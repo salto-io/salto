@@ -1969,6 +1969,56 @@ describe('adapter', () => {
         expect(fetchRes.elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'article')).not.toBeDefined()
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
+      it('should not generate articles and sections when category excluded', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const { elements } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernamePasswordCredentialsType,
+            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                include: [{
+                  type: '.*',
+                }],
+                exclude: [
+                  {
+                    type: 'category',
+                  },
+                ],
+                guide: {
+                  brands: ['.*'],
+                },
+              },
+              [API_DEFINITIONS_CONFIG]: {
+                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+                typeDefaults: {
+                  transformation: {
+                    omitInactive: false,
+                  },
+                },
+              },
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.getFullName().startsWith('zendesk.article.')))
+          .toEqual([])
+        expect(elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.getFullName().startsWith('zendesk.section.')))
+          .toEqual([])
+        expect(elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.getFullName().startsWith('zendesk.category.')))
+          .toEqual([])
+      })
     })
 
     describe('type overrides', () => {

@@ -305,15 +305,24 @@ const GUIDE_EXCLUDE_DEPENDENCIES: ExcludeDependency[] = [
 
 
 const excludeGuideDependentTypes = (excludeElements: FetchEntry<DefaultFetchCriteria>[]):
-  FetchEntry<DefaultFetchCriteria>[] => (
-  GUIDE_EXCLUDE_DEPENDENCIES
+  {
+    excludeEntries: FetchEntry<DefaultFetchCriteria>[]
+    errors: SaltoError[]
+  } => {
+  const errors: SaltoError[] = []
+  const excludeEntries = GUIDE_EXCLUDE_DEPENDENCIES
     .reduce(
-      (acc, dep) => (
-        acc.map(e => e.type).includes(dep.target)
-        && !acc.map(e => e.type).includes(dep.source)
-          ? [...acc, { type: dep.source }] : acc),
+      (acc, dep) => {
+        if (acc.map(e => e.type).includes(dep.target) && !acc.map(e => e.type).includes(dep.source)) {
+          errors.push({ severity: 'Warning', message: `Excluding ${dep.source} as it is dependent on ${dep.target}` })
+          return [...acc, { type: dep.source }]
+        }
+        return acc
+      },
       excludeElements
-    ))
+    )
+  return { excludeEntries, errors }
+}
 
 /**
  * Fetch Guide (help_center) elements of brand.
@@ -590,7 +599,8 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    this.userConfig[FETCH_CONFIG].exclude = excludeGuideDependentTypes(this.userConfig[FETCH_CONFIG].exclude)
+    const { excludeEntries, errors } = excludeGuideDependentTypes(this.userConfig[FETCH_CONFIG].exclude)
+    this.userConfig[FETCH_CONFIG].exclude = excludeEntries
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
@@ -617,7 +627,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const combinedRes = {
       configChanges: (defaultSubdomainResult.configChanges ?? []),
       elements: defaultSubdomainResult.elements,
-      errors: (defaultSubdomainResult.errors ?? []),
+      errors: ([...errors, ...(defaultSubdomainResult.errors ?? [])]),
     }
 
     const brandsList = getBrandsForGuide(

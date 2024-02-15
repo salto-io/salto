@@ -190,6 +190,14 @@ const validateTypeNameOverrides = (
   }
 }
 
+// Verify swagger url is taken from salto's adapter-swaggers repo
+const validateSwaggerUrl = (url: string): void => {
+  const ADAPTERS_SWAGGERS_REPO = 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/'
+  if (!url.startsWith(ADAPTERS_SWAGGERS_REPO)) {
+    throw new Error('Swagger url must be valid')
+  }
+}
+
 export const validateApiDefinitionConfig = (
   apiDefinitionConfigPath: string,
   adapterApiConfig: AdapterSwaggerApiConfig,
@@ -214,6 +222,7 @@ export const validateApiDefinitionConfig = (
     adapterApiConfig.swagger.typeNameOverrides ?? [],
     Object.keys(adapterApiConfig.types),
   )
+  validateSwaggerUrl(adapterApiConfig.swagger.url)
 }
 
 /**

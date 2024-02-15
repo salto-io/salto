@@ -95,7 +95,7 @@ describe('config_swagger', () => {
         'PATH',
         {
           swagger: {
-            url: '/a/b/c',
+            url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/my-swagger.yaml',
             additionalTypes: [
               { typeName: 'abc', cloneFrom: 'def' },
             ],
@@ -130,7 +130,7 @@ describe('config_swagger', () => {
         'PATH',
         {
           swagger: {
-            url: '/a/b/c',
+            url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/my-swagger.yaml',
             additionalTypes: [
               { typeName: 'abc', cloneFrom: 'def' },
             ],
@@ -164,7 +164,7 @@ describe('config_swagger', () => {
         'PATH',
         {
           swagger: {
-            url: '/a/b/c',
+            url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/my-swagger.yaml',
             additionalTypes: [
               { typeName: 'abc', cloneFrom: 'def' },
             ],
@@ -196,7 +196,7 @@ describe('config_swagger', () => {
         'PATH',
         {
           swagger: {
-            url: '/a/b/c',
+            url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/my-swagger.yaml',
             additionalTypes: [
               { typeName: 'abc', cloneFrom: 'def' },
             ],
@@ -226,7 +226,7 @@ describe('config_swagger', () => {
         'PATH',
         {
           swagger: {
-            url: '/a/b/c',
+            url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/my-swagger.yaml',
             additionalTypes: [
               { typeName: 'abc', cloneFrom: 'def' },
             ],
@@ -252,6 +252,100 @@ describe('config_swagger', () => {
             },
           },
           supportedTypes: { aa: ['aaa'] },
+        },
+      )).not.toThrow()
+    })
+    it('should throw when provided swagger url is invalid', () => {
+      // doesn't start with https://
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: 'https://my-swagger.yaml',
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+          },
+          supportedTypes: {},
+        },
+      )).toThrow(new Error('Swagger url must be valid'))
+      // https:// followed by an IPv4 address
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: 'https://127.0.0.1/',
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+          },
+          supportedTypes: {},
+        },
+      )).toThrow(new Error('Swagger url must be valid'))
+      // https:// followed by an IPv6 address
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: 'https://::1',
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+          },
+          supportedTypes: {},
+        },
+      )).toThrow(new Error('Swagger url must be valid'))
+    })
+    it('should not throw on valid swagger urls', () => {
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/my-swagger.yaml',
+            additionalTypes: [
+              { typeName: 'abc', cloneFrom: 'def' },
+            ],
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+          },
+          supportedTypes: {},
         },
       )).not.toThrow()
     })

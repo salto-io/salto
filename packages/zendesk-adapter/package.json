@@ -30,6 +30,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
+    "@handlebars/parser": "^2.1.0",
     "@salto-io/adapter-api": "0.3.53",
     "@salto-io/adapter-components": "0.3.53",
     "@salto-io/adapter-utils": "0.3.53",

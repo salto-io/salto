@@ -77,12 +77,10 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .map(({ elemID, removedListItems }: { removedListItems: string[]; elemID: ElemID }) => ({
       elemID,
       severity: 'Warning',
-      message: 'Can\'t remove inner elements',
-      detailedMessage: ((removedListItems.length > 1)
-        ? (`Can't remove the inner elements ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
-          + ' Salto is going to ignore these removals.')
-        : (`Can't remove the inner element ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
-          + ' Salto is going to ignore this removal.')),
+      message: 'Inner Element Removal Not Supported',
+      detailedMessage: `Netsuite doesn't support the removal of inner element${(removedListItems.length > 1) ? 's' : ''} via API; `
+        + `Salto will ignore ${(removedListItems.length > 1) ? 'these changes' : 'this change'} for this deployment. `
+        + `Please use Netuiste's UI to remove ${(removedListItems.length > 1) ? 'it' : 'them'}`,
     }))
     .toArray() as Promise<ChangeError[]>
 }

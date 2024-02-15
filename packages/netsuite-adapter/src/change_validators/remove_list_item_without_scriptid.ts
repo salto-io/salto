@@ -38,11 +38,9 @@ type GetListPath = () => string[]
 type GetMessage = (removedListItems: string[]) => string
 
 const getMessageByElementNameAndListItems = (elemName: string, removedListItems: string[]): string =>
-  ((removedListItems.length > 1)
-    ? (`Can't remove the inner ${elemName}s ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
-      + ' Salto is going to ignore these removals.')
-    : (`Can't remove the inner ${elemName} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
-      + ' Salto is going to ignore this removal.'))
+  `Netsuite doesn't support the removal of inner ${elemName}${(removedListItems.length > 1) ? 's' : ''} via API; `
+  + `Salto will ignore ${(removedListItems.length > 1) ? 'these changes' : 'this change'} for this deployment. `
+  + `Please use Netuiste's UI to remove ${(removedListItems.length > 1) ? 'it' : 'them'}`
 
 export type ItemListGetters = {
   getItemList: GetItemList
@@ -114,11 +112,10 @@ const getIdentifierItemMap = (
   instance: InstanceElement,
   getters: ItemListGetters,
 ): Record<string, ItemInList> => {
-  const itemRecord: Record<string, ItemInList> = {}
-  getters.getItemList(instance)
-    .forEach(item => {
-      itemRecord[getters.getItemString(item)] = item
-    })
+  const itemRecord: Record<string, ItemInList> = Object.fromEntries(
+    getters.getItemList(instance)
+      .map(item => [getters.getItemString(item), item])
+  )
   return itemRecord
 }
 

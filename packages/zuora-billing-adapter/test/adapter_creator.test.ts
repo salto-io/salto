@@ -125,7 +125,7 @@ describe('adapter creator', () => {
           fetch: DEFAULT_CONFIG[FETCH_CONFIG],
           apiDefinitions: {
             swagger: {
-              url: '/tmp/swagger.yaml',
+              url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/test',
             },
             types: {
               CustomObject: {
@@ -162,7 +162,7 @@ describe('adapter creator', () => {
           },
           apiDefinitions: {
             swagger: {
-              url: '/tmp/swagger.yaml',
+              url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/test',
             },
             types: {
               CustomObject: {
@@ -200,7 +200,7 @@ describe('adapter creator', () => {
           },
           apiDefinitions: {
             swagger: {
-              url: '/tmp/swagger.yaml',
+              url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/test',
             },
             types: {},
           },
@@ -224,7 +224,7 @@ describe('adapter creator', () => {
           },
           apiDefinitions: {
             swagger: {
-              url: '/tmp/swagger.yaml',
+              url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/test',
             },
             types: {},
           },

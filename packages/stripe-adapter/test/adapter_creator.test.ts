@@ -125,7 +125,7 @@ describe('adapter creator', () => {
           fetch: DEFAULT_CONFIG[FETCH_CONFIG],
           apiDefinitions: {
             swagger: {
-              url: '/tmp/swagger.yaml',
+              url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/test',
             },
             types: {
               Product: {

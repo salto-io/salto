@@ -190,6 +190,15 @@ const validateTypeNameOverrides = (
   }
 }
 
+// Verify swagger url is taken from salto's adapter-swaggers repo
+const validateSwaggerUrl = (url: string): void => {
+  const ADAPTERS_SWAGGERS_REPO = 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/'
+  const STRIPE_SWAGGER_URL = 'https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml' // stripe's swagger is not in adapter-swaggers repo
+  if (!url.startsWith(ADAPTERS_SWAGGERS_REPO) && url !== STRIPE_SWAGGER_URL) {
+    throw new Error('Swagger url must be valid')
+  }
+}
+
 export const validateApiDefinitionConfig = (
   apiDefinitionConfigPath: string,
   adapterApiConfig: AdapterSwaggerApiConfig,
@@ -214,6 +223,7 @@ export const validateApiDefinitionConfig = (
     adapterApiConfig.swagger.typeNameOverrides ?? [],
     Object.keys(adapterApiConfig.types),
   )
+  validateSwaggerUrl(adapterApiConfig.swagger.url)
 }
 
 /**

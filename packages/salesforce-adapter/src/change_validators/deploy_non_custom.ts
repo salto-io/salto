@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 import {
+  Change,
   ChangeError,
   ChangeValidator,
   getChangeData,
+  isFieldChange,
   isObjectTypeChange,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
+
+const { isDefined } = values
+
+const log = logger(module)
 
 const createNonDeployableTypeError = (objectType: ObjectType): ChangeError => ({
   elemID: objectType.elemID,
@@ -29,11 +38,30 @@ const createNonDeployableTypeError = (objectType: ObjectType): ChangeError => ({
   severity: 'Error',
 })
 
+const getAffectedType = (change: Change): ObjectType | undefined => {
+  if (isObjectTypeChange(change)) {
+    return getChangeData(change)
+  }
+  if (isFieldChange(change)) {
+    return getChangeData(change).parent
+  }
+
+  return undefined
+}
+
 const changeValidator: ChangeValidator = async (changes) =>
   changes
-    .filter(isObjectTypeChange)
-    .filter((change) => !isCustomObjectSync(getChangeData(change)))
-    .map(getChangeData)
+    .filter((change) => {
+      log.info('Validating change %s', safeJsonStringify(change))
+      return true
+    })
+    .map((change) => getAffectedType(change))
+    .filter(isDefined)
+    .filter((objectType) => !isCustomObjectSync(objectType))
+    .filter((objectType) => {
+      log.info('Invalid change! %s', safeJsonStringify(objectType))
+      return true
+    })
     .map(createNonDeployableTypeError)
 
 export default changeValidator

@@ -127,6 +127,7 @@ export type ChangeValidatorName = (
   | 'dataCategoryGroup'
   | 'standardFieldOrObjectAdditionsOrDeletions'
   | 'deletedNonQueryableFields'
+  | 'metadataDeployValidation'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -777,6 +778,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
     standardFieldOrObjectAdditionsOrDeletions: { refType: BuiltinTypes.BOOLEAN },
     deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
+    metadataDeployValidation: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

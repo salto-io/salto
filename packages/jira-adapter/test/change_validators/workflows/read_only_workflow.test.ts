@@ -49,7 +49,6 @@ describe('workflowValidator', () => {
 
     it('should not return an error if canEdit is true', async () => {
       instance.value.operations.canEdit = true
-
       expect(await readOnlyWorkflowValidator([
         toChange({
           before: instance,

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD, ACTIVE_STATUS, SAML_2_0_APP } from '../constants'
@@ -130,7 +130,7 @@ const deployApp = async (
     }
 
     const response = await defaultDeployChange(
-      change,
+      isModificationChange(change) ? deployment.transformRemovedValuesToNull(_.cloneDeep(change), ['settings']) : change,
       client,
       apiDefinitions,
       fieldsToIgnore,

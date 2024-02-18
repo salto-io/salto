@@ -14,8 +14,6 @@
 * limitations under the License.
 */
 
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import {
   ActionName,
@@ -161,7 +159,6 @@ export const deployChange = async ({
   allowedStatusCodesOnRemoval?: number[]
 }): Promise<ResponseResult> => {
   const instance = getChangeData(change)
-  console.log('Inside deployment, starting to deploy ', change.data)
   log.debug(`Starting deploying instance ${instance.elemID.getFullName()} with action '${change.action}'`)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
@@ -173,8 +170,7 @@ export const deployChange = async ({
     endpoint.fieldsToIgnore,
     elementsSource,
   )).value
-  console.log('valuesToDeploy: ')
-  console.log(valuesToDeploy)
+
   const url = createUrl({
     instance,
     baseUrl: endpoint.url,
@@ -184,8 +180,6 @@ export const deployChange = async ({
   const data = endpoint.deployAsField
     ? { [endpoint.deployAsField]: valuesToDeploy }
     : valuesToDeploy
-  console.log('raw data: ')
-  console.log(data)
 
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined

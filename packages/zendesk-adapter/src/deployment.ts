@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import {
   Change,
@@ -91,8 +88,6 @@ const getMatchedChild = ({
       ? response[dataField]
       : response
     ) as Values)?.[childFieldName]
-  console.log('ssss====================')
-  console.log(childrenResponse)
   if (childrenResponse) {
     if (_.isArray(childrenResponse) && childrenResponse.every(_.isPlainObject)) {
       return childrenResponse.find(
@@ -120,8 +115,6 @@ export const addIdsToChildrenUponAddition = ({
   childFieldName: string
   childUniqueFieldName: string
 }): Change<InstanceElement>[] => {
-  console.log('What type of response do i get in the add ID thing? ')
-  console.log(response)
   const { deployRequests } = apiDefinitions
     .types[getChangeData(parentChange).elemID.typeName]
   childrenChanges
@@ -132,7 +125,6 @@ export const addIdsToChildrenUponAddition = ({
         const child = getMatchedChild({
           change, response, dataField, childFieldName, childUniqueFieldName,
         })
-        console.log(child)
         if (child) {
           addId({
             change, apiDefinitions, response: child,
@@ -151,8 +143,6 @@ export const deployChange = async (
   fieldsToIgnore?: string[],
 ): Promise<deployment.ResponseResult> => {
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
-  console.log('enpoints: ')
-  console.log(deployRequests)
   try {
     const response = await deployment.deployChange({
       change,

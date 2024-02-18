@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import _, { isString } from 'lodash'
 import {
   AdapterOperations,
@@ -813,9 +810,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         `We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`,
       )
     }
-    // console.log('Adapter, all changes: ')
-    // instanceChanges.map(change => console.log(change.data))
-
     const changesToDeploy = instanceChanges
       .map(change => ({
         action: change.action,

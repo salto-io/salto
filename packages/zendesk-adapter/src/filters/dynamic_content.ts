@@ -13,16 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange,
+  Change, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { addIdsToChildrenUponAddition, deployChange, deployChangesByGroups } from '../deployment'
+import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { applyforInstanceChangesOfType } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
@@ -74,68 +71,33 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
-    // const [modificationVariantChanges] = _.partition(
-    //   variantChanges,
-    //   change => isModificationChange(change),
-    // )
 
-    /*
-     * Order of operations:
-     * 1. Run variant modifications as is
-     * 2. Run Item changes (all of them!) and make sure that the variants *inside* the items are updated correctly
-    */
+    if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
+      const [variantAdditionChanges, variantNonAdditionChanges] = _.partition(variantChanges, isAdditionChange)
+      const [variantRemovalChanges, variantModificationChanges] = _.partition(
+        variantNonAdditionChanges, isRemovalChange
+      )
+      const [itemRemovalChanges, itemNonRemovalChanges] = _.partition(itemChanges, isRemovalChange)
 
-    //   if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
-    //     const [removalChanges, nonRemovalChanges] = _.partition(relevantChanges, isRemovalChange)
-    //     console.log('boop', removalChanges)
-    //     nonRemovalChanges.forEach(change => {
-    //       const a = change.data
-    //       if ('before' in a) {
-    //         console.log(a.before.value.variants)
-    //       }
-    //     })
-    //     nonRemovalChanges.map(change => console.log(change.data.after.value.variants))
-    //     const deployResult = await deployChangesByGroups(
-    //       [removalChanges, nonRemovalChanges] as Change<InstanceElement>[][],
-    //       async change => {
-    //         await deployChange(change, client, config.apiDefinitions)
-    //       }
-    //     )
-    //     return { deployResult, leftoverChanges }
-    //   }
-    //   const deployResult = await deployChanges(
-    //     itemChanges,
-    //     async change => {
-    //       const response = await deployChange(
-    //         change, client, config.apiDefinitions
-    //       )
-    //       return addIdsToChildrenUponAddition({
-    //         response,
-    //         parentChange: change,
-    //         childrenChanges: variantChanges,
-    //         apiDefinitions: config[API_DEFINITIONS_CONFIG],
-    //         childFieldName: VARIANTS_FIELD_NAME,
-    //         childUniqueFieldName: 'locale_id',
-    //       })
-    //     }
-    //   )
-    //   return { deployResult, leftoverChanges }
-    // },
-
-    const [variantAdditionChanges, variantNonAdditionChanges] = _.partition(variantChanges, isAdditionChange)
-    const [variantRemovalChanges, variantModificationChanges] = _.partition(variantNonAdditionChanges, isRemovalChange)
-    const [itemRemovalChanges, itemNonRemovalChanges] = _.partition(itemChanges, isRemovalChange)
-    console.log(itemNonRemovalChanges)
-    const deployResult = await deployChangesByGroups(
-      // The service does not allow us to have an item with no variant - therefore, we need to do
-      //  the removal changes last
-      [
-        variantAdditionChanges,
-        itemNonRemovalChanges,
-        variantModificationChanges,
-        itemRemovalChanges,
-        variantRemovalChanges,
-      ] as Change<InstanceElement>[][],
+      const deployResult = await deployChangesByGroups(
+        // The service does not allow us to have an item with no variant - therefore, we need to do
+        // the removal changes last. Variant additions need to be first in order to prevent race
+        // conditions with item modifications
+        [
+          variantAdditionChanges,
+          itemNonRemovalChanges,
+          variantModificationChanges,
+          itemRemovalChanges,
+          variantRemovalChanges,
+        ] as Change<InstanceElement>[][],
+        async change => {
+          await deployChange(change, client, config.apiDefinitions)
+        }
+      )
+      return { deployResult, leftoverChanges }
+    }
+    const deployResult = await deployChanges(
+      itemChanges,
       async change => {
         const response = await deployChange(
           change, client, config.apiDefinitions

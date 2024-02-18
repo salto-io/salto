@@ -234,8 +234,6 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     }
 
     const { url, queryParams, headers, responseType } = params
-    
-    console.log(method, params)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logResponse = (res: Response<any>): void => {

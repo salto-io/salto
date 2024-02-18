@@ -135,8 +135,6 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
           }
         : undefined
       const { data, status } = await this.resourceClient.get(url, requestConfig)
-      console.log('he', requestConfig)
-      console.log('he', data)
       log.debug('Received response for resource request %s with status %d', url, status)
       log.trace(
         'Full HTTP response for resource %s: %s',

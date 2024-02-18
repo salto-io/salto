@@ -16,13 +16,14 @@
 
 import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { GUIDE_THEME_TYPE_NAME } from '../constants'
+import { GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME } from '../constants'
 
 export const guideThemeReadonlyValidator: ChangeValidator = async changes => {
   const themeInstances = changes
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME
+      || instance.elemID.typeName === THEME_SETTINGS_TYPE_NAME)
 
   if (_.isEmpty(themeInstances)) {
     return []

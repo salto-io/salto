@@ -27,15 +27,15 @@ describe('guideThemeReadonlyValidator', () => {
       live: true,
     }
   )
-  const message = 'Guide Themes deploy support is currently under development. Please note that Theme code referencing other elements might not transfer correctly between environments'
+  const message = 'Guide Themes deploy support is currently under development, and is currently in read only mode.'
   it('should return a warning on modification theme changes', async () => {
     const changeErrors = await guideThemeReadonlyValidator([
       toChange({ before: guideThemeInstance, after: guideThemeInstance }),
     ])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
-    expect(changeErrors[0].message).toEqual('Guide Themes is currently under development.')
-    expect(changeErrors[0].severity).toEqual('Warning')
+    expect(changeErrors[0].message).toEqual('Deploying Guide Themes is not supported at the moment as Guide Themes is currently under development.')
+    expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].detailedMessage).toEqual(message)
   })
   it('should return a warning on addition theme changes', async () => {
@@ -44,8 +44,8 @@ describe('guideThemeReadonlyValidator', () => {
     ])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
-    expect(changeErrors[0].message).toEqual('Guide Themes is currently under development.')
-    expect(changeErrors[0].severity).toEqual('Warning')
+    expect(changeErrors[0].message).toEqual('Deploying Guide Themes is not supported at the moment as Guide Themes is currently under development.')
+    expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].detailedMessage).toEqual(message)
   })
   it('should return a warning on deletion theme changes', async () => {
@@ -54,8 +54,8 @@ describe('guideThemeReadonlyValidator', () => {
     ])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
-    expect(changeErrors[0].message).toEqual('Guide Themes is currently under development.')
-    expect(changeErrors[0].severity).toEqual('Warning')
+    expect(changeErrors[0].message).toEqual('Deploying Guide Themes is not supported at the moment as Guide Themes is currently under development.')
+    expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].detailedMessage).toEqual(message)
   })
 })

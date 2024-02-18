@@ -13,8 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { restoreValues, isResolvedReferenceExpression, resolvePath } from '@salto-io/adapter-utils'
-import { isAdditionOrModificationChange, getChangeData, InstanceElement, isInstanceElement, ReferenceExpression, Value, isReferenceExpression } from '@salto-io/adapter-api'
+
+import { restoreValues, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import {
+  isAdditionOrModificationChange,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  ReferenceExpression,
+  Value,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { references as referenceUtils, resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'

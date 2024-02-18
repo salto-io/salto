@@ -61,7 +61,7 @@ import {
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
-  restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
+  restoreChangeElement, RestoreValuesFunc, applyFunctionToChangeData,
   transformElement, toObjectType, getParents, resolveTypeShallow,
   elementExpressionStringifyReplacer,
   createSchemeGuard,
@@ -2565,24 +2565,6 @@ describe('Test utils.ts', () => {
   "refType": "TypeReference(salto.obj_staticfile, <omitted>)"
 }`)
       })
-    })
-  })
-
-  describe('getAllReferencedIds', () => {
-    it('should find referenced ids', () => {
-      const res = getAllReferencedIds(mockInstance)
-      expect(res).toEqual(
-        new Set([
-          'mockAdapter.test',
-          'mockAdapter.test2.field.aaa',
-          templateElemID.getFullName(),
-          templateElemID2.getFullName(),
-        ]),
-      )
-    })
-    it('should find referenced ids only in annotations', () => {
-      const res = getAllReferencedIds(mockInstance, true)
-      expect(res).toEqual(new Set(['mockAdapter.test']))
     })
   })
 

@@ -26,77 +26,9 @@ import {
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, ResolveValuesFunc, restoreValues } from '@salto-io/adapter-utils'
 import { resolveValues, resolveChangeElement } from '../src/resolve_utils'
+import { fileContent, getName, mockInstance, regValue, valueFile, valueRef } from './utils'
 
 describe('resolve utils func', () => {
-  const getName: GetLookupNameFunc = ({ ref }) => ref.value
-  const mockStrType = new PrimitiveType({
-    elemID: new ElemID('mockAdapter', 'str'),
-    primitive: PrimitiveTypes.STRING,
-    annotations: { testAnno: 'TEST ANNO TYPE' },
-    path: ['here', 'we', 'go'],
-  })
-  const mockElem = new ElemID('mockAdapter', 'test')
-  const mockType = new ObjectType({
-    elemID: mockElem,
-    annotationRefsOrTypes: {
-      testAnno: mockStrType,
-    },
-    annotations: {
-      testAnno: 'TEST ANNO',
-    },
-    fields: {
-      ref: { refType: BuiltinTypes.STRING },
-      str: { refType: BuiltinTypes.STRING, annotations: { testAnno: 'TEST FIELD ANNO' } },
-      file: { refType: BuiltinTypes.STRING },
-      bool: { refType: BuiltinTypes.BOOLEAN },
-      num: { refType: BuiltinTypes.NUMBER },
-      numArray: { refType: new ListType(BuiltinTypes.NUMBER) },
-      strArray: { refType: new ListType(BuiltinTypes.STRING) },
-      numMap: { refType: new MapType(BuiltinTypes.NUMBER) },
-      strMap: { refType: new MapType(BuiltinTypes.STRING) },
-      obj: {
-        refType: new ListType(new ObjectType({
-          elemID: mockElem,
-          fields: {
-            field: { refType: BuiltinTypes.STRING },
-            otherField: {
-              refType: BuiltinTypes.STRING,
-            },
-            value: { refType: BuiltinTypes.STRING },
-            mapOfStringList: {
-              refType: new MapType(new ListType(BuiltinTypes.STRING)),
-            },
-            innerObj: {
-              refType: new ObjectType({
-                elemID: mockElem,
-                fields: {
-                  name: { refType: BuiltinTypes.STRING },
-                  listOfNames: {
-                    refType: new ListType(BuiltinTypes.STRING),
-                  },
-                  magical: {
-                    refType: new ObjectType({
-                      elemID: mockElem,
-                      fields: {
-                        deepNumber: { refType: BuiltinTypes.NUMBER },
-                        deepName: { refType: BuiltinTypes.STRING },
-                      },
-                    }),
-                  },
-                },
-              }),
-            },
-          },
-        })),
-      },
-    },
-    path: ['this', 'is', 'happening'],
-  })
-  const regValue = 'regValue'
-  const valueRef = new ReferenceExpression(mockElem, regValue, mockType)
-  const fileContent = 'bb'
-  const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(fileContent) })
-
   describe('resolveValues func', () => {
     const instanceName = 'Instance'
     const objectName = 'Object'
@@ -371,89 +303,7 @@ describe('resolve utils func', () => {
     let additionChange: AdditionChange<InstanceElement>
     let removalChange: RemovalChange<InstanceElement>
     let modificationChange: ModificationChange<InstanceElement>
-    const templateElemID = new ElemID('template', 'test')
-    const templateElemID2 = new ElemID('template2', 'test2')
-    const templateRef = new TemplateExpression({ parts: ['this is:',
-      new ReferenceExpression(templateElemID), 'a template',
-      new ReferenceExpression(templateElemID2)] })
-    const mockInstance = new InstanceElement(
-      'mockInstance',
-      mockType,
-      {
-        ref: valueRef,
-        templateRef,
-        str: 'val',
-        bool: 'true',
-        num: '99',
-        numArray: ['12', '13', '14'],
-        strArray: 'should be list',
-        numMap: { key12: 12, num13: 13 },
-        strMap: { a: 'a', bla: 'BLA' },
-        notExist: 'notExist',
-        notExistArray: ['', ''],
-        file: valueFile,
-        obj: [
-          {
-            field: 'firstField',
-            otherField: 'doesn\'t matter',
-            value: {
-              val: 'someString',
-              anotherVal: { objTest: '123' },
-            },
-            mapOfStringList: {
-              l1: ['aaa', 'bbb'],
-              l2: ['ccc', 'ddd'],
-            },
-            innerObj: {
-              name: 'oren',
-              listOfNames: ['abc', 'qwe', 'opiu'],
-              magical: {
-                deepNumber: '888',
-                deepName: 'innerName',
-              },
-            },
-          },
-          {
-            field: 'true',
-            undeployable: valueRef,
-            value: ['123', '456'],
-            mapOfStringList: { something: [] },
-            innerObj: {
-              name: 'name1',
-              listOfNames: ['', '', ''],
-              magical: {
-                deepName: 'innerName1',
-                notExist2: 'false',
-              },
-            },
-          },
-          {
-            field: '123',
-            innerObj: {
-              name: 'name1',
-              undeployable: new ReferenceExpression(new ElemID('mockAdapter', 'test2', 'field', 'aaa')),
-              listOfNames: ['str4', 'str1', 'str2'],
-              magical: {
-                deepNumber: '',
-                deepName: '',
-              },
-            },
-          },
-          {
-          },
-        ],
-        objWithInnerObj: {
-          innerObj: {
-            listKey: [1, 2],
-            stringKey: 'val2',
-          },
-        },
-      },
-      ['yes', 'this', 'is', 'path'],
-      {
-        [CORE_ANNOTATIONS.DEPENDS_ON]: { reference: valueRef },
-      },
-    )
+
     beforeEach(() => {
       afterData = mockInstance.clone()
       beforeData = mockInstance.clone()

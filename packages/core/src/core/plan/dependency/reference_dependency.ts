@@ -33,7 +33,8 @@ import {
   isEqualValues,
   dependencyChange,
 } from '@salto-io/adapter-api'
-import { getAllReferencedIds, getParents, resolvePath } from '@salto-io/adapter-utils'
+import { getParents, resolvePath } from '@salto-io/adapter-utils'
+import { getAllReferencedIds } from '@salto-io/adapter-components'
 
 const { awu } = collections.asynciterable
 
@@ -69,7 +70,9 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     const onlyAnnotations = isObjectType(elem)
     // Not using ElementsSource here is legit because it's ran
     // after resolve
-    return wu(getAllReferencedIds(elem, onlyAnnotations))
+    const allReferencedIds = await getAllReferencedIds(elem, onlyAnnotations)
+    return wu(allReferencedIds)
+
       .map(targetRefIdFullName => {
         const targetRefId = ElemID.fromFullName(targetRefIdFullName)
         const targetElemId = targetRefId.createBaseID().parent.getFullName()

@@ -27,8 +27,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType,
-  UnresolvedReference, FieldMap,
+  compareSpecialValues, getChangeData, PlaceholderObjectType, UnresolvedReference, FieldMap,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -985,31 +984,6 @@ export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: str
 export const inspectValue = (value: Value, options?: InspectOptions): string =>
   inspect(value, _.defaults({}, options ?? {}, { depth: 4 }))
 
-export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
-  const allReferencedIds = new Set<string>()
-  const func: WalkOnFunc = ({ value, path }) => {
-    // if onlyAnnotations is true - skip the non annotations part
-    if (onlyAnnotations && !path.isAttrID()) {
-      // If this is an element we need to recurse in order to get to the annotations
-      return isElement(value) ? WALK_NEXT_STEP.RECURSE : WALK_NEXT_STEP.SKIP
-    }
-    if (isReferenceExpression(value)) {
-      allReferencedIds.add(value.elemID.getFullName())
-      return WALK_NEXT_STEP.SKIP
-    }
-    if (isTemplateExpression(value)) {
-      value.parts.forEach(part => {
-        if (isReferenceExpression(part)) {
-          allReferencedIds.add(part.elemID.getFullName())
-        }
-      })
-      return WALK_NEXT_STEP.SKIP
-    }
-    return WALK_NEXT_STEP.RECURSE
-  }
-  walkOnElement({ element, func })
-  return allReferencedIds
-}
 
 export const getParents = (instance: Element): Array<Value> =>
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])

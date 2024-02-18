@@ -147,7 +147,8 @@ Promise<InstanceElement | Error> => {
     return logoContent
   }
   const pathName = pathNaclCase(logoName)
-  const resourcePathName = `${normalizeFilePathPart(logoName)}.${contentType}`
+  const camelCaseName = pathName.replace(/_/g, '')
+  const resourcePathName = `${normalizeFilePathPart(camelCaseName)}.${contentType}`
   const logoId = extractIdFromUrl(link)
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(
@@ -155,7 +156,7 @@ Promise<InstanceElement | Error> => {
     logoType,
     {
       id: logoId,
-      fileName: `${logoName}.${contentType}`,
+      fileName: `${camelCaseName}.${contentType}`,
       contentType,
       content: new StaticFile({
         filepath: `${OKTA}/${logoType.elemID.name}/${resourcePathName}`,

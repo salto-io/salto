@@ -28,8 +28,7 @@ const removeEmptyValidators = (instance: WorkflowV1Instance | WorkflowV2Instance
         transition.rules.validators = transition.rules.validators
           .filter((validator: Value) => !isEmptyValidatorV1(validator))
       })
-  }
-  if (isWorkflowV2Instance(instance)) {
+  } else if (isWorkflowV2Instance(instance)) {
     Object.values(instance.value.transitions)
       .filter((transition: Value) => transition.validators !== undefined)
       .forEach((transition: Value) => {
@@ -47,9 +46,7 @@ const filter: FilterCreator = () => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(isWorkflowInstance)
-      .forEach(instance => {
-        removeEmptyValidators(instance)
-      })
+      .forEach(removeEmptyValidators)
   },
 })
 

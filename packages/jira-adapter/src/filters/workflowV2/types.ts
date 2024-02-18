@@ -46,7 +46,7 @@ export type WorkflowStatus = {
   name: string
 }
 
-export type TransitionV2 = {
+export type WorkflowTransitionV2 = {
   id: string
   actions?: Values[]
   conditions?: Values
@@ -79,7 +79,7 @@ export type Workflow = {
   statuses: Values[]
 }
 
-export type WorkflowV2Instance = InstanceElement & { value: InstanceElement['value'] & Omit<Workflow, 'transitions'> & { transitions: Record<string, TransitionV2> } }
+export type WorkflowV2Instance = InstanceElement & { value: InstanceElement['value'] & Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowTransitionV2> } }
 
 const WORKFLOW_SCHEMA = Joi.object({
   name: Joi.string().required(),
@@ -101,7 +101,7 @@ const WORKFLOW_SCHEMA = Joi.object({
   statuses: Joi.array().items(Joi.object()).required(),
 }).unknown(true).required()
 
-const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, TransitionV2> }>(WORKFLOW_SCHEMA, 'Received an invalid workflow values')
+const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowTransitionV2> }>(WORKFLOW_SCHEMA, 'Received an invalid workflow values')
 
 export const isWorkflowV2Instance = (instance: InstanceElement)
 : instance is WorkflowV2Instance =>

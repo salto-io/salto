@@ -17,7 +17,7 @@ import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationCh
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { isWorkflowV1Instance, Transition as TransitionV1, WorkflowV1Instance } from '../../filters/workflow/types'
-import { isWorkflowInstance, isWorkflowV2Instance, TransitionV2, WorkflowV2Instance } from '../../filters/workflowV2/types'
+import { isWorkflowInstance, isWorkflowV2Instance, WorkflowTransitionV2, WorkflowV2Instance } from '../../filters/workflowV2/types'
 
 const { isDefined } = values
 export const CONFIGURATION_VALIDATOR_TYPE = new Set([
@@ -55,7 +55,7 @@ const workflowV1HasEmptyValidator = (transition: TransitionV1, invalidValidators
   })
 }
 
-const workflowV2HasEmptyValidator = (transition: TransitionV2, invalidValidators: Set<string>): void => {
+const workflowV2HasEmptyValidator = (transition: WorkflowTransitionV2, invalidValidators: Set<string>): void => {
   transition.validators?.forEach(validator => {
     if (isEmptyValidatorV2(validator)) {
       invalidValidators.add(validator.parameters.ruleType)
@@ -68,8 +68,7 @@ const workflowHasEmptyValidator = (instance: WorkflowV1Instance | WorkflowV2Inst
   if (isWorkflowV1Instance(instance)) {
     Object.values(instance.value.transitions)
       .forEach(transition => workflowV1HasEmptyValidator(transition, invalidValidators))
-  }
-  if (isWorkflowV2Instance(instance)) {
+  } else if (isWorkflowV2Instance(instance)) {
     Object.values(instance.value.transitions)
       .forEach(transition => workflowV2HasEmptyValidator(transition, invalidValidators))
   }

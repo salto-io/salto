@@ -163,7 +163,7 @@ describe('workflowPropertiesValidator', () => {
       expect(await emptyValidatorWorkflowChangeValidator(changes)).toEqual([
         {
           elemID: workflowV2Instance.elemID,
-          severity: 'Warning', // fix the error messages and finish the tests
+          severity: 'Warning',
           message: 'Invalid workflow transition validator won’t be deployed',
           detailedMessage: "This workflow has a fieldHasSingleValue transition validator, which is missing 'fieldKey' field. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its 'fieldKey' field",
         },

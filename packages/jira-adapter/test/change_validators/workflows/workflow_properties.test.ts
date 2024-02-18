@@ -15,9 +15,11 @@
 */
 import { toChange, InstanceElement, Change } from '@salto-io/adapter-api'
 import { workflowPropertiesValidator } from '../../../src/change_validators/workflows/workflow_properties'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME, WORKFLOW_V1, WORKFLOW_V2 } from '../../../src/constants'
+import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 
+const WORKFLOW_V1 = 'workflowV1'
+const WORKFLOW_V2 = 'workflowV2'
 
 describe('workflowPropertiesValidator', () => {
   let instance: InstanceElement
@@ -51,8 +53,7 @@ describe('workflowPropertiesValidator', () => {
           ],
         },
       )
-    }
-    if (workflowVersion === WORKFLOW_V2) {
+    } else if (workflowVersion === WORKFLOW_V2) {
       instance = new InstanceElement(
         'workflowV2Instance',
         createEmptyType(JIRA_WORKFLOW_TYPE),

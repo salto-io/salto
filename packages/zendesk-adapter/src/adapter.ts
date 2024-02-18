@@ -1,18 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+/* eslint-disable no-console */
+
 import _, { isString } from 'lodash'
 import {
   AdapterOperations,
@@ -810,16 +813,22 @@ export default class ZendeskAdapter implements AdapterOperations {
         `We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`,
       )
     }
-    const changesToDeploy = instanceChanges.map(change => ({
-      action: change.action,
-      data: _.mapValues(change.data, (instance: InstanceElement) =>
-        replaceInstanceTypeForDeploy({
-          instance,
-          config: this.userConfig[API_DEFINITIONS_CONFIG],
-        }),
-      ),
-    })) as Change<InstanceElement>[]
-    const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
+    // console.log('Adapter, all changes: ')
+    // instanceChanges.map(change => console.log(change.data))
+
+    const changesToDeploy = instanceChanges
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: this.userConfig[API_DEFINITIONS_CONFIG],
+          })),
+      })) as Change<InstanceElement>[]
+    const sourceChanges = _.keyBy(
+      changesToDeploy,
+      change => getChangeData(change).elemID.getFullName(),
+    )
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>

@@ -1,18 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+/* eslint-disable no-console */
+
 import _ from 'lodash'
 import {
   Change,
@@ -76,13 +79,29 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
-    relevantChanges.map(change => console.log(change.data))
+    // const [modificationVariantChanges] = _.partition(
+    //   variantChanges,
+    //   change => isModificationChange(change),
+    // )
+
+    /*
+     * Order of operations:
+     * 1. Run variant modifications as is
+     * 2. Run Item changes (all of them!) and make sure that the variants *inside* the items are updated correctly
+    */
+
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
-      // The service does not allow us to have an item with no variant - therefore, we need to do
-      //  the removal changes last
       const [removalChanges, nonRemovalChanges] = _.partition(relevantChanges, isRemovalChange)
+      console.log('boop', removalChanges)
+      nonRemovalChanges.forEach(change => {
+        const a = change.data
+        if ('before' in a) {
+          console.log(a.before.value.variants)
+        }
+      })
+      nonRemovalChanges.map(change => console.log(change.data.after.value.variants))
       const deployResult = await deployChangesByGroups(
-        [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
+        [removalChanges, nonRemovalChanges] as Change<InstanceElement>[][],
         async change => {
           await deployChange(change, client, config.apiDefinitions)
         },
@@ -102,6 +121,28 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     })
     return { deployResult, leftoverChanges }
   },
+
+  //   const [removalChanges, nonRemovalChanges] = _.partition(relevantChanges, isRemovalChange)
+  //   const deployResult = await deployChangesByGroups(
+  //     // The service does not allow us to have an item with no variant - therefore, we need to do
+  //     //  the removal changes last
+  //     [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
+  //     async change => {
+  //       const response = await deployChange(
+  //         change, client, config.apiDefinitions
+  //       )
+  //       return addIdsToChildrenUponAddition({
+  //         response,
+  //         parentChange: change,
+  //         childrenChanges: variantChanges,
+  //         apiDefinitions: config[API_DEFINITIONS_CONFIG],
+  //         childFieldName: VARIANTS_FIELD_NAME,
+  //         childUniqueFieldName: 'locale_id',
+  //       })
+  //     }
+  //   )
+  //   return { deployResult, leftoverChanges }
+  // },
 })
 
 export default filterCreator

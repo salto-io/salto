@@ -49,7 +49,7 @@ import {
   transformRelationshipFilterField,
 } from './utils'
 import { paginate } from '../../client/pagination'
-import { getIdByEmail, getUsers } from '../../user_utils'
+import { getIdByEmail } from '../../user_utils'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
@@ -317,7 +317,7 @@ const getUserConditions = (changes: Change[]): CustomObjectCondition[] => {
  *  preDeploy handles values that are users, including fallback user
  *  onDeploy reverts the preDeploy
  */
-const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
+const customObjectFieldsFilter: FilterCreator = ({ config, client, usersPromise }) => {
   const userPathToOriginalValue: Record<string, string> = {}
   const paginator = createPaginator({
     client,
@@ -375,7 +375,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       if (userConditions.length === 0) {
         return
       }
-      const { users } = await getUsers(paginator, config[FETCH_CONFIG].resolveUserIDs)
+      const { users } = await usersPromise
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

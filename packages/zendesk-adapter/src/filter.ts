@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
 import { FilterContext } from './config'
+import { User } from './user_utils'
 
 export const { filtersRunner } = filterUtils
 
@@ -28,6 +29,7 @@ export type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
   brandIdToClient?: BrandIdToClient
   fetchQuery: elementUtils.query.ElementQuery
+  usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

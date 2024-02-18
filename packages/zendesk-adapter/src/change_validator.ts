@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeValidator, SaltoError } from '@salto-io/adapter-api'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import {
   accountSettingsValidator,
@@ -88,6 +88,7 @@ import {
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
+import { User } from './user_utils'
 
 const {
   deployTypesNotSupportedValidator,
@@ -99,6 +100,7 @@ const {
 export default ({
   client,
   config,
+  usersPromise,
   apiConfig,
   fetchConfig,
   deployConfig,
@@ -107,6 +109,7 @@ export default ({
 }: {
   client: ZendeskClient
   config: ZendeskConfig
+  usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
   deployConfig?: ZendeskDeployConfig
@@ -146,9 +149,9 @@ export default ({
     customStatusCategory: customStatusCategoryValidator,
     customStatusActiveDefault: customStatusActiveDefaultValidator,
     defaultCustomStatuses: defaultCustomStatusesValidator,
-    customRoleRemoval: customRoleRemovalValidator(client, fetchConfig),
+    customRoleRemoval: customRoleRemovalValidator(usersPromise),
     sideConversations: sideConversationsValidator,
-    users: usersValidator(client, fetchConfig),
+    users: usersValidator(usersPromise),
     requiredAppOwnedParameters: requiredAppOwnedParametersValidator,
     oneTranslationPerLocale: oneTranslationPerLocaleValidator,
     articleRemoval: articleRemovalValidator,

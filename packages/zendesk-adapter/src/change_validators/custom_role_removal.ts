@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { getUsers } from '../user_utils'
-import { paginate } from '../client/pagination'
-import ZendeskClient from '../client/client'
+import { ChangeValidator, SaltoError, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { User } from '../user_utils'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
-import { ZendeskFetchConfig } from '../config'
-
-const { createPaginator } = clientUtils
 
 /*
- * Checks that no user with agent role is associated with the removed custom_role
- *
- */
-export const customRoleRemovalValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) => ChangeValidator =
-  (client, fetchConfig) => async changes => {
+* Checks that no user with agent role is associated with the removed custom_role
+*
+*/
+export const customRoleRemovalValidator: (usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>) =>
+  ChangeValidator = usersPromise => async changes => {
     const relevantInstances = changes
       .filter(isRemovalChange)
       .filter(isInstanceChange)
@@ -40,11 +34,7 @@ export const customRoleRemovalValidator: (client: ZendeskClient, fetchConfig: Ze
       return []
     }
 
-    const paginator = createPaginator({
-      client,
-      paginationFuncCreator: paginate,
-    })
-    const { users } = await getUsers(paginator, fetchConfig.resolveUserIDs)
+    const { users } = await usersPromise
     if (_.isEmpty(users)) {
       return []
     }

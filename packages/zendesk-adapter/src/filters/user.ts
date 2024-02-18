@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { TYPE_NAME_TO_REPLACER, getIdByEmail, getUsers } from '../user_utils'
+import { TYPE_NAME_TO_REPLACER, getIdByEmail } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
 import { paginate } from '../client/pagination'
 import { FETCH_CONFIG } from '../config'
@@ -30,7 +30,7 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean =>
 /**
  * Replaces the user ids with emails
  */
-const filterCreator: FilterCreator = ({ client, config }) => {
+const filterCreator: FilterCreator = ({ client, config, usersPromise }) => {
   let userIdToEmail: Record<string, string> = {}
   const { resolveUserIDs } = config[FETCH_CONFIG]
   return {
@@ -40,7 +40,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const { errors } = await getUsers(paginator, resolveUserIDs)
+      const { errors } = await usersPromise
       const mapping = await getIdByEmail(paginator, resolveUserIDs)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
@@ -57,7 +57,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const { users } = await getUsers(paginator, resolveUserIDs)
+      const { users } = await usersPromise
       if (_.isEmpty(users)) {
         return
       }

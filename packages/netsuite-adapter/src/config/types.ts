@@ -244,6 +244,7 @@ export type NetsuiteValidatorName = (
   | 'unreferencedFileAddition'
   | 'unreferencedDatasets'
   | 'analyticsSilentFailure'
+  | 'undeployableBundleChanges'
 )
 
 export type NonSuiteAppValidatorName = (
@@ -619,6 +620,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unreferencedFileAddition: { refType: BuiltinTypes.BOOLEAN },
     unreferencedDatasets: { refType: BuiltinTypes.BOOLEAN },
     analyticsSilentFailure: { refType: BuiltinTypes.BOOLEAN },
+    undeployableBundleChanges: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

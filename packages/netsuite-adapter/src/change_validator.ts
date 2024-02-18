@@ -50,6 +50,7 @@ import omitFieldsValidator from './change_validators/omit_fields'
 import unreferencedFileAdditionValidator from './change_validators/unreferenced_file_addition'
 import unreferencedDatasetsValidator from './change_validators/check_referenced_datasets'
 import analyticsSilentFailureValidator from './change_validators/analytics_post_deploy_notification'
+import bundleChangesValidator from './change_validators/bundle_changes'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
@@ -94,6 +95,7 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   unreferencedFileAddition: unreferencedFileAdditionValidator,
   unreferencedDatasets: unreferencedDatasetsValidator,
   analyticsSilentFailure: analyticsSilentFailureValidator,
+  undeployableBundleChanges: bundleChangesValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {

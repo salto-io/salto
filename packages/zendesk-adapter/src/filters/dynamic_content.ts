@@ -73,6 +73,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     )
 
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
+      // The service does not allow us to have an item with no variant - therefore, we need to do
+      // the removal changes last. Variant additions need to be first in order to prevent race
+      // conditions with item modifications
       const [variantAdditionChanges, variantNonAdditionChanges] = _.partition(variantChanges, isAdditionChange)
       const [variantRemovalChanges, variantModificationChanges] = _.partition(
         variantNonAdditionChanges, isRemovalChange
@@ -80,9 +83,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const [itemRemovalChanges, itemNonRemovalChanges] = _.partition(itemChanges, isRemovalChange)
 
       const deployResult = await deployChangesByGroups(
-        // The service does not allow us to have an item with no variant - therefore, we need to do
-        // the removal changes last. Variant additions need to be first in order to prevent race
-        // conditions with item modifications
         [
           variantAdditionChanges,
           itemNonRemovalChanges,

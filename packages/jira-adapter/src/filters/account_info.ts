@@ -78,7 +78,7 @@ const LICENSE_RESPONSE_SCHEME = Joi.object({
 
 const isLicenseResponse = createSchemeGuard<LicenseResponse>(LICENSE_RESPONSE_SCHEME, 'Received an invalid license response')
 
-const getCloudLicense = async (client: JiraClient): Promise<Value> => {
+export const getCloudLicense = async (client: JiraClient): Promise<Value> => {
   const response = await client.get({
     url: '/rest/api/3/instance/license',
   })

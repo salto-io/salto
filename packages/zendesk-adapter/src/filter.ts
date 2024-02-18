@@ -17,7 +17,7 @@ import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
 import { FilterContext } from './config'
-import { User } from './user_utils'
+import { User } from './users/types'
 
 export const { filtersRunner } = filterUtils
 

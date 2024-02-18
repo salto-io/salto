@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { ChangeValidator, SaltoError, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { User } from '../user_utils'
+import { User } from '../users/types'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
 
 /*

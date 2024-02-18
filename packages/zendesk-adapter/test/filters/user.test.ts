@@ -27,7 +27,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
-import { getIdByEmail, getUsers } from '../../src/user_utils'
+import { getIdByEmail, getUsers } from '../../src/users/user_utils'
 
 jest.mock('../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../src/user_utils'),

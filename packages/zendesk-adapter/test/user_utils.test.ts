@@ -20,7 +20,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import ZendeskClient from '../src/client/client'
 import { ZendeskDeployConfig } from '../src/config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
-import * as usersUtilsModule from '../src/user_utils'
+import * as usersUtilsModule from '../src/users/user_utils'
 
 const logError = jest.fn()
 jest.mock('@salto-io/logging', () => {

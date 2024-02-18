@@ -23,7 +23,7 @@ import {
   ZENDESK,
 } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
-import * as userUtils from '../../src/user_utils'
+import * as userUtils from '../../src/users/user_utils'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { FixElementsArgs } from '../../src/fix_elements/types'
 

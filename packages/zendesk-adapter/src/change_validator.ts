@@ -88,7 +88,7 @@ import {
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
-import { User } from './user_utils'
+import { User } from './users/types'
 
 const {
   deployTypesNotSupportedValidator,

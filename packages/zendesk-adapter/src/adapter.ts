@@ -149,7 +149,7 @@ import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
-import { isCurrentUserResponse, User, getUsers } from './user_utils'
+import { isCurrentUserResponse, getUsers } from './users/user_utils'
 import addAliasFilter from './filters/add_alias'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
@@ -165,6 +165,7 @@ import customObjectFieldsOrderFilter from './filters/custom_objects/custom_objec
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
+import { User } from './users/types'
 
 const { makeArray } = collections.array
 const log = logger(module)

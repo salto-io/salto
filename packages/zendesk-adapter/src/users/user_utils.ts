@@ -20,9 +20,10 @@ import { client as clientUtils, definitions } from '@salto-io/adapter-components
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { SaltoError, Values } from '@salto-io/adapter-api'
-import ZendeskClient from './client/client'
-import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
-import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from './config'
+import ZendeskClient from '../client/client'
+import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from '../replacers_utils'
+import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from '../config'
+import { CurrentUserResponse, User } from './types'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -44,20 +45,6 @@ export const VALID_USER_VALUES = [
 export const MISSING_USERS_DOC_LINK =
   'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
 export const MISSING_USERS_ERROR_MSG = "Instance references users which don't exist in target environment"
-
-export type User = {
-  id: number
-  name: string
-  email: string
-  role: string
-  // eslint-disable-next-line camelcase
-  custom_role_id?: number | null
-  locale: string
-}
-
-type CurrentUserResponse = {
-  user: User
-}
 
 const EXPECTED_USER_SCHEMA = Joi.object({
   id: Joi.number().required(),

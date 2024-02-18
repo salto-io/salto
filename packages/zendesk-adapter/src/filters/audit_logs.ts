@@ -57,7 +57,7 @@ import {
   ZENDESK,
 } from '../constants'
 import ZendeskClient from '../client/client'
-import { getIdByName } from '../user_utils'
+import { getIdByName } from '../users/user_utils'
 import { FETCH_CONFIG, GUIDE_GLOBAL_TYPES, GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
 const log = logger(module)

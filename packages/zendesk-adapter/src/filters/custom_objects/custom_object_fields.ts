@@ -49,7 +49,7 @@ import {
   transformRelationshipFilterField,
 } from './utils'
 import { paginate } from '../../client/pagination'
-import { getIdByEmail } from '../../user_utils'
+import { getIdByEmail } from '../../users/user_utils'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils

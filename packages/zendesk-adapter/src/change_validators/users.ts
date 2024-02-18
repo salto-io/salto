@@ -33,11 +33,11 @@ import {
   MISSING_USERS_DOC_LINK,
   MISSING_USERS_ERROR_MSG,
   TYPE_NAME_TO_REPLACER,
-  User,
   VALID_USER_VALUES,
-} from '../user_utils'
+} from '../users/user_utils'
 import { lookupFunc } from '../filters/field_references'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
+import { User } from '../users/types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues

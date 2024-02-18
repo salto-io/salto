@@ -26,10 +26,11 @@ import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../config'
-import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue, User } from '../user_utils'
+import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../users/user_utils'
 import { FixElementsHandler } from './types'
 import { CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 import { FieldsParams, ValueReplacer, replaceConditionsAndActionsCreator } from '../replacers_utils'
+import { User } from '../users/types'
 
 const log = logger(module)
 

@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FixElementsFunc, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
-import ZendeskClient from '../client/client'
-import { ZendeskConfig } from '../config'
-import { User } from '../users/types'
-
-export type FixElementsArgs = {
-  client: ZendeskClient
-  config: ZendeskConfig
-  elementsSource: ReadOnlyElementsSource
-  usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
+export type User = {
+  id: number
+  name: string
+  email: string
+  role: string
+  // eslint-disable-next-line camelcase
+  custom_role_id?: number | null
+  locale: string
 }
 
-export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc
+export type CurrentUserResponse = {
+  user: User
+}

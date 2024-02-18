@@ -226,7 +226,8 @@ const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
 const getInstanceChangesWithFieldPermissions = async (
   changes: Change<ChangeDataType>[],
 ):
-Promise<(AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[]> => (awu(changes)
+Promise<(AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+)[]> => (awu(changes)
   .filter(isAdditionOrModificationChange)
   .filter(isInstanceOfTypeChange(...metadataTypesWithFieldPermissions))
   .filter(isInstanceChange)

@@ -326,7 +326,8 @@ export const deployWorkflowDiagram = async (
   : {
     instance: WorkflowV1Instance
     client: JiraClient
-  }): Promise<void> => {
+  }
+): Promise<void> => {
   const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instance })
   const { statusIdToStepId, actionKeyToTransition } = workflowDiagramMaps
   const statuses = buildStatusDiagramFields(instance, statusIdToStepId)

@@ -94,7 +94,8 @@ export const fetchCommand = async (
     getApprovedChanges, shouldUpdateConfig, accounts,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
     stateOnly, regenerateSaltoIds, withChangesDetection,
-  }: FetchCommandArgs): Promise<CliExitCode> => {
+  }: FetchCommandArgs
+): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {

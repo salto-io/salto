@@ -553,7 +553,8 @@ describe('updatePathIndex', () => {
 
   const runTest = async (
     updatePathIndexFunc: (args: PathIndexArgs) => Promise<void>,
-    pathHintsFunc: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[]): Promise<void> => {
+    pathHintsFunc: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[]
+  ): Promise<void> => {
     const index = new InMemoryRemoteMap<Path[]>()
     await index.setAll(pathHintsFunc([...objectsToModifyBefore, ...objectsToRemove]))
     await updatePathIndexFunc({

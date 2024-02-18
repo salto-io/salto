@@ -413,7 +413,8 @@ const retryOnBadResponse = async <T extends object>(
 }
 
 export const loginFromCredentialsAndReturnOrgId = async (
-  connection: Connection, creds: Credentials): Promise<string> => {
+  connection: Connection, creds: Credentials
+): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
     try {
       return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
@@ -462,7 +463,8 @@ const PRODUCTION_ACCOUNT_TYPES = [
 ]
 
 export const getConnectionDetails = async (
-  creds: Credentials, connection? : Connection): Promise<{
+  creds: Credentials, connection? : Connection
+): Promise<{
   remainingDailyRequests: number
   orgId: string
   accountType?: string

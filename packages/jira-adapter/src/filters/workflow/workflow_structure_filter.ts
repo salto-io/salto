@@ -54,24 +54,24 @@ const transformPostFunctions = (rules: Rules, transitionType?: string): void => 
       delete postFunc.configuration?.event?.name
     })
 
-    rules.postFunctions
-      ?.filter(({ type }) => type === 'SetIssueSecurityFromRoleFunction')
-      .forEach(postFunc => {
-        // This is not deployable and the id property provides the same info
-        delete postFunc.configuration?.projectRole?.name
-      })
+  rules.postFunctions
+    ?.filter(({ type }) => type === 'SetIssueSecurityFromRoleFunction')
+    .forEach(postFunc => {
+      // This is not deployable and the id property provides the same info
+      delete postFunc.configuration?.projectRole?.name
+    })
 
-    rules.postFunctions
-      ?.filter(({ type }) => isExtensionType(type))
-      .forEach(postFunc => {
-        delete postFunc.configuration?.id
-      })
+  rules.postFunctions
+    ?.filter(({ type }) => isExtensionType(type))
+    .forEach(postFunc => {
+      delete postFunc.configuration?.id
+    })
 
-    rules.postFunctions = rules.postFunctions?.filter(
-      postFunction => (transitionType === 'initial'
-        ? !NOT_FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')
-        : ![...NOT_FETCHED_POST_FUNCTION_TYPES, ...FETCHED_ONLY_INITIAL_POST_FUNCTION].includes(postFunction.type ?? '')),
-    )
+  rules.postFunctions = rules.postFunctions?.filter(
+    postFunction => (transitionType === 'initial'
+      ? !NOT_FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')
+      : ![...NOT_FETCHED_POST_FUNCTION_TYPES, ...FETCHED_ONLY_INITIAL_POST_FUNCTION].includes(postFunction.type ?? '')),
+  )
 }
 
 const transformValidator = (validator: Validator): void => {

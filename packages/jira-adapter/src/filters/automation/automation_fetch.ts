@@ -159,7 +159,7 @@ export const getAutomations = async (
     : postPaginated(
       `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rules`,
       client,
-        config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
+      config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
     )
 )
 

@@ -153,8 +153,8 @@ const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQu
   }
 
   const newLockedElementToExclude = combineQueryParams(
-  currentFetchConfig?.lockedElementsToExclude,
-  suggestedFetchConfig?.lockedElementsToExclude
+    currentFetchConfig?.lockedElementsToExclude,
+    suggestedFetchConfig?.lockedElementsToExclude
   )
 
   if (!_.isEqual(newLockedElementToExclude, emptyQueryParams())) {

@@ -44,7 +44,8 @@ const createMatchers = async (
   elementSelectors: ElementSelector[]
 ): Promise<{
   isChangeMatchSelectors: (change: DetailedChange) => boolean
-  isTopLevelElementMatchSelectors: (elemID: ElemID) => boolean
+  isTopLevelElementMatchSelectors: (elemID: ElemID
+) => boolean
 }> => {
   const beforeMatchingElemIDs = await getFilteredIds(
     elementSelectors,

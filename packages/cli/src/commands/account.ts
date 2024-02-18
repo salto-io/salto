@@ -125,7 +125,8 @@ const getLoginConfig = async (
   authMethods: AdapterAuthentication,
   output: CliOutput,
   getLoginInput: (configType: ObjectType) =>
-    Promise<InstanceElement>): Promise<InstanceElement> => {
+    Promise<InstanceElement>
+): Promise<InstanceElement> => {
   let newConfig: InstanceElement
   if (authType === 'oauth' && authMethods.oauth) {
     newConfig = await getOauthConfig(authMethods.oauth, output, getLoginInput)

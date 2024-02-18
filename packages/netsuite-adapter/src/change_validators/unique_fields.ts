@@ -58,8 +58,7 @@ const getChangeNestedField = (
   fieldPath: string[]
 ) : Value => resolvePath(change, change.elemID.createNestedID(...fieldPath))
 
-const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterParams
-): Promise<string[]> => {
+const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> => {
   const element = await elementsSource.get(elemID)
   if (!isObjectType(element) || !isCustomRecordType(element)) {
     return []

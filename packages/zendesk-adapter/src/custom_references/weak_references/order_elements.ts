@@ -90,7 +90,8 @@ const getFixedElementsAndUpdatedPaths = (elementsSource: ReadOnlyElementsSource)
   Promise<{ instance: InstanceElement; paths: string[] } | undefined> => {
   const filterReferencesNotInSource = async (
     allReferences: ReferenceExpression[]
-  ): Promise<(ReferenceExpression | number)[]> =>
+  ): Promise<(ReferenceExpression | number
+)[]> =>
     awu<ReferenceExpression | number>(allReferences)
       .filter(
         async reference => (

@@ -1,6 +1,0 @@
-/dist
-*.d.ts
-*.config.js
-coverage
-/package_native.js
-/nexe-natives-adapted

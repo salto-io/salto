@@ -55,7 +55,8 @@ const FIELDS_TO_IGNORE = [
 
 const deployWorkflowStatuses = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  client: JiraClient): Promise<void> => {
+  client: JiraClient
+): Promise<void> => {
   if ((isAdditionChange(change))
     || (isModificationChange(change)
     && !isEqualValues(change.data.before.value.workflowStatuses, change.data.after.value.workflowStatuses))) {

@@ -188,7 +188,8 @@ export const buildInMemState = (
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
     updateStateFromChanges: async (
-      { changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
+      { changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs
+    ) => {
       await updateStateElements(changes)
       if (!_.isEmpty(fetchAccounts)) {
         await updateAccounts(fetchAccounts)

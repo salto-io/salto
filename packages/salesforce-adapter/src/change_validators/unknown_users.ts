@@ -207,7 +207,8 @@ const getUsersFromInstance = async (instance: InstanceElement, getterDefs: Types
 
 const getUsersFromInstances = async (
   defMapping: TypesWithUserFields,
-  instances: InstanceElement[]): Promise<UserRef[]> => (
+  instances: InstanceElement[]
+): Promise<UserRef[]> => (
   awu(instances)
     .map(async instance => getUsersFromInstance(instance, defMapping))
     .flat()

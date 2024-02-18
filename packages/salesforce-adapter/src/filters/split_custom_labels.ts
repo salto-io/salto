@@ -90,7 +90,8 @@ const isCustomLabelsChange = async (change: Change): Promise<boolean> => (
 )
 
 const resolveCustomLabelsType = async (
-  changes: Change[]): Promise<ObjectType> => {
+  changes: Change[]
+): Promise<ObjectType> => {
   const customLabelInstance = getChangeData(changes[0])
   if (!isInstanceElement(customLabelInstance)) {
     throw new Error('Could not determine CustomLabel type')

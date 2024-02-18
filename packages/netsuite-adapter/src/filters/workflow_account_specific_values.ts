@@ -604,8 +604,7 @@ const toMissingInternalIdWarning = (
   elemID,
   severity: 'Warning',
   message: 'Could not identify value in workflow',
-  // TODO: add help article link
-  detailedMessage: `Could not find object "${name}" for field "${field}". Setting it to ACCOUNT_SPECIFIC_VALUE instead.`,
+  detailedMessage: `Could not find object "${name}" for field "${field}". Setting it to ACCOUNT_SPECIFIC_VALUE instead. Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
 })
 
 const toMultipleInternalIdsWarning = (
@@ -616,7 +615,7 @@ const toMultipleInternalIdsWarning = (
   elemID,
   severity: 'Warning',
   message: 'Multiple objects with the same name',
-  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}).`,
+  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}). Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
 })
 
 const resolveAccountSpecificValues = (

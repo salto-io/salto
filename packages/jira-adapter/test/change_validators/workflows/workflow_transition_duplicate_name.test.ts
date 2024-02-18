@@ -16,7 +16,10 @@
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { createEmptyType } from '../../utils'
 import { workflowTransitionDuplicateNameValidator } from '../../../src/change_validators/workflows/workflow_transition_duplicate_names'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME, WORKFLOW_V1, WORKFLOW_V2 } from '../../../src/constants'
+import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+
+const WORKFLOW_V1 = 'workflowV1'
+const WORKFLOW_V2 = 'workflowV2'
 
 describe('workflowTransitionDuplicateNameValidator', () => {
   let instance: InstanceElement

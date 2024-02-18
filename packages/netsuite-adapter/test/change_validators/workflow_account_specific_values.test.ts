@@ -212,7 +212,7 @@ describe('workflow account specific values', () => {
           elemID: ElemID.fromFullName('netsuite.workflow.instance.instance.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction'),
           severity: 'Warning',
           message: 'Could not identify value in workflow',
-          detailedMessage: 'Could not find object "Unknown Salto user" for field "recipient". Setting it to ACCOUNT_SPECIFIC_VALUE instead.',
+          detailedMessage: 'Could not find object "Unknown Salto user" for field "recipient". Setting it to ACCOUNT_SPECIFIC_VALUE instead. Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite',
         },
         {
           elemID: instance.elemID,
@@ -224,7 +224,7 @@ describe('workflow account specific values', () => {
           elemID: ElemID.fromFullName('netsuite.workflow.instance.instance.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction'),
           severity: 'Warning',
           message: 'Could not identify value in workflow',
-          detailedMessage: 'Could not find object "Unknown Salto user" for field "sender". Setting it to ACCOUNT_SPECIFIC_VALUE instead.',
+          detailedMessage: 'Could not find object "Unknown Salto user" for field "sender". Setting it to ACCOUNT_SPECIFIC_VALUE instead. Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite',
         },
         {
           elemID: instance.elemID,
@@ -354,7 +354,7 @@ describe('workflow account specific values', () => {
           elemID: instance.elemID.createNestedID('initcondition', 'parameters', 'parameter', 'Account1'),
           severity: 'Warning',
           message: 'Could not identify value in workflow',
-          detailedMessage: 'Could not find object "Unknown Salto user" for field "value". Setting it to ACCOUNT_SPECIFIC_VALUE instead.',
+          detailedMessage: 'Could not find object "Unknown Salto user" for field "value". Setting it to ACCOUNT_SPECIFIC_VALUE instead. Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite',
         },
         {
           elemID: instance.elemID.createNestedID('initcondition'),
@@ -382,7 +382,7 @@ describe('workflow account specific values', () => {
           elemID: instance.elemID.createNestedID('initcondition', 'parameters', 'parameter', 'Account1'),
           severity: 'Warning',
           message: 'Multiple objects with the same name',
-          detailedMessage: 'There are multiple objects with the name "Salto user 3". Using the first one (internal id: 3).',
+          detailedMessage: 'There are multiple objects with the name "Salto user 3". Using the first one (internal id: 3). Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite',
         },
       ]))
     })

@@ -23,6 +23,7 @@ import {
   ListType,
   ReferenceExpression,
   toChange,
+  MapType,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { naclCase } from '@salto-io/adapter-utils'
@@ -77,6 +78,7 @@ describe('jiraWorkflowFilter', () => {
   const TRANSITION_NAME_TO_KEY: Record<string, string> = {
     Create: naclCase('Create::From: none::Initial'),
     Done: naclCase('Done::From: any status::Global'),
+    ToStatus2: naclCase('ToStatus2::From: Create::Directed'),
   }
 
   beforeEach(async () => {
@@ -646,7 +648,7 @@ describe('jiraWorkflowFilter', () => {
       ]
       workflowInstance.value.statusMappings = statusMapping
       workflowInstance.value.statuses.pop()
-      workflowInstance.value.transitions.pop()
+      delete workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
     }
     beforeEach(() => {
       // types
@@ -716,7 +718,7 @@ describe('jiraWorkflowFilter', () => {
         elemID: new ElemID(JIRA, JIRA_WORKFLOW_TYPE),
         fields: {
           statuses: { refType: workflowReferenceStatusType },
-          transitions: { refType: new ListType(transitionType) },
+          transitions: { refType: new MapType(transitionType) },
           statusMappings: { refType: new ListType(statusMappingType) },
         },
       })
@@ -769,8 +771,8 @@ describe('jiraWorkflowFilter', () => {
             },
           },
         ],
-        transitions: [
-          {
+        transitions: {
+          [TRANSITION_NAME_TO_KEY.Create]: {
             id: '1',
             type: 'INITIAL',
             name: 'Create',
@@ -787,7 +789,7 @@ describe('jiraWorkflowFilter', () => {
               },
             ],
           },
-          {
+          [TRANSITION_NAME_TO_KEY.ToStatus2]: {
             id: '2',
             type: 'DIRECTED',
             name: 'toStatus2',
@@ -810,7 +812,7 @@ describe('jiraWorkflowFilter', () => {
               ],
             },
           },
-        ],
+        },
       })
       const { client: cli, connection: conn } = mockClient()
       client = cli
@@ -900,7 +902,7 @@ describe('jiraWorkflowFilter', () => {
                 },
               ],
             }
-            workflowInstance.value.transitions[1].conditions = conditions
+            workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2].conditions = conditions
           })
           it('should convert transition parameters to concat string', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
@@ -1131,7 +1133,7 @@ describe('jiraWorkflowFilter', () => {
         })
         it('should undo the preDeploy changes', async () => {
           workflowInstanceBefore.value.statuses.pop()
-          workflowInstanceBefore.value.transitions.pop()
+          delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
           const { statuses: statusesBefore, transitions: transitionsBefore } = workflowInstanceBefore.value
           const { statuses: statusesAfter, transitions: transitionsAfter } = workflowInstance.value
           expect(statusesAfter).toEqual(statusesBefore)

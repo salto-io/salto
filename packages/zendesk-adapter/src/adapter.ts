@@ -44,8 +44,6 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { DefaultFetchCriteria } from '@salto-io/adapter-components/src/definitions'
-import { FetchEntry } from '@salto-io/adapter-components/src/definitions/user/fetch_config'
 import ZendeskClient from './client/client'
 import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
 import {
@@ -297,16 +295,16 @@ const GUIDE_EXCLUDE_DEPENDENCIES: ExcludeDependency[] = [
     source: SECTION_TYPE_NAME,
     target: CATEGORY_TYPE_NAME,
   },
-  {
+  { // article -> section should be after section -> category.
     source: ARTICLE_TYPE_NAME,
     target: SECTION_TYPE_NAME,
   },
 ]
 
 
-const excludeGuideDependentTypes = (excludeElements: FetchEntry<DefaultFetchCriteria>[]):
+const excludeGuideDependentTypes = (excludeElements: definitions.FetchEntry<definitions.DefaultFetchCriteria>[]):
   {
-    excludeEntries: FetchEntry<DefaultFetchCriteria>[]
+    excludeEntries: definitions.FetchEntry<definitions.DefaultFetchCriteria>[]
     errors: SaltoError[]
   } => {
   const errors: SaltoError[] = []
@@ -627,7 +625,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const combinedRes = {
       configChanges: (defaultSubdomainResult.configChanges ?? []),
       elements: defaultSubdomainResult.elements,
-      errors: ([...errors, ...(defaultSubdomainResult.errors ?? [])]),
+      errors: errors.concat(defaultSubdomainResult.errors ?? []),
     }
 
     const brandsList = getBrandsForGuide(

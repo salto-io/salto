@@ -17,6 +17,6 @@
 // eslint-disable-next-line import/no-cycle
 export { UserConfig, createUserConfigType, ConfigTypeCreator } from './user_config'
 // eslint-disable-next-line import/no-cycle
-export { UserFetchConfig, createUserFetchConfigType, ElemIDCustomization, DefaultFetchCriteria } from './fetch_config'
+export { UserFetchConfig, createUserFetchConfigType, ElemIDCustomization, DefaultFetchCriteria, FetchEntry } from './fetch_config'
 export { UserDeployConfig, createUserDeployConfigType, validateDefaultMissingUserFallbackConfig, DefaultMissingUserFallbackConfig, DEPLOYER_FALLBACK_VALUE } from './deploy_config'
 export { ClientBaseConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPageSizeConfig, ClientTimeoutConfig, createClientConfigType, validateClientConfig } from './client_config'

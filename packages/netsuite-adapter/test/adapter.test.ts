@@ -31,7 +31,7 @@ import {
   SaltoElementError,
   ProgressReporter,
 } from '@salto-io/adapter-api'
-import _, { create } from 'lodash'
+import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'

@@ -27,12 +27,7 @@ import {
   toChange,
   Value,
 } from '@salto-io/adapter-api'
-import {
-  applyFunctionToChangeData,
-  createSchemeGuard,
-  getParents,
-  references,
-} from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createSchemeGuard, getParents, references } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'

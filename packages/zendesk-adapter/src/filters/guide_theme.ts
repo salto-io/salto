@@ -27,7 +27,10 @@ import {
   SaltoError,
   StaticFile,
   Element,
-  isObjectType, Field, MapType, CORE_ANNOTATIONS,
+  isObjectType,
+  Field,
+  MapType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
@@ -213,17 +216,17 @@ const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployT
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
 
 const addDownloadErrors = (theme: InstanceElement, downloadErrors: string[]): SaltoError[] =>
-  (downloadErrors.length > 0
+  downloadErrors.length > 0
     ? downloadErrors.map(e => ({
-      message: `Error fetching theme id ${theme.value.id}, ${e}`,
-      severity: 'Warning',
-    }))
-    : [
-      {
-        message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
+        message: `Error fetching theme id ${theme.value.id}, ${e}`,
         severity: 'Warning',
-      },
-    ])
+      }))
+    : [
+        {
+          message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
+          severity: 'Warning',
+        },
+      ]
 
 const createTheme = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
@@ -273,7 +276,8 @@ const fixThemeTypes = (elements: Element[]): void => {
   const relevantTypes = elements
     .filter(isObjectType)
     .filter(type =>
-      [GUIDE_THEME_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_FILE_TYPE_NAME].includes(type.elemID.typeName),)
+      [GUIDE_THEME_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_FILE_TYPE_NAME].includes(type.elemID.typeName),
+    )
   const themeType = relevantTypes.find(type => GUIDE_THEME_TYPE_NAME === type.elemID.typeName)
   const themeFolderType = relevantTypes.find(type => THEME_FOLDER_TYPE_NAME === type.elemID.typeName)
   const themeFileType = relevantTypes.find(type => THEME_FILE_TYPE_NAME === type.elemID.typeName)

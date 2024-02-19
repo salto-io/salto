@@ -14,8 +14,33 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement, FixElementsFunc } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers, resolveChangeElement, fetch as fetchUtils } from '@salto-io/adapter-components'
+import {
+  Element,
+  FetchResult,
+  AdapterOperations,
+  DeployResult,
+  InstanceElement,
+  TypeMap,
+  isObjectType,
+  FetchOptions,
+  DeployOptions,
+  Change,
+  isInstanceChange,
+  ElemIdGetter,
+  ReadOnlyElementsSource,
+  getChangeData,
+  ProgressReporter,
+  isInstanceElement,
+  FixElementsFunc,
+} from '@salto-io/adapter-api'
+import {
+  config as configUtils,
+  elements as elementUtils,
+  client as clientUtils,
+  combineElementFixers,
+  resolveChangeElement,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'

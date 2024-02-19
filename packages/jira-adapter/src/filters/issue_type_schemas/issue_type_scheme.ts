@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isModificationChange,
+  isObjectType,
+  ModificationChange,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -62,7 +73,8 @@ const deployNewAndDeletedIssueTypeIds = async (
   await awu(Array.from(removedIds)).forEach(id =>
     client.delete({
       url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
-    }),)
+    }),
+  )
 }
 
 const deployIssueTypeIdsOrder = async (
@@ -70,8 +82,8 @@ const deployIssueTypeIdsOrder = async (
   client: JiraClient,
 ): Promise<void> => {
   if (
-    (change.data.after.value.issueTypeIds ?? []).length === 0
-    || _.isEqual(change.data.before.value.issueTypeIds, change.data.after.value.issueTypeIds)
+    (change.data.after.value.issueTypeIds ?? []).length === 0 ||
+    _.isEqual(change.data.before.value.issueTypeIds, change.data.after.value.issueTypeIds)
   ) {
     return
   }
@@ -121,9 +133,9 @@ const filter: FilterCreator = ({ config, client }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME,
+        isInstanceChange(change) &&
+        isAdditionOrModificationChange(change) &&
+        getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME,
     )
 
     const deployResult = await deployChanges(

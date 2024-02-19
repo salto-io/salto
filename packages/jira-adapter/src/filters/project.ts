@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isEqualValues,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange,
+} from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { resolveValues } from '@salto-io/adapter-components'
 
@@ -98,10 +109,10 @@ const deployCustomerPermissions = async (
     return
   }
   if (
-    (isAdditionChange(change)
-      || (isModificationChange(change)
-        && !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions)))
-    && instance.value.customerPermissions !== undefined
+    (isAdditionChange(change) ||
+      (isModificationChange(change) &&
+        !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions))) &&
+    instance.value.customerPermissions !== undefined
   ) {
     await client.post({
       url: `/rest/servicedesk/1/servicedesk/${instance.value.key}/settings/requestsecurity`,
@@ -153,7 +164,8 @@ const removeComponents = async (projectId: number, client: JiraClient): Promise<
     componentIds.map(id =>
       client.delete({
         url: `/rest/api/3/component/${id}`,
-      }),),
+      }),
+    ),
   )
 }
 
@@ -264,9 +276,12 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
         delete instance.value.lead
 
-        instance.value[WORKFLOW_SCHEME_FIELD] = instance.value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
-        instance.value.issueTypeScreenScheme = instance.value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
-        instance.value.fieldConfigurationScheme = instance.value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
+        instance.value[WORKFLOW_SCHEME_FIELD] =
+          instance.value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
+        instance.value.issueTypeScreenScheme =
+          instance.value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
+        instance.value.fieldConfigurationScheme =
+          instance.value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
         instance.value[ISSUE_TYPE_SCHEME] = instance.value[ISSUE_TYPE_SCHEME]?.[ISSUE_TYPE_SCHEME]?.id
 
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
@@ -295,9 +310,9 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === PROJECT_TYPE_NAME
-        && isAdditionOrModificationChange(change),
+        isInstanceChange(change) &&
+        getChangeData(change).elemID.typeName === PROJECT_TYPE_NAME &&
+        isAdditionOrModificationChange(change),
     )
 
     const getFieldsToIgnore = async (change: Change<InstanceElement>): Promise<string[]> => {

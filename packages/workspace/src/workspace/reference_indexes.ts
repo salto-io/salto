@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   ElemID,
@@ -25,7 +25,10 @@ import {
   isTemplateExpression,
   isObjectTypeChange,
   ReferenceInfo,
-  ReferenceType, TemplateExpression, StaticFile, isStaticFile,
+  ReferenceType,
+  TemplateExpression,
+  StaticFile,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -54,10 +57,7 @@ type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
   `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
 
-const getReferences = async (
-  element: Element,
-  customReferences: ReferenceInfo[]
-): Promise<ReferenceInfo[]> => {
+const getReferences = async (element: Element, customReferences: ReferenceInfo[]): Promise<ReferenceInfo[]> => {
   const references: Record<string, ReferenceInfo> = {}
   const templateStaticFiles: { value: StaticFile; source: ElemID }[] = []
   const getReferencesFromTemplateExpression = (source: ElemID, template?: TemplateExpression): void => {
@@ -122,9 +122,10 @@ const createReferenceTree = (references: ReferenceInfo[], rootFields = false): R
     references.map(ref => {
       // In case we are creating a reference tree for a type object, the fields path is not relevant
       // This is because a request for the field's references will be to the field itself, and not through the object
-      const key = rootFields && ref.source.idType === 'field'
-        ? ''
-        : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
+      const key =
+        rootFields && ref.source.idType === 'field'
+          ? ''
+          : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
       return [key, [{ id: ref.target, type: ref.type }]]
     }),
     ElemID.NAMESPACE_SEPARATOR,
@@ -141,13 +142,14 @@ const getReferenceTargetIndexUpdates = (
     const elemId = objectType.elemID.getFullName()
 
     const baseIdToReferences = _.groupBy(changeToReferences[elemId].currentAndNew, reference =>
-      reference.source.createBaseID().parent.getFullName(),)
+      reference.source.createBaseID().parent.getFullName(),
+    )
 
     const allFields = isModificationChange(change)
       ? {
-        ...change.data.before.fields,
-        ...objectType.fields,
-      }
+          ...change.data.before.fields,
+          ...objectType.fields,
+        }
       : objectType.fields
 
     indexUpdates.push(
@@ -227,16 +229,15 @@ const updateReferenceSourcesIndex = async (
 
   const changedReferenceSources = new Set(changes.map(getChangeData).map(elem => elem.elemID.getFullName()))
 
-  const relevantKeys = _(referenceSourcesAdditions).keys().concat(Object.keys(referenceSourcesRemovals)).uniq()
-    .value()
+  const relevantKeys = _(referenceSourcesAdditions).keys().concat(Object.keys(referenceSourcesRemovals)).uniq().value()
 
   const oldReferencesSources = initialIndex
     ? {}
     : _(await index.getMany(relevantKeys))
-      .map((ids, i) => ({ ids, i }))
-      .keyBy(({ i }) => relevantKeys[i])
-      .mapValues(({ ids }) => ids)
-      .value()
+        .map((ids, i) => ({ ids, i }))
+        .keyBy(({ i }) => relevantKeys[i])
+        .mapValues(({ ids }) => ids)
+        .value()
 
   const updates = relevantKeys.map(id =>
     updateIdOfReferenceSourcesIndex(
@@ -244,7 +245,8 @@ const updateReferenceSourcesIndex = async (
       referenceSourcesAdditions[id] ?? [],
       oldReferencesSources[id] ?? [],
       changedReferenceSources,
-    ),)
+    ),
+  )
 
   const [deletions, modifications] = _.partition(updates, update => update.value.length === 0)
   const uniqueModification = modifications.map(modification => ({
@@ -307,23 +309,17 @@ export const updateReferenceIndexes = async (
 
     const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
 
-    const changeToReferences = Object.fromEntries(await awu(relevantChanges)
-      .map(async change => [
-        getChangeData(change).elemID.getFullName(),
-        await getReferencesFromChange(change, customReferences),
-      ]).toArray())
+    const changeToReferences = Object.fromEntries(
+      await awu(relevantChanges)
+        .map(async change => [
+          getChangeData(change).elemID.getFullName(),
+          await getReferencesFromChange(change, customReferences),
+        ])
+        .toArray(),
+    )
 
     // Outgoing references
-    await updateReferenceTargetsIndex(
-      relevantChanges,
-      referenceTargetsIndex,
-      changeToReferences,
-    )
+    await updateReferenceTargetsIndex(relevantChanges, referenceTargetsIndex, changeToReferences)
     // Incoming references
-    await updateReferenceSourcesIndex(
-      relevantChanges,
-      referenceSourcesIndex,
-      changeToReferences,
-      initialIndex,
-    )
+    await updateReferenceSourcesIndex(relevantChanges, referenceSourcesIndex, changeToReferences, initialIndex)
   }, 'updating references indexes')

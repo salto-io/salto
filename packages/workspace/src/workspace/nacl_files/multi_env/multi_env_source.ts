@@ -81,8 +81,9 @@ export class UnknownEnvironmentError extends Error {
 export class UnsupportedNewEnvChangeError extends Error {
   constructor(change: DetailedChange) {
     const changeElemID = getChangeData(change).elemID.getFullName()
-    const message = 'Adding a new environment only support add changes.'
-      + `Received change of type ${change.action} for ${changeElemID}`
+    const message =
+      'Adding a new environment only support add changes.' +
+      `Received change of type ${change.action} for ${changeElemID}`
     super(message)
   }
 }
@@ -162,7 +163,7 @@ const buildMultiEnvSource = (
   const envSources = (): Record<string, NaclFilesSource> => _.omit(sources, [commonSourceName])
 
   const getRemoteMapNamespace = (namespace: string, env?: string): string =>
-    (env === undefined ? `multi_env-${namespace}` : `multi_env-${env}-${namespace}`)
+    env === undefined ? `multi_env-${namespace}` : `multi_env-${env}-${namespace}`
 
   const getActiveSources = (env: string): Record<string, NaclFilesSource> => _.pick(sources, [commonSourceName, env])
 
@@ -244,7 +245,8 @@ const buildMultiEnvSource = (
       mergeManager = await createMergeManager(
         Object.values(states).flatMap(envState => [envState.elements, envState.mergeErrors]),
         _.mapKeys(sources, (_source, envName) =>
-          (envName === commonSourceName ? COMMON_ENV_PREFIX + commonSourceName : envName),),
+          envName === commonSourceName ? COMMON_ENV_PREFIX + commonSourceName : envName,
+        ),
         remoteMapCreator,
         getRemoteMapNamespace('multi_env_mergeManager'),
         persistent,
@@ -277,7 +279,8 @@ const buildMultiEnvSource = (
                   awu(plainResult.merged.values())
                     .map(e => e.elemID)
                     .concat(await envState.elements.list()),
-              }),),
+              }),
+            ),
           }
         },
       })
@@ -322,7 +325,7 @@ const buildMultiEnvSource = (
   }
 
   const buildFullPath = (envName: string, relPath: string): string =>
-    (envName === commonSourceName ? path.join(envName, relPath) : path.join(ENVS_PREFIX, envName, relPath))
+    envName === commonSourceName ? path.join(envName, relPath) : path.join(ENVS_PREFIX, envName, relPath)
 
   const getNaclFile = async (filename: string): Promise<NaclFile | undefined> => {
     const { source, relPath } = getSourceForNaclFile(filename)
@@ -504,7 +507,8 @@ const buildMultiEnvSource = (
     const [srcErrors, mergeErrors] = await Promise.all([
       Promise.all(
         _.entries(getActiveSources(env)).map(async ([prefix, source]) =>
-          rebaseSrcErrorsPaths(prefix, await source.getErrors()),),
+          rebaseSrcErrorsPaths(prefix, await source.getErrors()),
+        ),
       ),
       awu(currentState.states[env].mergeErrors.values()).flat().toArray(),
     ])
@@ -571,7 +575,8 @@ const buildMultiEnvSource = (
     removeNaclFiles: async (names: string[]): Promise<EnvsChanges> => {
       const envNameToFilesToRemove = _.groupBy(names, getSourceNameForNaclFile)
       const envNameToChanges = await mapValuesAsync(envNameToFilesToRemove, (files, envName) =>
-        getSourceFromEnvName(envName).removeNaclFiles(files.map(fileName => getRelativePath(fileName, envName))),)
+        getSourceFromEnvName(envName).removeNaclFiles(files.map(fileName => getRelativePath(fileName, envName))),
+      )
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
       state = buildRes.state
       return buildRes.changes
@@ -591,7 +596,8 @@ const buildMultiEnvSource = (
           (await source.getSourceRanges(elemID)).map(sourceRange => ({
             ...sourceRange,
             filename: buildFullPath(prefix, sourceRange.filename),
-          })),)
+          })),
+        )
         .toArray(),
     getErrors,
     getParsedNaclFile: async (filename: string): Promise<ParsedNaclFile | undefined> => {
@@ -602,13 +608,15 @@ const buildMultiEnvSource = (
       _.flatten(
         await Promise.all(
           Object.entries(getActiveSources(env)).map(async ([prefix, source]) =>
-            (await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p)),),
+            (await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p)),
+          ),
         ),
       ),
     getElementFileNames: async (env: string): Promise<Map<string, string[]>> => {
       const res = new Map<string, string[]>()
       const elementFilenamesBySource = await mapValuesAsync(getActiveSources(env), source =>
-        source.getElementFileNames(),)
+        source.getElementFileNames(),
+      )
       Object.entries(elementFilenamesBySource).forEach(([envName, elementsFileNames]) => {
         elementsFileNames.forEach((fileNames, element) => {
           const fullFileNames = fileNames.map(fileName => buildFullPath(envName, fileName))
@@ -622,7 +630,8 @@ const buildMultiEnvSource = (
       _.flatten(
         await Promise.all(
           Object.entries(getActiveSources(env)).map(async ([prefix, source]) =>
-            (await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p)),),
+            (await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p)),
+          ),
         ),
       ),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {

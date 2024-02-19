@@ -982,41 +982,15 @@ const fixStaticFilesForFromStateChanges = async (
   const filteredChanges = fetchChangesResult.changes
     .map(fetchChange => fetchChange.change)
     .filter(isAdditionOrModificationChange)
-  await awu(filteredChanges)
-    .forEach(async change => {
-      const staticFiles = getPathsToStaticFiles(
-        change.data.after,
-        change.id,
-      )
-      const changePath = change.id.createTopLevelParentID().path
-      await awu(staticFiles).forEach(async ({ elemID: staticFileValElemID, staticFile }) => {
-        const actualStaticFile = await otherWorkspace.getStaticFile({
-          filepath: staticFile.filepath,
-          encoding: staticFile.encoding,
-          env,
-          isTemplate: staticFile.isTemplate,
-        })
-        if (!actualStaticFile?.isEqual(staticFile)) {
-          invalidChangeIDs.add(change.id.getFullName())
-          log.warn(
-            'Static files mismatch in fetch from state for change in elemID %s. (stateHash=%s naclHash=%s)',
-            change.id.getFullName(),
-            staticFile.hash,
-            actualStaticFile?.hash,
-          )
-          return
-        }
-        if (isElement(change.data.after)) {
-          setPath(change.data.after, staticFileValElemID, actualStaticFile)
-          return
-        }
-        if (isStaticFile(change.data.after)) {
-          change.data.after = actualStaticFile
-          return
-        }
-        const staticFilePath = staticFileValElemID.createTopLevelParentID().path
-        const relativePath = staticFilePath.slice(changePath.length - 1)
-        _.set(change.data.after, relativePath, actualStaticFile)
+  await awu(filteredChanges).forEach(async change => {
+    const staticFiles = getPathsToStaticFiles(change.data.after, change.id)
+    const changePath = change.id.createTopLevelParentID().path
+    await awu(staticFiles).forEach(async ({ elemID: staticFileValElemID, staticFile }) => {
+      const actualStaticFile = await otherWorkspace.getStaticFile({
+        filepath: staticFile.filepath,
+        encoding: staticFile.encoding,
+        env,
+        isTemplate: staticFile.isTemplate,
       })
       if (!actualStaticFile?.isEqual(staticFile)) {
         invalidChangeIDs.add(change.id.getFullName())

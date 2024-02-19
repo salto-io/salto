@@ -21,13 +21,49 @@ import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import { types as lowerDashTypes, collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import {
-  ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
-  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
-  ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
-  CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
-  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, PlaceholderObjectType, UnresolvedReference, FieldMap,
+  ObjectType,
+  isStaticFile,
+  StaticFile,
+  ElemID,
+  PrimitiveType,
+  Values,
+  Value,
+  isReferenceExpression,
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  isPrimitiveType,
+  TypeMap,
+  isField,
+  ReferenceExpression,
+  Field,
+  InstanceAnnotationTypes,
+  isType,
+  isObjectType,
+  isAdditionChange,
+  CORE_ANNOTATIONS,
+  TypeElement,
+  Change,
+  isRemovalChange,
+  isModificationChange,
+  isListType,
+  ChangeData,
+  ListType,
+  CoreAnnotationTypes,
+  isMapType,
+  MapType,
+  isContainerType,
+  isTypeReference,
+  ReadOnlyElementsSource,
+  ReferenceMap,
+  TypeReference,
+  createRefToElmWithValue,
+  isElement,
+  compareSpecialValues,
+  getChangeData,
+  PlaceholderObjectType,
+  UnresolvedReference,
+  FieldMap,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -618,7 +654,7 @@ export const restoreChangeElement = async (
   return change
 }
 
-export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
+export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> =>
   wu(elements).filter(e => e.elemID.isEqual(id))
 
 export const findElement = (elements: Iterable<Element>, id: ElemID): Element | undefined =>
@@ -983,7 +1019,6 @@ export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: str
 
 export const inspectValue = (value: Value, options?: InspectOptions): string =>
   inspect(value, _.defaults({}, options ?? {}, { depth: 4 }))
-
 
 export const getParents = (instance: Element): Array<Value> =>
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])

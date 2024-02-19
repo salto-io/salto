@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   AdditionChange,
@@ -124,7 +124,8 @@ const removeCreateIssuePermissionValidator = (instance: WorkflowV1Instance): voi
     .filter(transition => transition.type === 'initial')
     .forEach(transition => {
       const createIssuePermissionValidatorIndex = _.findLastIndex(transition.rules?.validators ?? [], validator =>
-        _.isEqual(validator, INITIAL_VALIDATOR),)
+        _.isEqual(validator, INITIAL_VALIDATOR),
+      )
 
       _.remove(transition.rules?.validators ?? [], (_validator, index) => index === createIssuePermissionValidatorIndex)
     })
@@ -243,10 +244,10 @@ const deployWithClone = async (
       client,
       apiDefinitions: config.apiDefinitions,
       fieldsToIgnore: path =>
-        path.name === 'triggers'
+        path.name === 'triggers' ||
         // Matching here the 'name' of status inside the statuses array
         // In DC we support passing the step name as part of the request
-        || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
+        (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
     })
     getChangeData(resolvedChange).value.entityId = deployInstance.value.entityId
   } catch (err) {
@@ -368,7 +369,7 @@ export const deployWorkflow = async (
     })
   }
   // ids are added for trigger deployment and onDeploy filters, will be removed in the ids filter
-  [getChangeData(change), instance].forEach(instanceToChange => {
+  ;[getChangeData(change), instance].forEach(instanceToChange => {
     addTransitionIdsToInstance(instanceToChange, transitions, statusesMap)
   })
   if (hasDiagramFields(instance)) {
@@ -402,9 +403,9 @@ const filter: FilterCreator = ({ config, client }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isInstanceChange(change)
-        && isAdditionChange(change)
-        && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME,
+        isInstanceChange(change) &&
+        isAdditionChange(change) &&
+        getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME,
     )
 
     const deployResult = await deployChanges(

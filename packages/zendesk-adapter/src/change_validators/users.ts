@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import {
   ChangeError,
@@ -29,7 +29,14 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
-import { getUsers, MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, User, VALID_USER_VALUES } from '../user_utils'
+import {
+  getUsers,
+  MISSING_USERS_DOC_LINK,
+  MISSING_USERS_ERROR_MSG,
+  TYPE_NAME_TO_REPLACER,
+  User,
+  VALID_USER_VALUES,
+} from '../user_utils'
 import { lookupFunc } from '../filters/field_references'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
@@ -58,7 +65,8 @@ const handleNonExistingUsers = async (nonExistingUsersPaths: userPathAndInstance
 
   // Error about users that do not exist because no fallback user was provided
   return instancesAndUsers.map(instanceAndUsers =>
-    getDefaultMissingUsersError(instanceAndUsers.instance, instanceAndUsers.users),)
+    getDefaultMissingUsersError(instanceAndUsers.instance, instanceAndUsers.users),
+  )
 }
 
 const handleExistingUsers = ({
@@ -99,62 +107,64 @@ const handleExistingUsers = ({
  *  1. If we could not use user fallback value for some reason, we will return an error.
  *  2. If the user has no permissions to its field, we will return a warning (default user included).
  */
-export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) => ChangeValidator = (client, fetchConfig) => async (changes, elementSource) => {
-  const relevantInstances = await awu(changes)
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .map(getChangeData)
-    .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
-    .map(data => resolveValues(data, lookupFunc))
-    .toArray()
+export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) => ChangeValidator =
+  (client, fetchConfig) => async (changes, elementSource) => {
+    const relevantInstances = await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
+      .map(data => resolveValues(data, lookupFunc))
+      .toArray()
 
-  if (relevantInstances.length === 0) {
-    return []
+    if (relevantInstances.length === 0) {
+      return []
+    }
+
+    const paginator = createPaginator({
+      client,
+      paginationFuncCreator: paginate,
+    })
+    const { users } = await getUsers(paginator, fetchConfig.resolveUserIDs)
+
+    const existingUsersEmails = new Set(users.map(user => user.email))
+    const instancesUserPaths = relevantInstances.flatMap(instance => {
+      const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
+      return userPaths
+        .map(userPath => {
+          const user = resolvePath(instance, userPath)
+          // Filter our valid values that are not users
+          return VALID_USER_VALUES.includes(user) ? undefined : { user, userPath, instance }
+        })
+        .filter(isDefined)
+    })
+
+    const [existingUsersPaths, nonExistingUsersPaths] = _.partition(instancesUserPaths, userPath =>
+      existingUsersEmails.has(userPath.user),
+    )
+
+    const notExistingUsersErrors = await handleNonExistingUsers(nonExistingUsersPaths)
+
+    if (elementSource === undefined) {
+      log.error('Failed to handleExistingUsers in userPermissionsValidator because no element source was provided')
+      return notExistingUsersErrors
+    }
+
+    // Don't waste time fetching the elements if there are no existing users to check
+    if (existingUsersPaths.length === 0) {
+      return notExistingUsersErrors
+    }
+
+    const elements = await elementSource.getAll()
+    const customRoles = await awu(elements)
+      .filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === CUSTOM_ROLE_TYPE_NAME)
+      .toArray()
+
+    const usersByEmail = _.keyBy(users, user => user.email)
+    const customRolesById = _.keyBy(customRoles, (role): number => role.value.id)
+
+    const existingUsersWarnings = handleExistingUsers({ existingUsersPaths, customRolesById, usersByEmail })
+
+    return [...notExistingUsersErrors, ...existingUsersWarnings]
   }
-
-  const paginator = createPaginator({
-    client,
-    paginationFuncCreator: paginate,
-  })
-  const { users } = await getUsers(paginator, fetchConfig.resolveUserIDs)
-
-  const existingUsersEmails = new Set(users.map(user => user.email))
-  const instancesUserPaths = relevantInstances.flatMap(instance => {
-    const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
-    return userPaths
-      .map(userPath => {
-        const user = resolvePath(instance, userPath)
-        // Filter our valid values that are not users
-        return VALID_USER_VALUES.includes(user) ? undefined : { user, userPath, instance }
-      })
-      .filter(isDefined)
-  })
-
-  const [existingUsersPaths, nonExistingUsersPaths] = _.partition(instancesUserPaths, userPath =>
-    existingUsersEmails.has(userPath.user),)
-
-  const notExistingUsersErrors = await handleNonExistingUsers(nonExistingUsersPaths)
-
-  if (elementSource === undefined) {
-    log.error('Failed to handleExistingUsers in userPermissionsValidator because no element source was provided')
-    return notExistingUsersErrors
-  }
-
-  // Don't waste time fetching the elements if there are no existing users to check
-  if (existingUsersPaths.length === 0) {
-    return notExistingUsersErrors
-  }
-
-  const elements = await elementSource.getAll()
-  const customRoles = await awu(elements)
-    .filter(isInstanceElement)
-    .filter(e => e.elemID.typeName === CUSTOM_ROLE_TYPE_NAME)
-    .toArray()
-
-  const usersByEmail = _.keyBy(users, user => user.email)
-  const customRolesById = _.keyBy(customRoles, (role): number => role.value.id)
-
-  const existingUsersWarnings = handleExistingUsers({ existingUsersPaths, customRolesById, usersByEmail })
-
-  return [...notExistingUsersErrors, ...existingUsersWarnings]
-}

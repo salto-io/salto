@@ -1,20 +1,44 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ActionName, BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isRemovalOrModificationChange, ListType, ModificationChange, ObjectType, ReadOnlyElementsSource, RemovalChange, Values } from '@salto-io/adapter-api'
-import { elements as elementUtils, client as clientUtils, config as configUtils, resolveValues } from '@salto-io/adapter-components'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ActionName,
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange,
+  isRemovalOrModificationChange,
+  ListType,
+  ModificationChange,
+  ObjectType,
+  ReadOnlyElementsSource,
+  RemovalChange,
+  Values,
+} from '@salto-io/adapter-api'
+import {
+  elements as elementUtils,
+  client as clientUtils,
+  config as configUtils,
+  resolveValues,
+} from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -114,8 +138,8 @@ const publishDraft = async (
     data:
       statusMigrations !== undefined
         ? {
-          statusMappings: statusMigrations,
-        }
+            statusMappings: statusMigrations,
+          }
         : {},
   })
 
@@ -185,7 +209,8 @@ const replaceIDsWithNames = ({
         IDs,
         (m, id) => m.replace(id, IDToInstance[id] !== undefined ? IDToInstance[id].elemID.name : `ID ${id}`),
         msg,
-      ),)
+      ),
+    )
     .map(msg => msg.replace(new RegExp(' ID'), ' name'))
 
 const createMappingFromID = async (
@@ -216,7 +241,8 @@ const reformatMigrationErrorMessages = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<string[]> => {
   const [relevantMessages, otherMessages] = _.partition(errorMessages, (message: string) =>
-    message.includes('is missing the mappings required for statuses'),)
+    message.includes('is missing the mappings required for statuses'),
+  )
   const idsToInstance = {
     [ISSUE_TYPE_NAME]: await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
     [STATUS_TYPE_NAME]: await createMappingFromID(elementsSource, STATUS_TYPE_NAME),
@@ -344,7 +370,8 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
         applyFunctionToChangeData<Change<InstanceElement>>(change, async instance => {
           await preDeployWorkflowScheme(instance, change.action)
           return instance
-        }),),
+        }),
+      ),
 
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -353,7 +380,8 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployWorkflowScheme(change, client, paginator, config, elementsSource),)
+      deployWorkflowScheme(change, client, paginator, config, elementsSource),
+    )
 
     return {
       leftoverChanges,
@@ -372,7 +400,8 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
             delete instance.value.updateDraftIfNeeded
           }
           return instance
-        }),),
+        }),
+      ),
 })
 
 export default filter

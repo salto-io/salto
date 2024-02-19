@@ -62,7 +62,7 @@ export type ParsedNaclFileCache = {
 }
 
 const isMD5Equal = (cacheMD5: string, buffer?: ContentType): boolean =>
-  (buffer === undefined || buffer === '' ? false : hash.toMD5(buffer) === cacheMD5)
+  buffer === undefined || buffer === '' ? false : hash.toMD5(buffer) === cacheMD5
 
 const parseNaclFileFromCacheSources = async (
   cacheSources: CacheSources,
@@ -79,9 +79,9 @@ const parseNaclFileFromCacheSources = async (
 })
 
 const getRemoteMapCacheNamespace = (cacheName: string, dataType: string, fileName?: string): string =>
-  (fileName === undefined
+  fileName === undefined
     ? `parsedResultCache-${cacheName}-${dataType}`
-    : `parsedResultCache-${cacheName}-${dataType}-${fileName}`)
+    : `parsedResultCache-${cacheName}-${dataType}-${fileName}`
 
 const getMetadata = async (
   cacheName: string,

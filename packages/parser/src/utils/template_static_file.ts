@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { isReferenceExpression, StaticFile, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
@@ -30,9 +30,7 @@ const isMultilineBuffer = (stringBuffer: string): boolean =>
 const removeMultilineStringPrefixAndSuffix = (prim: string): string =>
   _.trimStart(_.trimEnd(prim, MULTILINE_STRING_SUFFIX), MULTILINE_STRING_PREFIX)
 
-
 const returnDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\$\{/g, '\\\\${')
-
 
 const splitByReferencesMarker = (stringBuffer: string): string[] => {
   const regex = /(?<!\\)\$\{[^}]+\}/g
@@ -54,20 +52,20 @@ const splitByReferencesMarker = (stringBuffer: string): string[] => {
   return parts
 }
 
-const createReferencesFromStringParts = (parts: string[]): TemplatePart[] => parts.map(part => {
-  if (part.startsWith('${') && part.endsWith('}')) {
-    // remove the ${ and }
-    const refParts = part.split(/\${|}/)
-    if (refParts.length !== 3) {
-      // add log
-      return part
+const createReferencesFromStringParts = (parts: string[]): TemplatePart[] =>
+  parts.map(part => {
+    if (part.startsWith('${') && part.endsWith('}')) {
+      // remove the ${ and }
+      const refParts = part.split(/\${|}/)
+      if (refParts.length !== 3) {
+        // add log
+        return part
+      }
+      const ref = createReferenceExpresion(refParts[1].replace(/\s+/g, ''))
+      return ref instanceof IllegalReference ? part : ref
     }
-    const ref = createReferenceExpresion(refParts[1].replace(/\s+/g, ''))
-    return ref instanceof IllegalReference ? part : ref
-  }
-  return part
-})
-
+    return part
+  })
 
 const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => {
   const stringBuffer = buffer.toString()
@@ -77,19 +75,20 @@ const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => 
     : JSON.parse(returnDoubleTemplateMarkerEscaping(stringBuffer))
   const parts = createReferencesFromStringParts(splitByReferencesMarker(finalString))
   const unescapedTemplateMarkerParts = parts.map(part =>
-    (isReferenceExpression(part) ? part : unescapeTemplateMarker(part)))
+    isReferenceExpression(part) ? part : unescapeTemplateMarker(part),
+  )
 
   return createTemplateExpression({ parts: unescapedTemplateMarkerParts })
 }
-
 
 export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
   const string = dumpValue(expression).toString()
   return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true, encoding: 'utf8' })
 }
 
-export const staticFileToTemplateExpression = async (staticFile: StaticFile)
-  : Promise<TemplateExpression | undefined> => {
+export const staticFileToTemplateExpression = async (
+  staticFile: StaticFile,
+): Promise<TemplateExpression | undefined> => {
   if (staticFile.isTemplate !== true) {
     return undefined
   }

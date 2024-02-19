@@ -35,12 +35,8 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): p
         await staticFilesSource.persistStaticFile(val)
       }
       const finalEncoding = val.isTemplate === true ? 'template' : val.encoding
-      const params = finalEncoding === DEFAULT_STATIC_FILE_ENCODING
-        ? [val.filepath] : [val.filepath, finalEncoding]
-      return new parser.FunctionExpression(
-        'file',
-        params,
-      )
+      const params = finalEncoding === DEFAULT_STATIC_FILE_ENCODING ? [val.filepath] : [val.filepath, finalEncoding]
+      return new parser.FunctionExpression('file', params)
     },
     isSerializedAsFunction: (val: Value) => isStaticFile(val) || isInvalidStaticFile(val),
   },

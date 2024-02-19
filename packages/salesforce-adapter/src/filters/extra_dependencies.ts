@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   Element,
@@ -102,7 +102,7 @@ const createQueries = (
   orgNamespace: string | undefined,
 ): string[] => {
   const baseQueries = whereClauses.map(
-    clause => `SELECT 
+    (clause) => `SELECT 
     MetadataComponentId, MetadataComponentType, MetadataComponentName, 
     RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
   FROM MetadataComponentDependency WHERE ${clause}`,
@@ -111,10 +111,10 @@ const createQueries = (
     return baseQueries
   }
   const nonNamespaceDepsQueries = baseQueries.map(
-    query => `${query} AND MetadataComponentNamespace = '${orgNamespace}'`,
+    (query) => `${query} AND MetadataComponentNamespace = '${orgNamespace}'`,
   )
   const namespaceDepsQueries = baseQueries.map(
-    query => `${query} AND MetadataComponentNamespace != '${orgNamespace}'`,
+    (query) => `${query} AND MetadataComponentNamespace != '${orgNamespace}'`,
   )
   return nonNamespaceDepsQueries.concat(namespaceDepsQueries)
 }
@@ -124,11 +124,11 @@ const getDependencies = async (
   toolingDepsOfCurrentNamespace: boolean,
 ): Promise<DependencyGroup[]> => {
   const allTypes = REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(
-    t => `'${t}'`,
+    (t) => `'${t}'`,
   ).join(', ')
   const whereClauses = [
     ...REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(
-      t => `MetadataComponentType='${t}'`,
+      (t) => `MetadataComponentType='${t}'`,
     ),
     `MetadataComponentType NOT IN (${allTypes})`,
   ]
@@ -138,14 +138,14 @@ const getDependencies = async (
     client.orgNamespace,
   )
   const allDepsIters = await Promise.all(
-    allQueries.map(q => client.queryAll(q, true)),
+    allQueries.map((q) => client.queryAll(q, true)),
   )
 
   const queriesRecordsCount: number[] = []
-  const allDepsResults = allDepsIters.map(iter =>
-    collections.asynciterable.mapAsync(iter, recs => {
+  const allDepsResults = allDepsIters.map((iter) =>
+    collections.asynciterable.mapAsync(iter, (recs) => {
       queriesRecordsCount.push(recs.length)
-      return recs.map(rec => ({
+      return recs.map((rec) => ({
         from: {
           type: rec.MetadataComponentType,
           id: rec.MetadataComponentId,
@@ -157,12 +157,14 @@ const getDependencies = async (
           name: rec.RefMetadataComponentName,
         },
       }))
-    }),)
+    }),
+  )
 
   const deps = (
     await Promise.all(
-      allDepsResults.map(async res =>
-        (await collections.asynciterable.toArrayAsync(res)).flat(),),
+      allDepsResults.map(async (res) =>
+        (await collections.asynciterable.toArrayAsync(res)).flat(),
+      ),
     )
   ).flat()
 
@@ -171,10 +173,10 @@ const getDependencies = async (
     counts: queriesRecordsCount,
   })
 
-  return _.values(_.groupBy(deps, dep => Object.entries(dep.from))).map(
-    depArr => ({
+  return _.values(_.groupBy(deps, (dep) => Object.entries(dep.from))).map(
+    (depArr) => ({
       from: depArr[0].from,
-      to: depArr.map(dep => dep.to),
+      to: depArr.map((dep) => dep.to),
     }),
   )
 }
@@ -188,7 +190,7 @@ const queryDeps = async ({
     getInternalId,
   )
   // The MetadataComponentId of standard objects is the object name
-  elements.filter(isStandardObjectSync).forEach(standardObject => {
+  elements.filter(isStandardObjectSync).forEach((standardObject) => {
     const objectName = apiNameSync(standardObject)
     if (objectName !== undefined) {
       elementsByMetadataComponentId[objectName] = standardObject
@@ -206,11 +208,11 @@ const queryDeps = async ({
   ): Promise<Dependency[]> =>
     (
       await Promise.all(
-        _.chunk(ids, chunkSize).map(async idsChunk => {
+        _.chunk(ids, chunkSize).map(async (idsChunk) => {
           const query = `SELECT 
     MetadataComponentId, MetadataComponentType, MetadataComponentName, 
     RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
-  FROM MetadataComponentDependency WHERE MetadataComponentId IN (${idsChunk.map(id => `'${id}'`).join(', ')})`
+  FROM MetadataComponentDependency WHERE MetadataComponentId IN (${idsChunk.map((id) => `'${id}'`).join(', ')})`
           const allRecords = (
             await toArrayAsync(await client.queryAll(query, true))
           ).flat()
@@ -226,7 +228,7 @@ const queryDeps = async ({
               )
             }
           }
-          return allRecords.map(rec => ({
+          return allRecords.map((rec) => ({
             from: {
               type: rec.MetadataComponentType,
               id: rec.MetadataComponentId,
@@ -249,7 +251,7 @@ const queryDeps = async ({
     log.error(
       'Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s',
       Array.from(errorIds)
-        .map(id => elementsByMetadataComponentId[id]?.elemID.getFullName())
+        .map((id) => elementsByMetadataComponentId[id]?.elemID.getFullName())
         .join(', '),
     )
   }
@@ -268,10 +270,10 @@ const getDependenciesV2 = async (
   params: QueryDepsParams,
 ): Promise<DependencyGroup[]> => {
   const deps = await queryDeps(params)
-  return _.values(_.groupBy(deps, dep => Object.entries(dep.from))).map(
-    depArr => ({
+  return _.values(_.groupBy(deps, (dep) => Object.entries(dep.from))).map(
+    (depArr) => ({
       from: depArr[0].from,
-      to: depArr.map(dep => dep.to),
+      to: depArr.map((dep) => dep.to),
     }),
   )
 }
@@ -283,20 +285,23 @@ const getDependenciesV2 = async (
  * @param elem        The element to modify
  * @param refElemIDs  The reference ids to add
  */
-const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Promise<ReferenceExpression[]> => {
+const addGeneratedDependencies = async (
+  elem: Element,
+  refElemIDs: ElemID[],
+): Promise<ReferenceExpression[]> => {
   if (refElemIDs.length === 0) {
     return []
   }
 
   const existingReferences = await getAllReferencedIds(elem)
   const newDependencies = refElemIDs
-    .filter(elemId => !existingReferences.has(elemId.getFullName()))
-    .map(elemId => new ReferenceExpression(elemId))
+    .filter((elemId) => !existingReferences.has(elemId.getFullName()))
+    .map((elemId) => new ReferenceExpression(elemId))
 
   if (newDependencies.length !== 0) {
     extendGeneratedDependencies(
       elem,
-      newDependencies.map(reference => ({ reference })),
+      newDependencies.map((reference) => ({ reference })),
     )
   }
   return newDependencies
@@ -338,7 +343,7 @@ const addExtraReferences = async (
 
   const addedDeps: ReferenceExpression[] = (
     await awu(groupedDeps)
-      .map(async edge => {
+      .map(async (edge) => {
         const elemId = getElemId(edge.from)
         if (elemId === undefined) {
           log.debug(
@@ -359,14 +364,14 @@ const addExtraReferences = async (
           )
           return []
         }
-        const dependencies = edge.to.map(dst => ({
+        const dependencies = edge.to.map((dst) => ({
           dep: dst,
           elemId: getElemId(dst),
         }))
         const missingDeps = dependencies
-          .filter(item => item.elemId === undefined)
-          .map(item => item.dep)
-        missingDeps.forEach(dep => {
+          .filter((item) => item.elemId === undefined)
+          .map((item) => item.dep)
+        missingDeps.forEach((dep) => {
           log.debug(
             `Referenced element ${dep.type}:${dep.id} (${dep.name}) not found for ${elem.elemID.getFullName()}`,
           )
@@ -374,7 +379,7 @@ const addExtraReferences = async (
 
         return addGeneratedDependencies(
           elem,
-          dependencies.map(item => item.elemId).filter(isDefined),
+          dependencies.map((item) => item.elemId).filter(isDefined),
         )
       })
       .toArray()
@@ -382,7 +387,8 @@ const addExtraReferences = async (
   log.debug('Added %d extra dependencies', addedDeps.length)
 }
 
-export const WARNING_MESSAGE = 'Encountered an error while trying to query your salesforce account for additional configuration dependencies.'
+export const WARNING_MESSAGE =
+  'Encountered an error while trying to query your salesforce account for additional configuration dependencies.'
 
 /**
  * Add references using the tooling API.
@@ -400,11 +406,11 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
       )
         ? await getDependenciesV2({ client, elements })
         : await getDependencies(
-          client,
-          config.fetchProfile.isFeatureEnabled(
-            'toolingDepsOfCurrentNamespace',
-          ),
-        )
+            client,
+            config.fetchProfile.isFeatureEnabled(
+              'toolingDepsOfCurrentNamespace',
+            ),
+          )
       const fetchedElements = buildElementsSourceFromElements(elements)
       const allElements = buildElementsSourceForFetch(elements, config)
 
@@ -413,14 +419,14 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
         .addIndex({
           name: 'elemLookup',
           filter: hasInternalId,
-          key: async elem => [await metadataType(elem), getInternalId(elem)],
-          map: elem => elem.elemID,
+          key: async (elem) => [await metadataType(elem), getInternalId(elem)],
+          map: (elem) => elem.elemID,
         })
         .addIndex({
           name: 'customObjectLookup',
-          filter: async elem => isCustomObject(elem),
-          key: async elem => [await apiName(elem)],
-          map: elem => elem.elemID,
+          filter: async (elem) => isCustomObject(elem),
+          key: async (elem) => [await apiName(elem)],
+          map: (elem) => elem.elemID,
         })
         .process(
           awu(await allElements.getAll()).flatMap(

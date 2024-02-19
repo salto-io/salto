@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   Field,
@@ -57,12 +57,30 @@ import { mockFunction } from '@salto-io/test-utils'
 import Joi from 'joi'
 import wu from 'wu'
 import {
-  transformValues, resolvePath, TransformFunc,
-  findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
-  findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath,
-  flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
-  restoreChangeElement, RestoreValuesFunc, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, resolveTypeShallow,
+  transformValues,
+  resolvePath,
+  TransformFunc,
+  findElement,
+  findElements,
+  findObjectType,
+  GetLookupNameFunc,
+  safeJsonStringify,
+  findInstances,
+  flattenElementStr,
+  valuesDeepSome,
+  filterByID,
+  setPath,
+  flatValues,
+  mapKeysRecursive,
+  createDefaultInstanceFromType,
+  applyInstancesDefaults,
+  restoreChangeElement,
+  RestoreValuesFunc,
+  applyFunctionToChangeData,
+  transformElement,
+  toObjectType,
+  getParents,
+  resolveTypeShallow,
   elementExpressionStringifyReplacer,
   createSchemeGuard,
   getParent,
@@ -421,7 +439,8 @@ describe('Test utils.ts', () => {
                 await (numArrayFieldType as ListType).getInnerType(),
                 mockType.fields.numArray.annotations,
               ),
-            }),)
+            }),
+          )
         })
 
         it('should call transform on map value elements', async () => {
@@ -562,13 +581,15 @@ describe('Test utils.ts', () => {
               value: origValue[name],
               path: undefined,
               field: new Field(defaultFieldParent, name, typeMap[name]),
-            }),)
+            }),
+          )
           origValue.nums.forEach((value: string) =>
             expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
               field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
-            }),)
+            }),
+          )
           await awu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
             const field = new Field(
               toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
@@ -829,7 +850,7 @@ describe('Test utils.ts', () => {
             }),
           ),
           transformFunc: ({ value, path }) =>
-            (_.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`),
+            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`,
           pathID: mockElem.createNestedID('instance', 'list'),
           strict: true,
         })
@@ -974,7 +995,8 @@ describe('Test utils.ts', () => {
                 await (numArrayFieldType as ListType).getInnerType(),
                 mockType.fields.numArray.annotations,
               ),
-            }),)
+            }),
+          )
         })
 
         it('should call transform on map value elements', () => {
@@ -1115,13 +1137,15 @@ describe('Test utils.ts', () => {
               value: origValue[name],
               path: undefined,
               field: new Field(defaultFieldParent, name, typeMap[name]),
-            }),)
+            }),
+          )
           origValue.nums.forEach((value: string) =>
             expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
               field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
-            }),)
+            }),
+          )
           wu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
             const field = new Field(
               toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
@@ -1382,7 +1406,7 @@ describe('Test utils.ts', () => {
             }),
           ),
           transformFunc: ({ value, path }) =>
-            (_.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`),
+            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`,
           pathID: mockElem.createNestedID('instance', 'list'),
           strict: true,
         })
@@ -1716,7 +1740,6 @@ describe('Test utils.ts', () => {
       })
     })
   })
-
 
   describe('restore/ResolveChangeElement functions', () => {
     let afterData: InstanceElement
@@ -2155,29 +2178,33 @@ describe('Test utils.ts', () => {
       }
 
       const onlyFields = await filterByID(objElemID, obj, async id =>
-        (id.idType === 'type' || id.idType === 'field' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        id.idType === 'type' || id.idType === 'field' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(onlyFields).toBeDefined()
       expectEqualFields(onlyFields?.fields, obj.fields)
       expect(onlyFields?.annotations).toEqual({})
       expect(onlyFields?.annotationRefTypes).toEqual({})
       const onlyAnno = await filterByID(objElemID, obj, async id =>
-        (id.idType === 'type' || id.idType === 'attr' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        id.idType === 'type' || id.idType === 'attr' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(onlyAnno).toBeDefined()
       expect(onlyAnno?.fields).toEqual({})
       expect(onlyAnno?.annotations).toEqual(obj.annotations)
       expect(onlyAnno?.annotationRefTypes).toEqual({})
 
       const onlyAnnoType = await filterByID(objElemID, obj, async id =>
-        (id.idType === 'type' || id.idType === 'annotation'
+        id.idType === 'type' || id.idType === 'annotation'
           ? FILTER_FUNC_NEXT_STEP.RECURSE
-          : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(onlyAnnoType).toBeDefined()
       expect(onlyAnnoType?.fields).toEqual({})
       expect(onlyAnnoType?.annotations).toEqual({})
       expect(onlyAnnoType?.annotationRefTypes).toEqual(obj.annotationRefTypes)
 
       const withoutAnnoObjStr = await filterByID(objElemID, obj, async id =>
-        (!id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        !id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(withoutAnnoObjStr).toBeDefined()
       expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
       expect(withoutAnnoObjStr?.annotations.obj).toEqual({ num: 42 })
@@ -2186,9 +2213,10 @@ describe('Test utils.ts', () => {
       expect(withoutAnnoObjStr?.annotationRefTypes).toEqual(obj.annotationRefTypes)
 
       const withoutFieldAnnotations = await filterByID(objElemID, obj, async id =>
-        (id.getFullName() !== 'salto.obj.field.obj.label'
+        id.getFullName() !== 'salto.obj.field.obj.label'
           ? FILTER_FUNC_NEXT_STEP.RECURSE
-          : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
 
       expect(withoutFieldAnnotations).toBeDefined()
       expect(withoutFieldAnnotations?.annotations).toEqual(obj.annotations)
@@ -2196,9 +2224,10 @@ describe('Test utils.ts', () => {
       expect(withoutFieldAnnotations?.fields.obj).toBeDefined()
       expect(withoutFieldAnnotations?.fields.obj.annotations).toEqual({})
       const onlyI = await filterByID(objElemID, obj, async id =>
-        (Number.isNaN(Number(_.last(id.getFullNameParts()))) || Number(_.last(id.getFullNameParts())) === 0
+        Number.isNaN(Number(_.last(id.getFullNameParts()))) || Number(_.last(id.getFullNameParts())) === 0
           ? FILTER_FUNC_NEXT_STEP.RECURSE
-          : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(onlyI).toBeDefined()
       expectEqualFields(onlyI?.fields, obj.fields)
       expect(onlyI?.annotations.obj).toEqual(obj.annotations.obj)
@@ -2208,14 +2237,16 @@ describe('Test utils.ts', () => {
 
     it('should filter primitive type', async () => {
       const filteredPrim = await filterByID(prim.elemID, prim, async id =>
-        (!id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        !id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
       expect(filteredPrim?.annotationRefTypes).toEqual({ obj: createRefToElmWithValue(annoType) })
     })
 
     it('should filter instances', async () => {
       const filteredInstance = await filterByID(inst.elemID, inst, async id =>
-        (!id.getFullNameParts().includes('list') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        !id.getFullNameParts().includes('list') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
     })
@@ -2231,25 +2262,29 @@ describe('Test utils.ts', () => {
 
     it('should return undefined if the base item fails the filter func', async () => {
       const filteredInstance = await filterByID(inst.elemID, inst, async id =>
-        (id.idType !== 'instance' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        id.idType !== 'instance' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(filteredInstance).toBeUndefined()
     })
 
     it('should not set array, map and obj values that are empty after filtering', async () => {
       const withoutList = await filterByID(inst.elemID, inst, async id =>
-        (Number.isNaN(Number(_.last(id.getFullNameParts())))
+        Number.isNaN(Number(_.last(id.getFullNameParts())))
           ? FILTER_FUNC_NEXT_STEP.RECURSE
-          : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(withoutList?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
 
       const withoutObj = await filterByID(inst.elemID, inst, async id =>
-        (!id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
+        !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
           ? FILTER_FUNC_NEXT_STEP.RECURSE
-          : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+          : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(withoutObj?.value).toEqual({ list: inst.value.list, map: inst.value.map })
 
       const withoutMap = await filterByID(inst.elemID, inst, async id =>
-        (!id.getFullNameParts().includes('Do') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),)
+        !id.getFullNameParts().includes('Do') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE,
+      )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
     it('should include value that filterFunc returns INCLUDE for without recursing', async () => {

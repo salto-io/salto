@@ -1,26 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import {
-  BuiltinTypes, CORE_ANNOTATIONS,
-  ElemID, InstanceElement,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
   ListType,
   MapType,
-  ObjectType, PrimitiveType, PrimitiveTypes,
-  ReferenceExpression, StaticFile, TemplateExpression,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  ReferenceExpression,
+  StaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
@@ -51,39 +57,41 @@ const mockType = new ObjectType({
     numMap: { refType: new MapType(BuiltinTypes.NUMBER) },
     strMap: { refType: new MapType(BuiltinTypes.STRING) },
     obj: {
-      refType: new ListType(new ObjectType({
-        elemID: mockElem,
-        fields: {
-          field: { refType: BuiltinTypes.STRING },
-          otherField: {
-            refType: BuiltinTypes.STRING,
-          },
-          value: { refType: BuiltinTypes.STRING },
-          mapOfStringList: {
-            refType: new MapType(new ListType(BuiltinTypes.STRING)),
-          },
-          innerObj: {
-            refType: new ObjectType({
-              elemID: mockElem,
-              fields: {
-                name: { refType: BuiltinTypes.STRING },
-                listOfNames: {
-                  refType: new ListType(BuiltinTypes.STRING),
+      refType: new ListType(
+        new ObjectType({
+          elemID: mockElem,
+          fields: {
+            field: { refType: BuiltinTypes.STRING },
+            otherField: {
+              refType: BuiltinTypes.STRING,
+            },
+            value: { refType: BuiltinTypes.STRING },
+            mapOfStringList: {
+              refType: new MapType(new ListType(BuiltinTypes.STRING)),
+            },
+            innerObj: {
+              refType: new ObjectType({
+                elemID: mockElem,
+                fields: {
+                  name: { refType: BuiltinTypes.STRING },
+                  listOfNames: {
+                    refType: new ListType(BuiltinTypes.STRING),
+                  },
+                  magical: {
+                    refType: new ObjectType({
+                      elemID: mockElem,
+                      fields: {
+                        deepNumber: { refType: BuiltinTypes.NUMBER },
+                        deepName: { refType: BuiltinTypes.STRING },
+                      },
+                    }),
+                  },
                 },
-                magical: {
-                  refType: new ObjectType({
-                    elemID: mockElem,
-                    fields: {
-                      deepNumber: { refType: BuiltinTypes.NUMBER },
-                      deepName: { refType: BuiltinTypes.STRING },
-                    },
-                  }),
-                },
-              },
-            }),
+              }),
+            },
           },
-        },
-      })),
+        }),
+      ),
     },
   },
   path: ['this', 'is', 'happening'],
@@ -95,9 +103,9 @@ export const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(f
 
 export const templateElemID = new ElemID('template', 'test')
 export const templateElemID2 = new ElemID('template2', 'test2')
-const templateRef = new TemplateExpression({ parts: ['this is:',
-  new ReferenceExpression(templateElemID), 'a template',
-  new ReferenceExpression(templateElemID2)] })
+const templateRef = new TemplateExpression({
+  parts: ['this is:', new ReferenceExpression(templateElemID), 'a template', new ReferenceExpression(templateElemID2)],
+})
 export const mockInstance = new InstanceElement(
   'mockInstance',
   mockType,
@@ -117,7 +125,7 @@ export const mockInstance = new InstanceElement(
     obj: [
       {
         field: 'firstField',
-        otherField: 'doesn\'t matter',
+        otherField: "doesn't matter",
         value: {
           val: 'someString',
           anotherVal: { objTest: '123' },
@@ -161,8 +169,7 @@ export const mockInstance = new InstanceElement(
           },
         },
       },
-      {
-      },
+      {},
     ],
     objWithInnerObj: {
       innerObj: {

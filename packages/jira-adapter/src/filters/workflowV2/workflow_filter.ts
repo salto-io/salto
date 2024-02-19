@@ -1,24 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, walkOnElement } from '@salto-io/adapter-utils'
-import { elements as adapterElements, config as configUtils, client as clientUtils, resolveValues } from '@salto-io/adapter-components'
-import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, AdditionChange, Change, ChangeDataType, getChangeData, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, Values, ElemID, Field } from '@salto-io/adapter-api'
+import {
+  elements as adapterElements,
+  config as configUtils,
+  client as clientUtils,
+  resolveValues,
+} from '@salto-io/adapter-components'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  InstanceElement,
+  ObjectType,
+  SaltoError,
+  AdditionChange,
+  Change,
+  ChangeDataType,
+  getChangeData,
+  isAdditionChange,
+  isInstanceElement,
+  isModificationChange,
+  ModificationChange,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  Values,
+  ElemID,
+  Field,
+} from '@salto-io/adapter-api'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import {
@@ -275,7 +299,8 @@ const getStatusInstances = (
     const { before: beforeInstance } = change.data
     const beforeStatusInstances = getStatusReferenceInstances(beforeInstance)
     const statusInstances = _.uniqBy([...afterStatusInstances, ...beforeStatusInstances], statusInstance =>
-      statusInstance.elemID.getFullName(),)
+      statusInstance.elemID.getFullName(),
+    )
     return statusInstances
   }
   return afterStatusInstances
@@ -317,9 +342,9 @@ const getWorkflowPayload = (
   }
   const workflowPayload = isAddition
     ? {
-      scope: resolvedWorkflowInstance.value.scope,
-      ...basicPayload,
-    }
+        scope: resolvedWorkflowInstance.value.scope,
+        ...basicPayload,
+      }
     : basicPayload
   return workflowPayload
 }
@@ -395,18 +420,20 @@ const insertConditionGroups: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
     value.conditionGroups = []
   }
   if (
-    isInstanceElement(value)
-    || CONDITION_GROUPS_PATH_NAME_TO_RECURSE.has(path.name)
-    || (_.isPlainObject(value) && value.conditions)
+    isInstanceElement(value) ||
+    CONDITION_GROUPS_PATH_NAME_TO_RECURSE.has(path.name) ||
+    (_.isPlainObject(value) && value.conditions)
   ) {
     return WALK_NEXT_STEP.RECURSE
   }
   return WALK_NEXT_STEP.SKIP
 }
 
-const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOnFunc =>
+const replaceStatusIdWithUuid =
+  (statusIdToUuid: Record<string, string>): WalkOnFunc =>
   ({ value, path }): WALK_NEXT_STEP => {
-    const isValueToRecurse = (_.isPlainObject(value) && (value.to || value.from || value.statusMigrations)) || _.isArray(value)
+    const isValueToRecurse =
+      (_.isPlainObject(value) && (value.to || value.from || value.statusMigrations)) || _.isArray(value)
     if (isInstanceElement(value) || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name) || isValueToRecurse) {
       return WALK_NEXT_STEP.RECURSE
     }
@@ -520,7 +547,8 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           client,
           config,
           elementsSource,
-        }),)
+        }),
+      )
       return {
         leftoverChanges,
         deployResult,

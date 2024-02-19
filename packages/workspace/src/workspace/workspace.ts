@@ -295,7 +295,7 @@ export type Workspace = {
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
-  getFileEnvs(filePath: string): {envName: string; isStatic?: boolean}[]
+  getFileEnvs(filePath: string): { envName: string; isStatic?: boolean }[]
   getStaticFile(params: {
     filepath: string
     encoding: BufferEncoding
@@ -511,12 +511,21 @@ export const loadWorkspace = async (
                     deserializeSingleElement(
                       s,
                       async staticFile =>
+<<<<<<< HEAD
                         (await naclFilesSource.getStaticFile({
                           filePath: staticFile.filepath,
                           encoding: staticFile.encoding,
                           env: envName,
                           isTemplate: staticFile.isTemplate
                         })) ?? staticFile,
+=======
+                        (await naclFilesSource.getStaticFile(
+                          staticFile.filepath,
+                          staticFile.encoding,
+                          envName,
+                          staticFile.isTemplate,
+                        )) ?? staticFile,
+>>>>>>> 4af0b9605 (prettier)
                     ),
                   persistent,
                 }),

@@ -1,28 +1,36 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   AdditionChange,
-  BuiltinTypes, CORE_ANNOTATIONS, createRefToElmWithValue,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  createRefToElmWithValue,
   ElemID,
   Field,
   InstanceElement,
   ListType,
-  MapType, ModificationChange,
-  ObjectType, PrimitiveType, PrimitiveTypes,
-  ReferenceExpression, RemovalChange, StaticFile, TemplateExpression,
+  MapType,
+  ModificationChange,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  ReferenceExpression,
+  RemovalChange,
+  StaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, ResolveValuesFunc, restoreValues } from '@salto-io/adapter-utils'
 import { resolveValues, resolveChangeElement } from '../src/resolve_utils'
@@ -39,7 +47,6 @@ describe('resolve utils func', () => {
       annotationRefsOrTypes: {
         refValue: BuiltinTypes.STRING,
         reg: BuiltinTypes.STRING,
-
       },
       annotations: {
         name: objectName,
@@ -53,14 +60,13 @@ describe('resolve utils func', () => {
       },
     })
     element.annotations.typeRef = new ReferenceExpression(
-      elementID.createNestedID('annotation', 'name'), objectName, element
+      elementID.createNestedID('annotation', 'name'),
+      objectName,
+      element,
     )
 
-    const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
-      new ReferenceExpression(
-        elemID.createNestedID(...path)
-      )
-    )
+    const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression =>
+      new ReferenceExpression(elemID.createNestedID(...path))
 
     const elemID = new ElemID('salesforce', 'base')
 
@@ -68,11 +74,7 @@ describe('resolve utils func', () => {
       elemID: new ElemID('salto', 'simple'),
     })
 
-    const firstRef = new InstanceElement(
-      'first',
-      refType,
-      { from: 'Milano', to: 'Minsk', obj: { a: 1 } }
-    )
+    const firstRef = new InstanceElement('first', refType, { from: 'Milano', to: 'Minsk', obj: { a: 1 } })
     const instance = new InstanceElement(
       'instance',
       element,
@@ -80,9 +82,7 @@ describe('resolve utils func', () => {
         name: instanceName,
         fileValue: valueFile,
         refValue: valueRef,
-        objValue: new ReferenceExpression(
-          firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef,
-        ),
+        objValue: new ReferenceExpression(firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef),
         into: new TemplateExpression({
           parts: [
             'Well, you made a long journey from ',
@@ -92,11 +92,7 @@ describe('resolve utils func', () => {
             ', Rochelle Rochelle',
           ],
         }),
-        arrayValues: [
-          regValue,
-          valueRef,
-          {},
-        ],
+        arrayValues: [regValue, valueRef, {}],
         mapValues: {
           regValue,
           valueRef,
@@ -234,7 +230,6 @@ describe('resolve utils func', () => {
         resolvedPrim = await resolveValues(prim, getName)
       })
 
-
       it('should transform primitive', () => {
         expect(resolvedPrim).not.toEqual(prim)
 
@@ -276,7 +271,6 @@ describe('resolve utils func', () => {
         resolvedField = await resolveValues(field, getName)
       })
 
-
       it('should transform field', async () => {
         expect(resolvedField).not.toEqual(field)
 
@@ -313,9 +307,9 @@ describe('resolve utils func', () => {
     })
     let mockResolve: ResolveValuesFunc
     beforeEach(() => {
-      mockResolve = jest.fn().mockImplementation(
-      <T extends Element>(element: T, _getLookUpName: GetLookupNameFunc) => element
-      )
+      mockResolve = jest
+        .fn()
+        .mockImplementation(<T extends Element>(element: T, _getLookUpName: GetLookupNameFunc) => element)
     })
     it('should call resolve func on after data when add change', async () => {
       await resolveChangeElement(additionChange, getName, mockResolve)

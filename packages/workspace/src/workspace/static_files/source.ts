@@ -62,7 +62,7 @@ export class LazyStaticFile extends AbsoluteStaticFile {
     absoluteFilePath: string,
     private getContentFunc: () => Promise<Buffer | undefined>,
     encoding?: BufferEncoding,
-    isTemplate?: boolean
+    isTemplate?: boolean,
   ) {
     super({ filepath, hash, encoding, absoluteFilePath, isTemplate })
   }

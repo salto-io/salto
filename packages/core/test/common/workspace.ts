@@ -110,7 +110,8 @@ export const mockWorkspace = ({
     elements: jest
       .fn()
       .mockImplementation(async (includeHidden = true) =>
-        elementSource.createInMemoryElementSource(includeHidden ? elements : elementsWithoutHidden),),
+        elementSource.createInMemoryElementSource(includeHidden ? elements : elementsWithoutHidden),
+      ),
     name,
     envs: () => ['default'],
     currentEnv: () => 'default',

@@ -62,16 +62,17 @@ const addTransitionReferences = (
       const transitionKey = transitionIdToKey.get(scriptRunner.transitionId)
       const missingValue = enableMissingReferences
         ? referenceUtils.createMissingValueReference(
-          workflowInstance.elemID.createNestedID('transitions'),
-          scriptRunner.transitionId,
-        )
+            workflowInstance.elemID.createNestedID('transitions'),
+            scriptRunner.transitionId,
+          )
         : scriptRunner.transitionId
-      scriptRunner.transitionId = transitionKey === undefined
-        ? missingValue
-        : new ReferenceExpression(
-          workflowInstance.elemID.createNestedID('transitions', transitionKey),
-          workflowInstance.value.transitions[transitionKey],
-        )
+      scriptRunner.transitionId =
+        transitionKey === undefined
+          ? missingValue
+          : new ReferenceExpression(
+              workflowInstance.elemID.createNestedID('transitions', transitionKey),
+              workflowInstance.value.transitions[transitionKey],
+            )
     })
   })
 }
@@ -108,10 +109,11 @@ const filter: FilterCreator = ({ config, client }) => {
         const expectedIdsMap = transitionKeysToExpectedIds(workflow)
         Object.values(workflow.value.transitions).forEach(transition => {
           walkOverTransitionIds(transition, scriptRunner => {
-            scriptRunner.transitionId = isReferenceExpression(scriptRunner.transitionId)
-              && expectedIdsMap.get(scriptRunner.transitionId.elemID.name) !== undefined
-              ? expectedIdsMap.get(scriptRunner.transitionId.elemID.name)
-              : scriptRunner.transitionId
+            scriptRunner.transitionId =
+              isReferenceExpression(scriptRunner.transitionId) &&
+              expectedIdsMap.get(scriptRunner.transitionId.elemID.name) !== undefined
+                ? expectedIdsMap.get(scriptRunner.transitionId.elemID.name)
+                : scriptRunner.transitionId
           })
         })
       })

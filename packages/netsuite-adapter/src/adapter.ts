@@ -116,6 +116,7 @@ import {
   ALL_TYPES_REGEX,
   DEFAULT_WARN_STALE_DATA,
   DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+  INCLUDE_ALL,
 } from './config/constants'
 import {
   FetchByQueryFunc,
@@ -334,7 +335,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (bundleIdsToExclude === undefined) {
       return []
     }
-    const bundleMatchers = bundleIdsToExclude.map(matcher => new RegExp(matcher === 'ALL' ? '.*' : matcher))
+    const bundleMatchers = bundleIdsToExclude.map(matcher => new RegExp(matcher === INCLUDE_ALL ? ALL_TYPES_REGEX : matcher))
     const installedBundlesInfo = installedBundles.map(bundle => ({ id: bundle.id.toString(), version: bundle.version }))
     return installedBundlesInfo
       .filter(bundle => bundle.id in BUNDLE_ID_TO_COMPONENTS)

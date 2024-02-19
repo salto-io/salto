@@ -448,6 +448,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'properties' },
       ),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+      serviceUrl: '/admin/universaldirectory#app/{_parent.0.id}',
     },
     deployRequests: {
       modify: {
@@ -555,7 +556,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'properties' },
       ),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
-      // serviceUrl is created in service_url filter
+      serviceUrl: '/admin/universaldirectory#okta/{_parent.0.id}',
     },
     deployRequests: {
       add: {
@@ -1678,6 +1679,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       idFields: ['&userGroupId'],
       serviceIdField: 'mappingId',
       extendsParentId: true,
+      serviceUrl: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-group-push',
     },
     deployRequests: {
       add: {
@@ -1703,6 +1705,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       idFields: ['name'],
       serviceIdField: 'mappingRuleId',
       extendsParentId: true,
+      serviceUrl: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-group-push',
     },
     deployRequests: {
       add: {

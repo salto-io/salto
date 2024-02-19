@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
-import { transformElement, inspectValue } from '@salto-io/adapter-utils'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange, isRemovalChange, ModificationChange } from '@salto-io/adapter-api'
+import { transformElement, inspectValue, walkOnValue, resolvePath, setPath, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../fetch/resource'
 import { HTTPError, HTTPWriteClientInterface } from '../client/http_client'
@@ -74,6 +74,40 @@ export const filterIgnoredValues = async (
   )
 
   return filteredInstance
+}
+
+/**
+ * Transform removed change values to null, for APIs that require explicit null values
+ */
+export const transformRemovedValuesToNull = (
+  change: ModificationChange<InstanceElement>,
+  applyToPath?: string[],
+): ModificationChange<InstanceElement> => {
+  const { before, after } = change.data
+  const elemId = applyToPath
+    ? getChangeData(change).elemID.createNestedID(...applyToPath)
+    : getChangeData(change).elemID
+  walkOnValue({
+    elemId,
+    value: resolvePath(before, elemId),
+    func: ({ value, path }) => {
+      const valueInAfter = resolvePath(after, path)
+      if (valueInAfter === undefined) {
+        if (!_.isPlainObject(value)) {
+          setPath(after, path, null)
+          return WALK_NEXT_STEP.SKIP
+        }
+        // if value is an object, we want to recurse into it to set all its values to null
+        return WALK_NEXT_STEP.RECURSE
+      }
+      // Arrays are being skipped to avoid setting null to removed array elements
+      if (Array.isArray(value)) {
+        return WALK_NEXT_STEP.SKIP
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return change
 }
 
 /**

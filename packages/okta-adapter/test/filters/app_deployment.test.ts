@@ -328,6 +328,55 @@ describe('appDeploymentFilter', () => {
         .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.name === 'customApp')
       expect(customAppInstance?.value.status).toEqual('INACTIVE')
     })
+    it('Should convert removed values in apps settings to null', async () => {
+      const app = new InstanceElement(
+        'app',
+        appType,
+        {
+          id: 'appId',
+          signOnMode: 'SAML_2_0',
+          settings: {
+            app: {
+              customDomain: 'subdomain',
+              loginUrl: 'http://example.com',
+            },
+            notes: { admin: 'admin note', endUser: 'notes' },
+            signOn: {
+              url: 'a',
+              attributeStatements: [{ type: 'a' }, { type: 'b' }],
+            },
+          },
+          credentials: {
+            scheme: 'SCHEME',
+            revealPassword: true,
+          },
+        }
+      )
+      const appAfter = app.clone()
+      delete appAfter.value.settings.notes
+      delete appAfter.value.settings.app.loginUrl
+      delete appAfter.value.credentials.revealPassword
+      delete appAfter.value.settings.signOn.attributeStatements
+      await filter.deploy([toChange({ before: app, after: appAfter })])
+      expect(mockConnection.put).toHaveBeenCalledWith(
+        '/api/v1/apps/appId',
+        {
+          signOnMode: 'SAML_2_0',
+          settings: {
+            app: {
+              customDomain: 'subdomain',
+              loginUrl: null,
+            },
+            notes: { admin: null, endUser: null },
+            signOn: { url: 'a', attributeStatements: null },
+          },
+          credentials: {
+            scheme: 'SCHEME',
+          },
+        },
+        undefined,
+      )
+    })
   })
 
   describe('onDeploy', () => {

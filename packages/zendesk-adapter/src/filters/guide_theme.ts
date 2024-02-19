@@ -27,14 +27,13 @@ import {
   SaltoError,
   StaticFile,
   Element,
-  isObjectType, Field, MapType, CORE_ANNOTATIONS, ElemID, ObjectType, ReferenceExpression,
+  isObjectType, Field, MapType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
-import { parserUtils } from '@salto-io/parser'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { getInstancesFromElementSource, naclCase, inspectValue, createTemplateExpression } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
@@ -56,20 +55,9 @@ import { parseHtmlPotentialReferences } from './template_engines/html_parser'
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
 const { awu } = collections.asynciterable
-const { templateExpressionToStaticFile } = parserUtils
 
 type ThemeFile = { filename: string; content: StaticFile }
 type DeployThemeFile = { filename: string; content: Buffer }
-
-const article = new InstanceElement(
-  'article',
-  new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
-  {
-    id: 1,
-  }
-)
-const macro1 = new InstanceElement('macro1', new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) }), { id: 2, actions: [{ value: 'non template', field: 'comment_value_html' }] })
-
 
 export type ThemeDirectory = {
   files: Record<string, ThemeFile | DeployThemeFile>
@@ -384,18 +372,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       }),
     )
     const errors = processedThemes.flatMap(theme => theme.errors)
-    guideThemes.forEach(theme => {
-      theme.value.special = templateExpressionToStaticFile(
-        createTemplateExpression({ parts: [
-          '"/hc/test/test/articles/',
-          new ReferenceExpression(article.elemID, article),
-          '\n/test "hc/test/test/articles/',
-          new ReferenceExpression(macro1.elemID, macro1),
-          '/test',
-        ] }),
-        `${ZENDESK}/themes/${theme.value.name}/temp2`
-      )
-    })
     return { errors }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

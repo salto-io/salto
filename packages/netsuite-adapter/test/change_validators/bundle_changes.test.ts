@@ -52,7 +52,7 @@ describe('bundle changes', () => {
         message: 'Cannot add, modify, or remove bundles',
         severity: 'Error',
         elemID: bundleInstanceAfter.elemID,
-        detailedMessage: 'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles.',
+        detailedMessage: 'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
       }
     )
   })
@@ -68,7 +68,7 @@ describe('bundle changes', () => {
         message: 'Can\'t add new elements to bundle',
         severity: 'Error',
         elemID: fileInstanceAfter.elemID,
-        detailedMessage: 'Adding elements to a bundle is not supported.',
+        detailedMessage: 'Adding elements to a bundle is not supported. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
       }
     )
   })

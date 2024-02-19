@@ -108,6 +108,20 @@ describe('workflow account specific values', () => {
     expect(changeErrors).toHaveLength(0)
   })
 
+  it('should have a generic ASV warning when deploying an instance with ACCOUNT_SPECIFIC_VALUES', async () => {
+    const after = instance.clone()
+    after.value.valueselect = '[ACCOUNT_SPECIFIC_VALUE]|[ACCOUNT_SPECIFIC_VALUE]'
+    const changeErrors = await workflowAccountSpecificValidator(
+      [toChange({ before: instance, after })],
+      false,
+      buildElementsSourceFromElements([]),
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Warning')
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    expect(changeErrors[0].message).toEqual('Values containing ACCOUNT_SPECIFIC_VALUE are ignored by NetSuite')
+  })
+
   describe('sender and recepient fields', () => {
     it('should have changeError when deploying an instance with sender = ACCOUNT_SPECIFIC_VALUES and sendertype = SPECIFIC', async () => {
       const after = instance.clone()

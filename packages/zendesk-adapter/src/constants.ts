@@ -100,6 +100,7 @@ export const VIEW_ORDER_TYPE_NAME = 'view_order'
 export const WORKSPACE_ORDER_TYPE_NAME = 'workspace_order'
 export const THEME_FOLDER_TYPE_NAME = 'theme_folder'
 export const THEME_FILE_TYPE_NAME = 'theme_file'
+export const SECTIONS_TYPE_NAME = 'sections'
 export const ORDER_TYPE_NAMES = [
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,

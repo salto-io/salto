@@ -214,7 +214,7 @@ export type NetsuiteConfig = {
   includeInactiveRecords?: string[]
   includeDataFileTypes?: string[]
   includeFileCabinetFolders?: string[]
-  excludeBundles: string[]
+  excludeBundles?: string[]
 
   // complex config
   typesToSkip?: string[]
@@ -732,8 +732,8 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Exclude bundles',
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto include all installed bundles by default.'
-        + 'You can choose to exclude specific bundles.',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto includes all installed bundles by default.'
+        + ' You can choose to exclude specific bundles.',
       },
     },
     fetch: {

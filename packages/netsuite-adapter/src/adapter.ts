@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   FetchResult,
   AdapterOperations,
@@ -129,6 +129,8 @@ import {
 } from './config/query'
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
+import { BundleInfo, buildNetsuiteBundlesQuery } from './config/bundle_query'
+import { SuiteAppBundleType } from './types/bundle_type'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -326,6 +328,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
+  private getBundlesToExclude = (installedBundles: SuiteAppBundleType[]): BundleInfo[] => {
+    const bundleIdsToExclude = this.userConfig.excludeBundles
+    if (bundleIdsToExclude === undefined) {
+      return []
+    }
+    const bundleMatchers = bundleIdsToExclude.map(matcher => new RegExp(matcher === 'ALL' ? '.*' : matcher))
+    const installedBundlesInfo = installedBundles.map(bundle => ({ id: bundle.id.toString(), version: bundle.version }))
+    return installedBundlesInfo
+      .filter(bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString())))
+  }
+
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
     progressReporter: ProgressReporter,
@@ -333,13 +346,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
     const configRecords = await this.client.getConfigRecords()
+    const installedBundles = await this.client.getInstalledBundles()
+    const filteredBundlesToExclude = this.getBundlesToExclude(installedBundles)
+    const netsuiteBundlesQuery = buildNetsuiteBundlesQuery(filteredBundlesToExclude)
+    const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
       timeZoneAndFormat,
     )
-    const updatedFetchQuery = changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQuery) : fetchQuery
+    const updatedFetchQuery = changedObjectsQuery !== undefined
+      ? andQuery(changedObjectsQuery, fetchQueryWithBundles)
+      : fetchQueryWithBundles
 
     const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
       progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
@@ -351,7 +370,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return result
     }
 
-    const getStandardAndCustomElements = async (): Promise<{
+    const getStandardAndCustomElements = async (bundlesList: SuiteAppBundleType[]): Promise<{
       standardInstances: InstanceElement[]
       standardTypes: TypeElement[]
       customRecordTypes: ObjectType[]
@@ -362,14 +381,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const [
         { elements: fileCabinetContent, failedPaths: failedFilePaths },
         { elements: customObjects, instancesIds, failedToFetchAllAtOnce, failedTypes },
-        bundlesList,
       ] = await Promise.all([
         importFileCabinetContent(),
         this.client.getCustomObjects(getStandardTypesNames(), {
           updatedFetchQuery,
           originFetchQuery: fetchQuery,
         }),
-        this.client.getInstalledBundles(),
       ])
       const bundlesCustomInfo = bundlesList.map(bundle => ({
         typeName: BUNDLE,
@@ -405,7 +422,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
       { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
-      getStandardAndCustomElements(),
+      getStandardAndCustomElements(installedBundles),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
       getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
     ])
@@ -418,22 +435,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult =
-      isPartial && this.withPartialDeletion !== false
-        ? await getDeletedElements({
-            client: this.client,
-            elementsSource: this.elementsSource,
-            fetchQuery,
-            serviceInstanceIds: instancesIds,
-            requestedCustomRecordTypes: customRecordTypes,
-            serviceCustomRecords: customRecords,
-            requestedDataTypes,
-            serviceDataElements: dataElements.filter(isInstanceElement),
-          })
-        : {}
+    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = isPartial && this.withPartialDeletion !== false
+      ? await getDeletedElements({
+        client: this.client,
+        elementsSource: this.elementsSource,
+        fetchQuery,
+        serviceInstanceIds: instancesIds,
+        requestedCustomRecordTypes: customRecordTypes,
+        serviceCustomRecords: customRecords,
+        requestedDataTypes,
+        serviceDataElements: dataElements.filter(isInstanceElement),
+      })
+      : {}
 
-    const serverTimeElements =
-      serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
+    const serverTimeElements = serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
 
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
@@ -467,11 +482,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isFirstFetch: boolean
   }): boolean {
     return (
-      !shouldFetchWithChangesDetectionParams.isFirstFetch &&
-      (this.useChangesDetection === true ||
-        shouldFetchWithChangesDetectionParams.withChangesDetection ||
+      !shouldFetchWithChangesDetectionParams.isFirstFetch
+      && (this.useChangesDetection === true
+        || shouldFetchWithChangesDetectionParams.withChangesDetection
         // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
-        (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
+        || (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
     )
   }
 
@@ -576,8 +591,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const [saltoElementErrors, saltoErrors] = _.partition(deployResult.errors, isSaltoElementError)
     const [originalChangesErrors, additionalChangesErrors] = _.partition(saltoElementErrors, error =>
-      originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName()),
-    )
+      originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName()),)
 
     const errorsOnCustomFieldsByParents = _(originalChangesErrors)
       .filter(error => error.elemID.idType === 'field')
@@ -602,8 +616,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(changesToDeploy, groupID, this.additionalDependencies, elemID =>
-      this.elementsSource.has(elemID),
-    )
+      this.elementsSource.has(elemID),)
 
     const ids = new Set(deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()))
 

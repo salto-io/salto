@@ -14,29 +14,87 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
-import { TypesQuery, FileCabinetQuery, CustomRecordsQuery, NetsuiteQuery } from './query'
+import { TypesQuery, FileCabinetQuery, NetsuiteQuery, CustomRecordsQuery } from './query'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
-import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 
+export type BundleInfo = {
+  id: string
+  version: string | undefined
+}
 
-const buildTypesQuery = (bundleId: string, bundleVersion: string): TypesQuery => ({
+const isBundleComponent = (instanceIdOrType: string, bundleId: string, bundleVersion: string | undefined): boolean => {
+  if (bundleVersion) {
+    return BUNDLE_ID_TO_COMPONENTS[bundleId][bundleVersion].has(instanceIdOrType)
+  }
+  // version is unsupported, check all supported versions of this bundle
+  const versionComponentsUnion = new Set(
+    Object.values(BUNDLE_ID_TO_COMPONENTS[bundleId]).flatMap(versionComponents => Array.from(versionComponents))
+  )
+  return versionComponentsUnion.has(instanceIdOrType)
+}
+
+const isContainedInSomeBundle = (instanceIdOrType: string, bundlesInfo: BundleInfo[]): boolean =>
+  bundlesInfo.some(({ id, version }) =>
+    isBundleComponent(instanceIdOrType, id, version))
+
+const buildTypesQuery = (bundlesInfo: BundleInfo[]): TypesQuery => ({
   isTypeMatch: () => true,
   areAllObjectsMatch: () => false,
-  isObjectMatch: ({ instanceId }) => !BUNDLE_ID_TO_COMPONENTS[bundleId][bundleVersion].has(instanceId),
+  isObjectMatch: ({ instanceId }) => !isContainedInSomeBundle(instanceId, bundlesInfo),
 })
 
-const buildFileCabinetQuery = (bundleIds: string[]): FileCabinetQuery => ({
-  // TODO should be true if the file path has "bundle <bundleId>" in it
-  isFileMatch: filePath => true,
-  isParentFolderMatch: () => true,
-  areSomeFilesMatch: () => true,
+const buildFileCabinetQuery = (bundlesInfo: BundleInfo[]): FileCabinetQuery => {
+  const regexPatterns = bundlesInfo.map(bundleInfo => new RegExp(`Bundle ${bundleInfo.id}`))
+
+  return {
+    isFileMatch: filePath => !regexPatterns.some(regex => regex.test(filePath)),
+    isParentFolderMatch: () => true,
+    areSomeFilesMatch: () => true,
+  }
+}
+
+const buildCustomRecordQuery = (bundlesInfo: BundleInfo[]): CustomRecordsQuery => ({
+  isCustomRecordTypeMatch: typeName => !isContainedInSomeBundle(typeName, bundlesInfo),
+  areAllCustomRecordsMatch: () => false,
+  isCustomRecordMatch: ({ type, instanceId }) => !bundlesInfo.some(({ id, version }) =>
+    isBundleComponent(type, id, version) || isBundleComponent(instanceId, id, version)),
 })
 
-const buildeCustomRecordQuery = (bundleIds: string[]): FileCabinetQuery => ({
-  // TODO: should be false if the customRecordType is in the bundle
-  isCustomRecordTypeMatch = ()
-  areAllCustomRecordsMatch = () => false
-  // TODO: should be false if the type or instance is in the bundle
-  isCustomRecordMatch = () =>
-})
+export const buildNetsuiteBundlesQuery = (
+  bundlesInfo: BundleInfo[] = [],
+): NetsuiteQuery => {
+  const {
+    isTypeMatch,
+    areAllObjectsMatch,
+    isObjectMatch,
+  } = buildTypesQuery(bundlesInfo)
+  const {
+    isFileMatch,
+    isParentFolderMatch,
+    areSomeFilesMatch,
+  } = buildFileCabinetQuery(bundlesInfo)
+
+  const {
+    isCustomRecordTypeMatch,
+    areAllCustomRecordsMatch,
+    isCustomRecordMatch,
+  } = buildCustomRecordQuery(bundlesInfo)
+
+  return {
+    isTypeMatch,
+    areAllObjectsMatch,
+    isObjectMatch: object => isObjectMatch(object)
+    || (object.type === CUSTOM_SEGMENT && isObjectMatch({
+      type: CUSTOM_RECORD_TYPE,
+      instanceId: addCustomRecordTypePrefix(object.instanceId),
+    })),
+    isFileMatch,
+    isParentFolderMatch,
+    areSomeFilesMatch,
+    isCustomRecordTypeMatch,
+    areAllCustomRecordsMatch,
+    isCustomRecordMatch,
+  }
+}

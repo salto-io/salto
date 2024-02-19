@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api/src/values'
-import { isWorkflowV1Instance, Status, Transition } from '../../filters/workflow/types'
+import { isWorkflowInstance } from '../../filters/workflowV2/types'
 
 
 const { awu } = collections.asynciterable
 
-const getPropertiesKeyGroups = (statusesOrTransitions: (Status| Transition)[]):
+const getPropertiesKeyGroups = (statusesOrTransitions: Values[]):
   string[][] => Array.from(statusesOrTransitions).map(param =>
   (param.properties ?? []).map(((property: Values) => property.key)))
 
@@ -30,16 +30,17 @@ const getPropertiesKeyGroups = (statusesOrTransitions: (Status| Transition)[]):
 export const workflowPropertiesValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isWorkflowV1Instance)
+    .filter(isWorkflowInstance)
     .filter(instance => {
-      const items = [...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])]
+      const items = [...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions))]
       const countItemsKeys = getPropertiesKeyGroups(items).map(keyGroup => _.countBy(keyGroup))
       const duplicateItemsKeys = countItemsKeys.map(dictionary => _.values(dictionary))
         .flatMap(countList => countList.filter(count => count > 1))
       return !_.isEmpty(duplicateItemsKeys)
     })
-    .map(async instance => ({
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Can\'t deploy workflow with status or transition that have multiple properties with an identical key.',

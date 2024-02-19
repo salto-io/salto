@@ -110,15 +110,12 @@ export const addBundleFieldToType = (type: ObjectType, bundleType: ObjectType): 
 }
 
 const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
-  awu(Object.values(type.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
+  awu(Object.values(type.fields)).find(async f => {
+    const fType = await f.getType()
+    return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+  })
 
-const getServiceIdFieldName = (type: ObjectType): string => (
-  isStandardType(type) ? SCRIPT_ID : PATH
-)
+const getServiceIdFieldName = (type: ObjectType): string => (isStandardType(type) ? SCRIPT_ID : PATH)
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
@@ -144,8 +141,7 @@ export const createInstanceElement = async (
       }),
     }
     const desiredName = naclCase(
-      transformedValues[serviceIdFieldName]
-        .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), '')
+      transformedValues[serviceIdFieldName].replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''),
     )
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
@@ -258,7 +254,8 @@ export const createElements = async (
 
   topLevelStandardTypes.concat(Object.values(additionalTypes)).forEach(addApplicationIdToType)
 
-  topLevelStandardTypes.concat(Object.values(additionalTypes).filter(isFileCabinetType))
+  topLevelStandardTypes
+    .concat(Object.values(additionalTypes).filter(isFileCabinetType))
     .forEach(type => addBundleFieldToType(type, additionalTypes[BUNDLE]))
 
   const customizationInfosWithTypes = customizationInfos

@@ -19,7 +19,7 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import {
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_STATUS_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME, TAG_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
 } from '../../constants'
@@ -32,6 +32,7 @@ export type ZendeskMissingReferenceStrategyName =
 export const VALUES_TO_SKIP_BY_TYPE: Record<string, string[]> = {
   group: ['current_groups', 'group_id'],
   webhook: ['(Value no longer exists. Choose another.)'],
+  tag: ['current_tags']
 }
 
 const VALUE_BY_TYPE: Record<string, string[]> = {
@@ -48,7 +49,11 @@ export const ZendeskMissingReferenceStrategyLookup: Record<
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value || VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)) {
+      if (!_.isString(typeName)
+        || !value
+        || VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)
+        || typeName === TAG_TYPE_NAME
+      ) {
         return undefined
       }
       return referenceUtils.createMissingInstance(adapter, typeName, value)

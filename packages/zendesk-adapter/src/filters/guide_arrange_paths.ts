@@ -270,7 +270,7 @@ const filterCreator: FilterCreator = () => ({
       guideGrouped[SECTION_TYPE_NAME] ?? [],
       inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME
     )
-    sectionWithCategoryParent
+    sectionWithCategoryParent.filter(instance => instance.value.direct_parent_id?.elemID !== undefined)
       .forEach(instance => {
         const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
         const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
@@ -316,7 +316,7 @@ const filterCreator: FilterCreator = () => ({
 
     // articles
     const articles = guideGrouped[ARTICLE_TYPE_NAME] ?? []
-    articles
+    articles.filter(instance => instance.value.direct_parent_id?.elemID !== undefined)
       .forEach(instance => {
         const parentId = nameByIdParents[instance.value.section_id?.elemID.getFullName()]
         instance.path = pathForOtherLevels({

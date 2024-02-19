@@ -17,7 +17,6 @@ import { InstanceElement, ObjectType, ElemID, toChange, ReferenceExpression } fr
 import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { ticketFieldDeactivationValidator } from '../../src/change_validators'
-import { ZendeskApiConfig } from '../../src/config'
 
 const { createInMemoryElementSource } = elementSourceUtils
 
@@ -46,7 +45,7 @@ describe('ticketFieldDeactivationValidator', () => {
     const changes = [toChange({ before: ticketField, after: ticketField })]
 
     const elementSource = createInMemoryElementSource([ticketField, ticketForm])
-    const errors = await ticketFieldDeactivationValidator({} as ZendeskApiConfig)(changes, elementSource)
+    const errors = await ticketFieldDeactivationValidator(changes, elementSource)
     expect(errors).toEqual([])
   })
 
@@ -58,7 +57,7 @@ describe('ticketFieldDeactivationValidator', () => {
     const changes = [toChange({ before: ticketField1, after: ticketField1 }), toChange({ before: ticketField2 })]
 
     const elementSource = createInMemoryElementSource([ticketField1, ticketField2, ticketForm])
-    const errors = await ticketFieldDeactivationValidator({} as ZendeskApiConfig)(changes, elementSource)
+    const errors = await ticketFieldDeactivationValidator(changes, elementSource)
     expect(errors).toEqual([])
   })
 
@@ -79,7 +78,7 @@ describe('ticketFieldDeactivationValidator', () => {
     ]
 
     const elementSource = createInMemoryElementSource([ticketField1, ticketField2, ticketForm1, ticketForm2])
-    const errors = await ticketFieldDeactivationValidator({} as ZendeskApiConfig)(changes, elementSource)
+    const errors = await ticketFieldDeactivationValidator(changes, elementSource)
     expect(errors).toMatchObject([
       {
         elemID: ticketField1.elemID,
@@ -94,37 +93,6 @@ describe('ticketFieldDeactivationValidator', () => {
         message: 'Deactivation of a conditional ticket field',
         detailedMessage:
           'Cannot remove this ticket field because it is configured as a conditional field in the following ticket forms: ticketForm1, ticketForm2',
-      },
-    ])
-  })
-
-  it('should return a warning when a ticket field is deactivated and inactive ticket forms are omitted', async () => {
-    const ticketField1 = createTicketFieldInstance('ticketField1', 1)
-    const ticketField2 = createTicketFieldInstance('ticketField2', 2)
-    const ticketField1Deactivated = ticketField1.clone()
-    ticketField1Deactivated.value.active = false
-    const changes = [
-      toChange({ before: ticketField1, after: ticketField1Deactivated }),
-      toChange({ before: ticketField2 }),
-    ]
-
-    const elementSource = createInMemoryElementSource([ticketField1, ticketField2])
-    const config = { typeDefaults: { transformation: { omitInactive: true } } } as ZendeskApiConfig
-    const errors = await ticketFieldDeactivationValidator(config)(changes, elementSource)
-    expect(errors).toMatchObject([
-      {
-        elemID: ticketField1.elemID,
-        severity: 'Warning',
-        message: 'Deactivation of a ticket field',
-        detailedMessage:
-          'This may be a conditional ticket field of a deactivated ticket form, if true, the deployment will fail',
-      },
-      {
-        elemID: ticketField2.elemID,
-        severity: 'Warning',
-        message: 'Deactivation of a ticket field',
-        detailedMessage:
-          'This may be a conditional ticket field of a deactivated ticket form, if true, the deployment will fail',
       },
     ])
   })

@@ -18,7 +18,13 @@ import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { triggerCategoryRemovalValidator } from '../../src/change_validators'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskApiConfig } from '../../src/config'
+import {
+  API_DEFINITIONS_CONFIG,
+  DEFAULT_CONFIG,
+  FETCH_CONFIG,
+  ZendeskApiConfig,
+  ZendeskFetchConfig,
+} from '../../src/config'
 
 const { createInMemoryElementSource } = elementSourceUtils
 
@@ -27,6 +33,7 @@ describe('triggerCategoryRemovalValidator', () => {
   let triggerCategoryWithTriggers: InstanceElement
   let activeTriggerInstance: InstanceElement
   let inactiveTriggerInstance: InstanceElement
+  let fetchConfig: ZendeskFetchConfig
   let apiConfig: ZendeskApiConfig
   beforeEach(() => {
     triggerCategoryWithTriggers = new InstanceElement(
@@ -51,13 +58,14 @@ describe('triggerCategoryRemovalValidator', () => {
       { active: false, category_id: triggerCategoryRef },
     )
     apiConfig = DEFAULT_CONFIG[API_DEFINITIONS_CONFIG]
-    apiConfig.typeDefaults.transformation.omitInactive = false
+    fetchConfig = DEFAULT_CONFIG[FETCH_CONFIG]
+    fetchConfig.omitInactive = { default: false, customizations: {} }
   })
 
   it('should error on removal of a trigger category with active trigger', async () => {
     const elementSource = createInMemoryElementSource([activeTriggerInstance])
     const changes = [toChange({ before: triggerCategoryWithTriggers })]
-    const changeErrors = await triggerCategoryRemovalValidator(apiConfig)(changes, elementSource)
+    const changeErrors = await triggerCategoryRemovalValidator(apiConfig, fetchConfig)(changes, elementSource)
     expect(changeErrors).toMatchObject([
       {
         elemID: triggerCategoryWithTriggers.elemID,
@@ -72,7 +80,7 @@ describe('triggerCategoryRemovalValidator', () => {
   it('should warn on removal of a trigger category with inactive trigger', async () => {
     const elementSource = createInMemoryElementSource([inactiveTriggerInstance])
     const changes = [toChange({ before: triggerCategoryWithTriggers })]
-    const changeErrors = await triggerCategoryRemovalValidator(apiConfig)(changes, elementSource)
+    const changeErrors = await triggerCategoryRemovalValidator(apiConfig, fetchConfig)(changes, elementSource)
     expect(changeErrors).toMatchObject([
       {
         elemID: triggerCategoryWithTriggers.elemID,
@@ -85,10 +93,11 @@ describe('triggerCategoryRemovalValidator', () => {
   })
 
   it('should warn on removal of trigger category when omitInactive is true by type defaults', async () => {
-    const omitInactiveConfig = _.merge({}, apiConfig, { typeDefaults: { transformation: { omitInactive: true } } })
+    const omitInactiveConfig = _.cloneDeep(fetchConfig)
+    omitInactiveConfig.omitInactive = { default: true, customizations: {} }
     const elementSource = createInMemoryElementSource([inactiveTriggerInstance])
     const changes = [toChange({ before: triggerCategoryWithTriggers })]
-    const changeErrors = await triggerCategoryRemovalValidator(omitInactiveConfig)(changes, elementSource)
+    const changeErrors = await triggerCategoryRemovalValidator(apiConfig, omitInactiveConfig)(changes, elementSource)
     expect(changeErrors).toMatchObject([
       {
         elemID: triggerCategoryWithTriggers.elemID,
@@ -100,11 +109,14 @@ describe('triggerCategoryRemovalValidator', () => {
   })
 
   it('should warn on removal of trigger category when omitInactive is true in trigger type', async () => {
-    const triggerTypeConfig = { types: { [TRIGGER_TYPE_NAME]: { transformation: { omitInactive: true } } } }
-    const omitInactiveTriggersConfig = _.merge({}, apiConfig, triggerTypeConfig)
+    const omitInactiveTriggersConfig = _.cloneDeep(fetchConfig)
+    omitInactiveTriggersConfig.omitInactive = { default: false, customizations: { trigger_category: true } }
     const elementSource = createInMemoryElementSource([inactiveTriggerInstance])
     const changes = [toChange({ before: triggerCategoryWithTriggers })]
-    const changeErrors = await triggerCategoryRemovalValidator(omitInactiveTriggersConfig)(changes, elementSource)
+    const changeErrors = await triggerCategoryRemovalValidator(apiConfig, omitInactiveTriggersConfig)(
+      changes,
+      elementSource,
+    )
     expect(changeErrors).toMatchObject([
       {
         elemID: triggerCategoryWithTriggers.elemID,
@@ -118,7 +130,7 @@ describe('triggerCategoryRemovalValidator', () => {
   it('should not error on removal of a trigger category with no triggers', async () => {
     const elementSource = createInMemoryElementSource([activeTriggerInstance, inactiveTriggerInstance])
     const changes = [toChange({ before: triggerCategoryWithoutTriggers })]
-    const changeErrors = await triggerCategoryRemovalValidator(apiConfig)(changes, elementSource)
+    const changeErrors = await triggerCategoryRemovalValidator(apiConfig, fetchConfig)(changes, elementSource)
     expect(changeErrors).toMatchObject([])
   })
 })

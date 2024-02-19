@@ -22,6 +22,7 @@ export {
   TypeDuckTypeDefaultsConfig,
   validateApiDefinitionConfig as validateDuckTypeApiDefinitionConfig,
   validateFetchConfig as validateDuckTypeFetchConfig,
+  validateDefaultWithCustomizations,
 } from './ducktype'
 export {
   createRequestConfigs,

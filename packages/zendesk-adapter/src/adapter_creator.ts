@@ -42,6 +42,7 @@ import {
   CLIENT_CONFIG,
   FETCH_CONFIG,
   validateFetchConfig,
+  validateOmitInactiveConfig,
   API_DEFINITIONS_CONFIG,
   DEFAULT_CONFIG,
   ZendeskFetchConfig,
@@ -135,6 +136,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)
+  validateOmitInactiveConfig(adapterConfig.fetch.omitInactive, apiDefinitions)
   if (adapterConfig.deploy !== undefined) {
     validateDefaultMissingUserFallbackConfig(DEPLOY_CONFIG, adapterConfig.deploy, isValidUser)
   }

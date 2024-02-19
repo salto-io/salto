@@ -22,6 +22,7 @@ import {
   TypeConfig,
   TypeDefaultsConfig,
   validateSupportedTypes,
+  validateCustomizationsTypes,
 } from './shared'
 import {
   TransformationConfig,
@@ -30,8 +31,10 @@ import {
   validateTransoformationConfig,
   getTransformationConfigByType,
 } from './transformation'
+
 import { validateRequestConfig } from './request'
 import { UserFetchConfig } from '../definitions/user'
+import { DefaultWithCustomizations } from '../definitions'
 
 const { isDefined } = lowerDashValues
 
@@ -111,4 +114,13 @@ export const validateFetchConfig = (
 ): void => {
   validateSupportedTypes(fetchConfigPath, userFetchConfig, Object.keys(adapterApiConfig.supportedTypes))
   validateSupportedTypes(fetchConfigPath, userFetchConfig, Object.keys(adapterApiConfig.types))
+}
+
+export const validateDefaultWithCustomizations = (
+  customizationName: string,
+  config: DefaultWithCustomizations<boolean>,
+  adapterApiConfig: AdapterApiConfig,
+): void => {
+  validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.supportedTypes))
+  validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.types))
 }

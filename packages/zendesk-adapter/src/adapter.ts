@@ -66,6 +66,7 @@ import {
   isGuideEnabled,
   isGuideThemesEnabled,
   ZendeskConfig,
+  migrateOmitInactiveConfig,
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -720,11 +721,15 @@ export default class ZendeskAdapter implements AdapterOperations {
           })
         : undefined
 
+    // TODO SALTO-5420 remove the omitInactive migration
+    const configWithOmitInactive = this.configInstance
+      ? migrateOmitInactiveConfig(this.configInstance, updatedConfig)
+      : undefined
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     if (this.logIdsFunc !== undefined) {
       this.logIdsFunc()
     }
-    return { elements, errors: fetchErrors, updatedConfig }
+    return { elements, errors: fetchErrors, updatedConfig: configWithOmitInactive }
   }
 
   private getBrandsFromElementsSource(): Promise<InstanceElement[]> {

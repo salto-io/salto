@@ -13,89 +13,168 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
-import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import emptyValidatorFilter from '../../../src/filters/workflow/empty_validator_workflow'
-import { getFilterParams, mockClient } from '../../utils'
+import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 
 describe('empty validator workflow', () => {
   let filter: filterUtils.FilterWith<'preDeploy'>
-  let workflowType: ObjectType
-  let workflowInstance: InstanceElement
   let client: JiraClient
   let changes: Change<InstanceElement>[]
   beforeEach(async () => {
-    workflowType = new ObjectType({
-      elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
-    })
-    workflowInstance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        transitions: {
-          tran1: {
-            name: 'tran1',
-            rules: {
-              validators: [
-                {
-                  type: 'FieldChangedValidator',
-                  configuration: {
-                    key: 'value',
-                  },
-                },
-                {
-                  type: 'add_on_type_with_no_configuration',
-                },
-                {
-                  type: 'FieldHasSingleValueValidator',
-                },
-              ],
-            },
-          },
-        },
-      },
-    )
-
     const { client: cli, paginator } = mockClient()
-    changes = [toChange({ after: workflowInstance })]
     client = cli
     filter = emptyValidatorFilter(getFilterParams({
       client,
       paginator,
     })) as typeof filter
   })
-
-  describe('preDeploy', () => {
-    it('should remove empty validators from workflow transitions but keep add on ones', async () => {
-      await filter.preDeploy(changes)
-      expect(getChangeData(changes[0]).value.transitions.tran1.rules.validators).toEqual([
+  describe('workflowV1', () => {
+    let workflowInstance: InstanceElement
+    beforeEach(() => {
+      workflowInstance = new InstanceElement(
+        'instance',
+        createEmptyType(WORKFLOW_TYPE_NAME),
         {
-          type: 'FieldChangedValidator',
-          configuration: {
-            key: 'value',
+          transitions: {
+            tran1: {
+              name: 'tran1',
+              rules: {
+                validators: [
+                  {
+                    type: 'FieldChangedValidator',
+                    configuration: {
+                      key: 'value',
+                    },
+                  },
+                  {
+                    type: 'add_on_type_with_no_configuration',
+                  },
+                  {
+                    type: 'FieldHasSingleValueValidator',
+                  },
+                ],
+              },
+            },
           },
         },
-        {
-          type: 'add_on_type_with_no_configuration',
-        },
-      ])
+      )
+      changes = [toChange({ after: workflowInstance })]
     })
+    describe('preDeploy', () => {
+      it('should remove empty validators from workflow transitions but keep add on ones', async () => {
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).value.transitions.tran1.rules.validators).toEqual([
+          {
+            type: 'FieldChangedValidator',
+            configuration: {
+              key: 'value',
+            },
+          },
+          {
+            type: 'add_on_type_with_no_configuration',
+          },
+        ])
+      })
 
-    it('should not change valid validators', async () => {
-      workflowInstance.value.transitions.tran1.rules.validators.pop()
-      expect(getChangeData(changes[0]).value.transitions.tran1.rules.validators).toEqual([
+      it('should not change valid validators', async () => {
+        workflowInstance.value.transitions.tran1.rules.validators.pop()
+        expect(getChangeData(changes[0]).value.transitions.tran1.rules.validators).toEqual([
+          {
+            type: 'FieldChangedValidator',
+            configuration: {
+              key: 'value',
+            },
+          },
+          {
+            type: 'add_on_type_with_no_configuration',
+          },
+        ])
+      })
+    })
+  })
+  describe('workflowV2', () => {
+    let workflowV2Instance: InstanceElement
+    beforeEach(() => {
+      workflowV2Instance = new InstanceElement(
+        'workflowV2Instance',
+        createEmptyType(JIRA_WORKFLOW_TYPE),
         {
-          type: 'FieldChangedValidator',
-          configuration: {
-            key: 'value',
+          name: 'workflowV2Instance',
+          version: {
+            versionNumber: 1,
+            id: 'id',
+          },
+          id: 'id',
+          scope: {
+            project: 'project',
+            type: 'type',
+          },
+          statuses: [],
+          transitions: {
+            tran1: {
+              name: 'tran1',
+              id: 'id',
+              validators: [
+                {
+                  parameters: {
+                    ruleType: 'fieldHasSingleValue',
+                    fieldKey: 'fieldKey',
+                  },
+                },
+                {
+                  parameters: {
+                    ruleType: 'addonType',
+                  },
+                },
+                {
+                  parameters: {
+                    ruleType: 'fieldHasSingleValue',
+                  },
+                },
+              ],
+            },
           },
         },
-        {
-          type: 'add_on_type_with_no_configuration',
-        },
-      ])
+      )
+      changes = [toChange({ after: workflowV2Instance })]
+    })
+    describe('preDeploy', () => {
+      it('should remove empty validators from workflow transitions but keep add on ones', async () => {
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).value.transitions.tran1.validators).toEqual([
+          {
+            parameters: {
+              ruleType: 'fieldHasSingleValue',
+              fieldKey: 'fieldKey',
+            },
+          },
+          {
+            parameters: {
+              ruleType: 'addonType',
+            },
+          },
+        ])
+      })
+      it('should not change valid validators', async () => {
+        workflowV2Instance.value.transitions.tran1.validators.pop()
+        expect(getChangeData(changes[0]).value.transitions.tran1.validators).toEqual([
+          {
+            parameters: {
+              ruleType: 'fieldHasSingleValue',
+              fieldKey: 'fieldKey',
+            },
+          },
+          {
+            parameters: {
+              ruleType: 'addonType',
+            },
+          },
+        ])
+      })
     })
   })
 })

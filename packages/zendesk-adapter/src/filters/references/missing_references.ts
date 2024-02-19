@@ -32,7 +32,6 @@ export type ZendeskMissingReferenceStrategyName =
 export const VALUES_TO_SKIP_BY_TYPE: Record<string, string[]> = {
   group: ['current_groups', 'group_id'],
   webhook: ['(Value no longer exists. Choose another.)'],
-  tag: ['current_tags']
 }
 
 const VALUE_BY_TYPE: Record<string, string[]> = {

@@ -85,7 +85,7 @@ const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => 
 
 export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
   const string = dumpValue(expression).toString()
-  return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true })
+  return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true, encoding: 'utf8' })
 }
 
 export const staticFileToTemplateExpression = async (staticFile: StaticFile)

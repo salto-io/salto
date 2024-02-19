@@ -262,7 +262,7 @@ const toMissingInternalIdError = (elemId: ElemID, name: string): ChangeError => 
     detailedMessage:
 `Could not find object "${name}" for field "${path.join(ElemID.NAMESPACE_SEPARATOR)}".
 In order to deploy that field, please edit it in Salto and either replace the "id" value with the actual value in the environment you are deploying to or remove it.
-If you choose to remove it, after a successful deploy you can assign the correct value in the NetSuite UI.`,
+If you choose to remove it, after a successful deploy you can assign the correct value in the NetSuite UI. Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
   }
 }
 
@@ -274,7 +274,7 @@ const toMultipleInternalIdsWarning = (
   elemID,
   severity: 'Warning',
   message: 'Multiple objects with the same name',
-  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}).`,
+  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}). Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
 })
 
 export const getResolvedAccountSpecificValue = (

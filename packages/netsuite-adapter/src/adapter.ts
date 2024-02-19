@@ -131,6 +131,7 @@ import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { BundleInfo, buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { SuiteAppBundleType } from './types/bundle_type'
+import { BUNDLE_ID_TO_COMPONENTS } from './autogen/bundle_components/bundle_components'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -336,6 +337,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const bundleMatchers = bundleIdsToExclude.map(matcher => new RegExp(matcher === 'ALL' ? '.*' : matcher))
     const installedBundlesInfo = installedBundles.map(bundle => ({ id: bundle.id.toString(), version: bundle.version }))
     return installedBundlesInfo
+      .filter(bundle => bundle.id in BUNDLE_ID_TO_COMPONENTS)
       .filter(bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString())))
   }
 

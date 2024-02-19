@@ -195,17 +195,6 @@ export type EmptyObject = {
 }
 
 // containers of special fields
-export const TValuesToIgnore = new Set([
-  'workbook',
-  'dataSet',
-  'formula',
-])
-export const fieldsToOmitFromDefinition = [
-  NAME,
-]
-export const fieldsToOmitFromOriginal = [
-  DEFINITION,
-  TABLES,
-  CHARTS,
-  PIVOTS,
-]
+export const TValuesToIgnore = new Set(['workbook', 'dataSet', 'formula'])
+export const fieldsToOmitFromDefinition = [NAME]
+export const fieldsToOmitFromOriginal = [DEFINITION, TABLES, CHARTS, PIVOTS]

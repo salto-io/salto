@@ -19,7 +19,14 @@ import { parse } from 'fast-xml-parser'
 import { decode } from 'he'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, Values } from '@salto-io/adapter-api'
+import {
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  Values,
+} from '@salto-io/adapter-api'
 import { TransformFunc, resolvePath, transformValuesSync } from '@salto-io/adapter-utils'
 import { DATASET, SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'

@@ -14,70 +14,25 @@
  * limitations under the License.
  */
 
-import {
-  Change,
-  ElemID,
-  getChangeData,
-  InstanceElement,
-  isAdditionOrModificationChange,
-  isInstanceElement,
-  ReadOnlyElementsSource,
-  Value,
-  Values,
-} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { parse } from 'fast-xml-parser'
 import { decode } from 'he'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import { DATASET, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, Values } from '@salto-io/adapter-api'
+import { TransformFunc, resolvePath, transformValuesSync } from '@salto-io/adapter-utils'
+import { DATASET, SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
-import {
-  DATASET_LINK,
-  DATASET_LINKS,
-  DATASETS,
-  INNER_ARRAY_NAMES,
-  INNER_XML_TITLES,
-} from '../type_parsers/analytics_parsers/analytics_constants'
+import { DATASET_LINK, DATASET_LINKS, DATASETS, ROOT } from '../type_parsers/analytics_parsers/analytics_constants'
 import { addAdditionalDependency } from '../client/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const addWorkbookToolsToRecord = (
-  instance: InstanceElement,
-  workbookToolsRecord: Record<string, Values>,
-  name: string,
-): void => {
-  if (Array.isArray(instance.value[name])) {
-    instance.value[name].forEach((tool: unknown) => {
-      if (values.isPlainObject(tool)) {
-        Object.values(tool)
-          .filter(values.isPlainObject)
-          .forEach((obj: Values) => {
-            if (_.isString(obj[SOAP_SCRIPT_ID])) {
-              workbookToolsRecord[obj[SOAP_SCRIPT_ID]] = obj
-            }
-          })
-      }
-    })
-  }
-}
+const isStringArray = (val: unknown): val is string[] => Array.isArray(val) && _.every(val, _.isString)
 
-const createRecordOfPivotsChartsAndDsLinks = async (
-  elementsSource: ReadOnlyElementsSource,
-  elemID: ElemID,
-): Promise<Record<string, Values>> => {
-  const oldWorkbookToolsRecord: Record<string, Values> = {}
-  const oldInstance = await elementsSource.get(elemID)
-  if (isInstanceElement(oldInstance)) {
-    INNER_ARRAY_NAMES.forEach(arrayName => {
-      addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, arrayName)
-    })
-  }
-  return oldWorkbookToolsRecord
-}
+const isXmlContent = (val: unknown): val is string => _.isString(val) && val.startsWith(`<${ROOT}>`)
 
 const isSameXmlValues = (xml1: string, xml2: string): boolean => {
   const values1 = parse(xml1, {
@@ -93,45 +48,33 @@ const isSameXmlValues = (xml1: string, xml2: string): boolean => {
   return _.isEqual(values1, values2)
 }
 
-const getInnerXmlTitle = (workbookTool: Values): string | undefined =>
-  INNER_XML_TITLES.find(title => title in workbookTool)
-
-const compareAndAssignInnerXmls = (newTool: Values, oldTool: Values): void => {
-  const innerXmlTitle = getInnerXmlTitle(newTool)
-  if (innerXmlTitle === undefined) {
-    return
-  }
-  const innerXmlNew = newTool[innerXmlTitle]
-  const innerXmlOld = oldTool[innerXmlTitle]
-  if (!_.isString(innerXmlNew) || !_.isString(innerXmlOld)) {
-    return
-  }
-  if (isSameXmlValues(innerXmlNew, innerXmlOld)) {
-    newTool[innerXmlTitle] = oldTool[innerXmlTitle]
-  }
-}
-
-const adjustWorkbookToolsOrder = (workbookTools: Value[], oldWorkbookToolsRecord: Record<string, Values>): void => {
-  workbookTools
-    .filter(values.isPlainObject)
-    .flatMap(obj => Object.values(obj))
-    .filter(values.isPlainRecord)
-    .forEach((workbookTool: Values) => {
-      if (_.isArray(workbookTool[DATASETS])) {
-        workbookTool[DATASETS].sort()
-      }
-      if (_.isString(workbookTool[SOAP_SCRIPT_ID]) && workbookTool[SOAP_SCRIPT_ID] in oldWorkbookToolsRecord) {
-        const oldWorkbookTool = oldWorkbookToolsRecord[workbookTool[SOAP_SCRIPT_ID]]
-        compareAndAssignInnerXmls(workbookTool, oldWorkbookTool)
-      }
-    })
-}
-
-const discardUnrelevantChanges = (newInstanceValues: Values, oldTools: Record<string, Values>): void => {
-  INNER_ARRAY_NAMES.forEach(arrName => {
-    if (Array.isArray(newInstanceValues[arrName])) {
-      adjustWorkbookToolsOrder(newInstanceValues[arrName], oldTools)
+const discardUnrelevantChanges = (
+  existingInstance: InstanceElement | undefined,
+  newInstance: InstanceElement,
+): void => {
+  const transformFunc: TransformFunc = ({ value, path }) => {
+    if (path === undefined) {
+      return value
     }
+    if (path.name === DATASETS && isStringArray(value)) {
+      return value.sort()
+    }
+    if (!isInstanceElement(existingInstance) || !isXmlContent(value)) {
+      return value
+    }
+    const existingValue = resolvePath(existingInstance, path)
+    if (isXmlContent(existingValue) && isSameXmlValues(value, existingValue)) {
+      return existingValue
+    }
+    return value
+  }
+
+  newInstance.value = transformValuesSync({
+    values: newInstance.value,
+    type: newInstance.getTypeSync(),
+    strict: false,
+    pathID: newInstance.elemID,
+    transformFunc,
   })
 }
 
@@ -156,18 +99,16 @@ const getDatasetLinkList = (workbook: InstanceElement): Values[] =>
         .filter(values.isPlainObject)
     : []
 
-const isStringArray = (val: unknown): val is string[] => Array.isArray(val) && _.every(val, _.isString)
-
 const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
   name: 'fixOrderProblemsInWorkbooks',
   onFetch: async elements => {
-    const workbooks = elements.filter(elem => elem.elemID.typeName === WORKBOOK).filter(isInstanceElement)
-    await awu(workbooks).forEach(async instance => {
-      const oldTools = await createRecordOfPivotsChartsAndDsLinks(elementsSource, instance.elemID)
-      discardUnrelevantChanges(instance.value, oldTools)
-    })
+    await awu(elements)
+      .filter(elem => elem.elemID.typeName === WORKBOOK)
+      .filter(isInstanceElement)
+      .forEach(async instance => {
+        discardUnrelevantChanges(await elementsSource.get(instance.elemID), instance)
+      })
   },
-
   preDeploy: async (changes: Change[]) => {
     const changedDatasets = changes
       .filter(isAdditionOrModificationChange)

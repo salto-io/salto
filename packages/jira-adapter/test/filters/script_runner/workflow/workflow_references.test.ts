@@ -131,6 +131,19 @@ jest.mock('@salto-io/adapter-utils', () => ({
   }),
 }))
 
+jest.mock('@salto-io/adapter-components', () => ({
+  ...jest.requireActual<{}>('@salto-io/adapter-components'),
+  resolveValues: jest.fn().mockImplementation((...args) => {
+    if (args[0].elemID.typeName === WORKFLOW_TYPE_NAME) {
+      return resolvedInstance
+    }
+    if (args[0].elemID.typeName === JIRA_WORKFLOW_TYPE) {
+      return resolvedWorkflowV2Instance
+    }
+    return undefined
+  }),
+}))
+
 describe('Scriptrunner references', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

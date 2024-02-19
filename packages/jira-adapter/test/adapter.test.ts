@@ -446,7 +446,7 @@ describe('adapter', () => {
           .onGet('/rest/api/3/configuration').replyOnce(200)
           .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
           .onGet('/rest/api/3/instance/license')
-          .replyOnce(200, { applications: [{ plan: 'FREE' }] })
+          .reply(200, { applications: [{ id: 'jira-servicedesk', plan: 'FREE' }] })
           .onGet('/rest/servicedeskapi/servicedesk')
           .replyOnce(200,
             {

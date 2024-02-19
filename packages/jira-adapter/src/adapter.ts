@@ -124,7 +124,7 @@ import requestTypeLayoutsFilter from './filters/layouts/request_type_request_for
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
-import accountInfoFilter from './filters/account_info'
+import accountInfoFilter, { isJsmEnabledInService } from './filters/account_info'
 import requestTypeFilter from './filters/request_type'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow/workflow_filter'
@@ -577,6 +577,20 @@ export default class JiraAdapter implements AdapterOperations {
       || jsmApiDefinitions === undefined
       || !this.userConfig.fetch.enableJSM) {
       return { elements: [] }
+    }
+
+    const isJsmEnabled = await isJsmEnabledInService(this.client)
+    if (!isJsmEnabled) {
+      log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
+      return {
+        elements: [],
+        errors: [
+          {
+            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            severity: 'Warning',
+          },
+        ],
+      }
     }
     const paginator = createPaginator({
       client: this.client,

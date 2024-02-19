@@ -88,6 +88,13 @@ const getCloudLicense = async (client: JiraClient): Promise<Value> => {
   log.info(`jira license (type cloud) is: ${safeJsonStringify(response.data)}`)
   return { applications: response.data.applications }
 }
+
+export const isJsmEnabledInService = async (client: JiraClient): Promise<boolean> => {
+  // Currently, JSM is supported only in cloud. TODO: add support for DC when it will be available
+  const accountLicense = await getCloudLicense(client)
+  return accountLicense.applications?.some((app: Value) => app.id === 'jira-servicedesk')
+}
+
 const getDCLicense = async (client: JiraClient): Promise<Value> => {
   const response = await client.get({
     url: '/rest/plugins/applications/1.0/installed/jira-software/license',

@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   BuiltinTypes,
   ElemID,
@@ -24,11 +24,9 @@ import {
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
-import {
-  REFERENCE_INDEXES_VERSION,
-  ReferenceTargetIndexValue,
-  updateReferenceIndexes,
-} from '../../src/workspace/reference_indexes'
+import { parserUtils } from '@salto-io/parser'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { REFERENCE_INDEXES_VERSION, ReferenceTargetIndexValue, updateReferenceIndexes } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
@@ -80,19 +78,27 @@ describe('updateReferenceIndexes', () => {
       },
     })
 
+    const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID('test', 'article') }), {})
+    const macro1 = new InstanceElement('macro1', new ObjectType({ elemID: new ElemID('test', 'macro') }), {})
+
     instance = new InstanceElement(
       'instance',
       object,
       {
         someValue: new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance')),
-        templateValue: new TemplateExpression({
-          parts: [
-            'Template is:',
-            new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someTemplateField', 'value')),
-            'here',
-            new ReferenceExpression(new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value')),
-          ],
-        }),
+        templateValue: new TemplateExpression({ parts: ['Template is:',
+          new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someTemplateField', 'value')), 'here',
+          new ReferenceExpression(new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'))] }),
+        templateStaticFile: parserUtils.templateExpressionToStaticFile(
+          createTemplateExpression({ parts: [
+            '"/hc/test/test/articles/',
+            new ReferenceExpression(article.elemID, article),
+            '\n/test "hc/test/test/articles/',
+            new ReferenceExpression(macro1.elemID, macro1),
+            '/test',
+          ] }),
+          'test'
+        ),
       },
       undefined,
       { someAnnotation: new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someField', 'value')) },
@@ -125,6 +131,11 @@ describe('updateReferenceIndexes', () => {
                 { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
                 { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
               ],
+            ],
+            ['templateStaticFile', [
+              { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+              { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+            ],
             ],
           ]),
         },
@@ -185,6 +196,18 @@ describe('updateReferenceIndexes', () => {
           value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
         },
         {
+          key: 'test.article.instance.article',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile'),
+          ],
+        },
+        {
+          key: 'test.macro.instance.macro1',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile'),
+          ],
+        },
+        {
           key: 'test.target1',
           value: [
             new ElemID('test', 'object', 'attr', 'typeRef'),
@@ -214,6 +237,7 @@ describe('updateReferenceIndexes', () => {
       const instanceAfter = instance.clone()
       delete instanceAfter.annotations.someAnnotation
       delete instanceAfter.value.templateValue
+      delete instanceAfter.value.templateStaticFile
 
       instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(
         new ElemID('test', 'target2', 'instance', 'someInstance', 'value'),
@@ -236,8 +260,7 @@ describe('updateReferenceIndexes', () => {
             return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')]
           }
           return undefined
-        }),
-      )
+        }),)
 
       await updateReferenceIndexes(
         changes,
@@ -281,6 +304,8 @@ describe('updateReferenceIndexes', () => {
         'test.target2.field.someField',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
+        'test.article.instance.article',
+        'test.macro.instance.macro1',
         'test.target2',
       ])
     })
@@ -302,8 +327,7 @@ describe('updateReferenceIndexes', () => {
           }
 
           return undefined
-        }),
-      )
+        }),)
 
       await updateReferenceIndexes(
         changes,
@@ -358,8 +382,7 @@ describe('updateReferenceIndexes', () => {
             return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')]
           }
           return undefined
-        }),
-      )
+        }),)
 
       await updateReferenceIndexes(
         changes,
@@ -389,6 +412,8 @@ describe('updateReferenceIndexes', () => {
         'test.target2.instance.someInstance',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
+        'test.article.instance.article',
+        'test.macro.instance.macro1',
         'test.target1',
         'test.target2',
         'test.object',
@@ -411,25 +436,23 @@ describe('updateReferenceIndexes', () => {
       })
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
-        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
-          {
-            key: 'test.object.instance.instance',
-            value: new collections.treeMap.TreeMap([
-              [
-                'someAnnotation',
-                [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
-              ],
-              ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-              [
-                'templateValue',
-                [
-                  { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
-                  { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-                ],
-              ],
-            ]),
-          },
-        ])
+        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
+          key: 'test.object.instance.instance',
+          value: new collections.treeMap.TreeMap([
+            ['someAnnotation', [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }]],
+            ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+            ['templateValue', [
+              { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
+              { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+            ],
+            ],
+            ['templateStaticFile', [
+              { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+              { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+            ],
+            ],
+          ]),
+        }])
       })
 
       it('should update referenceSources index using the element source', () => {
@@ -449,7 +472,21 @@ describe('updateReferenceIndexes', () => {
           },
           {
             key: 'test.target2.field.anotherTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+            value: [
+              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+            ],
+          },
+          {
+            key: 'test.article.instance.article',
+            value: [
+              new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile'),
+            ],
+          },
+          {
+            key: 'test.macro.instance.macro1',
+            value: [
+              new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile'),
+            ],
           },
           {
             key: 'test.target2',
@@ -478,54 +515,67 @@ describe('updateReferenceIndexes', () => {
       })
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
-        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
-          {
-            key: 'test.object.instance.instance',
-            value: new collections.treeMap.TreeMap([
-              [
-                'someAnnotation',
-                [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
-              ],
-              ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-              [
-                'templateValue',
-                [
-                  { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
-                  { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-                ],
-              ],
-            ]),
-          },
-        ])
+        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
+          key: 'test.object.instance.instance',
+          value: new collections.treeMap.TreeMap([
+            ['someAnnotation', [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }]],
+            ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+            ['templateValue', [
+              { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
+              { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+            ],
+            ],
+            ['templateStaticFile', [
+              { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+              { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+            ],
+            ],
+          ]),
+        }])
       })
 
       it('should update referenceSources index using the element source', () => {
         expect(referenceSourcesIndex.clear).toHaveBeenCalled()
-        expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
-          {
-            key: 'test.target2.field.someField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
-          },
-          {
-            key: 'test.target2.instance.someInstance',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
-          },
-          {
-            key: 'test.target2.field.someTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
-          },
-          {
-            key: 'test.target2.field.anotherTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
-          },
-          {
-            key: 'test.target2',
-            value: [
-              new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-            ],
-          },
-        ])
+        expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([{
+          key: 'test.target2.field.someField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+          ],
+        }, {
+          key: 'test.target2.instance.someInstance',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
+          ],
+        }, {
+          key: 'test.target2.field.someTemplateField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        }, {
+          key: 'test.target2.field.anotherTemplateField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        },
+        {
+          key: 'test.article.instance.article',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile'),
+          ],
+        },
+        {
+          key: 'test.macro.instance.macro1',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile'),
+          ],
+        },
+        {
+          key: 'test.target2',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        }])
       })
     })
   })
@@ -546,20 +596,20 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async elements =>
-          elements.length !== 0
+          (elements.length !== 0
             ? [
-                {
-                  source: inst.elemID.createNestedID('val2'),
-                  target: new ElemID('test', 'type', 'instance', 'someInstance2'),
-                  type: 'weak',
-                },
-                {
-                  source: inst.elemID.createNestedID('val3'),
-                  target: new ElemID('test', 'type', 'instance', 'someInstance3'),
-                  type: 'weak',
-                },
-              ]
-            : [],
+              {
+                source: inst.elemID.createNestedID('val2'),
+                target: new ElemID('test', 'type', 'instance', 'someInstance2'),
+                type: 'weak',
+              },
+              {
+                source: inst.elemID.createNestedID('val3'),
+                target: new ElemID('test', 'type', 'instance', 'someInstance3'),
+                type: 'weak',
+              },
+            ]
+            : []),
       )
     })
     it('should override the default references with the custom references', () => {
@@ -620,15 +670,15 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async elements =>
-          (elements[0] as InstanceElement).value.val1 !== undefined
+          ((elements[0] as InstanceElement).value.val1 !== undefined
             ? [
-                {
-                  source: instBefore.elemID.createNestedID('val1'),
-                  target: new ElemID('test', 'type', 'instance', 'someInstance1'),
-                  type: 'weak',
-                },
-              ]
-            : [],
+              {
+                source: instBefore.elemID.createNestedID('val1'),
+                target: new ElemID('test', 'type', 'instance', 'someInstance1'),
+                type: 'weak',
+              },
+            ]
+            : []),
       )
     })
     it('should remove the removed custom references', () => {

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -43,10 +43,7 @@ import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
-export const buildContainerTypeId = (
-  prefix: ContainerTypeName,
-  innerTypeId: ElemID,
-): ElemID => {
+export const buildContainerTypeId = (prefix: ContainerTypeName, innerTypeId: ElemID): ElemID => {
   const typeElemIdCreator: Record<ContainerTypeName, (innerType: TypeReference) => ElemID> = {
     List: ListType.createElemID,
     Map: MapType.createElemID,
@@ -123,23 +120,18 @@ const updateTemplateExpression = (value: TemplateExpression, accountName: string
   })
 }
 
-const updateStaticFile = (
-  value: StaticFile,
-  newAccountName: string,
-  oldAccountName: string,
-): void => {
+const updateStaticFile = (value: StaticFile, newAccountName: string, oldAccountName: string): void => {
   // Note: the replace function only replace the first occurrence (which will be the folder name)
   _.set(value, 'filepath', value.filepath.replace(`${oldAccountName}/`, `${newAccountName}/`))
 }
 
 const updateElement = (value: Element, accountName: string): void => {
   _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
-  value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
-    annotation => {
-      const annotationType = _.clone(annotation)
-      updateRefTypeWithId(annotationType, accountName)
-      return annotationType
-    })
+  value.annotationRefTypes = _.mapValues(value.annotationRefTypes, annotation => {
+    const annotationType = _.clone(annotation)
+    updateRefTypeWithId(annotationType, accountName)
+    return annotationType
+  })
   if (isField(value)) {
     const fieldType = _.clone(value.refType)
     updateRefTypeWithId(fieldType, accountName)
@@ -147,28 +139,32 @@ const updateElement = (value: Element, accountName: string): void => {
   }
 }
 
-const transformElemIDAdapter = (accountName: string, oldAccount: string): TransformFunc => async (
-  { value }
-) => {
-  if (isReferenceExpression(value)) {
-    updateReferenceExpression(value, accountName)
+const transformElemIDAdapter =
+  (accountName: string, oldAccount: string): TransformFunc =>
+  async ({ value }) => {
+    if (isReferenceExpression(value)) {
+      updateReferenceExpression(value, accountName)
+    }
+    if (isStaticFile(value)) {
+      updateStaticFile(value, accountName, oldAccount)
+    }
+    if (isTemplateExpression(value)) {
+      updateTemplateExpression(value, accountName)
+    }
+    if (isElement(value) && value.elemID.adapter !== accountName) {
+      updateElement(value, accountName)
+    }
+    return value
   }
-  if (isStaticFile(value)) {
-    updateStaticFile(value, accountName, oldAccount)
-  }
-  if (isTemplateExpression(value)) {
-    updateTemplateExpression(value, accountName)
-  }
-  if (isElement(value) && value.elemID.adapter !== accountName) {
-    updateElement(value, accountName)
-  }
-  return value
-}
 
-export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Element[],
-  newAccount: string, oldAccount: string, source?: ReadOnlyElementsSource): Promise<void> =>
+export const updateElementsWithAlternativeAccount = async (
+  elementsToUpdate: Element[],
+  newAccount: string,
+  oldAccount: string,
+  source?: ReadOnlyElementsSource,
+): Promise<void> =>
   awu(elementsToUpdate).forEach(async element => {
-    if (element.path !== undefined && (element.path[0] === oldAccount)) {
+    if (element.path !== undefined && element.path[0] === oldAccount) {
       element.path = [newAccount, ...element.path.slice(1)]
     }
     if (element.elemID.adapter === oldAccount) {
@@ -183,8 +179,6 @@ export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Ele
       if (isInstanceElement(element)) {
         updateRefTypeWithId(element.refType, newAccount)
       }
-      Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(
-        annotation, newAccount
-      ))
+      Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(annotation, newAccount))
     }
   })

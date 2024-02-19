@@ -1,24 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS } from '../src/builtins'
 import {
-  Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
-  PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
-  isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue, PlaceholderObjectType,
+  Field,
+  InstanceElement,
+  ObjectType,
+  PrimitiveType,
+  isObjectType,
+  isInstanceElement,
+  PrimitiveTypes,
+  ListType,
+  isPrimitiveType,
+  isType,
+  isListType,
+  isEqualElements,
+  Variable,
+  isVariable,
+  isMapType,
+  MapType,
+  isContainerType,
+  createRefToElmWithValue,
+  PlaceholderObjectType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -142,22 +158,17 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify equal list types', async () => {
-      expect(isEqualElements(
-        await lstField.getType(),
-        _.cloneDeep(await lstField.getType())
-      )).toBeTruthy()
+      expect(isEqualElements(await lstField.getType(), _.cloneDeep(await lstField.getType()))).toBeTruthy()
     })
 
     it('should identify not equal for diff list types', () => {
-      expect(isEqualElements(new ListType(BuiltinTypes.STRING), new ListType(BuiltinTypes.BOOLEAN)))
-        .toBeFalsy()
+      expect(isEqualElements(new ListType(BuiltinTypes.STRING), new ListType(BuiltinTypes.BOOLEAN))).toBeFalsy()
     })
 
     it('should identify not equal for diff list types when inner is list', () => {
-      expect(isEqualElements(
-        new ListType(BuiltinTypes.STRING),
-        new ListType(new ListType(BuiltinTypes.STRING))
-      )).toBeFalsy()
+      expect(
+        isEqualElements(new ListType(BuiltinTypes.STRING), new ListType(new ListType(BuiltinTypes.STRING))),
+      ).toBeFalsy()
     })
 
     it('should identify equal map fields', () => {
@@ -165,29 +176,21 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify equal map types', async () => {
-      expect(isEqualElements(
-        await mapField.getType(),
-        _.cloneDeep(await mapField.getType())
-      )).toBeTruthy()
+      expect(isEqualElements(await mapField.getType(), _.cloneDeep(await mapField.getType()))).toBeTruthy()
     })
 
     it('should identify not equal for diff map types', () => {
-      expect(isEqualElements(new MapType(BuiltinTypes.STRING), new MapType(BuiltinTypes.BOOLEAN)))
-        .toBeFalsy()
+      expect(isEqualElements(new MapType(BuiltinTypes.STRING), new MapType(BuiltinTypes.BOOLEAN))).toBeFalsy()
     })
 
     it('should identify not equal for diff map types when inner is map', () => {
-      expect(isEqualElements(
-        new MapType(BuiltinTypes.STRING),
-        new MapType(new MapType(BuiltinTypes.STRING))
-      )).toBeFalsy()
+      expect(
+        isEqualElements(new MapType(BuiltinTypes.STRING), new MapType(new MapType(BuiltinTypes.STRING))),
+      ).toBeFalsy()
     })
 
     it('should identify not equal for map and list', () => {
-      expect(isEqualElements(
-        new MapType(BuiltinTypes.STRING),
-        new ListType(BuiltinTypes.STRING)
-      )).toBeFalsy()
+      expect(isEqualElements(new MapType(BuiltinTypes.STRING), new ListType(BuiltinTypes.STRING))).toBeFalsy()
     })
 
     it('should identify equal instance elements', () => {
@@ -204,11 +207,7 @@ describe('Test elements.ts', () => {
     })
 
     it('should identify different instances with id change', () => {
-      const instClone = new InstanceElement(
-        'different_name',
-        inst.refType,
-        inst.value
-      )
+      const instClone = new InstanceElement('different_name', inst.refType, inst.value)
       expect(isEqualElements(inst, instClone)).toBeFalsy()
     })
     it('should identify different instances with value change', () => {
@@ -327,9 +326,7 @@ describe('Test elements.ts', () => {
         expect(configTypeId.getFullName()).toEqual(configTypeId.adapter)
       })
       it('should contain full type and the word instance for config instance', () => {
-        expect(configInstId.getFullName()).toEqual(
-          `${configTypeId.adapter}.${configTypeId.typeName}.instance`,
-        )
+        expect(configInstId.getFullName()).toEqual(`${configTypeId.adapter}.${configTypeId.typeName}.instance`)
       })
       it('should contain namespace and variable name for variable ID', () => {
         expect(variableId.getFullName()).toEqual('var.varName')
@@ -338,10 +335,7 @@ describe('Test elements.ts', () => {
 
     describe('getFieldsElemIDsFullName', () => {
       it('should get full name of fields in objectType', () => {
-        expect(ot.getFieldsElemIDsFullName()).toEqual([
-          'test.obj.field.num_field',
-          'test.obj.field.str_field',
-        ])
+        expect(ot.getFieldsElemIDsFullName()).toEqual(['test.obj.field.num_field', 'test.obj.field.str_field'])
       })
     })
 
@@ -371,9 +365,21 @@ describe('Test elements.ts', () => {
 
     describe('fromFullName', () => {
       it('should create elem ID from its full name', () => {
-        [typeId, fieldId, annotationTypesId, annotationTypeId, typeInstId, valueId, configTypeId,
-          configInstId, variableId, listId, mapId, nestedListId, BuiltinTypes.STRING.elemID]
-          .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
+        ;[
+          typeId,
+          fieldId,
+          annotationTypesId,
+          annotationTypeId,
+          typeInstId,
+          valueId,
+          configTypeId,
+          configInstId,
+          variableId,
+          listId,
+          mapId,
+          nestedListId,
+          BuiltinTypes.STRING.elemID,
+        ].forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
       it('should fail on invalid id type', () => {
         expect(() => ElemID.fromFullName('adapter.type.bla.foo')).toThrow()
@@ -399,8 +405,7 @@ describe('Test elements.ts', () => {
 
       it('Should return the deepInnerType elemID for list of map elemID', () => {
         const listOfMapType = new ListType(new MapType(newObjectType))
-        expect(ElemID.getTypeOrContainerTypeID(listOfMapType.elemID).isEqual(elemID))
-          .toBeTruthy()
+        expect(ElemID.getTypeOrContainerTypeID(listOfMapType.elemID).isEqual(elemID)).toBeTruthy()
       })
 
       it('Should throw an error if <> structure is illegal in the elemID', () => {
@@ -422,9 +427,7 @@ describe('Test elements.ts', () => {
             const containerInfo = listOfMapType.elemID.getContainerPrefixAndInnerType()
             expect(containerInfo).toBeDefined()
             expect(containerInfo?.prefix).toEqual('List')
-            expect(containerInfo?.innerTypeName).toEqual(
-              listOfMapType.refInnerType.elemID.getFullName()
-            )
+            expect(containerInfo?.innerTypeName).toEqual(listOfMapType.refInnerType.elemID.getFullName())
           })
         })
         describe('with map type', () => {
@@ -432,9 +435,7 @@ describe('Test elements.ts', () => {
             const containerInfo = mapOfString.elemID.getContainerPrefixAndInnerType()
             expect(containerInfo).toBeDefined()
             expect(containerInfo?.prefix).toEqual('Map')
-            expect(containerInfo?.innerTypeName).toEqual(
-              mapOfString.refInnerType.elemID.getFullName()
-            )
+            expect(containerInfo?.innerTypeName).toEqual(mapOfString.refInnerType.elemID.getFullName())
           })
         })
       })
@@ -648,8 +649,8 @@ describe('Test elements.ts', () => {
       })
       describe('from nested ID', () => {
         it('should return one nesting level less deep', () => {
-          [fieldId, typeInstId, configInstId].forEach(
-            parent => expect(parent.createNestedID('test').createParentID()).toEqual(parent)
+          ;[fieldId, typeInstId, configInstId].forEach(parent =>
+            expect(parent.createNestedID('test').createParentID()).toEqual(parent),
           )
         })
       })
@@ -659,8 +660,8 @@ describe('Test elements.ts', () => {
           expect(() => fieldId.createParentID(-1)).toThrow()
         })
         it('should go up the correct number of levels', () => {
-          [fieldId, typeInstId, configInstId].forEach(
-            parent => expect(parent.createNestedID('test', 'foo').createParentID(2)).toEqual(parent)
+          ;[fieldId, typeInstId, configInstId].forEach(parent =>
+            expect(parent.createNestedID('test', 'foo').createParentID(2)).toEqual(parent),
           )
           expect(fieldId.createNestedID('asd').createParentID(2)).toEqual(typeId)
           expect(typeAttrId.createNestedID('asd').createParentID(2)).toEqual(typeId)
@@ -672,7 +673,7 @@ describe('Test elements.ts', () => {
     describe('createTopLevelParentID', () => {
       describe('from top level element', () => {
         it('should return the same ID and empty path', () => {
-          [typeId, typeInstId, configTypeId, configInstId, variableId].forEach(id => {
+          ;[typeId, typeInstId, configTypeId, configInstId, variableId].forEach(id => {
             const { parent, path } = id.createTopLevelParentID()
             expect(parent).toEqual(id)
             expect(path).toHaveLength(0)
@@ -683,7 +684,7 @@ describe('Test elements.ts', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
         beforeAll(() => {
-          ({ parent, path } = fieldId.createTopLevelParentID())
+          ;({ parent, path } = fieldId.createTopLevelParentID())
         })
 
         it('should return the type', () => {
@@ -697,7 +698,7 @@ describe('Test elements.ts', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
         beforeAll(() => {
-          ({ parent, path } = annotationTypesId.createTopLevelParentID())
+          ;({ parent, path } = annotationTypesId.createTopLevelParentID())
         })
 
         it('should return the type', () => {
@@ -711,7 +712,7 @@ describe('Test elements.ts', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
         beforeAll(() => {
-          ({ parent, path } = annotationTypeId.createTopLevelParentID())
+          ;({ parent, path } = annotationTypeId.createTopLevelParentID())
         })
 
         it('should return the type', () => {
@@ -725,7 +726,7 @@ describe('Test elements.ts', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
         beforeAll(() => {
-          ({ parent, path } = valueId.createTopLevelParentID())
+          ;({ parent, path } = valueId.createTopLevelParentID())
         })
 
         it('should return the instance', () => {
@@ -742,7 +743,7 @@ describe('Test elements.ts', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
           beforeAll(() => {
-            ({ parent, path } = fieldId.createBaseID())
+            ;({ parent, path } = fieldId.createBaseID())
           })
 
           it('should return the field', () => {
@@ -756,7 +757,7 @@ describe('Test elements.ts', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
           beforeAll(() => {
-            ({ parent, path } = fieldIdWithPath.createBaseID())
+            ;({ parent, path } = fieldIdWithPath.createBaseID())
           })
 
           it('should return the field', () => {
@@ -772,13 +773,11 @@ describe('Test elements.ts', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
           beforeAll(() => {
-            ({ parent, path } = annotationTypesId.createBaseID())
+            ;({ parent, path } = annotationTypesId.createBaseID())
           })
 
           it('should return the type', () => {
-            expect(parent).toEqual(
-              new ElemID(annotationTypesId.adapter, annotationTypesId.typeName)
-            )
+            expect(parent).toEqual(new ElemID(annotationTypesId.adapter, annotationTypesId.typeName))
           })
           it('should return empty path', () => {
             expect(path).toEqual([])
@@ -789,7 +788,7 @@ describe('Test elements.ts', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
         beforeAll(() => {
-          ({ parent, path } = annotationTypeId.createBaseID())
+          ;({ parent, path } = annotationTypeId.createBaseID())
         })
 
         it('should return the type', () => {
@@ -804,7 +803,7 @@ describe('Test elements.ts', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
           beforeAll(() => {
-            ({ parent, path } = typeInstId.createBaseID())
+            ;({ parent, path } = typeInstId.createBaseID())
           })
 
           it('should return the instance', () => {
@@ -818,7 +817,7 @@ describe('Test elements.ts', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
           beforeAll(() => {
-            ({ parent, path } = valueId.createBaseID())
+            ;({ parent, path } = valueId.createBaseID())
           })
 
           it('should return the instance', () => {
@@ -838,21 +837,9 @@ describe('Test elements.ts', () => {
         expect(nonAnno.isAttrID()).toBeFalsy()
       })
       it('should identify instance annotation IDs', () => {
-        const instAnno = new ElemID(
-          'salto',
-          'obj',
-          'instance',
-          'inst',
-          CORE_ANNOTATIONS.GENERATED_DEPENDENCIES
-        )
+        const instAnno = new ElemID('salto', 'obj', 'instance', 'inst', CORE_ANNOTATIONS.GENERATED_DEPENDENCIES)
 
-        const nonAnno = new ElemID(
-          'salto',
-          'obj',
-          'instance',
-          'inst',
-          'whatevsman'
-        )
+        const nonAnno = new ElemID('salto', 'obj', 'instance', 'inst', 'whatevsman')
 
         expect(instAnno.isAttrID()).toBeTruthy()
         expect(nonAnno.isAttrID()).toBeFalsy()
@@ -869,39 +856,51 @@ describe('Test elements.ts', () => {
 
     describe('replaceParentId', () => {
       it('should replace the id of the parent with the new id', () => {
-        expect(new ElemID('salto', 'obj', 'instance', 'inst1', 'a')
-          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2')).getFullName())
-          .toBe('salto.obj.instance.inst2.a')
+        expect(
+          new ElemID('salto', 'obj', 'instance', 'inst1', 'a')
+            .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2'))
+            .getFullName(),
+        ).toBe('salto.obj.instance.inst2.a')
       })
 
       it('should return the new id if the two arrays are of the same size', () => {
-        expect(new ElemID('salto', 'obj', 'instance', 'inst1')
-          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2')).getFullName())
-          .toBe('salto.obj.instance.inst2')
+        expect(
+          new ElemID('salto', 'obj', 'instance', 'inst1')
+            .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2'))
+            .getFullName(),
+        ).toBe('salto.obj.instance.inst2')
       })
 
       it('should return the new id the new id is longer than the current one', () => {
-        expect(new ElemID('salto', 'obj', 'instance', 'inst1')
-          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2', 'a')).getFullName())
-          .toBe('salto.obj.instance.inst2.a')
+        expect(
+          new ElemID('salto', 'obj', 'instance', 'inst1')
+            .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2', 'a'))
+            .getFullName(),
+        ).toBe('salto.obj.instance.inst2.a')
       })
 
       it('should work with config elements', () => {
-        expect(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME, 'a')
-          .replaceParentId(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME)).getFullName())
-          .toBe('salto.obj.instance._config.a')
+        expect(
+          new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME, 'a')
+            .replaceParentId(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME))
+            .getFullName(),
+        ).toBe('salto.obj.instance._config.a')
       })
 
       it('should work with config element in the current id', () => {
-        expect(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME, 'a')
-          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2')).getFullName())
-          .toBe('salto.obj.instance.inst2.a')
+        expect(
+          new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME, 'a')
+            .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2'))
+            .getFullName(),
+        ).toBe('salto.obj.instance.inst2.a')
       })
 
       it('should work with config element in the new id', () => {
-        expect(new ElemID('salto', 'obj', 'instance', 'inst1', 'a')
-          .replaceParentId(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME)).getFullName())
-          .toBe('salto.obj.instance._config.a')
+        expect(
+          new ElemID('salto', 'obj', 'instance', 'inst1', 'a')
+            .replaceParentId(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME))
+            .getFullName(),
+        ).toBe('salto.obj.instance._config.a')
       })
     })
   })
@@ -920,7 +919,9 @@ describe('Test elements.ts', () => {
       })
       // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
-        expect(() => { lstType.setRefInnerType(ot) }).toThrow()
+        expect(() => {
+          lstType.setRefInnerType(ot)
+        }).toThrow()
       })
     })
   })
@@ -939,7 +940,9 @@ describe('Test elements.ts', () => {
       })
       // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
-        expect(() => { mapType.setRefInnerType(ot) }).toThrow()
+        expect(() => {
+          mapType.setRefInnerType(ot)
+        }).toThrow()
       })
     })
   })

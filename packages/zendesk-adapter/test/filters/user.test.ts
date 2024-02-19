@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData, SaltoError } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  toChange,
+  getChangeData,
+  SaltoError,
+} from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import { ZENDESK } from '../../src/constants'
@@ -35,48 +43,36 @@ describe('user filter', () => {
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
   const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
 
-  const userSegmentInstance = new InstanceElement(
-    'test',
-    userSegmentType,
-    {
-      title: 'test',
-      added_user_ids: 1,
-    }
-  )
+  const userSegmentInstance = new InstanceElement('test', userSegmentType, {
+    title: 'test',
+    added_user_ids: 1,
+  })
 
-  const articleInstance = new InstanceElement(
-    'test',
-    articleType,
-    {
-      title: 'test',
-      author_id: 1,
-    }
-  )
-  const macroInstance = new InstanceElement(
-    'test',
-    macroType,
-    {
-      title: 'test',
-      actions: [
-        {
-          field: 'status',
-          value: 'closed',
-        },
-        {
-          field: 'assignee_id',
-          value: '2',
-        },
-        {
-          field: 'follower',
-          value: '1',
-        },
-      ],
-      restriction: {
-        type: 'User',
-        id: 3,
+  const articleInstance = new InstanceElement('test', articleType, {
+    title: 'test',
+    author_id: 1,
+  })
+  const macroInstance = new InstanceElement('test', macroType, {
+    title: 'test',
+    actions: [
+      {
+        field: 'status',
+        value: 'closed',
       },
+      {
+        field: 'assignee_id',
+        value: '2',
+      },
+      {
+        field: 'follower',
+        value: '1',
+      },
+    ],
+    restriction: {
+      type: 'User',
+      id: 3,
     },
-  )
+  })
   let mockPaginator: clientUtils.Paginator
 
   beforeEach(async () => {
@@ -90,30 +86,30 @@ describe('user filter', () => {
       getUsersMock.mockResolvedValue({ users: [] })
     })
 
-    const filter = filterCreator(
-      createFilterCreatorParams({ paginator: mockPaginator })
-    ) as FilterType
+    const filter = filterCreator(createFilterCreatorParams({ paginator: mockPaginator })) as FilterType
     it('should change the user ids to emails', async () => {
-      getIdByEmailMock
-        .mockResolvedValueOnce({
-          1: 'a@a.com',
-          2: 'b@b.com',
-          3: 'c@c.com',
-        },)
+      getIdByEmailMock.mockResolvedValueOnce({
+        1: 'a@a.com',
+        2: 'b@b.com',
+        3: 'c@c.com',
+      })
       const elements = [
-        macroType, macroInstance, userSegmentType, userSegmentInstance,
-        articleType, articleInstance,
+        macroType,
+        macroInstance,
+        userSegmentType,
+        userSegmentInstance,
+        articleType,
+        articleInstance,
       ].map(e => e.clone())
       await filter.onFetch(elements)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk.article',
-          'zendesk.article.instance.test',
-          'zendesk.macro',
-          'zendesk.macro.instance.test',
-          'zendesk.user_segment',
-          'zendesk.user_segment.instance.test',
-        ])
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.article',
+        'zendesk.article.instance.test',
+        'zendesk.macro',
+        'zendesk.macro.instance.test',
+        'zendesk.user_segment',
+        'zendesk.user_segment.instance.test',
+      ])
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
       expect(macro?.value).toEqual({
@@ -137,24 +133,17 @@ describe('user filter', () => {
       })
     })
     it('should not replace anything if the user does not exist', async () => {
-      const elements = [macroType.clone(), macroInstance.clone(),
-        userSegmentType.clone(), userSegmentInstance.clone()]
-      getIdByEmailMock
-        .mockResolvedValueOnce(
-          { 4: 'd@d.com' },
-        )
+      const elements = [macroType.clone(), macroInstance.clone(), userSegmentType.clone(), userSegmentInstance.clone()]
+      getIdByEmailMock.mockResolvedValueOnce({ 4: 'd@d.com' })
       const paginator = mockFunction<clientUtils.Paginator>()
-      const newFilter = filterCreator(
-        createFilterCreatorParams({ paginator })
-      ) as FilterType
+      const newFilter = filterCreator(createFilterCreatorParams({ paginator })) as FilterType
       await newFilter.onFetch(elements)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk.macro',
-          'zendesk.macro.instance.test',
-          'zendesk.user_segment',
-          'zendesk.user_segment.instance.test',
-        ])
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.macro',
+        'zendesk.macro.instance.test',
+        'zendesk.user_segment',
+        'zendesk.user_segment.instance.test',
+      ])
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
       expect(macro?.value).toEqual({
@@ -176,9 +165,7 @@ describe('user filter', () => {
       const elements = [macroType.clone(), macroInstance.clone()]
       getIdByEmailMock.mockResolvedValueOnce({})
       const paginator = mockFunction<clientUtils.Paginator>()
-      const newFilter = filterCreator(
-        createFilterCreatorParams({ paginator })
-      ) as FilterType
+      const newFilter = filterCreator(createFilterCreatorParams({ paginator })) as FilterType
       await newFilter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
@@ -198,9 +185,7 @@ describe('user filter', () => {
       getUsersMock.mockResolvedValueOnce({ users: [], errors })
       getIdByEmailMock.mockResolvedValueOnce({})
       const paginator = mockFunction<clientUtils.Paginator>()
-      const newFilter = filterCreator(
-        createFilterCreatorParams({ paginator })
-      ) as FilterType
+      const newFilter = filterCreator(createFilterCreatorParams({ paginator })) as FilterType
       expect(await newFilter.onFetch(elements)).toEqual({ errors })
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
@@ -223,19 +208,15 @@ describe('user filter', () => {
       getUsersMock = getUsers as jest.MockedFunction<typeof getUsers>
     })
     it('should change the emails to user ids', async () => {
-      filter = filterCreator(
-        createFilterCreatorParams({ paginator: mockPaginator })
-      ) as FilterType
-      getUsersMock
-        .mockResolvedValue({ users: [
+      filter = filterCreator(createFilterCreatorParams({ paginator: mockPaginator })) as FilterType
+      getUsersMock.mockResolvedValue({
+        users: [
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ] })
-      getIdByEmailMock
-        .mockResolvedValue({ 1: 'a@a.com',
-          2: 'b@b.com',
-          3: 'c@c.com' },)
+        ],
+      })
+      getIdByEmailMock.mockResolvedValue({ 1: 'a@a.com', 2: 'b@b.com', 3: 'c@c.com' })
       const instances = [macroInstance, userSegmentInstance, articleInstance].map(e => e.clone())
       await filter.onFetch(instances)
       const changes = instances.map(instance => toChange({ after: instance }))
@@ -264,20 +245,16 @@ describe('user filter', () => {
     })
   })
   describe('onDeploy', () => {
-    const filter = filterCreator(
-      createFilterCreatorParams({ paginator: mockPaginator })
-    ) as FilterType
+    const filter = filterCreator(createFilterCreatorParams({ paginator: mockPaginator })) as FilterType
     it('should change the user ids to emails', async () => {
-      getUsersMock
-        .mockResolvedValue({ users: [
+      getUsersMock.mockResolvedValue({
+        users: [
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ] })
-      getIdByEmailMock
-        .mockResolvedValue({ 1: 'a@a.com',
-          2: 'b@b.com',
-          3: 'c@c.com' },)
+        ],
+      })
+      getIdByEmailMock.mockResolvedValue({ 1: 'a@a.com', 2: 'b@b.com', 3: 'c@c.com' })
       const instances = [macroInstance, userSegmentInstance, articleInstance].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
@@ -309,12 +286,8 @@ describe('user filter', () => {
       const instances = [macroInstance.clone()]
       const paginator = mockFunction<clientUtils.Paginator>()
       getUsersMock.mockResolvedValueOnce({ users: [] })
-      getIdByEmailMock.mockResolvedValueOnce({
-
-      })
-      const newFilter = filterCreator(
-        createFilterCreatorParams({ paginator })
-      ) as FilterType
+      getIdByEmailMock.mockResolvedValueOnce({})
+      const newFilter = filterCreator(createFilterCreatorParams({ paginator })) as FilterType
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
       await newFilter.preDeploy(changes)

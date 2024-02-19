@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import open from 'open'
 import http from 'http'
@@ -22,19 +22,25 @@ import { CliOutput } from './types'
 import { outputLine } from './outputer'
 import { formatGoToBrowser } from './formatter'
 
-export const createServer = (port: number, requiredOauthFields: string[],
+export const createServer = (
+  port: number,
+  requiredOauthFields: string[],
   resolve: (value: OauthAccessTokenResponse | PromiseLike<OauthAccessTokenResponse>) => void,
-  reject: (reason?: Error) => void): http.Server => {
+  reject: (reason?: Error) => void,
+): http.Server => {
   let server: http.Server
   const app = express()
   app.get('/', (_req: Request, res: Response) => {
-    res.send(`<script>url = window.location.href;window.location.replace("http://localhost:${port}/extract/?" + url.substring(url.search("#") + 1, url.length));</script>`)
+    res.send(
+      `<script>url = window.location.href;window.location.replace("http://localhost:${port}/extract/?" + url.substring(url.search("#") + 1, url.length));</script>`,
+    )
   })
   app.get('/extract', (req: Request, res: Response) => {
     res.send(`<script>window.location.replace("http://localhost:${port}/done")</script>`)
     if (_.every(requiredOauthFields, field => typeof req.query[field] === 'string')) {
-      const fields = Object.fromEntries(requiredOauthFields.map(field => [_.camelCase(field),
-        req.query[field] as string]))
+      const fields = Object.fromEntries(
+        requiredOauthFields.map(field => [_.camelCase(field), req.query[field] as string]),
+      )
       resolve({
         fields,
       })
@@ -43,7 +49,7 @@ export const createServer = (port: number, requiredOauthFields: string[],
     }
   })
   app.get('/done', (_req: Request, res: Response) => {
-    res.send('<h3>Done configuring Salto\'s Oauth access. You may close this tab.</h3>')
+    res.send("<h3>Done configuring Salto's Oauth access. You may close this tab.</h3>")
     if (server) {
       server.close()
     }
@@ -52,9 +58,8 @@ export const createServer = (port: number, requiredOauthFields: string[],
   return server
 }
 
-const createLocalOauthServer = async (port: number, requiredOauthFields: string[]):
-  Promise<OauthAccessTokenResponse> => new Promise<OauthAccessTokenResponse>((resolve,
-    reject) => createServer(port, requiredOauthFields, resolve, reject))
+const createLocalOauthServer = async (port: number, requiredOauthFields: string[]): Promise<OauthAccessTokenResponse> =>
+  new Promise<OauthAccessTokenResponse>((resolve, reject) => createServer(port, requiredOauthFields, resolve, reject))
 
 export const processOauthCredentials = async (
   port: number,

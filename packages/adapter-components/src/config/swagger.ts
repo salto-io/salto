@@ -1,24 +1,44 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType, ActionName } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  FieldDefinition,
+  ListType,
+  ActionName,
+} from '@salto-io/adapter-api'
 import { types, collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, validateSupportedTypes } from './shared'
+import {
+  AdapterApiConfig,
+  createAdapterApiConfigType,
+  TypeConfig,
+  TypeDefaultsConfig,
+  validateSupportedTypes,
+} from './shared'
 import { validateRequestConfig } from './request'
-import { createTransformationConfigTypes, getTransformationConfigByType, TransformationConfig, TransformationDefaultConfig, validateTransoformationConfig } from './transformation'
+import {
+  createTransformationConfigTypes,
+  getTransformationConfigByType,
+  TransformationConfig,
+  TransformationDefaultConfig,
+  validateTransoformationConfig,
+} from './transformation'
 import { UserFetchConfig } from '../definitions/user'
 
 const { isDefined } = lowerDashValues
@@ -53,39 +73,39 @@ export type RequestableTypeSwaggerConfig = types.PickyRequired<TypeSwaggerConfig
 export type TypeSwaggerDefaultConfig = TypeDefaultsConfig
 
 export type AdapterSwaggerApiConfig<A extends string = ActionName> = AdapterApiConfig<
- TransformationConfig, TransformationDefaultConfig, A> & {
+  TransformationConfig,
+  TransformationDefaultConfig,
+  A
+> & {
   swagger: SwaggerDefinitionBaseConfig
 }
 export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
   types: Record<string, RequestableTypeSwaggerConfig>
 }
 
-export const createTypeNameOverrideConfigType = (
-  adapter: string,
-): ObjectType => new ObjectType({
-  elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
-  fields: {
-    originalName: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+export const createTypeNameOverrideConfigType = (adapter: string): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
+    fields: {
+      originalName: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      newName: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
       },
     },
-    newName: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
-})
+  })
 
-const createSwaggerDefinitionsBaseConfigType = (
-  adapter: string,
-): ObjectType => {
+const createSwaggerDefinitionsBaseConfigType = (adapter: string): ObjectType => {
   const additionalTypeConfig = new ObjectType({
     elemID: new ElemID(adapter, 'additionalTypeConfig'),
     fields: {
@@ -168,7 +188,7 @@ export const createSwaggerAdapterApiConfigType = ({
 const validateTypeNameOverrides = (
   apiDefinitionConfigPath: string,
   typeNameOverrides: TypeNameOverrideConfig[],
-  typeNames: string[]
+  typeNames: string[],
 ): void => {
   const newNames = typeNameOverrides.map(t => t.newName)
   const newNameDuplicates = findDuplicates(newNames)
@@ -181,12 +201,12 @@ const validateTypeNameOverrides = (
     throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${originalNameDuplicates}`)
   }
   const newTypeNames = new Set(newNames)
-  const invalidTypeNames = new Set(
-    originalNames.filter(originalName => !newTypeNames.has(originalName))
-  )
+  const invalidTypeNames = new Set(originalNames.filter(originalName => !newTypeNames.has(originalName)))
   const invalidTypes = typeNames.filter(t => invalidTypeNames.has(t))
   if (invalidTypes.length > 0) {
-    throw new Error(`Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`)
+    throw new Error(
+      `Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`,
+    )
   }
 }
 
@@ -235,9 +255,5 @@ export const validateFetchConfig = (
   userFetchConfig: UserFetchConfig,
   adapterApiConfig: AdapterSwaggerApiConfig,
 ): void => {
-  validateSupportedTypes(
-    fetchConfigPath,
-    userFetchConfig,
-    Object.keys(adapterApiConfig.supportedTypes)
-  )
+  validateSupportedTypes(fetchConfigPath, userFetchConfig, Object.keys(adapterApiConfig.supportedTypes))
 }

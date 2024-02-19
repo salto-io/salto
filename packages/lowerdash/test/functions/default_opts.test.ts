@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { functions, validators as validatorUtils } from '../../src/index'
 
 const { validators } = validatorUtils
@@ -31,14 +31,19 @@ describe('defaultOpts', () => {
       receivedOpts = undefined
     })
 
-    const f = defaultOpts((opts: MyOpts): void => {
-      receivedOpts = opts // test what f actually receives
-    }, {
-      num: 12,
-    })
+    const f = defaultOpts(
+      (opts: MyOpts): void => {
+        receivedOpts = opts // test what f actually receives
+      },
+      {
+        num: 12,
+      },
+    )
 
     describe('when no opts are specified', () => {
-      beforeEach(() => { f() })
+      beforeEach(() => {
+        f()
+      })
       it('passes the default values', () => {
         const expectedOpts: MyOpts = { num: 12 }
         expect(receivedOpts).toEqual(expectedOpts)
@@ -47,7 +52,9 @@ describe('defaultOpts', () => {
 
     describe('when opts are specified', () => {
       describe('required opt', () => {
-        beforeEach(() => { f({ num: 13 }) })
+        beforeEach(() => {
+          f({ num: 13 })
+        })
         it('passes the specified opt value', () => {
           const expectedOpts: MyOpts = { num: 13 }
           expect(receivedOpts).toEqual(expectedOpts)
@@ -55,7 +62,9 @@ describe('defaultOpts', () => {
       })
 
       describe('optional opt', () => {
-        beforeEach(() => { f({ num: 13, stringOrUndefined: 'x' }) })
+        beforeEach(() => {
+          f({ num: 13, stringOrUndefined: 'x' })
+        })
         it('passes the specified opt value', () => {
           const expectedOpts: MyOpts = { num: 13, stringOrUndefined: 'x' }
           expect(receivedOpts).toEqual(expectedOpts)
@@ -64,13 +73,17 @@ describe('defaultOpts', () => {
     })
 
     describe('when validators are specified', () => {
-      const fWithValidation = defaultOpts((opts: MyOpts): void => {
-        receivedOpts = opts // test what f actually receives
-      }, {
-        num: 12,
-      }, {
-        num: validators.greaterOrEqualThan(10),
-      })
+      const fWithValidation = defaultOpts(
+        (opts: MyOpts): void => {
+          receivedOpts = opts // test what f actually receives
+        },
+        {
+          num: 12,
+        },
+        {
+          num: validators.greaterOrEqualThan(10),
+        },
+      )
 
       it('throws when some opts are not valid', () => {
         expect(() => fWithValidation({ num: 9 })).toThrow('num should be greater or equal than 10, received: 9')
@@ -96,7 +109,8 @@ describe('defaultOpts', () => {
     const f = defaultOpts.withRequired<MyPartialOpts, MyRequiredOpts, void>(
       (opts: MyOpts): void => {
         receivedOpts = opts // test what f actually receives
-      }, { optionalString: 'defaultString' }
+      },
+      { optionalString: 'defaultString' },
     )
 
     describe('required opt', () => {

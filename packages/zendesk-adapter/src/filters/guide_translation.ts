@@ -1,22 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  Change, DeployResult,
+  Change,
+  DeployResult,
   getChangeData,
-  InstanceElement, isAdditionChange, isInstanceElement, toChange,
+  InstanceElement,
+  isAdditionChange,
+  isInstanceElement,
+  toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
@@ -24,24 +28,17 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { removedTranslationParentId } from './guide_section_and_category'
-import {
-  ARTICLE_TRANSLATION_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
-  TRANSLATION_TYPE_NAMES,
-} from '../constants'
+import { ARTICLE_TRANSLATION_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, TRANSLATION_TYPE_NAMES } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-
 const isDefaultTranslationAddition = (
   change: Change<InstanceElement>,
-  languageSettingsByIds: Record<string, InstanceElement>
+  languageSettingsByIds: Record<string, InstanceElement>,
 ): boolean => {
-  if (
-    !isAdditionChange(change)
-    || (!TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
-  ) {
+  if (!isAdditionChange(change) || !TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)) {
     return false
   }
   const data = getChangeData(change)
@@ -84,8 +81,9 @@ const needToOmit = (change: Change<InstanceElement>, languageSettingsByIds: Reco
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const translationInstances = changes
-      .filter(change => TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+    const translationInstances = changes.filter(change =>
+      TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName),
+    )
     if (_.isEmpty(translationInstances)) {
       log.debug('there are no translation instances, not running guideTranslationFilter')
       return {
@@ -96,42 +94,43 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         leftoverChanges: changes,
       }
     }
-    const guideLanguageSettingsInstances = await (awu(await elementsSource.list())
+    const guideLanguageSettingsInstances = await awu(await elementsSource.list())
       .filter(id => id.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
       .map(async id => elementsSource.get(id))
-      .toArray())
+      .toArray()
     log.debug(`there are ${guideLanguageSettingsInstances.length} guide language setting instances`)
     const languageSettingsByIds = _.keyBy(guideLanguageSettingsInstances, instance => instance.elemID.name)
-    const [translationChangesToIgnore, leftoverChanges] = _.partition(
-      changes,
-      change => needToOmit(change, languageSettingsByIds),
+    const [translationChangesToIgnore, leftoverChanges] = _.partition(changes, change =>
+      needToOmit(change, languageSettingsByIds),
     )
     // split default article translation addition changes out of changes to ignore
     const [defaultArticleTranslationAdditionChanges, otherTranslationChanges] = _.partition(
       translationChangesToIgnore,
-      change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME
-        && isDefaultTranslationAddition(change, languageSettingsByIds),
+      change =>
+        getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME &&
+        isDefaultTranslationAddition(change, languageSettingsByIds),
     )
 
     // creating modification changes from the addition of default article translations
     const defaultArticleTranslationModificationChanges = defaultArticleTranslationAdditionChanges
       .map(getChangeData)
-      .map(instance =>
-        toChange({ before: instance, after: instance }))
+      .map(instance => toChange({ before: instance, after: instance }))
 
     // deploy the created modification changes
     const articleTranslationDeployResult = await deployChanges(
       defaultArticleTranslationModificationChanges,
       async change => {
         await deployChange(change, client, config.apiDefinitions)
-      }
+      },
     )
-    const successfulModificationDeployChangesSet = new Set(articleTranslationDeployResult.appliedChanges
-      .map(change => getChangeData(change).elemID.name))
+    const successfulModificationDeployChangesSet = new Set(
+      articleTranslationDeployResult.appliedChanges.map(change => getChangeData(change).elemID.name),
+    )
 
     // filtering from the addition changes only the changes for which the deploy of the modification was successful
-    const successfulAdditionDeployChanges = defaultArticleTranslationAdditionChanges
-      .filter(change => successfulModificationDeployChangesSet.has(getChangeData(change).elemID.name))
+    const successfulAdditionDeployChanges = defaultArticleTranslationAdditionChanges.filter(change =>
+      successfulModificationDeployChangesSet.has(getChangeData(change).elemID.name),
+    )
 
     const deployResult: DeployResult = {
       appliedChanges: otherTranslationChanges.concat(successfulAdditionDeployChanges),

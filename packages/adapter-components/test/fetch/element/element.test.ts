@@ -1,20 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, isEqualElements, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  isEqualElements,
+  isInstanceElement,
+  isObjectType,
+} from '@salto-io/adapter-api'
 import { getElementGenerator } from '../../../src/fetch/element/element'
 import { queryWithDefault } from '../../../src/definitions'
 import { createMockQuery } from '../../../src/fetch/query'
@@ -69,8 +76,15 @@ describe('element', () => {
       const res = generator.generate()
       expect(res.errors).toEqual([])
       expect(res.elements).toHaveLength(4)
-      expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual(['myAdapter.myType', 'myAdapter.myType.instance.unnamed_0', 'myAdapter.myType.instance.unnamed_1', 'myAdapter.myType__arr'])
-      const objType = res.elements.filter(isObjectType).find(e => e.elemID.getFullName() === 'myAdapter.myType') as ObjectType
+      expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'myAdapter.myType',
+        'myAdapter.myType.instance.unnamed_0',
+        'myAdapter.myType.instance.unnamed_1',
+        'myAdapter.myType__arr',
+      ])
+      const objType = res.elements
+        .filter(isObjectType)
+        .find(e => e.elemID.getFullName() === 'myAdapter.myType') as ObjectType
       const subType = res.elements.filter(isObjectType).find(e => e.elemID.getFullName() === 'myAdapter.myType__arr')
       expect(_.mapValues(objType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
         str: 'string',
@@ -81,18 +95,18 @@ describe('element', () => {
         st: 'string',
         unknown: 'unknown',
       })
-      expect(isEqualElements(res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'unnamed_0'), new InstanceElement(
-        'unnamed_0',
-        objType,
-        entries[0],
-        [],
-      ))).toBeTruthy()
-      expect(isEqualElements(res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'unnamed_1'), new InstanceElement(
-        'unnamed_1',
-        objType,
-        entries[1],
-        [],
-      ))).toBeTruthy()
+      expect(
+        isEqualElements(
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'unnamed_0'),
+          new InstanceElement('unnamed_0', objType, entries[0], []),
+        ),
+      ).toBeTruthy()
+      expect(
+        isEqualElements(
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'unnamed_1'),
+          new InstanceElement('unnamed_1', objType, entries[1], []),
+        ),
+      ).toBeTruthy()
     })
     it('should create instances and matching type based on defined customizations', () => {
       const entries = [
@@ -137,8 +151,15 @@ describe('element', () => {
       const res = generator.generate()
       expect(res.errors).toEqual([])
       expect(res.elements).toHaveLength(4)
-      expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual(['myAdapter.myType', 'myAdapter.myType.instance.A', 'myAdapter.myType.instance.CCC', 'myAdapter.myType__arr'])
-      const objType = res.elements.filter(isObjectType).find(e => e.elemID.getFullName() === 'myAdapter.myType') as ObjectType
+      expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'myAdapter.myType',
+        'myAdapter.myType.instance.A',
+        'myAdapter.myType.instance.CCC',
+        'myAdapter.myType__arr',
+      ])
+      const objType = res.elements
+        .filter(isObjectType)
+        .find(e => e.elemID.getFullName() === 'myAdapter.myType') as ObjectType
       const subType = res.elements.filter(isObjectType).find(e => e.elemID.getFullName() === 'myAdapter.myType__arr')
       expect(_.mapValues(objType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
         str: 'serviceid',
@@ -149,18 +170,18 @@ describe('element', () => {
         st: 'string',
         unknown: 'boolean',
       })
-      expect(isEqualElements(res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'A'), new InstanceElement(
-        'A',
-        objType,
-        entries[0],
-        [],
-      ))).toBeTruthy()
-      expect(isEqualElements(res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'CCC'), new InstanceElement(
-        'CCC',
-        objType,
-        entries[1],
-        [],
-      ))).toBeTruthy()
+      expect(
+        isEqualElements(
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'A'),
+          new InstanceElement('A', objType, entries[0], []),
+        ),
+      ).toBeTruthy()
+      expect(
+        isEqualElements(
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'CCC'),
+          new InstanceElement('CCC', objType, entries[1], []),
+        ),
+      ).toBeTruthy()
     })
   })
 })

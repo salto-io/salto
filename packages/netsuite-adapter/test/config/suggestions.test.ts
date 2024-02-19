@@ -1,23 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { fullFetchConfig, fullQueryParams } from '../../src/config/config_creator'
-import { toLargeFoldersExcludedMessage, toLargeTypesExcludedMessage, STOP_MANAGING_ITEMS_MSG, getConfigFromConfigChanges, ALIGNED_INACTIVE_CRITERIAS } from '../../src/config/suggestions'
+import {
+  toLargeFoldersExcludedMessage,
+  toLargeTypesExcludedMessage,
+  STOP_MANAGING_ITEMS_MSG,
+  getConfigFromConfigChanges,
+  ALIGNED_INACTIVE_CRITERIAS,
+} from '../../src/config/suggestions'
 import { NetsuiteQueryParameters, fetchDefault, configType, NetsuiteConfig } from '../../src/config/types'
 import { INACTIVE_FIELDS } from '../../src/constants'
 
@@ -63,15 +69,17 @@ describe('netsuite config suggestions', () => {
   }
 
   it('should return undefined when having no currentConfig suggestions', () => {
-    expect(getConfigFromConfigChanges(
-      {
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
-        failedCustomRecords: [],
-      },
-      currentConfigWithFetch,
-    )).toBeUndefined()
+    expect(
+      getConfigFromConfigChanges(
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
+        currentConfigWithFetch,
+      ),
+    ).toBeUndefined()
   })
 
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
@@ -86,35 +94,35 @@ describe('netsuite config suggestions', () => {
       },
       { fetch: fullFetchConfig() },
     )?.config as InstanceElement[]
-    expect(configFromConfigChanges[0].isEqual(new InstanceElement(
-      ElemID.CONFIG_NAME,
-      configType,
-      {
-        fetch: {
-          include: fullQueryParams(),
-          exclude: {
-            types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
-            fileCabinet: [newFailedFilePath],
+    expect(
+      configFromConfigChanges[0].isEqual(
+        new InstanceElement(ElemID.CONFIG_NAME, configType, {
+          fetch: {
+            include: fullQueryParams(),
+            exclude: {
+              types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
+              fileCabinet: [newFailedFilePath],
+            },
           },
-        },
-        client: {
-          fetchAllTypesAtOnce: false,
-        },
-      }
-    ))).toBe(true)
+          client: {
+            fetchAllTypesAtOnce: false,
+          },
+        }),
+      ),
+    ).toBe(true)
 
-    expect(configFromConfigChanges[1].isEqual(new InstanceElement(
-      ElemID.CONFIG_NAME,
-      configType,
-      {
-        fetch: {
-          lockedElementsToExclude: {
-            types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
-            fileCabinet: lockedFiles,
+    expect(
+      configFromConfigChanges[1].isEqual(
+        new InstanceElement(ElemID.CONFIG_NAME, configType, {
+          fetch: {
+            lockedElementsToExclude: {
+              types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
+              fileCabinet: lockedFiles,
+            },
           },
-        },
-      }
-    ))).toBe(true)
+        }),
+      ),
+    ).toBe(true)
 
     expect(configFromConfigChanges[1].path).toEqual(['lockedElements'])
   })
@@ -131,9 +139,7 @@ describe('netsuite config suggestions', () => {
         { name: 'excludedTypeTest' },
       ],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
-      customRecords: [
-        { name: 'excludedCustomRecord' },
-      ],
+      customRecords: [{ name: 'excludedCustomRecord' }],
     }
     const configChange = getConfigFromConfigChanges(
       {
@@ -144,11 +150,9 @@ describe('netsuite config suggestions', () => {
       },
       currentConfigWithFetch,
     )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
+    expect(
+      configChange?.config[0].isEqual(
+        new InstanceElement(ElemID.CONFIG_NAME, configType, {
           fetch: {
             include: currentConfigWithFetch.fetch.include,
             exclude: newExclude,
@@ -159,12 +163,17 @@ describe('netsuite config suggestions', () => {
             maxItemsInImportObjectsRequest: 10,
             sdfConcurrencyLimit: 2,
           },
-        }
-      ))).toBe(true)
+        }),
+      ),
+    ).toBe(true)
 
-    expect(configChange?.message).toBe(formatConfigSuggestionsReasons([
-      STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath]), toLargeTypesExcludedMessage(['excludedTypeTest', 'excludedCustomRecord']),
-    ]))
+    expect(configChange?.message).toBe(
+      formatConfigSuggestionsReasons([
+        STOP_MANAGING_ITEMS_MSG,
+        toLargeFoldersExcludedMessage([newLargeFolderPath]),
+        toLargeTypesExcludedMessage(['excludedTypeTest', 'excludedCustomRecord']),
+      ]),
+    )
   })
 
   it('should combine configuration messages when needed', () => {
@@ -192,7 +201,7 @@ describe('netsuite config suggestions', () => {
     )
 
     expect(configChange?.message).toBe(
-      formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath])])
+      formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath])]),
     )
   })
 
@@ -200,13 +209,12 @@ describe('netsuite config suggestions', () => {
     const config: NetsuiteConfig = {
       fetch: fullFetchConfig(),
     }
-    config.fetch.exclude.types = Object.values(INACTIVE_FIELDS)
-      .map(fieldName => ({
-        name: '.*',
-        criteria: {
-          [fieldName]: true,
-        },
-      }))
+    config.fetch.exclude.types = Object.values(INACTIVE_FIELDS).map(fieldName => ({
+      name: '.*',
+      criteria: {
+        [fieldName]: true,
+      },
+    }))
     const configChange = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: false,

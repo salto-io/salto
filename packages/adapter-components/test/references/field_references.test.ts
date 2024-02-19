@@ -1,22 +1,39 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue, Field } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Element,
+  BuiltinTypes,
+  isInstanceElement,
+  ListType,
+  createRefToElmWithValue,
+  Field,
+} from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { addReferences, generateLookupFunc } from '../../src/references/field_references'
-import { FieldReferenceDefinition, FieldReferenceResolver, ReferenceSerializationStrategy, ReferenceSerializationStrategyLookup, ReferenceSerializationStrategyName } from '../../src/references/reference_mapping'
+import {
+  FieldReferenceDefinition,
+  FieldReferenceResolver,
+  ReferenceSerializationStrategy,
+  ReferenceSerializationStrategyLookup,
+  ReferenceSerializationStrategyName,
+} from '../../src/references/reference_mapping'
 import { ContextValueMapperFunc, ContextFunc, neighborContextGetter } from '../../src/references'
 
 const ADAPTER_NAME = 'myAdapter'
@@ -25,10 +42,11 @@ const neighborContextFunc = (args: {
   contextFieldName: string
   levelsUp?: number
   contextValueMapper?: ContextValueMapperFunc
-}): ContextFunc => neighborContextGetter({
-  ...args,
-  getLookUpName: async ({ ref }) => ref?.elemID.name,
-})
+}): ContextFunc =>
+  neighborContextGetter({
+    ...args,
+    getLookUpName: async ({ ref }) => ref?.elemID.name,
+  })
 
 describe('Field references', () => {
   const apiClientType = new ObjectType({
@@ -155,8 +173,7 @@ describe('Field references', () => {
     },
   })
 
-  const generateElements = (
-  ): Element[] => ([
+  const generateElements = (): Element[] => [
     apiClientType,
     new InstanceElement('cli123', apiClientType, { id: 123 }),
     apiCollectionType,
@@ -189,7 +206,11 @@ describe('Field references', () => {
     new InstanceElement('brand1', brandType, { id: 1001 }),
     new InstanceElement('brand2', brandType, { id: 1002 }),
     new InstanceElement('group3', groupType, { id: '2003' }),
-    new InstanceElement('group4', groupType, { id: '2004', basedOnRef: '2003', ref: new ReferenceExpression(groupType.elemID) }),
+    new InstanceElement('group4', groupType, {
+      id: '2004',
+      basedOnRef: '2003',
+      ref: new ReferenceExpression(groupType.elemID),
+    }),
     new InstanceElement('inst1', type1, {
       subjectAndValues: [
         {
@@ -211,9 +232,7 @@ describe('Field references', () => {
         },
         {
           value: 'group_id',
-          values: [
-            { list: [{ value: '2003' }], type: 'ignore' },
-          ],
+          values: [{ list: [{ value: '2003' }], type: 'ignore' }],
         },
       ],
       product: 'ABC',
@@ -229,11 +248,13 @@ describe('Field references', () => {
     new InstanceElement('trigger1', triggerType, { id: '3002', ticket_field_id: '3001', ref: 'ABC' }),
     new InstanceElement('trigger2', triggerType, { id: '3003', ticket_field_id: '3111' }),
     new InstanceElement('trigger3', triggerType, { id: '3004', ticket_field_id: '' }),
-  ])
+  ]
 
   describe('addReferences', () => {
     let elements: Element[]
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'>[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<
+      'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'
+    >[] = [
       {
         src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
         serializationStrategy: 'id',
@@ -315,89 +336,96 @@ describe('Field references', () => {
         defs: fieldNameToTypeMappingDefs,
         fieldsToGroupBy: ['id', 'name'],
         contextStrategyLookup: {
-          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
-          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+          parentSubject: neighborContextFunc({
+            contextFieldName: 'subject',
+            levelsUp: 1,
+            contextValueMapper: val => val.replace('_id', ''),
+          }),
+          parentValue: neighborContextFunc({
+            contextFieldName: 'value',
+            levelsUp: 2,
+            contextValueMapper: val => val.replace('_id', ''),
+          }),
           neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
-          fail: neighborContextFunc({ contextFieldName: 'product', contextValueMapper: () => { throw new Error('fail') } }),
+          fail: neighborContextFunc({
+            contextFieldName: 'product',
+            contextValueMapper: () => {
+              throw new Error('fail')
+            },
+          }),
         },
       })
     })
 
     it('should resolve field values when referenced element exists', () => {
       const prof = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'api_access_profile'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'api_access_profile',
       )[0] as InstanceElement
       expect(prof.value.api_client_id).toBeInstanceOf(ReferenceExpression)
       expect(prof.value.api_client_id?.elemID.getFullName()).toEqual('myAdapter.api_client.instance.cli123')
       expect(prof.value.api_collection_ids).toHaveLength(1)
       expect(prof.value.api_collection_ids[0]).toBeInstanceOf(ReferenceExpression)
-      expect(prof.value.api_collection_ids[0].elemID.getFullName()).toEqual('myAdapter.api_collection.instance.collection456')
+      expect(prof.value.api_collection_ids[0].elemID.getFullName()).toEqual(
+        'myAdapter.api_collection.instance.collection456',
+      )
 
       const folders = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'folder',
       ) as InstanceElement[]
       expect(folders).toHaveLength(2)
       expect(folders[1].value.parent_id).toBeInstanceOf(ReferenceExpression)
       expect(folders[1].value.parent_id.elemID.getFullName()).toEqual('myAdapter.folder.instance.folder11')
 
-      const inst = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
+      const inst = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'inst1')[0] as InstanceElement
       expect(inst.value.nestedValues[0].values[0].list[0].value).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.nestedValues[0].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
+      expect(inst.value.nestedValues[0].values[0].list[0].value.elemID.getFullName()).toEqual(
+        'myAdapter.brand.instance.brand1',
+      )
       expect(inst.value.nestedValues[0].values[1].list[1].value).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.nestedValues[0].values[1].list[1].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand2')
+      expect(inst.value.nestedValues[0].values[1].list[1].value.elemID.getFullName()).toEqual(
+        'myAdapter.brand.instance.brand2',
+      )
       expect(inst.value.nestedValues[1].values[0].list[0].value).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.nestedValues[1].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
+      expect(inst.value.nestedValues[1].values[0].list[0].value.elemID.getFullName()).toEqual(
+        'myAdapter.group.instance.group3',
+      )
       expect(inst.value.product).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.product.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC')
       expect(inst.value.productWithName).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.productWithName.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC.name')
     })
     it('should resolve field values when context field is a reference', () => {
-      const inst = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'group4'
-      )[0] as InstanceElement
+      const inst = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'group4')[0] as InstanceElement
       expect(inst.value.basedOnRef).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.basedOnRef.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
     })
     it('should choose rules based on instanceTypes when specified', () => {
-      const inst1 = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
+      const inst1 = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'inst1')[0] as InstanceElement
       expect(inst1.value.ref).toBeInstanceOf(ReferenceExpression)
       expect(inst1.value.ref.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC.name')
-      const trigger1 = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'trigger1'
-      )[0] as InstanceElement
+      const trigger1 = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'trigger1')[0] as InstanceElement
       expect(trigger1.value.ref).toBeInstanceOf(ReferenceExpression)
       expect(trigger1.value.ref.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC')
-      const inst2 = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst2'
-      )[0] as InstanceElement
+      const inst2 = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'inst2')[0] as InstanceElement
       expect(inst2.value.ref).toBeInstanceOf(ReferenceExpression)
       expect(inst2.value.ref.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
     it('should not resolve fields in unexpected types even if field name matches', () => {
       const collections = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'api_collection'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'api_collection',
       ) as InstanceElement[]
       expect(collections).toHaveLength(2)
       expect(collections[1].value.api_client_id).not.toBeInstanceOf(ReferenceExpression)
       expect(collections[1].value.api_client_id).toEqual(123)
     })
     it('should not resolve fields if values are not identical, even if the only difference is string vs number', () => {
-      const inst = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
-      expect(
-        inst.value.subjectAndValues[0].valueList[0].value
-      ).not.toBeInstanceOf(ReferenceExpression)
+      const inst = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'inst1')[0] as InstanceElement
+      expect(inst.value.subjectAndValues[0].valueList[0].value).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value).toEqual('1001')
     })
     it('should not resolve if referenced element does not exist', () => {
       const folders = elements.filter(
-        e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'folder',
       ) as InstanceElement[]
       expect(folders).toHaveLength(2)
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)
@@ -405,17 +433,16 @@ describe('Field references', () => {
     })
     it('should not create missing reference if enableMissingReference is false (or not specified)', async () => {
       const triggerWithMissingReference = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'trigger2'
+        e => isInstanceElement(e) && e.elemID.name === 'trigger2',
       )[0] as InstanceElement
-      expect(triggerWithMissingReference.value.ticket_field_id)
-        .not.toBeInstanceOf(ReferenceExpression)
+      expect(triggerWithMissingReference.value.ticket_field_id).not.toBeInstanceOf(ReferenceExpression)
     })
-    describe('\'exact\' validation strategy', () => {
+    describe("'exact' validation strategy", () => {
       const referee = new InstanceElement('referee', ticketFieldType, { id: '1234' })
       let numReferer: InstanceElement
       let otherNumReferer: InstanceElement
       let strReferer: InstanceElement
-      const defs : FieldReferenceDefinition<never>[] = [
+      const defs: FieldReferenceDefinition<never>[] = [
         {
           src: { field: 'ref', instanceTypes: ['type1'] },
           target: { type: 'ticket_field' },
@@ -448,13 +475,13 @@ describe('Field references', () => {
         expect(otherNumReferer.value.ref).toEqual(5678)
       })
     })
-    describe('\'asString\' validation strategy', () => {
+    describe("'asString' validation strategy", () => {
       const referee = new InstanceElement('referee', ticketFieldType, { id: 'SomeName' })
       const numReferee = new InstanceElement('numReferee', ticketFieldType, { id: '1234' })
       let invalidReferer: InstanceElement
       let differentCaseReferer: InstanceElement
       let numReferer: InstanceElement
-      const defs : FieldReferenceDefinition<never>[] = [
+      const defs: FieldReferenceDefinition<never>[] = [
         {
           src: { field: 'ref', instanceTypes: ['type1'] },
           target: { type: 'ticket_field' },
@@ -486,13 +513,13 @@ describe('Field references', () => {
         expect(differentCaseReferer.value.ref).toEqual('somename')
       })
     })
-    describe('\'asCaseInsensitiveString\' validation strategy', () => {
+    describe("'asCaseInsensitiveString' validation strategy", () => {
       const referee = new InstanceElement('referee', ticketFieldType, { id: 'somename' })
       const numReferee = new InstanceElement('numReferee', ticketFieldType, { id: '1234' })
       let invalidReferer: InstanceElement
       let differentCaseReferer: InstanceElement
       let numReferer: InstanceElement
-      const defs : FieldReferenceDefinition<never>[] = [
+      const defs: FieldReferenceDefinition<never>[] = [
         {
           src: { field: 'ref', instanceTypes: ['type1'] },
           target: { type: 'ticket_field' },
@@ -528,7 +555,9 @@ describe('Field references', () => {
 
   describe('generateLookupNameFunc', () => {
     let lookupNameFunc: GetLookupNameFunc
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'>[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<
+      'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'
+    >[] = [
       {
         src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
         serializationStrategy: 'id',
@@ -559,9 +588,16 @@ describe('Field references', () => {
       const res = await lookupNameFunc({
         ref: new ReferenceExpression(
           new ElemID('adapter', 'api_client', 'instance', 'instance'),
-          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_client') }), { id: 2, name: 'name' }),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_client') }), {
+            id: 2,
+            name: 'name',
+          }),
         ),
-        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_client_id', BuiltinTypes.NUMBER),
+        field: new Field(
+          new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }),
+          'api_client_id',
+          BuiltinTypes.NUMBER,
+        ),
         path: new ElemID('adapter', 'somePath'),
         element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
@@ -571,11 +607,12 @@ describe('Field references', () => {
 
     it('should resolve using ref value when ref value is not an element', async () => {
       const res = await lookupNameFunc({
-        ref: new ReferenceExpression(
-          new ElemID('adapter', 'api_client', 'instance', 'instance', 'someVal'),
-          3,
+        ref: new ReferenceExpression(new ElemID('adapter', 'api_client', 'instance', 'instance', 'someVal'), 3),
+        field: new Field(
+          new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }),
+          'api_client_id',
+          BuiltinTypes.NUMBER,
         ),
-        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_client_id', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
         element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
@@ -587,9 +624,16 @@ describe('Field references', () => {
       const res = await lookupNameFunc({
         ref: new ReferenceExpression(
           new ElemID('adapter', 'api_collection', 'instance', 'instance'),
-          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_collection') }), { id: 2, name: 'name' }),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_collection') }), {
+            id: 2,
+            name: 'name',
+          }),
         ),
-        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_collection_ids', BuiltinTypes.NUMBER),
+        field: new Field(
+          new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }),
+          'api_collection_ids',
+          BuiltinTypes.NUMBER,
+        ),
         path: new ElemID('adapter', 'somePath'),
         element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
@@ -601,9 +645,16 @@ describe('Field references', () => {
       const res = await lookupNameFunc({
         ref: new ReferenceExpression(
           new ElemID('adapter', 'api_client', 'instance', 'instance'),
-          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_collection') }), { id: 2, name: 'name' }),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_collection') }), {
+            id: 2,
+            name: 'name',
+          }),
         ),
-        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_collection_ids', BuiltinTypes.NUMBER),
+        field: new Field(
+          new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }),
+          'api_collection_ids',
+          BuiltinTypes.NUMBER,
+        ),
         path: new ElemID('adapter', 'somePath'),
         element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
@@ -612,13 +663,17 @@ describe('Field references', () => {
     })
 
     it('should resolve using full value strategy when no rule is matched, and clone the values', async () => {
-      const inst = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'someType') }), { id: 2, name: 'name' })
+      const inst = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'someType') }), {
+        id: 2,
+        name: 'name',
+      })
       const res = await lookupNameFunc({
-        ref: new ReferenceExpression(
-          new ElemID('adapter', 'someType', 'instance', 'instance'),
-          inst,
+        ref: new ReferenceExpression(new ElemID('adapter', 'someType', 'instance', 'instance'), inst),
+        field: new Field(
+          new ObjectType({ elemID: new ElemID('adapter', 'someType') }),
+          'api_collection_ids',
+          BuiltinTypes.NUMBER,
         ),
-        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'someType') }), 'api_collection_ids', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
         element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
@@ -630,10 +685,10 @@ describe('Field references', () => {
 
     it('should resolve using full value strategy when field is undefined', async () => {
       const res = await lookupNameFunc({
-        ref: new ReferenceExpression(
-          new ElemID('adapter', 'someType', 'instance', 'instance'),
-          { id: 2, name: 'name' },
-        ),
+        ref: new ReferenceExpression(new ElemID('adapter', 'someType', 'instance', 'instance'), {
+          id: 2,
+          name: 'name',
+        }),
         path: new ElemID('adapter', 'somePath'),
         element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
@@ -645,7 +700,8 @@ describe('Field references', () => {
         customSerializationStrategy?: 'realId'
       }
       const CustomReferenceSerializationStrategyLookup: Record<
-        'realId' | ReferenceSerializationStrategyName, ReferenceSerializationStrategy
+        'realId' | ReferenceSerializationStrategyName,
+        ReferenceSerializationStrategy
       > = {
         ...ReferenceSerializationStrategyLookup,
         realId: {
@@ -656,26 +712,31 @@ describe('Field references', () => {
       class CustomFieldReferenceResolver extends FieldReferenceResolver<never> {
         constructor(def: CustomFieldReferenceDefinition) {
           super({ src: def.src })
-          this.serializationStrategy = CustomReferenceSerializationStrategyLookup[
-            def.customSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-          ]
-          this.target = def.target
-            ? { ...def.target, lookup: this.serializationStrategy.lookup }
-            : undefined
+          this.serializationStrategy =
+            CustomReferenceSerializationStrategyLookup[
+              def.customSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+            ]
+          this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
         }
       }
       const customLookupNameFunc = generateLookupFunc(
-        [{
-          src: { field: 'refValue' },
-          customSerializationStrategy: 'realId',
-          target: { type: 'typeWithDifferentIdField' },
-        } as CustomFieldReferenceDefinition],
+        [
+          {
+            src: { field: 'refValue' },
+            customSerializationStrategy: 'realId',
+            target: { type: 'typeWithDifferentIdField' },
+          } as CustomFieldReferenceDefinition,
+        ],
         defs => new CustomFieldReferenceResolver(defs),
       )
       const res = await customLookupNameFunc({
         ref: new ReferenceExpression(
           new ElemID('adapter', 'typeWithDifferentIdField', 'instance', 'instance'),
-          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'typeWithDifferentIdField') }), { realId: 2 }),
+          new InstanceElement(
+            'instance',
+            new ObjectType({ elemID: new ElemID('adapter', 'typeWithDifferentIdField') }),
+            { realId: 2 },
+          ),
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'obj2') }), 'refValue', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
@@ -687,7 +748,9 @@ describe('Field references', () => {
   })
   describe('failure modes', () => {
     let elements: Element[]
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'>[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<
+      'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'
+    >[] = [
       {
         src: { field: 'fail' },
         serializationStrategy: 'id',
@@ -707,26 +770,35 @@ describe('Field references', () => {
         defs: fieldNameToTypeMappingDefs,
         fieldsToGroupBy: ['id', 'name'],
         contextStrategyLookup: {
-          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
-          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+          parentSubject: neighborContextFunc({
+            contextFieldName: 'subject',
+            levelsUp: 1,
+            contextValueMapper: val => val.replace('_id', ''),
+          }),
+          parentValue: neighborContextFunc({
+            contextFieldName: 'value',
+            levelsUp: 2,
+            contextValueMapper: val => val.replace('_id', ''),
+          }),
           neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
-          fail: neighborContextFunc({ contextFieldName: 'product', contextValueMapper: () => { throw new Error('fail') } }),
+          fail: neighborContextFunc({
+            contextFieldName: 'product',
+            contextValueMapper: () => {
+              throw new Error('fail')
+            },
+          }),
         },
       })
     })
 
     it('should not crash when context function throws an error', async () => {
       // nothing to check really - just making sure the field was not removed
-      const inst = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
+      const inst = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'inst1')[0] as InstanceElement
       expect(inst.value.fail).toEqual('fail')
     })
     it('should not crash when a matching rule has a too-high levelsUp value', async () => {
       // nothing to check really - just making sure the field was not removed
-      const inst = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
+      const inst = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'inst1')[0] as InstanceElement
       expect(inst.value.value).toEqual('fail')
     })
   })

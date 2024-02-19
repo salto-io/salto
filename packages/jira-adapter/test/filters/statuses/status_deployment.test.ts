@@ -1,19 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, getChangeData, getAllChangeData } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+  ReferenceExpression,
+  getChangeData,
+  getAllChangeData,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -40,11 +50,13 @@ describe('statusDeploymentFilter', () => {
     client = cli
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = statusDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    filter = statusDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, STATUS_TYPE_NAME),
@@ -64,27 +76,17 @@ describe('statusDeploymentFilter', () => {
       },
     })
 
-    statusCategoryInstance = new InstanceElement(
-      'Done',
-      statusCategoryType,
-      {
-        id: 3,
-        name: 'Done',
-      }
-    )
+    statusCategoryInstance = new InstanceElement('Done', statusCategoryType, {
+      id: 3,
+      name: 'Done',
+    })
 
-    statusInstance = new InstanceElement(
-      'statusInstance',
-      type,
-      {
-        id: '10005',
-        name: 'status',
-        description: 'a new status',
-        statusCategory: new ReferenceExpression(
-          statusCategoryInstance.elemID, statusCategoryInstance
-        ),
-      }
-    )
+    statusInstance = new InstanceElement('statusInstance', type, {
+      id: '10005',
+      name: 'status',
+      description: 'a new status',
+      statusCategory: new ReferenceExpression(statusCategoryInstance.elemID, statusCategoryInstance),
+    })
 
     modifiedInstance = statusInstance.clone()
     modifiedInstance.value.description = 'new description'
@@ -92,21 +94,11 @@ describe('statusDeploymentFilter', () => {
 
   describe('onFetch', () => {
     it('should replace status category with id', async () => {
-      const instances = [new InstanceElement(
-        'instance',
-        type,
-        { statusCategory: 'TODO' }
-      ),
-      new InstanceElement(
-        'instance',
-        type,
-        { statusCategory: 'IN_PROGRESS' }
-      ),
-      new InstanceElement(
-        'instance',
-        type,
-        { statusCategory: 'DONE' }
-      )]
+      const instances = [
+        new InstanceElement('instance', type, { statusCategory: 'TODO' }),
+        new InstanceElement('instance', type, { statusCategory: 'IN_PROGRESS' }),
+        new InstanceElement('instance', type, { statusCategory: 'DONE' }),
+      ]
 
       await filter.onFetch?.([...instances, type])
       expect(instances[0].value).toEqual({
@@ -121,13 +113,9 @@ describe('statusDeploymentFilter', () => {
     })
 
     it('should do nothing if the status category is different', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-        {
-          statusCategory: 'NEW',
-        },
-      )
+      const instance = new InstanceElement('instance', type, {
+        statusCategory: 'NEW',
+      })
       await filter.onFetch?.([instance, type])
       expect(instance.value.statusCategory).toEqual('NEW')
     })
@@ -178,17 +166,11 @@ describe('statusDeploymentFilter', () => {
     let additionInstance: InstanceElement
 
     beforeEach(async () => {
-      additionInstance = new InstanceElement(
-        'addedStatus',
-        type,
-        {
-          name: 'addedStatus',
-          description: 'a new status',
-          statusCategory: new ReferenceExpression(
-            statusCategoryInstance.elemID, statusCategoryInstance
-          ),
-        }
-      )
+      additionInstance = new InstanceElement('addedStatus', type, {
+        name: 'addedStatus',
+        description: 'a new status',
+        statusCategory: new ReferenceExpression(statusCategoryInstance.elemID, statusCategoryInstance),
+      })
 
       mockConnection.post.mockClear()
       mockConnection.put.mockClear()
@@ -196,30 +178,30 @@ describe('statusDeploymentFilter', () => {
     describe('should retry on failed to acquire lock error', () => {
       describe('failure', () => {
         it('modification', async () => {
-          mockConnection.put.mockRejectedValue(new clientUtils.HTTPError('message', {
-            status: 409,
-            data: {
-              errorMessages: ['Failed to acquire lock'],
-            },
-          }))
-          const changes = [
-            toChange({ before: statusInstance, after: modifiedInstance }),
-          ]
+          mockConnection.put.mockRejectedValue(
+            new clientUtils.HTTPError('message', {
+              status: 409,
+              data: {
+                errorMessages: ['Failed to acquire lock'],
+              },
+            }),
+          )
+          const changes = [toChange({ before: statusInstance, after: modifiedInstance })]
           const { deployResult } = await filter.deploy(changes)
           expect(deployResult.appliedChanges).toHaveLength(0)
           expect(deployResult.errors).toHaveLength(1)
           expect(mockConnection.put).toHaveBeenCalledTimes(3)
         })
         it('addition', async () => {
-          mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
-            status: 409,
-            data: {
-              errorMessages: ['Failed to acquire lock'],
-            },
-          }))
-          const changes = [
-            toChange({ after: additionInstance }),
-          ]
+          mockConnection.post.mockRejectedValue(
+            new clientUtils.HTTPError('message', {
+              status: 409,
+              data: {
+                errorMessages: ['Failed to acquire lock'],
+              },
+            }),
+          )
+          const changes = [toChange({ after: additionInstance })]
           const { deployResult } = await filter.deploy(changes)
           expect(mockConnection.post).toHaveBeenCalledTimes(3)
           expect(additionInstance.value.id).not.toEqual('12345')
@@ -233,42 +215,44 @@ describe('statusDeploymentFilter', () => {
             status: 201,
             data: [],
           })
-          mockConnection.put.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-            status: 409,
-            data: {
-              errorMessages: ['Failed to acquire lock'],
-            },
-          }))
-          const changes = [
-            toChange({ before: statusInstance, after: modifiedInstance }),
-          ]
+          mockConnection.put.mockRejectedValueOnce(
+            new clientUtils.HTTPError('message', {
+              status: 409,
+              data: {
+                errorMessages: ['Failed to acquire lock'],
+              },
+            }),
+          )
+          const changes = [toChange({ before: statusInstance, after: modifiedInstance })]
           const { deployResult } = await filter.deploy(changes)
           expect(deployResult.appliedChanges).toHaveLength(1)
           expect(deployResult.errors).toHaveLength(0)
           expect(mockConnection.put).toHaveBeenCalledTimes(2)
-          expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
-            .toEqual('jira.Status.instance.statusInstance')
+          expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName()).toEqual(
+            'jira.Status.instance.statusInstance',
+          )
         })
         it('addition', async () => {
           mockConnection.post.mockResolvedValue({
             status: 200,
-            data: [{
-              id: '12345',
-              name: 'addedStatus',
-              description: 'a new status',
-              statusCategory: 'DONE',
-            },
+            data: [
+              {
+                id: '12345',
+                name: 'addedStatus',
+                description: 'a new status',
+                statusCategory: 'DONE',
+              },
             ],
           })
-          mockConnection.post.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-            status: 409,
-            data: {
-              errorMessages: ['Failed to acquire lock'],
-            },
-          }))
-          const changes = [
-            toChange({ after: additionInstance }),
-          ]
+          mockConnection.post.mockRejectedValueOnce(
+            new clientUtils.HTTPError('message', {
+              status: 409,
+              data: {
+                errorMessages: ['Failed to acquire lock'],
+              },
+            }),
+          )
+          const changes = [toChange({ after: additionInstance })]
           const { deployResult } = await filter.deploy(changes)
           expect(mockConnection.post).toHaveBeenCalledTimes(2)
           expect(additionInstance.value.id).toEqual('12345')
@@ -282,14 +266,13 @@ describe('statusDeploymentFilter', () => {
         status: 201,
         data: [],
       })
-      const changes = [
-        toChange({ before: statusInstance, after: modifiedInstance }),
-      ]
+      const changes = [toChange({ before: statusInstance, after: modifiedInstance })]
       const { deployResult } = await filter.deploy(changes)
       expect(deployResult.appliedChanges).toHaveLength(1)
       expect(deployResult.errors).toHaveLength(0)
-      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
-        .toEqual('jira.Status.instance.statusInstance')
+      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName()).toEqual(
+        'jira.Status.instance.statusInstance',
+      )
     })
 
     it('should return status deletion changes as leftover changes', async () => {
@@ -298,8 +281,7 @@ describe('statusDeploymentFilter', () => {
       expect(deployResult.appliedChanges).toHaveLength(0)
       expect(deployResult.errors).toHaveLength(0)
       expect(leftoverChanges).toHaveLength(1)
-      expect(getChangeData(leftoverChanges[0]).elemID.getFullName())
-        .toEqual('jira.Status.instance.statusInstance')
+      expect(getChangeData(leftoverChanges[0]).elemID.getFullName()).toEqual('jira.Status.instance.statusInstance')
     })
 
     it('should not remove status category references after deploy', async () => {
@@ -308,22 +290,21 @@ describe('statusDeploymentFilter', () => {
         toChange({ after: additionInstance }),
       ]
       await filter.deploy(changes)
-      expect(getAllChangeData(changes[0])[0].value.statusCategory)
-        .toBeInstanceOf(ReferenceExpression)
-      expect(getAllChangeData(changes[0])[1].value.statusCategory)
-        .toBeInstanceOf(ReferenceExpression)
+      expect(getAllChangeData(changes[0])[0].value.statusCategory).toBeInstanceOf(ReferenceExpression)
+      expect(getAllChangeData(changes[0])[1].value.statusCategory).toBeInstanceOf(ReferenceExpression)
       expect(getChangeData(changes[1]).value.statusCategory).toBeInstanceOf(ReferenceExpression)
     })
 
     it('should set id to added statuses on deploy', async () => {
       mockConnection.post.mockResolvedValue({
         status: 200,
-        data: [{
-          id: '12345',
-          name: 'addedStatus',
-          description: 'a new status',
-          statusCategory: 'DONE',
-        },
+        data: [
+          {
+            id: '12345',
+            name: 'addedStatus',
+            description: 'a new status',
+            statusCategory: 'DONE',
+          },
         ],
       })
       await filter.deploy([toChange({ after: additionInstance })])
@@ -331,33 +312,23 @@ describe('statusDeploymentFilter', () => {
     })
 
     it('should try to deploy all of the statuses', async () => {
-      const responseData = _.range(0, 50)
-        .map(i => ({ id: `${i}`, name: `status${i}` }))
-      mockConnection.post.mockResolvedValue({ status: 200,
-        data: responseData })
-      mockConnection.post.mockRejectedValueOnce((new Error('no status category')))
-      const validChanges = _.range(0, 50).map(i => toChange({
-        after: new InstanceElement(
-          `status${i}`,
-          type,
-          {
+      const responseData = _.range(0, 50).map(i => ({ id: `${i}`, name: `status${i}` }))
+      mockConnection.post.mockResolvedValue({ status: 200, data: responseData })
+      mockConnection.post.mockRejectedValueOnce(new Error('no status category'))
+      const validChanges = _.range(0, 50).map(i =>
+        toChange({
+          after: new InstanceElement(`status${i}`, type, {
             name: `status${i}`,
             description: 'a new status',
-            statusCategory: new ReferenceExpression(
-              statusCategoryInstance.elemID, statusCategoryInstance
-            ),
-          },
-        ),
-      }))
+            statusCategory: new ReferenceExpression(statusCategoryInstance.elemID, statusCategoryInstance),
+          }),
+        }),
+      )
       const invalidChange = toChange({
-        after: new InstanceElement(
-          'invalidStatus',
-          type,
-          {
-            name: 'invalidStatus',
-            description: 'invalid',
-          },
-        ),
+        after: new InstanceElement('invalidStatus', type, {
+          name: 'invalidStatus',
+          description: 'invalid',
+        }),
       })
       const { deployResult } = await filter.deploy([...validChanges, invalidChange])
       expect(deployResult.appliedChanges).toHaveLength(50)

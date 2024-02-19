@@ -1,19 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, InstanceElement, ReferenceExpression, ChangeValidator, toChange, ReadOnlyElementsSource, ChangeError } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  ReferenceExpression,
+  ChangeValidator,
+  toChange,
+  ReadOnlyElementsSource,
+  ChangeError,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -27,10 +36,22 @@ describe('issue type scheme migration validator', () => {
   const issueTypeInstance2 = new InstanceElement('issueType2', issueTypeObject, { name: 'issueType2' })
   const issueTypeInstance3 = new InstanceElement('issueType3', issueTypeObject, { name: 'issueType3' })
   const issueTypeInstance4 = new InstanceElement('issueType4', issueTypeObject, { name: 'issueType4' })
-  const issueTypeReference1 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), issueTypeInstance1)
-  const issueTypeReference2 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'), issueTypeInstance2)
-  const issueTypeReference3 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType3'), issueTypeInstance3)
-  const issueTypeReference4 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType4'), issueTypeInstance4)
+  const issueTypeReference1 = new ReferenceExpression(
+    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'),
+    issueTypeInstance1,
+  )
+  const issueTypeReference2 = new ReferenceExpression(
+    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'),
+    issueTypeInstance2,
+  )
+  const issueTypeReference3 = new ReferenceExpression(
+    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType3'),
+    issueTypeInstance3,
+  )
+  const issueTypeReference4 = new ReferenceExpression(
+    new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType4'),
+    issueTypeInstance4,
+  )
   const projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
   let projectInstance: InstanceElement
   let secondProjectInstance: InstanceElement
@@ -41,9 +62,7 @@ describe('issue type scheme migration validator', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let numberOfIssues: number
   const callValidator = async (): Promise<readonly ChangeError[]> => {
-    const changes = [
-      toChange({ before: issueTypeScheme, after: modifiedIssueTypeScheme }),
-    ]
+    const changes = [toChange({ before: issueTypeScheme, after: modifiedIssueTypeScheme })]
     return validator(changes, elementSource)
   }
 
@@ -53,47 +72,24 @@ describe('issue type scheme migration validator', () => {
     mockConnection = connection
     numberOfIssues = 100
     const issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME) })
-    projectInstance = new InstanceElement(
-      'instance',
-      projectType,
-      {
-        name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
-        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
-      }
-    )
-    secondProjectInstance = new InstanceElement(
-      'instance2',
-      projectType,
-      {
-        name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
-        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
-      }
-    )
-    issueTypeScheme = new InstanceElement(
-      'issueTypeScheme',
-      issueTypeSchemeType,
-      {
-        defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
-        issueTypeIds: [
-          issueTypeReference1,
-          issueTypeReference2,
-          issueTypeReference3,
-        ],
-      }
-    )
-    modifiedIssueTypeScheme = new InstanceElement(
-      'issueTypeScheme',
-      issueTypeSchemeType,
-      {
-        defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
-        issueTypeIds: [
-          issueTypeReference1,
-          issueTypeReference4,
-        ],
-      }
-    )
+    projectInstance = new InstanceElement('instance', projectType, {
+      name: 'instance',
+      workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
+      issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
+    })
+    secondProjectInstance = new InstanceElement('instance2', projectType, {
+      name: 'instance',
+      workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
+      issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
+    })
+    issueTypeScheme = new InstanceElement('issueTypeScheme', issueTypeSchemeType, {
+      defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
+      issueTypeIds: [issueTypeReference1, issueTypeReference2, issueTypeReference3],
+    })
+    modifiedIssueTypeScheme = new InstanceElement('issueTypeScheme', issueTypeSchemeType, {
+      defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
+      issueTypeIds: [issueTypeReference1, issueTypeReference4],
+    })
     elementSource = buildElementsSourceFromElements([
       projectInstance,
       secondProjectInstance,
@@ -119,10 +115,7 @@ describe('issue type scheme migration validator', () => {
   })
 
   it('should not return an error if no issue types were removed', async () => {
-    modifiedIssueTypeScheme.value.issueTypeIds = [
-      ...issueTypeScheme.value.issueTypeIds,
-      issueTypeReference4,
-    ]
+    modifiedIssueTypeScheme.value.issueTypeIds = [...issueTypeScheme.value.issueTypeIds, issueTypeReference4]
     expect(await callValidator()).toEqual([])
   })
 
@@ -130,8 +123,7 @@ describe('issue type scheme migration validator', () => {
     issueTypeScheme.value.issueTypeIds = [
       new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType5'), {}),
     ]
-    modifiedIssueTypeScheme.value.issueTypeIds = [
-    ]
+    modifiedIssueTypeScheme.value.issueTypeIds = []
     await expect(callValidator()).resolves.not.toThrow()
   })
   it('should not throw on missing issue type ids ', async () => {
@@ -182,7 +174,9 @@ describe('issue type scheme migration validator', () => {
     const errors = await callValidator()
     expect(errors).toHaveLength(1)
     expect(errors[0].message).toEqual('Cannot remove issue types from scheme')
-    expect(errors[0].detailedMessage).toEqual('The issue types issueType2, issueType3 have assigned issues and cannot be removed from this issue type scheme')
+    expect(errors[0].detailedMessage).toEqual(
+      'The issue types issueType2, issueType3 have assigned issues and cannot be removed from this issue type scheme',
+    )
   })
   it('should only include issue type with assigned issues in error', async () => {
     numberOfIssues = 0
@@ -200,6 +194,8 @@ describe('issue type scheme migration validator', () => {
     const errors = await callValidator()
     expect(errors).toHaveLength(1)
     expect(errors[0].message).toEqual('Cannot remove issue type from scheme')
-    expect(errors[0].detailedMessage).toEqual('The issue type issueType2 have assigned issues and cannot be removed from this issue type scheme')
+    expect(errors[0].detailedMessage).toEqual(
+      'The issue type issueType2 have assigned issues and cannot be removed from this issue type scheme',
+    )
   })
 })

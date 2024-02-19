@@ -1,22 +1,37 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
-  FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
-  setPartialFetchData, InstanceElement, ObjectType, TypeElement, ChangeDataType,
+  FetchResult,
+  AdapterOperations,
+  DeployOptions,
+  ElemIdGetter,
+  ReadOnlyElementsSource,
+  ProgressReporter,
+  FetchOptions,
+  DeployModifiers,
+  getChangeData,
+  isObjectType,
+  isInstanceElement,
+  ElemID,
+  isSaltoElementError,
+  setPartialFetchData,
+  InstanceElement,
+  ObjectType,
+  TypeElement,
+  ChangeDataType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -71,7 +86,14 @@ import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_cust
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
 import alignFieldNamesFilter from './filters/align_field_names'
-import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
+import {
+  Filter,
+  LocalFilterCreator,
+  LocalFilterCreatorDefinition,
+  RemoteFilterCreator,
+  RemoteFilterCreatorDefinition,
+  RemoteFilterOpts,
+} from './filter'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -88,8 +110,23 @@ import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ImportFileCabinetResult } from './client/types'
-import { DEFAULT_VALIDATE, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, ALL_TYPES_REGEX, DEFAULT_WARN_STALE_DATA, DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from './config/constants'
-import { FetchByQueryFunc, NetsuiteQuery, FetchByQueryReturnType, andQuery, FetchByQueryFailures, buildNetsuiteQuery, convertToQueryParams, notQuery } from './config/query'
+import {
+  DEFAULT_VALIDATE,
+  DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+  ALL_TYPES_REGEX,
+  DEFAULT_WARN_STALE_DATA,
+  DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+} from './config/constants'
+import {
+  FetchByQueryFunc,
+  NetsuiteQuery,
+  FetchByQueryReturnType,
+  andQuery,
+  FetchByQueryFailures,
+  buildNetsuiteQuery,
+  convertToQueryParams,
+  notQuery,
+} from './config/query'
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 
@@ -203,16 +240,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly withPartialDeletion?: boolean
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
-  private createFiltersRunner: (params: {
-    operation: 'fetch'
-    isPartial: boolean
-    fetchTime: Date | undefined
-    timeZoneAndFormat: TimeZoneAndFormat
-    deletedElements: ElemID[]
-  } | {
-    operation: 'deploy'
-    changesGroupId: string
-  }) => Required<Filter>
+  private createFiltersRunner: (
+    params:
+      | {
+          operation: 'fetch'
+          isPartial: boolean
+          fetchTime: Date | undefined
+          timeZoneAndFormat: TimeZoneAndFormat
+          deletedElements: ElemID[]
+        }
+      | {
+          operation: 'deploy'
+          changesGroupId: string
+        },
+  ) => Required<Filter>
 
   public constructor({
     client,
@@ -226,8 +267,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
     this.typesToSkip = typesToSkip.concat(makeArray(config.typesToSkip))
-    this.filePathRegexSkipList = filePathRegexSkipList
-      .concat(makeArray(config.filePathRegexSkipList))
+    this.filePathRegexSkipList = filePathRegexSkipList.concat(makeArray(config.filePathRegexSkipList))
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
     this.fetchInclude = config.fetch.include
@@ -237,8 +277,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
     this.useChangesDetection = config.useChangesDetection
-    this.deployReferencedElements = config.deploy?.deployReferencedElements
-     ?? config.deployReferencedElements
+    this.deployReferencedElements = config.deploy?.deployReferencedElements ?? config.deployReferencedElements
     this.warnStaleData = config.deploy?.warnOnStaleWorkspaceData
     this.validateBeforeDeploy = config.deploy?.validate ?? DEFAULT_VALIDATE
     this.additionalDependencies = {
@@ -260,7 +299,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
             return {
               client: this.client,
               elementsSourceIndex: createElementsSourceIndex(
-                this.elementsSource, params.isPartial, params.deletedElements
+                this.elementsSource,
+                params.isPartial,
+                params.deletedElements,
               ),
               elementsSource: this.elementsSource,
               isPartial: params.isPartial,
@@ -289,27 +330,22 @@ export default class NetsuiteAdapter implements AdapterOperations {
     fetchQuery: NetsuiteQuery,
     progressReporter: ProgressReporter,
     useChangesDetection: boolean,
-    isPartial: boolean
+    isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
     const configRecords = await this.client.getConfigRecords()
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
-    const {
-      changedObjectsQuery,
-      serverTime,
-    } = await this.runSuiteAppOperations(
+    const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
       timeZoneAndFormat,
     )
-    const updatedFetchQuery = changedObjectsQuery !== undefined
-      ? andQuery(changedObjectsQuery, fetchQuery)
-      : fetchQuery
+    const updatedFetchQuery = changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQuery) : fetchQuery
 
     const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
       progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
       const result = await this.client.importFileCabinetContent(
         updatedFetchQuery,
-        this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
+        this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result
@@ -352,7 +388,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         this.client,
         customRecordTypes,
         fetchQuery,
-        this.getElemIdFunc
+        this.getElemIdFunc,
       )
       return {
         standardInstances,
@@ -365,14 +401,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     const [
-      {
-        standardInstances,
-        standardTypes,
-        customRecordTypes,
-        customRecords,
-        instancesIds,
-        failures,
-      },
+      { standardInstances, standardTypes, customRecordTypes, customRecords, instancesIds, failures },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
       suiteQLTableElements,
     ] = await Promise.all([
@@ -389,21 +418,22 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = (
-      isPartial && this.withPartialDeletion !== false) ? await getDeletedElements({
-        client: this.client,
-        elementsSource: this.elementsSource,
-        fetchQuery,
-        serviceInstanceIds: instancesIds,
-        requestedCustomRecordTypes: customRecordTypes,
-        serviceCustomRecords: customRecords,
-        requestedDataTypes,
-        serviceDataElements: dataElements.filter(isInstanceElement),
-      }) : {}
+    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult =
+      isPartial && this.withPartialDeletion !== false
+        ? await getDeletedElements({
+            client: this.client,
+            elementsSource: this.elementsSource,
+            fetchQuery,
+            serviceInstanceIds: instancesIds,
+            requestedCustomRecordTypes: customRecordTypes,
+            serviceCustomRecords: customRecords,
+            requestedDataTypes,
+            serviceDataElements: dataElements.filter(isInstanceElement),
+          })
+        : {}
 
-    const serverTimeElements = serverTime !== undefined
-      ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial)
-      : []
+    const serverTimeElements =
+      serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
 
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
@@ -431,16 +461,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
-  private shouldFetchWithChangesDetection(shouldFetchWithChangesDetectionParams : {
+  private shouldFetchWithChangesDetection(shouldFetchWithChangesDetectionParams: {
     withChangesDetection: boolean
     hasFetchTarget: boolean
     isFirstFetch: boolean
-  }) : boolean {
-    return !shouldFetchWithChangesDetectionParams.isFirstFetch && (
-      this.useChangesDetection === true
-      || shouldFetchWithChangesDetectionParams.withChangesDetection
-      // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
-      || (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
+  }): boolean {
+    return (
+      !shouldFetchWithChangesDetectionParams.isFirstFetch &&
+      (this.useChangesDetection === true ||
+        shouldFetchWithChangesDetectionParams.withChangesDetection ||
+        // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
+        (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
+    )
   }
 
   /**
@@ -453,13 +485,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfigType()))
     const hasFetchTarget = this.fetchTarget !== undefined
     if (hasFetchTarget && isFirstFetch) {
-      throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
+      throw new Error("Can't define fetchTarget for the first fetch. Remove fetchTarget from adapter config file")
     }
 
-    const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, [ALL_TYPES_REGEX]])),
-      filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
-    }))
+    const deprecatedSkipList = buildNetsuiteQuery(
+      convertToQueryParams({
+        types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, [ALL_TYPES_REGEX]])),
+        filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
+      }),
+    )
     const fetchQuery = [
       buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
@@ -467,10 +501,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),
       this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),
-    ].filter(values.isDefined).reduce(andQuery)
+    ]
+      .filter(values.isDefined)
+      .reduce(andQuery)
 
     const fetchWithChangesDetection = this.shouldFetchWithChangesDetection({
-      withChangesDetection, hasFetchTarget, isFirstFetch,
+      withChangesDetection,
+      hasFetchTarget,
+      isFirstFetch,
     })
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
@@ -495,11 +533,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
     timeZoneAndFormat: TimeZoneAndFormat,
-  ):
-    Promise<{
-      changedObjectsQuery?: NetsuiteQuery
-      serverTime?: Date
-    }> {
+  ): Promise<{
+    changedObjectsQuery?: NetsuiteQuery
+    serverTime?: Date
+  }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
@@ -533,15 +570,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private static getDeployErrors(
     originalChanges: DeployOptions['changeGroup']['changes'],
-    deployResult: DeployResult
+    deployResult: DeployResult,
   ): DeployResult['errors'] {
-    const originalChangesElemIds = new Set(originalChanges.map(change =>
-      getChangeData(change).elemID.getFullName()))
+    const originalChangesElemIds = new Set(originalChanges.map(change => getChangeData(change).elemID.getFullName()))
 
     const [saltoElementErrors, saltoErrors] = _.partition(deployResult.errors, isSaltoElementError)
-    const [originalChangesErrors, additionalChangesErrors] = _.partition(
-      saltoElementErrors,
-      error => originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName())
+    const [originalChangesErrors, additionalChangesErrors] = _.partition(saltoElementErrors, error =>
+      originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName()),
     )
 
     const errorsOnCustomFieldsByParents = _(originalChangesErrors)
@@ -566,16 +601,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const filtersRunner = this.createFiltersRunner({ operation: 'deploy', changesGroupId: groupID })
     await filtersRunner.preDeploy(changesToDeploy)
 
-    const deployResult = await this.client.deploy(
-      changesToDeploy,
-      groupID,
-      this.additionalDependencies,
-      elemID => this.elementsSource.has(elemID),
+    const deployResult = await this.client.deploy(changesToDeploy, groupID, this.additionalDependencies, elemID =>
+      this.elementsSource.has(elemID),
     )
 
-    const ids = new Set(deployResult.appliedChanges.map(
-      change => getChangeData(change).elemID.getFullName()
-    ))
+    const ids = new Set(deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()))
 
     const appliedChanges = changes
       .filter(change => ids.has(getChangeData(change).elemID.getFullName()))
@@ -596,8 +626,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         withSuiteApp: this.client.isSuiteAppConfigured(),
         warnStaleData: this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
         fetchByQuery: this.fetchByQuery,
-        deployReferencedElements: this.deployReferencedElements
-          ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+        deployReferencedElements: this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
         filtersRunner: changesGroupId => this.createFiltersRunner({ operation: 'deploy', changesGroupId }),

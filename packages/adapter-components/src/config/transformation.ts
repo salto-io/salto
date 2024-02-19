@@ -1,21 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
-  FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  FieldDefinition,
+  ListType,
+  RestrictionAnnotationType,
+} from '@salto-io/adapter-api'
 import { types, values, collections } from '@salto-io/lowerdash'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
 import { getConfigTypeName } from './request'
@@ -74,13 +81,16 @@ export type TransformationConfig = {
   nestStandaloneInstances?: boolean
 }
 
-export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>
+export type TransformationDefaultConfig = types.PickyRequired<
+  Partial<Omit<TransformationConfig, 'isSingleton'>>,
+  'idFields'
+>
 
 export const createTransformationConfigTypes = ({
   adapter,
   additionalFields,
   elemIdPrefix = '',
-}:{
+}: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
   elemIdPrefix?: string
@@ -174,7 +184,7 @@ export const createTransformationConfigTypes = ({
 export const validateTransoformationConfig = (
   configPath: string,
   defaultConfig: TransformationDefaultConfig,
-  configMap: Record<string, TransformationConfig>
+  configMap: Record<string, TransformationConfig>,
 ): void => {
   const findNestedFieldDups = (
     fieldName: string,
@@ -187,26 +197,25 @@ export const validateTransoformationConfig = (
         throw new Error(`Duplicate ${fieldName} params found in ${configPath} default config: ${duplicates}`)
       }
     }
-    const duplicates = (Object.entries(configEntriesMap)
+    const duplicates = Object.entries(configEntriesMap)
       .filter(([_typeName, config]) => config !== undefined)
       .map(([typeName, config]) => ({
         typeName,
         dups: findDuplicates((config ?? []).map(def => def.fieldName)),
       }))
       .filter(({ dups }) => dups.length > 0)
-    )
     if (duplicates.length > 0) {
-      throw new Error(`Duplicate ${fieldName} params found in ${configPath} for the following types: ${duplicates.map(d => d.typeName)}`)
+      throw new Error(
+        `Duplicate ${fieldName} params found in ${configPath} for the following types: ${duplicates.map(d => d.typeName)}`,
+      )
     }
   }
 
-  const getInvalidIdFields = (idFields: string[]): string[] => (
+  const getInvalidIdFields = (idFields: string[]): string[] =>
     idFields.filter(fieldName => {
       const symbolCount = (fieldName.match(/&/g) || []).length
-      return (symbolCount > 1)
-            || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))
+      return symbolCount > 1 || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))
     })
-  )
 
   const validateIdFieldsConfig = (
     defaultIdFields: string[] | undefined,
@@ -226,9 +235,12 @@ export const validateTransoformationConfig = (
           return { type, invalidFieldNames }
         }
         return undefined
-      }).filter(values.isDefined)
+      })
+      .filter(values.isDefined)
     if (invalidIdFieldsTypeConfig.length > 0) {
-      const invalidIdFieldsMsg = invalidIdFieldsTypeConfig.map(f => `in type: ${f.type}, invalid idFields: [${f.invalidFieldNames}]`)
+      const invalidIdFieldsMsg = invalidIdFieldsTypeConfig.map(
+        f => `in type: ${f.type}, invalid idFields: [${f.invalidFieldNames}]`,
+      )
       throw new Error(`Invalid idFields found in the following types:\n${invalidIdFieldsMsg.join('\n')}`)
     }
   }
@@ -254,45 +266,41 @@ export const validateTransoformationConfig = (
     _.mapValues(configMap, c => c.standaloneFields),
   )
 
-  const validateIsSingletonTypes = (Object.keys(configMap)
-    .filter(type => (
-      configMap[type].isSingleton
-      && (configMap[type].idFields !== undefined || configMap[type].fileNameFields !== undefined)
-    ))
+  const validateIsSingletonTypes = Object.keys(configMap).filter(
+    type =>
+      configMap[type].isSingleton &&
+      (configMap[type].idFields !== undefined || configMap[type].fileNameFields !== undefined),
   )
   if (validateIsSingletonTypes.length > 0) {
-    throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
+    throw new Error(
+      `Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`,
+    )
   }
 
-  validateIdFieldsConfig(defaultConfig.idFields, _.mapValues(configMap, c => c.idFields))
+  validateIdFieldsConfig(
+    defaultConfig.idFields,
+    _.mapValues(configMap, c => c.idFields),
+  )
 }
 
 export const getTypeTransformationConfig = (
   typeName: string,
   typeConfig: Record<string, TypeConfig>,
-  typeDefaultConfig: TypeDefaultsConfig
-): TransformationConfig => (
-  getConfigWithDefault(
-    typeConfig[typeName]?.transformation,
-    typeDefaultConfig.transformation,
+  typeDefaultConfig: TypeDefaultsConfig,
+): TransformationConfig => getConfigWithDefault(typeConfig[typeName]?.transformation, typeDefaultConfig.transformation)
+
+export const getTransformationConfigByType = (
+  typesConfig: Record<string, TypeConfig>,
+): Record<string, TransformationConfig> =>
+  _.pickBy(
+    _.mapValues(typesConfig, def => def.transformation),
+    values.isDefined,
   )
-)
 
-export const getTransformationConfigByType = (typesConfig: Record<string, TypeConfig>):
-Record<string, TransformationConfig> => _.pickBy(
-  _.mapValues(typesConfig, def => def.transformation),
-  values.isDefined,
-)
+export const isReferencedIdField = (idField: string): boolean => idField.startsWith(FIELD_REFERENCE_PREFIX)
 
-export const isReferencedIdField = (
-  idField: string
-): boolean => idField.startsWith(FIELD_REFERENCE_PREFIX)
-
-export const dereferenceFieldName = (
-  fieldName: string
-): string => (isReferencedIdField(fieldName)
-  ? _.trimStart(fieldName, FIELD_REFERENCE_PREFIX)
-  : fieldName)
+export const dereferenceFieldName = (fieldName: string): string =>
+  isReferencedIdField(fieldName) ? _.trimStart(fieldName, FIELD_REFERENCE_PREFIX) : fieldName
 
 export const shouldNestFiles = (
   transformationDefaultConfig: TransformationDefaultConfig,

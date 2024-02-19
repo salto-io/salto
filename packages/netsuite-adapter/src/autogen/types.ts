@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { TypesMap } from '../types/object_types'
 import { addressFormType } from './types/standard_types/addressForm'
 import { advancedpdftemplateType } from './types/standard_types/advancedpdftemplate'
@@ -74,7 +74,6 @@ import { workbookbuilderpluginType } from './types/standard_types/workbookbuilde
 import { workflowType } from './types/standard_types/workflow'
 import { workflowactionscriptType } from './types/standard_types/workflowactionscript'
 import { customrecordactionscriptType } from './types/standard_types/customrecordactionscript'
-
 
 const standardTypesNamesList = [
   'addressForm',
@@ -139,18 +138,17 @@ const standardTypesNamesList = [
   'workflowactionscript',
 ] as const
 
-export type StandardType = typeof standardTypesNamesList[number]
+export type StandardType = (typeof standardTypesNamesList)[number]
 
 const standardTypesNamesSet: ReadonlySet<StandardType> = new Set(standardTypesNamesList)
 export const isStandardTypeName = (name: string): name is StandardType =>
   standardTypesNamesSet.has(name as StandardType)
 
-export const getStandardTypesNames = (): StandardType[] =>
-  Array.from(standardTypesNamesList)
+export const getStandardTypesNames = (): StandardType[] => Array.from(standardTypesNamesList)
 
 /**
-* generated using types_generator.py as Netsuite don't expose a metadata API for them.
-*/
+ * generated using types_generator.py as Netsuite don't expose a metadata API for them.
+ */
 export const getStandardTypes = (): TypesMap<StandardType> => {
   const addressForm = addressFormType()
   const advancedpdftemplate = advancedpdftemplateType()

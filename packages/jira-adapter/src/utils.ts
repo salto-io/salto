@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  ObjectType,
+  Element,
+  isObjectType,
+  getDeepInnerType,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  isInstanceElement,
+  Value,
+  Values,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -45,9 +56,7 @@ export const setTypeDeploymentAnnotations = (type: ObjectType): void => {
 }
 
 export const findObject = (elements: Element[], name: string): ObjectType | undefined => {
-  const type = elements.filter(isObjectType).find(
-    element => element.elemID.name === name
-  )
+  const type = elements.filter(isObjectType).find(element => element.elemID.name === name)
 
   if (type === undefined) {
     log.warn(`${name} type not found`)
@@ -56,11 +65,7 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
   return type
 }
 
-
-export const addAnnotationRecursively = async (
-  type: ObjectType,
-  annotation: string
-): Promise<void> =>
+export const addAnnotationRecursively = async (type: ObjectType, annotation: string): Promise<void> =>
   awu(Object.values(type.fields)).forEach(async field => {
     if (!field.annotations[annotation]) {
       field.annotations[annotation] = true
@@ -71,11 +76,7 @@ export const addAnnotationRecursively = async (
     }
   })
 
-export const getFilledJspUrls = (
-  instance: InstanceElement,
-  config: JiraConfig,
-  typeName: string
-): JspUrls => {
+export const getFilledJspUrls = (instance: InstanceElement, config: JiraConfig, typeName: string): JspUrls => {
   const jspRequests = config.apiDefinitions.types[typeName]?.jspRequests
   if (jspRequests === undefined) {
     throw new Error(`${typeName} jsp urls are missing from the configuration`)
@@ -83,23 +84,22 @@ export const getFilledJspUrls = (
 
   return {
     ...jspRequests,
-    query: jspRequests.query && fetchUtils.resource.createUrl({
-      instance,
-      baseUrl: jspRequests.query,
-    }),
+    query:
+      jspRequests.query &&
+      fetchUtils.resource.createUrl({
+        instance,
+        baseUrl: jspRequests.query,
+      }),
   }
 }
 
-export const isAllFreeLicense = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<boolean> => {
-  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
+export const isAllFreeLicense = async (elementsSource: ReadOnlyElementsSource): Promise<boolean> => {
+  if (!(await elementsSource.has(ACCOUNT_INFO_ELEM_ID))) {
     log.error('account info instance not found in elements source, treating the account as paid one')
     return false
   }
   const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
-  if (!isInstanceElement(accountInfo)
-  || accountInfo.value.license?.applications === undefined) {
+  if (!isInstanceElement(accountInfo) || accountInfo.value.license?.applications === undefined) {
     log.error('account info instance or its license not found in elements source, treating the account as paid one')
     return false
   }
@@ -107,15 +107,12 @@ export const isAllFreeLicense = async (
   return !hasPaidApp
 }
 
-export const isJiraSoftwareFreeLicense = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<boolean> => {
-  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
+export const isJiraSoftwareFreeLicense = async (elementsSource: ReadOnlyElementsSource): Promise<boolean> => {
+  if (!(await elementsSource.has(ACCOUNT_INFO_ELEM_ID))) {
     return true
   }
   const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
-  if (!isInstanceElement(accountInfo)
-  || accountInfo.value.license?.applications === undefined) {
+  if (!isInstanceElement(accountInfo) || accountInfo.value.license?.applications === undefined) {
     log.error('account info instance or its license not found in elements source, treating the account as free one')
     return true
   }
@@ -128,14 +125,15 @@ export const isJiraSoftwareFreeLicense = async (
 }
 
 /*
-* Checks if the Jira service has a service desk license. The default is to assume that it doesn't.
-*/
-export const hasJiraServiceDeskLicense = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<boolean> => {
+ * Checks if the Jira service has a service desk license. The default is to assume that it doesn't.
+ */
+export const hasJiraServiceDeskLicense = async (elementsSource: ReadOnlyElementsSource): Promise<boolean> => {
   const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
-  if (accountInfo === undefined || !isInstanceElement(accountInfo)
-  || accountInfo.value.license?.applications === undefined) {
+  if (
+    accountInfo === undefined ||
+    !isInstanceElement(accountInfo) ||
+    accountInfo.value.license?.applications === undefined
+  ) {
     log.error('account info instance or its license not found in elements source, treating the account as free one')
     return false
   }
@@ -162,20 +160,26 @@ type ProjectDataResponse = {
 }
 
 const PROJECT_DATA_RESPONSE_SCHEMA = Joi.object({
-  values: Joi.array().items(Joi.object({
-    projectTypeKey: Joi.string().required(),
-  }).unknown(true).required()).required(),
-}).unknown(true).required()
-
+  values: Joi.array()
+    .items(
+      Joi.object({
+        projectTypeKey: Joi.string().required(),
+      })
+        .unknown(true)
+        .required(),
+    )
+    .required(),
+})
+  .unknown(true)
+  .required()
 
 const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DATA_RESPONSE_SCHEMA)
 
 /*
-* Checks if the Jira service has a software project. The default is to assume that it does.
-* We are going to exclude Borads if we sure that there is no software project.
-*/
-export const hasSoftwareProject = async (client: JiraClient):
-Promise<boolean> => {
+ * Checks if the Jira service has a software project. The default is to assume that it does.
+ * We are going to exclude Borads if we sure that there is no software project.
+ */
+export const hasSoftwareProject = async (client: JiraClient): Promise<boolean> => {
   try {
     const response = await client.get({
       url: '/rest/api/3/project/search',
@@ -193,17 +197,14 @@ Promise<boolean> => {
 export const convertPropertiesToList = (fields: Values[]): void => {
   fields.forEach(field => {
     if (field.properties != null) {
-      field.properties = Object.entries(field.properties)
-        .map(([key, value]) => ({ key, value }))
+      field.properties = Object.entries(field.properties).map(([key, value]) => ({ key, value }))
     }
   })
 }
 export const convertPropertiesToMap = (fields: Values[]): void => {
   fields.forEach(field => {
     if (field.properties != null) {
-      field.properties = Object.fromEntries(
-        field.properties.map(({ key, value }: Values) => [key, value])
-      )
+      field.properties = Object.fromEntries(field.properties.map(({ key, value }: Values) => [key, value]))
     }
   })
 }

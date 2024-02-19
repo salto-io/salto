@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -21,7 +21,6 @@ import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { SCRIPTED_FIELD_TYPE } from '../../../src/constants'
 import * as deployment from '../../../src/deployment/standard_deployment'
-
 
 type FilterType = filterUtils.FilterWith<'deploy'>
 
@@ -34,18 +33,9 @@ describe('script_runner_instance_deploy', () => {
 
   beforeEach(() => {
     type = createEmptyType(SCRIPTED_FIELD_TYPE)
-    scriptInstance1 = new InstanceElement(
-      'instance',
-      type,
-    )
-    scriptInstance2 = new InstanceElement(
-      'instance2',
-      type,
-    )
-    instance3 = new InstanceElement(
-      'instance3',
-      createEmptyType('type'),
-    )
+    scriptInstance1 = new InstanceElement('instance', type)
+    scriptInstance2 = new InstanceElement('instance2', type)
+    instance3 = new InstanceElement('instance3', createEmptyType('type'))
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableScriptRunnerAddon = true
     filter = scriptRunnerInstanceDeploy(getFilterParams({ config })) as FilterType
@@ -60,25 +50,15 @@ describe('script_runner_instance_deploy', () => {
       toChange({ after: scriptInstance2 }),
       toChange({ after: instance3 }),
     ])
-    expect(res.deployResult.appliedChanges).toEqual(
-      [toChange({ after: scriptInstance1 })],
-    )
-    expect(res.deployResult.errors).toEqual(
-      [{ message: '123', severity: 'Warning' }],
-    )
-    expect(res.leftoverChanges).toEqual(
-      [toChange({ after: instance3 })],
-    )
+    expect(res.deployResult.appliedChanges).toEqual([toChange({ after: scriptInstance1 })])
+    expect(res.deployResult.errors).toEqual([{ message: '123', severity: 'Warning' }])
+    expect(res.leftoverChanges).toEqual([toChange({ after: instance3 })])
   })
   it('should return empty if no relevant changes', async () => {
-    const res = await filter.deploy([
-      toChange({ after: instance3 }),
-    ])
+    const res = await filter.deploy([toChange({ after: instance3 })])
     expect(res.deployResult.appliedChanges).toEqual([])
     expect(res.deployResult.errors).toEqual([])
-    expect(res.leftoverChanges).toEqual(
-      [toChange({ after: instance3 })],
-    )
+    expect(res.leftoverChanges).toEqual([toChange({ after: instance3 })])
   })
   it('should not deploy if script runner is disabled', async () => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -91,8 +71,10 @@ describe('script_runner_instance_deploy', () => {
     ])
     expect(res.deployResult.appliedChanges).toEqual([])
     expect(res.deployResult.errors).toEqual([])
-    expect(res.leftoverChanges).toEqual(
-      [toChange({ after: scriptInstance1 }), toChange({ after: scriptInstance2 }), toChange({ after: instance3 })],
-    )
+    expect(res.leftoverChanges).toEqual([
+      toChange({ after: scriptInstance1 }),
+      toChange({ after: scriptInstance2 }),
+      toChange({ after: instance3 }),
+    ])
   })
 })

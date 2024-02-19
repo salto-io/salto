@@ -1,22 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import {
-  buildLazyShallowTypeResolverElementsSource,
-} from '@salto-io/adapter-utils'
+import { buildLazyShallowTypeResolverElementsSource } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
@@ -50,12 +48,14 @@ import deletedNonQueryableFields from './change_validators/deleted_non_queryable
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
-const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
+const { createChangeValidator, getDefaultChangeValidators } =
+  deployment.changeValidators
 
-type ChangeValidatorCreator = (config: SalesforceConfig,
-                               isSandbox: boolean,
-                               client: SalesforceClient) => ChangeValidator
-
+type ChangeValidatorCreator = (
+  config: SalesforceConfig,
+  isSandbox: boolean,
+  client: SalesforceClient,
+) => ChangeValidator
 
 export const defaultChangeValidatorsDeployConfig: Record<string, boolean> = {
   omitData: false,
@@ -64,7 +64,10 @@ export const defaultChangeValidatorsValidateConfig: Record<string, boolean> = {
   dataChange: false,
 }
 
-export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
+export const changeValidators: Record<
+  ChangeValidatorName,
+  ChangeValidatorCreator
+> = {
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
   customObjectInstances: () => customObjectInstancesValidator,
@@ -76,7 +79,8 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   recordTypeDeletion: () => recordTypeDeletionValidator,
-  flowsValidator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
+  flowsValidator: (config, isSandbox, client) =>
+    flowsValidator(config, isSandbox, client),
   fullNameChangedValidator: () => fullNameChangedValidator,
   invalidListViewFilterScope: () => invalidListViewFilterScope,
   caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
@@ -91,12 +95,18 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
-  standardFieldOrObjectAdditionsOrDeletions: () => standardFieldOrObjectAdditionsOrDeletions,
+  standardFieldOrObjectAdditionsOrDeletions: () =>
+    standardFieldOrObjectAdditionsOrDeletions,
   deletedNonQueryableFields: () => deletedNonQueryableFields,
-  ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
+  ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
 }
 
-const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {
+const createSalesforceChangeValidator = ({
+  config,
+  isSandbox,
+  checkOnly,
+  client,
+}: {
   config: SalesforceConfig
   isSandbox: boolean
   checkOnly: boolean
@@ -108,15 +118,24 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     : defaultChangeValidatorsDeployConfig
 
   const changeValidator = createChangeValidator({
-    validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
-    validatorsActivationConfig: { ...defaultValidatorsActivationConfig, ...config[DEPLOY_CONFIG]?.changeValidators },
+    validators: _.mapValues(changeValidators, (validator) =>
+      validator(config, isSandbox, client),
+    ),
+    validatorsActivationConfig: {
+      ...defaultValidatorsActivationConfig,
+      ...config[DEPLOY_CONFIG]?.changeValidators,
+    },
   })
 
   // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow
   // upon usage. This is relevant to Change Validators that get instances from the elementsSource.
-  return async (changes, elementSource) => ((elementSource === undefined)
-    ? changeValidator(changes, elementSource)
-    : changeValidator(changes, buildLazyShallowTypeResolverElementsSource(elementSource)))
+  return async (changes, elementSource) =>
+    elementSource === undefined
+      ? changeValidator(changes, elementSource)
+      : changeValidator(
+          changes,
+          buildLazyShallowTypeResolverElementsSource(elementSource),
+        )
 }
 
 export default createSalesforceChangeValidator

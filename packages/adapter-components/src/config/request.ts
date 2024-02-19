@@ -1,19 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType, ActionName, createRestriction } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  FieldDefinition,
+  MapType,
+  ListType,
+  ActionName,
+  createRestriction,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -22,7 +32,7 @@ import { findUnresolvedArgs } from '../fetch/request/utils'
 const { findDuplicates } = collections.array
 
 export const getConfigTypeName = (prefix: string, typeName: string): string =>
-  (_.isEmpty(prefix) ? typeName : prefix.concat('_', typeName))
+  _.isEmpty(prefix) ? typeName : prefix.concat('_', typeName)
 
 export type DependsOnConfig = {
   pathParam: string
@@ -43,10 +53,8 @@ type RecurseIntoConditionByContext = RecurseIntoConditionBase & {
 export type RecurseIntoCondition = RecurseIntoConditionByField | RecurseIntoConditionByContext
 
 export const isRecurseIntoConditionByField = (
-  condition: RecurseIntoCondition
-): condition is RecurseIntoConditionByField => (
-  'fromField' in condition
-)
+  condition: RecurseIntoCondition,
+): condition is RecurseIntoConditionByField => 'fromField' in condition
 
 type RecurseIntoContext = {
   name: string
@@ -93,7 +101,7 @@ export const createRequestConfigs = ({
   additionalFields,
   additionalActions,
   elemIdPrefix = '',
-}:{
+}: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
   additionalActions?: string[]
@@ -162,9 +170,7 @@ export const createRequestConfigs = ({
   })
 
   // either fromField or fromContext is required - not enforcing in nacl for now
-  const recurseIntoConditionType = createMatchingObjectType<
-    RecurseIntoConditionBase & Partial<RecurseIntoCondition
-  >>({
+  const recurseIntoConditionType = createMatchingObjectType<RecurseIntoConditionBase & Partial<RecurseIntoCondition>>({
     elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'recurseIntoCondition')),
     fields: {
       match: {
@@ -232,7 +238,6 @@ export const createRequestConfigs = ({
     },
   }
 
-
   const fetchEndpointFields: Record<string, FieldDefinition> = {
     recursiveQueryByResponseField: {
       refType: new MapType(BuiltinTypes.STRING),
@@ -266,7 +271,6 @@ export const createRequestConfigs = ({
     },
   })
 
-
   const deployRequestConfigType = new ObjectType({
     elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'deployRequestConfig')),
     fields: {
@@ -293,7 +297,7 @@ export const createRequestConfigs = ({
   })
 
   const additionalActionFields = Object.fromEntries(
-    additionalActions?.map(actionName => [actionName, { refType: deployRequestConfigType }]) ?? []
+    additionalActions?.map(actionName => [actionName, { refType: deployRequestConfigType }]) ?? [],
   )
   const deployRequestsType = new ObjectType({
     elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'deployRequests')),
@@ -326,7 +330,7 @@ export const createRequestConfigs = ({
 export const validateRequestConfig = (
   configPath: string,
   requestDefaultConfig: FetchRequestDefaultConfig | undefined,
-  requestConfigMap: Record<string, FetchRequestConfig>
+  requestConfigMap: Record<string, FetchRequestConfig>,
 ): void => {
   if (requestDefaultConfig?.dependsOn !== undefined) {
     const duplicates = findDuplicates(requestDefaultConfig.dependsOn.map(def => def.pathParam))
@@ -335,7 +339,7 @@ export const validateRequestConfig = (
     }
   }
   const defaultDependsOnArgs = (requestDefaultConfig?.dependsOn ?? []).map(d => d.pathParam)
-  const typesWithErrors = (Object.entries(requestConfigMap)
+  const typesWithErrors = Object.entries(requestConfigMap)
     .filter(([_typeName, config]) => config.dependsOn !== undefined)
     .map(([typeName, config]) => ({
       typeName,
@@ -346,15 +350,16 @@ export const validateRequestConfig = (
       ),
     }))
     .filter(({ dups, unresolvedArgs }) => dups.length > 0 || unresolvedArgs.length > 0)
-  )
   const dependsOnDups = typesWithErrors.filter(({ dups }) => dups.length > 0)
   if (dependsOnDups.length > 0) {
-    throw new Error(`Duplicate dependsOn params found in ${configPath} for the following types: ${dependsOnDups.map(d => d.typeName)}`)
+    throw new Error(
+      `Duplicate dependsOn params found in ${configPath} for the following types: ${dependsOnDups.map(d => d.typeName)}`,
+    )
   }
-  const typesWithUnresolvedArgs = typesWithErrors.filter(
-    ({ unresolvedArgs }) => unresolvedArgs.length > 0
-  )
+  const typesWithUnresolvedArgs = typesWithErrors.filter(({ unresolvedArgs }) => unresolvedArgs.length > 0)
   if (typesWithUnresolvedArgs.length > 0) {
-    throw new Error(`Unresolved URL params in the following types in ${configPath} for the following types: ${typesWithUnresolvedArgs.map(d => d.typeName)}`)
+    throw new Error(
+      `Unresolved URL params in the following types in ${configPath} for the following types: ${typesWithUnresolvedArgs.map(d => d.typeName)}`,
+    )
   }
 }

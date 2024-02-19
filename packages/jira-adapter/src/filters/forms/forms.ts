@@ -1,20 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, SaltoError, SeverityLevel, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Change,
+  InstanceElement,
+  ReferenceExpression,
+  SaltoError,
+  SeverityLevel,
+  getChangeData,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -28,10 +40,7 @@ import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../ut
 
 const { isDefined } = lowerDashValues
 
-const deployForms = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-): Promise<void> => {
+const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
   const project = getParent(form)
   if (form.value.design?.settings?.name === undefined) {
@@ -65,9 +74,9 @@ const deployForms = async (
 }
 
 /*
-* This filter fetches all forms from Jira Service Management and creates an instance element for each form.
-* We use filter because we need to use cloudId which is not available in the infrastructure.
-*/
+ * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
+ * We use filter because we need to use cloudId which is not available in the infrastructure.
+ */
 const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
@@ -81,7 +90,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     await addAnnotationRecursively(formType, CORE_ANNOTATIONS.UPDATABLE)
     await addAnnotationRecursively(formType, CORE_ANNOTATIONS.DELETABLE)
     elements.push(formType)
-    subTypes.forEach(subType => { elements.push(subType) })
+    subTypes.forEach(subType => {
+      elements.push(subType)
+    })
 
     const jsmProjects = elements
       .filter(isInstanceElement)
@@ -89,43 +100,47 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
     const errors: SaltoError[] = []
-    const forms = (await Promise.all(jsmProjects
-      .flatMap(async project => {
-        const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-        const res = await client.get({ url })
-        if (!isFormsResponse(res)) {
-          return undefined
-        }
-        return Promise.all(res.data
-          .map(async formResponse => {
-            const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-            const detailedRes = await client.get({ url: detailedUrl })
-            if (!isDetailedFormsResponse(detailedRes.data)) {
-              const error = {
-                message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
-                severity: 'Warning' as SeverityLevel,
+    const forms = (
+      await Promise.all(
+        jsmProjects.flatMap(async project => {
+          const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
+          const res = await client.get({ url })
+          if (!isFormsResponse(res)) {
+            return undefined
+          }
+          return Promise.all(
+            res.data.map(async formResponse => {
+              const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
+              const detailedRes = await client.get({ url: detailedUrl })
+              if (!isDetailedFormsResponse(detailedRes.data)) {
+                const error = {
+                  message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
+                  severity: 'Warning' as SeverityLevel,
+                }
+                errors.push(error)
+                return undefined
               }
-              errors.push(error)
-              return undefined
-            }
-            const name = naclCase(`${project.value.key}_${formResponse.name}`)
-            const formValue = detailedRes.data
-            const parentPath = project.path ?? []
-            const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
-            if (jsmDuckTypeApiDefinitions === undefined) {
-              return undefined
-            }
-            return new InstanceElement(
-              name,
-              formType,
-              formValue,
-              [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
-              {
-                [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+              const name = naclCase(`${project.value.key}_${formResponse.name}`)
+              const formValue = detailedRes.data
+              const parentPath = project.path ?? []
+              const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+              if (jsmDuckTypeApiDefinitions === undefined) {
+                return undefined
               }
-            )
-          }))
-      })))
+              return new InstanceElement(
+                name,
+                formType,
+                formValue,
+                [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+                {
+                  [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+                },
+              )
+            }),
+          )
+        }),
+      )
+    )
       .flat()
       .filter(isDefined)
     forms.forEach(form => {
@@ -153,11 +168,10 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     }
     const [formsChanges, leftoverChanges] = _.partition(
       changes,
-      (change): change is Change<InstanceElement> => isInstanceChange(change)
-      && getChangeData(change).elemID.typeName === FORM_TYPE
+      (change): change is Change<InstanceElement> =>
+        isInstanceChange(change) && getChangeData(change).elemID.typeName === FORM_TYPE,
     )
-    const deployResult = await deployChanges(formsChanges,
-      async change => deployForms(change, client))
+    const deployResult = await deployChanges(formsChanges, async change => deployForms(change, client))
 
     return {
       leftoverChanges,

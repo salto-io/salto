@@ -1,28 +1,44 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { mockFunction } from '@salto-io/test-utils'
 import { collections } from '../../src'
 
 const { asynciterable } = collections
 const {
   handleErrorsAsync,
-  findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
-  filterAsync, flattenAsync, awu, isEmptyAsync, lengthAsync, peekAsync, takeAsync,
-  zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
-  keyByAsync, iterateTogether, flatMapAsync,
+  findAsync,
+  mapAsync,
+  toArrayAsync,
+  toAsyncIterable,
+  concatAsync,
+  filterAsync,
+  flattenAsync,
+  awu,
+  isEmptyAsync,
+  lengthAsync,
+  peekAsync,
+  takeAsync,
+  zipSortedAsync,
+  someAsync,
+  everyAsync,
+  forEachAsync,
+  groupByAsync,
+  keyByAsync,
+  iterateTogether,
+  flatMapAsync,
 } = asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 
@@ -36,10 +52,7 @@ describe('asynciterable', () => {
       })
       describe('when the predicate returns true', () => {
         it('should return the value', async () => {
-          expect(await findAsync(
-            toAsyncIterable([1, 2, 3]),
-            (v, i) => v === 3 && i === 2,
-          )).toBe(3)
+          expect(await findAsync(toAsyncIterable([1, 2, 3]), (v, i) => v === 3 && i === 2)).toBe(3)
         })
       })
       describe('when the predicate does not return true', () => {
@@ -57,10 +70,7 @@ describe('asynciterable', () => {
       })
       describe('when the predicate returns true', () => {
         it('should return the value', async () => {
-          expect(await findAsync(
-            toAsyncIterable([1, 2, 3]),
-            async (v, i) => v === 3 && i === 2,
-          )).toBe(3)
+          expect(await findAsync(toAsyncIterable([1, 2, 3]), async (v, i) => v === 3 && i === 2)).toBe(3)
         })
       })
       describe('when the predicate does not return true', () => {
@@ -117,9 +127,7 @@ describe('asynciterable', () => {
 
   describe('takeAsync', () => {
     it('should return the first n values', async () => {
-      expect(await toArrayAsync(takeAsync(
-        toAsyncIterable(['A', 'B', 'C', 'D']), 2
-      ))).toEqual(['A', 'B'])
+      expect(await toArrayAsync(takeAsync(toAsyncIterable(['A', 'B', 'C', 'D']), 2))).toEqual(['A', 'B'])
     })
 
     it('should return all of the itr elements if n is greated then the it size', async () => {
@@ -138,31 +146,27 @@ describe('asynciterable', () => {
     })
     describe('when func is sync', () => {
       it('should return flat async iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, num => [num, num])
-        )
+        const result = await toArrayAsync(flatMapAsync(iterable, num => [num, num]))
         expect(result).toEqual([1, 1, 2, 2, 3, 3])
       })
       it('should only flatten one level of iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, num => [[num, num]])
-        )
-        expect(result).toEqual([[1, 1], [2, 2], [3, 3]])
+        const result = await toArrayAsync(flatMapAsync(iterable, num => [[num, num]]))
+        expect(result).toEqual([
+          [1, 1],
+          [2, 2],
+          [3, 3],
+        ])
       })
     })
     describe('when func is async', () => {
       it('should return flat async iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, async num => [num, num])
-        )
+        const result = await toArrayAsync(flatMapAsync(iterable, async num => [num, num]))
         expect(result).toEqual([1, 1, 2, 2, 3, 3])
       })
     })
     describe('when func returns async iterable', () => {
       it('should return flat async iterable', async () => {
-        const result = await toArrayAsync(
-          flatMapAsync(iterable, num => toAsyncIterable([num, num]))
-        )
+        const result = await toArrayAsync(flatMapAsync(iterable, num => toAsyncIterable([num, num])))
         expect(result).toEqual([1, 1, 2, 2, 3, 3])
       })
     })
@@ -177,17 +181,14 @@ describe('asynciterable', () => {
 
     beforeEach(() => {
       toStringMock = jest.fn().mockImplementation((v: number) => v.toString())
-      asyncToStringMock = jest.fn().mockImplementation(async (v: number): Promise<string> =>
-        v.toString())
+      asyncToStringMock = jest.fn().mockImplementation(async (v: number): Promise<string> => v.toString())
       numberIdentityMock = jest.fn().mockImplementation((v: number) => v)
     })
 
     describe('when mapFunc is sync', () => {
       describe('when given an empty iterable', () => {
         it('should return empty array', async () => {
-          expect(await toArrayAsync(
-            mapAsync(toAsyncIterable([]), toStringMock)
-          )).toEqual([])
+          expect(await toArrayAsync(mapAsync(toAsyncIterable([]), toStringMock))).toEqual([])
           expect(toStringMock).toHaveBeenCalledTimes(0)
         })
       })
@@ -195,9 +196,7 @@ describe('asynciterable', () => {
       describe('when iterable has values', () => {
         it('should return same result as a map on the original array', async () => {
           iterable = toAsyncIterable(baseArray)
-          expect(await toArrayAsync(
-            mapAsync(iterable, toStringMock)
-          )).toEqual(baseArray.map(v => v.toString()))
+          expect(await toArrayAsync(mapAsync(iterable, toStringMock))).toEqual(baseArray.map(v => v.toString()))
           expect(toStringMock).toHaveBeenCalledTimes(3)
         })
       })
@@ -205,9 +204,7 @@ describe('asynciterable', () => {
     describe('when mapFunc is async', () => {
       describe('when given an empty iterable', () => {
         it('should return empty array', async () => {
-          expect(await toArrayAsync(
-            mapAsync(toAsyncIterable([]), asyncToStringMock)
-          )).toEqual([])
+          expect(await toArrayAsync(mapAsync(toAsyncIterable([]), asyncToStringMock))).toEqual([])
           expect(asyncToStringMock).toHaveBeenCalledTimes(0)
         })
       })
@@ -215,9 +212,7 @@ describe('asynciterable', () => {
       describe('when iterable has values', () => {
         it('should return same result as a map on an array (not Promises)', async () => {
           iterable = toAsyncIterable(baseArray)
-          expect(await toArrayAsync(
-            mapAsync(iterable, asyncToStringMock)
-          )).toEqual(baseArray.map(v => v.toString()))
+          expect(await toArrayAsync(mapAsync(iterable, asyncToStringMock))).toEqual(baseArray.map(v => v.toString()))
           expect(asyncToStringMock).toHaveBeenCalledTimes(3)
         })
       })
@@ -226,9 +221,9 @@ describe('asynciterable', () => {
     describe('when mapFunc is called twice in a row', () => {
       it('should call both map funcs on each element before calling on the next one', async () => {
         iterable = toAsyncIterable(baseArray)
-        expect(await toArrayAsync(
-          mapAsync(mapAsync(iterable, numberIdentityMock), numberIdentityMock)
-        )).toEqual(baseArray)
+        expect(await toArrayAsync(mapAsync(mapAsync(iterable, numberIdentityMock), numberIdentityMock))).toEqual(
+          baseArray,
+        )
         expect(numberIdentityMock).toHaveBeenCalledTimes(6)
         expect(numberIdentityMock).toHaveBeenNthCalledWith(1, 1, 0)
         expect(numberIdentityMock).toHaveBeenNthCalledWith(2, 1, 0)
@@ -244,72 +239,56 @@ describe('asynciterable', () => {
     describe('when funcMap is sync', () => {
       it('should return an async iterator without the filtered elements', async () => {
         const iterable = toAsyncIterable([1, 2, 3])
-        expect(await toArrayAsync(
-          filterAsync(iterable, i => i !== 2)
-        )).toEqual([1, 3])
+        expect(await toArrayAsync(filterAsync(iterable, i => i !== 2))).toEqual([1, 3])
       })
     })
     describe('when funcMap is async', () => {
       it('should return an async iterator without the filtered elements', async () => {
         const iterable = toAsyncIterable([1, 2, 3])
-        expect(await toArrayAsync(
-          filterAsync(iterable, async i => i !== 2)
-        )).toEqual([1, 3])
+        expect(await toArrayAsync(filterAsync(iterable, async i => i !== 2))).toEqual([1, 3])
       })
     })
   })
 
   describe('concatAsync', () => {
     it('should return an empty iterator if one iterator is porivded', async () => {
-      const concated = await toArrayAsync(concatAsync(
-        toAsyncIterable([])
-      ))
+      const concated = await toArrayAsync(concatAsync(toAsyncIterable([])))
       expect(concated).toEqual([])
     })
     it('should return the original iterator if only an iterator is provided', async () => {
-      const concated = await toArrayAsync(concatAsync(
-        toAsyncIterable([1, 2, 3])
-      ))
+      const concated = await toArrayAsync(concatAsync(toAsyncIterable([1, 2, 3])))
       expect(concated).toEqual([1, 2, 3])
     })
     it('should return an async version of the original iterator if only a sync iterator is provided', async () => {
-      const concated = await toArrayAsync(concatAsync(
-        [1, 2, 3]
-      ))
+      const concated = await toArrayAsync(concatAsync([1, 2, 3]))
       expect(concated).toEqual([1, 2, 3])
     })
     it('should concat multiple iterables', async () => {
-      const concated = await toArrayAsync(concatAsync(
-        toAsyncIterable([1, 2, 3]),
-        [4, 5, 6],
-        toAsyncIterable([7, 8, 9])
-      ))
+      const concated = await toArrayAsync(
+        concatAsync(toAsyncIterable([1, 2, 3]), [4, 5, 6], toAsyncIterable([7, 8, 9])),
+      )
       expect(concated).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
     })
   })
 
   describe('flattenAsync', () => {
     it('should flatten all iterables', async () => {
-      const flattened = await toArrayAsync(flattenAsync(
-        [[1, 2, 3]],
-        toAsyncIterable([[4], [5, 6]]),
-        [toAsyncIterable([7, 8])],
-        toAsyncIterable([[], toAsyncIterable([9])]),
-        [10]
-      ))
+      const flattened = await toArrayAsync(
+        flattenAsync(
+          [[1, 2, 3]],
+          toAsyncIterable([[4], [5, 6]]),
+          [toAsyncIterable([7, 8])],
+          toAsyncIterable([[], toAsyncIterable([9])]),
+          [10],
+        ),
+      )
       expect(flattened).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     })
   })
 
   describe('zipSortedAsync', () => {
     it('should return a sorted iterable of multiple sorted iterables', async () => {
-      const iterables = [
-        toAsyncIterable([1, 4, 5, 12]),
-        [3, 4, 6],
-        [1, 2, 10],
-        [],
-        [40],
-      ]
+      const iterables = [toAsyncIterable([1, 4, 5, 12]), [3, 4, 6], [1, 2, 10], [], [40]]
       const shouldBeSorted = await toArrayAsync(zipSortedAsync(v => v, ...iterables))
       expect(shouldBeSorted).toEqual([1, 1, 2, 3, 4, 4, 5, 6, 10, 12, 40])
     })
@@ -325,35 +304,23 @@ describe('asynciterable', () => {
 
   describe('someAsync', () => {
     it('should return true of one of the elements is truthy', async () => {
-      expect(
-        await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 2))
-      ).toBe(true)
+      expect(await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 2))).toBe(true)
     })
     it('should return false if none of the elements are truthy', async () => {
-      expect(
-        await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 5))
-      ).toBe(false)
+      expect(await someAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n === 5))).toBe(false)
     })
     it('should allow some function to get an index', async () => {
-      expect(
-        await someAsync(toAsyncIterable([1, 2, 3, 4]), (n, i) => Promise.resolve(n === i))
-      ).toBe(false)
-      expect(
-        await someAsync(toAsyncIterable([1, 1, 3, 4]), (n, i) => Promise.resolve(n === i))
-      ).toBe(true)
+      expect(await someAsync(toAsyncIterable([1, 2, 3, 4]), (n, i) => Promise.resolve(n === i))).toBe(false)
+      expect(await someAsync(toAsyncIterable([1, 1, 3, 4]), (n, i) => Promise.resolve(n === i))).toBe(true)
     })
   })
 
   describe('everyAsync', () => {
     it('should return true of all of the elements is truthy', async () => {
-      expect(
-        await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 5))
-      ).toBe(true)
+      expect(await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 5))).toBe(true)
     })
     it('should return false if at least one of the elements are falsy', async () => {
-      expect(
-        await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 3))
-      ).toBe(false)
+      expect(await everyAsync(toAsyncIterable([1, 2, 3, 4]), n => Promise.resolve(n !== 3))).toBe(false)
     })
   })
 
@@ -373,8 +340,7 @@ describe('asynciterable', () => {
       firstIter = awu([0, 1, 3, 4, 5, 8])
       secondIter = awu([0, 4, 5, 7, 9])
     })
-    const expectBeforeAfterEquals = (array1: BeforeAfter<number>[],
-      array2: BeforeAfter<number>[]): void => {
+    const expectBeforeAfterEquals = (array1: BeforeAfter<number>[], array2: BeforeAfter<number>[]): void => {
       expect(array1.length).toEqual(array2.length)
       for (let i = 0; i < array1.length; i += 1) {
         expect(array1[i].before).toEqual(array2[i].before)
@@ -395,23 +361,25 @@ describe('asynciterable', () => {
       ]
       expectBeforeAfterEquals(result, expected)
       const resultReversed = await awu(iterateTogether(secondIter, firstIter, cmp)).toArray()
-      expectBeforeAfterEquals(resultReversed,
-        expected.map(ba => ({ before: ba.after, after: ba.before })))
+      expectBeforeAfterEquals(
+        resultReversed,
+        expected.map(ba => ({ before: ba.after, after: ba.before })),
+      )
     })
     it('should throw exception if iterator unsorted', async () => {
-      await expect(awu(iterateTogether(awu(firstIter), awu([1, 0]), cmp)).toArray()).rejects
-        .toEqual(new Error('Runtime Error: iterators must be sorted'))
-      await expect(awu(iterateTogether(awu([0, 5, 1]), secondIter, cmp)).toArray()).rejects
-        .toEqual(new Error('Runtime Error: iterators must be sorted'))
+      await expect(awu(iterateTogether(awu(firstIter), awu([1, 0]), cmp)).toArray()).rejects.toEqual(
+        new Error('Runtime Error: iterators must be sorted'),
+      )
+      await expect(awu(iterateTogether(awu([0, 5, 1]), secondIter, cmp)).toArray()).rejects.toEqual(
+        new Error('Runtime Error: iterators must be sorted'),
+      )
     })
   })
 
   describe('forEachAsync', () => {
     it('should run the callback on all elements', async () => {
       let counter = 0
-      const itr = toAsyncIterable(
-        [1, 2, 3]
-      )
+      const itr = toAsyncIterable([1, 2, 3])
       await forEachAsync(itr, async n => {
         counter += n
       })
@@ -432,7 +400,10 @@ describe('asynciterable', () => {
 
   describe('keyByAsync', () => {
     it('should create a key according to the key function', async () => {
-      const itr = toAsyncIterable([{ key: 'A', val: 1 }, { key: 'B', val: 1 }])
+      const itr = toAsyncIterable([
+        { key: 'A', val: 1 },
+        { key: 'B', val: 1 },
+      ])
       const res = await keyByAsync(itr, async v => v.key)
       expect(res).toEqual({
         A: { key: 'A', val: 1 },
@@ -494,7 +465,11 @@ describe('asynciterable', () => {
         expect(await awu([1, 2, 3]).take(2).toArray()).toEqual([1, 2])
       })
       it('should forward the flat function to flatAsync', async () => {
-        expect(await awu([[1, 2], [3]]).flat().toArray()).toEqual([1, 2, 3])
+        expect(
+          await awu([[1, 2], [3]])
+            .flat()
+            .toArray(),
+        ).toEqual([1, 2, 3])
       })
       it('should forward the some function to someAsync', async () => {
         expect(await awu([true, false]).some(i => i)).toBeTruthy()
@@ -513,8 +488,11 @@ describe('asynciterable', () => {
         })
       })
       it('should delete copies from list when uniquifying', async () => {
-        expect(await awu([1, 2, 3, 5, 4, 6, 6, 4, 3, 7, 2, 1])
-          .uniquify(num => num).toArray()).toEqual([1, 2, 3, 5, 4, 6, 7])
+        expect(
+          await awu([1, 2, 3, 5, 4, 6, 6, 4, 3, 7, 2, 1])
+            .uniquify(num => num)
+            .toArray(),
+        ).toEqual([1, 2, 3, 5, 4, 6, 7])
       })
     })
     describe('function chaining', () => {
@@ -542,10 +520,7 @@ describe('asynciterable', () => {
 
     describe('reduce', () => {
       it('should return the reduced value', async () => {
-        const res = await awu([1, 2, 3]).reduce(
-          async (total, current, index) => total + current + index,
-          0,
-        )
+        const res = await awu([1, 2, 3]).reduce(async (total, current, index) => total + current + index, 0)
         expect(res).toEqual(9)
       })
     })
@@ -560,11 +535,10 @@ describe('asynciterable', () => {
       mapper = mockFunction<typeof mapper>().mockImplementation(num => num)
       iterable = mapAsync(
         handleErrorsAsync(
-          mapAsync(
-            toAsyncIterable([1, 2, 3, 4, 5]),
-            num => (num === 4 ? Promise.reject(new Error('err')) : Promise.resolve(num))
+          mapAsync(toAsyncIterable([1, 2, 3, 4, 5]), num =>
+            num === 4 ? Promise.reject(new Error('err')) : Promise.resolve(num),
           ),
-          errorHandler
+          errorHandler,
         ),
         mapper,
       )
@@ -572,7 +546,9 @@ describe('asynciterable', () => {
     describe('when error handling function throws', () => {
       let result: Promise<number[]>
       beforeEach(() => {
-        errorHandler.mockImplementation(error => { throw error })
+        errorHandler.mockImplementation(error => {
+          throw error
+        })
         result = toArrayAsync(iterable)
       })
       it('should throw the error', async () => {

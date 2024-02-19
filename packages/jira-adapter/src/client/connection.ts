@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -28,9 +28,7 @@ type appInfo = {
   plan: string
 }
 
-const isAuthorized = async (
-  connection: clientUtils.APIConnection,
-): Promise<boolean> => {
+const isAuthorized = async (connection: clientUtils.APIConnection): Promise<boolean> => {
   try {
     await connection.get('/rest/api/3/configuration')
     return true
@@ -42,9 +40,7 @@ const isAuthorized = async (
   }
 }
 
-const getBaseUrl = async (
-  connection: clientUtils.APIConnection,
-): Promise<string> => {
+const getBaseUrl = async (connection: clientUtils.APIConnection): Promise<string> => {
   const response = await connection.get('/rest/api/3/serverInfo')
   return response.data.baseUrl
 }
@@ -53,9 +49,13 @@ const getBaseUrl = async (
 Based on the current implementation of the Jira API, we can't know if the account is a production
 account, but in some cases we can know that it's not a production account.
 */
-export const validateCredentials = async (
-  { connection, credentials }: { connection: clientUtils.APIConnection; credentials: Credentials },
-): Promise<AccountInfo> => {
+export const validateCredentials = async ({
+  connection,
+  credentials,
+}: {
+  connection: clientUtils.APIConnection
+  credentials: Credentials
+}): Promise<AccountInfo> => {
   const productSettings = getProductSettings({ isDataCenter: Boolean(credentials.isDataCenter) })
   const wrappedConnection = productSettings.wrapConnection(connection)
   if (await isAuthorized(wrappedConnection)) {
@@ -76,20 +76,17 @@ export const validateCredentials = async (
   throw new CredentialError('Invalid Credentials')
 }
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async credentials => (
-      {
-        auth: {
-          username: credentials.user,
-          password: credentials.token,
-        },
-        headers: credentials.isDataCenter ? {} : { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...EXPERIMENTAL_API_HEADERS },
-      }
-    ),
+    authParamsFunc: async credentials => ({
+      auth: {
+        username: credentials.user,
+        password: credentials.token,
+      },
+      headers: credentials.isDataCenter ? {} : { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...EXPERIMENTAL_API_HEADERS },
+    }),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,
     timeout,
   })
-)

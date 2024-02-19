@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
@@ -40,8 +40,7 @@ const getTransitionType = (transition: Transition): TransitionType => {
   if (transition.type?.toLowerCase() === 'initial') {
     return 'Initial'
   }
-  if (transition.from !== undefined
-    && transition.from.length !== 0) {
+  if (transition.from !== undefined && transition.from.length !== 0) {
     return 'Directed'
   }
   if ((transition.to ?? '') === '') {
@@ -67,58 +66,65 @@ export const transitionKeysToExpectedIds = (workflowInstance: WorkflowV1Instance
     map.set(key, (1 + count * 10).toString())
   })
 
-
   return map
 }
 
-export const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
-  .filter((status): status is {id: string; name: string} => typeof status.id === 'string' && status.name !== undefined)
-  .map((status => [status.id, status.name])))
+export const createStatusMap = (statuses: Status[]): Map<string, string> =>
+  new Map(
+    statuses
+      .filter(
+        (status): status is { id: string; name: string } => typeof status.id === 'string' && status.name !== undefined,
+      )
+      .map(status => [status.id, status.name]),
+  )
 
 export const getTransitionKey = (transition: Transition, statusesMap: Map<string, string>): string => {
   const type = getTransitionType(transition)
-  const fromSorted = type === 'Directed'
-    ? (transition.from?.map(from => (
-      typeof from === 'string' ? from : from.id ?? ''
-    )) ?? [])
-      .map(from => statusesMap.get(from) ?? from)
-      .sort()
-      .join(',')
-    : TYPE_TO_FROM_MAP[type]
+  const fromSorted =
+    type === 'Directed'
+      ? (transition.from?.map(from => (typeof from === 'string' ? from : from.id ?? '')) ?? [])
+          .map(from => statusesMap.get(from) ?? from)
+          .sort()
+          .join(',')
+      : TYPE_TO_FROM_MAP[type]
 
   return naclCase([transition.name, `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
 }
 
-export const transformTransitions = (
-  value: Value,
-  statuses?: Pick<Status, 'id' | 'name'>[]
-): SaltoError[] => {
+export const transformTransitions = (value: Value, statuses?: Pick<Status, 'id' | 'name'>[]): SaltoError[] => {
   const statusesMap = createStatusMap(statuses ?? value.statuses ?? [])
-  const maxCounts = _(value.transitions).map(transition => getTransitionKey(transition, statusesMap)).countBy().value()
+  const maxCounts = _(value.transitions)
+    .map(transition => getTransitionKey(transition, statusesMap))
+    .countBy()
+    .value()
 
   const counts: Record<string, number> = {}
 
-  value.transitions = Object.fromEntries(value.transitions
-    // This is Value and not the actual type as we change types
-    .map((transition: Value) => {
-      const key = getTransitionKey(transition, statusesMap)
-      counts[key] = (counts[key] ?? 0) + 1
-      if (maxCounts[key] > 1) {
-        return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
-      }
-      return [key, transition]
-    }))
+  value.transitions = Object.fromEntries(
+    value.transitions
+      // This is Value and not the actual type as we change types
+      .map((transition: Value) => {
+        const key = getTransitionKey(transition, statusesMap)
+        counts[key] = (counts[key] ?? 0) + 1
+        if (maxCounts[key] > 1) {
+          return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
+        }
+        return [key, transition]
+      }),
+  )
   const errorKeyNames = Object.entries(counts)
     .filter(([, count]) => count > 1)
     .map(([key]) => invertNaclCase(key).split(TRANSITION_PARTS_SEPARATOR)[0])
 
   return errorKeyNames.length === 0
     ? []
-    : [{
-      message: `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
+    : [
+        {
+          message: `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
-      severity: 'Warning',
-    }]
+          severity: 'Warning',
+        },
+      ]
 }
 
 export const walkOverTransitionIds = (transition: Transition, func: (value: Value) => void): void => {
@@ -134,23 +140,35 @@ export const walkOverTransitionIds = (transition: Transition, func: (value: Valu
 
 export const walkOverTransitionIdsV2 = (transition: WorkflowTransitionV2, func: (value: Value) => void): void => {
   transition.actions
-    ?.filter(action =>
-      action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE
-      && action.parameters.scriptRunner?.transitionId !== undefined)
+    ?.filter(
+      action =>
+        action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE &&
+        action.parameters.scriptRunner?.transitionId !== undefined,
+    )
     .forEach(action => {
       func(action.parameters.scriptRunner)
     })
 }
 
-export const expectedToActualTransitionIds = ({ transitions, expectedTransitionIds, statusesMap }
-: { transitions: Transition[]
+export const expectedToActualTransitionIds = ({
+  transitions,
+  expectedTransitionIds,
+  statusesMap,
+}: {
+  transitions: Transition[]
   expectedTransitionIds: Map<string, string>
   statusesMap: Map<string, string>
 }): Record<string, string> =>
-  Object.fromEntries(transitions
-    // create a map of [expectedId, actualId]
-    .map(transition => [
-      expectedTransitionIds.get(getTransitionKey(transition, statusesMap)),
-      transition.id] as [string | undefined, string | undefined])
-    .filter(([expectedId, actualId]) => expectedId !== undefined && actualId !== undefined)
-    .filter(([expectedId, actualId]) => expectedId !== actualId))
+  Object.fromEntries(
+    transitions
+      // create a map of [expectedId, actualId]
+      .map(
+        transition =>
+          [expectedTransitionIds.get(getTransitionKey(transition, statusesMap)), transition.id] as [
+            string | undefined,
+            string | undefined,
+          ],
+      )
+      .filter(([expectedId, actualId]) => expectedId !== undefined && actualId !== undefined)
+      .filter(([expectedId, actualId]) => expectedId !== actualId),
+  )

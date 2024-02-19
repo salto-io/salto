@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 export const OKTA = 'okta'
 export const APPLICATION_TYPE_NAME = 'Application'
 export const GROUP_TYPE_NAME = 'Group'
@@ -47,10 +47,22 @@ export const AUTOMATION_TYPE_NAME = 'Automation'
 export const AUTOMATION_RULE_TYPE_NAME = 'AutomationRule'
 export const ACTIVE_STATUS = 'ACTIVE'
 export const INACTIVE_STATUS = 'INACTIVE'
-export const POLICY_TYPE_NAMES = [ACCESS_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME,
-  SIGN_ON_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME]
-export const POLICY_RULE_TYPE_NAMES = [ACCESS_POLICY_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME,
-  SIGN_ON_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
+export const POLICY_TYPE_NAMES = [
+  ACCESS_POLICY_TYPE_NAME,
+  IDP_POLICY_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
+  SIGN_ON_POLICY_TYPE_NAME,
+  PASSWORD_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+]
+export const POLICY_RULE_TYPE_NAMES = [
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  IDP_RULE_TYPE_NAME,
+  MFA_RULE_TYPE_NAME,
+  SIGN_ON_RULE_TYPE_NAME,
+  PASSWORD_RULE_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+]
 export const CUSTOM_NAME_FIELD = 'customName'
 export const LINKS_FIELD = '_links'
 export const SAML_2_0_APP = 'SAML_2_0'

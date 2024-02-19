@@ -1,26 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, Element, InstanceElement, ObjectType, ReferenceExpression, createRefToElmWithValue, isInstanceElement, isObjectType, isReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  Element,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  createRefToElmWithValue,
+  isInstanceElement,
+  isObjectType,
+  isReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { FILE, NETSUITE } from '../../src/constants'
 import { LocalFilterOpts } from '../../src/filter'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { fullFetchConfig } from '../../src/config/config_creator'
 import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
-import filterCreator, { UNKNOWN_TYPE_REFERENCES_ELEM_ID, UNKNOWN_TYPE_REFERENCES_TYPE_NAME } from '../../src/filters/data_account_specific_values'
+import filterCreator, {
+  UNKNOWN_TYPE_REFERENCES_ELEM_ID,
+  UNKNOWN_TYPE_REFERENCES_TYPE_NAME,
+} from '../../src/filters/data_account_specific_values'
 
 describe('data account specific values filter', () => {
   let dataType: ObjectType
@@ -44,25 +58,17 @@ describe('data account specific values filter', () => {
       annotations: { source: 'soap' },
     })
     suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
-    suiteQLTableInstance = new InstanceElement(
-      'account',
-      suiteQLTableType,
-      {
-        [INTERNAL_IDS_MAP]: {
-          1: { name: 'Account 1' },
-        },
-      }
-    )
+    suiteQLTableInstance = new InstanceElement('account', suiteQLTableType, {
+      [INTERNAL_IDS_MAP]: {
+        1: { name: 'Account 1' },
+      },
+    })
     unknownTypeReferencesType = new ObjectType({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
-    existingUnknownTypeReferencesInstance = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      unknownTypeReferencesType,
-      {
-        [naclCase('someType.someField.inner')]: {
-          789: 'Value 789',
-        },
-      }
-    )
+    existingUnknownTypeReferencesInstance = new InstanceElement(ElemID.CONFIG_NAME, unknownTypeReferencesType, {
+      [naclCase('someType.someField.inner')]: {
+        789: 'Value 789',
+      },
+    })
     filterOpts = {
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
       elementsSource: buildElementsSourceFromElements([
@@ -86,43 +92,34 @@ describe('data account specific values filter', () => {
     let elements: Element[]
 
     beforeEach(() => {
-      dataInstance = new InstanceElement(
-        'instance',
-        dataType,
-        {
-          mainAddress: {
-            country: '_unitedStates',
-            state: 'CA',
-            internalId: '1',
+      dataInstance = new InstanceElement('instance', dataType, {
+        mainAddress: {
+          country: '_unitedStates',
+          state: 'CA',
+          internalId: '1',
+        },
+        accountField: {
+          internalId: '1',
+        },
+        customField: {
+          name: 'Account 2',
+          internalId: '2',
+          typeId: '-112',
+        },
+        someField: {
+          inner: {
+            name: 'Value 123',
+            internalId: '123',
           },
-          accountField: {
-            internalId: '1',
+        },
+        listField: [
+          {
+            name: 'Value 456',
+            internalId: '456',
           },
-          customField: {
-            name: 'Account 2',
-            internalId: '2',
-            typeId: '-112',
-          },
-          someField: {
-            inner: {
-              name: 'Value 123',
-              internalId: '123',
-            },
-          },
-          listField: [
-            {
-              name: 'Value 456',
-              internalId: '456',
-            },
-          ],
-        }
-      )
-      elements = [
-        dataType,
-        dataInstance,
-        suiteQLTableType,
-        suiteQLTableInstance,
-      ]
+        ],
+      })
+      elements = [dataType, dataInstance, suiteQLTableType, suiteQLTableInstance]
     })
 
     it('should transform references to ACCOUNT_SPECIFIC_VALUE', async () => {
@@ -174,18 +171,14 @@ describe('data account specific values filter', () => {
 
     it('should use one name for the same internal id', async () => {
       dataInstance.value.accountField.name = 'Other Name'
-      const anotherDataInstance = new InstanceElement(
-        'another',
-        dataType,
-        {
-          someField: {
-            inner: {
-              name: 'Another Value 123',
-              internalId: '123',
-            },
+      const anotherDataInstance = new InstanceElement('another', dataType, {
+        someField: {
+          inner: {
+            name: 'Another Value 123',
+            internalId: '123',
           },
-        }
-      )
+        },
+      })
       elements.push(anotherDataInstance)
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(dataInstance.value.accountField.id).toEqual('[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)')
@@ -220,12 +213,12 @@ describe('data account specific values filter', () => {
 
     it('should add reference types and replace field types', async () => {
       await filterCreator(filterOpts).onFetch?.(elements)
-      const referenceType = elements
-        .filter(isObjectType)
-        .find(type => type.annotations.originalType !== undefined)
+      const referenceType = elements.filter(isObjectType).find(type => type.annotations.originalType !== undefined)
       expect(referenceType).toBeDefined()
-      expect(isReferenceExpression(referenceType?.annotations.originalType)
-        && referenceType?.annotations.originalType.elemID).toEqual(fileType.elemID)
+      expect(
+        isReferenceExpression(referenceType?.annotations.originalType) &&
+          referenceType?.annotations.originalType.elemID,
+      ).toEqual(fileType.elemID)
       expect(dataType.fields.fileField.refType.elemID).toEqual(referenceType?.elemID)
     })
 
@@ -290,35 +283,31 @@ describe('data account specific values filter', () => {
         },
       })
       dataType.fields.fileField.refType = createRefToElmWithValue(referenceType)
-      dataInstance = new InstanceElement(
-        'instance',
-        dataType,
-        {
-          mainAddress: {
-            country: '_unitedStates',
-            state: 'CA',
+      dataInstance = new InstanceElement('instance', dataType, {
+        mainAddress: {
+          country: '_unitedStates',
+          state: 'CA',
+        },
+        accountField: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
+        },
+        customField: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
+        },
+        someField: {
+          inner: {
+            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
           },
-          accountField: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
+        },
+        listField: [
+          {
+            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
           },
-          customField: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
-          },
-          someField: {
-            inner: {
-              id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
-            },
-          },
-          listField: [
-            {
-              id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
-            },
-          ],
-          fileField: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (File Reference)',
-          },
-        }
-      )
+        ],
+        fileField: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (File Reference)',
+        },
+      })
       suiteQLTableInstance.value = {
         [INTERNAL_IDS_MAP]: {
           1: { name: 'Account 1' },

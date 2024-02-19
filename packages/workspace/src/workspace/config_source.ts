@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -38,11 +38,8 @@ class ConfigParseError extends Error {
   }
 }
 
-export const configSource = (
-  dirStore: DirectoryStore<string>,
-): ConfigSource => {
-  const filename = (name: string): string =>
-    (name.endsWith(FILE_EXTENSION) ? name : name.concat(FILE_EXTENSION))
+export const configSource = (dirStore: DirectoryStore<string>): ConfigSource => {
+  const filename = (name: string): string => (name.endsWith(FILE_EXTENSION) ? name : name.concat(FILE_EXTENSION))
 
   return {
     get: async (name, defaultValue) => {
@@ -58,8 +55,7 @@ export const configSource = (
       }
       const elements = await awu(parseResult.elements).toArray()
       if (elements.length > 1) {
-        log.warn('%s has more than a single element in the config file; returning the first element',
-          name)
+        log.warn('%s has more than a single element in the config file; returning the first element', name)
       }
       const configInstance = elements.find(isInstanceElement)
       if (configInstance === undefined) {

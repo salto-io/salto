@@ -1,21 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { logger } from '@salto-io/logging'
-import { filterFilePathsInFolders, filterFilesInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
+import {
+  filterFilePathsInFolders,
+  filterFilesInFolders,
+  filterFolderPathsInFolders,
+  largeFoldersToExclude,
+} from '../../src/client/file_cabinet_utils'
 
 const logging = logger('netsuite-adapter/src/client/file_cabinet_utils')
 
@@ -55,9 +60,7 @@ describe('excludeLargeFolders', () => {
 
   it('should create a log when there is a warning overflow (1GB hardcoded), but no size overflow', () => {
     const log = jest.spyOn(logging, 'info')
-    const filesToSize = [
-      { path: '/firstTopFolder/path1', size: 1_500_000_000 },
-    ]
+    const filesToSize = [{ path: '/firstTopFolder/path1', size: 1_500_000_000 }]
     const largeFolders = largeFoldersToExclude(filesToSize, 2)
     expect(largeFolders).toEqual([])
     expect(log).toHaveBeenCalledWith(expect.stringContaining('1.40 GB'))
@@ -100,7 +103,10 @@ describe('exclude and filter', () => {
       { path: '/smallTopFolder/path1', size: 500_000 },
     ]
     const largeFolders = largeFoldersToExclude(filesToSize, 0.002)
-    const result = filterFilesInFolders(filesToSize.map(({ path }) => path), largeFolders)
+    const result = filterFilesInFolders(
+      filesToSize.map(({ path }) => path),
+      largeFolders,
+    )
     expect(result).toEqual(['/largeTopFolder/smallFolder/path2', '/smallTopFolder/path1'])
   })
 

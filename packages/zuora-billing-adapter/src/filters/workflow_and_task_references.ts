@@ -1,24 +1,38 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Element, isObjectType, InstanceElement, ElemID, isInstanceElement, ReferenceExpression,
-  isField, CORE_ANNOTATIONS, isReferenceExpression,
+  Element,
+  isObjectType,
+  InstanceElement,
+  ElemID,
+  isInstanceElement,
+  ReferenceExpression,
+  isField,
+  CORE_ANNOTATIONS,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, FlatDetailedDependency, resolvePath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import {
+  extendGeneratedDependencies,
+  FlatDetailedDependency,
+  resolvePath,
+  walkOnElement,
+  WalkOnFunc,
+  WALK_NEXT_STEP,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex, values, strings } from '@salto-io/lowerdash'
 import { TASK_TYPE, WORKFLOW_EXPORT_TYPE, WORKFLOW_DETAILED_TYPE } from '../constants'
@@ -85,12 +99,12 @@ const addParameterFieldsFieldDependency = (
       // CUSTOM_OBJECT_SUFFIX appended for lookup
       const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName.toLowerCase())
       if (fieldId !== undefined) {
-        return [{
-          reference: new ReferenceExpression(fieldId),
-          location: new ReferenceExpression(
-            parametersFieldsElemId.createNestedID(typeName, fieldName)
-          ),
-        }]
+        return [
+          {
+            reference: new ReferenceExpression(fieldId),
+            location: new ReferenceExpression(parametersFieldsElemId.createNestedID(typeName, fieldName)),
+          },
+        ]
       }
       return []
     })
@@ -100,7 +114,7 @@ const addParameterFieldsFieldDependency = (
 const addStringsReferencesDependency = (
   inst: InstanceElement,
   fieldLowercaseLookup: multiIndex.Index<[string, string], ElemID>,
-  parentWorkflow?: InstanceElement
+  parentWorkflow?: InstanceElement,
 ): FlatDetailedDependency[] => {
   const dependencies: FlatDetailedDependency[] = []
   const func: WalkOnFunc = ({ value, path }) => {
@@ -108,42 +122,40 @@ const addStringsReferencesDependency = (
       return WALK_NEXT_STEP.RECURSE
     }
 
-    const potentialReferences = _.uniq([...matchAll(value, TASK_REFS_REGEX)]
-      .map(r => r.groups)
-      .filter(isDefined)) as StringReference[]
+    const potentialReferences = _.uniq(
+      [...matchAll(value, TASK_REFS_REGEX)].map(r => r.groups).filter(isDefined),
+    ) as StringReference[]
     if (_.isEmpty(potentialReferences)) {
       return WALK_NEXT_STEP.SKIP
     }
 
-    const references = potentialReferences.map(({ typeName, fieldName }) => {
-      const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName.toLowerCase())
-      if (isDefined(fieldId)) {
-        return new ReferenceExpression(fieldId)
-      }
+    const references = potentialReferences
+      .map(({ typeName, fieldName }) => {
+        const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName.toLowerCase())
+        if (isDefined(fieldId)) {
+          return new ReferenceExpression(fieldId)
+        }
 
-      if (typeName !== WORKFLOW_PARAMS_REF || !isDefined(parentWorkflow)) {
-        return undefined
-      }
+        if (typeName !== WORKFLOW_PARAMS_REF || !isDefined(parentWorkflow)) {
+          return undefined
+        }
 
-      const workflowParams = resolvePath(
-        parentWorkflow, parentWorkflow.elemID.createNestedID(...WORKFLOW_PARAMS_PATH)
-      )
-      if (!_.isArray(workflowParams)) {
-        return undefined
-      }
-
-      if (workflowParams.some(field =>
-        field.object_name === WORKFLOW_PARAMS_REF && field.field_name === fieldName)) {
-        return new ReferenceExpression(
-          parentWorkflow.elemID.createNestedID(...WORKFLOW_PARAMS_PATH)
+        const workflowParams = resolvePath(
+          parentWorkflow,
+          parentWorkflow.elemID.createNestedID(...WORKFLOW_PARAMS_PATH),
         )
-      }
-      return undefined
-    }).filter(isDefined)
+        if (!_.isArray(workflowParams)) {
+          return undefined
+        }
 
-    references.forEach(
-      reference => dependencies.push({ reference, location: new ReferenceExpression(path) })
-    )
+        if (workflowParams.some(field => field.object_name === WORKFLOW_PARAMS_REF && field.field_name === fieldName)) {
+          return new ReferenceExpression(parentWorkflow.elemID.createNestedID(...WORKFLOW_PARAMS_PATH))
+        }
+        return undefined
+      })
+      .filter(isDefined)
+
+    references.forEach(reference => dependencies.push({ reference, location: new ReferenceExpression(path) }))
 
     return WALK_NEXT_STEP.SKIP
   }
@@ -156,19 +168,21 @@ const addTaskDependencies = (
   inst: InstanceElement,
   fieldLowercaseLookup: multiIndex.Index<[string, string], ElemID>,
   topWorkflows: InstanceElement[],
-  workflows: InstanceElement[]
+  workflows: InstanceElement[],
 ): void => {
-  const topWorkflowReference = _.isArray(inst.annotations[CORE_ANNOTATIONS.PARENT])
-    && inst.annotations[CORE_ANNOTATIONS.PARENT].find(isReferenceExpression)
-  const parentTopWorkflow = isReferenceExpression(topWorkflowReference)
-    && topWorkflows.find(workflow => workflow.elemID.isEqual(topWorkflowReference.elemID))
+  const topWorkflowReference =
+    _.isArray(inst.annotations[CORE_ANNOTATIONS.PARENT]) &&
+    inst.annotations[CORE_ANNOTATIONS.PARENT].find(isReferenceExpression)
+  const parentTopWorkflow =
+    isReferenceExpression(topWorkflowReference) &&
+    topWorkflows.find(workflow => workflow.elemID.isEqual(topWorkflowReference.elemID))
   const parentWorkflow = isInstanceElement(parentTopWorkflow)
     ? workflows.find(workflow => workflow.elemID.isEqual(parentTopWorkflow.value.workflow.elemID))
     : undefined
 
   const deps = _.concat(
     addParameterFieldsFieldDependency(inst, fieldLowercaseLookup),
-    addStringsReferencesDependency(inst, fieldLowercaseLookup, parentWorkflow)
+    addStringsReferencesDependency(inst, fieldLowercaseLookup, parentWorkflow),
   )
   if (deps.length > 0) {
     extendGeneratedDependencies(inst, deps)
@@ -181,14 +195,12 @@ const addTaskDependencies = (
 const filterCreator: FilterCreator = () => ({
   name: 'workflowAndTaskReferencesFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
-    const workflowTopType = elements.filter(isObjectType)
-      .find(e => e.elemID.name === WORKFLOW_EXPORT_TYPE)
+    const workflowTopType = elements.filter(isObjectType).find(e => e.elemID.name === WORKFLOW_EXPORT_TYPE)
     if (workflowTopType === undefined) {
       log.warn('Could not find %s object type', WORKFLOW_EXPORT_TYPE)
       return
     }
-    const workflowType = elements.filter(isObjectType)
-      .find(e => e.elemID.name === WORKFLOW_DETAILED_TYPE)
+    const workflowType = elements.filter(isObjectType).find(e => e.elemID.name === WORKFLOW_DETAILED_TYPE)
     if (workflowType === undefined) {
       log.warn('Could not find %s object type', WORKFLOW_DETAILED_TYPE)
       return
@@ -200,19 +212,16 @@ const filterCreator: FilterCreator = () => ({
     }
 
     const instances = elements.filter(isInstanceElement)
-    const topWorkflowInstances = instances.filter(inst =>
-      inst.elemID.typeName === WORKFLOW_EXPORT_TYPE)
-    const workflowInstances = instances
-      .filter(inst => inst.elemID.typeName === WORKFLOW_DETAILED_TYPE)
+    const topWorkflowInstances = instances.filter(inst => inst.elemID.typeName === WORKFLOW_EXPORT_TYPE)
+    const workflowInstances = instances.filter(inst => inst.elemID.typeName === WORKFLOW_DETAILED_TYPE)
     const taskInstances = instances.filter(inst => inst.elemID.typeName === TASK_TYPE)
     if (workflowInstances.length === 0 && taskInstances.length === 0) {
       return
     }
 
     const objectDefs = await getObjectDefs(elements)
-    const {
-      typeLowercaseLookup, fieldLowercaseLookup,
-    } = await multiIndex.buildMultiIndex<Element>()
+    const { typeLowercaseLookup, fieldLowercaseLookup } = await multiIndex
+      .buildMultiIndex<Element>()
       .addIndex({
         name: 'typeLowercaseLookup',
         filter: isObjectDef,
@@ -222,25 +231,14 @@ const filterCreator: FilterCreator = () => ({
       .addIndex({
         name: 'fieldLowercaseLookup',
         filter: isField,
-        key: async field => [
-          await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase(),
-        ],
+        key: async field => [await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase()],
         map: field => field.elemID,
       })
-      .process(
-        flatMapAsync(toAsyncIterable(objectDefs), obj => [obj, ...Object.values(obj.fields)])
-      )
+      .process(flatMapAsync(toAsyncIterable(objectDefs), obj => [obj, ...Object.values(obj.fields)]))
 
-    workflowInstances.forEach(
-      workflow => addWorkflowDependencies(workflow, typeLowercaseLookup, fieldLowercaseLookup)
-    )
-    taskInstances.forEach(
-      task => addTaskDependencies(
-        task,
-        fieldLowercaseLookup,
-        topWorkflowInstances,
-        workflowInstances
-      )
+    workflowInstances.forEach(workflow => addWorkflowDependencies(workflow, typeLowercaseLookup, fieldLowercaseLookup))
+    taskInstances.forEach(task =>
+      addTaskDependencies(task, fieldLowercaseLookup, topWorkflowInstances, workflowInstances),
     )
   },
 })

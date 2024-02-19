@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, ElemIdGetter, ObjectType } from '@salto-io/adapter-api'
 import { NetsuiteQuery, CustomRecordsQuery } from '../src/config/query'
 import NetsuiteClient from '../src/client/client'
@@ -25,25 +25,32 @@ describe('custom records', () => {
       isSuiteAppConfigured: () => true,
       getCustomRecords: async () => ({
         customRecords: [
-          { type: 'custrecord1',
-            records: [{
-              scriptId: 'val_111',
-              attributes: {
-                internalId: '1',
+          {
+            type: 'custrecord1',
+            records: [
+              {
+                scriptId: 'val_111',
+                attributes: {
+                  internalId: '1',
+                },
               },
-            }, {
-              attributes: {
-                internalId: '2',
+              {
+                attributes: {
+                  internalId: '2',
+                },
               },
-            }, {
-              attributes: {
-                internalId: '3',
+              {
+                attributes: {
+                  internalId: '3',
+                },
               },
-            }, {
-              attributes: {
-                internalId: '4',
+              {
+                attributes: {
+                  internalId: '4',
+                },
               },
-            }] },
+            ],
+          },
           {
             type: 'custrecord2',
             records: [],
@@ -51,11 +58,11 @@ describe('custom records', () => {
         ],
         largeTypesError: [],
       }),
-      runSuiteQL: async _query => ([
+      runSuiteQL: async _query => [
         { id: '1', scriptid: 'val_1' },
         { id: '2', scriptid: 'val_2' },
         { id: '3', scriptid: 'val_3' },
-      ]),
+      ],
     }
     const query: CustomRecordsQuery = {
       isCustomRecordTypeMatch: () => true,
@@ -99,22 +106,26 @@ describe('custom records', () => {
         'netsuite.custrecord1.instance.val_2',
         'netsuite.custrecord1.instance.val_3',
       ])
-      expect(instances.map(inst => inst.value)).toEqual([{
-        scriptid: 'val_111',
-        attributes: {
-          internalId: '1',
+      expect(instances.map(inst => inst.value)).toEqual([
+        {
+          scriptid: 'val_111',
+          attributes: {
+            internalId: '1',
+          },
         },
-      }, {
-        scriptid: 'val_2',
-        attributes: {
-          internalId: '2',
+        {
+          scriptid: 'val_2',
+          attributes: {
+            internalId: '2',
+          },
         },
-      }, {
-        scriptid: 'val_3',
-        attributes: {
-          internalId: '3',
+        {
+          scriptid: 'val_3',
+          attributes: {
+            internalId: '3',
+          },
         },
-      }])
+      ])
     })
   })
 })

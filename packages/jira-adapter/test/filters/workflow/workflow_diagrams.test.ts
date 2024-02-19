@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
@@ -50,65 +50,61 @@ describe('workflowDiagramFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        name: 'workflowName',
-        statuses: [
-          {
-            name: 'Resolved',
-            id: '5',
-          },
-          {
-            name: 'Open',
-            id: '1',
-          },
-          {
-            name: 'The best name',
-            id: '10007',
-          },
-          {
-            name: 'Create',
-            id: '5',
-          },
-          {
-            name: 'Building',
-            id: '400',
-          },
-        ],
-        transitions: {
-          tran1: {
-            name: 'Building',
-            to: '400',
-            type: 'global',
-          },
-          tran2: {
-            name: 'Create',
-            to: '1',
-            type: 'initial',
-          },
-          tran3: {
-            name: 'hey',
-            from: ['1'],
-            to: '5',
-            type: 'directed',
-          },
-          tran4: {
-            name: 'super',
-            from: ['10007'],
-            to: '400',
-            type: 'directed',
-          },
-          tran5: {
-            name: 'yey',
-            from: ['5'],
-            to: '10007',
-            type: 'directed',
-          },
+    instance = new InstanceElement('instance', workflowType, {
+      name: 'workflowName',
+      statuses: [
+        {
+          name: 'Resolved',
+          id: '5',
         },
-      }
-    )
+        {
+          name: 'Open',
+          id: '1',
+        },
+        {
+          name: 'The best name',
+          id: '10007',
+        },
+        {
+          name: 'Create',
+          id: '5',
+        },
+        {
+          name: 'Building',
+          id: '400',
+        },
+      ],
+      transitions: {
+        tran1: {
+          name: 'Building',
+          to: '400',
+          type: 'global',
+        },
+        tran2: {
+          name: 'Create',
+          to: '1',
+          type: 'initial',
+        },
+        tran3: {
+          name: 'hey',
+          from: ['1'],
+          to: '5',
+          type: 'directed',
+        },
+        tran4: {
+          name: 'super',
+          from: ['10007'],
+          to: '400',
+          type: 'directed',
+        },
+        tran5: {
+          name: 'yey',
+          from: ['5'],
+          to: '10007',
+          type: 'directed',
+        },
+      },
+    })
 
     const { client: cli, connection } = mockClient()
     client = cli
@@ -213,14 +209,16 @@ describe('workflowDiagramFilter', () => {
           ],
           loopedTransitionContainer: {
             x: -15.85,
-            y: 109.40,
+            y: 109.4,
           },
         },
       },
     })
-    filter = workflowDiagramsFilter(getFilterParams({
-      client,
-    })) as typeof filter
+    filter = workflowDiagramsFilter(
+      getFilterParams({
+        client,
+      }),
+    ) as typeof filter
   })
 
   describe('onFetch', () => {
@@ -257,13 +255,10 @@ describe('workflowDiagramFilter', () => {
     it('should add location fields to the statuses and to the initial entry', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/workflowDesigner/1.0/workflows',
-        {
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          params: { name: 'workflowName' },
-        },
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', {
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        params: { name: 'workflowName' },
+      })
       expect(elements).toHaveLength(3)
       expect(instance.value.statuses[0].location).toBeDefined()
       expect(instance.value.statuses[0].location.x).toEqual(-3)
@@ -276,13 +271,10 @@ describe('workflowDiagramFilter', () => {
     it('should add angles to from values in transitions', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/workflowDesigner/1.0/workflows',
-        {
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          params: { name: 'workflowName' },
-        },
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', {
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        params: { name: 'workflowName' },
+      })
       expect(elements).toHaveLength(3)
       expect(instance.value.transitions.tran3.from).toBeDefined()
       expect(instance.value.transitions.tran3.from[0].id).toEqual('1')
@@ -292,13 +284,10 @@ describe('workflowDiagramFilter', () => {
     it('should add angles to from of initial transitions with undefined id', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/workflowDesigner/1.0/workflows',
-        {
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          params: { name: 'workflowName' },
-        },
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', {
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        params: { name: 'workflowName' },
+      })
       expect(elements).toHaveLength(3)
       expect(instance.value.transitions.tran2.from).toBeDefined()
       expect(instance.value.transitions.tran2.from[0].id).toBeUndefined()
@@ -308,30 +297,24 @@ describe('workflowDiagramFilter', () => {
     it('from should not be undefined in global transitions', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/workflowDesigner/1.0/workflows',
-        {
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          params: { name: 'workflowName' },
-        },
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', {
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        params: { name: 'workflowName' },
+      })
       expect(elements).toHaveLength(3)
       expect(instance.value.transitions.tran1.from).toBeUndefined()
     })
     it('should add diagramGlobalLoopedTransition angles to the instance', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/workflowDesigner/1.0/workflows',
-        {
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          params: { name: 'workflowName' },
-        },
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', {
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        params: { name: 'workflowName' },
+      })
       expect(elements).toHaveLength(3)
       expect(instance.value.diagramGlobalLoopedTransition).toBeDefined()
       expect(instance.value.diagramGlobalLoopedTransition.x).toEqual(-15.85)
-      expect(instance.value.diagramGlobalLoopedTransition.y).toEqual(109.40)
+      expect(instance.value.diagramGlobalLoopedTransition.y).toEqual(109.4)
     })
     it('should fetch diagram values without diagramGlobalLoopedTransition', async () => {
       instance.value.diagramGlobalLoopedTransition = undefined
@@ -436,17 +419,16 @@ describe('workflowDiagramFilter', () => {
         },
       })
       const elements = [instance]
-      filter = workflowDiagramsFilter(getFilterParams({
-        client,
-      })) as typeof filter
+      filter = workflowDiagramsFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as typeof filter
       await filter.onFetch(elements)
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/workflowDesigner/1.0/workflows',
-        {
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          params: { name: 'workflowName' },
-        },
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', {
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        params: { name: 'workflowName' },
+      })
       expect(instance.value.diagramGlobalLoopedTransition).toBeUndefined()
       expect(instance.value.statuses[0].location).toBeDefined()
       expect(instance.value.statuses[0].location.x).toEqual(-3)
@@ -467,17 +449,23 @@ describe('workflowDiagramFilter', () => {
           },
         },
       })
-      filter = workflowDiagramsFilter(getFilterParams({
-        client,
-      })) as typeof filter
+      filter = workflowDiagramsFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as typeof filter
       await filter.onFetch(elements)
-      expect(logErrorSpy).toHaveBeenCalledWith('Failed to get the workflow diagram of jira.Workflow.instance.instance: Fail to get the workflow workflowName diagram values due to an invalid response')
+      expect(logErrorSpy).toHaveBeenCalledWith(
+        'Failed to get the workflow diagram of jira.Workflow.instance.instance: Fail to get the workflow workflowName diagram values due to an invalid response',
+      )
     })
     it('should log error when workflow does not have a name', async () => {
       instance.value.name = undefined
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(logErrorSpy).toHaveBeenCalledWith('Failed to get the workflow diagram of jira.Workflow.instance.instance: Fail to get workflow diagram values because its name is undefined')
+      expect(logErrorSpy).toHaveBeenCalledWith(
+        'Failed to get the workflow diagram of jira.Workflow.instance.instance: Fail to get workflow diagram values because its name is undefined',
+      )
     })
   })
 })

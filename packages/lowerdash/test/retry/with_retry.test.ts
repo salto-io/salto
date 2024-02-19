@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { withRetry, RetryError } from '../../src/retry'
 import retryStrategies from '../../src/retry/strategies'
 
@@ -38,15 +38,10 @@ describe('withRetry', () => {
         })
       })
 
-      it(
-        'should throw WaitError',
-        () => expect(result).rejects.toThrow(RetryError)
-      )
+      it('should throw WaitError', () => expect(result).rejects.toThrow(RetryError))
 
-      it(
-        'should include the strategy\'s error message in the thrown error',
-        () => expect(result).rejects.toThrow(/my action\b.*\btesting error/)
-      )
+      it("should include the strategy's error message in the thrown error", () =>
+        expect(result).rejects.toThrow(/my action\b.*\btesting error/))
     })
 
     describe('when waitStrategy returns a number', () => {
@@ -69,7 +64,7 @@ describe('withRetry', () => {
         expect(predicate).toHaveBeenCalledTimes(3)
       })
 
-      it('should return the predicate\'s value', () => {
+      it("should return the predicate's value", () => {
         expect(result).toEqual('ok')
       })
     })
@@ -91,8 +86,6 @@ describe('withRetry', () => {
       expect(retryStrategies.intervals).toHaveBeenCalled()
     })
 
-    it('uses an empty description', () => expect(caught.message).toMatch(
-      /Error while waiting: testing/
-    ))
+    it('uses an empty description', () => expect(caught.message).toMatch(/Error while waiting: testing/))
   })
 })

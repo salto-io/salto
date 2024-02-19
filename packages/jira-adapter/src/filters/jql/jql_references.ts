@@ -1,26 +1,38 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isTemplateExpression,
+  TemplateExpression,
+} from '@salto-io/adapter-api'
 import { setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, QUEUE_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { generateTemplateExpression, generateJqlContext, removeCustomFieldPrefix } from './template_expression_generator'
+import {
+  generateTemplateExpression,
+  generateJqlContext,
+  removeCustomFieldPrefix,
+} from './template_expression_generator'
 
 const { awu } = collections.asynciterable
 
@@ -47,7 +59,11 @@ const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
   'jira.jql.condition': [['rawValue']],
   'jira.issue.assign': [['value', 'jql']],
   'jira.issue.related': [['value', 'jql']],
-  'jira.issues.related.condition': [['value', 'compareJql'], ['value', 'relatedJql'], ['value', 'jql']],
+  'jira.issues.related.condition': [
+    ['value', 'compareJql'],
+    ['value', 'relatedJql'],
+    ['value', 'jql'],
+  ],
   'jira.jql.scheduled': [['value', 'jql']],
   JQL: [['query', 'value']],
 }
@@ -116,8 +132,7 @@ const getJqls = (instance: InstanceElement): JqlDetails[] => {
   if (Object.keys(instanceTypeToString).includes(instance.elemID.typeName)) {
     return getRelativePathJqlsJsm(instance, instanceTypeToString)
   }
-  return JQL_FIELDS
-    .filter(({ type }) => type === instance.elemID.typeName)
+  return JQL_FIELDS.filter(({ type }) => type === instance.elemID.typeName)
     .map(({ path }) => ({
       path: instance.elemID.createNestedID(...path),
       jql: _.get(instance.value, path),
@@ -138,16 +153,15 @@ const filter: FilterCreator = ({ config }) => {
 
       const instances = elements.filter(isInstanceElement)
 
-      const jqls = instances
-        .flatMap(getJqls)
-        .filter((jql): jql is StringJqlDetails => _.isString(jql.jql))
+      const jqls = instances.flatMap(getJqls).filter((jql): jql is StringJqlDetails => _.isString(jql.jql))
 
       const jqlContext = generateJqlContext(instances)
 
       log.debug(`About to parse ${jqls.length} unique JQLs`)
 
-      const jqlToTemplate = Object.fromEntries(jqls
-        .map(jql => [jql.jql, generateTemplateExpression(jql.jql, jqlContext)]))
+      const jqlToTemplate = Object.fromEntries(
+        jqls.map(jql => [jql.jql, generateTemplateExpression(jql.jql, jqlContext)]),
+      )
 
       const idToInstance = _.keyBy(instances, instance => instance.elemID.getFullName())
 
@@ -182,21 +196,21 @@ const filter: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .forEach(async instance => {
           getJqls(instance)
-            .filter((jql): jql is TemplateJqlDetails =>
-              isTemplateExpression(jql.jql))
+            .filter((jql): jql is TemplateJqlDetails => isTemplateExpression(jql.jql))
             .forEach(jql => {
-              const resolvedJql = jql.jql.parts.map(part => {
-                if (!isResolvedReferenceExpression(part)) {
-                  return part
-                }
+              const resolvedJql = jql.jql.parts
+                .map(part => {
+                  if (!isResolvedReferenceExpression(part)) {
+                    return part
+                  }
 
-                if (part.elemID.isTopLevel()) {
-                  return removeCustomFieldPrefix(part.value.value.id)
-                }
+                  if (part.elemID.isTopLevel()) {
+                    return removeCustomFieldPrefix(part.value.value.id)
+                  }
 
-                return part.value
-              }).join('')
-
+                  return part.value
+                })
+                .join('')
 
               jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
 
@@ -211,8 +225,7 @@ const filter: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .forEach(async instance => {
           getJqls(instance)
-            .filter((jql): jql is JqlDetails & { jql: string } =>
-              _.isString(jql.jql))
+            .filter((jql): jql is JqlDetails & { jql: string } => _.isString(jql.jql))
             .filter(jql => jqlToTemplateExpression[jql.path.getFullName()] !== undefined)
             .forEach(jql => {
               setPath(instance, jql.path, jqlToTemplateExpression[jql.path.getFullName()])

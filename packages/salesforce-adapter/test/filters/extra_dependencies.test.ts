@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Element,
   ElemID,
@@ -28,12 +28,20 @@ import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
+import filterCreator, {
+  WARNING_MESSAGE,
+} from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
 import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import {
-  SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
-  CUSTOM_FIELD, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_OBJECT,
+  SALESFORCE,
+  API_NAME,
+  METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  CUSTOM_FIELD,
+  INTERNAL_ID_FIELD,
+  INTERNAL_ID_ANNOTATION,
+  CUSTOM_OBJECT,
 } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { Types } from '../../src/transformers/transformer'
@@ -41,9 +49,8 @@ import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import Connection from '../../src/client/jsforce'
 import { FilterWith } from './mocks'
 
-const getGeneratedDeps = (elem: Element): ReferenceExpression[] => (
+const getGeneratedDeps = (elem: Element): ReferenceExpression[] =>
   elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
-)
 
 describe('extra dependencies filter', () => {
   let client: SalesforceClient
@@ -59,15 +66,12 @@ describe('extra dependencies filter', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.resetAllMocks()
-    const mdType = createMetadataTypeElement(
-      'meta',
-      {
-        fields: {
-          fieldName: { refType: BuiltinTypes.STRING },
-          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.SERVICE_ID },
-        },
-      }
-    )
+    const mdType = createMetadataTypeElement('meta', {
+      fields: {
+        fieldName: { refType: BuiltinTypes.STRING },
+        [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.SERVICE_ID },
+      },
+    })
     const layoutObjType = createMetadataTypeElement('Layout', {})
     customObjType = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'obj__c'),
@@ -109,42 +113,29 @@ describe('extra dependencies filter', () => {
       },
     })
     instances = [
-      new InstanceElement(
-        'inst1',
-        mdType,
-        {
-          fieldName: new ReferenceExpression(customObjType.fields.first.elemID),
-          [INTERNAL_ID_FIELD]: 'inst1 id',
-          [INSTANCE_FULL_NAME_FIELD]: 'inst1',
-        },
-      ),
-      new InstanceElement(
-        'inst2',
-        mdType,
-        {
-          fieldName: 'obj__c.first__c',
-          [INTERNAL_ID_FIELD]: 'inst2 id',
-          [INSTANCE_FULL_NAME_FIELD]: 'inst2',
-        },
-      ),
-      new InstanceElement(
-        'layoutId1',
-        layoutObjType,
-        {
-          [INTERNAL_ID_FIELD]: 'layoutId1',
-        },
-      ),
+      new InstanceElement('inst1', mdType, {
+        fieldName: new ReferenceExpression(customObjType.fields.first.elemID),
+        [INTERNAL_ID_FIELD]: 'inst1 id',
+        [INSTANCE_FULL_NAME_FIELD]: 'inst1',
+      }),
+      new InstanceElement('inst2', mdType, {
+        fieldName: 'obj__c.first__c',
+        [INTERNAL_ID_FIELD]: 'inst2 id',
+        [INSTANCE_FULL_NAME_FIELD]: 'inst2',
+      }),
+      new InstanceElement('layoutId1', layoutObjType, {
+        [INTERNAL_ID_FIELD]: 'layoutId1',
+      }),
     ]
     const otherMdType = createMetadataTypeElement('meta2', {})
-    workspaceInstance = new InstanceElement(
-      'inst3',
+    workspaceInstance = new InstanceElement('inst3', otherMdType, {
+      [INTERNAL_ID_FIELD]: 'inst3 id',
+      [INSTANCE_FULL_NAME_FIELD]: 'inst3',
+    })
+    elementsSource = buildElementsSourceFromElements([
       otherMdType,
-      {
-        [INTERNAL_ID_FIELD]: 'inst3 id',
-        [INSTANCE_FULL_NAME_FIELD]: 'inst3',
-      }
-    )
-    elementsSource = buildElementsSourceFromElements([otherMdType, workspaceInstance])
+      workspaceInstance,
+    ])
     elements = [mdType, layoutObjType, customObjType, leadObjType, ...instances]
     client = mockClient().client
   })
@@ -156,7 +147,10 @@ describe('extra dependencies filter', () => {
         config: {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
-            fetchParams: { target: ['meta'], optionalFeatures: { extraDependenciesV2: false } },
+            fetchParams: {
+              target: ['meta'],
+              optionalFeatures: { extraDependenciesV2: false },
+            },
           }),
           elementsSource,
         },
@@ -166,7 +160,7 @@ describe('extra dependencies filter', () => {
       let numElements: number
       let mockQueryAll: jest.Mock
 
-      async function *mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
+      async function* mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
         yield [
           {
             MetadataComponentType: 'meta',
@@ -253,12 +247,15 @@ describe('extra dependencies filter', () => {
         ] as unknown as SalesforceRecord[]
       }
 
-      async function *mockQueryAllImplEmpty(): AsyncIterable<SalesforceRecord[]> {
-        yield [
-        ] as unknown as SalesforceRecord[]
+      async function* mockQueryAllImplEmpty(): AsyncIterable<
+        SalesforceRecord[]
+      > {
+        yield [] as unknown as SalesforceRecord[]
       }
 
-      async function *mockQueryAllImplLayout(): AsyncIterable<SalesforceRecord[]> {
+      async function* mockQueryAllImplLayout(): AsyncIterable<
+        SalesforceRecord[]
+      > {
         yield [
           {
             MetadataComponentType: 'Layout',
@@ -272,7 +269,8 @@ describe('extra dependencies filter', () => {
       }
 
       beforeEach(async () => {
-        mockQueryAll = jest.fn()
+        mockQueryAll = jest
+          .fn()
           .mockImplementationOnce(mockQueryAllImplLayout)
           .mockImplementationOnce(mockQueryAllImplEmpty)
           .mockImplementationOnce(mockQueryAllImplEmpty)
@@ -292,7 +290,10 @@ describe('extra dependencies filter', () => {
               fetchProfile: buildFetchProfile({
                 fetchParams: {
                   target: ['meta'],
-                  optionalFeatures: { toolingDepsOfCurrentNamespace: false, extraDependenciesV2: false },
+                  optionalFeatures: {
+                    toolingDepsOfCurrentNamespace: false,
+                    extraDependenciesV2: false,
+                  },
                 },
               }),
               elementsSource,
@@ -305,39 +306,68 @@ describe('extra dependencies filter', () => {
         })
 
         it('should add field dependencies to instances', () => {
-          const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
-          const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
-          const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
-          expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
-          expect(getGeneratedDeps(instances[1])).toEqual(
-            expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
+          const firstFieldRef = new ReferenceExpression(
+            customObjType.fields.first.elemID,
           )
-          expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
+          const secondFieldRef = new ReferenceExpression(
+            customObjType.fields.second.elemID,
+          )
+          const leadFieldRef = new ReferenceExpression(
+            leadObjType.fields.custom.elemID,
+          )
+          expect(getGeneratedDeps(instances[0])).toContainEqual({
+            reference: secondFieldRef,
+          })
+          expect(getGeneratedDeps(instances[1])).toEqual(
+            expect.arrayContaining([
+              { reference: firstFieldRef },
+              { reference: leadFieldRef },
+            ]),
+          )
+          expect(getGeneratedDeps(instances[2])).toEqual([
+            { reference: firstFieldRef },
+          ])
         })
 
         it('should not add generated dependencies to targets that already have a reference in the element', () => {
-          expect(getGeneratedDeps(instances[0])).not.toContainEqual(
-            { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
-          )
+          expect(getGeneratedDeps(instances[0])).not.toContainEqual({
+            reference: new ReferenceExpression(
+              customObjType.fields.first.elemID,
+            ),
+          })
         })
 
         it('should add dependencies to standard objects', () => {
           expect(getGeneratedDeps(instances[1])).toEqual(
-            expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
+            expect.arrayContaining([
+              { reference: new ReferenceExpression(leadObjType.elemID) },
+            ]),
           )
         })
 
         it('should add generated dependencies annotation to fields', () => {
-          expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
-            [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
-          )
+          expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual([
+            {
+              reference: new ReferenceExpression(
+                customObjType.fields.second.elemID,
+              ),
+            },
+          ])
         })
 
         it('should sort generated dependencies by name', () => {
           expect(getGeneratedDeps(instances[1])).toEqual([
             { reference: new ReferenceExpression(leadObjType.elemID) },
-            { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
-            { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
+            {
+              reference: new ReferenceExpression(
+                leadObjType.fields.custom.elemID,
+              ),
+            },
+            {
+              reference: new ReferenceExpression(
+                customObjType.fields.first.elemID,
+              ),
+            },
           ])
         })
 
@@ -349,9 +379,9 @@ describe('extra dependencies filter', () => {
         })
 
         it('should add generated dependencies to elements that were not fetched', () => {
-          expect(getGeneratedDeps(instances[0])).toContainEqual(
-            { reference: new ReferenceExpression(workspaceInstance.elemID) }
-          )
+          expect(getGeneratedDeps(instances[0])).toContainEqual({
+            reference: new ReferenceExpression(workspaceInstance.elemID),
+          })
         })
 
         it('should not modify workspace elements that were not fetched', () => {
@@ -367,7 +397,10 @@ describe('extra dependencies filter', () => {
               fetchProfile: buildFetchProfile({
                 fetchParams: {
                   target: ['meta'],
-                  optionalFeatures: { toolingDepsOfCurrentNamespace: true, extraDependenciesV2: false },
+                  optionalFeatures: {
+                    toolingDepsOfCurrentNamespace: true,
+                    extraDependenciesV2: false,
+                  },
                 },
               }),
               elementsSource: buildElementsSourceFromElements(elements),
@@ -390,8 +423,10 @@ describe('extra dependencies filter', () => {
 
       it('should return a warning', async () => {
         const { connection } = mockClient()
-        connection.query.mockImplementation(() => { throw new Error() })
-        const res = await filter.onFetch(elements) as FilterResult
+        connection.query.mockImplementation(() => {
+          throw new Error()
+        })
+        const res = (await filter.onFetch(elements)) as FilterResult
         const err = res.errors ?? []
         expect(res.errors).toHaveLength(1)
         expect(err[0]).toEqual({
@@ -412,7 +447,12 @@ describe('extra dependencies filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { extraDependencies: false, extraDependenciesV2: false } },
+              fetchParams: {
+                optionalFeatures: {
+                  extraDependencies: false,
+                  extraDependenciesV2: false,
+                },
+              },
             }),
             elementsSource: buildElementsSourceFromElements(elements),
           },
@@ -429,7 +469,7 @@ describe('extra dependencies filter', () => {
   describe('onFetch v2', () => {
     let queryAllSpy: jest.SpyInstance
 
-    async function *mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
+    async function* mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
       yield [
         {
           MetadataComponentType: 'meta',
@@ -534,7 +574,10 @@ describe('extra dependencies filter', () => {
         config: {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
-            fetchParams: { target: ['meta'], optionalFeatures: { extraDependenciesV2: true } },
+            fetchParams: {
+              target: ['meta'],
+              optionalFeatures: { extraDependenciesV2: true },
+            },
           }),
           elementsSource,
         },
@@ -553,43 +596,70 @@ describe('extra dependencies filter', () => {
 
       it('should add field dependencies to instances', async () => {
         await filter.onFetch(elements)
-        const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
-        const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
-        const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
-        expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
-        expect(getGeneratedDeps(instances[1])).toEqual(
-          expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
+        const firstFieldRef = new ReferenceExpression(
+          customObjType.fields.first.elemID,
         )
-        expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
+        const secondFieldRef = new ReferenceExpression(
+          customObjType.fields.second.elemID,
+        )
+        const leadFieldRef = new ReferenceExpression(
+          leadObjType.fields.custom.elemID,
+        )
+        expect(getGeneratedDeps(instances[0])).toContainEqual({
+          reference: secondFieldRef,
+        })
+        expect(getGeneratedDeps(instances[1])).toEqual(
+          expect.arrayContaining([
+            { reference: firstFieldRef },
+            { reference: leadFieldRef },
+          ]),
+        )
+        expect(getGeneratedDeps(instances[2])).toEqual([
+          { reference: firstFieldRef },
+        ])
       })
 
       it('should not add generated dependencies to targets that already have a reference in the element', async () => {
         await filter.onFetch(elements)
-        expect(getGeneratedDeps(instances[0])).not.toContainEqual(
-          { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
-        )
+        expect(getGeneratedDeps(instances[0])).not.toContainEqual({
+          reference: new ReferenceExpression(customObjType.fields.first.elemID),
+        })
       })
 
       it('should add dependencies to standard objects', async () => {
         await filter.onFetch(elements)
         expect(getGeneratedDeps(instances[1])).toEqual(
-          expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
+          expect.arrayContaining([
+            { reference: new ReferenceExpression(leadObjType.elemID) },
+          ]),
         )
       })
 
       it('should add generated dependencies annotation to fields', async () => {
         await filter.onFetch(elements)
-        expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
-          [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
-        )
+        expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual([
+          {
+            reference: new ReferenceExpression(
+              customObjType.fields.second.elemID,
+            ),
+          },
+        ])
       })
 
       it('should sort generated dependencies by name', async () => {
         await filter.onFetch(elements)
         expect(getGeneratedDeps(instances[1])).toEqual([
           { reference: new ReferenceExpression(leadObjType.elemID) },
-          { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
-          { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
+          {
+            reference: new ReferenceExpression(
+              leadObjType.fields.custom.elemID,
+            ),
+          },
+          {
+            reference: new ReferenceExpression(
+              customObjType.fields.first.elemID,
+            ),
+          },
         ])
       })
 
@@ -600,9 +670,9 @@ describe('extra dependencies filter', () => {
 
       it('should add generated dependencies to elements that were not fetched', async () => {
         await filter.onFetch(elements)
-        expect(getGeneratedDeps(instances[0])).toContainEqual(
-          { reference: new ReferenceExpression(workspaceInstance.elemID) }
-        )
+        expect(getGeneratedDeps(instances[0])).toContainEqual({
+          reference: new ReferenceExpression(workspaceInstance.elemID),
+        })
       })
 
       it('should not modify workspace elements that were not fetched', async () => {
@@ -635,21 +705,29 @@ describe('extra dependencies filter', () => {
         })
         it('should have multiple queries', async () => {
           await filter.onFetch(elements)
-          const queries = queryAllSpy.mock.calls.map((args => args[0]))
+          const queries = queryAllSpy.mock.calls.map((args) => args[0])
           expect(queries).toHaveLength(3)
-          expect(queries[0]).toContain("MetadataComponentId IN ('inst1 id', 'inst2 id', 'layoutId1', 'Lead')")
-          expect(queries[1]).toContain("MetadataComponentId IN ('inst1 id', 'inst2 id')")
-          expect(queries[2]).toContain("MetadataComponentId IN ('layoutId1', 'Lead')")
+          expect(queries[0]).toContain(
+            "MetadataComponentId IN ('inst1 id', 'inst2 id', 'layoutId1', 'Lead')",
+          )
+          expect(queries[1]).toContain(
+            "MetadataComponentId IN ('inst1 id', 'inst2 id')",
+          )
+          expect(queries[2]).toContain(
+            "MetadataComponentId IN ('layoutId1', 'Lead')",
+          )
         })
       })
     })
 
     describe('when feature is throwing an error', () => {
       beforeEach(() => {
-        queryAllSpy.mockImplementation(() => { throw new Error() })
+        queryAllSpy.mockImplementation(() => {
+          throw new Error()
+        })
       })
       it('should return a warning', async () => {
-        const res = await filter.onFetch(elements) as FilterResult
+        const res = (await filter.onFetch(elements)) as FilterResult
         const err = res.errors ?? []
         expect(res.errors).toHaveLength(1)
         expect(err[0]).toEqual({

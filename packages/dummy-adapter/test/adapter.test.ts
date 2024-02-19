@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   ElemID,
   ObjectType,
@@ -20,7 +20,9 @@ import {
   InstanceElement,
   getChangeData,
   isInstanceElement,
-  isObjectType, CORE_ANNOTATIONS, ProgressReporter,
+  isObjectType,
+  CORE_ANNOTATIONS,
+  ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from '../src/adapter'
@@ -54,7 +56,9 @@ describe('dummy adapter', () => {
       expect(adapter.deploy).toBeDefined()
     })
     it('should do nothing', async () => {
-      expect(await adapter.deploy({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter })).toEqual({
+      expect(
+        await adapter.deploy({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter }),
+      ).toEqual({
         appliedChanges: [],
         errors: [],
       })
@@ -65,11 +69,7 @@ describe('dummy adapter', () => {
         elemID: new ElemID(DUMMY_ADAPTER, 'type'),
       })
 
-      const instance = new InstanceElement(
-        'instance',
-        type,
-        { fieldToOmit: 'val1', field2: 'val2' }
-      )
+      const instance = new InstanceElement('instance', type, { fieldToOmit: 'val1', field2: 'val2' })
       const res = await adapter.deploy({
         changeGroup: { changes: [toChange({ after: instance })], groupID: ':)' },
         progressReporter: nullProgressReporter,
@@ -85,7 +85,9 @@ describe('dummy adapter', () => {
       expect(adapter.validate).toBeDefined()
     })
     it('should do nothing', async () => {
-      expect(await adapter.validate({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter })).toEqual({
+      expect(
+        await adapter.validate({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter }),
+      ).toEqual({
         appliedChanges: [],
         errors: [],
       })
@@ -112,15 +114,14 @@ describe('dummy adapter', () => {
       const mockReporter = { reportProgress: jest.fn() }
       const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
       fetchResult.elements.forEach(elem => {
-        if (isInstanceElement(elem)
-          && elem.elemID.typeName !== 'Profile'
-          && elem.path
-          && elem.path[1] === 'Records') {
+        if (isInstanceElement(elem) && elem.elemID.typeName !== 'Profile' && elem.path && elem.path[1] === 'Records') {
           expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).toBeDefined()
-        } else if (isObjectType(elem)
-          && elem.path
-          && elem.path[1] === 'Objects'
-          && _.last(elem.path)?.endsWith('Annotations')) {
+        } else if (
+          isObjectType(elem) &&
+          elem.path &&
+          elem.path[1] === 'Objects' &&
+          _.last(elem.path)?.endsWith('Annotations')
+        ) {
           expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).toBeDefined()
         } else {
           expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).not.toBeDefined()
@@ -130,19 +131,15 @@ describe('dummy adapter', () => {
   })
 
   describe('deployModifier', () => {
-    const adapterWithDeployModifiers = new DummyAdapter(
-      { ...testParams, changeErrors: [mockChangeError] }
-    )
+    const adapterWithDeployModifiers = new DummyAdapter({ ...testParams, changeErrors: [mockChangeError] })
     it('should be defined', () => {
       expect(adapterWithDeployModifiers.deployModifiers).toBeDefined()
     })
     it('should return changeError when same element exists in changes list', async () => {
-      expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst2Change]))
-        .toHaveLength(1)
+      expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst2Change])).toHaveLength(1)
     })
     it('should NOT return changeError when element is not exist in changes list', async () => {
-      expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst1Change]))
-        .toHaveLength(0)
+      expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst1Change])).toHaveLength(0)
     })
   })
 })

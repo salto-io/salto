@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
@@ -76,46 +76,35 @@ describe('omit inactive', () => {
         instanceFilter = filterOutInactiveInstancesForType(config)
       })
       it('should omit inactive instances if the omitInactive is true in their type config', () => {
-        expect(instanceFilter([trigger1, trigger2]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            trigger1.elemID.getFullName(),
-          ])
-        expect(instanceFilter([macro1, macro2]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            macro2.elemID.getFullName(),
-          ])
-        expect(instanceFilter([webhook1, webhook2, webhook3]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            webhook1.elemID.getFullName(),
-            webhook3.elemID.getFullName(),
-          ])
+        expect(instanceFilter([trigger1, trigger2]).map(elem => elem.elemID.getFullName())).toEqual([
+          trigger1.elemID.getFullName(),
+        ])
+        expect(instanceFilter([macro1, macro2]).map(elem => elem.elemID.getFullName())).toEqual([
+          macro2.elemID.getFullName(),
+        ])
+        expect(instanceFilter([webhook1, webhook2, webhook3]).map(elem => elem.elemID.getFullName())).toEqual([
+          webhook1.elemID.getFullName(),
+          webhook3.elemID.getFullName(),
+        ])
       })
       it('should not omit inactive instances if the omitInactive is false in their type config', () => {
-        expect(instanceFilter([view1]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            view1.elemID.getFullName(),
-          ])
+        expect(instanceFilter([view1]).map(elem => elem.elemID.getFullName())).toEqual([view1.elemID.getFullName()])
       })
       it('should not omit instance of types that we need their inactive instances for reorder', async () => {
-        expect(instanceFilter([ticketForm1]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            ticketForm1.elemID.getFullName(),
-          ])
+        expect(instanceFilter([ticketForm1]).map(elem => elem.elemID.getFullName())).toEqual([
+          ticketForm1.elemID.getFullName(),
+        ])
       })
       it('should not omit instance if it does not have active field', async () => {
         const inst = new InstanceElement('inst1', trigger, { name: 'test' })
-        expect(instanceFilter([inst]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            inst.elemID.getFullName(),
-          ])
+        expect(instanceFilter([inst]).map(elem => elem.elemID.getFullName())).toEqual([inst.elemID.getFullName()])
       })
       it('should omit only the inactive instance if two instances have the same id', async () => {
         const activeInst = new InstanceElement('inst1', trigger, { name: 'test', active: true })
         const inactiveInst = new InstanceElement('inst1', trigger, { name: 'test', active: false })
-        expect(instanceFilter([activeInst, inactiveInst]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            activeInst.elemID.getFullName(),
-          ])
+        expect(instanceFilter([activeInst, inactiveInst]).map(elem => elem.elemID.getFullName())).toEqual([
+          activeInst.elemID.getFullName(),
+        ])
       })
     })
     describe('typeDefaults config', () => {
@@ -127,27 +116,22 @@ describe('omit inactive', () => {
         instanceFilter = filterOutInactiveInstancesForType(config)
       })
       it('should omit inactive instances if omitInactive in typeDefaults is true', async () => {
-        expect(instanceFilter([trigger1, trigger2]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            trigger1.elemID.getFullName(),
-          ])
-        expect(instanceFilter([macro1, macro2]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            macro2.elemID.getFullName(),
-          ])
-        expect(instanceFilter([view1]).map(elem => elem.elemID.getFullName()))
-          .toEqual([])
-        expect(instanceFilter([webhook1, webhook2, webhook3]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            webhook1.elemID.getFullName(),
-            webhook3.elemID.getFullName(),
-          ])
+        expect(instanceFilter([trigger1, trigger2]).map(elem => elem.elemID.getFullName())).toEqual([
+          trigger1.elemID.getFullName(),
+        ])
+        expect(instanceFilter([macro1, macro2]).map(elem => elem.elemID.getFullName())).toEqual([
+          macro2.elemID.getFullName(),
+        ])
+        expect(instanceFilter([view1]).map(elem => elem.elemID.getFullName())).toEqual([])
+        expect(instanceFilter([webhook1, webhook2, webhook3]).map(elem => elem.elemID.getFullName())).toEqual([
+          webhook1.elemID.getFullName(),
+          webhook3.elemID.getFullName(),
+        ])
       })
       it('should not omit instance of types that we need their inactive instances for reorder', async () => {
-        expect(instanceFilter([ticketForm1]).map(elem => elem.elemID.getFullName()))
-          .toEqual([
-            ticketForm1.elemID.getFullName(),
-          ])
+        expect(instanceFilter([ticketForm1]).map(elem => elem.elemID.getFullName())).toEqual([
+          ticketForm1.elemID.getFullName(),
+        ])
       })
     })
   })

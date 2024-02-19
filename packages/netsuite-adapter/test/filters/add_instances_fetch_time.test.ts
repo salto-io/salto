@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_instances_fetch_time'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
@@ -30,22 +30,14 @@ describe('add instances fetch time filter', () => {
     serverTimeInstance = new InstanceElement(ElemID.CONFIG_NAME, serverTimeType)
   })
   it('should add standard instance fetch time', async () => {
-    const instance = new InstanceElement(
-      'cseg1',
-      customsegmentType().type,
-      { [SCRIPT_ID]: 'cseg1' }
-    )
+    const instance = new InstanceElement('cseg1', customsegmentType().type, { [SCRIPT_ID]: 'cseg1' })
     await filterCreator({ fetchTime } as LocalFilterOpts).onFetch?.([serverTimeInstance, instance])
     expect(serverTimeInstance.value.instancesFetchTime).toEqual({
       cseg1: fetchTime.toJSON(),
     })
   })
   it('should add file instance fetch time', async () => {
-    const instance = new InstanceElement(
-      'someFile',
-      fileType(),
-      { [PATH]: '/SuiteScript/someFile' }
-    )
+    const instance = new InstanceElement('someFile', fileType(), { [PATH]: '/SuiteScript/someFile' })
     await filterCreator({ fetchTime } as LocalFilterOpts).onFetch?.([serverTimeInstance, instance])
     expect(serverTimeInstance.value.instancesFetchTime).toEqual({
       '/SuiteScript/someFile': fetchTime.toJSON(),
@@ -66,38 +58,22 @@ describe('add instances fetch time filter', () => {
   })
   it('should not add data instance fetch time', async () => {
     const dataType = new ObjectType({ elemID: new ElemID(NETSUITE, 'account') })
-    const instance = new InstanceElement(
-      'account1',
-      dataType,
-      { [SCRIPT_ID]: 'account1' }
-    )
+    const instance = new InstanceElement('account1', dataType, { [SCRIPT_ID]: 'account1' })
     await filterCreator({ fetchTime } as LocalFilterOpts).onFetch?.([serverTimeInstance, instance])
     expect(serverTimeInstance.value.instancesFetchTime).toEqual({})
   })
   it('should not add without fetch time', async () => {
-    const instance = new InstanceElement(
-      'cseg1',
-      customsegmentType().type,
-      { [SCRIPT_ID]: 'cseg1' }
-    )
+    const instance = new InstanceElement('cseg1', customsegmentType().type, { [SCRIPT_ID]: 'cseg1' })
     await filterCreator({} as LocalFilterOpts).onFetch?.([serverTimeInstance, instance])
     expect(serverTimeInstance.value.instancesFetchTime).toBeUndefined()
   })
   it('should not add without server time instance', async () => {
-    const instance = new InstanceElement(
-      'cseg1',
-      customsegmentType().type,
-      { [SCRIPT_ID]: 'cseg1' }
-    )
+    const instance = new InstanceElement('cseg1', customsegmentType().type, { [SCRIPT_ID]: 'cseg1' })
     await filterCreator({ fetchTime } as LocalFilterOpts).onFetch?.([instance])
     expect(serverTimeInstance.value.instancesFetchTime).toBeUndefined()
   })
   it('should not add instance if service id is missing', async () => {
-    const instance = new InstanceElement(
-      'cseg1',
-      customsegmentType().type,
-      { name: 'cseg1' }
-    )
+    const instance = new InstanceElement('cseg1', customsegmentType().type, { name: 'cseg1' })
     await filterCreator({ fetchTime } as LocalFilterOpts).onFetch?.([serverTimeInstance, instance])
     expect(serverTimeInstance.value.instancesFetchTime).toEqual({})
   })

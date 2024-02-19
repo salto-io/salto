@@ -1,23 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, ObjectType, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, values } from '@salto-io/lowerdash'
-import { ComplexTypeElement, ExtensionElement, SchemaElement, Element, ElementElement, ComplexContentElement } from 'soap/lib/wsdl/elements'
+import {
+  ComplexTypeElement,
+  ExtensionElement,
+  SchemaElement,
+  Element,
+  ElementElement,
+  ComplexContentElement,
+} from 'soap/lib/wsdl/elements'
 import { convertToNamespaceName, searchInElement } from './utils'
 
 const log = logger(module)
@@ -47,7 +54,7 @@ const convertComplexContent = (
   element: ComplexContentElement,
   typeName: string,
   camelCase: boolean,
-  namespace?: string
+  namespace?: string,
 ): FieldType | undefined => {
   const extension = element.children.find(child => child instanceof ExtensionElement)
   if (!(extension instanceof ExtensionElement)) {
@@ -89,7 +96,7 @@ const convertField = (
     elementWithProperties.$type,
     element.schemaXmlns ?? {},
     camelCase,
-    namespace
+    namespace,
   )
   const isList = elementWithProperties.$maxOccurs !== undefined && elementWithProperties.$maxOccurs !== '1'
   const annotations = isAttribute ? { isAttribute: true } : {}
@@ -114,9 +121,7 @@ const convertComplexType = (
     return undefined
   }
 
-  const objectTypeName = camelCase
-    ? strings.lowerCaseFirstLetter(naclCase(typeName))
-    : naclCase(typeName)
+  const objectTypeName = camelCase ? strings.lowerCaseFirstLetter(naclCase(typeName)) : naclCase(typeName)
   const objectType = new ObjectType({ elemID: new ElemID(adapterName, objectTypeName) })
   const fields = searchInElement(type, ['element', 'attribute', 'complexContent'])
     .map(element => convertField(element, typeName, camelCase, namespace))

@@ -1,31 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName, ObjectType, Field, createRestriction, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  CORE_ANNOTATIONS,
+  ActionName,
+  ObjectType,
+  Field,
+  createRestriction,
+  BuiltinTypes,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
-import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, DEVICE_ASSURANCE } from './constants'
+import {
+  ACCESS_POLICY_TYPE_NAME,
+  CUSTOM_NAME_FIELD,
+  IDP_POLICY_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
+  OKTA,
+  PASSWORD_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  SIGN_ON_POLICY_TYPE_NAME,
+  AUTOMATION_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME,
+  DEVICE_ASSURANCE,
+} from './constants'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
 import { DEFAULT_APP_URLS_VALIDATOR_VALUE } from './change_validators/app_urls'
 
 type UserDeployConfig = definitions.UserDeployConfig
-const {
-  createSwaggerAdapterApiConfigType,
-  createDucktypeAdapterApiConfigType,
-} = configUtils
+const { createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -78,7 +95,14 @@ const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
 // Policy type is split to different kinds of policies
 // The full list of policy types is taken from here:
 // https://developer.okta.com/docs/reference/api/policy/#policy-types
-type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorEnrollmentPolicy' | 'OktaSignOnPolicy' | 'PasswordPolicy' | 'ProfileEnrollmentPolicy' | 'Automation'
+type PolicyTypeNames =
+  | 'AccessPolicy'
+  | 'IdentityProviderPolicy'
+  | 'MultifactorEnrollmentPolicy'
+  | 'OktaSignOnPolicy'
+  | 'PasswordPolicy'
+  | 'ProfileEnrollmentPolicy'
+  | 'Automation'
 
 type PolicyParams = {
   queryParam: string
@@ -126,8 +150,9 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
   },
 }
 
-const getPolicyItemsName = (policyName: string): string => (policyName === AUTOMATION_TYPE_NAME ? 'Automations' : `${(policyName).slice(0, -1)}ies`)
-const getPolicyRuleItemsName = (policyRuleName: string): string => (`${policyRuleName}s`)
+const getPolicyItemsName = (policyName: string): string =>
+  policyName === AUTOMATION_TYPE_NAME ? 'Automations' : `${policyName.slice(0, -1)}ies`
+const getPolicyRuleItemsName = (policyRuleName: string): string => `${policyRuleName}s`
 const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
@@ -218,15 +243,11 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
       },
     }
     if ([IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME].includes(typeName)) {
-      _.set(
-        policyRuleConfig.transformation,
-        'fieldTypeOverrides',
-        [
-          { fieldName: '_links', fieldType: 'LinksSelf' },
-          { fieldName: 'actions', fieldType: 'PolicyRuleActions' },
-          { fieldName: 'conditions', fieldType: 'PolicyRuleConditions' },
-        ]
-      )
+      _.set(policyRuleConfig.transformation, 'fieldTypeOverrides', [
+        { fieldName: '_links', fieldType: 'LinksSelf' },
+        { fieldName: 'actions', fieldType: 'PolicyRuleActions' },
+        { fieldName: 'conditions', fieldType: 'PolicyRuleConditions' },
+      ])
     }
     return {
       [getPolicyItemsName(typeName)]: {
@@ -289,13 +310,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'roles', fieldType: 'list<RoleAssignment>' },
         { fieldName: 'source', fieldType: 'Group__source' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([
-        { fieldName: 'lastMembershipUpdated' },
-        { fieldName: '_links' },
-      ]),
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([{ fieldName: 'lastMembershipUpdated' }, { fieldName: '_links' }]),
       idFields: ['profile.name'],
       serviceIdField: 'id',
       serviceUrl: '/admin/group/{id}',
@@ -332,9 +348,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   Role: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'targetGroups', fieldType: 'list<Group>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'targetGroups', fieldType: 'list<Group>' }],
       idFields: ['label'],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
@@ -373,11 +387,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
       idFields: ['label'],
       serviceIdField: 'id',
-      fieldsToHide: [
-        { fieldName: CUSTOM_NAME_FIELD },
-        { fieldName: 'id' },
-        { fieldName: '_links' },
-      ],
+      fieldsToHide: [{ fieldName: CUSTOM_NAME_FIELD }, { fieldName: 'id' }, { fieldName: '_links' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
       standaloneFields: [{ fieldName: 'appUserSchema' }],
@@ -435,7 +445,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
         { fieldName: '$schema' },
         { fieldName: 'type' },
-        { fieldName: 'properties' }
+        { fieldName: 'properties' },
       ),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
     },
@@ -451,16 +461,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   UserSchemaPublic: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'properties', fieldType: 'Map<okta.UserSchemaAttribute>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'properties', fieldType: 'Map<okta.UserSchemaAttribute>' }],
     },
   },
   GroupSchemaCustom: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'properties', fieldType: 'Map<okta.GroupSchemaAttribute>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'properties', fieldType: 'Map<okta.GroupSchemaAttribute>' }],
     },
   },
   AppLogo: {
@@ -519,9 +525,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   IdentityProvider: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'CSRs', fieldType: 'list<Csr>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'CSRs', fieldType: 'list<Csr>' }],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
@@ -542,8 +546,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'userType', fieldType: 'string' },
       ],
       serviceIdField: 'id',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT
-        .concat({ fieldName: '_links' }, { fieldName: '$schema' }, { fieldName: 'type' }, { fieldName: 'title' }, { fieldName: 'description' }, { fieldName: 'properties' }),
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
+        { fieldName: '_links' },
+        { fieldName: '$schema' },
+        { fieldName: 'type' },
+        { fieldName: 'title' },
+        { fieldName: 'description' },
+        { fieldName: 'properties' },
+      ),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
       // serviceUrl is created in service_url filter
     },
@@ -647,9 +657,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   AuthorizationServerPolicy: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' }],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
@@ -780,10 +788,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       idFields: ['title'],
       serviceIdField: 'id',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
-        { fieldName: '_links' },
-        { fieldName: '$schema' }
-      ),
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }, { fieldName: '$schema' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
     deployRequests: {
@@ -819,11 +824,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   OrgSetting: {
     request: {
       url: '/api/v1/org',
-      recurseInto: [{
-        type: 'api__v1__org__contacts',
-        toField: 'contactTypes',
-        context: [],
-      }],
+      recurseInto: [
+        {
+          type: 'api__v1__org__contacts',
+          toField: 'contactTypes',
+          context: [],
+        },
+      ],
     },
     transformation: {
       isSingleton: true,
@@ -857,9 +864,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       standaloneFields: [{ fieldName: 'theme' }],
       nestStandaloneInstances: false,
-      fieldTypeOverrides: [
-        { fieldName: 'theme', fieldType: 'list<BrandTheme>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {
@@ -877,16 +882,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       idFields: [],
       extendsParentId: true,
       serviceIdField: 'id',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: '_links' },
-        { fieldName: 'logo' },
-        { fieldName: 'favicon' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: '_links' }, { fieldName: 'logo' }, { fieldName: 'favicon' }],
       serviceUrl: '/admin/customizations/branding',
-      fieldTypeOverrides: [
-        { fieldName: '_links', fieldType: 'map<unknown>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'map<unknown>' }],
     },
     deployRequests: {
       modify: {
@@ -1152,10 +1150,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   UserType: {
     transformation: {
       serviceIdField: 'id',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: '_links' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: '_links' }],
       serviceUrl: 'admin/universaldirectory#okta/{id}',
     },
     deployRequests: {
@@ -1182,16 +1177,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   GroupSchemaAttribute: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'scope', fieldType: 'string' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'scope', fieldType: 'string' }],
     },
   },
   UserSchemaAttribute: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'scope', fieldType: 'string' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'scope', fieldType: 'string' }],
     },
   },
   IamRoles: {
@@ -1204,10 +1195,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   SmsTemplate: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
-      ],
+      fieldsToOmit: [{ fieldName: 'created' }, { fieldName: 'lastUpdated' }],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
@@ -1251,21 +1239,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   OAuth2Scope: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: '_links', fieldType: 'map<unknown>' },
-      ],
-      fieldsToOmit: [
-        { fieldName: '_links' },
-      ],
+      fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'map<unknown>' }],
+      fieldsToOmit: [{ fieldName: '_links' }],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   OAuth2Claim: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: '_links' },
-      ],
+      fieldsToOmit: [{ fieldName: '_links' }],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
@@ -1469,7 +1451,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'lastUpdate', fieldType: 'string' }],
       fieldsToHide: [{ fieldName: 'id' }],
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([{ fieldName: 'createdDate' }, { fieldName: 'lastUpdate' }, { fieldName: '_links' }]),
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([
+        { fieldName: 'createdDate' },
+        { fieldName: 'lastUpdate' },
+        { fieldName: '_links' },
+      ]),
     },
     deployRequests: {
       add: {
@@ -1498,10 +1484,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
 const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/okta/management-swagger-v3.yaml',
   additionalTypes: [
-    ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS)
-      .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
-    ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
-      .map(policy => ({ typeName: getPolicyRuleItemsName(policy.ruleName), cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
+    ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(policyTypeName => ({
+      typeName: getPolicyItemsName(policyTypeName),
+      cloneFrom: 'api__v1__policies',
+    })),
+    ...Object.values(POLICY_TYPE_NAME_TO_PARAMS).map(policy => ({
+      typeName: getPolicyRuleItemsName(policy.ruleName),
+      cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
+    })),
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
@@ -1524,9 +1514,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
 }
 
 export const SUPPORTED_TYPES = {
-  Application: [
-    'api__v1__apps',
-  ],
+  Application: ['api__v1__apps'],
   Authenticator: ['api__v1__authenticators'],
   AuthorizationServer: ['api__v1__authorizationServers'],
   AuthorizationServerPolicy: ['api__v1__authorizationServers___authServerId___policies@uuuuuu_00123_00125uu'],
@@ -1537,9 +1525,7 @@ export const SUPPORTED_TYPES = {
   Group: ['api__v1__groups'],
   RoleAssignment: ['api__v1__groups___groupId___roles@uuuuuu_00123_00125uu'],
   GroupRule: ['api__v1__groups__rules'],
-  IdentityProvider: [
-    'api__v1__idps',
-  ],
+  IdentityProvider: ['api__v1__idps'],
   InlineHook: ['api__v1__inlineHooks'],
   ProfileMapping: ['api__v1__mappings'],
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
@@ -1548,7 +1534,7 @@ export const SUPPORTED_TYPES = {
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   ...Object.fromEntries(
-    Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => ([typeName, [getPolicyItemsName(typeName)]]))
+    Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => [typeName, [getPolicyItemsName(typeName)]]),
   ),
   SmsTemplate: ['api__v1__templates__sms'],
   TrustedOrigin: ['api__v1__trustedOrigins'],
@@ -1742,7 +1728,15 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
           appId: '_parent.0.id',
           ruleId: 'mappingRuleId',
         },
-        fieldsToIgnore: ['mappingRuleId', 'name', 'status', 'searchExpression', 'descriptionSearchExpression', 'searchExpressionType', 'descriptionSearchExpressionType'],
+        fieldsToIgnore: [
+          'mappingRuleId',
+          'name',
+          'status',
+          'searchExpression',
+          'descriptionSearchExpression',
+          'searchExpressionType',
+          'descriptionSearchExpressionType',
+        ],
       },
     },
   },
@@ -1798,8 +1792,12 @@ export const DEFAULT_CONFIG: OktaConfig = {
   },
 }
 
-const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [DEVICE_ASSURANCE, AUTHENTICATOR_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
-  PROFILE_ENROLLMENT_POLICY_TYPE_NAME]
+const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
+  DEVICE_ASSURANCE,
+  AUTHENTICATOR_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+]
 
 export const getSupportedTypes = ({
   isClassicOrg,
@@ -1808,9 +1806,9 @@ export const getSupportedTypes = ({
   isClassicOrg: boolean
   supportedTypes: Record<string, string[]>
 }): Record<string, string[]> =>
-  (isClassicOrg ? _.omit(supportedTypes, CLASSIC_ENGINE_UNSUPPORTED_TYPES) : supportedTypes)
+  isClassicOrg ? _.omit(supportedTypes, CLASSIC_ENGINE_UNSUPPORTED_TYPES) : supportedTypes
 
-export type ChangeValidatorName = (
+export type ChangeValidatorName =
   | 'createCheckDeploymentBasedOnConfig'
   | 'application'
   | 'appGroup'
@@ -1831,7 +1829,6 @@ export type ChangeValidatorName = (
   | 'groupPushToApplicationUniqueness'
   | 'appGroupAssignment'
   | 'appUrls'
-  )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1867,9 +1864,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
 const createClientConfigType = (): ObjectType => {
   const rateLimitBufferField = { rateLimitBuffer: { refType: BuiltinTypes.NUMBER } }
   const configType = definitions.createClientConfigType(OKTA, undefined, rateLimitBufferField)
-  configType.fields.usePrivateAPI = new Field(
-    configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
-  )
+  configType.fields.usePrivateAPI = new Field(configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN)
   return configType
 }
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
@@ -1898,11 +1893,9 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       }),
     },
     [DEPLOY_CONFIG]: {
-      refType: definitions.createUserDeployConfigType(
-        OKTA,
-        changeValidatorConfigType,
-        { omitMissingUsers: { refType: BuiltinTypes.BOOLEAN } }
-      ),
+      refType: definitions.createUserDeployConfigType(OKTA, changeValidatorConfigType, {
+        omitMissingUsers: { refType: BuiltinTypes.BOOLEAN },
+      }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({
@@ -1925,7 +1918,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       CLIENT_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
-      `${FETCH_CONFIG}.getUsersStrategy`
+      `${FETCH_CONFIG}.getUsersStrategy`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -1942,14 +1935,11 @@ export const validateOktaFetchConfig = ({
   apiDefinitions: OktaSwaggerApiConfig
   privateApiDefinitions: OktaDuckTypeApiConfig
 }): void => {
-  const supportedTypes = clientConfig.usePrivateAPI === false
-    ? Object.keys(apiDefinitions.supportedTypes)
-    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(privateApiDefinitions.supportedTypes))
-  configUtils.validateSupportedTypes(
-    FETCH_CONFIG,
-    fetchConfig,
-    supportedTypes
-  )
+  const supportedTypes =
+    clientConfig.usePrivateAPI === false
+      ? Object.keys(apiDefinitions.supportedTypes)
+      : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(privateApiDefinitions.supportedTypes))
+  configUtils.validateSupportedTypes(FETCH_CONFIG, fetchConfig, supportedTypes)
 }
 
 export type FilterContext = {

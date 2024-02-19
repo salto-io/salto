@@ -1,24 +1,22 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { EOL } from 'os'
 import { Writable } from 'stream'
 import memoryStream from 'memory-streams'
-import {
-  dynamoDbRepo, Pool, Lease, InstanceNotLeasedError, Repo,
-} from '@salto-io/persistent-pool'
+import { dynamoDbRepo, Pool, Lease, InstanceNotLeasedError, Repo } from '@salto-io/persistent-pool'
 import cli from '../../src/cli'
 import { Adapter } from '../../src/types'
 import REPO_PARAMS from '../../src/repo_params'
@@ -56,14 +54,15 @@ const myAdapter: Adapter<MyArgs, MyCreds> = {
   validateCredentials: () => Promise.resolve(),
 }
 
-const createRealRepo = (): Promise<Repo> => dynamoDbRepo({
-  ...REPO_PARAMS,
-  serviceOpts: {
-    endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
-    region: 'local',
-  },
-  clientId: 'credentials-store-tests',
-})
+const createRealRepo = (): Promise<Repo> =>
+  dynamoDbRepo({
+    ...REPO_PARAMS,
+    serviceOpts: {
+      endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
+      region: 'local',
+    },
+    clientId: 'credentials-store-tests',
+  })
 
 const adapters = { salesforce: myAdapter }
 
@@ -76,16 +75,19 @@ describe('argparser', () => {
   let exitCode: number | undefined
   let createRepo: jest.Mock<Promise<Repo>, [string]>
 
-  const runCli = (commandLine: string): Promise<number> => new Promise(resolve => cli({
-    adapters,
-    process: {
-      stdout,
-      stderr,
-      exit: resolve as (code: number) => never,
-      argv: ['node', 'myscriptname', ...commandLine.split(' ')],
-    },
-    createRepo,
-  }))
+  const runCli = (commandLine: string): Promise<number> =>
+    new Promise(resolve =>
+      cli({
+        adapters,
+        process: {
+          stdout,
+          stderr,
+          exit: resolve as (code: number) => never,
+          argv: ['node', 'myscriptname', ...commandLine.split(' ')],
+        },
+        createRepo,
+      }),
+    )
 
   beforeEach(async () => {
     exitCode = undefined
@@ -96,7 +98,7 @@ describe('argparser', () => {
     await realPool.clear()
     mockPool = Object.assign(
       { [Symbol.asyncIterator]: realPool[Symbol.asyncIterator].bind(realPool) },
-      ...Object.keys(realPool).map(k => ({ [k]: jest.spyOn(realPool, k as keyof Pool) }))
+      ...Object.keys(realPool).map(k => ({ [k]: jest.spyOn(realPool, k as keyof Pool) })),
     )
     jest.spyOn(repo, 'pool').mockImplementation(() => Promise.resolve(mockPool as Pool<{}>))
     createRepo = jest.fn<Promise<Repo>, [string]>(() => Promise.resolve(repo))
@@ -104,7 +106,7 @@ describe('argparser', () => {
 
   describe('no args', () => {
     beforeEach(async () => {
-      (stdout as unknown as { columns: number | undefined }).columns = 80
+      ;(stdout as unknown as { columns: number | undefined }).columns = 80
       exitCode = await runCli('')
     })
 
@@ -167,10 +169,7 @@ describe('argparser', () => {
         })
 
         it('calls pool.register correctly', () => {
-          expect(mockPool.register).toHaveBeenCalledWith(
-            { password: 'pass1', username: 'user1' },
-            'my-id'
-          )
+          expect(mockPool.register).toHaveBeenCalledWith({ password: 'pass1', username: 'user1' }, 'my-id')
         })
 
         it('returns 0', () => {
@@ -180,7 +179,8 @@ describe('argparser', () => {
 
       describe('when the validation failes', () => {
         beforeEach(async () => {
-          jest.spyOn(myAdapter, 'validateCredentials')
+          jest
+            .spyOn(myAdapter, 'validateCredentials')
             .mockImplementationOnce(() => Promise.reject(new Error('not valid')))
           exitCode = await runCli('register salesforce my-id --username="user1" --password="pass1"')
         })
@@ -236,9 +236,7 @@ describe('argparser', () => {
 
     describe('when the instance id exists', () => {
       beforeEach(async () => {
-        await runCli(
-          'register salesforce my-id --username="user1" --password="pass1"'
-        )
+        await runCli('register salesforce my-id --username="user1" --password="pass1"')
         await runCli('lease salesforce')
         exitCode = await runCli('free salesforce my-id')
       })
@@ -261,9 +259,7 @@ describe('argparser', () => {
       describe('when the instance is already free', () => {
         beforeEach(async () => {
           exitCode = await runCli('free salesforce my-id')
-          return expect(
-            mockPool.return.mock.results[1].value
-          ).rejects.toThrow(InstanceNotLeasedError)
+          return expect(mockPool.return.mock.results[1].value).rejects.toThrow(InstanceNotLeasedError)
         })
 
         it('returns 0', () => {
@@ -308,9 +304,7 @@ describe('argparser', () => {
 
     describe('when the lease exists', () => {
       beforeEach(async () => {
-        await runCli(
-          'register salesforce my-id --username="user1" --password="pass1"'
-        )
+        await runCli('register salesforce my-id --username="user1" --password="pass1"')
       })
 
       describe('when the call to the pool succeeds', () => {
@@ -365,9 +359,7 @@ describe('argparser', () => {
 
     describe('when an available lease exists', () => {
       beforeEach(async () => {
-        await runCli(
-          'register salesforce my-id --username="user1" --password="pass1"'
-        )
+        await runCli('register salesforce my-id --username="user1" --password="pass1"')
         exitCode = await runCli('lease salesforce 50')
       })
 
@@ -392,23 +384,17 @@ describe('argparser', () => {
     let lease2: Lease<unknown>
     beforeEach(async () => {
       // leased
-      expect(await runCli(
-        'register salesforce my-id1 --username="user1" --password="pass1"'
-      )).toEqual(0)
-      lease1 = await realPool.lease(100000) as Lease<unknown>
+      expect(await runCli('register salesforce my-id1 --username="user1" --password="pass1"')).toEqual(0)
+      lease1 = (await realPool.lease(100000)) as Lease<unknown>
       expect(lease1).not.toBeNull()
 
       // suspended
-      expect(await runCli(
-        'register salesforce my-id2 --username="user2" --password="pass2"'
-      )).toEqual(0)
-      lease2 = await realPool.lease(100000) as Lease<unknown>
+      expect(await runCli('register salesforce my-id2 --username="user2" --password="pass2"')).toEqual(0)
+      lease2 = (await realPool.lease(100000)) as Lease<unknown>
       await realPool.suspend(lease2.id, 'not being nice', 10000)
 
       // available
-      expect(await runCli(
-        'register salesforce my-id3 --username="user3" --password="pass3"'
-      )).toEqual(0)
+      expect(await runCli('register salesforce my-id3 --username="user3" --password="pass3"')).toEqual(0)
     })
 
     afterEach(async () => {
@@ -441,12 +427,8 @@ describe('argparser', () => {
         expect(exitCode).toBe(0)
       })
 
-      const findEntry = <T>(
-        status: string
-      ): T => {
-        const result = JSON.parse(stdout.toString()).find(
-          (x: { status: string }): boolean => x.status === status
-        )
+      const findEntry = <T>(status: string): T => {
+        const result = JSON.parse(stdout.toString()).find((x: { status: string }): boolean => x.status === status)
         expect(result).toBeDefined()
         return result
       }
@@ -488,7 +470,7 @@ describe('argparser', () => {
       })
 
       describe('available entry', () => {
-        let entry: { }
+        let entry: {}
 
         beforeEach(() => {
           entry = findEntry('available')

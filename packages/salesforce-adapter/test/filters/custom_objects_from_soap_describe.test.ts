@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -34,9 +34,16 @@ import {
 import mockAdapter from '../adapter'
 import { findElements, defaultFilterContext } from '../utils'
 import filterCreator from '../../src/filters/custom_objects_from_soap_describe'
-import { INSTANCE_TYPE_FIELD, INSTANCE_REQUIRED_FIELD } from '../../src/filters/custom_objects_to_object_type'
+import {
+  INSTANCE_TYPE_FIELD,
+  INSTANCE_REQUIRED_FIELD,
+} from '../../src/filters/custom_objects_to_object_type'
 import { generateCustomObjectType } from './custom_objects_to_object_type.test'
-import { mockSObjectDescribeGlobal, mockSObjectDescribe, mockFileProperties } from '../connection'
+import {
+  mockSObjectDescribeGlobal,
+  mockSObjectDescribe,
+  mockFileProperties,
+} from '../connection'
 import { FilterWith } from './mocks'
 
 describe('Custom Objects from describe filter', () => {
@@ -47,141 +54,141 @@ describe('Custom Objects from describe filter', () => {
 
   beforeEach(() => {
     customObjectType = generateCustomObjectType()
-    testInstanceElement = new InstanceElement(
-      'Lead',
-      customObjectType,
-      {
-        fields: [
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
-            [INSTANCE_TYPE_FIELD]: 'AutoNumber',
-            [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
-            [INSTANCE_REQUIRED_FIELD]: 'false',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'UnsupportedField',
-            [INSTANCE_TYPE_FIELD]: 'DateTime',
-            [INSTANCE_REQUIRED_FIELD]: 'false',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'FieldWithNoType',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
-            [INSTANCE_TYPE_FIELD]: 'Picklist',
-            [INSTANCE_REQUIRED_FIELD]: 'true',
-            [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'YES',
-            [FIELD_ANNOTATIONS.VALUE_SET]: {
-              [VALUE_SET_FIELDS.RESTRICTED]: 'true',
-              [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
-                [VALUE_SET_DEFINITION_FIELDS.VALUE]:
-                [
-                  {
-                    [CUSTOM_VALUE.FULL_NAME]: 'YES',
-                    [CUSTOM_VALUE.LABEL]: 'YES',
-                    [CUSTOM_VALUE.DEFAULT]: 'true',
-                  },
-                  {
-                    [CUSTOM_VALUE.FULL_NAME]: 'NO',
-                    [CUSTOM_VALUE.LABEL]: 'NO',
-                    [CUSTOM_VALUE.DEFAULT]: 'false',
-                    [CUSTOM_VALUE.IS_ACTIVE]: 'true',
-                    [CUSTOM_VALUE.COLOR]: '#FF0000',
-                  },
-                  {
-                    [CUSTOM_VALUE.FULL_NAME]: 'MAYBE',
-                    [CUSTOM_VALUE.DEFAULT]: 'false',
-                    [CUSTOM_VALUE.LABEL]: 'MAYBE',
-                    [CUSTOM_VALUE.IS_ACTIVE]: 'false',
-                  },
-                ],
-              },
-            },
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'MyCheckbox',
-            [INSTANCE_TYPE_FIELD]: 'Checkbox',
-            [INSTANCE_REQUIRED_FIELD]: 'false',
-            [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'true',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'rollup',
-            [LABEL]: 'My Summary',
-            [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',
-            [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: {
-              [FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.Amount',
-              [FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
-              [FILTER_ITEM_FIELDS.VALUE]: '1',
-            },
-            [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
-            [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'sum',
-            [INSTANCE_TYPE_FIELD]: 'Summary',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'lookup_field',
-            [LABEL]: 'My Lookup',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: 'Account',
-            [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-              [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
-              [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: 'myBooleanFilter',
-              [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
-              [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'myInfoMessage',
-              [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'false',
-              [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
-                [FILTER_ITEM_FIELDS.FIELD]: 'myField1',
-                [FILTER_ITEM_FIELDS.OPERATION]: 'myOperation1',
-                [FILTER_ITEM_FIELDS.VALUE_FIELD]: 'myValueField1',
-              },
-            },
-            [INSTANCE_TYPE_FIELD]: 'Lookup',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'lookup_field_optional',
-            [LABEL]: 'My Lookup',
-            [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-              [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
-              [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
-              [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'true',
-            },
-            [INSTANCE_TYPE_FIELD]: 'Lookup',
-          },
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'picklist_field',
-            [LABEL]: 'My Field Dependency',
-            [FIELD_ANNOTATIONS.VALUE_SET]: {
-              [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
-              [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+    testInstanceElement = new InstanceElement('Lead', customObjectType, {
+      fields: [
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
+          [INSTANCE_TYPE_FIELD]: 'AutoNumber',
+          [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'UnsupportedField',
+          [INSTANCE_TYPE_FIELD]: 'DateTime',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'FieldWithNoType',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
+          [INSTANCE_TYPE_FIELD]: 'Picklist',
+          [INSTANCE_REQUIRED_FIELD]: 'true',
+          [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'YES',
+          [FIELD_ANNOTATIONS.VALUE_SET]: {
+            [VALUE_SET_FIELDS.RESTRICTED]: 'true',
+            [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+              [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
                 {
-                  [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1', 'Controlling2'],
-                  [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
+                  [CUSTOM_VALUE.FULL_NAME]: 'YES',
+                  [CUSTOM_VALUE.LABEL]: 'YES',
+                  [CUSTOM_VALUE.DEFAULT]: 'true',
                 },
                 {
-                  [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1'],
-                  [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
+                  [CUSTOM_VALUE.FULL_NAME]: 'NO',
+                  [CUSTOM_VALUE.LABEL]: 'NO',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.IS_ACTIVE]: 'true',
+                  [CUSTOM_VALUE.COLOR]: '#FF0000',
+                },
+                {
+                  [CUSTOM_VALUE.FULL_NAME]: 'MAYBE',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.LABEL]: 'MAYBE',
+                  [CUSTOM_VALUE.IS_ACTIVE]: 'false',
                 },
               ],
-              [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
-                [VALUE_SET_DEFINITION_FIELDS.SORTED]: false,
-                [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
-                  {
-                    [CUSTOM_VALUE.FULL_NAME]: 'Val1',
-                    [CUSTOM_VALUE.DEFAULT]: 'false',
-                    [CUSTOM_VALUE.LABEL]: 'Val1',
-                  },
-                  {
-                    [CUSTOM_VALUE.FULL_NAME]: 'Val2',
-                    [CUSTOM_VALUE.DEFAULT]: 'false',
-                    [CUSTOM_VALUE.LABEL]: 'Val2',
-                  },
-                ],
-              },
             },
-            [INSTANCE_TYPE_FIELD]: 'Picklist',
           },
-        ],
-        [INSTANCE_FULL_NAME_FIELD]: 'Lead',
-      },
-    )
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyCheckbox',
+          [INSTANCE_TYPE_FIELD]: 'Checkbox',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+          [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'true',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'rollup',
+          [LABEL]: 'My Summary',
+          [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',
+          [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: {
+            [FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.Amount',
+            [FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
+            [FILTER_ITEM_FIELDS.VALUE]: '1',
+          },
+          [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
+          [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'sum',
+          [INSTANCE_TYPE_FIELD]: 'Summary',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'lookup_field',
+          [LABEL]: 'My Lookup',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: 'Account',
+          [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+            [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
+            [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: 'myBooleanFilter',
+            [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
+            [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'myInfoMessage',
+            [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'false',
+            [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
+              [FILTER_ITEM_FIELDS.FIELD]: 'myField1',
+              [FILTER_ITEM_FIELDS.OPERATION]: 'myOperation1',
+              [FILTER_ITEM_FIELDS.VALUE_FIELD]: 'myValueField1',
+            },
+          },
+          [INSTANCE_TYPE_FIELD]: 'Lookup',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'lookup_field_optional',
+          [LABEL]: 'My Lookup',
+          [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+            [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
+            [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
+            [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'true',
+          },
+          [INSTANCE_TYPE_FIELD]: 'Lookup',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'picklist_field',
+          [LABEL]: 'My Field Dependency',
+          [FIELD_ANNOTATIONS.VALUE_SET]: {
+            [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
+            [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+              {
+                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                  'Controlling1',
+                  'Controlling2',
+                ],
+                [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
+              },
+              {
+                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                  'Controlling1',
+                ],
+                [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
+              },
+            ],
+            [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+              [VALUE_SET_DEFINITION_FIELDS.SORTED]: false,
+              [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
+                {
+                  [CUSTOM_VALUE.FULL_NAME]: 'Val1',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.LABEL]: 'Val1',
+                },
+                {
+                  [CUSTOM_VALUE.FULL_NAME]: 'Val2',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.LABEL]: 'Val2',
+                },
+              ],
+            },
+          },
+          [INSTANCE_TYPE_FIELD]: 'Picklist',
+        },
+      ],
+      [INSTANCE_FULL_NAME_FIELD]: 'Lead',
+    })
     const adapter = mockAdapter({})
     connection = adapter.connection
     filter = filterCreator({
@@ -194,11 +201,11 @@ describe('Custom Objects from describe filter', () => {
   })
 
   describe('onFetch', () => {
-    type MockSingleSObjectProperties = (
-      Parameters<typeof mockSObjectDescribeGlobal>[0]
-      & Parameters<typeof mockSObjectDescribe>[0]
-      & Pick<DescribeSObjectResult, 'name'>
-    )
+    type MockSingleSObjectProperties = Parameters<
+      typeof mockSObjectDescribeGlobal
+    >[0] &
+      Parameters<typeof mockSObjectDescribe>[0] &
+      Pick<DescribeSObjectResult, 'name'>
     const mockSingleSObject = (
       properties: MockSingleSObjectProperties,
       isMetadataType = false,
@@ -207,17 +214,20 @@ describe('Custom Objects from describe filter', () => {
       connection.describeGlobal.mockResolvedValue({
         sobjects: [mockSObjectDescribeGlobal(properties)],
       })
-      connection.soap.describeSObjects.mockResolvedValue(mockSObjectDescribe(properties))
+      connection.soap.describeSObjects.mockResolvedValue(
+        mockSObjectDescribe(properties),
+      )
 
       connection.metadata.describe.mockResolvedValue({
         metadataObjects: [
-          CUSTOM_OBJECT, ...(isMetadataType ? [properties.name] : []),
-        ].map(xmlName => ({ xmlName })),
+          CUSTOM_OBJECT,
+          ...(isMetadataType ? [properties.name] : []),
+        ].map((xmlName) => ({ xmlName })),
         organizationNamespace: '',
       })
-      connection.metadata.list.mockImplementation(async query => {
+      connection.metadata.list.mockImplementation(async (query) => {
         const { type } = collections.array.makeArray(query)[0]
-        return (type === CUSTOM_OBJECT && isInCustomObjectList)
+        return type === CUSTOM_OBJECT && isInCustomObjectList
           ? [mockFileProperties({ fullName: properties.name, type })]
           : []
       })
@@ -240,7 +250,7 @@ describe('Custom Objects from describe filter', () => {
         await filter.onFetch(elements)
       })
       it('should leave the instance unchanged', () => {
-        const leadInstances = elements.filter(o => o.elemID.name === 'Lead')
+        const leadInstances = elements.filter((o) => o.elemID.name === 'Lead')
         expect(leadInstances).toHaveLength(1)
         const [leadInstance] = leadInstances
         expect(leadInstance).toEqual(testInstanceElement)
@@ -279,7 +289,7 @@ describe('Custom Objects from describe filter', () => {
         })
         it('should keep the values from the metadata API when they exist', () => {
           expect(testInstanceElement.value.fields).toContainEqual(
-            testInstanceElement.value.fields[0]
+            testInstanceElement.value.fields[0],
           )
         })
         it('should add information to existing fields', () => {
@@ -289,7 +299,7 @@ describe('Custom Objects from describe filter', () => {
             label: 'a label',
           }
           expect(testInstanceElement.value.fields).toContainEqual(
-            expect.objectContaining(expectedField)
+            expect.objectContaining(expectedField),
           )
         })
       })
@@ -322,7 +332,7 @@ describe('Custom Objects from describe filter', () => {
             label: 'OnlyField',
           }
           expect(testInstanceElement.value.fields).toContainEqual(
-            expect.objectContaining(expectedField)
+            expect.objectContaining(expectedField),
           )
         })
       })
@@ -355,10 +365,10 @@ describe('Custom Objects from describe filter', () => {
         })
         it('should not add the nested fields that compose the compound field', () => {
           expect(testInstanceElement.value.fields).not.toContainEqual(
-            expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: 'City' })
+            expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: 'City' }),
           )
           expect(testInstanceElement.value.fields).not.toContainEqual(
-            expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: 'Street' })
+            expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: 'Street' }),
           )
           const expectedField = {
             [INSTANCE_FULL_NAME_FIELD]: 'Address',
@@ -367,7 +377,7 @@ describe('Custom Objects from describe filter', () => {
             label: 'Home Address',
           }
           expect(testInstanceElement.value.fields).toContainEqual(
-            expect.objectContaining(expectedField)
+            expect.objectContaining(expectedField),
           )
         })
       })
@@ -413,7 +423,7 @@ describe('Custom Objects from describe filter', () => {
               [INSTANCE_TYPE_FIELD]: 'Name',
             }
             expect(testInstanceElement.value.fields).toContainEqual(
-              expect.objectContaining(expectedField)
+              expect.objectContaining(expectedField),
             )
           })
         })
@@ -451,7 +461,7 @@ describe('Custom Objects from describe filter', () => {
               [INSTANCE_TYPE_FIELD]: 'Name2',
             }
             expect(testInstanceElement.value.fields).toContainEqual(
-              expect.objectContaining(expectedField)
+              expect.objectContaining(expectedField),
             )
           })
         })
@@ -478,7 +488,7 @@ describe('Custom Objects from describe filter', () => {
               [INSTANCE_TYPE_FIELD]: 'Text',
             }
             expect(testInstanceElement.value.fields).toContainEqual(
-              expect.objectContaining(expectedField)
+              expect.objectContaining(expectedField),
             )
           })
         })

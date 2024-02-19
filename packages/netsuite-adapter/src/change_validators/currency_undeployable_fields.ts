@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   AdditionChange,
   ChangeError,
@@ -27,27 +27,26 @@ import { values } from '@salto-io/lowerdash'
 import { CURRENCY } from '../constants'
 import { NetsuiteChangeValidator } from './types'
 
-
 const { isDefined } = values
 const DISPLAY_SYMBOL = 'display symbol'
 const SYMBOL_PLACEMENT = 'symbol placement'
 
-
-const validateModificationChange = (
-  change: ModificationChange<InstanceElement>
-): ChangeError | undefined => {
+const validateModificationChange = (change: ModificationChange<InstanceElement>): ChangeError | undefined => {
   const { before, after } = change.data
   if (before.value.currencyPrecision !== after.value.currencyPrecision) {
     return {
       elemID: before.elemID,
       severity: 'Error',
-      message: 'Editing of \'currencyPrecision\' is not supported',
-      detailedMessage: 'Cannot deploy currency - currency precision is a read-only field in NetSuite. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions',
+      message: "Editing of 'currencyPrecision' is not supported",
+      detailedMessage:
+        'Cannot deploy currency - currency precision is a read-only field in NetSuite. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions',
     }
   }
-  if ((before.value.displaySymbol !== after.value.displaySymbol
-    || before.value.symbolPlacement !== after.value.symbolPlacement)
-  && !before.value.overrideCurrencyFormat) {
+  if (
+    (before.value.displaySymbol !== after.value.displaySymbol ||
+      before.value.symbolPlacement !== after.value.symbolPlacement) &&
+    !before.value.overrideCurrencyFormat
+  ) {
     const changedField = before.value.displaySymbol !== after.value.displaySymbol ? DISPLAY_SYMBOL : SYMBOL_PLACEMENT
     return {
       elemID: before.elemID,
@@ -66,30 +65,32 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Currency contains a field that cannot be deployed.',
-      detailedMessage: 'Cannot deploy currency - override currency format is disabled. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions',
+      detailedMessage:
+        'Cannot deploy currency - override currency format is disabled. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions',
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Currency contains fields that cannot be deployed. These fields will be skipped from the deployment.',
-    detailedMessage: 'Unable to deploy \'locale\' field. Once the deployment is completed, set the \'locale\' of the newly created currency to the desired value in the target environment.',
+    detailedMessage:
+      "Unable to deploy 'locale' field. Once the deployment is completed, set the 'locale' of the newly created currency to the desired value in the target environment.",
     deployActions: {
       postAction: {
-        title: 'Edit \'locale\' field',
-        description: 'Set the \'locale\' of the newly created currency to the desired value',
+        title: "Edit 'locale' field",
+        description: "Set the 'locale' of the newly created currency to the desired value",
         showOnFailure: false,
         subActions: [
           'Within the NetSuite UI, navigate to Lists > Accounting > Currencies',
           `Choose the newly created currency (${instance.value.name})`,
-          'Set \'DEFAULT LOCALE\' to the correct value',
+          "Set 'DEFAULT LOCALE' to the correct value",
         ],
       },
     },
   }
 }
 
-const changeValidator: NetsuiteChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -101,6 +102,5 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
       return validateAdditionChange(change)
     })
     .filter(isDefined)
-)
 
 export default changeValidator

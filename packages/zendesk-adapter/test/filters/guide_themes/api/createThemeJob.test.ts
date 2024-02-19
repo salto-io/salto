@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../../../src/client/client'
 import { createThemeJob, JobType } from '../../../../src/filters/guide_themes/api/createThemeJob'
@@ -108,7 +108,10 @@ describe('createThemeJob', () => {
     describe('successful response', () => {
       it('returns a job on a correct response structure', async () => {
         mockPost.mockResolvedValue({ status: 202, data: downloadJobResponse('pending') })
-        expect(await createThemeJob((11).toString(), client, JobType.IMPORTS)).toEqual({ job: downloadJobResponse('pending').job, errors: [] })
+        expect(await createThemeJob((11).toString(), client, JobType.IMPORTS)).toEqual({
+          job: downloadJobResponse('pending').job,
+          errors: [],
+        })
       })
 
       it('returns undefined job on non-pending job', async () => {
@@ -125,7 +128,10 @@ describe('createThemeJob', () => {
     describe('response failure', () => {
       it('returns error response on wrong status code', async () => {
         mockPost.mockResolvedValue({ status: 400, data: downloadJobResponse('pending') })
-        expect(await createThemeJob((11).toString(), client, JobType.IMPORTS)).toEqual({ job: undefined, errors: [safeJsonStringify(downloadJobResponse('pending'))] })
+        expect(await createThemeJob((11).toString(), client, JobType.IMPORTS)).toEqual({
+          job: undefined,
+          errors: [safeJsonStringify(downloadJobResponse('pending'))],
+        })
       })
     })
   })

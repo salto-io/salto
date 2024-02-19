@@ -1,19 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { InstanceElement, ObjectType, BuiltinTypes, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  InstanceElement,
+  ObjectType,
+  BuiltinTypes,
+  ElemIdGetter,
+  OBJECT_SERVICE_ID,
+  toServiceIdsString,
+  OBJECT_NAME,
+  Values,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -37,9 +47,7 @@ const setTypeSourceAnnotation = (type: ObjectType): void => {
   type.annotations.source = SOAP
 }
 
-export const getDataTypes = async (
-  client: NetsuiteClient
-): Promise<ObjectType[]> => {
+export const getDataTypes = async (client: NetsuiteClient): Promise<ObjectType[]> => {
   if (!client.isSuiteAppConfigured()) {
     return []
   }
@@ -70,10 +78,7 @@ export const getDataTypes = async (
   return types
 }
 
-const getType = (
-  values: Values,
-  typesMap: Record<string, ObjectType>
-): ObjectType => {
+const getType = (values: Values, typesMap: Record<string, ObjectType>): ObjectType => {
   const typeNames: string[] = Object.entries(values.attributes ?? {})
     .filter(([key, value]) => key.split(':')[1] === 'type' && typeof value === 'string')
     .map(([_key, value]) => {
@@ -93,18 +98,21 @@ const createInstances = async (
   typesMap: Record<string, ObjectType>,
   elemIdGetter?: ElemIdGetter,
 ): Promise<InstanceElement[]> => {
-  const fixedValuesList = await awu(valuesList).map(async values => {
-    const type = getType(values, typesMap)
-    return {
-      values: await transformValues({
-        values,
+  const fixedValuesList = await awu(valuesList)
+    .map(async values => {
+      const type = getType(values, typesMap)
+      return {
+        values:
+          (await transformValues({
+            values,
+            type,
+            strict: false,
+            transformFunc: async ({ value, field }) => castFieldValue(value, field),
+          })) ?? values,
         type,
-        strict: false,
-        transformFunc: async ({ value, field }) => castFieldValue(value, field),
-      }) ?? values,
-      type,
-    }
-  }).toArray()
+      }
+    })
+    .toArray()
 
   addIdentifierToValues(fixedValuesList)
 
@@ -113,23 +121,21 @@ const createInstances = async (
     const identifierValue = values[serviceIdFieldName]
     const defaultName = naclCase(identifierValue)
 
-    const name = elemIdGetter !== undefined ? elemIdGetter(
-      NETSUITE,
-      {
-        [serviceIdFieldName]: identifierValue,
-        [OBJECT_SERVICE_ID]: toServiceIdsString({
-          [OBJECT_NAME]: type.elemID.getFullName(),
-        }),
-      },
-      defaultName
-    ).name : defaultName
+    const name =
+      elemIdGetter !== undefined
+        ? elemIdGetter(
+            NETSUITE,
+            {
+              [serviceIdFieldName]: identifierValue,
+              [OBJECT_SERVICE_ID]: toServiceIdsString({
+                [OBJECT_NAME]: type.elemID.getFullName(),
+              }),
+            },
+            defaultName,
+          ).name
+        : defaultName
 
-    return new InstanceElement(
-      name,
-      type,
-      values,
-      [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
-    )
+    return new InstanceElement(name, type, values, [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)])
   })
 }
 
@@ -154,22 +160,20 @@ export const getDataElements = async (
   }
 
   const { records: allRecords, largeTypesError } = await client.getAllRecords(availableTypesToFetch)
-  const instances = await createInstances(
-    allRecords,
-    typesMap,
-    elemIdGetter,
-  )
+  const instances = await createInstances(allRecords, typesMap, elemIdGetter)
 
   return {
     elements: [
       ...types,
-      ...await awu(instances).filter(async instance => {
-        const type = await instance.getType()
-        return query.isObjectMatch({
-          type: type.elemID.name,
-          instanceId: instance.value[getTypeIdentifier(type)],
+      ...(await awu(instances)
+        .filter(async instance => {
+          const type = await instance.getType()
+          return query.isObjectMatch({
+            type: type.elemID.name,
+            instanceId: instance.value[getTypeIdentifier(type)],
+          })
         })
-      }).toArray(),
+        .toArray()),
     ],
     requestedTypes: availableTypesToFetch,
     largeTypesError,

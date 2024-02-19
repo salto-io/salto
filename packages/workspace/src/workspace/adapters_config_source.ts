@@ -1,20 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
-import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, transformElement } from '@salto-io/adapter-utils'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  DetailedChange,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  SaltoError,
+} from '@salto-io/adapter-api'
+import {
+  applyDetailedChanges,
+  buildElementsSourceFromElements,
+  detailedCompare,
+  transformElement,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -27,7 +39,17 @@ import { Errors } from './errors'
 import { NaclFilesSource } from './nacl_files'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 
-export type PartialNaclFilesSource = Pick<NaclFilesSource, 'getErrors' | 'getSourceRanges' | 'getNaclFile' | 'setNaclFiles' | 'flush' | 'getParsedNaclFile' | 'getSourceMap' | 'listNaclFiles'>
+export type PartialNaclFilesSource = Pick<
+  NaclFilesSource,
+  | 'getErrors'
+  | 'getSourceRanges'
+  | 'getNaclFile'
+  | 'setNaclFiles'
+  | 'flush'
+  | 'getParsedNaclFile'
+  | 'getSourceMap'
+  | 'listNaclFiles'
+>
 
 const { awu } = collections.asynciterable
 
@@ -39,7 +61,7 @@ export type AdaptersConfigSource = {
   setAdapter(
     account: string,
     adapter: string,
-    config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+    config: Readonly<InstanceElement> | Readonly<InstanceElement>[],
   ): Promise<void>
   getElementNaclFiles(adapter: string): Promise<string[]>
   getElements(): ReadOnlyElementsSource
@@ -51,10 +73,7 @@ const updateValidationErrorsCache = async (
   elementsSource: ReadOnlyElementsSource,
   naclSource: NaclFilesSource,
 ): Promise<void> => {
-  const validationErrors = await validateElements(
-    await awu(await naclSource.getAll()).toArray(),
-    elementsSource
-  )
+  const validationErrors = await validateElements(await awu(await naclSource.getAll()).toArray(), elementsSource)
 
   await validationErrorsMap.clear()
   await validationErrorsMap.setAll(
@@ -62,7 +81,7 @@ const updateValidationErrorsCache = async (
       .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
       .entries()
       .map(([key, value]) => ({ key, value }))
-      .value()
+      .value(),
   )
 }
 
@@ -84,12 +103,10 @@ export const calculateAdditionalConfigTypes = async (
   const additionalConfigs: Record<string, ObjectType[]> = {}
   await awu(configTypeIDs).forEach(async configTypeID => {
     if (
-      !(await configElementsSource.get(configTypeID))
-      && additionalConfigs[configTypeID.getFullName()] === undefined
+      !(await configElementsSource.get(configTypeID)) &&
+      additionalConfigs[configTypeID.getFullName()] === undefined
     ) {
-      const accountConfigType = (await configElementsSource.get(
-        createAdapterReplacedID(configTypeID, adapter)
-      )).clone()
+      const accountConfigType = (await configElementsSource.get(createAdapterReplacedID(configTypeID, adapter))).clone()
       await updateElementsWithAlternativeAccount([accountConfigType], account, adapter)
       additionalConfigs[configTypeID.getFullName()] = accountConfigType
     }
@@ -127,19 +144,20 @@ export const buildAdaptersConfigSource = async ({
     await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
   }
 
-  const overwriteNacl = async (
-    configs: InstanceElement | InstanceElement[],
-  ): Promise<void> => {
+  const overwriteNacl = async (configs: InstanceElement | InstanceElement[]): Promise<void> => {
     // This function first removes the existing configuration and then adds the new configuration
     // instead of creating a "modify" change so the config element will be split exactly like the
     // new configuration and not like the old one
 
     const configsArr = collections.array.makeArray(configs)
 
-    await naclSource.updateNaclFiles(_.uniqBy(configsArr, conf => conf.elemID.getFullName())
-      .map(conf => ({
-        id: conf.elemID, action: 'remove', data: { before: conf },
-      })))
+    await naclSource.updateNaclFiles(
+      _.uniqBy(configsArr, conf => conf.elemID.getFullName()).map(conf => ({
+        id: conf.elemID,
+        action: 'remove',
+        data: { before: conf },
+      })),
+    )
 
     const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
       transformElement({
@@ -153,26 +171,31 @@ export const buildAdaptersConfigSource = async ({
     const configsToUpdate = await Promise.all(configsArr.map(removeUndefined))
     await naclSource.updateNaclFiles(
       configsToUpdate.map(conf => ({
-        id: conf.elemID, action: 'add', data: { after: conf }, path: [...CONFIG_PATH, conf.elemID.adapter, ...conf.path ?? [conf.elemID.adapter]],
-      }))
+        id: conf.elemID,
+        action: 'add',
+        data: { after: conf },
+        path: [...CONFIG_PATH, conf.elemID.adapter, ...(conf.path ?? [conf.elemID.adapter])],
+      })),
     )
   }
 
-  const getConfigWithoutOverrides = (adapter: string): Promise<InstanceElement | undefined> => (
+  const getConfigWithoutOverrides = (adapter: string): Promise<InstanceElement | undefined> =>
     naclSource.get(new ElemID(adapter, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME))
-  )
 
   const validateConfigChanges = (configChanges: DetailedChange[]): void => {
-    const updatedOverriddenIds = configOverrides.filter(
-      overiddeChange => configChanges.some(
-        updateChange => updateChange.id.isParentOf(overiddeChange.id)
-          || overiddeChange.id.isParentOf(updateChange.id)
-          || overiddeChange.id.isEqual(updateChange.id)
-      )
+    const updatedOverriddenIds = configOverrides.filter(overiddeChange =>
+      configChanges.some(
+        updateChange =>
+          updateChange.id.isParentOf(overiddeChange.id) ||
+          overiddeChange.id.isParentOf(updateChange.id) ||
+          overiddeChange.id.isEqual(updateChange.id),
+      ),
     )
 
     if (updatedOverriddenIds.length !== 0) {
-      throw new Error(`cannot update fields that were overridden by the user: ${updatedOverriddenIds.map(change => change.id.getFullName())}`)
+      throw new Error(
+        `cannot update fields that were overridden by the user: ${updatedOverriddenIds.map(change => change.id.getFullName())}`,
+      )
     }
   }
 
@@ -184,7 +207,7 @@ export const buildAdaptersConfigSource = async ({
 
   return {
     getAdapter: async (adapter, defaultValue) => {
-      const conf = (await getConfigWithoutOverrides(adapter) ?? defaultValue)?.clone()
+      const conf = ((await getConfigWithoutOverrides(adapter)) ?? defaultValue)?.clone()
       if (conf === undefined) {
         return undefined
       }
@@ -200,10 +223,7 @@ export const buildAdaptersConfigSource = async ({
           account,
         )
         updatedConfigTypes.push(...additionalConfigs)
-        elementsSource = buildElementsSourceFromElements(
-          updatedConfigTypes,
-          [naclSource],
-        )
+        elementsSource = buildElementsSourceFromElements(updatedConfigTypes, [naclSource])
       }
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
@@ -231,8 +251,10 @@ export const buildAdaptersConfigSource = async ({
       }
       await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
     },
-    getElementNaclFiles: async adapter => (await naclSource.listNaclFiles())
-      .filter(filePath => filePath.startsWith(path.join(...CONFIG_PATH, adapter).concat(path.sep))),
+    getElementNaclFiles: async adapter =>
+      (await naclSource.listNaclFiles()).filter(filePath =>
+        filePath.startsWith(path.join(...CONFIG_PATH, adapter).concat(path.sep)),
+      ),
 
     getErrors: async () => {
       const validationErrors = await awu(validationErrorsMap.values()).flat().toArray()

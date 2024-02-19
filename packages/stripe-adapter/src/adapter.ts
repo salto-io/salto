@@ -1,24 +1,35 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
-  DeployModifiers, FetchOptions,
+  FetchResult,
+  AdapterOperations,
+  DeployResult,
+  InstanceElement,
+  TypeMap,
+  isObjectType,
+  DeployModifiers,
+  FetchOptions,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  config as configUtils,
+  elements as elementUtils,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import StripeClient from './client/client'
@@ -54,21 +65,14 @@ export default class StripeAdapter implements AdapterOperations {
   private userConfig: StripeConfig
   private fetchQuery: elementUtils.query.ElementQuery
 
-  public constructor({
-    filterCreators = DEFAULT_FILTERS,
-    client,
-    config,
-  }: StripeAdapterParams) {
+  public constructor({ filterCreators = DEFAULT_FILTERS, client, config }: StripeAdapterParams) {
     this.userConfig = config
     this.client = client
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: () => getWithCursorPagination(),
     })
-    this.fetchQuery = elementUtils.query.createElementQuery(
-      this.userConfig[FETCH_CONFIG],
-      fetchCriteria,
-    )
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
     this.filtersRunner = filtersRunner(
       {
         client: this.client,
@@ -85,26 +89,23 @@ export default class StripeAdapter implements AdapterOperations {
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.TypeSwaggerConfig>
   }> {
-    return generateTypes(
-      STRIPE,
-      this.userConfig[API_DEFINITIONS_CONFIG]
-    )
+    return generateTypes(STRIPE, this.userConfig[API_DEFINITIONS_CONFIG])
   }
 
   @logDuration('generating instances from service')
   private async getInstances(
     allTypes: TypeMap,
-    parsedConfigs: Record<string, configUtils.TypeSwaggerConfig>
+    parsedConfigs: Record<string, configUtils.TypeSwaggerConfig>,
   ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig[API_DEFINITIONS_CONFIG],
       // user config takes precedence over parsed config
       types: {
         ...parsedConfigs,
-        ..._.mapValues(
-          this.userConfig[API_DEFINITIONS_CONFIG].types,
-          (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
-        ),
+        ..._.mapValues(this.userConfig[API_DEFINITIONS_CONFIG].types, (def, typeName) => ({
+          ...parsedConfigs[typeName],
+          ...def,
+        })),
       },
     }
     return getAllInstances({
@@ -128,10 +129,7 @@ export default class StripeAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { elements: instances } = await this.getInstances(allTypes, parsedConfigs)
 
-    const elements = [
-      ...Object.values(allTypes),
-      ...instances,
-    ]
+    const elements = [...Object.values(allTypes), ...instances]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })

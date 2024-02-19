@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
@@ -22,14 +22,14 @@ import {
   getChangeData,
   isInstanceChange,
   isReferenceExpression,
-  isRemovalChange, isTemplateExpression,
+  isRemovalChange,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { getInstancesFromElementSource, WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
-
 
 const log = logger(module)
 
@@ -58,7 +58,7 @@ export const dynamicContentDeletionValidator: ChangeValidator = async (changes, 
   const relevantTypesInstances = await getInstancesFromElementSource(elementSource, TYPES_WITH_DC)
 
   const dynamicContentToUsages = _.keyBy(
-    dynamicContentRemovals.map((dc): { elemId: ElemID; usages: string[]} => ({
+    dynamicContentRemovals.map((dc): { elemId: ElemID; usages: string[] } => ({
       elemId: dc.elemID,
       usages: [],
     })),
@@ -82,17 +82,19 @@ export const dynamicContentDeletionValidator: ChangeValidator = async (changes, 
     walkOnElement({ element: instance, func: lookForDc })
   })
 
-  const errors = Object.values(dynamicContentToUsages).map(({ elemId, usages }): ChangeError | undefined => {
-    if (usages.length === 0) {
-      return undefined
-    }
-    return {
-      elemID: elemId,
-      severity: 'Error',
-      message: 'Dynamic content is being used',
-      detailedMessage: `This dynamic content cannot be deleted because it is being used by ${_.uniq(usages).join(', ')}`,
-    }
-  }).filter(isDefined)
+  const errors = Object.values(dynamicContentToUsages)
+    .map(({ elemId, usages }): ChangeError | undefined => {
+      if (usages.length === 0) {
+        return undefined
+      }
+      return {
+        elemID: elemId,
+        severity: 'Error',
+        message: 'Dynamic content is being used',
+        detailedMessage: `This dynamic content cannot be deleted because it is being used by ${_.uniq(usages).join(', ')}`,
+      }
+    })
+    .filter(isDefined)
 
   return errors
 }

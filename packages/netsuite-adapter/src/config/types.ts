@@ -1,26 +1,58 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { types as lowerdashTypes } from '@salto-io/lowerdash'
-import { ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, MapType, Values } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ListType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  createRestriction,
+  MapType,
+  Values,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { definitions } from '@salto-io/adapter-components'
-import { BIN, CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EMPLOYEE, EXCHANGE_RATE, INACTIVE_FIELDS, NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK } from '../constants'
+import {
+  BIN,
+  CURRENCY,
+  CUSTOM_RECORD_TYPE,
+  DATASET,
+  EMPLOYEE,
+  EXCHANGE_RATE,
+  INACTIVE_FIELDS,
+  NETSUITE,
+  PERMISSIONS,
+  SAVED_SEARCH,
+  WORKBOOK,
+} from '../constants'
 import { netsuiteSupportedTypes } from '../types'
 import { ITEM_TYPE_TO_SEARCH_STRING } from '../data_elements/types'
-import { ALL_TYPES_REGEX, GROUPS_TO_DATA_FILE_TYPES, DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY, DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FILE_CABINET, FILE_TYPES_TO_EXCLUDE_REGEX, INCLUDE_ALL } from './constants'
+import {
+  ALL_TYPES_REGEX,
+  GROUPS_TO_DATA_FILE_TYPES,
+  DEFAULT_AXIOS_TIMEOUT_IN_MINUTES,
+  DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
+  DEFAULT_CONCURRENCY,
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
+  DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
+  FILE_CABINET,
+  FILE_TYPES_TO_EXCLUDE_REGEX,
+  INCLUDE_ALL,
+} from './constants'
 
 export type InstanceLimiterFunc = (type: string, instanceCount: number) => boolean
 export interface ObjectID {
@@ -216,7 +248,7 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   deployReferencedElements: 'deployReferencedElements',
 }
 
-export type NetsuiteValidatorName = (
+export type NetsuiteValidatorName =
   | 'exchangeRate'
   | 'currencyUndeployableFields'
   | 'workflowAccountSpecificValues'
@@ -245,16 +277,10 @@ export type NetsuiteValidatorName = (
   | 'unreferencedDatasets'
   | 'analyticsSilentFailure'
   | 'undeployableBundleChanges'
-)
 
-export type NonSuiteAppValidatorName = (
-  | 'removeFileCabinet'
-  | 'removeStandardTypes'
-)
+export type NonSuiteAppValidatorName = 'removeFileCabinet' | 'removeStandardTypes'
 
-export type OnlySuiteAppValidatorName = (
-  | 'fileCabinetInternalIds'
-)
+export type OnlySuiteAppValidatorName = 'fileCabinetInternalIds'
 
 type ChangeValidatorConfig = Record<
   NetsuiteValidatorName | NonSuiteAppValidatorName | OnlySuiteAppValidatorName,
@@ -374,7 +400,7 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
       },
     },
     filePaths: {
-      refType: (new ListType(BuiltinTypes.STRING)),
+      refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
@@ -431,26 +457,21 @@ const queryParamsConfigType = createMatchingObjectType<QueryParams>({
 
 export const fetchDefault: FetchParams = {
   include: {
-    types: [{
-      name: ALL_TYPES_REGEX,
-    }],
-    fileCabinet: [
-      '^/SuiteScripts.*',
-      '^/Templates.*',
+    types: [
+      {
+        name: ALL_TYPES_REGEX,
+      },
     ],
+    fileCabinet: ['^/SuiteScripts.*', '^/Templates.*'],
   },
   fieldsToOmit: [
     {
       type: CURRENCY,
-      fields: [
-        EXCHANGE_RATE,
-      ],
+      fields: [EXCHANGE_RATE],
     },
     {
       type: CUSTOM_RECORD_TYPE,
-      fields: [
-        PERMISSIONS,
-      ],
+      fields: [PERMISSIONS],
     },
   ],
   exclude: {
@@ -560,9 +581,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
   },
 })
 
-const additionalDependenciesInnerType = createMatchingObjectType<
-Partial<AdditionalSdfDeployDependencies>
->({
+const additionalDependenciesInnerType = createMatchingObjectType<Partial<AdditionalSdfDeployDependencies>>({
   elemID: new ElemID(NETSUITE, 'additionalDependenciesInner'),
   fields: {
     features: { refType: new ListType(BuiltinTypes.STRING) },
@@ -574,9 +593,7 @@ Partial<AdditionalSdfDeployDependencies>
   },
 })
 
-const additionalDependenciesType = createMatchingObjectType<
-DeployParams['additionalDependencies']
->({
+const additionalDependenciesType = createMatchingObjectType<DeployParams['additionalDependencies']>({
   elemID: new ElemID(NETSUITE, 'additionalDependencies'),
   fields: {
     include: { refType: additionalDependenciesInnerType },
@@ -651,17 +668,19 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Include All Public Saved Searches',
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto only includes referenced searches by default.'
-         + ' Turning this option on will make Salto fetch all public records.'
-         + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Salto only includes referenced searches by default.' +
+          ' Turning this option on will make Salto fetch all public records.' +
+          ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
       },
     },
     includeCustomRecords: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Include custom records',
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto will only fetch the custom records that are included in this list.'
-          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Salto will only fetch the custom records that are included in this list.' +
+          ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           enforce_value: false,
           values: [INCLUDE_ALL],
@@ -672,8 +691,9 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Include inactive records',
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto will only fetch the inactive records that are included in this list.'
-          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Salto will only fetch the inactive records that are included in this list.' +
+          ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           enforce_value: true,
           values: [INCLUDE_ALL, FILE_CABINET].concat(netsuiteSupportedTypes),
@@ -684,8 +704,9 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Re-introduce File Cabinet types',
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto excludes certain rare and large file types. You can include these back.'
-          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Salto excludes certain rare and large file types. You can include these back.' +
+          ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           enforce_value: true,
           values: Object.keys(GROUPS_TO_DATA_FILE_TYPES),
@@ -696,9 +717,10 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Include additional File Cabinet folders',
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto fetches the Templates and Suitscripts folders.'
-          + ' You can choose to include additional folders.'
-          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Salto fetches the Templates and Suitscripts folders.' +
+          ' You can choose to include additional folders.' +
+          ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
       },
     },
     fetch: {

@@ -1,19 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ModificationChange, ObjectType, Value, getChangeData, isAdditionChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ListType,
+  ModificationChange,
+  ObjectType,
+  Value,
+  getChangeData,
+  isAdditionChange,
+  isRemovalChange,
+  toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -39,11 +52,13 @@ describe('notificationSchemeDeploymentFilter', () => {
     client = cli
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = notificationSchemeDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    filter = notificationSchemeDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     notificationEventType = new ObjectType({
       elemID: new ElemID(JIRA, NOTIFICATION_EVENT_TYPE_NAME),
@@ -63,24 +78,22 @@ describe('notificationSchemeDeploymentFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      notificationSchemeType,
-      {
-        id: '1',
-        name: 'name',
-        description: 'description',
-        notificationSchemeEvents: [
-          {
-            eventType: 2,
-            notifications: [{
+    instance = new InstanceElement('instance', notificationSchemeType, {
+      id: '1',
+      name: 'name',
+      description: 'description',
+      notificationSchemeEvents: [
+        {
+          eventType: 2,
+          notifications: [
+            {
               type: 'EmailAddress',
               parameter: 'email',
-            }],
-          },
-        ],
-      },
-    )
+            },
+          ],
+        },
+      ],
+    })
   })
 
   describe('onFetch', () => {
@@ -130,9 +143,10 @@ describe('notificationSchemeDeploymentFilter', () => {
 
   describe('preDeploy', () => {
     it('should convert change structure', async () => {
-      const change = toChange(
-        { before: instance.clone(), after: instance.clone() }
-      ) as ModificationChange<InstanceElement>
+      const change = toChange({
+        before: instance.clone(),
+        after: instance.clone(),
+      }) as ModificationChange<InstanceElement>
       const changes = [change]
       await filter.preDeploy(changes)
       expect(changes).toHaveLength(1)
@@ -140,7 +154,9 @@ describe('notificationSchemeDeploymentFilter', () => {
       const afterInstance = changes[0].data.after
       expect(beforeInstance.value.notificationSchemeEvents[0].event.id).toEqual(2)
       expect(beforeInstance.value.notificationSchemeEvents[0].eventType).toBeUndefined()
-      expect(beforeInstance.value.notificationSchemeEvents[0].notifications[0]?.notificationType).toEqual('EmailAddress')
+      expect(beforeInstance.value.notificationSchemeEvents[0].notifications[0]?.notificationType).toEqual(
+        'EmailAddress',
+      )
       expect(beforeInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toBeUndefined()
       expect(afterInstance.value.notificationSchemeEvents[0].event.id).toEqual(2)
       expect(afterInstance.value.notificationSchemeEvents[0].eventType).toBeUndefined()
@@ -151,10 +167,13 @@ describe('notificationSchemeDeploymentFilter', () => {
       const { client: cli, connection: conn } = mockClient(true)
       connection = conn
       client = cli
-      const filterWithDc = notificationSchemeDeploymentFilter(getFilterParams({ client })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
-      const change = toChange(
-        { before: instance.clone(), after: instance.clone() }
-      ) as ModificationChange<InstanceElement>
+      const filterWithDc = notificationSchemeDeploymentFilter(getFilterParams({ client })) as filterUtils.FilterWith<
+        'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'
+      >
+      const change = toChange({
+        before: instance.clone(),
+        after: instance.clone(),
+      }) as ModificationChange<InstanceElement>
       const changes = [change]
       await filterWithDc.preDeploy(changes)
       expect(changes).toHaveLength(1)
@@ -170,9 +189,7 @@ describe('notificationSchemeDeploymentFilter', () => {
   describe('onDeploy', () => {
     it('should restore instance structure', async () => {
       const testInstance = instance.clone()
-      const change = toChange(
-        { before: testInstance, after: testInstance }
-      ) as ModificationChange<InstanceElement>
+      const change = toChange({ before: testInstance, after: testInstance }) as ModificationChange<InstanceElement>
       const changes = [change]
       await filter.preDeploy(changes) // preDeploy sets the mappings
       await filter.onDeploy(changes)
@@ -193,11 +210,11 @@ describe('notificationSchemeDeploymentFilter', () => {
       const { client: cli, connection: conn } = mockClient(true)
       connection = conn
       client = cli
-      const filterWithDc = notificationSchemeDeploymentFilter(getFilterParams({ client })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      const filterWithDc = notificationSchemeDeploymentFilter(getFilterParams({ client })) as filterUtils.FilterWith<
+        'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'
+      >
       const testInstance = instance.clone()
-      const change = toChange(
-        { before: testInstance, after: testInstance }
-      ) as ModificationChange<InstanceElement>
+      const change = toChange({ before: testInstance, after: testInstance }) as ModificationChange<InstanceElement>
       const changes = [change]
       await filterWithDc.preDeploy(changes) // preDeploy sets the mappings
       await filterWithDc.onDeploy(changes)
@@ -214,21 +231,19 @@ describe('notificationSchemeDeploymentFilter', () => {
       notificationSchemeEvents = [
         {
           event: { id: 3 },
-          notifications: [{
-            notificationType: 'EmailAddress',
-            parameter: 'email',
-          }],
+          notifications: [
+            {
+              notificationType: 'EmailAddress',
+              parameter: 'email',
+            },
+          ],
         },
       ]
-      deployableInstance = new InstanceElement(
-        'test',
-        notificationSchemeType,
-        {
-          name: 'test',
-          description: 'description',
-          notificationSchemeEvents,
-        },
-      )
+      deployableInstance = new InstanceElement('test', notificationSchemeType, {
+        name: 'test',
+        description: 'description',
+        notificationSchemeEvents,
+      })
       jest.clearAllMocks()
       connection.post.mockImplementation(async url => {
         if (url === '/rest/api/3/notificationscheme') {
@@ -333,19 +348,15 @@ describe('notificationSchemeDeploymentFilter', () => {
             ],
           },
         })
-        beforeInstance = new InstanceElement(
-          'before',
-          notificationSchemeType,
-          {
-            id: '1',
-            name: 'test',
-            description: 'desc',
-            notificationSchemeEvents: [
-              { event: { id: 3 }, notifications: [{ notificationType: 'EmailAddress', parameter: 'email' }] },
-            ],
-            notificationIds: { '3-EmailAddress-email': 123 },
-          }
-        )
+        beforeInstance = new InstanceElement('before', notificationSchemeType, {
+          id: '1',
+          name: 'test',
+          description: 'desc',
+          notificationSchemeEvents: [
+            { event: { id: 3 }, notifications: [{ notificationType: 'EmailAddress', parameter: 'email' }] },
+          ],
+          notificationIds: { '3-EmailAddress-email': 123 },
+        })
         afterInstance = beforeInstance.clone()
         afterInstance.value.description = 'updated'
         afterInstance.value.notificationSchemeEvents = [
@@ -390,10 +401,9 @@ describe('notificationSchemeDeploymentFilter', () => {
         )
         expect(connection.delete).toHaveBeenCalledTimes(1)
         // delete notification scheme event
-        expect(connection.delete).toHaveBeenCalledWith(
-          '/rest/api/3/notificationscheme/1/notification/123',
-          { data: undefined },
-        )
+        expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/notificationscheme/1/notification/123', {
+          data: undefined,
+        })
       })
       it('should update notificationIds mapping', async () => {
         const changes = [toChange({ before: beforeInstance.clone(), after: afterInstance.clone() })]
@@ -410,14 +420,17 @@ describe('notificationSchemeDeploymentFilter', () => {
         const invalidAfterInstance = afterInstance.clone()
         invalidAfterInstance.value.notificationSchemeEvents = [
           {
-            eventType: 2, notifications: [{ type: 'EmailAddress', parameter: 'email' }],
+            eventType: 2,
+            notifications: [{ type: 'EmailAddress', parameter: 'email' }],
           },
         ]
         const changes = [toChange({ before: beforeInstance.clone(), after: invalidAfterInstance })]
         const res = await filter.deploy(changes)
         expect(res.deployResult.appliedChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(1)
-        expect(res.deployResult.errors[0].message).toEqual('Error: received invalid structure for notificationSchemeEvents in instance jira.NotificationScheme.instance.before')
+        expect(res.deployResult.errors[0].message).toEqual(
+          'Error: received invalid structure for notificationSchemeEvents in instance jira.NotificationScheme.instance.before',
+        )
       })
     })
     describe('removal change', () => {
@@ -426,10 +439,7 @@ describe('notificationSchemeDeploymentFilter', () => {
         const res = await filter.deploy([removal])
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(res.deployResult.errors).toHaveLength(0)
-        expect(connection.delete).toHaveBeenCalledWith(
-          '/rest/api/3/notificationscheme/1',
-          { data: undefined },
-        )
+        expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/notificationscheme/1', { data: undefined })
       })
     })
   })
@@ -439,16 +449,16 @@ describe('notificationSchemeDeploymentFilter', () => {
       connection = conn
       client = cli
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-      filter = notificationSchemeDeploymentFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      filter = notificationSchemeDeploymentFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
     })
     it('should not deploy any change', async () => {
-      const { deployResult, leftoverChanges } = await filter.deploy([
-        toChange({ after: instance }),
-      ])
+      const { deployResult, leftoverChanges } = await filter.deploy([toChange({ after: instance })])
       expect(deployResult.appliedChanges).toHaveLength(0)
       expect(deployResult.errors).toHaveLength(0)
       expect(leftoverChanges).toHaveLength(1)
@@ -461,26 +471,20 @@ describe('notificationSchemeDeploymentFilter', () => {
       notificationSchemeEvents = [
         {
           event: { id: 3 },
-          notifications: [
-            { notificationType: 'EmailAddress', parameter: 'email' },
-            { notificationType: 'Reporter' },
-          ],
+          notifications: [{ notificationType: 'EmailAddress', parameter: 'email' }, { notificationType: 'Reporter' }],
         },
       ]
-      deployableInstance = new InstanceElement(
-        'test',
-        notificationSchemeType,
-        {
-          name: 'test',
-          description: 'description',
-          notificationSchemeEvents,
-        },
-      )
+      deployableInstance = new InstanceElement('test', notificationSchemeType, {
+        name: 'test',
+        description: 'description',
+        notificationSchemeEvents,
+      })
     })
     it('should return nothing if nothing has changed', () => {
-      const change = toChange(
-        { before: deployableInstance, after: deployableInstance }
-      ) as ModificationChange<InstanceElement>
+      const change = toChange({
+        before: deployableInstance,
+        after: deployableInstance,
+      }) as ModificationChange<InstanceElement>
       const eventChanges = getEventChangesToDeploy(change)
       expect(eventChanges).toHaveLength(0)
     })

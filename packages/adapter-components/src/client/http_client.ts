@@ -1,27 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ResponseType } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
+import {
+  Connection,
+  ConnectionCreator,
+  createRetryOptions,
+  createClientConnection,
+  ResponseValue,
+  Response,
+} from './http_connection'
 import { AdapterClientBase } from './base'
-import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
+import {
+  ClientRetryConfig,
+  ClientRateLimitConfig,
+  ClientPageSizeConfig,
+  ClientBaseConfig,
+  ClientTimeoutConfig,
+} from '../definitions/user/client_config'
 import { requiresLogin, logDecorator } from './decorators'
 import { throttle } from './rate_limit'
 
@@ -29,10 +42,7 @@ const log = logger(module)
 
 const NO_TIMEOUT = 0
 
-export type ClientOpts<
-  TCredentials,
-  TRateLimitConfig extends ClientRateLimitConfig,
-> = {
+export type ClientOpts<TCredentials, TRateLimitConfig extends ClientRateLimitConfig> = {
   config?: ClientBaseConfig<TRateLimitConfig>
   connection?: Connection<TCredentials>
   credentials: TCredentials
@@ -78,27 +88,27 @@ export type HttpMethodToClientParams = {
 type MethodsWithDataParam = 'put' | 'post' | 'patch'
 
 export class HTTPError extends Error {
-  constructor(message: string, readonly response: Response<ResponseValue>) {
+  constructor(
+    message: string,
+    readonly response: Response<ResponseValue>,
+  ) {
     super(message)
   }
 }
 
-export class TimeoutError extends Error {
-}
+export class TimeoutError extends Error {}
 
-const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
-  'data' in params
+const isMethodWithData = (params: ClientParams): params is ClientDataParams => 'data' in params
 
 // Determines if the given HTTP method uses 'data' as the second parameter, based on APIConnection
 const isMethodWithDataParam = <T extends keyof HttpMethodToClientParams>(
-  method: T
+  method: T,
 ): method is T & MethodsWithDataParam => ['put', 'post', 'patch'].includes(method)
 
-export abstract class AdapterHTTPClient<
-  TCredentials,
-  TRateLimitConfig extends ClientRateLimitConfig,
-> extends AdapterClientBase<TRateLimitConfig>
-  implements HTTPReadClientInterface, HTTPWriteClientInterface {
+export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends ClientRateLimitConfig>
+  extends AdapterClientBase<TRateLimitConfig>
+  implements HTTPReadClientInterface, HTTPWriteClientInterface
+{
   protected readonly conn: Connection<TCredentials>
   protected readonly credentials: TCredentials
 
@@ -114,11 +124,7 @@ export abstract class AdapterHTTPClient<
       timeout?: ClientTimeoutConfig
     },
   ) {
-    super(
-      clientName,
-      config,
-      defaults,
-    )
+    super(clientName, config, defaults)
     this.conn = createClientConnection({
       connection,
       retryOptions: createRetryOptions(
@@ -145,10 +151,7 @@ export abstract class AdapterHTTPClient<
   }
 
   // eslint-disable-next-line class-methods-use-this
-  protected clearValuesFromResponseData(
-    responseData: Values,
-    _url: string,
-  ): Values {
+  protected clearValuesFromResponseData(responseData: Values, _url: string): Values {
     return responseData
   }
 
@@ -158,11 +161,14 @@ export abstract class AdapterHTTPClient<
   // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
-      // include headers related to rate limits
-      ? _.pickBy(headers, (_val, key) =>
-        key.toLowerCase().startsWith('rate-')
-        || key.toLowerCase().startsWith('x-rate-')
-        || key.toLowerCase().startsWith('retry-'))
+      ? // include headers related to rate limits
+        _.pickBy(
+          headers,
+          (_val, key) =>
+            key.toLowerCase().startsWith('rate-') ||
+            key.toLowerCase().startsWith('x-rate-') ||
+            key.toLowerCase().startsWith('retry-'),
+        )
       : undefined
   }
 
@@ -172,62 +178,55 @@ export abstract class AdapterHTTPClient<
   @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async get(params: ClientBaseParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async get(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('get', params)
   }
 
   @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async post(params: ClientDataParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async post(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('post', params)
   }
 
   @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async put(params: ClientDataParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async put(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('put', params)
   }
 
   @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async delete(params: ClientDataParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async delete(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('delete', params)
   }
 
   @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async patch(params: ClientDataParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async patch(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('patch', params)
   }
 
   @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async head(params: ClientBaseParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async head(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('head', params)
   }
 
   @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async options(params: ClientBaseParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async options(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('options', params)
   }
 
   protected async sendRequest<T extends keyof HttpMethodToClientParams>(
     method: T,
-    params: HttpMethodToClientParams[T]
+    params: HttpMethodToClientParams[T],
   ): Promise<Response<ResponseValue | ResponseValue[]>> {
     if (this.apiClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
@@ -259,19 +258,25 @@ export abstract class AdapterHTTPClient<
     try {
       const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
         ? {
-          params: queryParams,
-          headers,
-          responseType,
-        }
+            params: queryParams,
+            headers,
+            responseType,
+          }
         : undefined
 
       const res = isMethodWithDataParam(method)
         ? await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
         : await this.apiClient[method](
-          url,
-          isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig
-        )
-      log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
+            url,
+            isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
+          )
+      log.debug(
+        'Received response for %s on %s (%s) with status %d',
+        method.toUpperCase(),
+        url,
+        safeJsonStringify({ url, queryParams }),
+        res.status,
+      )
       logResponse(res)
       return {
         data: res.data,
@@ -279,7 +284,9 @@ export abstract class AdapterHTTPClient<
         headers: this.extractHeaders(res.headers),
       }
     } catch (e) {
-      log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`)
+      log.warn(
+        `failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`,
+      )
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }

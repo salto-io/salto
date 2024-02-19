@@ -1,23 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { collections, regex } from '@salto-io/lowerdash'
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  TopLevelElement,
+  createRefToElmWithValue,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { NetsuiteConfig } from '../config/types'
 import { ALLOCATION_TYPE, EMPLOYEE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
@@ -45,17 +54,21 @@ type QueryParams = {
 }
 
 type SavedSearchInternalIdsResult = {
-  internalid: [{
-    value: string
-  }]
+  internalid: [
+    {
+      value: string
+    },
+  ]
   name: string
 }
 
 type AllocationTypeSearchResult = {
-  [ALLOCATION_TYPE]: [{
-    value: string
-    text: string
-  }]
+  [ALLOCATION_TYPE]: [
+    {
+      value: string
+      text: string
+    },
+  ]
 }
 
 const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
@@ -457,7 +470,7 @@ export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): Intern
 }
 
 export const getSuiteQLNameToInternalIdsMap = async (
-  elementsSource: ReadOnlyElementsSource
+  elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, Record<string, string[]>>> => {
   const suiteQLTableInstances = await awu(await elementsSource.list())
     .filter(elemId => elemId.idType === 'instance' && elemId.typeName === SUITEQL_TABLE)
@@ -468,12 +481,12 @@ export const getSuiteQLNameToInternalIdsMap = async (
   return _(suiteQLTableInstances)
     .keyBy(instance => instance.elemID.name)
     .mapValues(getSuiteQLTableInternalIdsMap)
-    .mapValues(
-      internalIdsMap => _(internalIdsMap)
+    .mapValues(internalIdsMap =>
+      _(internalIdsMap)
         .entries()
         .groupBy(([_key, value]) => value.name)
         .mapValues(rows => rows.map(([key, _value]) => key))
-        .value()
+        .value(),
     )
     .value()
 }
@@ -484,8 +497,10 @@ const getInternalIdsMap = async (
   { internalIdField, nameField, lastModifiedDateField }: QueryParams,
   lastFetchTime: Date | undefined,
 ): Promise<InternalIdsMap> => {
-  const whereLastModified = lastModifiedDateField !== undefined && lastFetchTime !== undefined
-    ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}` : ''
+  const whereLastModified =
+    lastModifiedDateField !== undefined && lastFetchTime !== undefined
+      ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}`
+      : ''
   const queryString = `SELECT ${internalIdField}, ${nameField} FROM ${tableName} ${whereLastModified} ORDER BY ${internalIdField} ASC`
   const results = await client.runSuiteQL(queryString)
   if (results === undefined) {
@@ -501,31 +516,21 @@ const getInternalIdsMap = async (
     log.warn('ignoring invalid result from table %s: %o', tableName, res)
     return []
   })
-  return Object.fromEntries(
-    validResults.map(({ internalId, name }) => [internalId, { name }])
-  )
+  return Object.fromEntries(validResults.map(({ internalId, name }) => [internalId, { name }]))
 }
 
 const createOrGetExistingInstance = (
   suiteQLTableType: ObjectType,
   tableName: string,
   existingInstance: InstanceElement | undefined,
-): InstanceElement => (
+): InstanceElement =>
   existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
     ? existingInstance
-    : new InstanceElement(
-      tableName,
-      suiteQLTableType,
-      { [INTERNAL_IDS_MAP]: {} },
-      undefined,
-      { [CORE_ANNOTATIONS.HIDDEN]: true }
-    )
-)
+    : new InstanceElement(tableName, suiteQLTableType, { [INTERNAL_IDS_MAP]: {} }, undefined, {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      })
 
-const fixExistingInstance = (
-  suiteQLTableType: ObjectType,
-  existingInstance: InstanceElement | undefined,
-): void => {
+const fixExistingInstance = (suiteQLTableType: ObjectType, existingInstance: InstanceElement | undefined): void => {
   if (existingInstance !== undefined) {
     existingInstance.refType = createRefToElmWithValue(suiteQLTableType)
     if (existingInstance.value[INTERNAL_IDS_MAP] === undefined) {
@@ -557,8 +562,8 @@ const getSuiteQLTableInstance = async (
       client,
       tableName,
       queryParams,
-      instance.value[VERSION_FIELD] === LATEST_VERSION ? lastFetchTime : undefined
-    )
+      instance.value[VERSION_FIELD] === LATEST_VERSION ? lastFetchTime : undefined,
+    ),
   )
   instance.value[VERSION_FIELD] = LATEST_VERSION
   return instance
@@ -590,7 +595,7 @@ const getSavedSearchQueryInstance = async (
     log.error('Got invalid results from %s saved search query: %s', searchType, ajv.errorsText())
   } else {
     instance.value[INTERNAL_IDS_MAP] = Object.fromEntries(
-      result.map(res => [res.internalid[0].value, { name: res.name }])
+      result.map(res => [res.internalid[0].value, { name: res.name }]),
     )
   }
   instance.value[VERSION_FIELD] = LATEST_VERSION
@@ -618,7 +623,7 @@ const getAllocationTypeInstance = async (
         columns: [ALLOCATION_TYPE],
         filters: exclude.length > 0 ? [[ALLOCATION_TYPE, 'noneof', ...exclude]] : [],
       },
-      ALLOCATION_TYPE_QUERY_LIMIT
+      ALLOCATION_TYPE_QUERY_LIMIT,
     )
     if (result === undefined) {
       log.warn('failed to search %s using saved search query', ALLOCATION_TYPE)
@@ -629,14 +634,14 @@ const getAllocationTypeInstance = async (
       return {}
     }
     const internalIdToName = Object.fromEntries(
-      result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }])
+      result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }]),
     )
     if (result.length < ALLOCATION_TYPE_QUERY_LIMIT) {
       return internalIdToName
     }
     return {
       ...internalIdToName,
-      ...await getAllocationTypes(Object.keys(internalIdToName).concat(exclude)),
+      ...(await getAllocationTypes(Object.keys(internalIdToName).concat(exclude))),
     }
   }
   instance.value[INTERNAL_IDS_MAP] = await getAllocationTypes()
@@ -649,7 +654,7 @@ const getAdditionalInstances = (
   suiteQLTableType: ObjectType,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
-  shouldSkipSuiteQLTable: (tableName: string) => boolean
+  shouldSkipSuiteQLTable: (tableName: string) => boolean,
 ): Promise<InstanceElement | undefined>[] => [
   shouldSkipSuiteQLTable(TAX_SCHEDULE)
     ? Promise.resolve(undefined)
@@ -666,7 +671,7 @@ export const getSuiteQLTableElements = async (
   config: NetsuiteConfig,
   client: NetsuiteClient,
   elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean
+  isPartial: boolean,
 ): Promise<TopLevelElement[]> => {
   if (config.fetch.resolveAccountSpecificValues === false || !client.isSuiteAppConfigured()) {
     return []
@@ -677,8 +682,9 @@ export const getSuiteQLTableElements = async (
   })
 
   const shouldSkipSuiteQLTable = (tableName: string): boolean => {
-    const shouldSkip = (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? [])
-      .some(name => regex.isFullRegexMatch(tableName, name))
+    const shouldSkip = (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? []).some(name =>
+      regex.isFullRegexMatch(tableName, name),
+    )
     if (shouldSkip) {
       log.debug('skipping query of SuiteQL table %s', tableName)
     }
@@ -687,22 +693,22 @@ export const getSuiteQLTableElements = async (
 
   const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
-    Object.entries(QUERIES_BY_TABLE_NAME).map(([tableName, queryParams]) => {
-      if (queryParams === undefined || shouldSkipSuiteQLTable(tableName)) {
-        return undefined
-      }
-      return getSuiteQLTableInstance(
-        client,
-        suiteQLTableType,
-        tableName,
-        queryParams,
-        elementsSource,
-        lastFetchTime,
-        isPartial
-      )
-    }).concat(
-      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)
-    )
+    Object.entries(QUERIES_BY_TABLE_NAME)
+      .map(([tableName, queryParams]) => {
+        if (queryParams === undefined || shouldSkipSuiteQLTable(tableName)) {
+          return undefined
+        }
+        return getSuiteQLTableInstance(
+          client,
+          suiteQLTableType,
+          tableName,
+          queryParams,
+          elementsSource,
+          lastFetchTime,
+          isPartial,
+        )
+      })
+      .concat(getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)),
   ).then(res => res.flatMap(instance => instance ?? []))
 
   return [suiteQLTableType, ...instances]

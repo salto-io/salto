@@ -1,26 +1,19 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "baseUrl": ".",
-        "declaration": true,
-        "resolveJsonModule": true,
-    },
-    "include": [
-        "src/**/*",
-        "src/**/*.json",
-        "test/**/*",
-        "test/**/*.json",
-        "e2e_test/**/*",
-        "index.ts"
-    ],
-    "references": [
-        { "path": "../adapter-api" },
-        { "path": "../adapter-components" },
-        { "path": "../adapter-utils" },
-        { "path": "../logging" },
-        { "path": "../lowerdash" },
-        { "path": "../test-utils" },
-        { "path": "../e2e-credentials-store" },
-    ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*", "src/**/*.json", "test/**/*", "test/**/*.json", "e2e_test/**/*", "index.ts"],
+  "references": [
+    { "path": "../adapter-api" },
+    { "path": "../adapter-components" },
+    { "path": "../adapter-utils" },
+    { "path": "../logging" },
+    { "path": "../lowerdash" },
+    { "path": "../test-utils" },
+    { "path": "../e2e-credentials-store" }
+  ]
 }

@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  MapType,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  toChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -60,33 +71,37 @@ describe('context options', () => {
         const { client: cli, connection: conn } = mockClient(true)
         connection = conn
         client = cli
-        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
-        contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
-          id: 3,
-          options: [
-            {
-              id: '10047',
-              value: 'p1',
-              disabled: false,
-              position: 0,
-            },
-            {
-              id: '10048',
-              value: 'p2',
-              disabled: false,
-              position: 1,
-            },
-          ],
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), {
+          id: 2,
         })
+        contextInstance = new InstanceElement(
+          'context',
+          new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }),
+          {
+            id: 3,
+            options: [
+              {
+                id: '10047',
+                value: 'p1',
+                disabled: false,
+                position: 0,
+              },
+              {
+                id: '10048',
+                value: 'p2',
+                disabled: false,
+                position: 1,
+              },
+            ],
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+          },
+        )
         const sourceParentField = parentField.clone()
         delete sourceParentField.value.id
-        elementSource = buildElementsSourceFromElements([
-          sourceParentField,
-        ])
+        elementSource = buildElementsSourceFromElements([sourceParentField])
       })
       describe('over 1000 options were changed', () => {
         let contextInstanceAfter: InstanceElement
@@ -97,8 +112,7 @@ describe('context options', () => {
           const largeOptionsObject = generateOptions(1001)
           contextInstanceAfter.value.options = largeOptionsObject
           contextInstanceBefore.value.options = Object.fromEntries(
-            Object.entries(largeOptionsObject)
-              .map(([key, option]) => [key, { ...option, disabled: true }])
+            Object.entries(largeOptionsObject).map(([key, option]) => [key, { ...option, disabled: true }]),
           )
           connection.post.mockResolvedValue({
             data: {
@@ -109,12 +123,13 @@ describe('context options', () => {
           await setContextOptions(
             toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
             client,
-            elementSource
+            elementSource,
           )
         })
         it('should not batch on reorder but batch modifications', () => {
           expect(connection.put).toHaveBeenCalledTimes(3)
-          expect(connection.put).toHaveBeenNthCalledWith(2,
+          expect(connection.put).toHaveBeenNthCalledWith(
+            2,
             '/rest/salto/1.0/field/2/context/3/option',
             {
               options: [
@@ -124,14 +139,17 @@ describe('context options', () => {
                 }),
               ],
             },
-            undefined)
-          expect(connection.put).toHaveBeenNthCalledWith(3,
+            undefined,
+          )
+          expect(connection.put).toHaveBeenNthCalledWith(
+            3,
             '/rest/salto/1.0/field/2/context/3/option/move',
             {
               customFieldOptionIds: expect.toBeArrayOfSize(1001),
               position: 'First',
             },
-            undefined)
+            undefined,
+          )
         })
       })
       describe('change has over 1000 additions', () => {
@@ -155,25 +173,24 @@ describe('context options', () => {
               status: 200,
             }
           })
-          await setContextOptions(
-            toChange({ after: contextInstance }),
-            client,
-            elementSource
-          )
+          await setContextOptions(toChange({ after: contextInstance }), client, elementSource)
         })
         it('should not batch on reorder', () => {
           expect(connection.put).toHaveBeenCalledTimes(1)
-          expect(connection.put).toHaveBeenNthCalledWith(1,
+          expect(connection.put).toHaveBeenNthCalledWith(
+            1,
             '/rest/salto/1.0/field/2/context/3/option/move',
             {
               customFieldOptionIds: expect.toBeArrayOfSize(1001),
               position: 'First',
             },
-            undefined)
+            undefined,
+          )
         })
         it('should call post with 1000 or less batches', () => {
           expect(connection.post).toHaveBeenCalledTimes(2)
-          expect(connection.post).toHaveBeenNthCalledWith(2,
+          expect(connection.post).toHaveBeenNthCalledWith(
+            2,
             '/rest/salto/1.0/field/2/context/3/option',
             {
               options: [
@@ -183,7 +200,8 @@ describe('context options', () => {
                 }),
               ],
             },
-            undefined)
+            undefined,
+          )
           expect(contextInstance.value.options.p1.id).toEqual('4')
         })
       })
@@ -197,33 +215,35 @@ describe('context options', () => {
 
       parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
 
-      contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
-        id: 3,
-        options: [
-          {
-            id: '10047',
-            value: 'p1',
-            disabled: false,
-            position: 0,
-          },
-          {
-            id: '10048',
-            value: 'p2',
-            disabled: false,
-            position: 1,
-          },
-        ],
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
-      })
+      contextInstance = new InstanceElement(
+        'context',
+        new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }),
+        {
+          id: 3,
+          options: [
+            {
+              id: '10047',
+              value: 'p1',
+              disabled: false,
+              position: 0,
+            },
+            {
+              id: '10048',
+              value: 'p2',
+              disabled: false,
+              position: 1,
+            },
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+        },
+      )
 
       const sourceParentField = parentField.clone()
       delete sourceParentField.value.id
-      elementSource = buildElementsSourceFromElements([
-        sourceParentField,
-      ])
+      elementSource = buildElementsSourceFromElements([sourceParentField])
     })
 
     it('if change is removal, should do nothing', async () => {
@@ -253,11 +273,7 @@ describe('context options', () => {
           },
           status: 200,
         })
-        await setContextOptions(
-          toChange({ after: contextInstance }),
-          client,
-          elementSource
-        )
+        await setContextOptions(toChange({ after: contextInstance }), client, elementSource)
       })
 
       it('should call the add endpoint with all of the options', () => {
@@ -298,16 +314,13 @@ describe('context options', () => {
             status: 200,
           }
         })
-        await setContextOptions(
-          toChange({ after: contextInstance }),
-          client,
-          elementSource
-        )
+        await setContextOptions(toChange({ after: contextInstance }), client, elementSource)
       })
 
       it('should call post with 1000 or less batches', () => {
         expect(connection.post).toHaveBeenCalledTimes(2)
-        expect(connection.post).toHaveBeenNthCalledWith(2,
+        expect(connection.post).toHaveBeenNthCalledWith(
+          2,
           '/rest/api/3/field/2/context/3/option',
           {
             options: [
@@ -317,7 +330,8 @@ describe('context options', () => {
               }),
             ],
           },
-          undefined)
+          undefined,
+        )
         expect(contextInstance.value.options.p1.id).toEqual('4')
       })
     })
@@ -327,11 +341,7 @@ describe('context options', () => {
         data: [],
         status: 200,
       })
-      await expect(setContextOptions(
-        toChange({ after: contextInstance }),
-        client,
-        elementSource
-      )).rejects.toThrow()
+      await expect(setContextOptions(toChange({ after: contextInstance }), client, elementSource)).rejects.toThrow()
     })
 
     it('when option name and value are different deploy successfully', async () => {
@@ -353,11 +363,7 @@ describe('context options', () => {
         },
         status: 200,
       })
-      await setContextOptions(
-        toChange({ after: contextInstance }),
-        client,
-        elementSource
-      )
+      await setContextOptions(toChange({ after: contextInstance }), client, elementSource)
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/field/2/context/3/option',
         {
@@ -368,7 +374,7 @@ describe('context options', () => {
             }),
           ],
         },
-        undefined
+        undefined,
       )
       expect(contextInstance.value.options.p1.id).toEqual('10')
     })
@@ -401,11 +407,7 @@ describe('context options', () => {
         },
         status: 200,
       })
-      await setContextOptions(
-        toChange({ after: contextInstance }),
-        client,
-        elementSource
-      )
+      await setContextOptions(toChange({ after: contextInstance }), client, elementSource)
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/field/2/context/3/option',
         {
@@ -420,7 +422,7 @@ describe('context options', () => {
             }),
           ],
         },
-        undefined
+        undefined,
       )
       expect(contextInstance.value.options.p1.id).toEqual('10')
       expect(contextInstance.value.options.p2.id).toEqual('20')
@@ -435,8 +437,7 @@ describe('context options', () => {
         const largeOptionsObject = generateOptions(1001)
         contextInstanceAfter.value.options = largeOptionsObject
         contextInstanceBefore.value.options = Object.fromEntries(
-          Object.entries(largeOptionsObject)
-            .map(([key, option]) => [key, { ...option, disabled: true }])
+          Object.entries(largeOptionsObject).map(([key, option]) => [key, { ...option, disabled: true }]),
         )
         connection.put.mockImplementation(async (_, data) => {
           const { customFieldOptionIds, options } = data as { customFieldOptionIds: unknown[]; options: unknown[] }
@@ -453,13 +454,14 @@ describe('context options', () => {
         await setContextOptions(
           toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
           client,
-          elementSource
+          elementSource,
         )
       })
 
       it('should call put with only 1000 or less batches', () => {
         expect(connection.put).toHaveBeenCalledTimes(4)
-        expect(connection.put).toHaveBeenNthCalledWith(2,
+        expect(connection.put).toHaveBeenNthCalledWith(
+          2,
           '/rest/api/3/field/2/context/3/option',
           {
             options: [
@@ -469,17 +471,18 @@ describe('context options', () => {
               }),
             ],
           },
-          undefined)
+          undefined,
+        )
         // check reorder is also using up to 1000 options at a time.
-        expect(connection.put).toHaveBeenNthCalledWith(4,
+        expect(connection.put).toHaveBeenNthCalledWith(
+          4,
           '/rest/api/3/field/2/context/3/option/move',
           {
-            customFieldOptionIds: [
-              undefined,
-            ],
+            customFieldOptionIds: [undefined],
             position: 'Last',
           },
-          undefined)
+          undefined,
+        )
       })
     })
 
@@ -528,7 +531,7 @@ describe('context options', () => {
         await setContextOptions(
           toChange({ before: contextInstance, after: contextInstanceAfter }),
           client,
-          elementSource
+          elementSource,
         )
       })
 
@@ -549,7 +552,7 @@ describe('context options', () => {
               },
             ],
           },
-          undefined
+          undefined,
         )
         expect(contextInstanceAfter.value.options.p2.cascadingOptions.c11.id).toEqual('4')
         expect(contextInstanceAfter.value.options.p2.cascadingOptions.c12.id).toEqual('5')
@@ -572,19 +575,14 @@ describe('context options', () => {
       })
 
       it('should call the delete endpoint with the removed options', () => {
-        expect(connection.delete).toHaveBeenCalledWith(
-          '/rest/api/3/field/2/context/3/option/10048',
-          undefined,
-        )
+        expect(connection.delete).toHaveBeenCalledWith('/rest/api/3/field/2/context/3/option/10048', undefined)
       })
 
       it('should call the reorder endpoint with the after option ids', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/rest/api/3/field/2/context/3/option/move',
           {
-            customFieldOptionIds: [
-              '10047',
-            ],
+            customFieldOptionIds: ['10047'],
             position: 'First',
           },
           undefined,
@@ -593,10 +591,7 @@ describe('context options', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/rest/api/3/field/2/context/3/option/move',
           {
-            customFieldOptionIds: [
-              '5',
-              '4',
-            ],
+            customFieldOptionIds: ['5', '4'],
             position: 'First',
           },
           undefined,
@@ -658,33 +653,37 @@ describe('context options', () => {
         connection = conn
         client = cli
         paginator = pgi
-        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
-        contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
-          id: 3,
-          options: [
-            {
-              id: '10047',
-              value: 'p1',
-              disabled: false,
-              position: 0,
-            },
-            {
-              id: '10048',
-              value: 'p2',
-              disabled: false,
-              position: 1,
-            },
-          ],
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), {
+          id: 2,
         })
+        contextInstance = new InstanceElement(
+          'context',
+          new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }),
+          {
+            id: 3,
+            options: [
+              {
+                id: '10047',
+                value: 'p1',
+                disabled: false,
+                position: 0,
+              },
+              {
+                id: '10048',
+                value: 'p2',
+                disabled: false,
+                position: 1,
+              },
+            ],
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+          },
+        )
         const sourceParentField = parentField.clone()
         delete sourceParentField.value.id
-        elementSource = buildElementsSourceFromElements([
-          sourceParentField,
-        ])
+        elementSource = buildElementsSourceFromElements([sourceParentField])
       })
       describe('change has over 10K options', () => {
         // Set long timeout as we create instance with more than 10K options
@@ -752,11 +751,7 @@ describe('context options', () => {
           const optionsAfter = tenKOptions
           contextInstanceAfter = contextInstance.clone()
           contextInstanceAfter.value.options = optionsAfter
-          await setContextOptions(
-            toChange({ after: contextInstanceAfter }),
-            client,
-            elementSource
-          )
+          await setContextOptions(toChange({ after: contextInstanceAfter }), client, elementSource)
           expect(connection.post).toHaveBeenCalledTimes(20)
           expect(connection.post).toHaveBeenNthCalledWith(
             11,
@@ -766,7 +761,7 @@ describe('context options', () => {
               headers: JSP_API_HEADERS,
               params: undefined,
               responseType: undefined,
-            }
+            },
           )
         })
         it('should use only private API if all added options are over 10K', async () => {
@@ -782,7 +777,7 @@ describe('context options', () => {
           await setContextOptions(
             toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
             client,
-            elementSource
+            elementSource,
           )
           expect(connection.post).toHaveBeenCalledTimes(1)
           expect(connection.post).toHaveBeenNthCalledWith(
@@ -793,7 +788,7 @@ describe('context options', () => {
               headers: JSP_API_HEADERS,
               params: undefined,
               responseType: undefined,
-            }
+            },
           )
         })
         it('should add cascading options through private API', async () => {
@@ -823,12 +818,16 @@ describe('context options', () => {
           expect(connection.post).toHaveBeenNthCalledWith(
             2,
             '/secure/admin/EditCustomFieldOptions!add.jspa',
-            new URLSearchParams({ addValue: 'c11', fieldConfigId: contextInstanceAfter.value.id, selectedParentOptionId: '10010000' }),
+            new URLSearchParams({
+              addValue: 'c11',
+              fieldConfigId: contextInstanceAfter.value.id,
+              selectedParentOptionId: '10010000',
+            }),
             {
               headers: JSP_API_HEADERS,
               params: undefined,
               responseType: undefined,
-            }
+            },
           )
         })
       })

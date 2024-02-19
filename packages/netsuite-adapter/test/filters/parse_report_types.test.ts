@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, ElemID, InstanceElement, isListType, isObjectType, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  ElemID,
+  InstanceElement,
+  isListType,
+  isObjectType,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator, { shouldBeList } from '../../src/filters/parse_report_types'
@@ -55,37 +63,13 @@ describe('parse_report_types filter', () => {
     const savedsearch = savedsearchType().type
     const financiallayout = financiallayoutType().type
     const reportdefinition = reportdefinitionType().type
-    savedSearchInstance = new InstanceElement(
-      'someSearch',
-      savedsearch,
-      { definition: emptyDefinition }
-    )
-    sourceSavedSearchInstance = new InstanceElement(
-      'someSearch',
-      savedsearch,
-      {}
-    )
+    savedSearchInstance = new InstanceElement('someSearch', savedsearch, { definition: emptyDefinition })
+    sourceSavedSearchInstance = new InstanceElement('someSearch', savedsearch, {})
 
-    financialLayoutInstance = new InstanceElement(
-      'layout1',
-      financiallayout,
-      { layout: layoutDefinition }
-    )
-    sourceFinancialLayoutInstance = new InstanceElement(
-      'layout1',
-      financiallayout,
-      {}
-    )
-    reportDefinitionInstance = new InstanceElement(
-      'report1',
-      reportdefinition,
-      { definition: simpleReportDefinition }
-    )
-    sourceReportDefinitionInstance = new InstanceElement(
-      'report1',
-      reportdefinition,
-      {}
-    )
+    financialLayoutInstance = new InstanceElement('layout1', financiallayout, { layout: layoutDefinition })
+    sourceFinancialLayoutInstance = new InstanceElement('layout1', financiallayout, {})
+    reportDefinitionInstance = new InstanceElement('report1', reportdefinition, { definition: simpleReportDefinition })
+    sourceReportDefinitionInstance = new InstanceElement('report1', reportdefinition, {})
 
     sourceSavedSearchInstance.value.definition = emptyDefinition
     sourceFinancialLayoutInstance.value.layout = layoutDefinition
@@ -99,28 +83,31 @@ describe('parse_report_types filter', () => {
       })
       const elements = [savedSearchObject]
       await filterCreator(fetchOpts).onFetch?.(elements)
-      expect(elements.filter(isObjectType)
-        .filter(e => e.elemID.typeName === SAVED_SEARCH)[0])
-        .not.toEqual(savedSearchObject)
-      expect(elements.filter(isObjectType)
-        .filter(e => e.elemID.typeName === SAVED_SEARCH)[0])
-        .toEqual(newSavedSearchType().type)
+      expect(elements.filter(isObjectType).filter(e => e.elemID.typeName === SAVED_SEARCH)[0]).not.toEqual(
+        savedSearchObject,
+      )
+      expect(elements.filter(isObjectType).filter(e => e.elemID.typeName === SAVED_SEARCH)[0]).toEqual(
+        newSavedSearchType().type,
+      )
     })
     it('should removes doubled dependency object type', async () => {
-      const dependencyObjectType = new ObjectType({ elemID: new ElemID(NETSUITE, 'savedsearch_dependencies'),
-        fields: {} })
+      const dependencyObjectType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'savedsearch_dependencies'),
+        fields: {},
+      })
       const elements = [dependencyObjectType]
       await filterCreator(fetchOpts).onFetch?.(elements)
-      expect(elements.filter(isObjectType)
-        .filter(e => e.elemID.typeName === SAVED_SEARCH)[0])
-        .not.toEqual(dependencyObjectType)
+      expect(elements.filter(isObjectType).filter(e => e.elemID.typeName === SAVED_SEARCH)[0]).not.toEqual(
+        dependencyObjectType,
+      )
     })
     it('should adds definition values', async () => {
       await filterCreator(fetchOpts).onFetch?.([savedSearchInstance, reportDefinitionInstance, financialLayoutInstance])
       expect(savedSearchInstance.value).toEqual({ definition: emptyDefinition, ...emptyDefinitionOutcome })
-      expect(reportDefinitionInstance.value).toEqual(
-        { definition: simpleReportDefinition, ...simpleReportDefinitionResult }
-      )
+      expect(reportDefinitionInstance.value).toEqual({
+        definition: simpleReportDefinition,
+        ...simpleReportDefinitionResult,
+      })
       expect(financialLayoutInstance.value).toEqual({ layout: layoutDefinition, ...layoutDefinitionResult })
     })
     it('should keeps old definition', async () => {
@@ -152,19 +139,21 @@ describe('parse_report_types filter', () => {
         financiallayout: financiallayoutType(),
         reportdefinition: reportdefinitionType(),
       } as TypesMap<StandardType>
-      const typesToCheck = getTopLevelStandardTypes(typesAndInnerTypes)
-        .concat(getInnerStandardTypes(typesAndInnerTypes))
+      const typesToCheck = getTopLevelStandardTypes(typesAndInnerTypes).concat(
+        getInnerStandardTypes(typesAndInnerTypes),
+      )
       const typesWithLists = await awu(typesToCheck)
-        .filter(type => awu(Object.values(type.fields))
-          .some(async field => isListType(await field.getType())))
+        .filter(type => awu(Object.values(type.fields)).some(async field => isListType(await field.getType())))
         .toArray()
       expect(typesWithLists).toHaveLength(1)
       expect(typesWithLists[0].elemID.getFullName()).toEqual('netsuite.savedsearch_dependencies')
       expect(Object.values(shouldBeList).flatMap(perType => Object.values(perType))).toHaveLength(1)
       expect(shouldBeList[SAVED_SEARCH][0]).toEqual(['dependencies', 'dependency'])
       const dependenciesInnerType = await newSavedSearchType().type.fields[shouldBeList[SAVED_SEARCH][0][0]].getType()
-      expect(isObjectType(dependenciesInnerType)
-      && isListType(await dependenciesInnerType.fields[shouldBeList[SAVED_SEARCH][0][1]].getType())).toBeTruthy()
+      expect(
+        isObjectType(dependenciesInnerType) &&
+          isListType(await dependenciesInnerType.fields[shouldBeList[SAVED_SEARCH][0][1]].getType()),
+      ).toBeTruthy()
     })
   })
   describe('preDeploy', () => {

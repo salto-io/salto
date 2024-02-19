@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { SeverityLevel, Value, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -26,21 +26,31 @@ const log = logger(module)
 
 type FragmentsResponse = unknown[]
 const FRAGMENTS_RESPONSE_SCHEME = Joi.array().required()
-const isFragmentsResponse = createSchemeGuard<FragmentsResponse>(FRAGMENTS_RESPONSE_SCHEME, 'Received an invalid scripted fragments response')
+const isFragmentsResponse = createSchemeGuard<FragmentsResponse>(
+  FRAGMENTS_RESPONSE_SCHEME,
+  'Received an invalid scripted fragments response',
+)
 
 type Fragments = {
   entities: string[]
   id: string
   panelLocation: string
 }
-const FRAGMENTS_ARRAY_SCHEME = Joi.array().items(
-  Joi.object({
-    entities: Joi.array().items(Joi.string()).required(),
-    id: Joi.string().required(),
-    panelLocation: Joi.string().required(),
-  }).required().unknown(true),
-).required()
-const isFragmentsArray = createSchemeGuard<Fragments[]>(FRAGMENTS_ARRAY_SCHEME, 'Received an invalid scripted fragments response')
+const FRAGMENTS_ARRAY_SCHEME = Joi.array()
+  .items(
+    Joi.object({
+      entities: Joi.array().items(Joi.string()).required(),
+      id: Joi.string().required(),
+      panelLocation: Joi.string().required(),
+    })
+      .required()
+      .unknown(true),
+  )
+  .required()
+const isFragmentsArray = createSchemeGuard<Fragments[]>(
+  FRAGMENTS_ARRAY_SCHEME,
+  'Received an invalid scripted fragments response',
+)
 
 type FragmentsProjectsProperties = {
   fragments: string[]
@@ -82,8 +92,7 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
 
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === SCRIPT_FRAGMENT_TYPE,
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === SCRIPT_FRAGMENT_TYPE,
     )
     if (relevantChanges.length === 0) {
       return {
@@ -93,10 +102,9 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
     }
     let fragmentsFromService: Value[]
     try {
-      const response = await scriptRunnerClient
-        .get({
-          url: '/sr-dispatcher/jira/token/script-fragments',
-        })
+      const response = await scriptRunnerClient.get({
+        url: '/sr-dispatcher/jira/token/script-fragments',
+      })
       if (!isFragmentsResponse(response.data)) {
         throw new Error('Received an invalid scripted fragments response')
       }
@@ -106,18 +114,20 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
       return {
         leftoverChanges,
         deployResult: {
-          errors: relevantChanges
-            .map(getChangeData)
-            .map(instance => ({
-              severity: 'Error' as SeverityLevel,
-              message: 'Error getting other scripted fragments information from the service',
-              elemID: instance.elemID,
-            })),
+          errors: relevantChanges.map(getChangeData).map(instance => ({
+            severity: 'Error' as SeverityLevel,
+            message: 'Error getting other scripted fragments information from the service',
+            elemID: instance.elemID,
+          })),
           appliedChanges: [],
         },
       }
     }
-    const { errors, appliedChanges, valuesToDeploy: fragmentValuesToDeploy } = await getValuesToDeploy({
+    const {
+      errors,
+      appliedChanges,
+      valuesToDeploy: fragmentValuesToDeploy,
+    } = await getValuesToDeploy({
       changes: relevantChanges,
       valuesFromService: fragmentsFromService,
       identifier: 'id',
@@ -127,13 +137,11 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
       return {
         leftoverChanges,
         deployResult: {
-          errors: relevantChanges
-            .map(getChangeData)
-            .map(instance => ({
-              severity: 'Error' as SeverityLevel,
-              message: 'Error getting other scripted fragments information from the service',
-              elemID: instance.elemID,
-            })),
+          errors: relevantChanges.map(getChangeData).map(instance => ({
+            severity: 'Error' as SeverityLevel,
+            message: 'Error getting other scripted fragments information from the service',
+            elemID: instance.elemID,
+          })),
           appliedChanges: [],
         },
       }
@@ -147,11 +155,13 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
 
       const projectToPropertiesMap = getProjectToPropertiesMap(fragmentValuesToDeploy)
 
-      await Promise.all(projects
-        .map(async project => {
+      await Promise.all(
+        projects.map(async project => {
           const projectKey = project.value.key
-          const { fragments, panelLocations } = projectToPropertiesMap[projectKey]
-            ?? { fragments: [], panelLocations: [] }
+          const { fragments, panelLocations } = projectToPropertiesMap[projectKey] ?? {
+            fragments: [],
+            panelLocations: [],
+          }
           const currentEpoch = Date.now()
           return client.put({
             url: `/rest/api/2/project/${projectKey}/properties/enabled-script-fragments?_r=${currentEpoch}`,
@@ -161,17 +171,18 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
               panelLocations,
             },
           })
-        }))
+        }),
+      )
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : e
       log.error(`Failed to put scripted fragments with the error: ${errorMessage}`)
-      errors.push(...appliedChanges
-        .map(getChangeData)
-        .map(instance => ({
+      errors.push(
+        ...appliedChanges.map(getChangeData).map(instance => ({
           severity: 'Error' as SeverityLevel,
           message: `${errorMessage}`,
           elemID: instance.elemID,
-        })))
+        })),
+      )
       return {
         deployResult: { appliedChanges: [], errors },
         leftoverChanges,

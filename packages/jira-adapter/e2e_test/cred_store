@@ -2,6 +2,6 @@
 require('@salto-io/e2e-credentials-store').cli.main({
   adapters: {
     jira: require('../dist/e2e_test/credentials_store/adapter').default,
-    jira_datacenter: require('../dist/e2e_test/credentials_store/adapter').default
+    jira_datacenter: require('../dist/e2e_test/credentials_store/adapter').default,
   },
 })

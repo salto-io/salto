@@ -1,44 +1,43 @@
-
 body {
-	background-color: #1e1e1e;
+  background-color: #1e1e1e;
 }
 
 div#container {
-	width: 90%;
-	margin: auto;
-	padding-top: 20px;
+  width: 90%;
+  margin: auto;
+  padding-top: 20px;
 }
 
 tbody.d2h-diff-tbody {
-	background-color: #fff;
+  background-color: #fff;
 }
 
 .d2h-icon {
-    visibility: hidden;
+  visibility: hidden;
 }
 .d2h-tag {
-	visibility: hidden;
+  visibility: hidden;
 }
 
 .text {
-	color: whitesmoke;
+  color: whitesmoke;
 }
 
 p.text {
-	font-size: 1.3em;
+  font-size: 1.3em;
 }
 
 .d2h-wrapper {
-    padding-top: 7px;
+  padding-top: 7px;
 }
 
 .d2h-file-wrapper {
-	border-radius: 5px;
-	margin-bottom: 2em;
-	color: #1e1e1e;
+  border-radius: 5px;
+  margin-bottom: 2em;
+  color: #1e1e1e;
 }
 
 .d2h-file-header {
-	height: auto;
-	padding: 0.5em;
+  height: auto;
+  padding: 0.5em;
 }

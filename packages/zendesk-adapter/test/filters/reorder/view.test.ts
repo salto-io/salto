@@ -1,22 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  ObjectType, ElemID, InstanceElement, Element, isObjectType,
-  isInstanceElement, ReferenceExpression, ModificationChange,
-  toChange, getChangeData,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  isObjectType,
+  isInstanceElement,
+  ReferenceExpression,
+  ModificationChange,
+  toChange,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { VIEW_TYPE_NAME, ZENDESK } from '../../../src/constants'
@@ -56,34 +63,24 @@ describe('view reorder filter', () => {
       const elements = [objType, inst1, inst2, inst3]
       await filter.onFetch(elements)
       expect(elements).toHaveLength(6)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk.view',
-          'zendesk.view.instance.inst1',
-          'zendesk.view.instance.inst2',
-          'zendesk.view.instance.inst3',
-          'zendesk.view_order',
-          'zendesk.view_order.instance',
-        ])
-      const viewOrderType = elements
-        .find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.view',
+        'zendesk.view.instance.inst1',
+        'zendesk.view.instance.inst2',
+        'zendesk.view.instance.inst3',
+        'zendesk.view_order',
+        'zendesk.view_order.instance',
+      ])
+      const viewOrderType = elements.find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
       expect(viewOrderType).toBeDefined()
-      const viewOrderInstance = elements
-        .find(e => isInstanceElement(e) && e.elemID.typeName === orderTypeName)
+      const viewOrderInstance = elements.find(e => isInstanceElement(e) && e.elemID.typeName === orderTypeName)
       expect(viewOrderInstance).toBeDefined()
       expect(viewOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
-      expect((viewOrderInstance as InstanceElement)?.value)
-        .toEqual({
-          active: [
-            new ReferenceExpression(inst1.elemID, inst1),
-            new ReferenceExpression(inst2.elemID, inst2),
-          ],
-          inactive: [
-            new ReferenceExpression(inst3.elemID, inst3),
-          ],
-        })
-      const orderType = elements
-        .find(elem => elem.elemID.getFullName() === 'zendesk.view_order')
+      expect((viewOrderInstance as InstanceElement)?.value).toEqual({
+        active: [new ReferenceExpression(inst1.elemID, inst1), new ReferenceExpression(inst2.elemID, inst2)],
+        inactive: [new ReferenceExpression(inst3.elemID, inst3)],
+      })
+      const orderType = elements.find(elem => elem.elemID.getFullName() === 'zendesk.view_order')
       expect(orderType).toBeDefined()
     })
     it('should not create new elements if there are no views', async () => {
@@ -94,12 +91,8 @@ describe('view reorder filter', () => {
   })
   describe('deploy', () => {
     const orderType = new ObjectType({ elemID: new ElemID(ZENDESK, orderTypeName) })
-    const before = new InstanceElement(
-      ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: [11, 22, 33] },
-    )
-    const after = new InstanceElement(
-      ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: [22, 33, 11] },
-    )
+    const before = new InstanceElement(ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: [11, 22, 33] })
+    const after = new InstanceElement(ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: [22, 33, 11] })
     const change: ModificationChange<InstanceElement> = {
       action: 'modify',
       data: { before, after },
@@ -148,9 +141,7 @@ describe('view reorder filter', () => {
           action: 'modify',
           data: {
             before,
-            after: new InstanceElement(
-              ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: ['22', '33'] },
-            ),
+            after: new InstanceElement(ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: ['22', '33'] }),
           },
         },
       ])

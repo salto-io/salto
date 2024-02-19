@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
@@ -58,8 +58,10 @@ export interface CreateReadOnlyRemoteMapParams<T> {
 }
 
 export type RemoteMapIterator<T, Opts> = Opts extends PagedIterationOpts
-  ? AsyncIterable<T[]> : Opts extends IterationOpts
-  ? AsyncIterable<T> : never
+  ? AsyncIterable<T[]>
+  : Opts extends IterationOpts
+    ? AsyncIterable<T>
+    : never
 
 export type RemoteMapIteratorCreator<T, Opts extends IterationOpts = IterationOpts> = (
   opts?: Opts,
@@ -83,14 +85,14 @@ export type RemoteMap<T, K extends string = string> = {
   isEmpty(): Promise<boolean>
 }
 
-export type ReadOnlyRemoteMap<T> = Pick<RemoteMap<T>, 'get'|'entries'|'values'|'has'>
+export type ReadOnlyRemoteMap<T> = Pick<RemoteMap<T>, 'get' | 'entries' | 'values' | 'has'>
 
 export type RemoteMapCreator = <T, K extends string = string>(
-  opts: CreateRemoteMapParams<T>
+  opts: CreateRemoteMapParams<T>,
 ) => Promise<RemoteMap<T, K>>
 
 export type ReadOnlyRemoteMapCreator = <T, K extends string = string>(
-  opts: CreateReadOnlyRemoteMapParams<T>
+  opts: CreateReadOnlyRemoteMapParams<T>,
 ) => Promise<RemoteMap<T, K>>
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
   private data: Map<K, T>
@@ -134,14 +136,12 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data = new Map()
   }
 
-  getSortedEntries = (): [K, T][] => _.sortBy(Array
-    .from(this.data.entries()), [e => e[0]])
+  getSortedEntries = (): [K, T][] => _.sortBy(Array.from(this.data.entries()), [e => e[0]])
 
   entries<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<RemoteMapEntry<T, K>, Opts> {
     const sortedEntries = this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
     if (opts && isPagedIterationOpts(opts)) {
-      return toAsyncIterable(wu(sortedEntries)
-        .chunk(opts.pageSize)) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
+      return toAsyncIterable(wu(sortedEntries).chunk(opts.pageSize)) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
     }
     return toAsyncIterable(sortedEntries) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
   }
@@ -186,14 +186,13 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
 
 export const mapRemoteMapResult = <T, R>(
   source: ReadOnlyRemoteMap<T>,
-  func: (orig: T) => Promise<R>
+  func: (orig: T) => Promise<R>,
 ): ReadOnlyRemoteMap<R> => ({
-    get: async id => {
-      const origValue = await source.get(id)
-      return origValue !== undefined ? func(origValue) : undefined
-    },
-    entries: () => awu(source.entries())
-      .map(async entry => ({ ...entry, value: await func(entry.value) })),
-    values: () => awu(source.values()).map(func),
-    has: id => source.has(id),
-  })
+  get: async id => {
+    const origValue = await source.get(id)
+    return origValue !== undefined ? func(origValue) : undefined
+  },
+  entries: () => awu(source.entries()).map(async entry => ({ ...entry, value: await func(entry.value) })),
+  values: () => awu(source.values()).map(func),
+  has: id => source.has(id),
+})

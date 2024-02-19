@@ -1,21 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  Values,
+  MapType,
+  PrimitiveType,
+  ListType,
+  isObjectType,
   FieldDefinition,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
@@ -81,9 +88,9 @@ const generateNestedType = ({
       })
       return {
         type: new ListType(nestedType.type),
-        nestedTypes: (isObjectType(nestedType.type)
+        nestedTypes: isObjectType(nestedType.type)
           ? [nestedType.type, ...nestedType.nestedTypes]
-          : nestedType.nestedTypes),
+          : nestedType.nestedTypes,
       }
     }
 
@@ -133,14 +140,13 @@ const generateNestedType = ({
  * Helper utility for generating the types to rename based on the ducktype transformation config
  */
 const generateTypeRenameConfig = (
-  transformationConfigByType: Record<string, DuckTypeTransformationConfig>
-): Record<string, string> => (
+  transformationConfigByType: Record<string, DuckTypeTransformationConfig>,
+): Record<string, string> =>
   Object.fromEntries(
     Object.entries(transformationConfigByType)
-      .map(([origTypeName, { sourceTypeName }]) => ([sourceTypeName, origTypeName]))
-      .filter(([sourceTypeName]) => sourceTypeName !== undefined)
+      .map(([origTypeName, { sourceTypeName }]) => [sourceTypeName, origTypeName])
+      .filter(([sourceTypeName]) => sourceTypeName !== undefined),
   )
-)
 
 /**
  * Generate a synthetic type based on the list of all entries found for this type:
@@ -176,21 +182,17 @@ export const generateType = ({
   isSubType?: boolean
   isUnknownEntry?: (value: unknown) => boolean
 }): ObjectTypeWithNestedTypes => {
-  const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(
-    transformationConfigByType
-  )
+  const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(transformationConfigByType)
   const typeName = typeRenameConfig[name] ?? name
   const naclName = naclCase(typeName)
   const path = [
-    adapterName, TYPES_PATH,
-    ...(isSubType
-      ? [SUBTYPES_PATH, ...naclName.split(ID_SEPARATOR).map(pathNaclCase)]
-      : [pathNaclCase(naclName)])]
+    adapterName,
+    TYPES_PATH,
+    ...(isSubType ? [SUBTYPES_PATH, ...naclName.split(ID_SEPARATOR).map(pathNaclCase)] : [pathNaclCase(naclName)]),
+  ]
 
   const nestedTypes: ObjectType[] = []
-  const addNestedType = (
-    typeWithNested: NestedTypeWithNestedTypes
-  ): ObjectType | ListType | PrimitiveType => {
+  const addNestedType = (typeWithNested: NestedTypeWithNestedTypes): ObjectType | ListType | PrimitiveType => {
     if (isObjectType(typeWithNested.type)) {
       nestedTypes.push(typeWithNested.type)
     }
@@ -200,44 +202,46 @@ export const generateType = ({
 
   const fields: Record<string, FieldDefinition> = hasDynamicFields
     ? {
-      value: {
-        refType: new MapType(addNestedType(generateNestedType({
-          adapterName,
-          typeName: 'value',
-          parentName: typeName,
-          entries: entries.flatMap(Object.values).filter(entry => entry !== undefined),
-          transformationConfigByType,
-          transformationDefaultConfig,
-          hasDynamicFields: false,
-          typeNameOverrideConfig: typeRenameConfig,
-          isUnknownEntry,
-        }))),
-      },
-    }
+        value: {
+          refType: new MapType(
+            addNestedType(
+              generateNestedType({
+                adapterName,
+                typeName: 'value',
+                parentName: typeName,
+                entries: entries.flatMap(Object.values).filter(entry => entry !== undefined),
+                transformationConfigByType,
+                transformationDefaultConfig,
+                hasDynamicFields: false,
+                typeNameOverrideConfig: typeRenameConfig,
+                isUnknownEntry,
+              }),
+            ),
+          ),
+        },
+      }
     : Object.fromEntries(
-      _.uniq(entries.flatMap(e => Object.keys(e)))
-        .map(fieldName => [
+        _.uniq(entries.flatMap(e => Object.keys(e))).map(fieldName => [
           fieldName,
           {
-            refType: addNestedType(generateNestedType({
-              adapterName,
-              typeName: fieldName,
-              parentName: typeName,
-              entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
-              transformationConfigByType,
-              transformationDefaultConfig,
-              hasDynamicFields: false,
-              typeNameOverrideConfig: typeRenameConfig,
-              isUnknownEntry,
-            })),
+            refType: addNestedType(
+              generateNestedType({
+                adapterName,
+                typeName: fieldName,
+                parentName: typeName,
+                entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
+                transformationConfigByType,
+                transformationDefaultConfig,
+                hasDynamicFields: false,
+                typeNameOverrideConfig: typeRenameConfig,
+                isUnknownEntry,
+              }),
+            ),
           },
-        ])
-    )
+        ]),
+      )
 
-  const transformation = getConfigWithDefault(
-    transformationConfigByType[naclName],
-    transformationDefaultConfig,
-  )
+  const transformation = getConfigWithDefault(transformationConfigByType[naclName], transformationDefaultConfig)
   const { fieldsToHide, serviceIdField, isSingleton } = transformation
 
   const type = new ObjectType({

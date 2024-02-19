@@ -1,19 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, createRestriction, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  FieldDefinition,
+  createRestriction,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 /* Client config */
@@ -52,7 +59,7 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
 export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(
   adapter: string,
   bucketNames?: (keyof RateLimitConfig)[],
-  additionRateLimitFields?: Record<string, FieldDefinition>
+  additionRateLimitFields?: Record<string, FieldDefinition>,
 ): ObjectType => {
   const createFieldDefWithMin = (min: number): FieldDefinition => ({
     refType: BuiltinTypes.NUMBER,
@@ -131,10 +138,11 @@ export const validateClientConfig = <RateLimitConfig extends ClientRateLimitConf
   clientConfig?: ClientBaseConfig<RateLimitConfig>,
 ): void => {
   if (clientConfig?.rateLimit !== undefined) {
-    const invalidValues = (Object.entries(clientConfig.rateLimit)
-      .filter(([_name, value]) => value === 0))
+    const invalidValues = Object.entries(clientConfig.rateLimit).filter(([_name, value]) => value === 0)
     if (invalidValues.length > 0) {
-      throw Error(`${clientConfigPath}.rateLimit values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
+      throw Error(
+        `${clientConfigPath}.rateLimit values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`,
+      )
     }
   }
   if (clientConfig?.maxRequestsPerMinute === 0) {

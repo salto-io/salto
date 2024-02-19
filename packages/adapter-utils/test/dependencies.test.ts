@@ -1,21 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, ReferenceExpression, ElemID, ListType,
-  BuiltinTypes, CORE_ANNOTATIONS, MapType,
+  InstanceElement,
+  ObjectType,
+  PrimitiveTypes,
+  PrimitiveType,
+  ReferenceExpression,
+  ElemID,
+  ListType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  MapType,
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, FlatDetailedDependency, DetailedDependency } from '../src/dependencies'
 
@@ -46,36 +54,37 @@ describe('dependencies', () => {
       numMap: { refType: new MapType(BuiltinTypes.NUMBER) },
       strMap: { refType: new MapType(BuiltinTypes.STRING) },
       obj: {
-        refType: new ListType(new ObjectType({
-          elemID: mockElem,
-          fields: {
-            field: { refType: BuiltinTypes.STRING },
-            otherField: {
-              refType: BuiltinTypes.STRING,
-            },
-            value: { refType: BuiltinTypes.STRING },
-            mapOfStringList: { refType: new MapType(new ListType(BuiltinTypes.STRING)) },
-            innerObj: {
-
-              refType: new ObjectType({
-                elemID: mockElem,
-                fields: {
-                  name: { refType: BuiltinTypes.STRING },
-                  listOfNames: { refType: new ListType(BuiltinTypes.STRING) },
-                  magical: {
-                    refType: new ObjectType({
-                      elemID: mockElem,
-                      fields: {
-                        deepNumber: { refType: BuiltinTypes.NUMBER },
-                        deepName: { refType: BuiltinTypes.STRING },
-                      },
-                    }),
+        refType: new ListType(
+          new ObjectType({
+            elemID: mockElem,
+            fields: {
+              field: { refType: BuiltinTypes.STRING },
+              otherField: {
+                refType: BuiltinTypes.STRING,
+              },
+              value: { refType: BuiltinTypes.STRING },
+              mapOfStringList: { refType: new MapType(new ListType(BuiltinTypes.STRING)) },
+              innerObj: {
+                refType: new ObjectType({
+                  elemID: mockElem,
+                  fields: {
+                    name: { refType: BuiltinTypes.STRING },
+                    listOfNames: { refType: new ListType(BuiltinTypes.STRING) },
+                    magical: {
+                      refType: new ObjectType({
+                        elemID: mockElem,
+                        fields: {
+                          deepNumber: { refType: BuiltinTypes.NUMBER },
+                          deepName: { refType: BuiltinTypes.STRING },
+                        },
+                      }),
+                    },
                   },
-                },
-              }),
+                }),
+              },
             },
-          },
-        })),
+          }),
+        ),
       },
     },
     path: ['this', 'is', 'happening'],
@@ -112,9 +121,7 @@ describe('dependencies', () => {
       expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
       extendGeneratedDependencies(type.fields.f1, flatRefs)
       expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
-        structuredRefs
-      )
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(structuredRefs)
     })
     it('should extend the _generated_dependencies annotation if it already exists', () => {
       const oldRefs = [{ reference: new ReferenceExpression(new ElemID('adapter', 'type123')) }]
@@ -134,13 +141,9 @@ describe('dependencies', () => {
           },
         },
       })
-      const inst = new InstanceElement(
-        'something',
-        mockType,
-        {},
-        undefined,
-        { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs] },
-      )
+      const inst = new InstanceElement('something', mockType, {}, undefined, {
+        [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs],
+      })
 
       const newRefs: FlatDetailedDependency[] = [
         { reference: new ReferenceExpression(new ElemID('adapter', 'type456')) },
@@ -148,22 +151,16 @@ describe('dependencies', () => {
 
       extendGeneratedDependencies(type, newRefs)
       expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
-        [...oldRefs, ...newRefs]
-      )
+      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([...oldRefs, ...newRefs])
 
       extendGeneratedDependencies(inst, newRefs)
       expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
-        [...oldRefs, ...newRefs]
-      )
+      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([...oldRefs, ...newRefs])
 
       expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
       extendGeneratedDependencies(type.fields.f1, newRefs)
       expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
-        [...oldRefs, ...newRefs]
-      )
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([...oldRefs, ...newRefs])
     })
     it('should do nothing if no new annotations are added', () => {
       const oldRefs = [{ reference: new ReferenceExpression(new ElemID('adapter', 'type123')) }]
@@ -183,13 +180,9 @@ describe('dependencies', () => {
           },
         },
       })
-      const inst = new InstanceElement(
-        'something',
-        mockType,
-        {},
-        undefined,
-        { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs] },
-      )
+      const inst = new InstanceElement('something', mockType, {}, undefined, {
+        [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs],
+      })
 
       extendGeneratedDependencies(type, [])
       expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
@@ -262,21 +255,19 @@ describe('dependencies', () => {
         ])
       })
 
-      const findRefDeps = (id: ElemID): DetailedDependency => (
-        type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].find(
-          (e: DetailedDependency) => e.reference.elemID.isEqual(id)
+      const findRefDeps = (id: ElemID): DetailedDependency =>
+        type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].find((e: DetailedDependency) =>
+          e.reference.elemID.isEqual(id),
         )
-      )
-      const getOccurrences = (
-        dep: DetailedDependency
-      ): { direction?: string; location?: string}[] | undefined => (
+      const getOccurrences = (dep: DetailedDependency): { direction?: string; location?: string }[] | undefined =>
         dep.occurrences?.map(oc => ({ ...oc, location: oc.location?.elemID.getFullName() }))
-      )
 
       it('should have one entry for each reference, sorted by the referenced elem id', () => {
-        expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (e: DetailedDependency) => e.reference.elemID.getFullName()
-        )).toEqual([
+        expect(
+          type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map((e: DetailedDependency) =>
+            e.reference.elemID.getFullName(),
+          ),
+        ).toEqual([
           'adapter.aaa',
           'adapter.type123',
           'adapter.type456',
@@ -296,10 +287,7 @@ describe('dependencies', () => {
         const type789Refs = findRefDeps(new ElemID('adapter', 'type789'))
         expect(type789Refs).toBeDefined()
         expect(type789Refs.occurrences).toBeDefined()
-        expect(getOccurrences(type789Refs)).toEqual([
-          { direction: 'output' },
-          { direction: 'input' },
-        ])
+        expect(getOccurrences(type789Refs)).toEqual([{ direction: 'output' }, { direction: 'input' }])
       })
       it('should omit less-specific occurrences when more detailed ones are provided', () => {
         const type456Refs = findRefDeps(new ElemID('adapter', 'type456'))

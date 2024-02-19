@@ -5,18 +5,10 @@
     "baseUrl": ".",
     "resolveJsonModule": true,
     "paths": {
-      "@salto-io/suitecloud-cli": [
-        "../netsuite-adapter/types/suitecloud-cli"
-      ]
+      "@salto-io/suitecloud-cli": ["../netsuite-adapter/types/suitecloud-cli"]
     }
   },
-  "include": [
-    "src/**/*",
-    "test/**/*",
-    "types/**/*",
-    "e2e_test/**/*",
-    "index.ts"
-  ],
+  "include": ["src/**/*", "test/**/*", "types/**/*", "e2e_test/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },
@@ -25,6 +17,6 @@
     { "path": "../file" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
-    { "path": "../test-utils" },
+    { "path": "../test-utils" }
   ]
 }

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import _ from 'lodash'
 import * as values from '../values'
@@ -22,12 +22,12 @@ export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
 
 const isAsyncIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  itr: any
+  itr: any,
 ): itr is AsyncIterable<T> => itr[Symbol.asyncIterator] !== undefined
 
 const isIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  itr: any
+  itr: any,
 ): itr is Iterable<T> => itr[Symbol.iterator] !== undefined
 
 export const findAsync = async <T>(
@@ -44,7 +44,7 @@ export const findAsync = async <T>(
   return undefined
 }
 
-export async function *mapAsync<T, U>(
+export async function* mapAsync<T, U>(
   itr: ThenableIterable<T>,
   mapFunc: (t: T, index: number) => Thenable<U>,
 ): AsyncIterable<U> {
@@ -55,9 +55,9 @@ export async function *mapAsync<T, U>(
   }
 }
 
-export async function *flatMapAsync<T, U>(
+export async function* flatMapAsync<T, U>(
   itr: AsyncIterable<T>,
-  mapFunc: (t: T, index: number) => Iterable<U> | AsyncIterable<U> | Promise<Iterable<U>>
+  mapFunc: (t: T, index: number) => Iterable<U> | AsyncIterable<U> | Promise<Iterable<U>>,
 ): AsyncIterable<U> {
   let index = 0
   for await (const curr of itr) {
@@ -80,15 +80,13 @@ export const forEachAsync = async <T>(
   }
 }
 
-export async function *toAsyncIterable<T>(iterable: Iterable<T>): AsyncIterable<T> {
+export async function* toAsyncIterable<T>(iterable: Iterable<T>): AsyncIterable<T> {
   for (const item of iterable) {
     yield item
   }
 }
 
-export const toArrayAsync = async <T>(
-  iterable: ThenableIterable<T>,
-): Promise<Array<T>> => {
+export const toArrayAsync = async <T>(iterable: ThenableIterable<T>): Promise<Array<T>> => {
   const res: T[] = []
   for await (const curr of iterable) {
     res.push(curr)
@@ -96,9 +94,7 @@ export const toArrayAsync = async <T>(
   return res
 }
 
-export async function *concatAsync<T>(
-  ...iterables: ThenableIterable<T>[]
-): AsyncIterable<T> {
+export async function* concatAsync<T>(...iterables: ThenableIterable<T>[]): AsyncIterable<T> {
   for (const itr of iterables) {
     // eslint-disable-next-line no-await-in-loop
     for await (const item of itr) {
@@ -108,15 +104,15 @@ export async function *concatAsync<T>(
 }
 export function filterAsync<T, S extends T>(
   itr: ThenableIterable<T>,
-  filterFunc: (t: T, index: number) => t is S
+  filterFunc: (t: T, index: number) => t is S,
 ): AsyncIterable<S>
 export function filterAsync<T>(
   itr: ThenableIterable<T>,
-  filterFunc: (t: T, index: number) => Thenable<boolean>
+  filterFunc: (t: T, index: number) => Thenable<boolean>,
 ): AsyncIterable<T>
-export async function *filterAsync<T>(
+export async function* filterAsync<T>(
   itr: ThenableIterable<T>,
-  filterFunc: (t: T, index: number) => unknown
+  filterFunc: (t: T, index: number) => unknown,
 ): AsyncIterable<T> {
   let index = 0
   for await (const item of itr) {
@@ -127,28 +123,23 @@ export async function *filterAsync<T>(
   }
 }
 
-export const handleErrorsAsync = <T>(
-  itr: AsyncIterable<T>,
-  onError: (error: Error) => void,
-): AsyncIterable<T> => ({
-    [Symbol.asyncIterator]: () => {
-      const it = itr[Symbol.asyncIterator]()
-      return {
-        next: async args => {
-          try {
-            return await it.next(args)
-          } catch (error) {
-            onError(error)
-            return { done: true, value: undefined }
-          }
-        },
-      }
-    },
-  })
+export const handleErrorsAsync = <T>(itr: AsyncIterable<T>, onError: (error: Error) => void): AsyncIterable<T> => ({
+  [Symbol.asyncIterator]: () => {
+    const it = itr[Symbol.asyncIterator]()
+    return {
+      next: async args => {
+        try {
+          return await it.next(args)
+        } catch (error) {
+          onError(error)
+          return { done: true, value: undefined }
+        }
+      },
+    }
+  },
+})
 
-export async function *flattenAsync<T>(
-  ...iterables: ThenableIterable<ThenableIterable<T> | T>[]
-): AsyncIterable<T> {
+export async function* flattenAsync<T>(...iterables: ThenableIterable<ThenableIterable<T> | T>[]): AsyncIterable<T> {
   for (const itr of iterables) {
     // eslint-disable-next-line no-await-in-loop
     for await (const nestedItr of itr) {
@@ -178,14 +169,10 @@ export const peekAsync = async <T>(itr: ThenableIterable<T>): Promise<T | undefi
   return undefined
 }
 
-export const isEmptyAsync = async <T>(
-  itr: ThenableIterable<T>
-): Promise<boolean> => (await peekAsync(itr)) === undefined
+export const isEmptyAsync = async <T>(itr: ThenableIterable<T>): Promise<boolean> =>
+  (await peekAsync(itr)) === undefined
 
-export async function *takeAsync<T>(
-  itr: ThenableIterable<T>,
-  maxItems: number
-): AsyncIterable<T> {
+export async function* takeAsync<T>(itr: ThenableIterable<T>, maxItems: number): AsyncIterable<T> {
   let counter = 0
   const it = isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : itr[Symbol.iterator]()
   let item: IteratorResult<T>
@@ -196,15 +183,12 @@ export async function *takeAsync<T>(
   }
 }
 
-export async function *zipSortedAsync<T, V>(
+export async function* zipSortedAsync<T, V>(
   keyBy: (value: T) => V,
   ...iterables: ThenableIterable<T>[]
 ): AsyncIterable<T> {
   let item: T | undefined
-  const itrs = iterables.map(itr => (isAsyncIterable(itr)
-    ? itr[Symbol.asyncIterator]()
-    : itr[Symbol.iterator]()
-  ))
+  const itrs = iterables.map(itr => (isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : itr[Symbol.iterator]()))
 
   const popItem = async (itr: AsyncIterator<T> | Iterator<T>): Promise<T | undefined> => {
     const res = await itr.next()
@@ -217,9 +201,7 @@ export async function *zipSortedAsync<T, V>(
 
   const popLowestItem = async (): Promise<T | undefined> => {
     const minValue = _.minBy(poppedItems.filter(values.isDefined), keyBy)
-    const minIndex = poppedItems.findIndex(
-      v => values.isDefined(v) && minValue && keyBy(v) === keyBy(minValue)
-    )
+    const minIndex = poppedItems.findIndex(v => values.isDefined(v) && minValue && keyBy(v) === keyBy(minValue))
     if (!values.isDefined(minValue) || !values.isDefined(minIndex)) {
       return undefined
     }
@@ -238,7 +220,7 @@ export async function *zipSortedAsync<T, V>(
 
 export const groupByAsync = async <T>(
   itr: ThenableIterable<T>,
-  groupFunc: (t: T) => Thenable<string>
+  groupFunc: (t: T) => Thenable<string>,
 ): Promise<Record<string, T[]>> => {
   const res: Record<string, T[]> = {}
   for await (const t of itr) {
@@ -249,22 +231,18 @@ export const groupByAsync = async <T>(
   return res
 }
 
-export const keyByAsync = async<T>(
+export const keyByAsync = async <T>(
   itr: ThenableIterable<T>,
-  keyFunc: (t: T) => Thenable<string>
-): Promise<Record<string, T>> => Object.fromEntries(
-  await toArrayAsync(mapAsync(itr, async t => [await keyFunc(t), t]))
-)
+  keyFunc: (t: T) => Thenable<string>,
+): Promise<Record<string, T>> => Object.fromEntries(await toArrayAsync(mapAsync(itr, async t => [await keyFunc(t), t])))
 
-export const someAsync = async<T>(
+export const someAsync = async <T>(
   itr: ThenableIterable<T>,
-  func: (t: T, i: number) => Thenable<unknown>
-): Promise<boolean> => await findAsync(mapAsync(itr, func), res => res) !== undefined
+  func: (t: T, i: number) => Thenable<unknown>,
+): Promise<boolean> => (await findAsync(mapAsync(itr, func), res => res)) !== undefined
 
-export const everyAsync = async<T>(
-  itr: ThenableIterable<T>,
-  func: (t: T) => Thenable<unknown>
-): Promise<boolean> => !(await someAsync(itr, async t => !(await func(t))))
+export const everyAsync = async <T>(itr: ThenableIterable<T>, func: (t: T) => Thenable<unknown>): Promise<boolean> =>
+  !(await someAsync(itr, async t => !(await func(t))))
 
 export const reduceAsync = async <T, U>(
   itr: ThenableIterable<T>,
@@ -285,8 +263,11 @@ export type BeforeAfter<T> = {
   after: T | undefined
 }
 
-export async function *iterateTogether<T>(before: AsyncIterable<T>,
-  after: AsyncIterable<T>, cmp: (obj1: T, obj2: T) => number): AsyncIterable<BeforeAfter<T>> {
+export async function* iterateTogether<T>(
+  before: AsyncIterable<T>,
+  after: AsyncIterable<T>,
+  cmp: (obj1: T, obj2: T) => number,
+): AsyncIterable<BeforeAfter<T>> {
   const beforeIterator = before[Symbol.asyncIterator]()
   const afterIterator = after[Symbol.asyncIterator]()
   const nextDefinedValue = async (
@@ -363,10 +344,7 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   keyBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T>>
   groupBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T[]>>
   uniquify(toSetType: (t: T) => unknown): AwuIterable<T>
-  reduce<U>(
-    reduceFunc: (total: U, currentValue: T, index: number) => Thenable<U>,
-    initialValue: U
-  ): Promise<U>
+  reduce<U>(reduceFunc: (total: U, currentValue: T, index: number) => Thenable<U>, initialValue: U): Promise<U>
 }
 
 export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
@@ -376,9 +354,8 @@ export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
     return awu(filterAsync(itr, filterFunc as any))
   }
   return {
-    [Symbol.asyncIterator]: () => (isAsyncIterable(itr)
-      ? itr[Symbol.asyncIterator]()
-      : toAsyncIterable(itr)[Symbol.asyncIterator]()),
+    [Symbol.asyncIterator]: () =>
+      isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : toAsyncIterable(itr)[Symbol.asyncIterator](),
     filter: awuFilter,
     concat: (...iterables) => awu(concatAsync(itr, ...iterables)),
     toArray: () => toArrayAsync(itr),

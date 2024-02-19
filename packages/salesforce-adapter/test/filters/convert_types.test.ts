@@ -1,21 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ListType,
   createRestriction,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -37,41 +43,43 @@ describe('convert types filter', () => {
       numAsStr: { refType: BuiltinTypes.NUMBER },
       nullStr: { refType: BuiltinTypes.STRING },
       values: {
-        refType: new ListType(new ObjectType({
-          elemID: mockObjId,
-          fields: {
-            field: { refType: BuiltinTypes.STRING },
-            value: { refType: BuiltinTypes.STRING },
-          },
-        })),
+        refType: new ListType(
+          new ObjectType({
+            elemID: mockObjId,
+            fields: {
+              field: { refType: BuiltinTypes.STRING },
+              value: { refType: BuiltinTypes.STRING },
+            },
+          }),
+        ),
       },
       numArray: { refType: new ListType(BuiltinTypes.NUMBER) },
       picklist: {
         refType: BuiltinTypes.STRING,
         annotations: {
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: ['a', 'b', 'c'],
+          }),
         },
       },
       refToStr: { refType: BuiltinTypes.STRING },
     },
   })
-  type XsdValueType = { _: string; $: { 'xsi:type': string }}
+  type XsdValueType = { _: string; $: { 'xsi:type': string } }
   const xsdValue = (val: string, type: string): XsdValueType => ({
     _: val,
     $: { 'xsi:type': type },
   })
-  const mockInstance = new InstanceElement(
-    'test_inst_with_list',
-    mockType,
-    {
-      strAsStr: '1.6',
-      strAsNum: 1.6,
-      boolAsBool: false,
-      boolAsStr: 'false',
-      numAsStr: '12',
-      numAsNum: 12,
-      nullStr: { $: { 'xsi:nil': 'true' } },
-      values: [{
+  const mockInstance = new InstanceElement('test_inst_with_list', mockType, {
+    strAsStr: '1.6',
+    strAsNum: 1.6,
+    boolAsBool: false,
+    boolAsStr: 'false',
+    numAsStr: '12',
+    numAsNum: 12,
+    nullStr: { $: { 'xsi:nil': 'true' } },
+    values: [
+      {
         field: 'xsdString',
         value: xsdValue('stringVal', 'xsd:string'),
       },
@@ -90,25 +98,32 @@ describe('convert types filter', () => {
       {
         field: 'xsdDouble',
         value: xsdValue('6.2', 'xsd:double'),
-      }],
-      numArray: ['12', '13', '14'],
-      picklist: '0',
-      refToStr: new ReferenceExpression(new ElemID(constants.SALESFORCE, 'dummy')),
-      withoutTypeDef: 'withoutTypeDef',
-    },
-  )
+      },
+    ],
+    numArray: ['12', '13', '14'],
+    picklist: '0',
+    refToStr: new ReferenceExpression(
+      new ElemID(constants.SALESFORCE, 'dummy'),
+    ),
+    withoutTypeDef: 'withoutTypeDef',
+  })
 
   const mockSettings = new InstanceElement(
     'test_settings',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, constants.SETTINGS_METADATA_TYPE),
+      elemID: new ElemID(
+        constants.SALESFORCE,
+        constants.SETTINGS_METADATA_TYPE,
+      ),
     }),
     {},
   )
 
   let testElements: Element[]
 
-  const filter = makeFilter({ config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = makeFilter({
+    config: defaultFilterContext,
+  }) as FilterWith<'onFetch'>
 
   describe('on fetch', () => {
     describe('convert', () => {
@@ -176,7 +191,9 @@ describe('convert types filter', () => {
       })
 
       it('should not change values that have no type definition', () => {
-        expect(inst.value.withoutTypeDef).toBe(mockInstance.value.withoutTypeDef)
+        expect(inst.value.withoutTypeDef).toBe(
+          mockInstance.value.withoutTypeDef,
+        )
       })
     })
   })

@@ -1,21 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  InstanceElement,
+  isInstanceChange,
+  getChangeData,
+  isAdditionChange,
+  toChange,
+} from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { getParents } from '@salto-io/adapter-utils'
@@ -28,8 +35,8 @@ import { deployChanges, defaultDeployWithStatus } from '../deployment'
 const log = logger(module)
 
 type PolicyRule = {
-    id: string
-    system: boolean
+  id: string
+  system: boolean
 }
 
 const EXPECTED_POLICY_RULE_SCHEMA = Joi.object({
@@ -48,10 +55,7 @@ const isRulesResponse = (values: unknown): values is PolicyRule[] => {
   return true
 }
 
-const getDefaultPolicyRuleEntry = async (
-  policyId: string,
-  client: OktaClient,
-): Promise<PolicyRule> => {
+const getDefaultPolicyRuleEntry = async (policyId: string, client: OktaClient): Promise<PolicyRule> => {
   const url = `/api/v1/policies/${policyId}/rules`
   const ruleEntries = (await client.get({ url })).data
   if (!isRulesResponse(ruleEntries)) {
@@ -79,7 +83,7 @@ const getCreatedPolicyRuleInstance = (
   )
   createdPolicyRuleInstance.value = _.omit(
     policyRuleEntry,
-    (fieldsToOmit ?? []).map(field => field.fieldName)
+    (fieldsToOmit ?? []).map(field => field.fieldName),
   )
   return createdPolicyRuleInstance
 }
@@ -93,18 +97,22 @@ const deployDefaultPolicy = async (
   const parentPolicyId = getParents(defaultRuleInstance)?.[0]?.id
   if (parentPolicyId === undefined) {
     log.error(`Error while trying to get parent id for policy rule ${defaultRuleInstance.elemID.getFullName()}`)
-    throw new Error(`Could not find parent policy id for policy rule ${defaultRuleInstance.elemID.name} from type ${defaultRuleInstance.elemID.typeName}`)
+    throw new Error(
+      `Could not find parent policy id for policy rule ${defaultRuleInstance.elemID.name} from type ${defaultRuleInstance.elemID.typeName}`,
+    )
   }
   const createdPolicyRuleEntry = await getDefaultPolicyRuleEntry(parentPolicyId, client)
   // Assign the id created by the service to the default policy rule
   defaultRuleInstance.value.id = createdPolicyRuleEntry.id
   const createdPolicyRuleInstance = getCreatedPolicyRuleInstance(
-    createdPolicyRuleEntry, defaultRuleInstance, apiDefinitions
+    createdPolicyRuleEntry,
+    defaultRuleInstance,
+    apiDefinitions,
   )
   await defaultDeployWithStatus(
     toChange({ before: createdPolicyRuleInstance, after: defaultRuleInstance }),
     client,
-    apiDefinitions
+    apiDefinitions,
   )
 }
 
@@ -117,16 +125,17 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && isAdditionChange(change)
-        && [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
-          .includes(getChangeData(change).elemID.typeName)
-        && getChangeData(change).value.system === true
+      change =>
+        isInstanceChange(change) &&
+        isAdditionChange(change) &&
+        [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME].includes(
+          getChangeData(change).elemID.typeName,
+        ) &&
+        getChangeData(change).value.system === true,
     )
 
-    const deployResult = await deployChanges(
-      relevantChanges.filter(isInstanceChange),
-      async change => deployDefaultPolicy(change, client, config[API_DEFINITIONS_CONFIG])
+    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
+      deployDefaultPolicy(change, client, config[API_DEFINITIONS_CONFIG]),
     )
 
     return {

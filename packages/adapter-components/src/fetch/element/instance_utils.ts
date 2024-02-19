@@ -1,20 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemIdGetter, INSTANCE_ANNOTATIONS, InstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import {
+  ElemIdGetter,
+  INSTANCE_ANNOTATIONS,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Values,
+} from '@salto-io/adapter-api'
 import { TransformFuncSync, invertNaclCase, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
@@ -31,20 +38,16 @@ import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/type
  */
 const recursiveNaclCase = (value: Values, invert = false): Values => {
   const func = invert ? invertNaclCase : naclCase
-  return _.cloneDeepWith(value, val => (
-    _.isPlainObject(val)
-      ? _.mapKeys(val, (_v, k) => func(k))
-      : val
-  ))
+  return _.cloneDeepWith(value, val => (_.isPlainObject(val) ? _.mapKeys(val, (_v, k) => func(k)) : val))
 }
 
 /**
  * - omit values of fields marked as omit=true
  * - omit null values
  */
-const omitValues = <ClientOptions extends string>(
-  defQuery: DefQuery<InstanceFetchApiDefinitions<ClientOptions>>,
-): TransformFuncSync => ({ value, field }) => {
+const omitValues =
+  <ClientOptions extends string>(defQuery: DefQuery<InstanceFetchApiDefinitions<ClientOptions>>): TransformFuncSync =>
+  ({ value, field }) => {
     if (value === null) {
       return undefined
     }
@@ -65,17 +68,22 @@ const omitValues = <ClientOptions extends string>(
  *
  * Note: standalone fields' values with referenceFromParent=false should be omitted separately
  */
-export const toInstanceValue = ({ value, defQuery, type }: {
+export const toInstanceValue = ({
+  value,
+  defQuery,
+  type,
+}: {
   value: Values
   defQuery: ElementAndResourceDefFinder
   type: ObjectType
-}): Values => transformValuesSync({
-  // nacl-case all keys recursively
-  values: recursiveNaclCase(value),
-  type,
-  transformFunc: omitValues(defQuery),
-  strict: false,
-})
+}): Values =>
+  transformValuesSync({
+    // nacl-case all keys recursively
+    values: recursiveNaclCase(value),
+    type,
+    transformFunc: omitValues(defQuery),
+    strict: false,
+  })
 
 export type InstanceCreationParams = {
   entry: Values
@@ -116,9 +124,7 @@ export const getInstanceCreationFunctions = ({
   const { elemID: elemIDDef, singleton } = elementDef.topLevel
 
   // if this is a singleton, the instance name has to be 'config' and cannot be customized
-  const elemIDCreator = ((elemIDDef?.custom && !singleton)
-    ? elemIDDef.custom
-    : createElemIDFunc)
+  const elemIDCreator = elemIDDef?.custom && !singleton ? elemIDDef.custom : createElemIDFunc
 
   const toElemName = elemIDCreator({
     elemIDDef: elemIDDef ?? {},
@@ -153,18 +159,10 @@ export const createInstance = ({
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const value = _.omit(entry, Object.keys(INSTANCE_ANNOTATIONS))
   if (parent !== undefined) {
-    annotations[INSTANCE_ANNOTATIONS.PARENT] = collections.array.makeArray(
-      annotations[INSTANCE_ANNOTATIONS.PARENT]
-    )
+    annotations[INSTANCE_ANNOTATIONS.PARENT] = collections.array.makeArray(annotations[INSTANCE_ANNOTATIONS.PARENT])
     annotations[INSTANCE_ANNOTATIONS.PARENT].push(new ReferenceExpression(parent.elemID, parent))
   }
 
   const args = { entry, parent, defaultName, nestUnderPath }
-  return new InstanceElement(
-    toElemName(args),
-    type,
-    value,
-    toPath(args),
-    annotations,
-  )
+  return new InstanceElement(toElemName(args), type, value, toPath(args), annotations)
 }

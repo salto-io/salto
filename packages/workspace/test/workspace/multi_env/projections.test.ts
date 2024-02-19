@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType, DetailedChange, getChangeData } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  PrimitiveType,
+  PrimitiveTypes,
+  InstanceElement,
+  Field,
+  BuiltinTypes,
+  ListType,
+  DetailedChange,
+  getChangeData,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -74,9 +85,7 @@ describe('projections', () => {
       },
     },
     fields: _.mapValues(annotationsObject, (type, name) => ({
-      refType: name.includes('list')
-        ? new ListType(type)
-        : type,
+      refType: name.includes('list') ? new ListType(type) : type,
     })),
   })
   const fieldParent = new ObjectType({
@@ -102,24 +111,20 @@ describe('projections', () => {
     },
   })
   const { field } = fieldParent.fields
-  const instance = new InstanceElement(
-    'instance',
-    objectType,
-    {
-      simple1: 'INSTANCE_1',
-      list1: ['INSTANCE_LIST_1'],
-      nested1: {
-        simple1: 'INSTANCE_NESTED_1',
-        simple2: 'INSTANCE_NESTED_2',
-      },
-      simple2: 'INSTANCE_1',
-      list2: ['INSTANCE_LIST_1'],
-      nested2: {
-        simple1: 'INSTANCE_NESTED_1',
-        simple2: 'INSTANCE_NESTED_2',
-      },
-    }
-  )
+  const instance = new InstanceElement('instance', objectType, {
+    simple1: 'INSTANCE_1',
+    list1: ['INSTANCE_LIST_1'],
+    nested1: {
+      simple1: 'INSTANCE_NESTED_1',
+      simple2: 'INSTANCE_NESTED_2',
+    },
+    simple2: 'INSTANCE_1',
+    list2: ['INSTANCE_LIST_1'],
+    nested2: {
+      simple1: 'INSTANCE_NESTED_1',
+      simple2: 'INSTANCE_NESTED_2',
+    },
+  })
 
   const partialPrimitiveType = new PrimitiveType({
     elemID: new ElemID('salto', 'string'),
@@ -144,9 +149,7 @@ describe('projections', () => {
       },
     },
     fields: _.mapValues(annotationsObject, (type, name) => ({
-      refType: name.includes('list')
-        ? new ListType(type)
-        : type,
+      refType: name.includes('list') ? new ListType(type) : type,
     })),
   })
   const partialFieldObject = new ObjectType({
@@ -165,50 +168,34 @@ describe('projections', () => {
     },
   })
   const partialField = partialFieldObject.fields.field
-  const partialInstance = new InstanceElement(
-    'instance',
-    objectType,
-    {
+  const partialInstance = new InstanceElement('instance', objectType, {
+    simple1: 'INSTANCE_1',
+    list1: ['INSTANCE_LIST_1'],
+    nested1: {
+      simple1: 'INSTANCE_NESTED_1',
+    },
+  })
+
+  const partialElements = [partialPrimitiveType, partialObjectType, partialInstance, partialFieldObject]
+  const source = createMockNaclFileSource(partialElements)
+
+  describe('project instances', () => {
+    const newInstance = new InstanceElement('newInstance', objectType, {
       simple1: 'INSTANCE_1',
       list1: ['INSTANCE_LIST_1'],
       nested1: {
         simple1: 'INSTANCE_NESTED_1',
       },
-    }
-  )
-
-  const partialElements = [
-    partialPrimitiveType,
-    partialObjectType,
-    partialInstance,
-    partialFieldObject,
-  ]
-  const source = createMockNaclFileSource(partialElements)
-
-  describe('project instances', () => {
-    const newInstance = new InstanceElement(
-      'newInstance',
-      objectType,
-      {
-        simple1: 'INSTANCE_1',
-        list1: ['INSTANCE_LIST_1'],
-        nested1: {
-          simple1: 'INSTANCE_NESTED_1',
-        },
-      }
-    )
+    })
 
     const newPartialInstance = new InstanceElement(
       'instance',
       objectType,
-      _.omit(instance.value, _.keys(partialInstance.value))
+      _.omit(instance.value, _.keys(partialInstance.value)),
     )
 
     const modifiedInstance = instance.clone()
-    modifiedInstance.value = _.cloneDeepWith(
-      instance.value,
-      v => (_.isString(v) ? 'MODIFIED' : undefined)
-    )
+    modifiedInstance.value = _.cloneDeepWith(instance.value, v => (_.isString(v) ? 'MODIFIED' : undefined))
 
     it('should project an add change for a missing instances', async () => {
       const change: DetailedChange = {
@@ -287,10 +274,7 @@ describe('projections', () => {
     const modifiedObject = new ObjectType({
       elemID: objectType.elemID,
       fields: objectType.fields,
-      annotations: _.cloneDeepWith(
-        objectType.annotations,
-        v => (_.isString(v) ? 'MODIFIED' : undefined)
-      ),
+      annotations: _.cloneDeepWith(objectType.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
       annotationRefsOrTypes: objectType.annotationRefTypes,
     })
 
@@ -449,12 +433,7 @@ describe('projections', () => {
       const parentObj = new ObjectType({ elemID: new ElemID('salto', 'new_parent') })
 
       beforeAll(async () => {
-        newField = new Field(
-          parentObj,
-          'new_field',
-          await field.getType(),
-          _.clone(field.annotations),
-        )
+        newField = new Field(parentObj, 'new_field', await field.getType(), _.clone(field.annotations))
 
         newPartialField = new Field(
           field.parent,

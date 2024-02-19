@@ -1,19 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ModificationChange,
+  ObjectType,
+  ReferenceExpression,
+  StaticFile,
+  toChange,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -25,28 +37,34 @@ import * as DeleteModule from '../../src/filters/guide_themes/delete'
 import * as PublishModule from '../../src/filters/guide_themes/publish'
 import { createFilterCreatorParams } from '../utils'
 
-jest.mock('jszip', () => jest.fn().mockImplementation(() => {
-  const mockFiles = {
-    // Mocked data you expect after loading the zip file
-    'file1.txt': { async: jest.fn(() => Buffer.from('file1content')), dir: false },
-    'subfolder.dot/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
-  }
-  const mockCorruptedFiles = {
-    'file1.txt': { async: jest.fn(() => { throw new Error('Bad zip file') }) },
-  }
-  return {
-    loadAsync: jest.fn().mockImplementation((buffer: Buffer) => {
-      if (buffer.toString() === 'corrupted') {
-        return {
-          files: mockCorruptedFiles,
+jest.mock('jszip', () =>
+  jest.fn().mockImplementation(() => {
+    const mockFiles = {
+      // Mocked data you expect after loading the zip file
+      'file1.txt': { async: jest.fn(() => Buffer.from('file1content')), dir: false },
+      'subfolder.dot/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
+    }
+    const mockCorruptedFiles = {
+      'file1.txt': {
+        async: jest.fn(() => {
+          throw new Error('Bad zip file')
+        }),
+      },
+    }
+    return {
+      loadAsync: jest.fn().mockImplementation((buffer: Buffer) => {
+        if (buffer.toString() === 'corrupted') {
+          return {
+            files: mockCorruptedFiles,
+          }
         }
-      }
-      return {
-        files: mockFiles,
-      }
-    }),
-  }
-}))
+        return {
+          files: mockFiles,
+        }
+      }),
+    }
+  }),
+)
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const themeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
@@ -63,38 +81,34 @@ const themeSettingsType = new ObjectType({
 })
 
 const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })
-const themeWithId = new InstanceElement('themeWithId', themeType,
-  { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID, brand1) })
-const newThemeWithFiles = new InstanceElement('newThemeWithFiles', themeType,
-  {
-    name: 'SevenFlags',
-    brand_id: new ReferenceExpression(brand1.elemID, brand1),
-    root: {
-      files: {
-        'file1_txt@v': { filename: 'file1.txt',
-          content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }) },
+const themeWithId = new InstanceElement('themeWithId', themeType, {
+  id: 'park?',
+  name: 'SixFlags',
+  brand_id: new ReferenceExpression(brand1.elemID, brand1),
+})
+const newThemeWithFiles = new InstanceElement('newThemeWithFiles', themeType, {
+  name: 'SevenFlags',
+  brand_id: new ReferenceExpression(brand1.elemID, brand1),
+  root: {
+    files: {
+      'file1_txt@v': {
+        filename: 'file1.txt',
+        content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }),
       },
-      folders: {},
     },
-  })
+    folders: {},
+  },
+})
 
-const themeSettingsInstance = new InstanceElement(
-  `${brand1.value.name}_settings`,
-  themeSettingsType,
-  {
-    brand: new ReferenceExpression(brand1.elemID),
-    liveTheme: new ReferenceExpression(themeWithId.elemID),
-  }
-)
+const themeSettingsInstance = new InstanceElement(`${brand1.value.name}_settings`, themeSettingsType, {
+  brand: new ReferenceExpression(brand1.elemID),
+  liveTheme: new ReferenceExpression(themeWithId.elemID),
+})
 
-const themeSettingsInstance2 = new InstanceElement(
-  `${brand1.value.name}_settings`,
-  themeSettingsType,
-  {
-    brand: new ReferenceExpression(brand1.elemID),
-    liveTheme: new ReferenceExpression(newThemeWithFiles.elemID),
-  }
-)
+const themeSettingsInstance2 = new InstanceElement(`${brand1.value.name}_settings`, themeSettingsType, {
+  brand: new ReferenceExpression(brand1.elemID),
+  liveTheme: new ReferenceExpression(newThemeWithFiles.elemID),
+})
 
 describe('filterCreator', () => {
   describe('fetch', () => {
@@ -141,7 +155,9 @@ describe('filterCreator', () => {
           })
 
           it('returns a warning for the theme', async () => {
-            const errors = [{ message: 'Error fetching theme id park?, download failed specific error', severity: 'Warning' }]
+            const errors = [
+              { message: 'Error fetching theme id park?, download failed specific error', severity: 'Warning' },
+            ]
             expect(await filter.onFetch?.([brand1, themeWithId])).toEqual({ errors })
           })
         })
@@ -158,7 +174,9 @@ describe('filterCreator', () => {
           })
 
           it('returns a default warning for the theme', async () => {
-            const errors = [{ message: 'Error fetching theme id park?, no content returned from Zendesk API', severity: 'Warning' }]
+            const errors = [
+              { message: 'Error fetching theme id park?, no content returned from Zendesk API', severity: 'Warning' },
+            ]
             expect(await filter.onFetch?.([brand1, themeWithId])).toEqual({ errors })
           })
         })
@@ -178,25 +196,35 @@ describe('filterCreator', () => {
           await filter.onFetch?.(elements)
           expect(Object.keys(liveThemeWithId.value.root)).toHaveLength(2)
           expect(liveThemeWithId.value.root.files['file1_txt@v'].filename).toEqual('file1.txt')
-          expect(liveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
-            content: Buffer.from('file1content'),
-          }))
-          expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].filename).toEqual('subfolder.dot/file2.txt')
-          expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
-            content: Buffer.from('file2content'),
-          }))
+          expect(liveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(
+            new StaticFile({
+              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
+              content: Buffer.from('file1content'),
+            }),
+          )
+          expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].filename).toEqual(
+            'subfolder.dot/file2.txt',
+          )
+          expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(
+            new StaticFile({
+              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
+              content: Buffer.from('file2content'),
+            }),
+          )
 
           expect(Object.keys(nonLiveThemeWithId.value.root)).toHaveLength(2)
-          expect(nonLiveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
-            content: Buffer.from('file1content'),
-          }))
-          expect(nonLiveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
-            content: Buffer.from('file2content'),
-          }))
+          expect(nonLiveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(
+            new StaticFile({
+              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
+              content: Buffer.from('file1content'),
+            }),
+          )
+          expect(nonLiveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(
+            new StaticFile({
+              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
+              content: Buffer.from('file2content'),
+            }),
+          )
         })
 
         it('returns no errors', async () => {
@@ -245,10 +273,9 @@ describe('filterCreator', () => {
       jest.resetAllMocks()
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
-      filter = filterCreator(createFilterCreatorParams({ config,
-        elementsSource: buildElementsSourceFromElements([
-          themeSettingsInstance,
-        ]) }))
+      filter = filterCreator(
+        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([themeSettingsInstance]) }),
+      )
       mockCreate = jest.spyOn(CreateModule, 'create')
       mockDelete = jest.spyOn(DeleteModule, 'deleteTheme')
       mockPublish = jest.spyOn(PublishModule, 'publish')
@@ -266,15 +293,16 @@ describe('filterCreator', () => {
         mockPublish.mockResolvedValue([])
       })
       it('should not fail', async () => {
-        const invalidTheme = new InstanceElement('invalidTheme', themeType,
-          {
-            name: 'SevenFlags',
-            brand_id: new ReferenceExpression(brand1.elemID, brand1),
-            root: {},
-          })
+        const invalidTheme = new InstanceElement('invalidTheme', themeType, {
+          name: 'SevenFlags',
+          brand_id: new ReferenceExpression(brand1.elemID, brand1),
+          root: {},
+        })
         const changes = [toChange({ after: invalidTheme })]
-        expect(await filter.deploy?.(changes))
-          .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+        expect(await filter.deploy?.(changes)).toEqual({
+          deployResult: { appliedChanges: changes, errors: [] },
+          leftoverChanges: [],
+        })
         expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
         expect(mockCreate).toHaveBeenCalled()
         expect(mockPublish).not.toHaveBeenCalled()
@@ -295,8 +323,10 @@ describe('filterCreator', () => {
         })
 
         it('should apply the change and return no errors', async () => {
-          expect(await filter.deploy?.(changes))
-            .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+          expect(await filter.deploy?.(changes)).toEqual({
+            deployResult: { appliedChanges: changes, errors: [] },
+            leftoverChanges: [],
+          })
           expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
           expect(mockCreate).toHaveBeenCalled()
           expect(mockPublish).not.toHaveBeenCalled()
@@ -305,8 +335,12 @@ describe('filterCreator', () => {
         it('should publish the theme if live is true', async () => {
           const config = { ...DEFAULT_CONFIG }
           config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
-          filter = filterCreator(createFilterCreatorParams({ config,
-            elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+          filter = filterCreator(
+            createFilterCreatorParams({
+              config,
+              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+            }),
+          )
 
           await filter.deploy?.(changes)
           expect(mockPublish).toHaveBeenCalledWith('newId', expect.anything())
@@ -320,13 +354,13 @@ describe('filterCreator', () => {
           })
 
           it('should return the aggregated errors', async () => {
-            expect(await filter.deploy?.(changes))
-              .toEqual({
-                deployResult: {
-                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
-                },
-                leftoverChanges: [],
-              })
+            expect(await filter.deploy?.(changes)).toEqual({
+              deployResult: {
+                appliedChanges: [],
+                errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
+              },
+              leftoverChanges: [],
+            })
           })
 
           it('should apply the new id', async () => {
@@ -340,18 +374,20 @@ describe('filterCreator', () => {
             mockCreate.mockResolvedValue({ themeId: undefined, errors: [] })
           })
           it('should not apply the change', async () => {
-            expect(await filter.deploy?.(changes))
-              .toEqual({
-                deployResult: {
-                  appliedChanges: [],
-                  errors: [{
+            expect(await filter.deploy?.(changes)).toEqual({
+              deployResult: {
+                appliedChanges: [],
+                errors: [
+                  {
                     elemID: newThemeWithFiles.elemID,
-                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
+                    message:
+                      'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
                     severity: 'Error',
-                  }],
-                },
-                leftoverChanges: [],
-              })
+                  },
+                ],
+              },
+              leftoverChanges: [],
+            })
             expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toBeUndefined()
           })
         })
@@ -365,7 +401,10 @@ describe('filterCreator', () => {
         const before = newThemeWithFiles.clone()
         before.value.id = 'oldId'
         const after = newThemeWithFiles.clone()
-        after.value.root.files['file1_txt@v'] = { filename: 'file1.txt', content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('newContent') }) }
+        after.value.root.files['file1_txt@v'] = {
+          filename: 'file1.txt',
+          content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('newContent') }),
+        }
         changes = [toChange({ before, after })]
       })
 
@@ -377,8 +416,10 @@ describe('filterCreator', () => {
         })
 
         it('should apply the change and return no errors', async () => {
-          expect(await filter.deploy?.(changes))
-            .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+          expect(await filter.deploy?.(changes)).toEqual({
+            deployResult: { appliedChanges: changes, errors: [] },
+            leftoverChanges: [],
+          })
           expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual('newId')
           expect(mockCreate).toHaveBeenCalled()
           expect(mockDelete).toHaveBeenCalledWith('oldId', expect.anything())
@@ -388,8 +429,12 @@ describe('filterCreator', () => {
         it('should publish the theme if live is true', async () => {
           const config = { ...DEFAULT_CONFIG }
           config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
-          filter = filterCreator(createFilterCreatorParams({ config,
-            elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+          filter = filterCreator(
+            createFilterCreatorParams({
+              config,
+              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+            }),
+          )
           await filter.deploy?.(changes)
           expect(mockPublish).toHaveBeenCalledWith('newId', expect.anything())
         })
@@ -402,13 +447,13 @@ describe('filterCreator', () => {
           })
 
           it('should return the aggregated errors', async () => {
-            expect(await filter.deploy?.(changes))
-              .toEqual({
-                deployResult: {
-                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
-                },
-                leftoverChanges: [],
-              })
+            expect(await filter.deploy?.(changes)).toEqual({
+              deployResult: {
+                appliedChanges: [],
+                errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
+              },
+              leftoverChanges: [],
+            })
             expect(mockDelete).not.toHaveBeenCalled()
           })
 
@@ -421,27 +466,31 @@ describe('filterCreator', () => {
           beforeEach(() => {
             const config = { ...DEFAULT_CONFIG }
             config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
-            filter = filterCreator(createFilterCreatorParams({ config,
-              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+            filter = filterCreator(
+              createFilterCreatorParams({
+                config,
+                elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+              }),
+            )
             mockPublish.mockResolvedValue(['Failed to publish'])
             mockCreate.mockResolvedValue({ themeId: 'idWithError', errors: [] })
           })
 
           it('should return an addition to the publish error in case of failure', async () => {
-            expect(await filter.deploy?.(changes))
-              .toEqual({
-                deployResult: {
-                  appliedChanges: [],
-                  errors: [
-                    {
-                      elemID: newThemeWithFiles.elemID,
-                      message: 'Failed to publish. The theme has been created but not published; you can manually publish it in the Zendesk UI.',
-                      severity: 'Error',
-                    },
-                  ],
-                },
-                leftoverChanges: [],
-              })
+            expect(await filter.deploy?.(changes)).toEqual({
+              deployResult: {
+                appliedChanges: [],
+                errors: [
+                  {
+                    elemID: newThemeWithFiles.elemID,
+                    message:
+                      'Failed to publish. The theme has been created but not published; you can manually publish it in the Zendesk UI.',
+                    severity: 'Error',
+                  },
+                ],
+              },
+              leftoverChanges: [],
+            })
             expect(mockDelete).not.toHaveBeenCalled()
           })
         })
@@ -451,19 +500,20 @@ describe('filterCreator', () => {
             mockCreate.mockResolvedValue({ themeId: undefined, errors: [] })
           })
           it('should not apply the change', async () => {
-            expect(await filter.deploy?.(changes))
-              .toEqual({
-                deployResult: {
-                  appliedChanges:
-                    [],
-                  errors: [{
+            expect(await filter.deploy?.(changes)).toEqual({
+              deployResult: {
+                appliedChanges: [],
+                errors: [
+                  {
                     elemID: newThemeWithFiles.elemID,
-                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
+                    message:
+                      'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
                     severity: 'Error',
-                  }],
-                },
-                leftoverChanges: [],
-              })
+                  },
+                ],
+              },
+              leftoverChanges: [],
+            })
             expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toBeUndefined()
           })
         })
@@ -475,13 +525,13 @@ describe('filterCreator', () => {
           })
 
           it('should return the aggregated errors', async () => {
-            expect(await filter.deploy?.(changes))
-              .toEqual({
-                deployResult: {
-                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'delete error', severity: 'Error' }],
-                },
-                leftoverChanges: [],
-              })
+            expect(await filter.deploy?.(changes)).toEqual({
+              deployResult: {
+                appliedChanges: [],
+                errors: [{ elemID: newThemeWithFiles.elemID, message: 'delete error', severity: 'Error' }],
+              },
+              leftoverChanges: [],
+            })
           })
         })
       })

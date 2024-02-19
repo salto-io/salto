@@ -1,33 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  SourceRange as InternalSourceRange,
-} from './internal/types'
-import {
-  Functions,
-} from './functions'
+import { SourceRange as InternalSourceRange } from './internal/types'
+import { Functions } from './functions'
 import PeekableLexer from './internal/native/lexer'
 import { parseBuffer } from './internal/native/parse'
 import { ParseResult } from './types'
 
 export { parseTopLevelID } from './internal/native/helpers'
 export { IllegalReference } from './internal/types'
-
 
 const log = logger(module)
 
@@ -47,13 +42,13 @@ export async function parse(
   naclFile: Buffer,
   filename: string,
   functions?: Functions,
-  calcSourceMap?: true
+  calcSourceMap?: true,
 ): Promise<Required<ParseResult>>
 export async function parse(
   naclFile: Buffer,
   filename: string,
   functions: Functions,
-  calcSourceMap: boolean
+  calcSourceMap: boolean,
 ): Promise<ParseResult>
 
 export async function parse(
@@ -75,7 +70,7 @@ export type Token = {
 
 // I don't return LexerToken because it would require the workspace package to
 // add @types/moo to the dependencies (instead of dev dependencies)
-export function *tokenizeContent(content: string): IterableIterator<Token> {
+export function* tokenizeContent(content: string): IterableIterator<Token> {
   const lexer = new PeekableLexer(content)
   try {
     while (lexer.peek()) {

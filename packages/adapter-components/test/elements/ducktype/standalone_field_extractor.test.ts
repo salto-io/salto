@@ -1,19 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement, ReferenceExpression, ListType, isEqualElements } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  BuiltinTypes,
+  isInstanceElement,
+  ReferenceExpression,
+  ListType,
+  isEqualElements,
+} from '@salto-io/adapter-api'
 import { extractStandaloneFields } from '../../../src/elements/ducktype/standalone_field_extractor'
 
 const ADAPTER_NAME = 'myAdapter'
@@ -55,7 +65,7 @@ describe('Extract standalone fields', () => {
           name: 'recipe123',
           code: jsonCode ? '{"flat":"a","nested":{"inner":"abc"}}' : { flat: 'a', nested: { inner: 'abc' } },
         },
-        [ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'recipe123']
+        [ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'recipe123'],
       ),
       new InstanceElement(
         'recipe456',
@@ -64,31 +74,19 @@ describe('Extract standalone fields', () => {
           name: 'recipe456',
           code: jsonCode ? '{"nested":{"inner":"def","other":"ghi"}}' : { nested: { inner: 'def', other: 'ghi' } },
         },
-        [ADAPTER_NAME, 'Records', 'recipe', 'recipe456', 'recipe456']
+        [ADAPTER_NAME, 'Records', 'recipe', 'recipe456', 'recipe456'],
       ),
-      new InstanceElement(
-        'book1',
-        bookType,
-        {
-          cover: [{ material: 'leather' }, { material: 'paper' }],
-        },
-      ),
-      new InstanceElement(
-        'conn',
-        connectionType,
-        {
-          name: 'conn',
-          code: 'ignore',
-        },
-      ),
-      new InstanceElement(
-        'recipe_empty',
-        recipeType,
-        {
-          name: 'recipe_empty',
-          code: jsonCode ? 'null' : undefined,
-        },
-      ),
+      new InstanceElement('book1', bookType, {
+        cover: [{ material: 'leather' }, { material: 'paper' }],
+      }),
+      new InstanceElement('conn', connectionType, {
+        name: 'conn',
+        code: 'ignore',
+      }),
+      new InstanceElement('recipe_empty', recipeType, {
+        name: 'recipe_empty',
+        code: jsonCode ? 'null' : undefined,
+      }),
     ]
     const typeWithNoInstances = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'typeWithNoInstances'),
@@ -101,14 +99,10 @@ describe('Extract standalone fields', () => {
   }
   const transformationConfigByType = {
     recipe: {
-      standaloneFields: [
-        { fieldName: 'code', parseJSON: true },
-      ],
+      standaloneFields: [{ fieldName: 'code', parseJSON: true }],
     },
     book: {
-      standaloneFields: [
-        { fieldName: 'cover' },
-      ],
+      standaloneFields: [{ fieldName: 'cover' }],
     },
     nonexistentType: {
       fieldsToOmit: [
@@ -118,20 +112,14 @@ describe('Extract standalone fields', () => {
         { fieldName: 'job_succeeded_count' },
         { fieldName: 'job_failed_count' },
       ],
-      standaloneFields: [
-        { fieldName: 'code', parseJSON: true },
-      ],
+      standaloneFields: [{ fieldName: 'code', parseJSON: true }],
     },
     typeWithNoInstances: {
-      standaloneFields: [
-        { fieldName: 'something' },
-      ],
+      standaloneFields: [{ fieldName: 'something' }],
     },
     // override existing type with nonexistent standalone field
     connection: {
-      standaloneFields: [
-        { fieldName: 'nonexistent' },
-      ],
+      standaloneFields: [{ fieldName: 'nonexistent' }],
     },
   }
 
@@ -158,19 +146,25 @@ describe('Extract standalone fields', () => {
     it('should modify the recipe type if its code type is not an object type', async () => {
       const recipeType = elements[0] as ObjectType
       expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
-      const codeType = await recipeType.fields.code.getType() as ObjectType
-      expect(codeType.isEqual(new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
-        fields: {
-          flat: { refType: BuiltinTypes.STRING },
-          nested: { refType: new ObjectType({
-            elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
+      const codeType = (await recipeType.fields.code.getType()) as ObjectType
+      expect(
+        codeType.isEqual(
+          new ObjectType({
+            elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
             fields: {
-              inner: { refType: BuiltinTypes.STRING },
+              flat: { refType: BuiltinTypes.STRING },
+              nested: {
+                refType: new ObjectType({
+                  elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
+                  fields: {
+                    inner: { refType: BuiltinTypes.STRING },
+                  },
+                }),
+              },
             },
-          }) },
-        },
-      }))).toBeTruthy()
+          }),
+        ),
+      ).toBeTruthy()
     })
 
     it('should create new recipe__code instances and reference them', () => {
@@ -190,9 +184,23 @@ describe('Extract standalone fields', () => {
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
       expect(recipe123Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
-      expect(recipe123Code.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_0'])
+      expect(recipe123Code.path).toEqual([
+        ADAPTER_NAME,
+        'Records',
+        'recipe',
+        'recipe123',
+        'code',
+        'recipe123__unnamed_0',
+      ])
       expect(recipe456Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
-      expect(recipe456Code.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe456', 'code', 'recipe456__unnamed_0'])
+      expect(recipe456Code.path).toEqual([
+        ADAPTER_NAME,
+        'Records',
+        'recipe',
+        'recipe456',
+        'code',
+        'recipe456__unnamed_0',
+      ])
 
       const origRecipe123 = origInstances[0]
       const origRecipe456 = origInstances[1]
@@ -203,16 +211,16 @@ describe('Extract standalone fields', () => {
       expect(recipe123.value.code).toBeInstanceOf(ReferenceExpression)
       expect(recipe456.value.code).toBeInstanceOf(ReferenceExpression)
       expect((recipe123.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
-        recipe123Code.elemID.getFullName()
+        recipe123Code.elemID.getFullName(),
       )
       expect((recipe456.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
-        recipe456Code.elemID.getFullName()
+        recipe456Code.elemID.getFullName(),
       )
     })
 
     it('should not modify the book type since cover type is already defined', async () => {
       const bookType = elements[2] as ObjectType
-      const coverListType = await bookType.fields.cover.getType() as ListType
+      const coverListType = (await bookType.fields.cover.getType()) as ListType
       expect(coverListType).toBeInstanceOf(ListType)
       const coverType = await coverListType.getInnerType()
       expect(coverType).toBeInstanceOf(ObjectType)
@@ -231,17 +239,16 @@ describe('Extract standalone fields', () => {
       expect(book1.value.cover[0]).toBeInstanceOf(ReferenceExpression)
       expect(book1.value.cover[1]).toBeInstanceOf(ReferenceExpression)
       expect((book1.value.cover[0] as ReferenceExpression).elemID.getFullName()).toEqual(
-        book1Covers[0].elemID.getFullName()
+        book1Covers[0].elemID.getFullName(),
       )
       expect((book1.value.cover[1] as ReferenceExpression).elemID.getFullName()).toEqual(
-        book1Covers[1].elemID.getFullName()
+        book1Covers[1].elemID.getFullName(),
       )
     })
 
     it('should not modify the connection type', () => {
       const connectionType = elements[3] as ObjectType
-      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
-        .toBeTruthy()
+      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
     })
   })
 
@@ -271,9 +278,12 @@ describe('Extract standalone fields', () => {
         recipeType,
         {
           name: 'recipe123',
-          code: [{ flat: 'a', nested: { inner: 'abc' } }, { flat: 'b', nested: { inner: 'abc' } }],
+          code: [
+            { flat: 'a', nested: { inner: 'abc' } },
+            { flat: 'b', nested: { inner: 'abc' } },
+          ],
         },
-        [ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'recipe123']
+        [ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'recipe123'],
       )
 
       return [recipeType, connectionType, instance]
@@ -309,8 +319,22 @@ describe('Extract standalone fields', () => {
       expect(recipe123Code1.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
       expect(recipe123Code2.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
 
-      expect(recipe123Code1.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_0'])
-      expect(recipe123Code2.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_1'])
+      expect(recipe123Code1.path).toEqual([
+        ADAPTER_NAME,
+        'Records',
+        'recipe',
+        'recipe123',
+        'code',
+        'recipe123__unnamed_0',
+      ])
+      expect(recipe123Code2.path).toEqual([
+        ADAPTER_NAME,
+        'Records',
+        'recipe',
+        'recipe123',
+        'code',
+        'recipe123__unnamed_1',
+      ])
 
       const origRecipe123 = origInstances[0]
 
@@ -320,17 +344,16 @@ describe('Extract standalone fields', () => {
       expect(recipe123.value.code[0]).toBeInstanceOf(ReferenceExpression)
       expect(recipe123.value.code[1]).toBeInstanceOf(ReferenceExpression)
       expect((recipe123.value.code[0] as ReferenceExpression).elemID.getFullName()).toEqual(
-        recipe123Code1.elemID.getFullName()
+        recipe123Code1.elemID.getFullName(),
       )
       expect((recipe123.value.code[1] as ReferenceExpression).elemID.getFullName()).toEqual(
-        recipe123Code2.elemID.getFullName()
+        recipe123Code2.elemID.getFullName(),
       )
     })
 
     it('should not modify the connection type', () => {
       const connectionType = elements[1] as ObjectType
-      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
-        .toBeTruthy()
+      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
     })
   })
 
@@ -357,19 +380,25 @@ describe('Extract standalone fields', () => {
     it('should modify the recipe type', async () => {
       const recipeType = elements[0] as ObjectType
       expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
-      const codeType = await recipeType.fields.code.getType() as ObjectType
-      expect(codeType.isEqual(new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
-        fields: {
-          flat: { refType: BuiltinTypes.STRING },
-          nested: { refType: new ObjectType({
-            elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
+      const codeType = (await recipeType.fields.code.getType()) as ObjectType
+      expect(
+        codeType.isEqual(
+          new ObjectType({
+            elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
             fields: {
-              inner: { refType: BuiltinTypes.STRING },
+              flat: { refType: BuiltinTypes.STRING },
+              nested: {
+                refType: new ObjectType({
+                  elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
+                  fields: {
+                    inner: { refType: BuiltinTypes.STRING },
+                  },
+                }),
+              },
             },
-          }) },
-        },
-      }))).toBeTruthy()
+          }),
+        ),
+      ).toBeTruthy()
     })
 
     it('should create new recipe__code instances and reference them', () => {
@@ -400,10 +429,10 @@ describe('Extract standalone fields', () => {
       expect(recipe123.value.code).toBeInstanceOf(ReferenceExpression)
       expect(recipe456.value.code).toBeInstanceOf(ReferenceExpression)
       expect((recipe123.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
-        recipe123Code.elemID.getFullName()
+        recipe123Code.elemID.getFullName(),
       )
       expect((recipe456.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
-        recipe456Code.elemID.getFullName()
+        recipe456Code.elemID.getFullName(),
       )
     })
     it('should not create recipe__code instance when original value is "null"', () => {
@@ -414,8 +443,7 @@ describe('Extract standalone fields', () => {
 
     it('should not modify the connection type', () => {
       const connectionType = elements[3] as ObjectType
-      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
-        .toBeTruthy()
+      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
     })
   })
 

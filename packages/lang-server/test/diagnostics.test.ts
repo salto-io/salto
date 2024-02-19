@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
@@ -30,30 +30,36 @@ describe('diagnostics', () => {
   }
   beforeEach(async () => {
     baseWs = await mockWorkspace()
-    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors(
-      [{ severity: 'Error', message: 'Blabla' }],
-      [{
-        message: 'parse',
-        context: {
-          start: { col: 1, line: 1, byte: 1 },
-          end: { col: 2, line: 1, byte: 2 },
-          filename: '/parse_error.nacl',
-        },
-        subject: parseRange,
-        severity: 'Error',
-        summary: 'parse error',
-      }],
-    ))
+    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(
+      mockErrors(
+        [{ severity: 'Error', message: 'Blabla' }],
+        [
+          {
+            message: 'parse',
+            context: {
+              start: { col: 1, line: 1, byte: 1 },
+              end: { col: 2, line: 1, byte: 2 },
+              filename: '/parse_error.nacl',
+            },
+            subject: parseRange,
+            severity: 'Error',
+            summary: 'parse error',
+          },
+        ],
+      ),
+    )
     baseWs.transformError = mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
       ...err,
-      sourceLocations: [{
-        sourceRange: {
-          start: { col: 1, line: 1, byte: 1 },
-          end: { col: 2, line: 1, byte: 2 },
-          filename: '/parse_error.nacl',
+      sourceLocations: [
+        {
+          sourceRange: {
+            start: { col: 1, line: 1, byte: 1 },
+            end: { col: 2, line: 1, byte: 2 },
+            filename: '/parse_error.nacl',
+          },
+          subRange: (err as parser.ParseError).subject,
         },
-        subRange: (err as parser.ParseError).subject,
-      }],
+      ],
     }))
   })
   it('should diagnostics on errors', async () => {
@@ -72,9 +78,12 @@ describe('diagnostics', () => {
     expect(parseError.range).toEqual(_.omit(parseRange, 'filename'))
   })
   it('should not return wanrnings when errors exist', async () => {
-    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors(
-      [{ severity: 'Error', message: 'Blabla' }, { severity: 'Warning', message: 'test' }],
-    ))
+    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(
+      mockErrors([
+        { severity: 'Error', message: 'Blabla' },
+        { severity: 'Warning', message: 'test' },
+      ]),
+    )
     const workspace = new EditorWorkspace('bla', baseWs)
     const diag = await getDiagnostics(workspace)
     const diagErrors = diag.errors['/parse_error.nacl']
@@ -85,9 +94,9 @@ describe('diagnostics', () => {
     expect(error.msg).toEqual('Blabla')
   })
   it('should return wanrnings when there are no errors', async () => {
-    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors(
-      [{ severity: 'Warning', message: 'Blabla' }],
-    ))
+    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(
+      mockErrors([{ severity: 'Warning', message: 'Blabla' }]),
+    )
     const workspace = new EditorWorkspace('bla', baseWs)
     const diag = (await getDiagnostics(workspace)).errors['/parse_error.nacl']
     expect(diag).toHaveLength(1)

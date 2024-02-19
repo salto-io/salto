@@ -1,22 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ActionName, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import {
+  ActionName,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+} from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -84,12 +89,14 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
 // We use Geolocation internally to avoid conflicts with the Location standard object
 export const LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME = 'Geolocation'
 
-export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
-  Record<string, COMPOUND_FIELD_TYPE_NAMES> = {
-    address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
-    location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
-    // name is handled differently with nameField
-  }
+export const COMPOUND_FIELDS_SOAP_TYPE_NAMES: Record<
+  string,
+  COMPOUND_FIELD_TYPE_NAMES
+> = {
+  address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
+  location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+  // name is handled differently with nameField
+}
 
 // target types for creating / updating custom fields:
 export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
@@ -98,8 +105,7 @@ export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
   COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
 ]
 
-export const FIELD_SOAP_TYPE_NAMES:
-Record<string, ALL_FIELD_TYPE_NAMES> = {
+export const FIELD_SOAP_TYPE_NAMES: Record<string, ALL_FIELD_TYPE_NAMES> = {
   anyType: INTERNAL_FIELD_TYPE_NAMES.ANY,
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
@@ -168,7 +174,8 @@ export const KEY_PREFIX = 'keyPrefix'
 export const OBJECT_HISTORY_TRACKING_ENABLED = 'enableHistory'
 export const RECORD_TYPE_HISTORY_TRACKING_ENABLED = 'recordTypeTrackHistory'
 export const OBJECT_FEED_HISTORY_TRACKING_ENABLED = 'enableFeeds'
-export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED = 'recordTypeTrackFeedHistory'
+export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED =
+  'recordTypeTrackFeedHistory'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -210,7 +217,8 @@ export const FIELD_ANNOTATIONS = {
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
   ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
-  METADATA_RELATIONSHIP_CONTROLLING_FIELD: 'metadataRelationshipControllingField',
+  METADATA_RELATIONSHIP_CONTROLLING_FIELD:
+    'metadataRelationshipControllingField',
   DEFAULTED_ON_CREATE: 'defaultedOnCreate',
 } as const
 
@@ -366,13 +374,15 @@ export const CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE = 'CustomObjectTranslation'
 export const SHARING_RULES_TYPE = 'SharingRules'
 export const LAYOUT_TYPE_ID_METADATA_TYPE = 'Layout'
 export const LAYOUT_ITEM_METADATA_TYPE = 'LayoutItem'
-export const LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE = 'LightningComponentBundle'
+export const LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE =
+  'LightningComponentBundle'
 export const SUMMARY_LAYOUT_ITEM_METADATA_TYPE = 'SummaryLayoutItem'
 export const WORKFLOW_ACTION_ALERT_METADATA_TYPE = 'WorkflowAlert'
 export const WORKFLOW_ACTION_REFERENCE_METADATA_TYPE = 'WorkflowActionReference'
 export const WORKFLOW_FIELD_UPDATE_METADATA_TYPE = 'WorkflowFieldUpdate'
 export const WORKFLOW_FLOW_ACTION_METADATA_TYPE = 'WorkflowFlowAction'
-export const WORKFLOW_KNOWLEDGE_PUBLISH_METADATA_TYPE = 'WorkflowKnowledgePublish'
+export const WORKFLOW_KNOWLEDGE_PUBLISH_METADATA_TYPE =
+  'WorkflowKnowledgePublish'
 export const WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE = 'WorkflowOutboundMessage'
 export const WORKFLOW_RULE_METADATA_TYPE = 'WorkflowRule'
 export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
@@ -399,7 +409,8 @@ export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
 export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
-export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE = 'GlobalValueSetTranslation'
+export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE =
+  'GlobalValueSetTranslation'
 
 // Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
@@ -420,7 +431,8 @@ export const ArtificialTypes = {
 export const ORGANIZATION_SETTINGS = 'Organization'
 
 // Retrieve constants
-export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
+export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX =
+  /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
 export const RETRIEVE_SIZE_LIMIT_ERROR = 'LIMIT_EXCEEDED'
 
 // According to Salesforce spec the keyPrefix length is 3
@@ -460,7 +472,8 @@ export const CPQ_RULE_LOOKUP_OBJECT_FIELD = 'SBQQ__RuleLookupObject__c'
 export const CPQ_SOURCE_LOOKUP_FIELD = 'SBQQ__SourceLookupField__c'
 export const CPQ_OBJECT_NAME = 'SBQQ__ObjectName__c'
 export const CPQ_CONSUMPTION_RATE_FIELDS = 'SBQQ__ConsumptionRateFields__c'
-export const CPQ_CONSUMPTION_SCHEDULE_FIELDS = 'SBQQ__ConsumptionScheduleFields__c'
+export const CPQ_CONSUMPTION_SCHEDULE_FIELDS =
+  'SBQQ__ConsumptionScheduleFields__c'
 export const CPQ_GROUP_FIELDS = 'SBQQ__GroupFields__c'
 export const CPQ_QUOTE_FIELDS = 'SBQQ__QuoteFields__c'
 export const CPQ_QUOTE_LINE_FIELDS = 'SBQQ__QuoteLineFields__c'
@@ -509,9 +522,11 @@ export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 // sbaa Fields
 export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
-
 // Change Groups
-export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: string): string => {
+export const groupIdForInstanceChangeGroup = (
+  action: ActionName,
+  typeName: string,
+): string => {
   const toVerbalNoun = (actionName: ActionName): string => {
     switch (actionName) {
       case 'add':
@@ -527,13 +542,16 @@ export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: stri
   }
   return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
 }
-export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom ApprovalRule and ApprovalCondition')
-export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom PriceRule and PriceCondition')
+export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP =
+  groupIdForInstanceChangeGroup(
+    'add',
+    'Custom ApprovalRule and ApprovalCondition',
+  )
+export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP =
+  groupIdForInstanceChangeGroup('add', 'Custom PriceRule and PriceCondition')
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 
-
 export const UNLIMITED_INSTANCES_VALUE = -1
-
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
 export const SYSTEM_FIELDS = [
@@ -599,7 +617,12 @@ export type SalesforceError = Error & {
 
 export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
-  return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
+  return (
+    _.isString(errorCode) &&
+    (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(
+      errorCode,
+    )
+  )
 }
 
 // Artifacts

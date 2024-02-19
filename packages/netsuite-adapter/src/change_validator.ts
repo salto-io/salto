@@ -1,21 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 
-import { ChangeError, getChangeData, ChangeValidator, Change, ChangeDataType, isFieldChange, isAdditionOrRemovalChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  getChangeData,
+  ChangeValidator,
+  Change,
+  ChangeDataType,
+  isFieldChange,
+  isAdditionOrRemovalChange,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import inactiveParent from './change_validators/inactive_parent'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
@@ -117,12 +126,14 @@ const changeErrorsToElementIDs = (changeErrors: readonly ChangeError[]): readonl
 // and the fields currently the process will fail with an exception
 const getInvalidFieldChangeIds = (
   changes: readonly Change<ChangeDataType>[],
-  invalidElementIds: Set<string>
+  invalidElementIds: Set<string>,
 ): string[] => {
-  const invalidRemovalOrAdditionElemIds = new Set(changes
-    .filter(isAdditionOrRemovalChange)
-    .map(change => getChangeData(change).elemID.getFullName())
-    .filter(name => invalidElementIds.has(name)))
+  const invalidRemovalOrAdditionElemIds = new Set(
+    changes
+      .filter(isAdditionOrRemovalChange)
+      .map(change => getChangeData(change).elemID.getFullName())
+      .filter(name => invalidElementIds.has(name)),
+  )
 
   return changes
     .filter(isFieldChange)
@@ -145,7 +156,7 @@ const getChangeValidator: ({
   deployReferencedElements,
   additionalDependencies,
   filtersRunner,
-} : {
+}: {
   client: NetsuiteClient
   withSuiteApp: boolean
   warnStaleData: boolean
@@ -156,66 +167,60 @@ const getChangeValidator: ({
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
   userConfig: NetsuiteConfig
-  }) => ChangeValidator = (
-    {
-      client,
-      withSuiteApp,
-      warnStaleData,
-      validate,
-      fetchByQuery,
-      deployReferencedElements,
-      additionalDependencies,
-      filtersRunner,
-      elementsSource,
-      userConfig,
-    }
-  ) =>
-    async (changes, elementSource) => {
-      const netsuiteValidators = withSuiteApp
-        ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
-        : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
+}) => ChangeValidator =
+  ({
+    client,
+    withSuiteApp,
+    warnStaleData,
+    validate,
+    fetchByQuery,
+    deployReferencedElements,
+    additionalDependencies,
+    filtersRunner,
+    elementsSource,
+    userConfig,
+  }) =>
+  async (changes, elementSource) => {
+    const netsuiteValidators = withSuiteApp
+      ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
+      : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
 
-      // Converts NetsuiteChangeValidator to ChangeValidator
-      const validators: Record<string, ChangeValidator> = _.mapValues(
-        netsuiteValidators,
-        validator =>
-          (innerChanges: ReadonlyArray<Change>) =>
-            validator(innerChanges, deployReferencedElements, elementsSource, userConfig, client)
-      )
-      const safeDeploy = warnStaleData
-        ? {
+    // Converts NetsuiteChangeValidator to ChangeValidator
+    const validators: Record<string, ChangeValidator> = _.mapValues(
+      netsuiteValidators,
+      validator => (innerChanges: ReadonlyArray<Change>) =>
+        validator(innerChanges, deployReferencedElements, elementsSource, userConfig, client),
+    )
+    const safeDeploy = warnStaleData
+      ? {
           safeDeploy: (innerChanges: ReadonlyArray<Change>) =>
             safeDeployValidator(innerChanges, fetchByQuery, deployReferencedElements),
         }
-        : undefined
+      : undefined
 
-      const mergedValidator = createChangeValidator({
-        validators: { ...defaultChangeValidators, ...validators, ...safeDeploy },
-        validatorsActivationConfig: userConfig.deploy?.changeValidators,
-      })
-      const validatorChangeErrors = await mergedValidator(changes, elementSource)
+    const mergedValidator = createChangeValidator({
+      validators: { ...defaultChangeValidators, ...validators, ...safeDeploy },
+      validatorsActivationConfig: userConfig.deploy?.changeValidators,
+    })
+    const validatorChangeErrors = await mergedValidator(changes, elementSource)
 
-      const dependedChangeErrors = await validateDependsOnInvalidElement(
-        changeErrorsToElementIDs(validatorChangeErrors),
-        changes,
-      )
-      const changeErrors = validatorChangeErrors.concat(dependedChangeErrors)
+    const dependedChangeErrors = await validateDependsOnInvalidElement(
+      changeErrorsToElementIDs(validatorChangeErrors),
+      changes,
+    )
+    const changeErrors = validatorChangeErrors.concat(dependedChangeErrors)
 
-      // filter out invalid changes to run netsuiteClientValidation only on relevant changes
-      const invalidChangeErrorIds = new Set(changeErrorsToElementIDs(changeErrors))
-      const invalidFieldChangeIds = getInvalidFieldChangeIds(changes, invalidChangeErrorIds)
-      const invalidElementIds = new Set([...invalidChangeErrorIds, ...invalidFieldChangeIds])
-      const validChanges = changes
-        .filter(change => !invalidElementIds.has(getChangeData(change).elemID.getFullName()))
+    // filter out invalid changes to run netsuiteClientValidation only on relevant changes
+    const invalidChangeErrorIds = new Set(changeErrorsToElementIDs(changeErrors))
+    const invalidFieldChangeIds = getInvalidFieldChangeIds(changes, invalidChangeErrorIds)
+    const invalidElementIds = new Set([...invalidChangeErrorIds, ...invalidFieldChangeIds])
+    const validChanges = changes.filter(change => !invalidElementIds.has(getChangeData(change).elemID.getFullName()))
 
-      const netsuiteValidatorErrors = validate ? await netsuiteClientValidation(
-        validChanges,
-        client,
-        additionalDependencies,
-        filtersRunner,
-      ) : []
+    const netsuiteValidatorErrors = validate
+      ? await netsuiteClientValidation(validChanges, client, additionalDependencies, filtersRunner)
+      : []
 
-      return changeErrors.concat(netsuiteValidatorErrors)
-    }
+    return changeErrors.concat(netsuiteValidatorErrors)
+  }
 
 export default getChangeValidator

@@ -1,44 +1,49 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  CORE_ANNOTATIONS,
-  Element,
-  isObjectType,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { CORE_ANNOTATIONS, Element, isObjectType } from '@salto-io/adapter-api'
 import { ImportantValues } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import {
   APP_INSTALLATION_TYPE_NAME,
-  APP_OWNED_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME,
+  APP_OWNED_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
   AUTOMATION_TYPE_NAME,
-  BRAND_TYPE_NAME, BUSINESS_HOUR_SCHEDULE, CATEGORY_TRANSLATION_TYPE_NAME,
-  CUSTOM_STATUS_TYPE_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE,
+  CATEGORY_TRANSLATION_TYPE_NAME,
+  CUSTOM_STATUS_TYPE_NAME,
+  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
   GROUP_TYPE_NAME,
   MACRO_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME, SECTION_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME,
+  SECTION_TYPE_NAME,
   SUPPORT_ADDRESS_TYPE_NAME,
   TARGET_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
   TRIGGER_TYPE_NAME,
-  USER_FIELD_TYPE_NAME, USER_SEGMENT_TYPE_NAME,
-  VIEW_TYPE_NAME, WEBHOOK_TYPE_NAME, WORKSPACE_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  VIEW_TYPE_NAME,
+  WEBHOOK_TYPE_NAME,
+  WORKSPACE_TYPE_NAME,
 } from '../constants'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
-
 
 const importantValuesMap: Record<string, ImportantValues> = {
   [APP_INSTALLATION_TYPE_NAME]: [

@@ -1,22 +1,21 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { forEachAsync, awu } from './collections/asynciterable'
 import { TypeGuard, Predicate, AsyncPredicate } from './types'
-
 
 // The '0' key is used to "nudge" typescript to infer a tuple type instead of an array
 type TupleType<T> = T[] & { '0': T }
@@ -44,9 +43,9 @@ type MultiIndexBuilder<InputType, Result extends object = {}> = {
     IndexName extends string,
     Key extends KeyType,
     FilteredType extends InputType = InputType,
-    ResultType = FilteredType
+    ResultType = FilteredType,
   >(
-    f: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>
+    f: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>,
   ) => MultiIndexBuilder<InputType, Result & { [name in IndexName]: Index<Key, ResultType> }>
 
   process: (iter: AsyncIterable<InputType>) => Promise<Result>
@@ -69,8 +68,7 @@ type MultiIndexBuilder<InputType, Result extends object = {}> = {
  *     })
  *     .process(items)
  */
-export const buildMultiIndex = <InputType, Result extends object = {}>(
-): MultiIndexBuilder<InputType, Result> => {
+export const buildMultiIndex = <InputType, Result extends object = {}>(): MultiIndexBuilder<InputType, Result> => {
   const indexDefinitions: IndexFunction[] = []
 
   const processItem = async (item: InputType, index: Record<string, unknown>): Promise<void> => {
@@ -86,22 +84,16 @@ export const buildMultiIndex = <InputType, Result extends object = {}>(
         _.set(index, [indexDef.name, ...keyParts], value)
       })
   }
-  const toMultiIndex = (index: Record<string, unknown>): Result => (
+  const toMultiIndex = (index: Record<string, unknown>): Result =>
     Object.fromEntries(
-      indexDefinitions.map(indexDef => ([
+      indexDefinitions.map(indexDef => [
         indexDef.name,
         { get: (...keyParts: string[]): unknown => _.get(index, [indexDef.name, ...keyParts]) },
-      ]))
+      ]),
     ) as Result
-  )
   const indexBuilder: MultiIndexBuilder<InputType, Result> = {
-    addIndex: <
-      FilteredType extends InputType,
-      ResultType,
-      Key extends KeyType,
-      IndexName extends string,
-    >(
-      func: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>
+    addIndex: <FilteredType extends InputType, ResultType, Key extends KeyType, IndexName extends string>(
+      func: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>,
     ) => {
       // Note - the cast to unknown is needed because we store all index definition in one array.
       // The type of that array has to be more general than the type of each index.
@@ -113,9 +105,7 @@ export const buildMultiIndex = <InputType, Result extends object = {}>(
       // the type added to Result matches the type of the index function we add here.
       indexDefinitions.push(func as unknown as IndexFunction)
       // Add the new index to the result type
-      return indexBuilder as (
-        MultiIndexBuilder<InputType, Result & { [name in IndexName]: Index<Key, ResultType> }>
-      )
+      return indexBuilder as MultiIndexBuilder<InputType, Result & { [name in IndexName]: Index<Key, ResultType> }>
     },
     process: async iter => {
       const index = {}
@@ -126,12 +116,7 @@ export const buildMultiIndex = <InputType, Result extends object = {}>(
   return indexBuilder
 }
 
-type KeyByAsyncParams<
-  Key extends KeyType,
-  InputType,
-  FilteredType extends InputType,
-  ResultType
-> = {
+type KeyByAsyncParams<Key extends KeyType, InputType, FilteredType extends InputType, ResultType> = {
   iter: AsyncIterable<InputType>
 } & Omit<IndexFunction<InputType, FilteredType, ResultType, Key>, 'name'>
 
@@ -139,12 +124,13 @@ export const keyByAsync = async <
   Key extends KeyType,
   InputType,
   FilteredType extends InputType = InputType,
-  ResultType = FilteredType
->(
-  { iter, key, map, filter }: KeyByAsyncParams<Key, InputType, FilteredType, ResultType>
-): Promise<Index<Key, ResultType>> => {
-  const { idx } = await buildMultiIndex<InputType>()
-    .addIndex({ name: 'idx', filter, map, key })
-    .process(iter)
+  ResultType = FilteredType,
+>({
+  iter,
+  key,
+  map,
+  filter,
+}: KeyByAsyncParams<Key, InputType, FilteredType, ResultType>): Promise<Index<Key, ResultType>> => {
+  const { idx } = await buildMultiIndex<InputType>().addIndex({ name: 'idx', filter, map, key }).process(iter)
   return idx
 }

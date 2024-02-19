@@ -1,20 +1,24 @@
-
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -25,29 +29,29 @@ import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 
-const addDisplayName = (userMap: UserMap): WalkOnUsersCallback => (
-  { value, fieldName }
-): void => {
-  if (Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
-    value[fieldName].displayName = userMap[value[fieldName].id].displayName
+const addDisplayName =
+  (userMap: UserMap): WalkOnUsersCallback =>
+  ({ value, fieldName }): void => {
+    if (Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
+      value[fieldName].displayName = userMap[value[fieldName].id].displayName
+    }
   }
-}
 
-const convertIdToUsername = (userMap: UserMap): WalkOnUsersCallback => (
-  { value, fieldName }
-): void => {
-  if (Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
-    value[fieldName].id = userMap[value[fieldName].id].username ?? value[fieldName].id
+const convertIdToUsername =
+  (userMap: UserMap): WalkOnUsersCallback =>
+  ({ value, fieldName }): void => {
+    if (Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
+      value[fieldName].id = userMap[value[fieldName].id].username ?? value[fieldName].id
+    }
   }
-}
 
-const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
-  { value, fieldName }
-): void => {
-  if (Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
-    value[fieldName].id = userMap[value[fieldName].id].userId ?? value[fieldName].id
+const convertUserNameToId =
+  (userMap: UserMap): WalkOnUsersCallback =>
+  ({ value, fieldName }): void => {
+    if (Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
+      value[fieldName].id = userMap[value[fieldName].id].userId ?? value[fieldName].id
+    }
   }
-}
 
 /*
  * A filter to add display names beside account ids. The source is a JIRA query.
@@ -84,7 +88,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
     }
     const preDeployUserMap = _.keyBy(
       Object.values(userMap).filter(userInfo => _.isString(userInfo.username)),
-      userInfo => userInfo.username as string
+      userInfo => userInfo.username as string,
     )
 
     changes
@@ -92,12 +96,10 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
-      .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap), config) }))
+      .forEach(element => walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap), config) }))
   },
   onDeploy: async changes => {
-    if (!(config.fetch.convertUsersIds ?? true)
-       || !client.isDataCenter) {
+    if (!(config.fetch.convertUsersIds ?? true) || !client.isDataCenter) {
       return
     }
     const userMap = await getUsersMap(elementsSource)
@@ -109,8 +111,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
-      .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) }))
+      .forEach(element => walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) }))
   },
 })
 

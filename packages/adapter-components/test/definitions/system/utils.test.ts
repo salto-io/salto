@@ -1,20 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { DefaultWithCustomizations, mergeSingleDefWithDefault, queryWithDefault, mergeWithDefault, getNestedWithDefault, DefQuery, mergeWithUserElemIDDefinitions } from '../../../src/definitions/system'
+import {
+  DefaultWithCustomizations,
+  mergeSingleDefWithDefault,
+  queryWithDefault,
+  mergeWithDefault,
+  getNestedWithDefault,
+  DefQuery,
+  mergeWithUserElemIDDefinitions,
+} from '../../../src/definitions/system'
 import { FetchApiDefinitions } from '../../../src/definitions/system/fetch'
 
 describe('system definitions utils', () => {
@@ -30,13 +38,8 @@ describe('system definitions utils', () => {
       customizations: {
         k1: {
           a: 'override',
-          arr: [
-            { a: 'a' },
-            { b: 'b', x: 7 },
-          ],
-          arr2: [
-            { a: 'a' },
-          ],
+          arr: [{ a: 'a' }, { b: 'b', x: 7 }],
+          arr2: [{ a: 'a' }],
         },
         k2: {
           b: 'different type',
@@ -64,9 +67,7 @@ describe('system definitions utils', () => {
       expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k2), 'arr')).toEqual([])
     })
     it('should ignore default if customization and default are both arrays', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'arr2')).toEqual([
-        { a: 'a' },
-      ])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'arr2')).toEqual([{ a: 'a' }])
       expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k2), 'arr')).toEqual([])
     })
     it('should not crash on type conflict', () => {
@@ -78,42 +79,46 @@ describe('system definitions utils', () => {
       })
     })
     it('should ignore default for fieldCustomizations if ignoreDefaultFieldCustomizations=true', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(mergeSingleDefWithDefault<any, string>(
-        {
-          fieldCustomizations: {
-            a: { hide: true },
-          },
-        },
-        {
-          fieldCustomizations: {
-            a: { omit: true },
-          },
-          ignoreDefaultFieldCustomizations: true,
-        },
-      )).toEqual({
-        fieldCustomizations: {
-          a: { omit: true },
-        },
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(mergeSingleDefWithDefault<any, string>(
-        {
-          nested: {
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mergeSingleDefWithDefault<any, string>(
+          {
             fieldCustomizations: {
               a: { hide: true },
             },
           },
-        },
-        {
-          nested: {
+          {
             fieldCustomizations: {
               a: { omit: true },
             },
             ignoreDefaultFieldCustomizations: true,
           },
+        ),
+      ).toEqual({
+        fieldCustomizations: {
+          a: { omit: true },
         },
-      )).toEqual({
+      })
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mergeSingleDefWithDefault<any, string>(
+          {
+            nested: {
+              fieldCustomizations: {
+                a: { hide: true },
+              },
+            },
+          },
+          {
+            nested: {
+              fieldCustomizations: {
+                a: { omit: true },
+              },
+              ignoreDefaultFieldCustomizations: true,
+            },
+          },
+        ),
+      ).toEqual({
         nested: {
           fieldCustomizations: {
             a: { omit: true },
@@ -122,20 +127,22 @@ describe('system definitions utils', () => {
       })
     })
     it('should not ignore default for fieldCustomizations if ignoreDefaultFieldCustomizations=false', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(mergeSingleDefWithDefault<any, string>(
-        {
-          fieldCustomizations: {
-            a: { hide: true },
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mergeSingleDefWithDefault<any, string>(
+          {
+            fieldCustomizations: {
+              a: { hide: true },
+            },
           },
-        },
-        {
-          fieldCustomizations: {
-            a: { omit: true },
+          {
+            fieldCustomizations: {
+              a: { omit: true },
+            },
+            ignoreDefaultFieldCustomizations: false,
           },
-          ignoreDefaultFieldCustomizations: false,
-        },
-      )).toEqual({
+        ),
+      ).toEqual({
         fieldCustomizations: {
           a: { hide: true, omit: true },
         },
@@ -349,7 +356,9 @@ describe('system definitions utils', () => {
       })
     })
     it('should not modify system default', () => {
-      expect(mergedDef.instances.default?.element?.topLevel?.elemID).toEqual({ parts: [{ fieldName: 'something else' }] })
+      expect(mergedDef.instances.default?.element?.topLevel?.elemID).toEqual({
+        parts: [{ fieldName: 'something else' }],
+      })
     })
   })
 })

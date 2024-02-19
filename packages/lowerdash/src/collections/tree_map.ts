@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import wu, { WuIterable } from 'wu'
 
@@ -25,7 +25,10 @@ export class TreeMap<T> implements Map<string, T[]> {
   [Symbol.toStringTag] = 'TreeMap'
   protected data: TreeMapEntry<T> = { children: {}, value: [] }
 
-  constructor(entries: Iterable<[string, T[]]> = [], public separator = '.') {
+  constructor(
+    entries: Iterable<[string, T[]]> = [],
+    public separator = '.',
+  ) {
     wu(entries).forEach(([key, value]) => this.push(key, ...value))
   }
 
@@ -58,43 +61,35 @@ export class TreeMap<T> implements Map<string, T[]> {
     })
   }
 
-  protected static mountToPath = <S>(
-    data: TreeMapEntry<S>,
-    path: string[],
-    value: TreeMapEntry<S>
-  ): void => {
+  protected static mountToPath = <S>(data: TreeMapEntry<S>, path: string[], value: TreeMapEntry<S>): void => {
     const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<S>
     TreeMap.mergeEntries(target, value)
   }
 
-  protected static setToPath = <S>(
-    data: TreeMapEntry<S>,
-    path: string[],
-    value: S[]
-  ): void => {
+  protected static setToPath = <S>(data: TreeMapEntry<S>, path: string[], value: S[]): void => {
     const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<S>
     target.value = value
   }
 
-  private iterEntry<S>(
-    entry: TreeMapEntry<S>,
-    prefix: string[] = []
-  ): WuIterable<[string, T[]]> {
-    const childEntries = wu.entries(entry.children)
+  private iterEntry<S>(entry: TreeMapEntry<S>, prefix: string[] = []): WuIterable<[string, T[]]> {
+    const childEntries = wu
+      .entries(entry.children)
       .map(([key, child]) => this.iterEntry(child, [...prefix, key]))
       .flatten(true)
-    return _.isEmpty(entry.value)
-      ? childEntries
-      : wu.chain([[prefix.join(this.separator), entry.value]], childEntries)
+    return _.isEmpty(entry.value) ? childEntries : wu.chain([[prefix.join(this.separator), entry.value]], childEntries)
   }
 
   [Symbol.iterator](): IterableIterator<[string, T[]]> {
     return this.iterEntry(this.data)
   }
 
-  get size(): number { return wu.reduce(count => count + 1, 0, this) }
+  get size(): number {
+    return wu.reduce(count => count + 1, 0, this)
+  }
 
-  get root(): TreeMapEntry<T> { return this.data }
+  get root(): TreeMapEntry<T> {
+    return this.data
+  }
 
   push(id: string, ...values: T[]): void {
     const key = id.split(this.separator)
@@ -159,9 +154,7 @@ export class TreeMap<T> implements Map<string, T[]> {
     return this.iterEntry(this.data).map(([_key, value]) => value)
   }
 
-  forEach(
-    callbackfn: (value: T[], key: string, map: Map<string, T[]>) => void,
-  ): void {
+  forEach(callbackfn: (value: T[], key: string, map: Map<string, T[]>) => void): void {
     this.iterEntry(this.data).forEach(([key, value]) => callbackfn(value, key, this))
   }
 
@@ -175,6 +168,4 @@ export class TreeMap<T> implements Map<string, T[]> {
   }
 }
 
-export class PartialTreeMap<T> extends TreeMap<T> {
-
-}
+export class PartialTreeMap<T> extends TreeMap<T> {}

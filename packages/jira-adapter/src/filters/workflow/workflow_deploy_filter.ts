@@ -1,25 +1,49 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { AdditionChange, Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange, toChange } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  Change,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isInstanceChange,
+  isRemovalChange,
+  RemovalChange,
+  toChange,
+} from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue, createSchemeGuard } from '@salto-io/adapter-utils'
+import {
+  resolveChangeElement,
+  walkOnValue,
+  WALK_NEXT_STEP,
+  inspectValue,
+  createSchemeGuard,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowChange, PostFetchWorkflowInstance, Transition, WORKFLOW_RESPONSE_SCHEMA, WorkflowV1Instance, WorkflowResponse } from './types'
+import {
+  isPostFetchWorkflowChange,
+  PostFetchWorkflowInstance,
+  Transition,
+  WORKFLOW_RESPONSE_SCHEMA,
+  WorkflowV1Instance,
+  WorkflowResponse,
+} from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
@@ -29,7 +53,13 @@ import { deployTriggers } from './triggers_deployment'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
 import { deployWorkflowDiagram, hasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
-import { expectedToActualTransitionIds, createStatusMap, transitionKeysToExpectedIds, walkOverTransitionIds, getTransitionKey } from './transition_structure'
+import {
+  expectedToActualTransitionIds,
+  createStatusMap,
+  transitionKeysToExpectedIds,
+  walkOverTransitionIds,
+  getTransitionKey,
+} from './transition_structure'
 import { decodeCloudFields, encodeCloudFields } from '../script_runner/workflow/workflow_cloud'
 
 const log = logger(module)
@@ -44,7 +74,10 @@ export const INITIAL_VALIDATOR = {
 const isValidTransitionResponse = (response: unknown): response is { values: [WorkflowResponse] } => {
   const { error } = Joi.object({
     values: Joi.array().min(1).max(1).items(WORKFLOW_RESPONSE_SCHEMA),
-  }).unknown(true).required().validate(response)
+  })
+    .unknown(true)
+    .required()
+    .validate(response)
 
   if (error !== undefined) {
     log.warn(`Unexpected workflows response from Jira: ${error}. ${inspectValue(response)}`)
@@ -54,10 +87,7 @@ const isValidTransitionResponse = (response: unknown): response is { values: [Wo
 }
 
 // needed for transitionIds
-const getTransitionsFromService = async (
-  client: JiraClient,
-  workflowName: string,
-): Promise<Transition[]> => {
+const getTransitionsFromService = async (client: JiraClient, workflowName: string): Promise<Transition[]> => {
   const response = await client.get({
     url: '/rest/api/3/workflow/search',
     queryParams: {
@@ -77,14 +107,14 @@ const getTransitionsFromService = async (
 const sameTransitionIds = (
   transitions: Transition[],
   otherTransitions: Transition[],
-  statusesMap: Map<string, string>
+  statusesMap: Map<string, string>,
 ): boolean => {
-  const transitionIds = Object.fromEntries(transitions.map(
-    transition => [transition.id, getTransitionKey(transition, statusesMap)]
-  ))
-  const otherTransitionIds = Object.fromEntries(otherTransitions.map(
-    transition => [transition.id, getTransitionKey(transition, statusesMap)]
-  ))
+  const transitionIds = Object.fromEntries(
+    transitions.map(transition => [transition.id, getTransitionKey(transition, statusesMap)]),
+  )
+  const otherTransitionIds = Object.fromEntries(
+    otherTransitions.map(transition => [transition.id, getTransitionKey(transition, statusesMap)]),
+  )
   return _.isEqual(transitionIds, otherTransitionIds)
 }
 
@@ -98,24 +128,15 @@ const removeCreateIssuePermissionValidator = (instance: WorkflowV1Instance): voi
   Object.values(instance.value.transitions)
     .filter(transition => transition.type === 'initial')
     .forEach(transition => {
-      const createIssuePermissionValidatorIndex = _.findLastIndex(
-        transition.rules?.validators ?? [],
-        validator => _.isEqual(
-          validator,
-          INITIAL_VALIDATOR,
-        ),
+      const createIssuePermissionValidatorIndex = _.findLastIndex(transition.rules?.validators ?? [], validator =>
+        _.isEqual(validator, INITIAL_VALIDATOR),
       )
 
-      _.remove(
-        transition.rules?.validators ?? [],
-        (_validator, index) => index === createIssuePermissionValidatorIndex,
-      )
+      _.remove(transition.rules?.validators ?? [], (_validator, index) => index === createIssuePermissionValidatorIndex)
     })
 }
 
-const changeIdsToString = (
-  values: Record<string | number, unknown>,
-): void => {
+const changeIdsToString = (values: Record<string | number, unknown>): void => {
   walkOnValue({
     elemId: new ElemID(JIRA, WORKFLOW_TYPE_NAME, 'instance', 'workflow'),
     value: values,
@@ -135,43 +156,50 @@ const workflowTransitionsToList = (workflowInstance: InstanceElement): void => {
 const addTransitionIdsToInstance = (
   workflowInstance: WorkflowV1Instance,
   transitions: Transition[],
-  statusesMap: Map<string, string>
+  statusesMap: Map<string, string>,
 ): void => {
-  const transitionIds = Object.fromEntries(transitions.map(
-    transition => [getTransitionKey(transition, statusesMap), transition.id]
-  ))
+  const transitionIds = Object.fromEntries(
+    transitions.map(transition => [getTransitionKey(transition, statusesMap), transition.id]),
+  )
   Object.entries(workflowInstance.value.transitions).forEach(([key, transition]) => {
     transition.id = transitionIds[key]
   })
 }
 
 type WorkflowIDResponse = {
-  values: [{
-    id: {
-      entityId: string
-    }
-  }] | []
+  values:
+    | [
+        {
+          id: {
+            entityId: string
+          }
+        },
+      ]
+    | []
 }
 
 const WORKFLOW_ID_RESPONSE_SCHEMA = Joi.object({
-  values: Joi.array().max(1).items(
-    Joi.object({
-      id: Joi.object({
-        entityId: Joi.string().required(),
-      }).unknown(true).required(),
-    }).unknown(true),
-  ),
-}).unknown(true).required()
+  values: Joi.array()
+    .max(1)
+    .items(
+      Joi.object({
+        id: Joi.object({
+          entityId: Joi.string().required(),
+        })
+          .unknown(true)
+          .required(),
+      }).unknown(true),
+    ),
+})
+  .unknown(true)
+  .required()
 
 const isWorkflowIDResponse = createSchemeGuard<WorkflowIDResponse>(
   WORKFLOW_ID_RESPONSE_SCHEMA,
-  'Received unexpected workflow id response from service'
+  'Received unexpected workflow id response from service',
 )
 
-const getWorkflowIdFromService = async (
-  client: JiraClient,
-  workflowName: string,
-): Promise<string | undefined> => {
+const getWorkflowIdFromService = async (client: JiraClient, workflowName: string): Promise<string | undefined> => {
   const response = await client.get({
     url: '/rest/api/3/workflow/search',
     queryParams: {
@@ -192,10 +220,7 @@ const getWorkflowIdFromService = async (
   return workflowValues.id.entityId
 }
 
-const doesWorkflowExist = async (
-  client: JiraClient,
-  workflowName: string,
-): Promise<boolean> => {
+const doesWorkflowExist = async (client: JiraClient, workflowName: string): Promise<boolean> => {
   const workflowId = await getWorkflowIdFromService(client, workflowName)
   return workflowId !== undefined
 }
@@ -203,12 +228,12 @@ const doesWorkflowExist = async (
 const deployWithClone = async (
   resolvedChange: Change<PostFetchWorkflowInstance>,
   client: JiraClient,
-  config: JiraConfig
+  config: JiraConfig,
 ): Promise<void> => {
   const resolvedChangeForDeployment = _.cloneDeep(resolvedChange)
   const deployInstance = getChangeData(resolvedChangeForDeployment)
 
-  if (isAdditionChange(resolvedChange) && await doesWorkflowExist(client, deployInstance.value.name)) {
+  if (isAdditionChange(resolvedChange) && (await doesWorkflowExist(client, deployInstance.value.name))) {
     log.warn(`A workflow with the name "${deployInstance.value.name}" already exists`)
     throw new Error(`A workflow with the name "${deployInstance.value.name}" already exists`)
   }
@@ -223,10 +248,11 @@ const deployWithClone = async (
       change: resolvedChangeForDeployment,
       client,
       apiDefinitions: config.apiDefinitions,
-      fieldsToIgnore: path => path.name === 'triggers'
+      fieldsToIgnore: path =>
+        path.name === 'triggers' ||
         // Matching here the 'name' of status inside the statuses array
         // In DC we support passing the step name as part of the request
-        || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
+        (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
     })
     getChangeData(resolvedChange).value.entityId = deployInstance.value.entityId
   } catch (err) {
@@ -237,14 +263,18 @@ const deployWithClone = async (
     if (!err.message.includes(`A workflow with the name '${deployInstance.value.name}' already exists`)) {
       throw err
     }
-    log.warn('Received an error about the being exist when trying to create it although it didn\'t exist before the deployment')
+    log.warn(
+      "Received an error about the being exist when trying to create it although it didn't exist before the deployment",
+    )
     const workflowId = await getWorkflowIdFromService(client, deployInstance.value.name)
     if (workflowId === undefined) {
       log.warn('Failed to get workflow id after receiving an error about the workflow being exist')
       throw err
     }
 
-    log.info(`Workflow ${deployInstance.value.name} was create successfully although we got an error about it being exist`)
+    log.info(
+      `Workflow ${deployInstance.value.name} was create successfully although we got an error about it being exist`,
+    )
     getChangeData(resolvedChange).value.entityId = workflowId
   }
 }
@@ -256,7 +286,7 @@ const verifyAndFixTransitionReferences = async ({
   client,
   config,
   resolvedChange,
-} : {
+}: {
   transitions: Transition[]
   expectedTransitionIds: Map<string, string>
   statusesMap: Map<string, string>
@@ -275,14 +305,14 @@ const verifyAndFixTransitionReferences = async ({
   const originalInstance = getChangeData(resolvedChange)
   // we need to delete to previous workflow before we can deploy the new one
   await deployWithClone(toChange({ before: originalInstance }), client, config)
-  walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
+  walkOnValue({
+    elemId: originalInstance.elemID.createNestedID('transitions'),
     value: originalInstance.value.transitions,
-    func: decodeCloudFields(false) })
+    func: decodeCloudFields(false),
+  })
 
   // a function as the transitions changed type to an array
-  const updateTransitionReferenceIds = (
-    transitionsArray: Record<string, Transition>,
-  ): void => {
+  const updateTransitionReferenceIds = (transitionsArray: Record<string, Transition>): void => {
     Object.values(transitionsArray).forEach((transition: Transition) => {
       walkOverTransitionIds(transition, scriptRunner => {
         scriptRunner.transitionId = transitionIdsMap[scriptRunner.transitionId] ?? scriptRunner.transitionId
@@ -291,9 +321,11 @@ const verifyAndFixTransitionReferences = async ({
   }
 
   updateTransitionReferenceIds(originalInstance.value.transitions)
-  walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
+  walkOnValue({
+    elemId: originalInstance.elemID.createNestedID('transitions'),
     value: originalInstance.value.transitions,
-    func: encodeCloudFields(false) })
+    func: encodeCloudFields(false),
+  })
 
   await deployWithClone(resolvedChange, client, config)
 
@@ -311,8 +343,7 @@ export const deployWorkflow = async (
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
-  if (!isPostFetchWorkflowChange(resolvedChange)
-    || !isPostFetchWorkflowChange(change)) {
+  if (!isPostFetchWorkflowChange(resolvedChange) || !isPostFetchWorkflowChange(change)) {
     const instance = getChangeData(resolvedChange)
     log.error(`values ${inspectValue(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
@@ -332,8 +363,7 @@ export const deployWorkflow = async (
   }
   let transitions = await getTransitionsFromService(client, instance.value.name)
   const statusesMap = createStatusMap(instance.value.statuses ?? [])
-  if (config.fetch.enableScriptRunnerAddon
-    && !client.isDataCenter) {
+  if (config.fetch.enableScriptRunnerAddon && !client.isDataCenter) {
     transitions = await verifyAndFixTransitionReferences({
       transitions,
       expectedTransitionIds,
@@ -344,7 +374,7 @@ export const deployWorkflow = async (
     })
   }
   // ids are added for trigger deployment and onDeploy filters, will be removed in the ids filter
-  [getChangeData(change), instance].forEach(instanceToChange => {
+  ;[getChangeData(change), instance].forEach(instanceToChange => {
     addTransitionIdsToInstance(instanceToChange, transitions, statusesMap)
   })
   if (hasDiagramFields(instance)) {
@@ -377,16 +407,15 @@ const filter: FilterCreator = ({ config, client }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && isAdditionChange(change)
-        && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
+      change =>
+        isInstanceChange(change) &&
+        isAdditionChange(change) &&
+        getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME,
     )
 
     const deployResult = await deployChanges(
-      relevantChanges
-        .filter(isInstanceChange)
-        .filter(isAdditionChange),
-      async change => deployWorkflow(change, client, config)
+      relevantChanges.filter(isInstanceChange).filter(isAdditionChange),
+      async change => deployWorkflow(change, client, config),
     )
 
     return {

@@ -1,28 +1,43 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, ReferenceExpression, BuiltinTypes,
-  isInstanceElement, isReferenceExpression, CORE_ANNOTATIONS,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  ReferenceExpression,
+  BuiltinTypes,
+  isInstanceElement,
+  isReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { ZUORA_BILLING, WORKFLOW_DETAILED_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, WORKFLOW_EXPORT_TYPE, OBJECT_TYPE } from '../../src/constants'
+import {
+  ZUORA_BILLING,
+  WORKFLOW_DETAILED_TYPE,
+  TASK_TYPE,
+  STANDARD_OBJECT,
+  METADATA_TYPE,
+  WORKFLOW_EXPORT_TYPE,
+  OBJECT_TYPE,
+} from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
 import { SUPPORTED_TYPES } from '../../src/config'
 
@@ -44,162 +59,142 @@ describe('Workflow and task references filter', () => {
       elemID: new ElemID(ZUORA_BILLING, TASK_TYPE),
     })
 
-    const wf1 = new InstanceElement(
-      'wf1',
-      workflowType,
-      {
-        id: 111,
-        name: 'workflow 1',
-        description: 'do things',
-        type: 'Workflow::Setup',
-        additionalProperties: {
-          parameters: {
-            fields: [
-              {
-                index: '0',
-                default: '',
-                datatype: 'Text',
-                required: true,
-                callout_id: 'BillRunID',
-                field_name: 'Id',
-                object_name: 'Billingrun',
-              },
-              {
-                index: '1',
-                default: '',
-                datatype: 'Text',
-                required: true,
-                callout_id: 'workflow_param',
-                field_name: 'param',
-                object_name: 'Workflow',
-              },
-            ],
-          },
-          ondemand_trigger: true,
-          callout_trigger: true,
-          scheduled_trigger: false,
-          status: 'Active',
-          css: {
-            top: '40px',
-            left: '35px',
-          },
+    const wf1 = new InstanceElement('wf1', workflowType, {
+      id: 111,
+      name: 'workflow 1',
+      description: 'do things',
+      type: 'Workflow::Setup',
+      additionalProperties: {
+        parameters: {
+          fields: [
+            {
+              index: '0',
+              default: '',
+              datatype: 'Text',
+              required: true,
+              callout_id: 'BillRunID',
+              field_name: 'Id',
+              object_name: 'Billingrun',
+            },
+            {
+              index: '1',
+              default: '',
+              datatype: 'Text',
+              required: true,
+              callout_id: 'workflow_param',
+              field_name: 'param',
+              object_name: 'Workflow',
+            },
+          ],
         },
-        notifications: {
-          emails: [],
-          failure: false,
-          pending: false,
-          success: false,
+        ondemand_trigger: true,
+        callout_trigger: true,
+        scheduled_trigger: false,
+        status: 'Active',
+        css: {
+          top: '40px',
+          left: '35px',
         },
-        call_type: 'ASYNC',
-        priority: 'Medium',
-        delete_ttl: 30,
       },
-    )
-    const wf2 = new InstanceElement(
-      'wf2',
-      workflowType,
-      {
-        id: 123,
-        name: 'workflow 2',
-        description: 'do other things',
-        type: 'Workflow::Setup',
-        additionalProperties: {
-          ondemand_trigger: true,
-          callout_trigger: true,
-          scheduled_trigger: false,
-          status: 'Active',
-          css: {
-            top: '40px',
-            left: '35px',
-          },
-        },
-        notifications: {
-          emails: [],
-          failure: false,
-          pending: false,
-          success: false,
-        },
-        call_type: 'ASYNC',
-        priority: 'Medium',
-        delete_ttl: 30,
+      notifications: {
+        emails: [],
+        failure: false,
+        pending: false,
+        success: false,
       },
-    )
-    const wf3 = new InstanceElement(
-      'wf3',
-      workflowType,
-      {
-        id: 111,
-        name: 'workflow 3',
-        description: 'do things',
-        type: 'Workflow::Setup',
-        additionalProperties: {
-          parameters: {
-            fields: [
-              {
-                index: '0',
-                default: '',
-                datatype: 'Text',
-                required: true,
-                callout_id: 'BillRunID',
-                field_name: 'Id',
-                object_name: 'invalid',
-              },
-              {
-                index: '1',
-                default: '',
-                datatype: 'Text',
-                required: true,
-                callout_id: '',
-                field_name: '',
-                not_object_name: '',
-              },
-              {
-                index: '2',
-                default: '',
-                datatype: 'Text',
-                required: true,
-                callout_id: 'BillRunID',
-                field_name: 'not_a_field',
-                object_name: 'Billingrun',
-              },
-            ],
-          },
-          ondemand_trigger: true,
-          callout_trigger: true,
-          scheduled_trigger: false,
-          status: 'Active',
-          css: {
-            top: '40px',
-            left: '35px',
-          },
+      call_type: 'ASYNC',
+      priority: 'Medium',
+      delete_ttl: 30,
+    })
+    const wf2 = new InstanceElement('wf2', workflowType, {
+      id: 123,
+      name: 'workflow 2',
+      description: 'do other things',
+      type: 'Workflow::Setup',
+      additionalProperties: {
+        ondemand_trigger: true,
+        callout_trigger: true,
+        scheduled_trigger: false,
+        status: 'Active',
+        css: {
+          top: '40px',
+          left: '35px',
         },
-        notifications: {
-          emails: [],
-          failure: false,
-          pending: false,
-          success: false,
-        },
-        call_type: 'ASYNC',
-        priority: 'Medium',
-        delete_ttl: 30,
       },
-    )
+      notifications: {
+        emails: [],
+        failure: false,
+        pending: false,
+        success: false,
+      },
+      call_type: 'ASYNC',
+      priority: 'Medium',
+      delete_ttl: 30,
+    })
+    const wf3 = new InstanceElement('wf3', workflowType, {
+      id: 111,
+      name: 'workflow 3',
+      description: 'do things',
+      type: 'Workflow::Setup',
+      additionalProperties: {
+        parameters: {
+          fields: [
+            {
+              index: '0',
+              default: '',
+              datatype: 'Text',
+              required: true,
+              callout_id: 'BillRunID',
+              field_name: 'Id',
+              object_name: 'invalid',
+            },
+            {
+              index: '1',
+              default: '',
+              datatype: 'Text',
+              required: true,
+              callout_id: '',
+              field_name: '',
+              not_object_name: '',
+            },
+            {
+              index: '2',
+              default: '',
+              datatype: 'Text',
+              required: true,
+              callout_id: 'BillRunID',
+              field_name: 'not_a_field',
+              object_name: 'Billingrun',
+            },
+          ],
+        },
+        ondemand_trigger: true,
+        callout_trigger: true,
+        scheduled_trigger: false,
+        status: 'Active',
+        css: {
+          top: '40px',
+          left: '35px',
+        },
+      },
+      notifications: {
+        emails: [],
+        failure: false,
+        pending: false,
+        success: false,
+      },
+      call_type: 'ASYNC',
+      priority: 'Medium',
+      delete_ttl: 30,
+    })
 
-    const w1 = new InstanceElement(
-      'w1',
-      workflowTopType,
-      {
-        workflow: new ReferenceExpression(wf1.elemID),
-      }
-    )
+    const w1 = new InstanceElement('w1', workflowTopType, {
+      workflow: new ReferenceExpression(wf1.elemID),
+    })
 
-    const w2 = new InstanceElement(
-      'w2',
-      workflowTopType,
-      {
-        workflow: new ReferenceExpression(wf2.elemID),
-      }
-    )
+    const w2 = new InstanceElement('w2', workflowTopType, {
+      workflow: new ReferenceExpression(wf2.elemID),
+    })
 
     const task1 = new InstanceElement(
       'task1',
@@ -222,7 +217,8 @@ describe('Workflow and task references filter', () => {
             },
             NotAPlainObject: 'false',
           },
-          where_clause: "Refund.ReasonCode = 'Chargeback' and Invoice.Balance > 0 and Data.Workflow.param != 3 or Data.Workflow.not_a_param == 2",
+          where_clause:
+            "Refund.ReasonCode = 'Chargeback' and Invoice.Balance > 0 and Data.Workflow.param != 3 or Data.Workflow.not_a_param == 2",
         },
         action_type: 'Export',
         object: 'RefundInvoicePayment',
@@ -230,10 +226,8 @@ describe('Workflow and task references filter', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(w1.elemID),
-        ],
-      }
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(w1.elemID)],
+      },
     )
     const task2 = new InstanceElement(
       'task2',
@@ -249,25 +243,19 @@ describe('Workflow and task references filter', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(w2.elemID),
-        ],
-      }
-    )
-
-    const task3 = new InstanceElement(
-      'task3',
-      taskType,
-      {
-        id: 24,
-        name: 'do one more thing',
-        parameters: {
-          where_clause: 'Data.Workflow.param == 2',
-        },
-        object: 'Account',
-        call_type: 'SOAP',
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(w2.elemID)],
       },
     )
+
+    const task3 = new InstanceElement('task3', taskType, {
+      id: 24,
+      name: 'do one more thing',
+      parameters: {
+        where_clause: 'Data.Workflow.param == 2',
+      },
+      object: 'Account',
+      call_type: 'SOAP',
+    })
 
     const standardObjects = [
       new ObjectType({
@@ -322,20 +310,7 @@ describe('Workflow and task references filter', () => {
       }),
     ]
 
-    return [
-      workflowTopType,
-      workflowType,
-      taskType,
-      w1,
-      w2,
-      wf1,
-      wf2,
-      wf3,
-      task1,
-      task2,
-      task3,
-      ...standardObjects,
-    ]
+    return [workflowTopType, workflowType, taskType, w1, w2, wf1, wf2, wf3, task1, task2, task3, ...standardObjects]
   }
 
   beforeAll(() => {
@@ -371,14 +346,22 @@ describe('Workflow and task references filter', () => {
     let origElements: Element[]
     let elements: Element[]
     it(`should return when ${WORKFLOW_EXPORT_TYPE} type doesn't exists`, async () => {
-      origElements = generateElements().filter(e => e.elemID.typeName !== WORKFLOW_EXPORT_TYPE || e.elemID.idType !== 'type')
-      elements = generateElements().filter(e => e.elemID.typeName !== WORKFLOW_EXPORT_TYPE || e.elemID.idType !== 'type')
+      origElements = generateElements().filter(
+        e => e.elemID.typeName !== WORKFLOW_EXPORT_TYPE || e.elemID.idType !== 'type',
+      )
+      elements = generateElements().filter(
+        e => e.elemID.typeName !== WORKFLOW_EXPORT_TYPE || e.elemID.idType !== 'type',
+      )
       await filter.onFetch(elements)
       expect(elements).toEqual(origElements)
     })
     it(`should return when ${WORKFLOW_DETAILED_TYPE} type doesn't exists`, async () => {
-      origElements = generateElements().filter(e => e.elemID.typeName !== WORKFLOW_DETAILED_TYPE || e.elemID.idType !== 'type')
-      elements = generateElements().filter(e => e.elemID.typeName !== WORKFLOW_DETAILED_TYPE || e.elemID.idType !== 'type')
+      origElements = generateElements().filter(
+        e => e.elemID.typeName !== WORKFLOW_DETAILED_TYPE || e.elemID.idType !== 'type',
+      )
+      elements = generateElements().filter(
+        e => e.elemID.typeName !== WORKFLOW_DETAILED_TYPE || e.elemID.idType !== 'type',
+      )
       await filter.onFetch(elements)
       expect(elements).toEqual(origElements)
     })
@@ -389,8 +372,12 @@ describe('Workflow and task references filter', () => {
       expect(elements).toEqual(origElements)
     })
     it(`should return when there aren't any instances of ${WORKFLOW_DETAILED_TYPE} and ${TASK_TYPE}`, async () => {
-      origElements = generateElements().filter(e => ![WORKFLOW_DETAILED_TYPE, TASK_TYPE].includes(e.elemID.typeName) || e.elemID.idType !== 'instance')
-      elements = generateElements().filter(e => ![WORKFLOW_DETAILED_TYPE, TASK_TYPE].includes(e.elemID.typeName) || e.elemID.idType !== 'instance')
+      origElements = generateElements().filter(
+        e => ![WORKFLOW_DETAILED_TYPE, TASK_TYPE].includes(e.elemID.typeName) || e.elemID.idType !== 'instance',
+      )
+      elements = generateElements().filter(
+        e => ![WORKFLOW_DETAILED_TYPE, TASK_TYPE].includes(e.elemID.typeName) || e.elemID.idType !== 'instance',
+      )
       await filter.onFetch(elements)
       expect(elements).toEqual(origElements)
     })
@@ -406,15 +393,16 @@ describe('Workflow and task references filter', () => {
     it('add references in workflows', () => {
       expect(elements).not.toEqual(origElements)
       expect(elements.length).toEqual(origElements.length)
-      const workflows = elements.filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === WORKFLOW_DETAILED_TYPE)
+      const workflows = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === WORKFLOW_DETAILED_TYPE)
       expect(workflows).toHaveLength(3)
 
       const wf1Param0 = workflows[0].value.additionalProperties.parameters.fields[0]
       expect(wf1Param0.object_name).toBeInstanceOf(ReferenceExpression)
       expect((wf1Param0.object_name as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.Billingrun')
       expect(wf1Param0.field_name).toBeInstanceOf(ReferenceExpression)
-      expect((wf1Param0.field_name as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.Billingrun.field.Id')
+      expect((wf1Param0.field_name as ReferenceExpression).elemID.getFullName()).toEqual(
+        'zuora_billing.Billingrun.field.Id',
+      )
       // eslint-disable-next-line no-underscore-dangle
       expect(workflows[0].annotations._generated_dependencies).toBeUndefined()
     })
@@ -426,10 +414,11 @@ describe('Workflow and task references filter', () => {
       // eslint-disable-next-line no-underscore-dangle
       const task1Deps = tasks[0].annotations._generated_dependencies as DetailedDependency[]
       expect(task1Deps.map(e => e.reference).every(isReferenceExpression)).toBeTruthy()
-      expect(task1Deps.every(
-        e => !_.isEmpty(e.occurrences)
-        && e.occurrences?.every(oc => isReferenceExpression(oc.location))
-      )).toBeTruthy()
+      expect(
+        task1Deps.every(
+          e => !_.isEmpty(e.occurrences) && e.occurrences?.every(oc => isReferenceExpression(oc.location)),
+        ),
+      ).toBeTruthy()
       expect(task1Deps.map(e => e.reference.elemID.getFullName())).toEqual([
         'zuora_billing.Invoice.field.Id',
         // Invoice.Balance and InvoiceDate do not exist on the object so they are not referenced

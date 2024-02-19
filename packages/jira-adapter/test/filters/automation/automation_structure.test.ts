@@ -1,26 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, toChange, getAllChangeData, ReferenceExpression, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ObjectType,
+  toChange,
+  getAllChangeData,
+  ReferenceExpression,
+  ElemID,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
-
 
 describe('automationStructureFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -32,146 +39,137 @@ describe('automationStructureFilter', () => {
   let instanceAfterFetch: InstanceElement
   let changedInstance: InstanceElement
 
-
   beforeEach(async () => {
     filter = automationStructureFilter(getFilterParams()) as typeof filter
 
     type = createAutomationTypes().automationType
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        id: '111',
-        trigger: {
-          component: 'TRIGGER',
-          type: 'jira.issue.event.trigger:created',
+    instance = new InstanceElement('instance', type, {
+      id: '111',
+      trigger: {
+        component: 'TRIGGER',
+        type: 'jira.issue.event.trigger:created',
+      },
+      components: [
+        {
+          id: '0',
+          component: 'ACTION',
+          value: null,
+          updated: 1234,
         },
-        components: [
-          {
-            id: '0',
-            component: 'ACTION',
-            value: null,
-            updated: 1234,
-          },
-          {
-            id: '1',
-            component: 'CONDITION',
-            value: 'priority > Medium',
-            updated: 1111,
-          },
-          {
-            id: '2',
-            component: 'CONDITION',
-            value: {
-              id: 'someId',
-              linkType: 'inward:10003',
-              value: '123',
-            },
-            updated: 1111,
-          },
-          {
-            id: '3',
-            component: 'CONDITION',
-            value: {
-              selectedFieldType: 'priority',
-              comparison: 'NOT_ONE_OF',
-              compareValue: {
-                type: 'ID',
-                multiValue: true,
-                value: '["\\"123","234","345","a]"]',
-              },
-            },
-          },
-          {
-            id: '4',
-            component: 'CONDITION',
-            value: {
-              selectedFieldType: 'status',
-              comparison: 'EQUALS',
-              compareValue: {
-                type: 'ID',
-                multiValue: false,
-                value: 'Done',
-              },
-            },
-          },
-          {
-            id: '5',
-            component: 'ACTION',
-            value: {
-              operations: [
-                {
-                  fieldType: 'status',
-                  type: 'SET',
-                  value: {
-                    type: 'NAME',
-                    value: 'Done',
-                  },
-                },
-                {
-                  fieldType: 'status',
-                  type: 'SET',
-                  value: 'rawVal',
-                },
-              ],
-            },
-          },
-          {
-            id: '6',
-            component: 'CONDITION',
-            value: '',
-            updated: 1111,
-          },
-          {
-            id: '7',
-            component: 'ACTION',
-            type: 'jira.issue.delete.link',
-            value: {
-              linkTypes: [
-                {
-                  id: '10003',
-                  direction: 'inward',
-                  name: 'Jira is fun',
-                },
-              ],
-            },
-          },
-          {
-            id: '8',
-            component: 'CONDITION',
-            type: 'jira.issue.hasAttachments',
-            value: true,
-            updated: 1111,
-          },
-        ],
-        projects: [
-          {
-            projectId: '3',
-            projectTypeKey: 'key',
-          },
-          {
-            projectTypeKey: 'key2',
-          },
-        ],
-        ruleScope: {
-          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/3'],
+        {
+          id: '1',
+          component: 'CONDITION',
+          value: 'priority > Medium',
+          updated: 1111,
         },
-      }
-    )
+        {
+          id: '2',
+          component: 'CONDITION',
+          value: {
+            id: 'someId',
+            linkType: 'inward:10003',
+            value: '123',
+          },
+          updated: 1111,
+        },
+        {
+          id: '3',
+          component: 'CONDITION',
+          value: {
+            selectedFieldType: 'priority',
+            comparison: 'NOT_ONE_OF',
+            compareValue: {
+              type: 'ID',
+              multiValue: true,
+              value: '["\\"123","234","345","a]"]',
+            },
+          },
+        },
+        {
+          id: '4',
+          component: 'CONDITION',
+          value: {
+            selectedFieldType: 'status',
+            comparison: 'EQUALS',
+            compareValue: {
+              type: 'ID',
+              multiValue: false,
+              value: 'Done',
+            },
+          },
+        },
+        {
+          id: '5',
+          component: 'ACTION',
+          value: {
+            operations: [
+              {
+                fieldType: 'status',
+                type: 'SET',
+                value: {
+                  type: 'NAME',
+                  value: 'Done',
+                },
+              },
+              {
+                fieldType: 'status',
+                type: 'SET',
+                value: 'rawVal',
+              },
+            ],
+          },
+        },
+        {
+          id: '6',
+          component: 'CONDITION',
+          value: '',
+          updated: 1111,
+        },
+        {
+          id: '7',
+          component: 'ACTION',
+          type: 'jira.issue.delete.link',
+          value: {
+            linkTypes: [
+              {
+                id: '10003',
+                direction: 'inward',
+                name: 'Jira is fun',
+              },
+            ],
+          },
+        },
+        {
+          id: '8',
+          component: 'CONDITION',
+          type: 'jira.issue.hasAttachments',
+          value: true,
+          updated: 1111,
+        },
+      ],
+      projects: [
+        {
+          projectId: '3',
+          projectTypeKey: 'key',
+        },
+        {
+          projectTypeKey: 'key2',
+        },
+      ],
+      ruleScope: {
+        resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/3'],
+      },
+    })
 
     someType = new ObjectType({
       elemID: new ElemID(JIRA, 'someType'),
     })
 
-    ref = new InstanceElement(
-      'linkInstance',
-      someType,
-      {
-        id: '10003',
-        name: 'LinkTypeee',
-      }
-    )
+    ref = new InstanceElement('linkInstance', someType, {
+      id: '10003',
+      name: 'LinkTypeee',
+    })
 
     statusim = [
       new InstanceElement('s1', someType, { id: '"123', name: 'S1' }),
@@ -180,9 +178,7 @@ describe('automationStructureFilter', () => {
     ]
 
     instanceAfterFetch = instance.clone()
-    instanceAfterFetch.value.components[2].value.linkType = new ReferenceExpression(
-      ref.elemID, ref.value.id
-    )
+    instanceAfterFetch.value.components[2].value.linkType = new ReferenceExpression(ref.elemID, ref.value.id)
     instanceAfterFetch.value.components[2].value.linkTypeDirection = 'inward'
     instanceAfterFetch.value.components[1].rawValue = 'priority > Medium'
     delete instanceAfterFetch.value.components[1].value
@@ -200,7 +196,8 @@ describe('automationStructureFilter', () => {
     instanceAfterFetch.value.components[4].value.compareFieldValue = _.clone(compareVal2)
     delete instanceAfterFetch.value.components[4].value.compareValue
     instanceAfterFetch.value.components[4].value.compareFieldValue.value = new ReferenceExpression(
-      statusim[1].elemID, statusim[1]
+      statusim[1].elemID,
+      statusim[1],
     )
     const rawVal = instanceAfterFetch.value.components[5].value.operations[1].value
     instanceAfterFetch.value.components[5].value.operations[1].rawValue = rawVal
@@ -209,12 +206,11 @@ describe('automationStructureFilter', () => {
     instanceAfterFetch.value.components[6].rawValue = instanceAfterFetch.value.components[6].value
     delete instanceAfterFetch.value.components[6].value
 
-    instanceAfterFetch.value.components[7].value.deleteLinkTypes = instanceAfterFetch.value
-      .components[7].value.linkTypes
+    instanceAfterFetch.value.components[7].value.deleteLinkTypes =
+      instanceAfterFetch.value.components[7].value.linkTypes
     delete instanceAfterFetch.value.components[7].value.linkTypes
 
-    instanceAfterFetch.value.components[8].hasAttachmentsValue = instanceAfterFetch.value
-      .components[8].value
+    instanceAfterFetch.value.components[8].hasAttachmentsValue = instanceAfterFetch.value.components[8].value
     delete instanceAfterFetch.value.components[8].value
 
     changedInstance = instanceAfterFetch.clone()
@@ -273,8 +269,7 @@ describe('automationStructureFilter', () => {
       await filter.onFetch([instance])
       expect(instance.value.components[3].value.compareValue).toBeUndefined()
       expect(instance.value.components[3].value.compareFieldValue).toBeObject()
-      expect(instance.value.components[3].value.compareFieldValue.values)
-        .toEqual(['"123', '234', '345', 'a]'])
+      expect(instance.value.components[3].value.compareFieldValue.values).toEqual(['"123', '234', '345', 'a]'])
       expect(instance.value.components[3].value.compareFieldValue.value).toBeUndefined()
       expect(instance.value.components[4].value.compareValue).toBeUndefined()
       expect(instance.value.components[4].value.compareFieldValue).toBeObject()
@@ -299,24 +294,20 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[8].hasAttachmentsValue).toBeTrue()
     })
     it('should not throw if wrong structure', async () => {
-      const exceptionInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '111',
-          components: [
-            {
-              id: '0',
-              value: {
-                compareValue: {
-                  multiValue: true,
-                  value: 'notAJson',
-                },
+      const exceptionInstance = new InstanceElement('instance', type, {
+        id: '111',
+        components: [
+          {
+            id: '0',
+            value: {
+              compareValue: {
+                multiValue: true,
+                value: 'notAJson',
               },
             },
-          ],
-        }
-      )
+          },
+        ],
+      })
       await filter.onFetch([exceptionInstance])
       expect(exceptionInstance.value.components[0].value.compareFieldValue.value).toBeDefined()
     })
@@ -325,33 +316,23 @@ describe('automationStructureFilter', () => {
       let ruleScopeInstance: InstanceElement
       let globalScopeInstance: InstanceElement
       beforeEach(() => {
-        ruleScopeInstance = new InstanceElement(
-          'instance',
-          type,
-          {
-            projects: [],
-            ruleScope: {
-              resources: [
-                'ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10024',
-                'ari:cloud:jira-software::site/128baddc-c238-4857-b249-cfc84bd10c4b',
-                'ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10034',
-                'ari:cloud:jira-core::site/128baddc-c238-4857-b249-cfc84bd10c4b',
-              ],
-            },
-          }
-        )
-        globalScopeInstance = new InstanceElement(
-          'instance',
-          type,
-          {
-            projects: [],
-            ruleScope: {
-              resources: [
-                'ari:cloud:jira::site/128baddc-c238-4857-b249-cfc84bd10c4b',
-              ],
-            },
-          }
-        )
+        ruleScopeInstance = new InstanceElement('instance', type, {
+          projects: [],
+          ruleScope: {
+            resources: [
+              'ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10024',
+              'ari:cloud:jira-software::site/128baddc-c238-4857-b249-cfc84bd10c4b',
+              'ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10034',
+              'ari:cloud:jira-core::site/128baddc-c238-4857-b249-cfc84bd10c4b',
+            ],
+          },
+        })
+        globalScopeInstance = new InstanceElement('instance', type, {
+          projects: [],
+          ruleScope: {
+            resources: ['ari:cloud:jira::site/128baddc-c238-4857-b249-cfc84bd10c4b'],
+          },
+        })
       })
       describe('when using Jira Cloud', () => {
         it('should covert rule scope to projects', async () => {
@@ -376,7 +357,8 @@ describe('automationStructureFilter', () => {
           expect(globalScopeInstance.value.projects).toBeUndefined()
         })
         it('should not covert if unknown project type', async () => {
-          ruleScopeInstance.value.ruleScope.resources[1] = 'ari:cloud:jira-none::site/128baddc-c238-4857-b249-cfc84bd10c4b'
+          ruleScopeInstance.value.ruleScope.resources[1] =
+            'ari:cloud:jira-none::site/128baddc-c238-4857-b249-cfc84bd10c4b'
           await filter.onFetch([ruleScopeInstance])
           expect(ruleScopeInstance.value.projects.length).toEqual(3)
         })
@@ -476,24 +458,18 @@ describe('automationStructureFilter', () => {
       const [before, after] = getAllChangeData(changes[0])
       expect(before.value.components[3].value.compareValue).toBeUndefined()
       expect(before.value.components[3].value.compareFieldValue).toBeObject()
-      expect(before.value.components[3].value.compareFieldValue.values
-        .filter(isReferenceExpression)).toBeArrayOfSize(3)
+      expect(before.value.components[3].value.compareFieldValue.values.filter(isReferenceExpression)).toBeArrayOfSize(3)
       expect(before.value.components[3].value.compareFieldValue.value).toBeUndefined()
       expect(before.value.components[4].value.compareValue).toBeUndefined()
       expect(before.value.components[4].value.compareFieldValue).toBeObject()
-      expect(before.value.components[4].value.compareFieldValue.value)
-        .toBeInstanceOf(ReferenceExpression)
+      expect(before.value.components[4].value.compareFieldValue.value).toBeInstanceOf(ReferenceExpression)
       expect(after.value.components[3].value.compareValue).toBeUndefined()
       expect(after.value.components[3].value.compareFieldValue).toBeObject()
-      expect(
-        after.value.components[3].value.compareFieldValue.values
-          .filter(isReferenceExpression)
-      ).toBeArrayOfSize(3)
+      expect(after.value.components[3].value.compareFieldValue.values.filter(isReferenceExpression)).toBeArrayOfSize(3)
       expect(after.value.components[3].value.compareFieldValue.value).toBeUndefined()
       expect(after.value.components[4].value.compareValue).toBeUndefined()
       expect(after.value.components[4].value.compareFieldValue).toBeObject()
-      expect(after.value.components[4].value.compareFieldValue.value)
-        .toBeInstanceOf(ReferenceExpression)
+      expect(after.value.components[4].value.compareFieldValue.value).toBeInstanceOf(ReferenceExpression)
     })
   })
 })

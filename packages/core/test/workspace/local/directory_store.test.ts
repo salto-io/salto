@@ -1,23 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as path from 'path'
 import readdirp from 'readdirp'
 import {
-  stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir,
-  rename, notFoundAsUndefined,
+  stat,
+  exists,
+  readFile,
+  replaceContents,
+  mkdirp,
+  rm,
+  isEmptyDir,
+  rename,
+  notFoundAsUndefined,
 } from '@salto-io/file'
 import { dirStore as workspaceDirStore } from '@salto-io/workspace'
 import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
@@ -202,9 +209,7 @@ describe('localDirectoryStore', () => {
       const naclFileName = 'blabla/exist.nacl'
       mockFileExists.mockResolvedValue(true)
       expect(await localDirectoryStore({ baseDir, name: '', encoding }).exists(naclFileName)).toBeTruthy()
-      expect(mockFileExists).toHaveBeenCalledWith(
-        expect.stringContaining(path.join(baseDir, naclFileName))
-      )
+      expect(mockFileExists).toHaveBeenCalledWith(expect.stringContaining(path.join(baseDir, naclFileName)))
     })
 
     it('returns false if does not exist in the dir store', async () => {
@@ -212,9 +217,7 @@ describe('localDirectoryStore', () => {
       const naclFileName = 'blabla/exist.nacl'
       mockFileExists.mockResolvedValue(false)
       expect(await localDirectoryStore({ baseDir, name: '', encoding }).exists(naclFileName)).toBeFalsy()
-      expect(mockFileExists).toHaveBeenCalledWith(
-        expect.stringContaining(path.join(baseDir, naclFileName))
-      )
+      expect(mockFileExists).toHaveBeenCalledWith(expect.stringContaining(path.join(baseDir, naclFileName)))
     })
   })
 
@@ -260,15 +263,14 @@ describe('localDirectoryStore', () => {
     })
 
     it('fails to get an absolute path', () =>
-      localDirectoryStore({ baseDir: 'dir', name: '', encoding }).set({ filename: '/aaaa', buffer: 'aa' })
+      localDirectoryStore({ baseDir: 'dir', name: '', encoding })
+        .set({ filename: '/aaaa', buffer: 'aa' })
         .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
   })
 
   describe('getFiles', () => {
     it('return multiple files', async () => {
-      mockFileExists.mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true)
+      mockFileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
       mockStat.mockResolvedValue({ mtimeMs: 7 })
       const files = await localDirectoryStore({ baseDir: '', name: '', encoding }).getFiles(['', '', ''])
@@ -277,13 +279,12 @@ describe('localDirectoryStore', () => {
       expect(files[2]?.buffer).toEqual('bla2')
     })
     it('fails to get an absolute path', () =>
-      localDirectoryStore({ baseDir: 'dir', name: '', encoding }).getFiles(['/aaaa'])
+      localDirectoryStore({ baseDir: 'dir', name: '', encoding })
+        .getFiles(['/aaaa'])
         .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
 
     it('Should return deleted file when requested to ignore cache', async () => {
-      mockFileExists.mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true)
+      mockFileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
       mockStat.mockResolvedValue({ mtimeMs: 7 })
       const dirStore = localDirectoryStore({ baseDir: '', name: '', encoding })
@@ -314,7 +315,8 @@ describe('localDirectoryStore', () => {
       expect(mockRm).toHaveBeenNthCalledWith(2, naclFileDir)
     })
     it('fails to delete an absolute path', async () =>
-      naclFileStore.delete('/aaaa')
+      naclFileStore
+        .delete('/aaaa')
         .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
   })
 
@@ -332,10 +334,9 @@ describe('localDirectoryStore', () => {
     it('should delete the all the files', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
       mockFileExists.mockResolvedValue(true)
-      mockReaddirp.mockResolvedValueOnce([
-        { fullPath: path.join(baseDir, 'test1') },
-        { fullPath: path.join(baseDir, 'test2') },
-      ]).mockResolvedValueOnce([])
+      mockReaddirp
+        .mockResolvedValueOnce([{ fullPath: path.join(baseDir, 'test1') }, { fullPath: path.join(baseDir, 'test2') }])
+        .mockResolvedValueOnce([])
       await naclFileStore.clear()
       expect(mockRm).toHaveBeenCalledTimes(3)
       expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test1'))
@@ -346,10 +347,7 @@ describe('localDirectoryStore', () => {
 
     it('should delete empty directories', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
-      mockReaddirp.mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-          { fullPath: path.join(baseDir, 'emptyDir') },
-        ])
+      mockReaddirp.mockResolvedValueOnce([]).mockResolvedValueOnce([{ fullPath: path.join(baseDir, 'emptyDir') }])
       await naclFileStore.clear()
       expect(mockRm).toHaveBeenCalledTimes(2)
       expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'emptyDir'))
@@ -359,9 +357,7 @@ describe('localDirectoryStore', () => {
     it('should not delete parent', async () => {
       const store = localDirectoryStore({ baseDir, name: 'name', encoding })
       const filePath = `${baseDir}/name`
-      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(
-        true
-      )
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(true)
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValueOnce([
         { fullPath: path.join(filePath, 'test1') },
@@ -405,23 +401,27 @@ describe('localDirectoryStore', () => {
     const baseDir = '/base'
     const fileStore = localDirectoryStore({ baseDir, name: '', accessiblePath: 'access', encoding })
     it('should fail for absolute paths', () =>
-      fileStore.get('/absolutely/fabulous')
+      fileStore
+        .get('/absolutely/fabulous')
         .catch(err =>
-          expect(err.message).toEqual('Filepath not contained in dir store base dir: /absolutely/fabulous')))
+          expect(err.message).toEqual('Filepath not contained in dir store base dir: /absolutely/fabulous'),
+        ))
     it('should fail for relative paths outside basedir', () =>
-      fileStore.get('../../bla')
-        .catch(err =>
-          expect(err.message).toEqual('Filepath not contained in dir store base dir: ../../bla')))
+      fileStore
+        .get('../../bla')
+        .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: ../../bla')))
 
     it('should fail for relative paths inside basedir but outside accessible path', () =>
-      fileStore.get('bla')
-        .catch(err =>
-          expect(err.message).toEqual('Filepath not contained in dir store base dir: bla')))
+      fileStore
+        .get('bla')
+        .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: bla')))
 
     it('should fail for relative paths outside basedir even for smart assets', () =>
-      fileStore.mtimestamp('something/bla/../../../dev/null')
+      fileStore
+        .mtimestamp('something/bla/../../../dev/null')
         .catch(err =>
-          expect(err.message).toEqual('Filepath not contained in dir store base dir: something/bla/../../../dev/null')))
+          expect(err.message).toEqual('Filepath not contained in dir store base dir: something/bla/../../../dev/null'),
+        ))
     it('should succeed for paths that contain ".." as part of the parts names', () =>
       expect(fileStore.get('access/..relatively../..fabulous../..bla..jsonl')).resolves.not.toThrow())
   })
@@ -433,13 +433,10 @@ describe('localDirectoryStore', () => {
     it('should getTotalSize the file', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
       mockFileExists.mockResolvedValue(true)
-      mockReaddirp.mockResolvedValueOnce([
-        { fullPath: path.join(baseDir, 'test1') },
-        { fullPath: path.join(baseDir, 'test2') },
-      ]).mockResolvedValueOnce([])
-      mockStat
-        .mockImplementation(filePath =>
-          (filePath.endsWith('test1') ? ({ size: 5 }) : ({ size: 4 })))
+      mockReaddirp
+        .mockResolvedValueOnce([{ fullPath: path.join(baseDir, 'test1') }, { fullPath: path.join(baseDir, 'test2') }])
+        .mockResolvedValueOnce([])
+      mockStat.mockImplementation(filePath => (filePath.endsWith('test1') ? { size: 5 } : { size: 4 }))
       const totalSize = await naclFileStore.getTotalSize()
       expect(mockStat).toHaveBeenCalledTimes(2)
       expect(totalSize).toEqual(9)
@@ -459,9 +456,7 @@ describe('localDirectoryStore', () => {
   describe('isPathIncluded', () => {
     const baseDir = '/base'
     const fileFilter = (filePath: string): boolean => path.extname(filePath) === '.nacl'
-    const directoryFilter = (filePath: string): boolean => (
-      !path.dirname(filePath).includes('exclude')
-    )
+    const directoryFilter = (filePath: string): boolean => !path.dirname(filePath).includes('exclude')
     const naclFileStore = localDirectoryStore({ baseDir, encoding, fileFilter, directoryFilter })
 
     it('should return true for file which are in the path and passes both the directory and file filters', () => {

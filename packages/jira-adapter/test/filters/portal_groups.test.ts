@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -24,43 +24,26 @@ import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
-
 describe('queue filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
-  const projectInstance = new InstanceElement(
-    'project1',
-    createEmptyType(PROJECT_TYPE),
-    {
-      id: 11111,
-      name: 'project1',
-      projectTypeKey: 'service_desk',
-      key: 'project1Key',
-    },
-  )
-  const RequestTypeInstanceOne = new InstanceElement(
-    'requestType1',
-    createEmptyType('requestType'),
-    {
-      id: 1,
-    },
-  )
-  const RequestTypeInstanceTwo = new InstanceElement(
-    'requestType2',
-    createEmptyType('requestType'),
-    {
-      id: 2,
-    },
-  )
-  const RequestTypeInstanceThree = new InstanceElement(
-    'requestType3',
-    createEmptyType('requestType'),
-    {
-      id: 3,
-    },
-  )
+  const projectInstance = new InstanceElement('project1', createEmptyType(PROJECT_TYPE), {
+    id: 11111,
+    name: 'project1',
+    projectTypeKey: 'service_desk',
+    key: 'project1Key',
+  })
+  const RequestTypeInstanceOne = new InstanceElement('requestType1', createEmptyType('requestType'), {
+    id: 1,
+  })
+  const RequestTypeInstanceTwo = new InstanceElement('requestType2', createEmptyType('requestType'), {
+    id: 2,
+  })
+  const RequestTypeInstanceThree = new InstanceElement('requestType3', createEmptyType('requestType'), {
+    id: 3,
+  })
   let portalGroupInstance: InstanceElement
   describe('deploy', () => {
     beforeEach(() => {
@@ -102,7 +85,7 @@ describe('queue filter', () => {
           name: 'portalGroup1',
           ticketTypeIds: [{ id: 1 }, { id: 2 }, { id: 3 }],
         },
-        undefined
+        undefined,
       )
     })
     it('should update portal group', async () => {
@@ -124,18 +107,20 @@ describe('queue filter', () => {
           name: 'portalGroup1',
           ticketTypeIds: [{ id: 1 }, { id: 2 }],
         },
-        undefined
+        undefined,
       )
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/servicedesk/1/servicedesk/11111/portal-groups/request-types',
         {
-          groups: [{
-            groupId: 11,
-            ticketTypeIds: [1, 2],
-          }],
+          groups: [
+            {
+              groupId: 11,
+              ticketTypeIds: [1, 2],
+            },
+          ],
         },
-        undefined
+        undefined,
       )
     })
     it('should delete portal group', async () => {

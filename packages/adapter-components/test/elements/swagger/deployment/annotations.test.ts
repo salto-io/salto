@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
@@ -143,8 +143,7 @@ describe('addDeploymentAnnotations', () => {
               },
             },
 
-            delete: {
-            },
+            delete: {},
           },
         },
         definitions: {},
@@ -199,10 +198,9 @@ describe('addDeploymentAnnotations', () => {
       },
     } as unknown as LoadedSwagger
 
-    await expect(addDeploymentAnnotations([type], [invalidSwagger], apiDefinitions))
-      .rejects.toThrow(
-        'Deployment currently only supports open api V3'
-      )
+    await expect(addDeploymentAnnotations([type], [invalidSwagger], apiDefinitions)).rejects.toThrow(
+      'Deployment currently only supports open api V3',
+    )
   })
 
   it('When there is no endpoint for the type should do nothing should add the annotation to the type', async () => {
@@ -227,9 +225,9 @@ describe('addDeploymentAnnotations', () => {
   })
 
   it('When endpoint is undefined should add the annotation to the type', async () => {
-    const { deployRequests } = apiDefinitions.types.test;
-    (deployRequests as { add: unknown }).add = undefined;
-    (deployRequests as { remove: unknown }).remove = undefined
+    const { deployRequests } = apiDefinitions.types.test
+    ;(deployRequests as { add: unknown }).add = undefined
+    ;(deployRequests as { remove: unknown }).remove = undefined
 
     await addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
@@ -240,11 +238,7 @@ describe('addDeploymentAnnotations', () => {
   })
 
   it('Should add the appropriate annotations', async () => {
-    await addDeploymentAnnotations(
-      [type, innerListType, innerType, mapType],
-      [mockSwagger],
-      apiDefinitions,
-    )
+    await addDeploymentAnnotations([type, innerListType, innerType, mapType], [mockSwagger], apiDefinitions)
     expect(type.fields.creatableField.annotations).toEqual({
       [CORE_ANNOTATIONS.UPDATABLE]: false,
     })

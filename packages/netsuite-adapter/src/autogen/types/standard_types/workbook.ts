@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
 import { TypeAndInnerTypes } from '../../../types/object_types'
@@ -30,8 +36,7 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_charts_chart = new ObjectType({
     elemID: workbook_charts_chartElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -39,7 +44,7 @@ export const workbookType = (): TypeAndInnerTypes => {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
         },
-      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custchart’. */
+      } /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custchart’. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
   })
@@ -50,13 +55,11 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_charts = new ObjectType({
     elemID: workbook_chartsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       chart: {
         refType: createRefToElmWithValue(new ListType(workbook_charts_chart)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
@@ -68,15 +71,14 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_dependencies = new ObjectType({
     elemID: workbook_dependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the dataset custom type. */
+      } /* Original description: This field accepts references to the dataset custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
   })
@@ -87,8 +89,7 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_pivots_pivot = new ObjectType({
     elemID: workbook_pivots_pivotElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -96,7 +97,7 @@ export const workbookType = (): TypeAndInnerTypes => {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
         },
-      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpivot’. */
+      } /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpivot’. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
   })
@@ -107,13 +108,11 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_pivots = new ObjectType({
     elemID: workbook_pivotsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       pivot: {
         refType: createRefToElmWithValue(new ListType(workbook_pivots_pivot)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
@@ -125,8 +124,7 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_tables_table = new ObjectType({
     elemID: workbook_tables_tableElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -134,7 +132,7 @@ export const workbookType = (): TypeAndInnerTypes => {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
         },
-      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custview’. */
+      } /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custview’. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
   })
@@ -145,13 +143,11 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   const workbook_tables = new ObjectType({
     elemID: workbook_tablesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       table: {
         refType: createRefToElmWithValue(new ListType(workbook_tables_table)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
@@ -159,11 +155,9 @@ export const workbookType = (): TypeAndInnerTypes => {
 
   innerTypes.workbook_tables = workbook_tables
 
-
   const workbook = new ObjectType({
     elemID: workbookElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -172,44 +166,39 @@ export const workbookType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custworkbook[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custworkbook’. */
+      } /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custworkbook’. */,
       name: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
         },
-      }, /* Original description: This field value can be up to 50 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 50 characters long.   This field accepts references to the string custom type. */,
       definition: {
         refType: createRefToElmWithValue(fieldTypes.cdata),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description:   */
+      } /* Original description:   */,
       charts: {
         refType: createRefToElmWithValue(workbook_charts),
-        annotations: {
-        },
+        annotations: {},
       },
       dependencies: {
         refType: createRefToElmWithValue(workbook_dependencies),
-        annotations: {
-        },
+        annotations: {},
       },
       pivots: {
         refType: createRefToElmWithValue(workbook_pivots),
-        annotations: {
-        },
+        annotations: {},
       },
       tables: {
         refType: createRefToElmWithValue(workbook_tables),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
   })
-
 
   return { type: workbook, innerTypes }
 }

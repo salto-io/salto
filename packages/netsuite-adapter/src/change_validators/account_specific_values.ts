@@ -33,7 +33,7 @@ export const toAccountSpecificValuesWarning = (element: Element): ChangeError =>
     'You can either edit the element in Salto and replace ACCOUNT_SPECIFIC_VALUE with the real value and deploy it or after a successful deploy, set the correct value directly in the NetSuite UI.',
 })
 
-const changeValidator: NetsuiteChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes =>
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(async change => {
@@ -52,6 +52,5 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     })
     .filter(isDefined)
     .toArray()
-)
 
 export default changeValidator

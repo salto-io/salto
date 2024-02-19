@@ -114,7 +114,7 @@ describe('workflow account specific values', () => {
     const changeErrors = await workflowAccountSpecificValidator(
       [toChange({ before: instance, after })],
       false,
-      buildElementsSourceFromElements([])
+      buildElementsSourceFromElements([]),
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')

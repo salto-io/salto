@@ -107,10 +107,10 @@ const getChangeErrorsOnAccountSpecificValues = (
         }
       }
       if (
-        typeof value === 'string'
-        && value.includes(ACCOUNT_SPECIFIC_VALUE)
-        && ![SENDER, RECIPIENT].includes(path.name)
-        && path.createParentID(2).name !== PARAMETER
+        typeof value === 'string' &&
+        value.includes(ACCOUNT_SPECIFIC_VALUE) &&
+        ![SENDER, RECIPIENT].includes(path.name) &&
+        path.createParentID(2).name !== PARAMETER
       ) {
         returnGenericAccountSpecificValuesWarning = true
       }

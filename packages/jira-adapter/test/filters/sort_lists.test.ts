@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ListType,
+  ObjectType,
+  ReferenceExpression,
+  Values,
+} from '@salto-io/adapter-api'
 import { getFilterParams } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
@@ -39,24 +47,12 @@ describe('sortListsFilter', () => {
         actors: { refType: new ListType(BuiltinTypes.UNKNOWN) },
       },
     })
-    projectRoleInstance = new InstanceElement(
-      'instance',
-      projectRoleType,
-      {
-        actors: [
-          { displayName: 'c' },
-          { displayName: 'a' },
-          { displayName: 'b' },
-        ],
-      },
-    )
+    projectRoleInstance = new InstanceElement('instance', projectRoleType, {
+      actors: [{ displayName: 'c' }, { displayName: 'a' }, { displayName: 'b' }],
+    })
 
     sortedProjectRoleValues = {
-      actors: [
-        { displayName: 'a' },
-        { displayName: 'b' },
-        { displayName: 'c' },
-      ],
+      actors: [{ displayName: 'a' }, { displayName: 'b' }, { displayName: 'c' }],
     }
 
     const dashboardType = new ObjectType({
@@ -66,22 +62,30 @@ describe('sortListsFilter', () => {
       },
     })
 
-    dashboardInstance = new InstanceElement(
-      'instance',
-      dashboardType,
-      {
-        gadgets: [
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c'), { value: { position: { column: 1, row: 0 } } }),
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a'), { value: { position: { column: 0, row: 1 } } }),
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b'), { value: { position: { column: 0, row: 0 } } }),
-        ],
-      },
-    )
+    dashboardInstance = new InstanceElement('instance', dashboardType, {
+      gadgets: [
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c'), {
+          value: { position: { column: 1, row: 0 } },
+        }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a'), {
+          value: { position: { column: 0, row: 1 } },
+        }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b'), {
+          value: { position: { column: 0, row: 0 } },
+        }),
+      ],
+    })
     sortedDashboardValues = {
       gadgets: [
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b'), { value: { position: { column: 0, row: 0 } } }),
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a'), { value: { position: { column: 0, row: 1 } } }),
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c'), { value: { position: { column: 1, row: 0 } } }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b'), {
+          value: { position: { column: 0, row: 0 } },
+        }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a'), {
+          value: { position: { column: 0, row: 1 } },
+        }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c'), {
+          value: { position: { column: 1, row: 0 } },
+        }),
       ],
     }
 
@@ -92,46 +96,42 @@ describe('sortListsFilter', () => {
       },
     })
 
-    permissionSchemeInstance = new InstanceElement(
-      'instance',
-      permissionSchemeType,
-      {
-        permissions: [
-          {
-            permission: 'A',
+    permissionSchemeInstance = new InstanceElement('instance', permissionSchemeType, {
+      permissions: [
+        {
+          permission: 'A',
+        },
+        {
+          permission: 'A',
+          holder: {
+            type: 'B',
           },
-          {
-            permission: 'A',
-            holder: {
-              type: 'B',
-            },
+        },
+        {
+          permission: 'A',
+          holder: {
+            type: 'A',
           },
-          {
-            permission: 'A',
-            holder: {
-              type: 'A',
-            },
+        },
+        {
+          permission: 'C',
+          holder: {
+            type: 'A',
+            parameter: new ReferenceExpression(new ElemID(JIRA, 'B'), {}),
           },
-          {
-            permission: 'C',
-            holder: {
-              type: 'A',
-              parameter: new ReferenceExpression(new ElemID(JIRA, 'B'), {}),
-            },
+        },
+        {
+          permission: 'C',
+          holder: {
+            type: 'A',
+            parameter: new ReferenceExpression(new ElemID(JIRA, 'A'), {}),
           },
-          {
-            permission: 'C',
-            holder: {
-              type: 'A',
-              parameter: new ReferenceExpression(new ElemID(JIRA, 'A'), {}),
-            },
-          },
-          {
-            permission: 'B',
-          },
-        ],
-      }
-    )
+        },
+        {
+          permission: 'B',
+        },
+      ],
+    })
 
     sortedPermissionValues = {
       permissions: [
@@ -183,23 +183,19 @@ describe('sortListsFilter', () => {
         projects: { refType: new ListType(automationProjectType) },
       },
     })
-    automationInstance = new InstanceElement(
-      'instance',
-      automationType,
-      {
-        projects: [
-          {
-            projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'c'), {}),
-          },
-          {
-            projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'b'), {}),
-          },
-          {
-            projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'a'), {}),
-          },
-        ],
-      }
-    )
+    automationInstance = new InstanceElement('instance', automationType, {
+      projects: [
+        {
+          projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'c'), {}),
+        },
+        {
+          projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'b'), {}),
+        },
+        {
+          projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'a'), {}),
+        },
+      ],
+    })
     sortedAutomationValues = {
       projects: [
         {
@@ -248,24 +244,20 @@ describe('sortListsFilter', () => {
         },
       })
 
-      const inst = new InstanceElement(
-        'instance',
-        type,
-        {
-          schemes: [
-            {
-              permissions: [
-                {
-                  permission: 'B',
-                },
-                {
-                  permission: 'A',
-                },
-              ],
-            },
-          ],
-        }
-      )
+      const inst = new InstanceElement('instance', type, {
+        schemes: [
+          {
+            permissions: [
+              {
+                permission: 'B',
+              },
+              {
+                permission: 'A',
+              },
+            ],
+          },
+        ],
+      })
 
       await filter.onFetch?.([inst])
       expect(inst.value).toEqual({

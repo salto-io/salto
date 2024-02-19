@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
@@ -36,35 +36,33 @@ describe('add_display_name_filter', () => {
   let instances: InstanceElement[] = []
 
   beforeEach(() => {
-    elemIdGetter = mockFunction<ElemIdGetter>()
-      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+    elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
+      (adapterName, _serviceIds, name) => new ElemID(adapterName, name),
+    )
     const usersType = new ObjectType({
       elemID: new ElemID(JIRA, 'Users'),
     })
-    const usersElements = new InstanceElement(
-      'users',
-      usersType,
-      {
-        users: {
-          id1: {
-            accountId: 'id1',
-            locale: 'en_US',
-            displayName: 'name1',
-          },
+    const usersElements = new InstanceElement('users', usersType, {
+      users: {
+        id1: {
+          accountId: 'id1',
+          locale: 'en_US',
+          displayName: 'name1',
         },
-      }
-    )
+      },
+    })
     const elementsSource = buildElementsSourceFromElements([usersElements])
     const { client, paginator, connection, getUserMapFunc } = mockClient()
     mockConnection = connection
-    filter = addDisplayNameFilter(getFilterParams({
-      client,
-      paginator,
-      getUserMapFunc,
-      elementsSource,
-      getElemIdFunc: elemIdGetter,
-    })) as typeof filter
-
+    filter = addDisplayNameFilter(
+      getFilterParams({
+        client,
+        paginator,
+        getUserMapFunc,
+        elementsSource,
+        getElemIdFunc: elemIdGetter,
+      }),
+    ) as typeof filter
 
     objectType = common.createObjectedType('SecurityLevel')
 
@@ -75,107 +73,133 @@ describe('add_display_name_filter', () => {
 
     mockConnection.get.mockResolvedValue({
       status: 200,
-      data: [{
-        accountId: '2',
-        displayName: 'disp2',
-        locale: 'en_US',
-      }, {
-        accountId: '2n',
-        displayName: 'disp2n',
-        locale: 'en_US',
-      }, {
-        accountId: '22',
-        displayName: 'disp22',
-        locale: 'en_US',
-      }, {
-        accountId: '22n',
-        displayName: 'disp22n',
-        locale: 'en_US',
-      }, {
-        accountId: '2l',
-        displayName: 'disp2l',
-        locale: 'en_US',
-      }, {
-        accountId: '2an',
-        displayName: 'disp2an',
-        locale: 'en_US',
-      }, {
-        accountId: '2h',
-        displayName: 'disp2h',
-        locale: 'en_US',
-      }, {
-        accountId: '2list1',
-        displayName: 'disp2list1',
-        locale: 'en_US',
-      }, {
-        accountId: '2list2',
-        displayName: 'disp2list2',
-        locale: 'en_US',
-      }, {
-        accountId: '2operations1',
-        displayName: 'disp2operations1',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation1',
-        displayName: 'disp2automation1',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation2',
-        displayName: 'disp2automation2',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation3',
-        displayName: 'disp2automation3',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation4',
-        displayName: 'disp2automation4',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation5',
-        displayName: 'disp2automation5',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation6',
-        displayName: 'disp2automation6',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation7',
-        displayName: 'disp2automation7',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation8a',
-        displayName: 'disp2automation8a',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation8b',
-        displayName: 'disp2automation8b',
-        locale: 'en_US',
-      }, {
-        accountId: '2automation9',
-        displayName: 'disp2automation9',
-        locale: 'en_US',
-      }, {
-        accountId: '2owner',
-        displayName: 'disp2owner',
-        locale: 'en_US',
-      }, {
-        accountId: '2users1',
-        displayName: 'disp2users1',
-        locale: 'en_US',
-      }, {
-        accountId: '2users2',
-        displayName: 'disp2users2',
-        locale: 'en_US',
-      }, {
-        accountId: '2Ids1',
-        displayName: 'disp2Ids1',
-        locale: 'en_US',
-      }, {
-        accountId: '2Ids2',
-        displayName: 'disp2Ids2',
-        locale: 'en_US',
-      }],
+      data: [
+        {
+          accountId: '2',
+          displayName: 'disp2',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2n',
+          displayName: 'disp2n',
+          locale: 'en_US',
+        },
+        {
+          accountId: '22',
+          displayName: 'disp22',
+          locale: 'en_US',
+        },
+        {
+          accountId: '22n',
+          displayName: 'disp22n',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2l',
+          displayName: 'disp2l',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2an',
+          displayName: 'disp2an',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2h',
+          displayName: 'disp2h',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2list1',
+          displayName: 'disp2list1',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2list2',
+          displayName: 'disp2list2',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2operations1',
+          displayName: 'disp2operations1',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation1',
+          displayName: 'disp2automation1',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation2',
+          displayName: 'disp2automation2',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation3',
+          displayName: 'disp2automation3',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation4',
+          displayName: 'disp2automation4',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation5',
+          displayName: 'disp2automation5',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation6',
+          displayName: 'disp2automation6',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation7',
+          displayName: 'disp2automation7',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation8a',
+          displayName: 'disp2automation8a',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation8b',
+          displayName: 'disp2automation8b',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2automation9',
+          displayName: 'disp2automation9',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2owner',
+          displayName: 'disp2owner',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2users1',
+          displayName: 'disp2users1',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2users2',
+          displayName: 'disp2users2',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2Ids1',
+          displayName: 'disp2Ids1',
+          locale: 'en_US',
+        },
+        {
+          accountId: '2Ids2',
+          displayName: 'disp2Ids2',
+          locale: 'en_US',
+        },
+      ],
     })
   })
   it('should only call once in fetch when there are multiple objects with accountId', async () => {
@@ -192,12 +216,14 @@ describe('add_display_name_filter', () => {
       configFFOff.fetch.convertUsersIds = false
       const { client, paginator, connection } = mockClient()
       connectionFFOff = connection
-      filterFFOff = addDisplayNameFilter(getFilterParams({
-        client,
-        paginator,
-        config: configFFOff,
-        getElemIdFunc: elemIdGetter,
-      })) as typeof filter
+      filterFFOff = addDisplayNameFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config: configFFOff,
+          getElemIdFunc: elemIdGetter,
+        }),
+      ) as typeof filter
     })
     it('should not call for users', async () => {
       await filterFFOff.onFetch(instances)
@@ -221,14 +247,11 @@ describe('add_display_name_filter', () => {
   it('adds display name on fetch for all 5 types', async () => {
     await filter.onFetch([instances[2]])
     expect(mockConnection.get).toHaveBeenCalledOnce()
-    expect(mockConnection.get).toHaveBeenCalledWith(
-      '/rest/api/3/users/search',
-      {
-        params: {
-          maxResults: '1000',
-        },
-      }
-    )
+    expect(mockConnection.get).toHaveBeenCalledWith('/rest/api/3/users/search', {
+      params: {
+        maxResults: '1000',
+      },
+    })
     common.checkDisplayNames(instances[2], '2')
   })
   it('should add display name in all defined types', async () => {
@@ -276,49 +299,47 @@ describe('convert userId to key in Jira DC', () => {
     const usersType = new ObjectType({
       elemID: new ElemID(JIRA, 'Users'),
     })
-    const usersElements = new InstanceElement(
-      'users',
-      usersType,
-      {
-        users: {
-          JIRAUSER10100: {
-            userId: 'JIRAUSER10100',
-            username: 'salto',
-            locale: 'en_US',
-            displayName: 'salto',
-          },
-          JIRAUSER10200: {
-            userId: 'JIRAUSER10200',
-            username: 'admin',
-            locale: 'en_US',
-            displayName: 'admin',
-          },
-          JIRAUSER10300: {
-            userId: 'JIRAUSER10300',
-            username: 'projectLeadAccount',
-            locale: 'en_US',
-            displayName: 'projectLeadAccount',
-          },
+    const usersElements = new InstanceElement('users', usersType, {
+      users: {
+        JIRAUSER10100: {
+          userId: 'JIRAUSER10100',
+          username: 'salto',
+          locale: 'en_US',
+          displayName: 'salto',
         },
-      }
-    )
+        JIRAUSER10200: {
+          userId: 'JIRAUSER10200',
+          username: 'admin',
+          locale: 'en_US',
+          displayName: 'admin',
+        },
+        JIRAUSER10300: {
+          userId: 'JIRAUSER10300',
+          username: 'projectLeadAccount',
+          locale: 'en_US',
+          displayName: 'projectLeadAccount',
+        },
+      },
+    })
     const elementsSource = buildElementsSourceFromElements([usersElements])
 
-    elemIdGetter = mockFunction<ElemIdGetter>()
-      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+    elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
+      (adapterName, _serviceIds, name) => new ElemID(adapterName, name),
+    )
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
     const { client, paginator, connection, getUserMapFunc } = mockClient(true)
     mockConnection = connection
-    filter = addDisplayNameFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      getUserMapFunc,
-      elementsSource,
-      getElemIdFunc: elemIdGetter,
-    })) as typeof filter
-
+    filter = addDisplayNameFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        getUserMapFunc,
+        elementsSource,
+        getElemIdFunc: elemIdGetter,
+      }),
+    ) as typeof filter
 
     automationType = new ObjectType({
       elemID: new ElemID(JIRA, AUTOMATION_TYPE),
@@ -342,42 +363,33 @@ describe('convert userId to key in Jira DC', () => {
       },
     })
 
-    dashboardInstance = new InstanceElement(
-      'instance',
-      dashboardType,
-      {
-        id: '0',
-        layout: 'AAA',
-        gadgets: [
-        ],
-        editPermissions: {
-          type: 'user',
-          user: {
-            accountId: {
-              id: 'JIRAUSER10200',
-            },
+    dashboardInstance = new InstanceElement('instance', dashboardType, {
+      id: '0',
+      layout: 'AAA',
+      gadgets: [],
+      editPermissions: {
+        type: 'user',
+        user: {
+          accountId: {
+            id: 'JIRAUSER10200',
           },
         },
-      }
-    )
+      },
+    })
 
-    automationInstance = new InstanceElement(
-      'instance',
-      automationType,
-      {
-        name: 'someName',
-        state: 'ENABLED',
-        projects: [
-          {
-            projectId: '1',
-          },
-        ],
-        actorAccountId: 'JIRAUSER10100',
-        authorAccountId: {
-          id: 'JIRAUSER10100',
+    automationInstance = new InstanceElement('instance', automationType, {
+      name: 'someName',
+      state: 'ENABLED',
+      projects: [
+        {
+          projectId: '1',
         },
-      }
-    )
+      ],
+      actorAccountId: 'JIRAUSER10100',
+      authorAccountId: {
+        id: 'JIRAUSER10100',
+      },
+    })
 
     projectType = new ObjectType({
       elemID: new ElemID(JIRA, 'Project'),
@@ -390,79 +402,88 @@ describe('convert userId to key in Jira DC', () => {
         components: { refType: BuiltinTypes.STRING },
       },
     })
-    projectInstance = new InstanceElement(
-      'instance',
-      projectType,
-      {
-        leadAccountId: {
-          id: 'JIRAUSER10300',
-        },
-      }
-    )
+    projectInstance = new InstanceElement('instance', projectType, {
+      leadAccountId: {
+        id: 'JIRAUSER10300',
+      },
+    })
 
     mockConnection.get.mockResolvedValue({
       status: 200,
-      data: [{
-        key: '2',
-        name: `${NAME_PREFIX}2`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2`,
-      }, {
-        key: '2l',
-        name: `${NAME_PREFIX}2l`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2l`,
-      }, {
-        key: '2n',
-        name: `${NAME_PREFIX}2n`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2n`,
-      }, {
-        key: '2an',
-        name: `${NAME_PREFIX}2an`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2an`,
-      }, {
-        key: '22n',
-        name: `${NAME_PREFIX}22n`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}22n`,
-      }, {
-        key: '22',
-        name: `${NAME_PREFIX}22`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}22`,
-      }, {
-        key: '2h',
-        name: `${NAME_PREFIX}2h`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2h`,
-      }, {
-        key: '2list1',
-        name: `${NAME_PREFIX}2list1`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2list1`,
-      }, {
-        key: '2list2',
-        name: `${NAME_PREFIX}2list2`,
-        locale: 'en_US',
-        displayName: `${NAME_PREFIX}2list2`,
-      }, {
-        key: 'JIRAUSER10100',
-        name: 'salto',
-        locale: 'en_US',
-        displayName: 'salto',
-      }, {
-        key: 'JIRAUSER10200',
-        name: 'admin',
-        locale: 'en_US',
-        displayName: 'admin',
-      }, {
-        key: 'JIRAUSER10300',
-        name: 'projectLeadAccount',
-        locale: 'en_US',
-        displayName: 'projectLeadAccount',
-      }],
+      data: [
+        {
+          key: '2',
+          name: `${NAME_PREFIX}2`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2`,
+        },
+        {
+          key: '2l',
+          name: `${NAME_PREFIX}2l`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2l`,
+        },
+        {
+          key: '2n',
+          name: `${NAME_PREFIX}2n`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2n`,
+        },
+        {
+          key: '2an',
+          name: `${NAME_PREFIX}2an`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2an`,
+        },
+        {
+          key: '22n',
+          name: `${NAME_PREFIX}22n`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}22n`,
+        },
+        {
+          key: '22',
+          name: `${NAME_PREFIX}22`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}22`,
+        },
+        {
+          key: '2h',
+          name: `${NAME_PREFIX}2h`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2h`,
+        },
+        {
+          key: '2list1',
+          name: `${NAME_PREFIX}2list1`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2list1`,
+        },
+        {
+          key: '2list2',
+          name: `${NAME_PREFIX}2list2`,
+          locale: 'en_US',
+          displayName: `${NAME_PREFIX}2list2`,
+        },
+        {
+          key: 'JIRAUSER10100',
+          name: 'salto',
+          locale: 'en_US',
+          displayName: 'salto',
+        },
+        {
+          key: 'JIRAUSER10200',
+          name: 'admin',
+          locale: 'en_US',
+          displayName: 'admin',
+        },
+        {
+          key: 'JIRAUSER10300',
+          name: 'projectLeadAccount',
+          locale: 'en_US',
+          displayName: 'projectLeadAccount',
+        },
+      ],
     })
   })
   describe('fetch', () => {
@@ -473,17 +494,14 @@ describe('convert userId to key in Jira DC', () => {
 
       await filter.onFetch([automationInstance, dashboardInstance, projectInstance])
       expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search',
-        {
-          headers: undefined,
-          params: {
-            maxResults: '1000',
-            username: '.',
-          },
-          responseType: undefined,
-        }
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/api/2/user/search', {
+        headers: undefined,
+        params: {
+          maxResults: '1000',
+          username: '.',
+        },
+        responseType: undefined,
+      })
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
       expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
@@ -496,16 +514,13 @@ describe('convert userId to key in Jira DC', () => {
         toChange({ after: projectInstance }),
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search',
-        {
-          params: {
-            maxResults: '1000',
-            username: '.',
-          },
-          responseType: undefined,
-        }
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/api/2/user/search', {
+        params: {
+          maxResults: '1000',
+          username: '.',
+        },
+        responseType: undefined,
+      })
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
       expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
@@ -515,17 +530,14 @@ describe('convert userId to key in Jira DC', () => {
         toChange({ after: projectInstance }),
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search',
-        {
-          headers: undefined,
-          params: {
-            maxResults: '1000',
-            username: '.',
-          },
-          responseType: undefined,
-        }
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('/rest/api/2/user/search', {
+        headers: undefined,
+        params: {
+          maxResults: '1000',
+          username: '.',
+        },
+        responseType: undefined,
+      })
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
       expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
@@ -552,17 +564,21 @@ describe('convert userId to key in Jira DC', () => {
   })
   describe('pre deploy', () => {
     it('should not raise error when no users NaCl', async () => {
-      filter = addDisplayNameFilter(getFilterParams({
-        elementsSource: buildElementsSourceFromElements([]),
-      })) as typeof filter
+      filter = addDisplayNameFilter(
+        getFilterParams({
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
+      ) as typeof filter
       await expect(filter.preDeploy([])).resolves.not.toThrow()
     })
   })
   describe('deploy', () => {
     it('should not raise error when user permission is missing', async () => {
-      filter = addDisplayNameFilter(getFilterParams({
-        elementsSource: buildElementsSourceFromElements([]),
-      })) as typeof filter
+      filter = addDisplayNameFilter(
+        getFilterParams({
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
+      ) as typeof filter
       await expect(filter.onDeploy([])).resolves.not.toThrow()
     })
   })

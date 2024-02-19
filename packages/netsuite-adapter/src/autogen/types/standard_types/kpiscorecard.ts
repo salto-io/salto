@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
 import { TypeAndInnerTypes } from '../../../types/object_types'
@@ -30,29 +36,24 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_audience = new ObjectType({
     elemID: kpiscorecard_audienceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       allroles: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       allpartners: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+        annotations: {},
+      } /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */,
       allemployees: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       audslctrole: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the allroles value is not equal to T.   You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+        annotations: {},
+      } /* Original description: This field is available when the allroles value is not equal to T.   You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
   })
@@ -63,117 +64,103 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_custom = new ObjectType({
     elemID: kpiscorecard_customElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       kpi1: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi2: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi3: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi4: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi5: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi6: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi7: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi8: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi9: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
       kpi10: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
   })
 
   innerTypes.kpiscorecard_custom = kpiscorecard_custom
 
-  const kpiscorecard_highlightings_highlightingElemID = new ElemID(constants.NETSUITE, 'kpiscorecard_highlightings_highlighting')
+  const kpiscorecard_highlightings_highlightingElemID = new ElemID(
+    constants.NETSUITE,
+    'kpiscorecard_highlightings_highlighting',
+  )
 
   const kpiscorecard_highlightings_highlighting = new ObjectType({
     elemID: kpiscorecard_highlightings_highlightingElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       kpiindex: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
-      }, /* Original description: The default value is 'ALL'. */
+        annotations: {},
+      } /* Original description: The default value is 'ALL'. */,
       condition: {
         refType: createRefToElmWithValue(enums.kpiscorecards_highlight_conditions),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see kpiscorecards_highlight_conditions. */
+        annotations: {},
+      } /* Original description: For information about possible values, see kpiscorecards_highlight_conditions. */,
       threshold: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-        },
+        annotations: {},
       },
       rangeindex: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
-      }, /* Original description: The default value is 'ALL'. */
+        annotations: {},
+      } /* Original description: The default value is 'ALL'. */,
       icon: {
         refType: createRefToElmWithValue(enums.kpiscorecards_highlight_icons),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see kpiscorecards_highlight_icons. */
+        annotations: {},
+      } /* Original description: For information about possible values, see kpiscorecards_highlight_icons. */,
       foregroundcolor: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */),
-        annotations: {
-        },
-      }, /* Original description: The default value is '#000000'. */
+        refType: createRefToElmWithValue(
+          BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
+        ),
+        annotations: {},
+      } /* Original description: The default value is '#000000'. */,
       backgroundcolor: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */),
-        annotations: {
-        },
-      }, /* Original description: The default value is '#FFFFFF'. */
+        refType: createRefToElmWithValue(
+          BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
+        ),
+        annotations: {},
+      } /* Original description: The default value is '#FFFFFF'. */,
       bold: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       headline: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
   })
@@ -184,13 +171,11 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_highlightings = new ObjectType({
     elemID: kpiscorecard_highlightingsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       highlighting: {
         refType: createRefToElmWithValue(new ListType(kpiscorecard_highlightings_highlighting)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
@@ -202,57 +187,50 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_kpis_kpi = new ObjectType({
     elemID: kpiscorecard_kpis_kpiElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       kpi: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */
+      } /* Original description: For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */,
       comparevalueto: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */
+        annotations: {},
+      } /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */,
       comparewithprevious: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */
+        annotations: {},
+      } /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */,
       comparisontype: {
         refType: createRefToElmWithValue(enums.kpiscorecards_comparisons),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see kpiscorecards_comparisons. */
+        annotations: {},
+      } /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see kpiscorecards_comparisons. */,
       invertcomparison: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */
+        annotations: {},
+      } /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */,
       formula: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
         },
-      }, /* Original description: This field value can be up to 200 characters long.   This field is available when the kpi value is present in kpi_snapshots_formula. */
+      } /* Original description: This field value can be up to 200 characters long.   This field is available when the kpi value is present in kpi_snapshots_formula. */,
       lessismore: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the kpi value is present in kpi_snapshots_formula.   The default value is F. */
+        annotations: {},
+      } /* Original description: This field is available when the kpi value is present in kpi_snapshots_formula.   The default value is F. */,
       hidden: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       label: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
         },
-      }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
   })
@@ -263,13 +241,11 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_kpis = new ObjectType({
     elemID: kpiscorecard_kpisElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       kpi: {
         refType: createRefToElmWithValue(new ListType(kpiscorecard_kpis_kpi)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
@@ -281,41 +257,36 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_ranges_range = new ObjectType({
     elemID: kpiscorecard_ranges_rangeElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       range: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */
+      } /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */,
       comparevalueto: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */
+        annotations: {},
+      } /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */,
       comparewithprevious: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       comparisontype: {
         refType: createRefToElmWithValue(enums.kpiscorecards_comparisons),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see kpiscorecards_comparisons. */
+        annotations: {},
+      } /* Original description: For information about possible values, see kpiscorecards_comparisons. */,
       invertcomparison: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       label: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
         },
-      }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
   })
@@ -326,13 +297,11 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   const kpiscorecard_ranges = new ObjectType({
     elemID: kpiscorecard_rangesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       range: {
         refType: createRefToElmWithValue(new ListType(kpiscorecard_ranges_range)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
@@ -340,11 +309,9 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
 
   innerTypes.kpiscorecard_ranges = kpiscorecard_ranges
 
-
   const kpiscorecard = new ObjectType({
     elemID: kpiscorecardElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -353,55 +320,49 @@ export const kpiscorecardType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^(custkpiscorecard|kpiscorecard)[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custkpiscorecard’. */
+      } /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custkpiscorecard’. */,
       name: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 25 }),
         },
-      }, /* Original description: This field value can be up to 25 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 25 characters long.   This field accepts references to the string custom type. */,
       useperiods: {
         refType: createRefToElmWithValue(enums.kpiscorecards_useperiods),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see kpiscorecards_useperiods. */
+      } /* Original description: For information about possible values, see kpiscorecards_useperiods. */,
       description: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
         },
-      }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */,
       audience: {
         refType: createRefToElmWithValue(kpiscorecard_audience),
-        annotations: {
-        },
+        annotations: {},
       },
       custom: {
         refType: createRefToElmWithValue(kpiscorecard_custom),
-        annotations: {
-        },
+        annotations: {},
       },
       highlightings: {
         refType: createRefToElmWithValue(kpiscorecard_highlightings),
-        annotations: {
-        },
+        annotations: {},
       },
       kpis: {
         refType: createRefToElmWithValue(kpiscorecard_kpis),
-        annotations: {
-        },
+        annotations: {},
       },
       ranges: {
         refType: createRefToElmWithValue(kpiscorecard_ranges),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
   })
-
 
   return { type: kpiscorecard, innerTypes }
 }

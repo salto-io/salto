@@ -1,19 +1,18 @@
-
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /* eslint-disable camelcase */
 import _ from 'lodash'
@@ -22,7 +21,14 @@ import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/pars
 import * as constants from '../../src/constants'
 import { translationcollectionType } from '../../src/autogen/types/standard_types/translationcollection'
 import { parsedWorkbookType } from '../../src/type_parsers/analytics_parsers/parsed_workbook'
-import { DATA_VIEWS, DATA_VIEW_IDS, FIELD_DEFINITION, FIELD_TYPE, PIVOTS, PIVOT_IDS } from '../../src/type_parsers/analytics_parsers/analytics_constants'
+import {
+  DATA_VIEWS,
+  DATA_VIEW_IDS,
+  FIELD_DEFINITION,
+  FIELD_TYPE,
+  PIVOTS,
+  PIVOT_IDS,
+} from '../../src/type_parsers/analytics_parsers/analytics_constants'
 
 const dataset = parsedDatasetType().type
 const workbook = parsedWorkbookType().type
@@ -107,12 +113,10 @@ const basicDatasetValue = {
   scriptid: 'seggevTestBasic',
   definition: basicDatasetDefinitionOriginal,
 }
-export const basicDataset = new InstanceElement(
-  'seggev basic',
-  dataset,
-  basicDatasetValue,
-  [constants.NETSUITE, constants.DATASET],
-)
+export const basicDataset = new InstanceElement('seggev basic', dataset, basicDatasetValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
 export const parsedBasicDatasetValue = {
   scriptid: basicDatasetValue.scriptid,
   name: basicDatasetValue.name,
@@ -173,12 +177,10 @@ export const parsedBasicDatasetValue = {
   },
 }
 
-export const parsedBasicDataset = new InstanceElement(
-  'seggev parsed basic',
-  dataset,
-  parsedBasicDatasetValue,
-  [constants.NETSUITE, constants.DATASET],
-)
+export const parsedBasicDataset = new InstanceElement('seggev parsed basic', dataset, parsedBasicDatasetValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
 
 // definition with unknown attribute
 const originalUnknownDefinition = `
@@ -201,12 +203,10 @@ const unknownDatasetValue = {
   scriptid: 'seggevTestUnknown',
   definition: originalUnknownDefinition,
 }
-export const unknownDataset = new InstanceElement(
-  'seggev unknown',
-  dataset,
-  unknownDatasetValue,
-  [constants.NETSUITE, constants.DATASET],
-)
+export const unknownDataset = new InstanceElement('seggev unknown', dataset, unknownDatasetValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
 
 export const parsedUnknownDatasetValue = {
   name: unknownDatasetValue.name,
@@ -282,12 +282,10 @@ const typesValue = {
   scriptid: 'seggevTestTypes',
   definition: typesDefinition,
 }
-export const typesWorkbook = new InstanceElement(
-  'seggev types',
-  workbook,
-  typesValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
+export const typesWorkbook = new InstanceElement('seggev types', workbook, typesValue, [
+  constants.NETSUITE,
+  constants.WORKBOOK,
+])
 export const parsedTypesWorkbook = {
   name: typesValue.name,
   scriptid: typesValue.scriptid,
@@ -300,20 +298,17 @@ export const parsedTypesWorkbook = {
 const emptyAnalyticValue = {
   scriptid: 'seggevTestEmpty',
 }
-export const emptyDataset = new InstanceElement(
-  'seggev empty',
-  dataset,
-  emptyAnalyticValue,
-  [constants.NETSUITE, constants.DATASET],
-)
-export const emptyWorkbook = new InstanceElement(
-  'seggev empty',
-  workbook,
-  emptyAnalyticValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
+export const emptyDataset = new InstanceElement('seggev empty', dataset, emptyAnalyticValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
+export const emptyWorkbook = new InstanceElement('seggev empty', workbook, emptyAnalyticValue, [
+  constants.NETSUITE,
+  constants.WORKBOOK,
+])
 
-export const emptyDatasetDefinition = '<root>\n  <_T_>dataSet</_T_>\n  <scriptid type="null"></scriptid>\n  <applicationId type="null"></applicationId>\n  <audience type="null"></audience>\n  <baseRecord type="null"></baseRecord>\n  <columns type="array"></columns>\n  <criteria type="null"></criteria>\n  <description type="null"></description>\n  <formulas type="array"></formulas>\n  <id type="null"></id>\n  <ownerId type="null"></ownerId>\n  <version type="null"></version>\n</root>\n'
+export const emptyDatasetDefinition =
+  '<root>\n  <_T_>dataSet</_T_>\n  <scriptid type="null"></scriptid>\n  <applicationId type="null"></applicationId>\n  <audience type="null"></audience>\n  <baseRecord type="null"></baseRecord>\n  <columns type="array"></columns>\n  <criteria type="null"></criteria>\n  <description type="null"></description>\n  <formulas type="array"></formulas>\n  <id type="null"></id>\n  <ownerId type="null"></ownerId>\n  <version type="null"></version>\n</root>\n'
 
 export const basicDatasetDefinition = `<root>
   <audience>
@@ -442,9 +437,7 @@ export const parsedBasicWorkbookValue = {
       isPublic: false,
     },
     ownerId: 5,
-    dataViewIDs: [
-      'custview72_16951029801843995215',
-    ],
+    dataViewIDs: ['custview72_16951029801843995215'],
   },
   dataViews: [
     {
@@ -456,9 +449,7 @@ export const parsedBasicWorkbookValue = {
           translationScriptId: 'name_of_the_table',
         },
         workbook: 'custworkbook_basic',
-        datasets: [
-          'stddatasetMyTransactionsDataSet',
-        ],
+        datasets: ['stddatasetMyTransactionsDataSet'],
         columns: [
           {
             datasetScriptId: 'stddatasetMyTransactionsDataSet',
@@ -561,22 +552,18 @@ const basicWorkbookValue = {
   },
 }
 
-export const basicWorkbook = new InstanceElement(
-  'seggev basic workbook',
-  workbook,
-  basicWorkbookValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
+export const basicWorkbook = new InstanceElement('seggev basic workbook', workbook, basicWorkbookValue, [
+  constants.NETSUITE,
+  constants.WORKBOOK,
+])
 
 const parsedDatasetWithDefaultCompletionValue = {
   name: 'default test',
   scriptid: 'default_test',
   criteria: {
     condition: {
-      operator: {
-      },
-      targetFieldContext: {
-      },
+      operator: {},
+      targetFieldContext: {},
     },
   },
 }
@@ -636,31 +623,20 @@ const parsedWorkbookWithArraysValue = {
     {
       pivot: {
         scriptId: '4',
-        datasets: [
-          'a',
-          'b',
-        ],
-        definition: '<root><version>1</version><columnAxis><dimensionTree><_T_>dataDimension</_T_><id>6</id><children type="array"><_ITEM_><ref>3</ref></_ITEM_></children><items type="array"><_ITEM_><id>2</id><expression><function>field</function><args><type><_T_>textType</_T_></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>displaynamewithhierarchy</fieldId></args></expression></_ITEM_></items></dimensionTree><uiSettings><headerAlwaysVisible type="boolean">true</headerAlwaysVisible></uiSettings></columnAxis><rowAxis><dimensionTree><_T_>section</_T_><id>5</id><children type="array"><_ITEM_><_T_>dataDimension</_T_><id>4</id><items type="array"><_ITEM_><id>1</id><expression><function>field</function><args><type><_T_>textType</_T_></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>description</fieldId></args></expression></_ITEM_></items></_ITEM_></children></dimensionTree></rowAxis><measures type="array"><_ITEM_><_T_>dataMeasure</_T_><id>3</id><aggregation>count</aggregation><expression><function>field</function><args><type><_T_>recordType</_T_><id>record_accttype</id></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>accttype</fieldId></args></expression></_ITEM_></measures></root>',
+        datasets: ['a', 'b'],
+        definition:
+          '<root><version>1</version><columnAxis><dimensionTree><_T_>dataDimension</_T_><id>6</id><children type="array"><_ITEM_><ref>3</ref></_ITEM_></children><items type="array"><_ITEM_><id>2</id><expression><function>field</function><args><type><_T_>textType</_T_></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>displaynamewithhierarchy</fieldId></args></expression></_ITEM_></items></dimensionTree><uiSettings><headerAlwaysVisible type="boolean">true</headerAlwaysVisible></uiSettings></columnAxis><rowAxis><dimensionTree><_T_>section</_T_><id>5</id><children type="array"><_ITEM_><_T_>dataDimension</_T_><id>4</id><items type="array"><_ITEM_><id>1</id><expression><function>field</function><args><type><_T_>textType</_T_></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>description</fieldId></args></expression></_ITEM_></items></_ITEM_></children></dimensionTree></rowAxis><measures type="array"><_ITEM_><_T_>dataMeasure</_T_><id>3</id><aggregation>count</aggregation><expression><function>field</function><args><type><_T_>recordType</_T_><id>record_accttype</id></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>accttype</fieldId></args></expression></_ITEM_></measures></root>',
       },
     },
   ],
   Workbook: {
-    [DATA_VIEW_IDS]: [
-      '1',
-      2,
-    ],
-    [PIVOT_IDS]: [
-      '3',
-    ],
+    [DATA_VIEW_IDS]: ['1', 2],
+    [PIVOT_IDS]: ['3'],
   },
 }
 
-export const tablesArray = [
-  { [constants.SCRIPT_ID]: '1' },
-]
-export const pivotArray = [
-  { [constants.SCRIPT_ID]: '3' },
-]
+export const tablesArray = [{ [constants.SCRIPT_ID]: '1' }]
+export const pivotArray = [{ [constants.SCRIPT_ID]: '3' }]
 export const parsedWorkbookWithArrays = new InstanceElement(
   'custworkbook_with_arrays',
   workbook,

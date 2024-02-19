@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 // eslint-disable-next-line
@@ -64,11 +64,7 @@ describe('ducktype_instance_elements', () => {
         entry,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'some_other_name@s',
-        type,
-        entry,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('some_other_name@s', type, entry))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name'])
     })
     it('should use fileNameFields for path when available', async () => {
@@ -87,11 +83,7 @@ describe('ducktype_instance_elements', () => {
         entry,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'some_other_name@s',
-        type,
-        entry,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('some_other_name@s', type, entry))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775_some_other_name'])
     })
     it('should convert number id fields to string', async () => {
@@ -109,11 +101,7 @@ describe('ducktype_instance_elements', () => {
         entry,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'some_other_name_54775@ssu',
-        type,
-        entry,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('some_other_name_54775@ssu', type, entry))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775'])
     })
     it('should escape id part when it only contains digits', async () => {
@@ -131,11 +119,7 @@ describe('ducktype_instance_elements', () => {
         entry,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        '54775@',
-        type,
-        entry,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('54775@', type, entry))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775'])
     })
     it('should include parent name when nestName is true', async () => {
@@ -156,15 +140,13 @@ describe('ducktype_instance_elements', () => {
         parent,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'abc__some_other_name@uuss',
-        type,
-        entry,
-        undefined,
-        {
-          _parent: [new ReferenceExpression(parent.elemID)],
-        }
-      ))).toBeTruthy()
+      expect(
+        inst?.isEqual(
+          new InstanceElement('abc__some_other_name@uuss', type, entry, undefined, {
+            _parent: [new ReferenceExpression(parent.elemID)],
+          }),
+        ),
+      ).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'abc__some_other_name'])
     })
     it('should omit fields from the top level', async () => {
@@ -173,10 +155,7 @@ describe('ducktype_instance_elements', () => {
         transformationConfigByType: {
           bla: {
             idFields: ['name'],
-            fieldsToOmit: [
-              { fieldName: 'field_with_complex_type' },
-              { fieldName: 'id', fieldType: 'number' },
-            ],
+            fieldsToOmit: [{ fieldName: 'field_with_complex_type' }, { fieldName: 'id', fieldType: 'number' }],
           },
         },
         transformationDefaultConfig: {
@@ -186,16 +165,10 @@ describe('ducktype_instance_elements', () => {
         entry,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'some_other_name@s',
-        type,
-        _.omit(entry, 'field_with_complex_type', 'id'),
-      ))).toBeTruthy()
-      expect(inst?.isEqual(new InstanceElement(
-        'some_other_name@s',
-        type,
-        entry,
-      ))).toBeFalsy()
+      expect(
+        inst?.isEqual(new InstanceElement('some_other_name@s', type, _.omit(entry, 'field_with_complex_type', 'id'))),
+      ).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('some_other_name@s', type, entry))).toBeFalsy()
     })
     it('should not omit fields when fieldType is specified and does not match', async () => {
       const inst = await toInstance({
@@ -203,10 +176,7 @@ describe('ducktype_instance_elements', () => {
         transformationConfigByType: {
           bla: {
             idFields: ['name'],
-            fieldsToOmit: [
-              { fieldName: 'field_with_complex_type' },
-              { fieldName: 'id', fieldType: 'string' },
-            ],
+            fieldsToOmit: [{ fieldName: 'field_with_complex_type' }, { fieldName: 'id', fieldType: 'string' }],
           },
         },
         transformationDefaultConfig: {
@@ -216,11 +186,9 @@ describe('ducktype_instance_elements', () => {
         entry,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'some_other_name@s',
-        type,
-        _.omit(entry, 'field_with_complex_type'),
-      ))).toBeTruthy()
+      expect(
+        inst?.isEqual(new InstanceElement('some_other_name@s', type, _.omit(entry, 'field_with_complex_type'))),
+      ).toBeTruthy()
       expect(inst?.value.id).toBeDefined()
     })
     it('should use default name if name field is not found in entry', async () => {
@@ -239,11 +207,7 @@ describe('ducktype_instance_elements', () => {
         entry: e,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'abc',
-        type,
-        e,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('abc', type, e))).toBeTruthy()
     })
     it('should not omit nested fields', async () => {
       const e = {
@@ -270,11 +234,7 @@ describe('ducktype_instance_elements', () => {
         },
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'abc',
-        type,
-        e,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement('abc', type, e))).toBeTruthy()
     })
     it('should omit null field values', async () => {
       const e = {
@@ -299,16 +259,16 @@ describe('ducktype_instance_elements', () => {
         entry: e,
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        'abc',
-        type,
-        {
-          field_with_complex_type: {
-            id: 54775,
-            number: 53,
-          },
-        },
-      ))).toBeTruthy()
+      expect(
+        inst?.isEqual(
+          new InstanceElement('abc', type, {
+            field_with_complex_type: {
+              id: 54775,
+              number: 53,
+            },
+          }),
+        ),
+      ).toBeTruthy()
     })
     it('should not generate instance if value is empty', async () => {
       const inst = await toInstance({
@@ -349,11 +309,7 @@ describe('ducktype_instance_elements', () => {
         },
       })
       expect(inst).toBeDefined()
-      expect(inst?.isEqual(new InstanceElement(
-        instanceName,
-        type,
-        entry,
-      ))).toBeTruthy()
+      expect(inst?.isEqual(new InstanceElement(instanceName, type, entry))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
     })
     it('should convert name if nameMapping exists', async () => {

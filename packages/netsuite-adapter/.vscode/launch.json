@@ -6,15 +6,10 @@
       "request": "launch",
       "name": "netsuite-adapter Debug Jest Tests",
       "cwd": "${workspaceFolder}",
-      "args": [
-        "${workspaceRoot}/node_modules/.bin/jest",
-        "--runInBand",
-        "--config",
-        "${workspaceRoot}/jest.config.js"
-      ],
+      "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
       "outFiles": [],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
-    },
+    }
   ]
 }

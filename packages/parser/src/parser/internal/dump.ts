@@ -1,23 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import {
-  Value, isExpression, ReferenceExpression,
-  TemplateExpression,
-} from '@salto-io/adapter-api'
+import { Value, isExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 import { isFunctionExpression } from './functions'
@@ -32,11 +29,10 @@ const C_ARR = ']'
 const O_PAREN = '('
 const C_PAREN = ')'
 export const INDENTATION = '  '
-export const MULTILINE_STRING_PREFIX = '\'\'\'\n'
-export const MULTILINE_STRING_SUFFIX = '\n\'\'\''
+export const MULTILINE_STRING_PREFIX = "'''\n"
+export const MULTILINE_STRING_SUFFIX = "\n'''"
 
-const createIndentation = (indentationLevel: number): string =>
-  INDENTATION.repeat(indentationLevel)
+const createIndentation = (indentationLevel: number): string => INDENTATION.repeat(indentationLevel)
 
 const dumpWord = (word: string, indentationLevel = 0): string => {
   // word needs to be escaped if it will not be parsed back as a single word token
@@ -74,12 +70,10 @@ const dumpString = (prim: string, indentationLevel = 0): string => {
 const dumpPrimitive = (prim: Value, indentationLevel = 0): string =>
   `${createIndentation(indentationLevel)}${safeJsonStringify(prim)}`
 
-const dumpObject = (
-  obj: Value, indentationLevel = 0,
-): string[] => {
+const dumpObject = (obj: Value, indentationLevel = 0): string[] => {
   const attributes = _.toPairs(obj).map(
     // eslint-disable-next-line no-use-before-define
-    attr => dumpAttr(attr, indentationLevel + 1)
+    attr => dumpAttr(attr, indentationLevel + 1),
   )
   const res = [`${createIndentation(indentationLevel)}${O_OBJ}`]
   attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(l)))
@@ -88,10 +82,12 @@ const dumpObject = (
 }
 
 const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
-  const items = separateByCommas(arr.map(
-    // eslint-disable-next-line no-use-before-define
-    (val: Value) => dumpValue(val, indentationLevel + 1)
-  ))
+  const items = separateByCommas(
+    arr.map(
+      // eslint-disable-next-line no-use-before-define
+      (val: Value) => dumpValue(val, indentationLevel + 1),
+    ),
+  )
   const res = [`${createIndentation(indentationLevel)}${O_ARR}`]
   items.forEach(itemLines => itemLines.forEach(l => res.push(l)))
   res.push(`${createIndentation(indentationLevel)}${C_ARR}`)
@@ -106,25 +102,20 @@ const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
   return [
     dumpString(
       parts
-        .map(part => (isExpression(part)
-          ? `\${ ${dumpExpression(part).join('\n')} }`
-          : escapeTemplateMarker(part))).join(''),
-      indentationLevel
+        .map(part => (isExpression(part) ? `\${ ${dumpExpression(part).join('\n')} }` : escapeTemplateMarker(part)))
+        .join(''),
+      indentationLevel,
     ),
   ]
 }
 
-export const dumpValue = (
-  value: Value, indentationLevel = 0
-): string[] => {
+export const dumpValue = (value: Value, indentationLevel = 0): string[] => {
   if (_.isArray(value)) {
     return dumpArray(value, indentationLevel)
   }
   if (isFunctionExpression(value)) {
     const { parameters, funcName } = value
-    const dumpedParams = parameters.map(
-      param => dumpValue(param, indentationLevel + 1)
-    )
+    const dumpedParams = parameters.map(param => dumpValue(param, indentationLevel + 1))
     if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
       return [`${createIndentation(indentationLevel)}${funcName}${O_PAREN}${dumpedParams[0][0].trimLeft()}${C_PAREN}`]
     }
@@ -146,9 +137,7 @@ export const dumpValue = (
   return [dumpPrimitive(value, indentationLevel)]
 }
 
-const dumpAttr = (
-  attr: [string, Value], indentationLevel = 0
-): string[] => {
+const dumpAttr = (attr: [string, Value], indentationLevel = 0): string[] => {
   const [key, value] = attr
   const valueLines = dumpValue(value, indentationLevel)
   valueLines[0] = `${dumpWord(key, indentationLevel)} = ${valueLines[0].trimLeft()}`
@@ -163,12 +152,11 @@ const createBlockDefLine = (block: DumpedHclBlock, indentationLevel = 0): string
 
 const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {
   const defLine = createBlockDefLine(block, indentationLevel)
-  const blocks = block.blocks.map(
-    subBlock => dumpBlock(subBlock, indentationLevel + 1)
-  )
-  const attributes = _(block.attrs).toPairs().map(
-    attr => dumpAttr(attr, indentationLevel + 1)
-  ).value()
+  const blocks = block.blocks.map(subBlock => dumpBlock(subBlock, indentationLevel + 1))
+  const attributes = _(block.attrs)
+    .toPairs()
+    .map(attr => dumpAttr(attr, indentationLevel + 1))
+    .value()
   const res = [defLine]
   blocks.forEach(blockLines => blockLines.forEach(b => res.push(b)))
   attributes.forEach(attributeLines => attributeLines.forEach(a => res.push(a)))
@@ -177,17 +165,14 @@ const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {
 }
 
 export const dump = (body: DumpedHclBody, indentationLevel = 0): string => {
-  const attributesLines = _(body.attrs).toPairs()
+  const attributesLines = _(body.attrs)
+    .toPairs()
     .map(line => dumpAttr(line, indentationLevel))
     .flatten()
     .value()
-  const blockLines = _(body.blocks).map(
-    block => dumpBlock(block, indentationLevel)
-  )
+  const blockLines = _(body.blocks)
+    .map(block => dumpBlock(block, indentationLevel))
     .flatten()
     .value()
-  return [
-    ...attributesLines,
-    ...blockLines,
-  ].join('\n').concat('\n')
+  return [...attributesLines, ...blockLines].join('\n').concat('\n')
 }

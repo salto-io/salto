@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Element, InstanceElement, CORE_ANNOTATIONS, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
@@ -24,7 +24,6 @@ import JiraClient from '../../../src/client/client'
 import { createWebhookTypes } from '../../../src/filters/webhook/types'
 import { JIRA, WEBHOOK_TYPE } from '../../../src/constants'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
-
 
 describe('webhookFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
@@ -44,23 +43,21 @@ describe('webhookFilter', () => {
       elemID: new ElemID(JIRA, WEBHOOK_TYPE),
     })
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        name: 'someName',
-      }
-    )
+    instance = new InstanceElement('instance', type, {
+      name: 'someName',
+    })
 
     fetchQuery = elementUtils.query.createMockQuery()
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = webhookFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      fetchQuery,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    filter = webhookFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        fetchQuery,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     connection.get.mockResolvedValue({
       status: 200,
@@ -93,9 +90,9 @@ describe('webhookFilter', () => {
 
       const webhookTypes = createWebhookTypes()
       expect(elements).toHaveLength(
-        2 // new webhook instances
-        + 1 // webhook top level type
-        + webhookTypes.subTypes.length
+        2 + // new webhook instances
+          1 + // webhook top level type
+          webhookTypes.subTypes.length,
       )
 
       const [webhook1, webhook2] = elements as InstanceElement[]
@@ -122,13 +119,9 @@ describe('webhookFilter', () => {
 
       expect(webhook2.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBe('someUser')
 
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/webhooks/1.0/webhook',
-        {
-          headers: PRIVATE_API_HEADERS,
-        },
-
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/webhooks/1.0/webhook', {
+        headers: PRIVATE_API_HEADERS,
+      })
     })
 
     it('should not fetch webhooks if webhooks were excluded', async () => {
@@ -142,16 +135,17 @@ describe('webhookFilter', () => {
 
     it('should use elemIdGetter', async () => {
       const { paginator } = mockClient()
-      filter = webhookFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-        getElemIdFunc: () => new ElemID(JIRA, 'someName2'),
-        fetchQuery: elementUtils.query.createMockQuery(),
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      filter = webhookFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+          getElemIdFunc: () => new ElemID(JIRA, 'someName2'),
+          fetchQuery: elementUtils.query.createMockQuery(),
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
       const elements: Element[] = []
       await filter.onFetch(elements)
-
 
       const webhook = elements[0] as InstanceElement
 
@@ -236,11 +230,7 @@ describe('webhookFilter', () => {
 
       expect(instance.value.id).toBe('3')
 
-      expect(connection.post).toHaveBeenCalledWith(
-        '/rest/webhooks/1.0/webhook',
-        instance.value,
-        undefined,
-      )
+      expect(connection.post).toHaveBeenCalledWith('/rest/webhooks/1.0/webhook', instance.value, undefined)
     })
 
     it('should fail creating webhook if response is invalid', async () => {
@@ -257,10 +247,7 @@ describe('webhookFilter', () => {
       instance.value.id = '3'
       await filter.deploy([toChange({ before: instance })])
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/webhooks/1.0/webhook/3',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/webhooks/1.0/webhook/3', undefined)
     })
 
     it('should modify webhook', async () => {

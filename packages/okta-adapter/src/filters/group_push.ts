@@ -1,27 +1,46 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Element, InstanceElement, isInstanceElement, ObjectType, ElemID, BuiltinTypes, ElemIdGetter, CORE_ANNOTATIONS, Change, getChangeData, isRemovalChange, isInstanceChange } from '@salto-io/adapter-api'
+import {
+  Element,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  ElemIdGetter,
+  CORE_ANNOTATIONS,
+  Change,
+  getChangeData,
+  isRemovalChange,
+  isInstanceChange,
+} from '@salto-io/adapter-api'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { OKTA, APPLICATION_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME, ACTIVE_STATUS } from '../constants'
+import {
+  OKTA,
+  APPLICATION_TYPE_NAME,
+  GROUP_PUSH_TYPE_NAME,
+  GROUP_PUSH_RULE_TYPE_NAME,
+  ACTIVE_STATUS,
+} from '../constants'
 import { PRIVATE_API_DEFINITIONS_CONFIG, OktaConfig, CLIENT_CONFIG } from '../config'
 
 const log = logger(module)
@@ -68,18 +87,20 @@ const GROUP_PUSH_RESPONSE_SCHEMA = Joi.array().items(GROUP_PUSH_SCHEMA).required
 const PUSH_RULE_RESPONSE_SCHEMA = Joi.array().items(PUSH_RULE_SCHEMA).required()
 
 const isGroupPushResponse = createSchemeGuard<GroupPushEntry[]>(
-  GROUP_PUSH_RESPONSE_SCHEMA, 'Received an invalid response for group push'
+  GROUP_PUSH_RESPONSE_SCHEMA,
+  'Received an invalid response for group push',
 )
 
 const isPushRulesResponse = createSchemeGuard<PushRuleEntry[]>(
-  PUSH_RULE_RESPONSE_SCHEMA, 'Received an invalid response for push rules'
+  PUSH_RULE_RESPONSE_SCHEMA,
+  'Received an invalid response for push rules',
 )
 
 export const isAppSupportsGroupPush = (instance: InstanceElement): boolean =>
   Array.isArray(instance.value.features) && instance.value.features.includes('GROUP_PUSH')
 
-const createGroupPushTypes = (): ObjectType[] => (
-  [new ObjectType({
+const createGroupPushTypes = (): ObjectType[] => [
+  new ObjectType({
     elemID: new ElemID(OKTA, GROUP_PUSH_TYPE_NAME),
     fields: {
       mappingId: {
@@ -108,17 +129,17 @@ const createGroupPushTypes = (): ObjectType[] => (
       descriptionSearchExpressionType: { refType: BuiltinTypes.STRING },
     },
     path: [OKTA, TYPES_PATH, GROUP_PUSH_RULE_TYPE_NAME],
-  })]
-)
+  }),
+]
 
 const getGroupPushForApp = async (paginator: clientUtils.Paginator, appId: string): Promise<GroupPushEntry[]> => {
   const paginationArgs = {
     url: `/api/internal/instance/${appId}/grouppush`,
     paginationField: 'nextMappingsPageUrl',
   }
-  const groupPushEntries = (await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page.mappings) as clientUtils.ResponseValue[])
-  )).flat()
+  const groupPushEntries = (
+    await toArrayAsync(paginator(paginationArgs, page => makeArray(page.mappings) as clientUtils.ResponseValue[]))
+  ).flat()
   if (!isGroupPushResponse(groupPushEntries)) {
     log.error('Received invalid response for group push')
     return []
@@ -130,9 +151,9 @@ const getPushRulesForApp = async (paginator: clientUtils.Paginator, appId: strin
   const paginationArgs = {
     url: `/api/internal/instance/${appId}/grouppushrules`,
   }
-  const pushRulesEntries = (await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-  )).flat()
+  const pushRulesEntries = (
+    await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
+  ).flat()
   if (!isPushRulesResponse(pushRulesEntries)) {
     log.error('Received invalid response for push rules')
     return []
@@ -184,15 +205,16 @@ const toPushRuleInstance = async ({
   appInstance: InstanceElement
   config: OktaConfig
   getElemIdFunc?: ElemIdGetter
-}): Promise<InstanceElement> => toBasicInstance({
-  entry,
-  type: pushRuleType,
-  transformationConfigByType: getTransformationConfigByType(config[PRIVATE_API_DEFINITIONS_CONFIG].types),
-  transformationDefaultConfig: config[PRIVATE_API_DEFINITIONS_CONFIG].typeDefaults.transformation,
-  parent: appInstance,
-  defaultName: entry.name,
-  getElemIdFunc,
-})
+}): Promise<InstanceElement> =>
+  toBasicInstance({
+    entry,
+    type: pushRuleType,
+    transformationConfigByType: getTransformationConfigByType(config[PRIVATE_API_DEFINITIONS_CONFIG].types),
+    transformationDefaultConfig: config[PRIVATE_API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+    parent: appInstance,
+    defaultName: entry.name,
+    getElemIdFunc,
+  })
 
 const getGroupPushRules = async ({
   appInstance,
@@ -208,13 +230,17 @@ const getGroupPushRules = async ({
   getElemIdFunc?: ElemIdGetter
 }): Promise<InstanceElement[]> => {
   const pushRulesEntries = await getPushRulesForApp(paginator, appInstance.value.id)
-  return Promise.all(pushRulesEntries.map(async entry => toPushRuleInstance({
-    entry,
-    pushRuleType,
-    appInstance,
-    config,
-    getElemIdFunc,
-  })))
+  return Promise.all(
+    pushRulesEntries.map(async entry =>
+      toPushRuleInstance({
+        entry,
+        pushRuleType,
+        appInstance,
+        config,
+        getElemIdFunc,
+      }),
+    ),
+  )
 }
 
 /**
@@ -248,28 +274,35 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
       paginationFuncCreator: () => getWithCursorPagination(),
     })
 
-    const instances = (await Promise.all(appsWithGroupPush
-      .map(async appInstance => {
-        if (!_.isString(appInstance.value.id)) {
-          log.error(`Skip fetching group push for app: ${appInstance.elemID.getFullName()}, because id is invalid`)
-          return []
-        }
-        const groupPushEntries = await getGroupPushForApp(paginator, appInstance.value.id)
-        const groupPush = await Promise.all(groupPushEntries.map(async entry => toGroupPushInstance({
-          entry,
-          groupPushType,
-          appInstance,
-          config,
-          getElemIdFunc,
-        })))
-        const appStatus = appInstance.value.status
-        // fetching Group Push rules is only supported for apps in status ACTIVE
-        const groupPushRules = appStatus === ACTIVE_STATUS
-          ? await getGroupPushRules({ appInstance, pushRuleType, paginator, config, getElemIdFunc })
-          : []
-        return groupPush.concat(groupPushRules)
-      })))
-      .flat()
+    const instances = (
+      await Promise.all(
+        appsWithGroupPush.map(async appInstance => {
+          if (!_.isString(appInstance.value.id)) {
+            log.error(`Skip fetching group push for app: ${appInstance.elemID.getFullName()}, because id is invalid`)
+            return []
+          }
+          const groupPushEntries = await getGroupPushForApp(paginator, appInstance.value.id)
+          const groupPush = await Promise.all(
+            groupPushEntries.map(async entry =>
+              toGroupPushInstance({
+                entry,
+                groupPushType,
+                appInstance,
+                config,
+                getElemIdFunc,
+              }),
+            ),
+          )
+          const appStatus = appInstance.value.status
+          // fetching Group Push rules is only supported for apps in status ACTIVE
+          const groupPushRules =
+            appStatus === ACTIVE_STATUS
+              ? await getGroupPushRules({ appInstance, pushRuleType, paginator, config, getElemIdFunc })
+              : []
+          return groupPush.concat(groupPushRules)
+        }),
+      )
+    ).flat()
 
     instances.forEach(instance => elements.push(instance))
   },
@@ -277,8 +310,9 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
     changes
       .filter(isInstanceChange)
       .filter(isRemovalChange)
-      .filter(change => [GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME]
-        .includes(getChangeData(change).elemID.typeName))
+      .filter(change =>
+        [GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME].includes(getChangeData(change).elemID.typeName),
+      )
       .map(getChangeData)
       .forEach(instance => {
         // The payload on removal change should only include
@@ -297,8 +331,9 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
     changes
       .filter(isInstanceChange)
       .filter(isRemovalChange)
-      .filter(change => [GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME]
-        .includes(getChangeData(change).elemID.typeName))
+      .filter(change =>
+        [GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME].includes(getChangeData(change).elemID.typeName),
+      )
       .map(getChangeData)
       .forEach(instance => {
         if (instance.elemID.typeName === GROUP_PUSH_TYPE_NAME) {

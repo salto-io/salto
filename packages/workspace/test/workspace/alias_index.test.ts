@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
@@ -24,7 +24,6 @@ describe('alias index', () => {
   let aliasIndex: MockInterface<RemoteMap<string>>
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
-
 
   const objectToDelete = new ObjectType({
     elemID: new ElemID('test', 'object3'),
@@ -98,85 +97,26 @@ describe('alias index', () => {
       },
     },
   })
-  const settingInstanceNoAlias = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    objectWithAnnotation,
-    {},
-  )
-  const firstInstanceWithAlias = new InstanceElement(
-    'instance1',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {
-      _alias: 'instance alias',
-    },
-  )
-  const secondInstanceNoAlias = new InstanceElement(
-    'instance2',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {},
-  )
-  const thirdInstance = new InstanceElement(
-    'instance3',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {},
-  )
-  const fourthInstanceBefore = new InstanceElement(
-    'instance4',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {},
-  )
-  const fourthInstanceAfter = new InstanceElement(
-    'instance4',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {
-      _alias: 'new alias',
-    },
-  )
-  const fifthInstanceBefore = new InstanceElement(
-    'instance5',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {
-      _alias: 'alias before',
-    },
-  )
-  const fifthInstanceAfter = new InstanceElement(
-    'instance5',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {
-      _alias: 'alias after',
-    },
-  )
-  const sixthInstanceBefore = new InstanceElement(
-    'instance6',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {
-      _alias: 'alias before',
-    },
-  )
-  const sixthInstanceAfter = new InstanceElement(
-    'instance6',
-    objectWithAnnotation,
-    {},
-    undefined,
-    {},
-  )
-
+  const settingInstanceNoAlias = new InstanceElement(ElemID.CONFIG_NAME, objectWithAnnotation, {})
+  const firstInstanceWithAlias = new InstanceElement('instance1', objectWithAnnotation, {}, undefined, {
+    _alias: 'instance alias',
+  })
+  const secondInstanceNoAlias = new InstanceElement('instance2', objectWithAnnotation, {}, undefined, {})
+  const thirdInstance = new InstanceElement('instance3', objectWithAnnotation, {}, undefined, {})
+  const fourthInstanceBefore = new InstanceElement('instance4', objectWithAnnotation, {}, undefined, {})
+  const fourthInstanceAfter = new InstanceElement('instance4', objectWithAnnotation, {}, undefined, {
+    _alias: 'new alias',
+  })
+  const fifthInstanceBefore = new InstanceElement('instance5', objectWithAnnotation, {}, undefined, {
+    _alias: 'alias before',
+  })
+  const fifthInstanceAfter = new InstanceElement('instance5', objectWithAnnotation, {}, undefined, {
+    _alias: 'alias after',
+  })
+  const sixthInstanceBefore = new InstanceElement('instance6', objectWithAnnotation, {}, undefined, {
+    _alias: 'alias before',
+  })
+  const sixthInstanceAfter = new InstanceElement('instance6', objectWithAnnotation, {}, undefined, {})
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -200,33 +140,23 @@ describe('alias index', () => {
         toChange({ before: fourthInstanceBefore, after: fourthInstanceAfter }), // modification to add alias
         toChange({ before: sixthInstanceBefore, after: sixthInstanceAfter }), // modification to remove alias
       ]
-      await updateAliasIndex(
-        changes,
-        aliasIndex,
-        mapVersions,
-        elementsSource,
-        true
-      )
+      await updateAliasIndex(changes, aliasIndex, mapVersions, elementsSource, true)
     })
     it('should add all addition and alias modification elements to index', () => {
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(
-        [
-          { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
-          { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
-          { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
-          { key: objectWithAnnotationAfter.fields.fieldWithAnnotation.elemID.getFullName(), value: 'field2 alias' },
-          { key: objectWithAnnotationAfter.elemID.getFullName(), value: 'object2 alias' },
-          { key: fifthInstanceAfter.elemID.getFullName(), value: 'alias after' },
-          { key: fourthInstanceAfter.elemID.getFullName(), value: 'new alias' },
-        ]
-      )
-      expect(aliasIndex.deleteAll).toHaveBeenCalledWith(
-        [
-          objectToDelete.elemID.getFullName(),
-          ...Object.values(objectToDelete.fields).map(field => field.elemID.getFullName()),
-          sixthInstanceAfter.elemID.getFullName(),
-        ]
-      )
+      expect(aliasIndex.setAll).toHaveBeenCalledWith([
+        { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
+        { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
+        { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
+        { key: objectWithAnnotationAfter.fields.fieldWithAnnotation.elemID.getFullName(), value: 'field2 alias' },
+        { key: objectWithAnnotationAfter.elemID.getFullName(), value: 'object2 alias' },
+        { key: fifthInstanceAfter.elemID.getFullName(), value: 'alias after' },
+        { key: fourthInstanceAfter.elemID.getFullName(), value: 'new alias' },
+      ])
+      expect(aliasIndex.deleteAll).toHaveBeenCalledWith([
+        objectToDelete.elemID.getFullName(),
+        ...Object.values(objectToDelete.fields).map(field => field.elemID.getFullName()),
+        sixthInstanceAfter.elemID.getFullName(),
+      ])
     })
   })
 
@@ -243,18 +173,16 @@ describe('alias index', () => {
           aliasIndex,
           mapVersions,
           elementsSource,
-          false
+          false,
         )
       })
       it('should update alias index with all additions', () => {
         expect(aliasIndex.clear).toHaveBeenCalled()
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(
-          [
-            { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
-            { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
-            { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
-          ]
-        )
+        expect(aliasIndex.setAll).toHaveBeenCalledWith([
+          { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
+          { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
+          { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
+        ])
         expect(aliasIndex.deleteAll).toHaveBeenCalledWith([])
       })
     })
@@ -265,23 +193,15 @@ describe('alias index', () => {
         await elementsSource.set(secondInstanceNoAlias)
         await elementsSource.set(objectWithAnnotation)
         mapVersions.get.mockResolvedValue(0)
-        await updateAliasIndex(
-          [],
-          aliasIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
+        await updateAliasIndex([], aliasIndex, mapVersions, elementsSource, true)
       })
       it('should update alias index using the element source', () => {
         expect(aliasIndex.clear).toHaveBeenCalled()
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(
-          [
-            { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
-            { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
-            { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
-          ]
-        )
+        expect(aliasIndex.setAll).toHaveBeenCalledWith([
+          { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
+          { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
+          { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
+        ])
       })
     })
   })

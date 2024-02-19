@@ -1,22 +1,34 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  ElemID, Field, InstanceElement, isPrimitiveType, ObjectType,
-  PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
-  OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
+  ElemID,
+  Field,
+  InstanceElement,
+  isPrimitiveType,
+  ObjectType,
+  PrimitiveTypes,
+  Values,
+  isObjectType,
+  isPrimitiveValue,
+  StaticFile,
+  ElemIdGetter,
+  OBJECT_SERVICE_ID,
+  OBJECT_NAME,
+  toServiceIdsString,
+  ServiceIds,
   isInstanceElement,
   ElemIDType,
   BuiltinTypes,
@@ -25,18 +37,56 @@ import {
   TypeReference,
   TopLevelElement,
 } from '@salto-io/adapter-api'
-import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import {
+  MapKeyFunc,
+  mapKeysRecursive,
+  TransformFunc,
+  transformValues,
+  GetLookupNameFunc,
+  naclCase,
+  pathNaclCase,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
-  ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
-  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT, ID_FIELD, BUNDLE,
+  ADDRESS_FORM,
+  ENTRY_FORM,
+  TRANSACTION_FORM,
+  IS_ATTRIBUTE,
+  NETSUITE,
+  RECORDS_PATH,
+  SCRIPT_ID,
+  ADDITIONAL_FILE_SUFFIX,
+  FILE_CABINET_PATH,
+  PATH,
+  FILE_CABINET_PATH_SEPARATOR,
+  APPLICATION_ID,
+  SETTINGS_PATH,
+  CUSTOM_RECORD_TYPE,
+  CONTENT,
+  ID_FIELD,
+  BUNDLE,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance, isBundleType } from './types'
+import {
+  isSDFConfigType,
+  isStandardType,
+  isFileCabinetType,
+  isCustomRecordType,
+  getTopLevelStandardTypes,
+  metadataTypesToList,
+  getMetadataTypes,
+  isFileInstance,
+  isBundleType,
+} from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
+import {
+  CustomizationInfo,
+  CustomTypeInfo,
+  FileCustomizationInfo,
+  FolderCustomizationInfo,
+  TemplateCustomTypeInfo,
+} from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 import { isStandardTypeName } from './autogen/types'
 import { createCustomRecordTypes } from './custom_records/custom_record_type'
@@ -60,11 +110,10 @@ export const addBundleFieldToType = (type: ObjectType, bundleType: ObjectType): 
 }
 
 const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
-  awu(Object.values(type.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
+  awu(Object.values(type.fields)).find(async f => {
+    const fType = await f.getType()
+    return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+  })
 const getServiceIdFieldName = (type: ObjectType): string => {
   if (isBundleType(type)) {
     return ID_FIELD
@@ -72,7 +121,8 @@ const getServiceIdFieldName = (type: ObjectType): string => {
   return isStandardType(type) ? SCRIPT_ID : PATH
 }
 
-const addBundlePrefix = (desiredName: string, type: ObjectType): string => (isBundleType(type) ? (`${BUNDLE}_${desiredName}`) : desiredName)
+const addBundlePrefix = (desiredName: string, type: ObjectType): string =>
+  isBundleType(type) ? `${BUNDLE}_${desiredName}` : desiredName
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
@@ -94,8 +144,12 @@ export const createInstanceElement = async (
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }
-    const desiredName = naclCase(addBundlePrefix(transformedValues[serviceIdFieldName], type)
-      .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
+    const desiredName = naclCase(
+      addBundlePrefix(transformedValues[serviceIdFieldName], type).replace(
+        new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`),
+        '',
+      ),
+    )
     return getElemIdFunc && !isBundleType(type) ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
@@ -139,14 +193,13 @@ export const createInstanceElement = async (
   }
 
   const transformAttributeKey: MapKeyFunc = ({ key }) =>
-    (key.startsWith(ATTRIBUTE_PREFIX) ? key.slice(ATTRIBUTE_PREFIX.length) : key)
+    key.startsWith(ATTRIBUTE_PREFIX) ? key.slice(ATTRIBUTE_PREFIX.length) : key
 
-  const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values,
-    transformAttributeKey)
+  const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values, transformAttributeKey)
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
-    valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
-      + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
+    valuesWithTransformedAttrs[PATH] =
+      FILE_CABINET_PATH_SEPARATOR + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
     if (isFileCustomizationInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
       valuesWithTransformedAttrs[CONTENT] = new StaticFile({
         filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.map(removeDotPrefix).join('/')}`,
@@ -163,8 +216,10 @@ export const createInstanceElement = async (
   // In that case we still want to load the objects:
   // - if the instance doesn't exists in the environment - we use default attributes.
   // - if the instance exists in the environment - we use the existing attibutes and the new file content.
-  if ((isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo))
-    && customizationInfo.hadMissingAttributes) {
+  if (
+    (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) &&
+    customizationInfo.hadMissingAttributes
+  ) {
     const instanceElemId = new ElemID(NETSUITE, type.elemID.name, 'instance', instanceName)
     const existingInstance = await elementsSource.get(instanceElemId)
     if (isInstanceElement(existingInstance)) {
@@ -180,8 +235,7 @@ export const createInstanceElement = async (
   }
 
   const fileContentField = await getFileContentField(type)
-  if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)
-    && customizationInfo.fileContent !== undefined) {
+  if (fileContentField && isTemplateCustomTypeInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
       filepath: `${NETSUITE}/${type.elemID.name}/${instanceFileName}.${customizationInfo.fileExtension}`,
       content: customizationInfo.fileContent,
@@ -193,12 +247,7 @@ export const createInstanceElement = async (
     transformFunc: transformPrimitive,
     strict: false,
   })
-  return new InstanceElement(
-    instanceName,
-    type,
-    values,
-    getInstancePath(instanceFileName),
-  )
+  return new InstanceElement(instanceName, type, values, getInstancePath(instanceFileName))
 }
 
 export const createElements = async (
@@ -210,10 +259,10 @@ export const createElements = async (
 
   const topLevelStandardTypes = getTopLevelStandardTypes(standardTypes)
 
-  topLevelStandardTypes.concat(Object.values(additionalTypes))
-    .forEach(addApplicationIdToType)
+  topLevelStandardTypes.concat(Object.values(additionalTypes)).forEach(addApplicationIdToType)
 
-  topLevelStandardTypes.concat(Object.values(additionalTypes).filter(isFileCabinetType))
+  topLevelStandardTypes
+    .concat(Object.values(additionalTypes).filter(isFileCabinetType))
     .forEach(type => addBundleFieldToType(type, additionalTypes.bundle))
 
   const customizationInfosWithTypes = customizationInfos
@@ -226,23 +275,15 @@ export const createElements = async (
     .filter(({ type }) => type !== undefined)
 
   const allInstances = await awu(customizationInfosWithTypes)
-    .map(({ customizationInfo, type }) => createInstanceElement(
-      customizationInfo,
-      type,
-      elementsSource,
-      getElemIdFunc,
-    ))
+    .map(({ customizationInfo, type }) => createInstanceElement(customizationInfo, type, elementsSource, getElemIdFunc))
     .toArray()
 
   const [customRecordTypeInstances, instances] = _.partition(
     allInstances,
-    instance => instance.elemID.typeName === CUSTOM_RECORD_TYPE
+    instance => instance.elemID.typeName === CUSTOM_RECORD_TYPE,
   )
 
-  const customRecordTypes = createCustomRecordTypes(
-    customRecordTypeInstances,
-    standardTypes.customrecordtype.type
-  )
+  const customRecordTypes = createCustomRecordTypes(customRecordTypeInstances, standardTypes.customrecordtype.type)
 
   return [
     ...metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes }),
@@ -251,8 +292,7 @@ export const createElements = async (
   ]
 }
 
-export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):
-  Promise<Values> => {
+export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID): Promise<Values> => {
   const allAttributesPaths = new Set<string>()
   const createPathSetCallback: TransformFunc = ({ value, field, path }) => {
     if (path && field && field.annotations[IS_ATTRIBUTE]) {
@@ -284,28 +324,33 @@ export const restoreAttributes = async (values: Values, type: ObjectType, instan
 const TYPES_TO_SORT = [ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM]
 
 const sortValuesBasedOnType = async (
-  topLevelType: ObjectType, values: Values, instancePath: ElemID
+  topLevelType: ObjectType,
+  values: Values,
+  instancePath: ElemID,
 ): Promise<Values> => {
   const sortValues: TransformFunc = async ({ field, value, path }) => {
-    const type = await field?.getType()
-      ?? (path && path.isEqual(instancePath) ? topLevelType : undefined)
+    const type = (await field?.getType()) ?? (path && path.isEqual(instancePath) ? topLevelType : undefined)
     if (isObjectType(type) && _.isPlainObject(value)) {
       const fieldsOrder = Object.keys(type.fields)
-      return _.fromPairs(fieldsOrder
-        .map(fieldName => [fieldName, value[fieldName]])
-        .filter(([_fieldName, val]) => !_.isUndefined(val)))
+      return _.fromPairs(
+        fieldsOrder.map(fieldName => [fieldName, value[fieldName]]).filter(([_fieldName, val]) => !_.isUndefined(val)),
+      )
     }
     return value
   }
 
-  return (await transformValues(
-    { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath, strict: false }
-  )) ?? {}
+  return (
+    (await transformValues({
+      type: topLevelType,
+      values,
+      transformFunc: sortValues,
+      pathID: instancePath,
+      strict: false,
+    })) ?? {}
+  )
 }
 
-export const toCustomizationInfo = async (
-  instance: InstanceElement
-): Promise<CustomizationInfo> => {
+export const toCustomizationInfo = async (instance: InstanceElement): Promise<CustomizationInfo> => {
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     if (_.isBoolean(value)) {
       return toXmlBoolean(value)
@@ -323,12 +368,13 @@ export const toCustomizationInfo = async (
     return String(value)
   }
   const instanceType = await instance.getType()
-  const transformedValues = (await transformValues({
-    values: instance.value,
-    type: instanceType,
-    transformFunc: transformPrimitive,
-    strict: false,
-  })) ?? {}
+  const transformedValues =
+    (await transformValues({
+      values: instance.value,
+      type: instanceType,
+      transformFunc: transformPrimitive,
+      strict: false,
+    })) ?? {}
 
   const typeName = instance.refType.elemID.name
   const sortedValues = TYPES_TO_SORT.includes(typeName)
@@ -357,8 +403,11 @@ export const toCustomizationInfo = async (
   const scriptId = instance.value[SCRIPT_ID]
   const fileContentField = await getFileContentField(instanceType)
   // Template Custom Type
-  if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
-    && isStandardType(instance.refType)) {
+  if (
+    !_.isUndefined(fileContentField) &&
+    !_.isUndefined(values[fileContentField.name]) &&
+    isStandardType(instance.refType)
+  ) {
     const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
     return {
@@ -372,10 +421,7 @@ export const toCustomizationInfo = async (
   return { typeName, values, scriptId } as CustomTypeInfo
 }
 
-const getScriptIdParts = (
-  values: Partial<Record<ElemIDType, Values>>,
-  elemId: ElemID
-): string[] => {
+const getScriptIdParts = (values: Partial<Record<ElemIDType, Values>>, elemId: ElemID): string[] => {
   if (elemId.isTopLevel()) {
     return [values[elemId.idType]?.[SCRIPT_ID]]
   }
@@ -389,16 +435,15 @@ const getScriptIdParts = (
 
 export const getLookUpName: GetLookupNameFunc = async ({ ref }) => {
   const { elemID, value, topLevelParent } = ref
-  if (
-    isObjectType(topLevelParent)
-    && isCustomRecordType(topLevelParent)
-    && elemID.name === SCRIPT_ID
-  ) {
-    return `[${SCRIPT_ID}=${getScriptIdParts({
-      type: topLevelParent.annotations,
-      attr: topLevelParent.annotations,
-      field: _.mapValues(topLevelParent.fields, field => field.annotations),
-    }, elemID).join('.')}]`
+  if (isObjectType(topLevelParent) && isCustomRecordType(topLevelParent) && elemID.name === SCRIPT_ID) {
+    return `[${SCRIPT_ID}=${getScriptIdParts(
+      {
+        type: topLevelParent.annotations,
+        attr: topLevelParent.annotations,
+        field: _.mapValues(topLevelParent.fields, field => field.annotations),
+      },
+      elemID,
+    ).join('.')}]`
   }
   if (!isInstanceElement(topLevelParent)) {
     return value
@@ -407,9 +452,12 @@ export const getLookUpName: GetLookupNameFunc = async ({ ref }) => {
     return `[${value}]`
   }
   if (isStandardType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
-    return `[${SCRIPT_ID}=${getScriptIdParts({
-      instance: topLevelParent.value,
-    }, elemID).join('.')}]`
+    return `[${SCRIPT_ID}=${getScriptIdParts(
+      {
+        instance: topLevelParent.value,
+      },
+      elemID,
+    ).join('.')}]`
   }
   const type = await topLevelParent.getType()
   if (isCustomRecordType(type) && elemID.name === SCRIPT_ID) {

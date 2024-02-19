@@ -1,22 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, isObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  ReferenceExpression,
+  isInstanceElement,
+  isObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsObjectTypeOrderFilter from '../../../src/filters/assets/assets_object_type_order'
@@ -28,21 +35,31 @@ const createAssetsObjectTypeInstance = (
   id: number,
   suffix: string,
   assetSchema: InstanceElement,
-  parentObjectTypeInstance: InstanceElement
-): InstanceElement => new InstanceElement(
-  `assetsObjectType${suffix}`,
-  createEmptyType(OBJECT_TYPE_TYPE),
-  {
-    id,
-    name: `assetsObjectType${suffix}`,
-    position: id - 1,
-    parentObjectTypeId: new ReferenceExpression(parentObjectTypeInstance.elemID, parentObjectTypeInstance),
-  },
-  [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', `assetsObjectType${suffix}`, `assetsObjectType${suffix}`],
-  {
-    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
-  }
-)
+  parentObjectTypeInstance: InstanceElement,
+): InstanceElement =>
+  new InstanceElement(
+    `assetsObjectType${suffix}`,
+    createEmptyType(OBJECT_TYPE_TYPE),
+    {
+      id,
+      name: `assetsObjectType${suffix}`,
+      position: id - 1,
+      parentObjectTypeId: new ReferenceExpression(parentObjectTypeInstance.elemID, parentObjectTypeInstance),
+    },
+    [
+      JIRA,
+      elementUtils.RECORDS_PATH,
+      OBJECT_SCHEMA_TYPE,
+      'assetsSchema',
+      'assetsObjectTypes',
+      'parentObjectTypeInstance',
+      `assetsObjectType${suffix}`,
+      `assetsObjectType${suffix}`,
+    ],
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
+    },
+  )
 
 describe('assetsObjectTypeOrderFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -64,14 +81,27 @@ describe('assetsObjectTypeOrderFilter', () => {
       name: 'AssetsObjectTypeP1',
       parentObjectTypeId: new ReferenceExpression(assetSchema.elemID, assetSchema),
     },
-    [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', 'parentObjectTypeInstance'],
+    [
+      JIRA,
+      elementUtils.RECORDS_PATH,
+      OBJECT_SCHEMA_TYPE,
+      'assetsSchema',
+      'assetsObjectTypes',
+      'parentObjectTypeInstance',
+      'parentObjectTypeInstance',
+    ],
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
-    }
+    },
   )
   const assetsObjectTypeInstanceOne = createAssetsObjectTypeInstance(1, 'One', assetSchema, parentObjectTypeInstance)
   const assetsObjectTypeInstanceTwo = createAssetsObjectTypeInstance(2, 'Two', assetSchema, parentObjectTypeInstance)
-  const assetsObjectTypeInstanceThree = createAssetsObjectTypeInstance(3, 'Three', assetSchema, parentObjectTypeInstance)
+  const assetsObjectTypeInstanceThree = createAssetsObjectTypeInstance(
+    3,
+    'Three',
+    assetSchema,
+    parentObjectTypeInstance,
+  )
   describe('fetch', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -138,9 +168,10 @@ describe('assetsObjectTypeOrderFilter', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]:
-          [new ReferenceExpression(parentObjectTypeInstance.elemID, parentObjectTypeInstance)],
-        }
+          [CORE_ANNOTATIONS.PARENT]: [
+            new ReferenceExpression(parentObjectTypeInstance.elemID, parentObjectTypeInstance),
+          ],
+        },
       )
       connection.get.mockImplementation(async url => {
         if (url === '/rest/servicedeskapi/assets/workspace') {
@@ -160,9 +191,7 @@ describe('assetsObjectTypeOrderFilter', () => {
       connection.post.mockResolvedValueOnce({ status: 200, data: {} })
     })
     it('should apply order when adding assetsObjectTypeOrderInstance', async () => {
-      const changes = [
-        toChange({ after: assetsObjectTypeOrderInstance }),
-      ]
+      const changes = [toChange({ after: assetsObjectTypeOrderInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -176,9 +205,7 @@ describe('assetsObjectTypeOrderFilter', () => {
         new ReferenceExpression(assetsObjectTypeInstanceThree.elemID, assetsObjectTypeInstanceThree),
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
       ]
-      const changes = [
-        toChange({ before: assetsObjectTypeOrderInstance, after: assetsObjectTypeOrderInstanceAfer }),
-      ]
+      const changes = [toChange({ before: assetsObjectTypeOrderInstance, after: assetsObjectTypeOrderInstanceAfer })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -187,14 +214,12 @@ describe('assetsObjectTypeOrderFilter', () => {
     })
     it('should return error when workspaceId is undefined', async () => {
       connection.get.mockResolvedValueOnce({ status: 200, data: {} })
-      const changes = [
-        toChange({ after: assetsObjectTypeOrderInstance }),
-      ]
+      const changes = [toChange({ after: assetsObjectTypeOrderInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'The following changes were not deployed, due to error with the workspaceId: jira.ObjectTypeOrder.instance.assetsObjectTypeOrderInstance'
+        'The following changes were not deployed, due to error with the workspaceId: jira.ObjectTypeOrder.instance.assetsObjectTypeOrderInstance',
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(connection.post).toHaveBeenCalledTimes(0)
@@ -203,9 +228,7 @@ describe('assetsObjectTypeOrderFilter', () => {
       assetsObjectTypeOrderInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(assetSchema.elemID, assetSchema),
       ]
-      const changes = [
-        toChange({ after: assetsObjectTypeOrderInstance }),
-      ]
+      const changes = [toChange({ after: assetsObjectTypeOrderInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -213,7 +236,12 @@ describe('assetsObjectTypeOrderFilter', () => {
       expect(connection.post).toHaveBeenCalledTimes(3)
     })
     it('should change order when adding another assetsObjectType and change order', async () => {
-      const assetsObjectTypeInstanceFour = createAssetsObjectTypeInstance(4, 'Four', assetSchema, parentObjectTypeInstance)
+      const assetsObjectTypeInstanceFour = createAssetsObjectTypeInstance(
+        4,
+        'Four',
+        assetSchema,
+        parentObjectTypeInstance,
+      )
       const assetsObjectTypeOrderInstanceAfer = assetsObjectTypeOrderInstance.clone()
       assetsObjectTypeOrderInstanceAfer.value.objectTypes = [
         new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
@@ -221,9 +249,7 @@ describe('assetsObjectTypeOrderFilter', () => {
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
         new ReferenceExpression(assetsObjectTypeInstanceThree.elemID, assetsObjectTypeInstanceThree),
       ]
-      const changes = [
-        toChange({ before: assetsObjectTypeOrderInstance, after: assetsObjectTypeOrderInstanceAfer }),
-      ]
+      const changes = [toChange({ before: assetsObjectTypeOrderInstance, after: assetsObjectTypeOrderInstanceAfer })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)

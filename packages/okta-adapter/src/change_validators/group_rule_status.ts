@@ -1,28 +1,35 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, Change, isRemovalChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ChangeValidator,
+  getChangeData,
+  isInstanceChange,
+  InstanceElement,
+  ChangeError,
+  isModificationChange,
+  Change,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { ACTIVE_STATUS, GROUP_RULE_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 
 const { awu } = collections.asynciterable
 const INVALID_STATUS = 'INVALID'
 
-const getGroupRuleStatusError = (
-  change: Change<InstanceElement>
-): ChangeError | undefined => {
+const getGroupRuleStatusError = (change: Change<InstanceElement>): ChangeError | undefined => {
   const instance = getChangeData(change)
   if (isRemovalChange(change) && instance.value.status === ACTIVE_STATUS) {
     return {
@@ -58,11 +65,10 @@ const getGroupRuleStatusError = (
 /**
  * Validate GroupRule status before deployment
  */
-export const groupRuleStatusValidator: ChangeValidator = async changes => (
+export const groupRuleStatusValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === GROUP_RULE_TYPE_NAME)
     .map(getGroupRuleStatusError)
     .filter(values.isDefined)
     .toArray()
-)

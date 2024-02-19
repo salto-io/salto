@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID } from '@salto-io/adapter-api'
 
 export const JIRA = 'jira'
@@ -72,7 +72,14 @@ export const PERMISSIONS = 'Permissions'
 export const PERMISSION_SCHEME_TYPE_NAME = 'PermissionScheme'
 export const ACCOUNT_ID_INFO_TYPE = 'AccountIdInfo'
 export const ACCOUNT_ID_STRING = 'ACCOUNT_ID'
-export const ACCOUNT_IDS_FIELDS_NAMES = ['leadAccountId', 'authorAccountId', 'accountId', 'actorAccountId', 'user', 'FIELD_USER_KEY']
+export const ACCOUNT_IDS_FIELDS_NAMES = [
+  'leadAccountId',
+  'authorAccountId',
+  'accountId',
+  'actorAccountId',
+  'user',
+  'FIELD_USER_KEY',
+]
 export const JIRA_USERS_PAGE = 'jira/people/search'
 export const ISSUE_EVENT_TYPE_NAME = 'IssueEvent'
 export const PRIORITY_SCHEME_TYPE_NAME = 'PriorityScheme'
@@ -103,8 +110,14 @@ export const BEHAVIOR_TYPE = 'Behavior'
 export const ESCALATION_SERVICE_TYPE = 'EscalationService'
 export const SCRIPTED_FIELD_TYPE = 'ScriptedField'
 export const SCRIPT_RUNNER_SETTINGS_TYPE = 'ScriptRunnerSettings'
-export const SCRIPT_RUNNER_TYPES = [SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE, SCHEDULED_JOB_TYPE,
-  BEHAVIOR_TYPE, ESCALATION_SERVICE_TYPE, SCRIPTED_FIELD_TYPE]
+export const SCRIPT_RUNNER_TYPES = [
+  SCRIPT_RUNNER_LISTENER_TYPE,
+  SCRIPT_FRAGMENT_TYPE,
+  SCHEDULED_JOB_TYPE,
+  BEHAVIOR_TYPE,
+  ESCALATION_SERVICE_TYPE,
+  SCRIPTED_FIELD_TYPE,
+]
 export const ISSUE_LAYOUT_TYPE = 'IssueLayout'
 export const SERVICE_DESK = 'service_desk'
 export const SOFTWARE_FIELD = 'software'
@@ -129,4 +142,5 @@ export const OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE = 'ObjectSchemaDefaultRef
 export const OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE = 'ObjectTypeLabelAttribute'
 export const DELETE_LINK_TYPES = 'DeleteLinkTypes'
 // almost constant functions
-export const fetchFailedWarnings = (name :string):string => `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`
+export const fetchFailedWarnings = (name: string): string =>
+  `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`

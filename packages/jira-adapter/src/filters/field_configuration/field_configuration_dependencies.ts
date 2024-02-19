@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { InstanceElement, isInstanceElement, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { extendGeneratedDependencies, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
@@ -26,41 +26,42 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
   if (!isResolvedReferenceExpression(instance.value.issueTypeScreenScheme)) {
     return []
   }
-  return instance.value.issueTypeScreenScheme.value.value.issueTypeMappings
-    ?.map((item: Values) => item.screenSchemeId)
-    .filter(isResolvedReferenceExpression)
-    .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(
-      screenSchemeRef.value.value.screens ?? {}
-    ))
-    .filter(isResolvedReferenceExpression)
-    .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs ?? {}))
-    .flatMap((tab: Values) => tab.fields)
-    .filter(isResolvedReferenceExpression)
-    .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
+  return (
+    instance.value.issueTypeScreenScheme.value.value.issueTypeMappings
+      ?.map((item: Values) => item.screenSchemeId)
+      .filter(isResolvedReferenceExpression)
+      .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(screenSchemeRef.value.value.screens ?? {}))
+      .filter(isResolvedReferenceExpression)
+      .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs ?? {}))
+      .flatMap((tab: Values) => tab.fields)
+      .filter(isResolvedReferenceExpression)
+      .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
+  )
 }
 
 const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] => {
   const fieldConfigurationRef = instance.value.fieldConfigurationScheme
   if (!isResolvedReferenceExpression(fieldConfigurationRef)) {
     if (fieldConfigurationRef !== undefined) {
-      log.warn(`${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`)
+      log.warn(
+        `${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`,
+      )
     }
     return []
   }
-  return fieldConfigurationRef.value.value.items
-    ?.map((item: Values) => item.fieldConfigurationId)
-    .filter(isResolvedReferenceExpression)
-    .map((fieldConfigRef: ReferenceExpression) => fieldConfigRef.value) ?? []
+  return (
+    fieldConfigurationRef.value.value.items
+      ?.map((item: Values) => item.fieldConfigurationId)
+      .filter(isResolvedReferenceExpression)
+      .map((fieldConfigRef: ReferenceExpression) => fieldConfigRef.value) ?? []
+  )
 }
-
 
 const getProjectUsedFieldConfigItems = (
   instance: InstanceElement,
-  fieldConfigurationItems: Record<string, InstanceElement[]>
+  fieldConfigurationItems: Record<string, InstanceElement[]>,
 ): InstanceElement[] => {
-  const usedFieldNames = new Set(
-    getProjectUsedFields(instance).map(field => field.elemID.getFullName())
-  )
+  const usedFieldNames = new Set(getProjectUsedFields(instance).map(field => field.elemID.getFullName()))
 
   return getProjectFieldConfigurations(instance)
     .flatMap(fieldConfig => fieldConfigurationItems[fieldConfig.elemID.getFullName()] ?? [])
@@ -84,7 +85,7 @@ const filter: FilterCreator = () => ({
           instance,
           fieldConfigItems.map(item => ({
             reference: new ReferenceExpression(item.elemID, item),
-          }))
+          })),
         )
       })
   },

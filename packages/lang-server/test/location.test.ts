@@ -1,23 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as path from 'path'
 import _ from 'lodash'
 import { EditorWorkspace } from '../src/workspace'
-import { getQueryLocationsExactMatch, getQueryLocationsFuzzy,
-  getQueryLocations, completeSaltoLocation } from '../src/location'
+import {
+  getQueryLocationsExactMatch,
+  getQueryLocationsFuzzy,
+  getQueryLocations,
+  completeSaltoLocation,
+} from '../src/location'
 import { mockWorkspace } from './workspace'
 
 describe('workspace query locations', () => {
@@ -101,20 +105,32 @@ describe('workspace query locations', () => {
     it('should find elements', async () => {
       const res = await getQueryLocations(workspace, 'perSon')
       expect(res.totalCount).toEqual(5)
-      expect(_.sortBy(res.results, 'fullname')).toEqual(_.sortBy([
-        { filename: naclFileName, fullname: 'vs.person', indices: [[3, 9]] },
-        { filename: naclFileName, fullname: 'vs.person.instance.lavi', indices: [[3, 9]] },
-        { filename: naclFileName, fullname: 'vs.person.instance.evyatar', indices: [[3, 9]] },
-        { filename: naclFileName, fullname: 'vs.person.instance.hadar', indices: [[3, 9]] },
-        { filename: naclFileName, fullname: 'vs.person.instance.parentTester', indices: [[3, 9]] },
-      ], 'fullname'))
+      expect(_.sortBy(res.results, 'fullname')).toEqual(
+        _.sortBy(
+          [
+            { filename: naclFileName, fullname: 'vs.person', indices: [[3, 9]] },
+            { filename: naclFileName, fullname: 'vs.person.instance.lavi', indices: [[3, 9]] },
+            { filename: naclFileName, fullname: 'vs.person.instance.evyatar', indices: [[3, 9]] },
+            { filename: naclFileName, fullname: 'vs.person.instance.hadar', indices: [[3, 9]] },
+            { filename: naclFileName, fullname: 'vs.person.instance.parentTester', indices: [[3, 9]] },
+          ],
+          'fullname',
+        ),
+      )
     })
     it('should find field elements', async () => {
       const res = await getQueryLocations(workspace, 'car')
       expect(res.totalCount).toEqual(3)
       expect(res.results).toEqual([
         { filename: naclFileName, fullname: 'vs.car', indices: [[3, 6]] },
-        { filename: naclFileName, fullname: 'vs.car.field.car_owner', indices: [[3, 6], [13, 16]] },
+        {
+          filename: naclFileName,
+          fullname: 'vs.car.field.car_owner',
+          indices: [
+            [3, 6],
+            [13, 16],
+          ],
+        },
         { filename: naclFileName, fullname: 'vs.loan.instance.weekend_car', indices: [[25, 28]] },
       ])
     })

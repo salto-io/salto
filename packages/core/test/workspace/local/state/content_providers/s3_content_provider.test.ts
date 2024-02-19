@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import path from 'path'
 import { Readable } from 'stream'
@@ -21,10 +21,20 @@ import { collections } from '@salto-io/lowerdash'
 import { setupTmpDir } from '@salto-io/test-utils'
 import { writeFile, readDir } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { GetObjectCommand, NoSuchKey, PutObjectCommandInput, S3Client, ServiceInputTypes, ServiceOutputTypes } from '@aws-sdk/client-s3'
+import {
+  GetObjectCommand,
+  NoSuchKey,
+  PutObjectCommandInput,
+  S3Client,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from '@aws-sdk/client-s3'
 import { AwsStub, mockClient } from 'aws-sdk-client-mock'
 import { sdkStreamMixin } from '@aws-sdk/util-stream-node'
-import { createS3StateContentProvider, StateContentProvider } from '../../../../../src/local-workspace/state/content_providers'
+import {
+  createS3StateContentProvider,
+  StateContentProvider,
+} from '../../../../../src/local-workspace/state/content_providers'
 import { LocalStateFileContent } from '../../../../../src/local-workspace/state/content_providers/s3_content_provider'
 
 const { awu } = collections.asynciterable
@@ -68,18 +78,14 @@ describe('createS3StateContentProvider', () => {
   beforeEach(async () => {
     s3mock.reset()
     provider = createS3StateContentProvider({ workspaceId, options: { bucket: bucketName } })
-    await Promise.all(
-      accountNames.map(name => setupStateFile(name, 'hash'))
-    )
-    await Promise.all(
-      nonStateFiles.map(name => writeFile(path.join(testDir.name(), name), 'data'))
-    )
+    await Promise.all(accountNames.map(name => setupStateFile(name, 'hash')))
+    await Promise.all(nonStateFiles.map(name => writeFile(path.join(testDir.name(), name), 'data')))
   })
 
   describe('findStateFiles', () => {
     it('should match only file names of the correct environment state files', async () => {
       expect(await provider.findStateFiles(envPrefix())).toIncludeSameMembers(
-        accountNames.map(name => path.join(testDir.name(), `env.${name}.json`))
+        accountNames.map(name => path.join(testDir.name(), `env.${name}.json`)),
       )
     })
   })
@@ -133,7 +139,9 @@ describe('createS3StateContentProvider', () => {
       // change the test and update it with the new correct value.
       // be aware that this test failing when the setup did not change means all existing workspaces will have
       // their cache invalidated the next time they are loaded
-      expect(await provider.getHash(await provider.findStateFiles(envPrefix()))).toEqual('d9aa9112a3ad7cb016e0925b0f6898ca')
+      expect(await provider.getHash(await provider.findStateFiles(envPrefix()))).toEqual(
+        'd9aa9112a3ad7cb016e0925b0f6898ca',
+      )
     })
   })
   describe('readContents', () => {
@@ -145,13 +153,15 @@ describe('createS3StateContentProvider', () => {
         accountNames.map(name => ({
           name: path.join(testDir.name(), `env.${name}.json`),
           content: Buffer.from('stateData'),
-        }))
+        })),
       )
     })
     describe('when remote file is missing', () => {
       beforeEach(async () => {
         await setupStateFile(accountNames[0], 'localHash', 'remoteHash')
-        s3mock.on(GetObjectCommand).rejects(new NoSuchKey({ message: 'The specified key does not exist.', $metadata: {} }))
+        s3mock
+          .on(GetObjectCommand)
+          .rejects(new NoSuchKey({ message: 'The specified key does not exist.', $metadata: {} }))
       })
       it('should return an iterator that fails to read', async () => {
         const contentIter = provider.readContents(await provider.findStateFiles(envPrefix()))
@@ -163,12 +173,14 @@ describe('createS3StateContentProvider', () => {
     beforeEach(async () => {
       await provider.writeContents(
         envPrefix(),
-        accountNames.map(account => ({ account, content: Buffer.from('newStateData'), contentHash: 'newHash' }))
+        accountNames.map(account => ({ account, content: Buffer.from('newStateData'), contentHash: 'newHash' })),
       )
     })
     it('should upload new data to S3', () => {
       expect(s3mock.calls().map(({ args }) => args[0].input)).toIncludeSameMembers(
-        accountNames.map(account => expect.objectContaining({ Bucket: bucketName, Key: `state/${workspaceId}/${account}/newHash` }))
+        accountNames.map(account =>
+          expect.objectContaining({ Bucket: bucketName, Key: `state/${workspaceId}/${account}/newHash` }),
+        ),
       )
     })
     it('should return the new contents when reading', async () => {
@@ -181,7 +193,7 @@ describe('createS3StateContentProvider', () => {
         accountNames.map(name => ({
           name: path.join(testDir.name(), `env.${name}.json`),
           content: Buffer.from('newStateData'),
-        }))
+        })),
       )
     })
   })

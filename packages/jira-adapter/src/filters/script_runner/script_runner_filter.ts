@@ -1,24 +1,37 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { getChangeData, isInstanceChange, isObjectType, isAdditionChange,
-  isModificationChange, CORE_ANNOTATIONS, Value, isInstanceElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  getChangeData,
+  isInstanceChange,
+  isObjectType,
+  isAdditionChange,
+  isModificationChange,
+  CORE_ANNOTATIONS,
+  Value,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
-import { SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
+import {
+  SCRIPT_FRAGMENT_TYPE,
+  SCRIPT_RUNNER_LISTENER_TYPE,
+  SCRIPT_RUNNER_SETTINGS_TYPE,
+  SCRIPT_RUNNER_TYPES,
+} from '../../constants'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { UserInfo, getCurrentUserInfo } from '../../users'
 
@@ -26,21 +39,18 @@ const { awu } = collections.asynciterable
 
 const getTimeNowAsSeconds = (): number => Math.floor(Date.now() / 1000)
 
-const AUDIT_SCRIPT_RUNNER_TYPES = SCRIPT_RUNNER_TYPES
-  .filter(type => ![SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE].includes(type))
+const AUDIT_SCRIPT_RUNNER_TYPES = SCRIPT_RUNNER_TYPES.filter(
+  type => ![SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE].includes(type),
+)
 
 const addCreatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.createdByAccountId = currentUserInfo?.userId ?? ''
-  value.createdTimestamp = timeStampAsString
-    ? getTimeNowAsSeconds().toString()
-    : getTimeNowAsSeconds()
+  value.createdTimestamp = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
 }
 
 const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.updatedByAccountId = currentUserInfo?.userId ?? ''
-  value.updatedTimestamp = timeStampAsString
-    ? getTimeNowAsSeconds().toString()
-    : getTimeNowAsSeconds()
+  value.updatedTimestamp = timeStampAsString ? getTimeNowAsSeconds().toString() : getTimeNowAsSeconds()
 }
 
 // This filter is used to:
@@ -78,9 +88,11 @@ const filter: FilterCreator = ({ client, config }) => ({
     const listeners = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE)
-    if (listeners.length === 1
-      && listeners[0].elemID.name === 'unnamed_0'
-      && listeners[0].value.spaceRemaining !== undefined) {
+    if (
+      listeners.length === 1 &&
+      listeners[0].elemID.name === 'unnamed_0' &&
+      listeners[0].value.spaceRemaining !== undefined
+    ) {
       elements.splice(elements.indexOf(listeners[0]), 1)
     }
   },
@@ -91,10 +103,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const currentUserInfo = await getCurrentUserInfo(client)
 
-    const additionInstances = changes
-      .filter(isAdditionChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
+    const additionInstances = changes.filter(isAdditionChange).filter(isInstanceChange).map(getChangeData)
 
     // Addition
     additionInstances
@@ -115,10 +124,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       })
 
     // Modification
-    const modificationInstances = changes
-      .filter(isModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
+    const modificationInstances = changes.filter(isModificationChange).filter(isInstanceChange).map(getChangeData)
 
     modificationInstances
       .filter(instance => AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))

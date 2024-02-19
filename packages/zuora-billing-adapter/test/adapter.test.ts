@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -25,7 +25,8 @@ import {
   MapType,
   ObjectType,
   isObjectType,
-  CORE_ANNOTATIONS, ProgressReporter,
+  CORE_ANNOTATIONS,
+  ProgressReporter,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -93,17 +94,17 @@ const getObjectDefTypes = (): Record<string, ObjectType> => {
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
-  const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (
-    adapterName, config, schemasAndRefs
-  ) => {
+  const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (adapterName, config, schemasAndRefs) => {
     if (schemasAndRefs !== undefined) {
       return actual.elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
     }
     return {
       allTypes: {
-        ...Object.fromEntries(Object.values(SUPPORTED_TYPES).flat().map(
-          type => [naclCase(type), new ObjectType({ elemID: new ElemID(ZUORA_BILLING, type) })]
-        )),
+        ...Object.fromEntries(
+          Object.values(SUPPORTED_TYPES)
+            .flat()
+            .map(type => [naclCase(type), new ObjectType({ elemID: new ElemID(ZUORA_BILLING, type) })]),
+        ),
         ...getObjectDefTypes(),
         [LIST_ALL_SETTINGS_TYPE]: new ObjectType({
           elemID: new ElemID(ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE),
@@ -127,13 +128,19 @@ jest.mock('@salto-io/adapter-components', () => {
         NotificationDefinitions: new ObjectType({
           elemID: new ElemID(ZUORA_BILLING, 'NotificationDefinitions'),
           fields: {
-            data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') })) },
+            data: {
+              refType: new ListType(
+                new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') }),
+              ),
+            },
           },
         }),
         NotificationEmailTemplates: new ObjectType({
           elemID: new ElemID(ZUORA_BILLING, 'NotificationEmailTemplates'),
           fields: {
-            data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })) },
+            data: {
+              refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })),
+            },
           },
         }),
       },
@@ -221,13 +228,13 @@ describe('adapter', () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {
       // eslint-disable-next-line camelcase
-      token_type: 'bearer', access_token: 'token123', expires_in: 10000,
+      token_type: 'bearer',
+      access_token: 'token123',
+      expires_in: 10000,
     })
-    mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true });
-    (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
-      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(
-        200, response
-      )
+    mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true })
+    ;(mockReplies as MockReply[]).forEach(({ url, params, response }) => {
+      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(200, response)
     })
   })
 
@@ -239,34 +246,28 @@ describe('adapter', () => {
   describe('fetch', () => {
     describe('full', () => {
       it('should generate the right elements on fetch', async () => {
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            oauthClientCredentialsType,
-            { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            DEFAULT_CONFIG,
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', oauthClientCredentialsType, {
+              clientId: 'client',
+              clientSecret: 'secret',
+              subdomain: 'sandbox.na',
+              production: false,
+            }),
+            config: new InstanceElement('config', configType, DEFAULT_CONFIG),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(2)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
-          ZUORA_BILLING,
-          {
-            ...DEFAULT_API_DEFINITIONS,
-            supportedTypes: {
-              ...DEFAULT_API_DEFINITIONS.supportedTypes,
-              [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
-            },
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
+          ...DEFAULT_API_DEFINITIONS,
+          supportedTypes: {
+            ...DEFAULT_API_DEFINITIONS.supportedTypes,
+            [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
           },
-        )
-        expect(
-          [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
-        ).toEqual([
+        })
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
           'AccountingCodes',
           'AccountingPeriods',
           'CatalogProduct',
@@ -307,25 +308,24 @@ describe('adapter', () => {
         expect(elements.filter(isInstanceElement)).toHaveLength(145)
         const objectDefs = (await awu(elements).filter(isObjectDef).toArray()).filter(isObjectType)
         expect(objectDefs).toHaveLength(2)
-        expect([...new Set(
-          objectDefs.map(e => e.elemID.name)
-        )].sort()).toEqual(['account', 'accountingcode'])
+        expect([...new Set(objectDefs.map(e => e.elemID.name))].sort()).toEqual(['account', 'accountingcode'])
         expect(objectDefs.find(obj => obj.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeUndefined()
         // ensure pagination is working
-        expect(elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport')).toHaveLength(6)
+        expect(
+          elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport'),
+        ).toHaveLength(6)
       })
     })
     it('should filter elements by type+name on fetch', async () => {
-      const { elements } = await adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          oauthClientCredentialsType,
-          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
-        ),
-        config: new InstanceElement(
-          'config',
-          configType,
-          {
+      const { elements } = await adapter
+        .operations({
+          credentials: new InstanceElement('config', oauthClientCredentialsType, {
+            clientId: 'client',
+            clientSecret: 'secret',
+            subdomain: 'sandbox.na',
+            production: false,
+          }),
+          config: new InstanceElement('config', configType, {
             ...DEFAULT_CONFIG,
             fetch: {
               ...DEFAULT_CONFIG.fetch,
@@ -334,12 +334,17 @@ describe('adapter', () => {
                 { type: 'Settings_TaxCode', criteria: { name: 'A.*' } },
               ],
             },
-          },
-        ),
-        elementsSource: buildElementsSourceFromElements([]),
-      }).fetch({ progressReporter: { reportProgress: () => null } })
+          }),
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+        .fetch({ progressReporter: { reportProgress: () => null } })
 
-      expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName()).sort()).toEqual([
+      expect(
+        elements
+          .filter(isInstanceElement)
+          .map(e => e.elemID.getFullName())
+          .sort(),
+      ).toEqual([
         'zuora_billing.Settings_TaxCode.instance.Avalara_Sales_Tax@s',
         'zuora_billing.Settings_TaxEngine.instance.unnamed_0__Zuora_SE@uuus',
         'zuora_billing.Settings_TaxEngine.instance.unnamed_0__Zuora_Tax@uuus',
@@ -348,44 +353,34 @@ describe('adapter', () => {
     })
     describe('without settings types', () => {
       it('should generate the right elements on fetch', async () => {
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            oauthClientCredentialsType,
-            { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', oauthClientCredentialsType, {
+              clientId: 'client',
+              clientSecret: 'secret',
+              subdomain: 'sandbox.na',
+              production: false,
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
-                include: [
-                  { type: '.*' },
-                ],
-                exclude: [
-                  { type: `${SETTINGS_TYPE_PREFIX}.*` },
-                ],
+                include: [{ type: '.*' }],
+                exclude: [{ type: `${SETTINGS_TYPE_PREFIX}.*` }],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-            }
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
-          ZUORA_BILLING,
-          {
-            ...DEFAULT_API_DEFINITIONS,
-            supportedTypes: {
-              ...DEFAULT_API_DEFINITIONS.supportedTypes,
-              [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
-            },
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
+          ...DEFAULT_API_DEFINITIONS,
+          supportedTypes: {
+            ...DEFAULT_API_DEFINITIONS.supportedTypes,
+            [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
           },
-        )
-        expect(
-          [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
-        ).toEqual([
+        })
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
           'AccountingCodes',
           'AccountingPeriods',
           'CatalogProduct',
@@ -396,50 +391,48 @@ describe('adapter', () => {
         ])
         expect(elements.filter(isInstanceElement)).toHaveLength(13)
         expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
-        expect([...new Set(
-          await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()
-        )].sort()).toEqual(['account', 'accountingcode'])
+        expect(
+          [
+            ...new Set(
+              await awu(elements)
+                .filter(isObjectDef)
+                .map(e => e.elemID.name)
+                .toArray(),
+            ),
+          ].sort(),
+        ).toEqual(['account', 'accountingcode'])
       })
     })
     describe('without settings types and standard objects', () => {
       it('should generate the right elements on fetch', async () => {
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            oauthClientCredentialsType,
-            { clientId: 'client', clientSecret: 'secret', subdomain: '', production: true },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', oauthClientCredentialsType, {
+              clientId: 'client',
+              clientSecret: 'secret',
+              subdomain: '',
+              production: true,
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
                 include: [{ type: '.*' }],
-                exclude: [
-                  { type: 'StandardObject' },
-                  { type: `${SETTINGS_TYPE_PREFIX}.*` },
-                ],
+                exclude: [{ type: 'StandardObject' }, { type: `${SETTINGS_TYPE_PREFIX}.*` }],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-            }
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
-          ZUORA_BILLING,
-          {
-            ...DEFAULT_API_DEFINITIONS,
-            supportedTypes: {
-              ...DEFAULT_API_DEFINITIONS.supportedTypes,
-              [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
-            },
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
+          ...DEFAULT_API_DEFINITIONS,
+          supportedTypes: {
+            ...DEFAULT_API_DEFINITIONS.supportedTypes,
+            [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
           },
-        )
-        expect(
-          [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
-        ).toEqual([
+        })
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
           'AccountingCodes',
           'AccountingPeriods',
           'CatalogProduct',
@@ -457,26 +450,25 @@ describe('adapter', () => {
   describe('deploy', () => {
     it('should throw not implemented', async () => {
       const operations = adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          oauthClientCredentialsType,
-          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
-        ),
-        config: new InstanceElement(
-          'config',
-          configType,
-          DEFAULT_CONFIG,
-        ),
+        credentials: new InstanceElement('config', oauthClientCredentialsType, {
+          clientId: 'client',
+          clientSecret: 'secret',
+          subdomain: 'sandbox.na',
+          production: false,
+        }),
+        config: new InstanceElement('config', configType, DEFAULT_CONFIG),
         elementsSource: buildElementsSourceFromElements([]),
       })
       const nullProgressReporter: ProgressReporter = {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
-      await expect(operations.deploy({
-        changeGroup: { groupID: '', changes: [] },
-        progressReporter: nullProgressReporter,
-      })).rejects.toThrow(new Error('Not implemented.'))
+      await expect(
+        operations.deploy({
+          changeGroup: { groupID: '', changes: [] },
+          progressReporter: nullProgressReporter,
+        }),
+      ).rejects.toThrow(new Error('Not implemented.'))
     })
   })
 })

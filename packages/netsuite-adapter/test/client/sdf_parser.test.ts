@@ -1,22 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { OBJECTS_DIR, convertToFeaturesXmlContent, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, parseSdfProjectDir } from '../../src/client/sdf_parser'
+import {
+  OBJECTS_DIR,
+  convertToFeaturesXmlContent,
+  convertToXmlContent,
+  parseFeaturesXml,
+  parseFileCabinetDir,
+  parseObjectsDir,
+  parseSdfProjectDir,
+} from '../../src/client/sdf_parser'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../../src/client/utils'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FILE_WITHOUT_ATTRIBUTES_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_TEMPLATE_CONTENT, OBJECTS_DIR_FILES, OBJECT_XML_WITH_HTML_CHARS, readFileMockFunction } from './mocks'
+import {
+  MOCK_FEATURES_XML,
+  MOCK_FILE_ATTRS_PATH,
+  MOCK_FILE_PATH,
+  MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
+  MOCK_FOLDER_ATTRS_PATH,
+  MOCK_TEMPLATE_CONTENT,
+  OBJECTS_DIR_FILES,
+  OBJECT_XML_WITH_HTML_CHARS,
+  readFileMockFunction,
+} from './mocks'
 
 const readFileMock = jest.fn()
 const existsMock = jest.fn()
@@ -35,16 +53,13 @@ describe('sdf parser', () => {
     jest.clearAllMocks()
     readFileMock.mockImplementation(path => readFileMockFunction(path))
     existsMock.mockResolvedValue(true)
-    readdirpMock.mockImplementation(dirPath => (
+    readdirpMock.mockImplementation(dirPath =>
       dirPath.endsWith(OBJECTS_DIR)
         ? OBJECTS_DIR_FILES.map(path => ({ path }))
-        : [
-          MOCK_FILE_PATH,
-          MOCK_FILE_ATTRS_PATH,
-          MOCK_FOLDER_ATTRS_PATH,
-          MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
-        ].map(path => ({ path: path.slice(1) }))
-    ))
+        : [MOCK_FILE_PATH, MOCK_FILE_ATTRS_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FILE_WITHOUT_ATTRIBUTES_PATH].map(
+            path => ({ path: path.slice(1) }),
+          ),
+    )
   })
   describe('parseObjectsDir', () => {
     it('should parse', async () => {
@@ -75,15 +90,17 @@ describe('sdf parser', () => {
     it('should decode html chars', async () => {
       readdirpMock.mockResolvedValue([{ path: 'custentity_my_script_id.xml' }])
       readFileMock.mockResolvedValue(OBJECT_XML_WITH_HTML_CHARS)
-      await expect(parseObjectsDir('objectsDir')).resolves.toEqual([{
-        typeName: 'entitycustomfield',
-        values: {
-          '@_scriptid': 'custentity_my_script_id',
-          // There is ZeroWidthSpace char between element and Name
-          label: 'Golf & Co’Co element​Name',
+      await expect(parseObjectsDir('objectsDir')).resolves.toEqual([
+        {
+          typeName: 'entitycustomfield',
+          values: {
+            '@_scriptid': 'custentity_my_script_id',
+            // There is ZeroWidthSpace char between element and Name
+            label: 'Golf & Co’Co element​Name',
+          },
+          scriptId: 'custentity_my_script_id',
         },
-        scriptId: 'custentity_my_script_id',
-      }])
+      ])
     })
   })
   describe('parseFileCabinetDir', () => {
@@ -94,19 +111,11 @@ describe('sdf parser', () => {
         MOCK_FOLDER_ATTRS_PATH,
         MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
       ])
-      const [objectsWithoutAttributes, objectsWithAttributes] = _.partition(
-        objects,
-        obj => obj.hadMissingAttributes
-      )
+      const [objectsWithoutAttributes, objectsWithAttributes] = _.partition(objects, obj => obj.hadMissingAttributes)
       expect(objectsWithAttributes).toEqual([
         {
           fileContent: 'dummy file content',
-          path: [
-            'Templates',
-            'E-mail Templates',
-            'InnerFolder',
-            'content.html',
-          ],
+          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           typeName: 'file',
           values: {
             description: 'file description',
@@ -114,11 +123,7 @@ describe('sdf parser', () => {
           hadMissingAttributes: false,
         },
         {
-          path: [
-            'Templates',
-            'E-mail Templates',
-            'InnerFolder',
-          ],
+          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
           typeName: 'folder',
           values: {
             description: 'folder description',
@@ -130,12 +135,7 @@ describe('sdf parser', () => {
         {
           fileContent: 'console.log("Hello World!")',
           hadMissingAttributes: true,
-          path: [
-            'Templates',
-            'E-mail Templates',
-            'InnerFolder',
-            'test.js',
-          ],
+          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'test.js'],
           typeName: 'file',
           values: {
             availablewithoutlogin: 'F',
@@ -200,8 +200,7 @@ describe('sdf parser', () => {
     it('should parse', async () => {
       const [fileCabinetWithoutAttributes, objects] = _.partition(
         await parseSdfProjectDir('/projectPath'),
-        obj => (isFileCustomizationInfo(obj) || isFolderCustomizationInfo(obj))
-          && obj.hadMissingAttributes
+        obj => (isFileCustomizationInfo(obj) || isFolderCustomizationInfo(obj)) && obj.hadMissingAttributes,
       )
       expect(objects).toEqual([
         {
@@ -222,12 +221,7 @@ describe('sdf parser', () => {
         },
         {
           fileContent: 'dummy file content',
-          path: [
-            'Templates',
-            'E-mail Templates',
-            'InnerFolder',
-            'content.html',
-          ],
+          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           typeName: 'file',
           values: {
             description: 'file description',
@@ -235,11 +229,7 @@ describe('sdf parser', () => {
           hadMissingAttributes: false,
         },
         {
-          path: [
-            'Templates',
-            'E-mail Templates',
-            'InnerFolder',
-          ],
+          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
           typeName: 'folder',
           values: {
             description: 'folder description',
@@ -262,12 +252,7 @@ describe('sdf parser', () => {
         {
           fileContent: 'console.log("Hello World!")',
           hadMissingAttributes: true,
-          path: [
-            'Templates',
-            'E-mail Templates',
-            'InnerFolder',
-            'test.js',
-          ],
+          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'test.js'],
           typeName: 'file',
           values: {
             availablewithoutlogin: 'F',

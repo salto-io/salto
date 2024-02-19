@@ -1,20 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  Change,
+  InstanceElement,
+  ModificationChange,
+  getChangeData,
+  isAdditionChange,
+  isInstanceChange,
+  isModificationChange,
+  isRemovalChange,
+  toChange,
+} from '@salto-io/adapter-api'
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -38,18 +49,24 @@ type QueueGetResponse = {
   values: QueueParams[]
 }
 const QUEUE_RESOPNSE_SCHEME = Joi.object({
-  values: Joi.array().items(Joi.object({
-    id: Joi.string().required(),
-    name: Joi.string().required(),
-  }).unknown(true)).required(),
-}).unknown(true).required()
+  values: Joi.array()
+    .items(
+      Joi.object({
+        id: Joi.string().required(),
+        name: Joi.string().required(),
+      }).unknown(true),
+    )
+    .required(),
+})
+  .unknown(true)
+  .required()
 
 const isQueueResponse = createSchemeGuard<QueueGetResponse>(QUEUE_RESOPNSE_SCHEME)
 
 const serviceIdSetterQueue = (
   instance: InstanceElement,
   serviceIdField: string,
-  response: clientUtils.ResponseValue
+  response: clientUtils.ResponseValue,
 ): void => {
   const serviceFieldValue = response?.[serviceIdField]
   if (instance.elemID.typeName === QUEUE_TYPE && _.isNumber(serviceFieldValue)) {
@@ -62,7 +79,7 @@ const serviceIdSetterQueue = (
 const getExsitingQueuesNamesAndIds = async (
   changes: Change<InstanceElement>[],
   client: JiraClient,
-):Promise<string[][]> => {
+): Promise<string[][]> => {
   try {
     const parent = getParent(getChangeData(changes[0]))
     const response = await client.get({
@@ -83,7 +100,7 @@ const updateDefaultQueue = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
   existingQueues: Record<string, string>,
-  jsmApiDefinitions: AdapterDuckTypeApiConfig
+  jsmApiDefinitions: AdapterDuckTypeApiConfig,
 ): Promise<void> => {
   change.data.after.value.id = existingQueues[change.data.after.value.name]
   const emptyQueueInstance = change.data.after.clone()
@@ -96,10 +113,7 @@ const updateDefaultQueue = async (
   })
 }
 
-const deployQueueRemovalChange = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-): Promise<void> => {
+const deployQueueRemovalChange = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const parent = getParent(getChangeData(change))
   const instanceId = getChangeData(change).value.id
   await client.put({
@@ -135,10 +149,10 @@ const deployFavouriteValue = async (
 }
 
 /*
-* This filter responsible for deploying queue deletions and deploying queues with default names.
-* Modification change and addition non default named queues, will be deployed through the
-* standard JSM deployment
-*/
+ * This filter responsible for deploying queue deletions and deploying queues with default names.
+ * Modification change and addition non default named queues, will be deployed through the
+ * standard JSM deployment
+ */
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'queueDeploymentFilter',
   deploy: async changes => {
@@ -149,7 +163,8 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
-    const queueAdditionChanges = changes.filter(isAdditionChange)
+    const queueAdditionChanges = changes
+      .filter(isAdditionChange)
       .filter(change => isInstanceChange(change))
       .filter(change => getChangeData(change).elemID.typeName === QUEUE_TYPE)
 
@@ -163,50 +178,55 @@ const filter: FilterCreator = ({ config, client }) => ({
       }
     })
     const projectToExistiningQueues: Record<string, string[][]> = Object.fromEntries(
-      await Promise.all(Object.entries(projectToQueueAdditions).map(async ([projectName, queueChanges]) =>
-        [projectName, await getExsitingQueuesNamesAndIds(queueChanges.filter(isInstanceChange), client)]))
+      await Promise.all(
+        Object.entries(projectToQueueAdditions).map(async ([projectName, queueChanges]) => [
+          projectName,
+          await getExsitingQueuesNamesAndIds(queueChanges.filter(isInstanceChange), client),
+        ]),
+      ),
     )
 
     const [queueChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === QUEUE_TYPE
+      change => getChangeData(change).elemID.typeName === QUEUE_TYPE,
     )
 
-    const typeFixedChanges = queueChanges
-      .map(change => ({
-        action: change.action,
-        data: _.mapValues(change.data, (instance: InstanceElement) =>
-          replaceInstanceTypeForDeploy({
-            instance,
-            config: jsmApiDefinitions,
-          })),
-      })) as Change<InstanceElement>[]
+    const typeFixedChanges = queueChanges.map(change => ({
+      action: change.action,
+      data: _.mapValues(change.data, (instance: InstanceElement) =>
+        replaceInstanceTypeForDeploy({
+          instance,
+          config: jsmApiDefinitions,
+        }),
+      ),
+    })) as Change<InstanceElement>[]
 
-    const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange),
-      async change => {
-        if (isRemovalChange(change)) {
-          return deployQueueRemovalChange(change, client)
-        }
-        const existingQueues = Object.fromEntries(
-          (projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()] ?? [])
-        )
-        if (isAdditionChange(change) && existingQueues[change.data.after.value.name] !== undefined) {
-          await updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
-        } else {
+    const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange), async change => {
+      if (isRemovalChange(change)) {
+        return deployQueueRemovalChange(change, client)
+      }
+      const existingQueues = Object.fromEntries(
+        projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()] ?? [],
+      )
+      if (isAdditionChange(change) && existingQueues[change.data.after.value.name] !== undefined) {
+        await updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
+      } else {
         // deploy non default named queues (modification and addition)
-          await defaultDeployChange({
-            change,
-            client,
-            apiDefinitions: jsmApiDefinitions,
-            serviceIdSetter: serviceIdSetterQueue,
-          })
-        }
-        if (isAdditionChange(change)
-        || (isModificationChange(change) && change.data.before.value.favourite !== change.data.after.value.favourite)) {
-          await deployFavouriteValue(change, client)
-        }
-        return undefined
-      })
+        await defaultDeployChange({
+          change,
+          client,
+          apiDefinitions: jsmApiDefinitions,
+          serviceIdSetter: serviceIdSetterQueue,
+        })
+      }
+      if (
+        isAdditionChange(change) ||
+        (isModificationChange(change) && change.data.before.value.favourite !== change.data.after.value.favourite)
+      ) {
+        await deployFavouriteValue(change, client)
+      }
+      return undefined
+    })
 
     return {
       leftoverChanges,

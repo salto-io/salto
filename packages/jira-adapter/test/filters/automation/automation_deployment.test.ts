@@ -1,19 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, Values, toChange, Value, ReferenceExpression } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  CORE_ANNOTATIONS,
+  BuiltinTypes,
+  Values,
+  toChange,
+  Value,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
@@ -34,18 +44,19 @@ describe('automationDeploymentFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
 
-
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = automationDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    filter = automationDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, AUTOMATION_TYPE),
@@ -56,19 +67,15 @@ describe('automationDeploymentFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        name: 'someName',
-        state: 'ENABLED',
-        projects: [
-          {
-            projectId: '1',
-          },
-        ],
-      }
-    )
+    instance = new InstanceElement('instance', type, {
+      name: 'someName',
+      state: 'ENABLED',
+      projects: [
+        {
+          projectId: '1',
+        },
+      ],
+    })
   })
 
   describe('onFetch', () => {
@@ -106,46 +113,47 @@ describe('automationDeploymentFilter', () => {
   describe('deploy', () => {
     let existingAutomationValues: Values
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    const createPostMockResponse = ((projects: Value) => jest.fn((url: string): Value => {
-      if (url === '/rest/webResources/1.0/resources') {
-        return {
-          status: 200,
-          data: {
-            unparsedData: {
-              [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                tenantId: 'cloudId',
-              }),
-            },
-          },
-        }
-      }
-      if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
-        return {
-          status: 200,
-          data: {
-            id: 'AA',
-          },
-        }
-      }
-      if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
-        return {
-          status: 200,
-          data: {
-            total: 2,
-            values: [
-              existingAutomationValues,
-              {
-                name: 'someName',
-                id: 3,
-                created: 1,
-                projects,
+    const createPostMockResponse = (projects: Value) =>
+      jest.fn((url: string): Value => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return {
+            status: 200,
+            data: {
+              unparsedData: {
+                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+                  tenantId: 'cloudId',
+                }),
               },
-            ],
-          },
+            },
+          }
         }
-      }
-      throw new Error(`Unexpected url ${url}`)
-    }))
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
+          return {
+            status: 200,
+            data: {
+              id: 'AA',
+            },
+          }
+        }
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 2,
+              values: [
+                existingAutomationValues,
+                {
+                  name: 'someName',
+                  id: 3,
+                  created: 1,
+                  projects,
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
 
     beforeEach(() => {
       existingAutomationValues = {
@@ -174,24 +182,24 @@ describe('automationDeploymentFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
-          rules: [{
-            name: 'someName',
-            state: 'ENABLED',
-            projects: [
-              {
-                projectId: '1',
-              },
-            ],
-            ruleScope: {
-              resources: [
-                'ari:cloud:jira:cloudId:project/1',
+          rules: [
+            {
+              name: 'someName',
+              state: 'ENABLED',
+              projects: [
+                {
+                  projectId: '1',
+                },
               ],
+              ruleScope: {
+                resources: ['ari:cloud:jira:cloudId:project/1'],
+              },
             },
-          }],
+          ],
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
 
       expect(connection.put).toHaveBeenCalledWith(
@@ -208,29 +216,29 @@ describe('automationDeploymentFilter', () => {
               },
             ],
             ruleScope: {
-              resources: [
-                'ari:cloud:jira:cloudId:project/1',
-              ],
+              resources: ['ari:cloud:jira:cloudId:project/1'],
             },
           },
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
     })
     it('should create automation with unsorted many projects', async () => {
-      connection.post.mockImplementation(async url => createPostMockResponse([
-        {
-          projectId: '1',
-        },
-        {
-          projectId: '3',
-        },
-        {
-          projectId: '2',
-        },
-      ])(url))
+      connection.post.mockImplementation(async url =>
+        createPostMockResponse([
+          {
+            projectId: '1',
+          },
+          {
+            projectId: '3',
+          },
+          {
+            projectId: '2',
+          },
+        ])(url),
+      )
 
       instance.value.projects = [
         {
@@ -256,11 +264,13 @@ describe('automationDeploymentFilter', () => {
         config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.deploy.taskMaxRetries = 3
         config.deploy.taskRetryDelay = 1
-        filter = automationDeploymentFilter(getFilterParams({
-          client,
-          paginator,
-          config,
-        })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+        filter = automationDeploymentFilter(
+          getFilterParams({
+            client,
+            paginator,
+            config,
+          }),
+        ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
         connection.post.mockImplementation(async url => createPostMockResponse([{ projectId: '1' }])(url))
       })
       it('should wait for a success answer from import', async () => {
@@ -364,9 +374,11 @@ describe('automationDeploymentFilter', () => {
         throw new Error(`Unexpected url ${url}`)
       })
 
-      filter = automationDeploymentFilter(getFilterParams({
-        client,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      filter = automationDeploymentFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
       await filter.deploy([toChange({ after: instance })])
 
@@ -376,19 +388,21 @@ describe('automationDeploymentFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/project/GLOBAL/rule/import',
         {
-          rules: [{
-            name: 'someName',
-            state: 'ENABLED',
-            projects: [
-              {
-                projectId: '1',
-              },
-            ],
-          }],
+          rules: [
+            {
+              name: 'someName',
+              state: 'ENABLED',
+              projects: [
+                {
+                  projectId: '1',
+                },
+              ],
+            },
+          ],
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
 
       expect(connection.put).toHaveBeenCalledWith(
@@ -406,7 +420,7 @@ describe('automationDeploymentFilter', () => {
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
     })
 
@@ -419,24 +433,24 @@ describe('automationDeploymentFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
-          rules: [{
-            name: 'someName',
-            state: 'DISABLED',
-            projects: [
-              {
-                projectId: '1',
-              },
-            ],
-            ruleScope: {
-              resources: [
-                'ari:cloud:jira:cloudId:project/1',
+          rules: [
+            {
+              name: 'someName',
+              state: 'DISABLED',
+              projects: [
+                {
+                  projectId: '1',
+                },
               ],
+              ruleScope: {
+                resources: ['ari:cloud:jira:cloudId:project/1'],
+              },
             },
-          }],
+          ],
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
 
       expect(connection.put).not.toHaveBeenCalled()
@@ -451,51 +465,59 @@ describe('automationDeploymentFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
-          rules: [{
-            name: 'someName',
-            state: 'ENABLED',
-            ruleScope: {
-              resources: [
-                'ari:cloud:jira::site/cloudId',
-              ],
+          rules: [
+            {
+              name: 'someName',
+              state: 'ENABLED',
+              ruleScope: {
+                resources: ['ari:cloud:jira::site/cloudId'],
+              },
             },
-          }],
+          ],
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
     })
 
     it('should deploy automation of projects type', async () => {
-      instance.value.projects = [{
-        projectTypeKey: 'business',
-      }]
+      instance.value.projects = [
+        {
+          projectTypeKey: 'business',
+        },
+      ]
       connection.post.mockClear()
-      connection.post.mockImplementation(async url => createPostMockResponse([{
-        projectTypeKey: 'business',
-      }],)(url))
+      connection.post.mockImplementation(async url =>
+        createPostMockResponse([
+          {
+            projectTypeKey: 'business',
+          },
+        ])(url),
+      )
       await filter.deploy([toChange({ after: instance })])
 
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import',
         {
-          rules: [{
-            name: 'someName',
-            state: 'ENABLED',
-            projects: [{
-              projectTypeKey: 'business',
-            }],
-            ruleScope: {
-              resources: [
-                'ari:cloud:jira-core::site/cloudId',
+          rules: [
+            {
+              name: 'someName',
+              state: 'ENABLED',
+              projects: [
+                {
+                  projectTypeKey: 'business',
+                },
               ],
+              ruleScope: {
+                resources: ['ari:cloud:jira-core::site/cloudId'],
+              },
             },
-          }],
+          ],
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
     })
 
@@ -517,11 +539,7 @@ describe('automationDeploymentFilter', () => {
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
           return {
             status: 200,
-            data: [
-              existingAutomationValues,
-              {
-              },
-            ],
+            data: [existingAutomationValues, {}],
           }
         }
         throw new Error(`Unexpected url ${url}`)
@@ -586,12 +604,11 @@ describe('automationDeploymentFilter', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/3',
         {
-          headers:
-          {
+          headers: {
             ...PRIVATE_API_HEADERS,
             'Content-Type': 'application/json',
           },
-        }
+        },
       )
     })
 
@@ -600,23 +617,21 @@ describe('automationDeploymentFilter', () => {
       client = cli
       connection = conn
 
-      filter = automationDeploymentFilter(getFilterParams({
-        client,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      filter = automationDeploymentFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
       instance.value.id = 3
       await filter.deploy([toChange({ before: instance })])
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/cb-automation/latest/project/GLOBAL/rule/3',
-        {
-          headers:
-          {
-            ...PRIVATE_API_HEADERS,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/cb-automation/latest/project/GLOBAL/rule/3', {
+        headers: {
+          ...PRIVATE_API_HEADERS,
+          'Content-Type': 'application/json',
+        },
+      })
     })
 
     it('should modify automation', async () => {
@@ -638,24 +653,24 @@ describe('automationDeploymentFilter', () => {
               },
             ],
             ruleScope: {
-              resources: [
-                'ari:cloud:jira:cloudId:project/1',
-              ],
+              resources: ['ari:cloud:jira:cloudId:project/1'],
             },
           },
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
     })
     describe('automation label', () => {
       beforeEach(() => {
         instance.value.id = 555
         connection.put.mockImplementation(async url => {
-          if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1'
-           || url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/2'
-           || url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/555') {
+          if (
+            url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1' ||
+            url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/2' ||
+            url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/555'
+          ) {
             return {
               status: 200,
               data: null,
@@ -672,7 +687,7 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           null,
-          { headers: { 'Content-Type': 'application/json' } }
+          { headers: { 'Content-Type': 'application/json' } },
         )
       })
 
@@ -681,9 +696,11 @@ describe('automationDeploymentFilter', () => {
         client = cli
         connection = conn
 
-        filter = automationDeploymentFilter(getFilterParams({
-          client,
-        })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+        filter = automationDeploymentFilter(
+          getFilterParams({
+            client,
+          }),
+        ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
         const modifyInstance = instance.clone()
         modifyInstance.value.labels = ['1']
@@ -715,9 +732,11 @@ describe('automationDeploymentFilter', () => {
         client = cli
         connection = conn
 
-        filter = automationDeploymentFilter(getFilterParams({
-          client,
-        })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+        filter = automationDeploymentFilter(
+          getFilterParams({
+            client,
+          }),
+        ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
         const modifyInstance = instance.clone()
         instance.value.labels = ['1']
@@ -774,15 +793,11 @@ describe('automationDeploymentFilter', () => {
           },
         },
       })
-      const objectSchemaInstance = new InstanceElement(
-        'instance',
-        objectSchemaType,
-        {
-          name: 'schemaName',
-          id: '25',
-          workspaceId: 'w11',
-        }
-      )
+      const objectSchemaInstance = new InstanceElement('instance', objectSchemaType, {
+        name: 'schemaName',
+        id: '25',
+        workspaceId: 'w11',
+      })
       const objectTypeInstance = new InstanceElement(
         'instance',
         objectTypeType,
@@ -792,33 +807,27 @@ describe('automationDeploymentFilter', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]: [
-            new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
-          ],
-        }
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
+        },
       )
       describe('assets components', () => {
         let automationInstance: InstanceElement
         beforeEach(() => {
-          automationInstance = new InstanceElement(
-            'instance',
-            type,
-            {
-              name: 'someName',
-              state: 'ENABLED',
-              projects: [],
-              components: [
-                {
-                  component: 'ACTION',
-                  schemaVersion: 1,
-                  value: {
-                    objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-                    schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
-                  },
+          automationInstance = new InstanceElement('instance', type, {
+            name: 'someName',
+            state: 'ENABLED',
+            projects: [],
+            components: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                  schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
                 },
-              ],
-            }
-          )
+              },
+            ],
+          })
         })
         it('should add missing fields to assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true
@@ -898,15 +907,11 @@ describe('automationDeploymentFilter', () => {
           },
         },
       })
-      const objectSchemaInstance = new InstanceElement(
-        'instance',
-        objectSchemaType,
-        {
-          name: 'schemaName',
-          id: '25',
-          workspaceId: 'w11',
-        }
-      )
+      const objectSchemaInstance = new InstanceElement('instance', objectSchemaType, {
+        name: 'schemaName',
+        id: '25',
+        workspaceId: 'w11',
+      })
       const objectTypeInstance = new InstanceElement(
         'instance',
         objectTypeType,
@@ -916,36 +921,30 @@ describe('automationDeploymentFilter', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]: [
-            new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
-          ],
-        }
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
+        },
       )
       describe('assets components', () => {
         let automationInstance: InstanceElement
         beforeEach(() => {
-          automationInstance = new InstanceElement(
-            'instance',
-            type,
-            {
-              name: 'someName',
-              state: 'ENABLED',
-              projects: [],
-              components: [
-                {
-                  component: 'ACTION',
-                  schemaVersion: 1,
-                  value: {
-                    objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-                    workspaceId: 'w11',
-                    schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
-                    schemaLabel: 'schemaName',
-                    objectTypeLabel: 'objectTypeName',
-                  },
+          automationInstance = new InstanceElement('instance', type, {
+            name: 'someName',
+            state: 'ENABLED',
+            projects: [],
+            components: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                  workspaceId: 'w11',
+                  schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+                  schemaLabel: 'schemaName',
+                  objectTypeLabel: 'objectTypeName',
                 },
-              ],
-            }
-          )
+              },
+            ],
+          })
         })
         it('should remove extra fields for assets components when enable JSM is true', async () => {
           config.fetch.enableJSM = true

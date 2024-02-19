@@ -1,23 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   ElemID,
   InstanceElement,
-  ObjectType, PlaceholderObjectType,
+  ObjectType,
+  PlaceholderObjectType,
   ReadOnlyElementsSource,
   TypeReference,
 } from '@salto-io/adapter-api'
@@ -43,17 +44,16 @@ describe('elementSource', () => {
         })
 
         it('should return the element with PlaceholderObjectType if the type is not in the source', async () => {
-          const instance = new InstanceElement(
-            'instance',
-            new TypeReference(new ElemID('adapter', 'unknownType'))
-          )
+          const instance = new InstanceElement('instance', new TypeReference(new ElemID('adapter', 'unknownType')))
           // I pass an inner elements source here because we try to resolve only elements that
           // are coming from the fallback source, so passing it in the first param as elements will test nothing
           const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
           const receivedInstance = (await toArrayAsync(await source.getAll()))[0] as InstanceElement
-          expect(receivedInstance.refType.type).toMatchObject(new PlaceholderObjectType({
-            elemID: receivedInstance.refType.elemID,
-          }))
+          expect(receivedInstance.refType.type).toMatchObject(
+            new PlaceholderObjectType({
+              elemID: receivedInstance.refType.elemID,
+            }),
+          )
         })
       })
 
@@ -69,8 +69,7 @@ describe('elementSource', () => {
 
       describe('list', () => {
         it('should return all the elements ids', async () => {
-          const receivedElementsIds = await collections.asynciterable
-            .toArrayAsync(await elementsSource.list())
+          const receivedElementsIds = await collections.asynciterable.toArrayAsync(await elementsSource.list())
           expect(receivedElementsIds).toEqual(elements.map(e => e.elemID))
         })
       })
@@ -112,7 +111,6 @@ describe('elementSource', () => {
           new ObjectType({
             elemID: new ElemID('adapter', 'type4'),
           }),
-
         ])
         elementSource = buildElementsSourceFromElements(
           [
@@ -148,7 +146,7 @@ describe('elementSource', () => {
       })
 
       it('should return element from the last fallback if not exist in other sources in get', async () => {
-        const elem = await elementSource.get(new ElemID('adapter', 'type4')) as ObjectType
+        const elem = (await elementSource.get(new ElemID('adapter', 'type4'))) as ObjectType
         expect(elem).toBeDefined()
       })
       it('should return elements from element by fallback orders in getAll', async () => {
@@ -202,11 +200,11 @@ describe('elementSource', () => {
     })
     it('should resolve the type shallowly once', async () => {
       const resolvedElement = await elementsSource.get(objectType.elemID)
-      expect(resolvedElement.fields[UNRESOLVED_FIELD_NAME]?.refType)
-        .toEqual(new TypeReference(unresolvedType.elemID, unresolvedType))
+      expect(resolvedElement.fields[UNRESOLVED_FIELD_NAME]?.refType).toEqual(
+        new TypeReference(unresolvedType.elemID, unresolvedType),
+      )
       expect(resolvedElement).toEqual(await elementsSource.get(objectType.elemID))
-      const callsOnTheObjectType = resolveTypeShallowSpy.mock.calls
-        .filter(args => args[0] === objectType)
+      const callsOnTheObjectType = resolveTypeShallowSpy.mock.calls.filter(args => args[0] === objectType)
       expect(callsOnTheObjectType).toHaveLength(1)
     })
   })

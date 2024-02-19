@@ -1,23 +1,36 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ChangeError,
+  ChangeValidator,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  SeverityLevel,
+  Values,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { isWorkflowV1Instance, Transition as TransitionV1, WorkflowV1Instance } from '../../filters/workflow/types'
-import { isWorkflowInstance, isWorkflowV2Instance, WorkflowTransitionV2, WorkflowV2Instance } from '../../filters/workflowV2/types'
+import {
+  isWorkflowInstance,
+  isWorkflowV2Instance,
+  WorkflowTransitionV2,
+  WorkflowV2Instance,
+} from '../../filters/workflowV2/types'
 
 const { isDefined } = values
 export const CONFIGURATION_VALIDATOR_TYPE = new Set([
@@ -32,20 +45,15 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
   'WindowsDateValidator',
 ])
 
-const FIELD_VALIDATOR_TYPE = new Set([
-  'fieldHasSingleValue',
-  'fieldChanged',
-])
+const FIELD_VALIDATOR_TYPE = new Set(['fieldHasSingleValue', 'fieldChanged'])
 
 export const isEmptyValidatorV2 = (validator: Values): boolean =>
-  validator.parameters?.ruleType !== undefined
-    && FIELD_VALIDATOR_TYPE.has(validator.parameters.ruleType)
-    && _.isEmpty(validator.parameters.fieldKey)
+  validator.parameters?.ruleType !== undefined &&
+  FIELD_VALIDATOR_TYPE.has(validator.parameters.ruleType) &&
+  _.isEmpty(validator.parameters.fieldKey)
 
 export const isEmptyValidatorV1 = (validator: Values): boolean =>
-  validator.type !== undefined
-  && CONFIGURATION_VALIDATOR_TYPE.has(validator.type)
-  && !('configuration' in validator)
+  validator.type !== undefined && CONFIGURATION_VALIDATOR_TYPE.has(validator.type) && !('configuration' in validator)
 
 const workflowV1HasEmptyValidator = (transition: TransitionV1, invalidValidators: Set<string>): void => {
   transition.rules?.validators?.forEach(validator => {
@@ -66,11 +74,13 @@ const workflowV2HasEmptyValidator = (transition: WorkflowTransitionV2, invalidVa
 const workflowHasEmptyValidator = (instance: WorkflowV1Instance | WorkflowV2Instance): Set<string> => {
   const invalidValidators = new Set<string>()
   if (isWorkflowV1Instance(instance)) {
-    Object.values(instance.value.transitions)
-      .forEach(transition => workflowV1HasEmptyValidator(transition, invalidValidators))
+    Object.values(instance.value.transitions).forEach(transition =>
+      workflowV1HasEmptyValidator(transition, invalidValidators),
+    )
   } else if (isWorkflowV2Instance(instance)) {
-    Object.values(instance.value.transitions)
-      .forEach(transition => workflowV2HasEmptyValidator(transition, invalidValidators))
+    Object.values(instance.value.transitions).forEach(transition =>
+      workflowV2HasEmptyValidator(transition, invalidValidators),
+    )
   }
   return invalidValidators
 }
@@ -91,7 +101,7 @@ const createEmptyValidatorWorkflowError = (
   }
 }
 
-export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes => (
+export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -100,4 +110,3 @@ export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async chan
     .map(instance => ({ instance, validatorTypes: workflowHasEmptyValidator(instance) }))
     .map(({ instance, validatorTypes }) => createEmptyValidatorWorkflowError(instance, validatorTypes))
     .filter(isDefined)
-)

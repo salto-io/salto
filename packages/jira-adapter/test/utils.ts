@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
@@ -27,22 +27,11 @@ import { GetUserMapFunc, getUserMapFuncCreator } from '../src/users'
 import { JIRA } from '../src/constants'
 import ScriptRunnerClient from '../src/client/script_runner_client'
 
+export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
+  new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
 
-export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.authenticationMethods.basic.credentialsType,
-    credentials,
-  )
-)
-
-export const createConfigInstance = (config: JiraConfig): InstanceElement => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.configType as ObjectType,
-    config,
-  )
-)
+export const createConfigInstance = (config: JiraConfig): InstanceElement =>
+  new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
 
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
   get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue({ status: 200, data: '' }),
@@ -79,9 +68,7 @@ export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
     },
     isDataCenter,
   })
-  const paginator = clientUtils.createPaginator(
-    { paginationFuncCreator: paginate, client }
-  )
+  const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
   const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
   const scriptRunnerClient = new ScriptRunnerClient({
     credentials: {},
@@ -97,17 +84,19 @@ export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {
   return defaultConfigInstance.value as JiraConfig
 }
 
-export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>, isDataCenter = false)
-: Parameters<FilterCreator>[0] => ({
+export const getFilterParams = (
+  params?: Partial<Parameters<FilterCreator>[0]>,
+  isDataCenter = false,
+): Parameters<FilterCreator>[0] => ({
   ...mockClient(isDataCenter),
   config: getDefaultConfig({ isDataCenter }),
   elementsSource: buildElementsSourceFromElements([]),
   fetchQuery: elementUtils.query.createMockQuery(),
   adapterContext: {},
-  ...params ?? {},
+  ...(params ?? {}),
 })
 
-export const getAccountInfoInstance = (isFree: boolean): InstanceElement => (
+export const getAccountInfoInstance = (isFree: boolean): InstanceElement =>
   new InstanceElement(
     '_config',
     new ObjectType({
@@ -122,13 +111,13 @@ export const getAccountInfoInstance = (isFree: boolean): InstanceElement => (
           },
         ],
       },
-    }
+    },
   )
-)
 
 export const getLicenseElementSource = (isFree: boolean): ReadOnlyElementsSource =>
   buildElementsSourceFromElements([getAccountInfoInstance(isFree)])
 
-export const createEmptyType = (type: string): ObjectType => new ObjectType({
-  elemID: new ElemID(JIRA, type),
-})
+export const createEmptyType = (type: string): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(JIRA, type),
+  })

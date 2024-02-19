@@ -1,19 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, ElemID, ElemIdGetter, Field, getChangeData, InstanceElement, ListType, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  ElemID,
+  ElemIdGetter,
+  Field,
+  getChangeData,
+  InstanceElement,
+  ListType,
+  ModificationChange,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -44,18 +56,21 @@ describe('account_id_filter', () => {
   let fieldContextInstance: InstanceElement
 
   beforeEach(() => {
-    elemIdGetter = mockFunction<ElemIdGetter>()
-      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+    elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
+      (adapterName, _serviceIds, name) => new ElemID(adapterName, name),
+    )
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     const { client, paginator } = mockClient()
-    filter = accountIdFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      getElemIdFunc: elemIdGetter,
-    })) as typeof filter
+    filter = accountIdFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        getElemIdFunc: elemIdGetter,
+      }),
+    ) as typeof filter
 
     objectType = common.createType('PermissionScheme') // passes 3rd condition
     changedObjectType = common.createObjectedType('NotificationScheme') // passes 3rd condition
@@ -65,40 +80,24 @@ describe('account_id_filter', () => {
     for (let i = 0; i < 4; i += 1) {
       simpleInstances[i] = common.createInstance(i.toString(), objectType)
     }
-    filterInstance = new InstanceElement(
-      'filterInstance',
-      common.createFilterType(),
-      {
-        owner: 'acc2',
-      }
-    )
-    boardInstance = new InstanceElement(
-      'boardInstance',
-      common.createBoardType(),
-      {
-        admins: {
-          users: ['acc3', 'acc31'],
-        },
-      }
-    )
-    dashboardInstance = new InstanceElement(
-      'instance3',
-      common.createDashboardType(),
-      {
-        inner: {
-          owner: 'acc4',
-        },
-      }
-    )
-    fieldContextInstance = new InstanceElement(
-      'instance',
-      common.createFieldContextType(),
-      {
-        defaultValue: {
-          accountId: 'acc5',
-        },
-      }
-    )
+    filterInstance = new InstanceElement('filterInstance', common.createFilterType(), {
+      owner: 'acc2',
+    })
+    boardInstance = new InstanceElement('boardInstance', common.createBoardType(), {
+      admins: {
+        users: ['acc3', 'acc31'],
+      },
+    })
+    dashboardInstance = new InstanceElement('instance3', common.createDashboardType(), {
+      inner: {
+        owner: 'acc4',
+      },
+    })
+    fieldContextInstance = new InstanceElement('instance', common.createFieldContextType(), {
+      defaultValue: {
+        accountId: 'acc5',
+      },
+    })
 
     displayChanges = [
       toChange({ after: displayNamesInstances[0] }),
@@ -134,25 +133,23 @@ describe('account_id_filter', () => {
         elemID: new ElemID(JIRA, 'CustomFieldContext'),
       })
       ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
-        currentObjectType.fields[fieldName] = new Field(
-          currentObjectType,
-          fieldName,
-          BuiltinTypes.STRING
-        )
+        currentObjectType.fields[fieldName] = new Field(currentObjectType, fieldName, BuiltinTypes.STRING)
       })
       currentObjectType.fields.accountIds = new Field(
         currentObjectType,
         'accountIds',
-        new ListType(BuiltinTypes.STRING)
+        new ListType(BuiltinTypes.STRING),
       )
       await filter.onFetch([currentObjectType])
       await awu(ACCOUNT_IDS_FIELDS_NAMES).forEach(async fieldName => {
-        const currentType = await currentObjectType.fields[fieldName].getType() as ObjectType
+        const currentType = (await currentObjectType.fields[fieldName].getType()) as ObjectType
         expect(Object.prototype.hasOwnProperty.call(currentType.fields, 'id')).toBeTruthy()
         expect(Object.prototype.hasOwnProperty.call(currentType.fields, 'displayName')).toBeTruthy()
         expect(currentType.elemID.getFullName()).toEqual('jira.AccountIdInfo')
       })
-      expect((await currentObjectType.fields.accountIds.getType()).elemID.getFullName()).toEqual('List<jira.AccountIdInfo>')
+      expect((await currentObjectType.fields.accountIds.getType()).elemID.getFullName()).toEqual(
+        'List<jira.AccountIdInfo>',
+      )
     })
     it('should not enhance types with account ids that are not part of the known types', async () => {
       const currentObjectType = new ObjectType({

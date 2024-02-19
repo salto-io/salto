@@ -1,27 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import {
   ChangeError,
   ChangeValidator,
   CORE_ANNOTATIONS,
-  ElemID, getChangeData,
+  ElemID,
+  getChangeData,
   InstanceElement,
   ObjectType,
-  ReferenceExpression, toChange,
+  ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import { getParent, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
@@ -33,12 +35,16 @@ import {
   CATEGORIES_FIELD,
   SECTIONS_FIELD,
   ARTICLE_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
 } from '../../src/constants'
 import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import {
-  childInOrderValidator, childrenReferencesValidator,
-  orderDeletionValidator, orderChildrenParentValidator,
+  childInOrderValidator,
+  childrenReferencesValidator,
+  orderDeletionValidator,
+  orderChildrenParentValidator,
 } from '../../src/change_validators'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
@@ -55,28 +61,32 @@ const createOrderElement = (
   parent: InstanceElement,
   orderElementType: string,
   orderField: string,
-  childInstance: InstanceElement
-) : InstanceElement => new InstanceElement(
-  `${parent.elemID.name}_${orderField}`,
-  createOrderType(orderElementType),
-  {
-    [orderField]: [new ReferenceExpression(childInstance.elemID, childInstance)],
-  }, [],
-  { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(parent.elemID, parent) }
-)
+  childInstance: InstanceElement,
+): InstanceElement =>
+  new InstanceElement(
+    `${parent.elemID.name}_${orderField}`,
+    createOrderType(orderElementType),
+    {
+      [orderField]: [new ReferenceExpression(childInstance.elemID, childInstance)],
+    },
+    [],
+    { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(parent.elemID, parent) },
+  )
 
-const categoryOrderInstance = createOrderElement(
-  brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, categoryInstance
-)
+const categoryOrderInstance = createOrderElement(brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, categoryInstance)
 const categorySectionsOrderInstance = createOrderElement(
-  categoryInstance, SECTION_TYPE_NAME, SECTIONS_FIELD, sectionInstance
+  categoryInstance,
+  SECTION_TYPE_NAME,
+  SECTIONS_FIELD,
+  sectionInstance,
 )
 const sectionSectionsOrderInstance = createOrderElement(
-  sectionInstance, SECTION_TYPE_NAME, SECTIONS_FIELD, sectionInstance
+  sectionInstance,
+  SECTION_TYPE_NAME,
+  SECTIONS_FIELD,
+  sectionInstance,
 )
-const articleOrderInstance = createOrderElement(
-  sectionInstance, ARTICLE_TYPE_NAME, ARTICLES_FIELD, articleInstance
-)
+const articleOrderInstance = createOrderElement(sectionInstance, ARTICLE_TYPE_NAME, ARTICLES_FIELD, articleInstance)
 
 describe('GuideOrdersValidator', () => {
   const orderInstances = [
@@ -90,7 +100,7 @@ describe('GuideOrdersValidator', () => {
     const testValidator = async (
       orderInstance: InstanceElement,
       orderField: string,
-      validator: ChangeValidator
+      validator: ChangeValidator,
     ): Promise<void> => {
       const orderWithoutReferences = orderInstance.clone()
       orderWithoutReferences.value[orderField] = [1]
@@ -113,21 +123,17 @@ describe('GuideOrdersValidator', () => {
       await testValidator(categoryOrderInstance, CATEGORIES_FIELD, childrenReferencesValidator)
     })
     it('Category sections order', async () => {
-      await testValidator(
-        categorySectionsOrderInstance, SECTIONS_FIELD, childrenReferencesValidator
-      )
+      await testValidator(categorySectionsOrderInstance, SECTIONS_FIELD, childrenReferencesValidator)
     })
     it('Section sections order', async () => {
-      await testValidator(
-        sectionSectionsOrderInstance, SECTIONS_FIELD, childrenReferencesValidator
-      )
+      await testValidator(sectionSectionsOrderInstance, SECTIONS_FIELD, childrenReferencesValidator)
     })
     it('Articles order', async () => {
       await testValidator(articleOrderInstance, ARTICLES_FIELD, childrenReferencesValidator)
     })
   })
   describe('Order element deletion', () => {
-    const testValidator = async (orderInstance: InstanceElement) : Promise<void> => {
+    const testValidator = async (orderInstance: InstanceElement): Promise<void> => {
       const orderWithoutParent = orderInstance.clone()
       const fakeParent = new InstanceElement('test', new ObjectType({ elemID: new ElemID(ZENDESK, 'test') }))
       orderWithoutParent.annotations[CORE_ANNOTATIONS.PARENT] = [{ value: fakeParent }]
@@ -176,15 +182,17 @@ describe('GuideOrdersValidator', () => {
         instance: InstanceElement,
         orderTypeName: string,
       ): Promise<void> => {
-      // Remove the order change that has the tested element
+        // Remove the order change that has the tested element
         const otherOrderChanges = orderChanges.filter(change => getChangeData(change).elemID.typeName !== orderTypeName)
         const errors = await validator([...childChanges, ...otherOrderChanges])
-        expect(errors).toMatchObject([{
-          elemID: instance.elemID,
-          severity: 'Warning',
-          message: 'Order not specified',
-          detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in ${instance.elemID.typeName} sort order.  Therefore, it will be added at the beginning by default.  If the order is important, please include it in ${orderTypeName}`,
-        }])
+        expect(errors).toMatchObject([
+          {
+            elemID: instance.elemID,
+            severity: 'Warning',
+            message: 'Order not specified',
+            detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in ${instance.elemID.typeName} sort order.  Therefore, it will be added at the beginning by default.  If the order is important, please include it in ${orderTypeName}`,
+          },
+        ])
       }
 
       it('With order element', async () => {
@@ -209,13 +217,15 @@ describe('GuideOrdersValidator', () => {
         const testOrderInstances = orderInstances.map(instance => instance.clone())
         const errorsToCheck: string[] = []
         // Fill the same child again
-        testOrderInstances.forEach(instance => [ARTICLES_FIELD, SECTIONS_FIELD, CATEGORIES_FIELD].forEach(field => {
-          if (instance.value[field] !== undefined) {
-            // stringify to sort later
-            errorsToCheck.push(safeJsonStringify(createDuplicateChildError(instance, instance.value[field][0])))
-            instance.value[field].push(instance.value[field][0])
-          }
-        }))
+        testOrderInstances.forEach(instance =>
+          [ARTICLES_FIELD, SECTIONS_FIELD, CATEGORIES_FIELD].forEach(field => {
+            if (instance.value[field] !== undefined) {
+              // stringify to sort later
+              errorsToCheck.push(safeJsonStringify(createDuplicateChildError(instance, instance.value[field][0])))
+              instance.value[field].push(instance.value[field][0])
+            }
+          }),
+        )
         const changes = testOrderInstances.map(instance => toChange({ after: instance }))
 
         const errors = (await childInOrderValidator(changes)).map(error => safeJsonStringify(error))
@@ -258,7 +268,9 @@ describe('GuideOrdersValidator', () => {
 
     it('children with same parent as order', async () => {
       const brandRef = new ReferenceExpression(brandInstance.elemID, brandInstance)
-      orderInstances.forEach(order => { order.annotations[CORE_ANNOTATIONS.PARENT] = brandRef })
+      orderInstances.forEach(order => {
+        order.annotations[CORE_ANNOTATIONS.PARENT] = brandRef
+      })
       changeChildrenParent(brandRef)
       const errors = await orderChildrenParentValidator(changes)
       expect(errors.length).toBe(0)

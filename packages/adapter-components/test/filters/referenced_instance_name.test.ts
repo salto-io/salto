@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   ElemID,
@@ -28,8 +28,11 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
-  createReferenceIndex } from '../../src/filters/referenced_instance_names'
+import {
+  addReferencesToInstanceNames,
+  referencedInstanceNamesFilterCreator,
+  createReferenceIndex,
+} from '../../src/filters/referenced_instance_names'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { createMockQuery } from '../../src/fetch/query'
@@ -79,56 +82,32 @@ describe('referenced instances', () => {
       elemID: new ElemID(ADAPTER_NAME, 'noIdFields'),
       fields: {},
     })
-    const rootBook = new InstanceElement(
-      'rootBook',
-      bookType,
-      {
-        id: 123,
-        parent_book_id: 'ROOT',
-      },
-    )
-    const anotherBook = new InstanceElement(
-      'book',
-      bookType,
-      {
-        id: 456,
-        parent_book_id: new ReferenceExpression(rootBook.elemID, rootBook),
-      },
-    )
+    const rootBook = new InstanceElement('rootBook', bookType, {
+      id: 123,
+      parent_book_id: 'ROOT',
+    })
+    const anotherBook = new InstanceElement('book', bookType, {
+      id: 456,
+      parent_book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+    })
     const recipes = [
-      new InstanceElement(
-        'recipe123',
-        recipeType,
-        {
-          name: 'recipe123',
-          book_id: new ReferenceExpression(rootBook.elemID, rootBook),
-        },
-      ),
-      new InstanceElement(
-        'recipe456',
-        recipeType,
-        {
-          name: 'recipe456',
-          book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
-        },
-      ),
+      new InstanceElement('recipe123', recipeType, {
+        name: 'recipe123',
+        book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+      }),
+      new InstanceElement('recipe456', recipeType, {
+        name: 'recipe456',
+        book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
+      }),
     ]
-    const sameRecipeOne = new InstanceElement(
-      'sameRecipe',
-      recipeType,
-      {
-        name: '12345',
-        book_id: new ReferenceExpression(rootBook.elemID, rootBook),
-      },
-    )
-    const sameRecipeTwo = new InstanceElement(
-      'sameRecipe',
-      recipeType,
-      {
-        name: '54321',
-        book_id: new ReferenceExpression(rootBook.elemID, rootBook),
-      },
-    )
+    const sameRecipeOne = new InstanceElement('sameRecipe', recipeType, {
+      name: '12345',
+      book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+    })
+    const sameRecipeTwo = new InstanceElement('sameRecipe', recipeType, {
+      name: '54321',
+      book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+    })
     const lastRecipe = new InstanceElement(
       'last',
       recipeType,
@@ -139,33 +118,21 @@ describe('referenced instances', () => {
       undefined,
       {
         _parent: [new ReferenceExpression(recipes[0].elemID, recipes[0])],
-      }
+      },
     )
     const groups = [
-      new InstanceElement(
-        'group1',
-        groupType,
-        {
-          name: 'groupOne',
-          fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
-        },
-      ),
-      new InstanceElement(
-        'group2',
-        groupType,
-        {
-          name: 'groupTwo',
-          fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
-        },
-      ),
-      new InstanceElement(
-        'group3',
-        groupType,
-        {
-          name: 'groupThree',
-          fav_recipe: new ReferenceExpression(recipes[1].elemID, recipes[1]),
-        },
-      ),
+      new InstanceElement('group1', groupType, {
+        name: 'groupOne',
+        fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
+      }),
+      new InstanceElement('group2', groupType, {
+        name: 'groupTwo',
+        fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
+      }),
+      new InstanceElement('group3', groupType, {
+        name: 'groupThree',
+        fav_recipe: new ReferenceExpression(recipes[1].elemID, recipes[1]),
+      }),
     ]
     const folderType = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'folder'),
@@ -182,7 +149,7 @@ describe('referenced instances', () => {
       undefined,
       {
         _parent: [new ReferenceExpression(lastRecipe.elemID, lastRecipe)],
-      }
+      },
     )
     const folderTwo = new InstanceElement(
       'folderTwo',
@@ -193,15 +160,13 @@ describe('referenced instances', () => {
       undefined,
       {
         _parent: [new ReferenceExpression(lastRecipe.elemID, lastRecipe)],
-      }
+      },
     )
-    const status = new InstanceElement(
-      'StAtUs',
-      statusType,
-      {
-        name: 'StAtUs',
-        fav_recipe: new ReferenceExpression(recipes[0].elemID.createNestedID('name'), recipes[0].value.name),
-        template_with_refs: new TemplateExpression({ parts: [
+    const status = new InstanceElement('StAtUs', statusType, {
+      name: 'StAtUs',
+      fav_recipe: new ReferenceExpression(recipes[0].elemID.createNestedID('name'), recipes[0].value.name),
+      template_with_refs: new TemplateExpression({
+        parts: [
           'aaa',
           new ReferenceExpression(recipes[0].elemID, recipes[0]),
           new ReferenceExpression(recipes[1].elemID, recipes[1]),
@@ -209,41 +174,47 @@ describe('referenced instances', () => {
           new ReferenceExpression(recipes[0].elemID, recipes[0]),
           new ReferenceExpression(anotherBook.elemID, anotherBook),
           'ccc',
-        ] }),
-      }
-    )
+        ],
+      }),
+    })
     const emailsWithTemplates = [
-      new InstanceElement(
-        'email1',
-        emailType,
-        {
-          name: 'aaa',
-          email: new TemplateExpression({ parts: ['username@', new ReferenceExpression(groups[0].elemID)] }),
-        }
-      ),
-      new InstanceElement(
-        'email2',
-        emailType,
-        {
-          name: 'aaa',
-          email: new TemplateExpression({ parts: ['username@', new ReferenceExpression(groups[0].elemID.createNestedID('x', 'y'))] }),
-        }
-      ),
+      new InstanceElement('email1', emailType, {
+        name: 'aaa',
+        email: new TemplateExpression({ parts: ['username@', new ReferenceExpression(groups[0].elemID)] }),
+      }),
+      new InstanceElement('email2', emailType, {
+        name: 'aaa',
+        email: new TemplateExpression({
+          parts: ['username@', new ReferenceExpression(groups[0].elemID.createNestedID('x', 'y'))],
+        }),
+      }),
     ]
     const noIdFieldsParent = new InstanceElement('no_idFieldsParent', bookType)
-    const noIdFieldsWithParent = new InstanceElement(
-      'no_idFieldsWithParent',
-      noIdFieldsType,
-      {},
-      [],
-      { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent) }
-    )
-    return [recipeType, bookType, ...recipes, anotherBook, rootBook,
-      sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,
-      folderType, folderOne, folderTwo, statusType, status, ...emailsWithTemplates,
-      noIdFieldsParent, noIdFieldsWithParent]
+    const noIdFieldsWithParent = new InstanceElement('no_idFieldsWithParent', noIdFieldsType, {}, [], {
+      [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent),
+    })
+    return [
+      recipeType,
+      bookType,
+      ...recipes,
+      anotherBook,
+      rootBook,
+      sameRecipeOne,
+      sameRecipeTwo,
+      lastRecipe,
+      groupType,
+      ...groups,
+      folderType,
+      folderOne,
+      folderTwo,
+      statusType,
+      status,
+      ...emailsWithTemplates,
+      noIdFieldsParent,
+      noIdFieldsWithParent,
+    ]
   }
-  const lowercaseName : NameMappingOptions = 'lowercase'
+  const lowercaseName: NameMappingOptions = 'lowercase'
   const config = {
     apiDefinitions: {
       types: {
@@ -313,27 +284,30 @@ describe('referenced instances', () => {
     it('should rename the elements correctly when the filter is called', async () => {
       elements = generateElements()
       await filter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .map(e => e.elemID.getFullName()).sort())
-        .toEqual(['myAdapter.book.instance.123_ROOT',
-          'myAdapter.book.instance.456_123_ROOT',
-          'myAdapter.book.instance.no_idFieldsParent',
-          'myAdapter.email.instance.aaa_username_group1@um',
-          'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
-          'myAdapter.group.instance.group1',
-          'myAdapter.group.instance.group2',
-          'myAdapter.group.instance.group3',
-          'myAdapter.noIdFields.instance.no_idFieldsParent',
-          'myAdapter.recipe.instance.recipe123_123_ROOT',
-          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
-          'myAdapter.recipe.instance.recipe456_456_123_ROOT',
-          'myAdapter.recipe.instance.sameRecipe',
-          'myAdapter.recipe.instance.sameRecipe',
-          'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
-        ])
+      expect(
+        elements
+          .filter(isInstanceElement)
+          .map(e => e.elemID.getFullName())
+          .sort(),
+      ).toEqual([
+        'myAdapter.book.instance.123_ROOT',
+        'myAdapter.book.instance.456_123_ROOT',
+        'myAdapter.book.instance.no_idFieldsParent',
+        'myAdapter.email.instance.aaa_username_group1@um',
+        'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
+        'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+        'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+        'myAdapter.group.instance.group1',
+        'myAdapter.group.instance.group2',
+        'myAdapter.group.instance.group3',
+        'myAdapter.noIdFields.instance.no_idFieldsParent',
+        'myAdapter.recipe.instance.recipe123_123_ROOT',
+        'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
+        'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+        'myAdapter.recipe.instance.sameRecipe',
+        'myAdapter.recipe.instance.sameRecipe',
+        'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
+      ])
     })
   })
 
@@ -351,33 +325,34 @@ describe('referenced instances', () => {
       const result = await addReferencesToInstanceNames(
         elements.slice(0, 6).concat(elements.slice(8)),
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
       const sortedResult = result
         .filter(isInstanceElement)
-        .map(i => i.elemID.getFullName()).sort()
+        .map(i => i.elemID.getFullName())
+        .sort()
       expect(result.length).toEqual(16)
-      expect(sortedResult)
-        .toEqual(['myAdapter.book.instance.123_ROOT',
-          'myAdapter.book.instance.456_123_ROOT',
-          'myAdapter.book.instance.no_idFieldsParent',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
-          'myAdapter.group.instance.group1',
-          'myAdapter.group.instance.group2',
-          'myAdapter.group.instance.group3',
-          'myAdapter.noIdFields.instance.no_idFieldsWithParent',
-          'myAdapter.recipe.instance.recipe123_123_ROOT',
-          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
-          'myAdapter.recipe.instance.recipe456_456_123_ROOT',
-        ])
+      expect(sortedResult).toEqual([
+        'myAdapter.book.instance.123_ROOT',
+        'myAdapter.book.instance.456_123_ROOT',
+        'myAdapter.book.instance.no_idFieldsParent',
+        'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+        'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+        'myAdapter.group.instance.group1',
+        'myAdapter.group.instance.group2',
+        'myAdapter.group.instance.group3',
+        'myAdapter.noIdFields.instance.no_idFieldsWithParent',
+        'myAdapter.recipe.instance.recipe123_123_ROOT',
+        'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
+        'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+      ])
     })
     it('should update references to the renamed instance correctly', async () => {
       elements = generateElements()
       const result = await addReferencesToInstanceNames(
         elements,
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
       const updatedRecipe = result.filter(isInstanceElement).find(inst => inst.elemID.name === 'recipe456_456_123_ROOT')
       const updatedGroup = result.filter(isInstanceElement).find(inst => inst.elemID.name === 'group3')
@@ -385,22 +360,25 @@ describe('referenced instances', () => {
       expect(updatedReference).toBeInstanceOf(ReferenceExpression)
       expect((updatedReference as ReferenceExpression).elemID).toEqual(updatedRecipe?.elemID)
       // verify reference value was updates as well
-      expect((updatedReference as ReferenceExpression).value.value.book_id.elemID)
-        .toEqual(updatedRecipe?.value.book_id.elemID)
+      expect((updatedReference as ReferenceExpression).value.value.book_id.elemID).toEqual(
+        updatedRecipe?.value.book_id.elemID,
+      )
     })
     it('should change references correctly inside template expressions', async () => {
       elements = generateElements()
       const result = await addReferencesToInstanceNames(
         elements,
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
       const updatedStatus = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'status')
       expect(updatedStatus).toBeInstanceOf(InstanceElement)
       expect(updatedStatus?.value.template_with_refs).toBeInstanceOf(TemplateExpression)
-      expect((updatedStatus?.value.template_with_refs.parts ?? []).map(
-        (val: TemplatePart) => (isReferenceExpression(val) ? val.elemID.getFullName() : val)
-      )).toEqual([
+      expect(
+        (updatedStatus?.value.template_with_refs.parts ?? []).map((val: TemplatePart) =>
+          isReferenceExpression(val) ? val.elemID.getFullName() : val,
+        ),
+      ).toEqual([
         'aaa',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -415,30 +393,30 @@ describe('referenced instances', () => {
       const result = await addReferencesToInstanceNames(
         elements,
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
       expect(result.length).toEqual(14)
-      expect(result
-        .map(e => e.elemID.getFullName()).sort())
-        .toEqual(['myAdapter.book',
-          'myAdapter.book.instance.123_ROOT',
-          'myAdapter.book.instance.456_123_ROOT',
-          'myAdapter.book.instance.no_idFieldsParent',
-          'myAdapter.folder',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
-          'myAdapter.noIdFields.instance.no_idFieldsWithParent',
-          'myAdapter.recipe',
-          'myAdapter.recipe.instance.recipe123_123_ROOT',
-          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
-          'myAdapter.recipe.instance.recipe456_456_123_ROOT',
-          'myAdapter.recipe.instance.sameRecipe',
-          'myAdapter.recipe.instance.sameRecipe',
-        ])
+      expect(result.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'myAdapter.book',
+        'myAdapter.book.instance.123_ROOT',
+        'myAdapter.book.instance.456_123_ROOT',
+        'myAdapter.book.instance.no_idFieldsParent',
+        'myAdapter.folder',
+        'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+        'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+        'myAdapter.noIdFields.instance.no_idFieldsWithParent',
+        'myAdapter.recipe',
+        'myAdapter.recipe.instance.recipe123_123_ROOT',
+        'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
+        'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+        'myAdapter.recipe.instance.sameRecipe',
+        'myAdapter.recipe.instance.sameRecipe',
+      ])
     })
     it('should create the correct reference map', () => {
       elements = generateElements()
-      const bookOrRecipeIns = elements.filter(isInstanceElement)
+      const bookOrRecipeIns = elements
+        .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === 'book' || e.elemID.typeName === 'recipe')
         .map(i => i.elemID.getFullName())
       const allIns = elements.filter(isInstanceElement)
@@ -457,12 +435,12 @@ describe('referenced instances', () => {
       const result = await addReferencesToInstanceNames(
         elements,
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
       const result2 = await addReferencesToInstanceNames(
         result,
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
       expect(result).toEqual(result2)
     })
@@ -480,15 +458,19 @@ describe('referenced instances', () => {
         undefined,
         {
           _parent: [new ReferenceExpression(parentRecipe[0].elemID, parentRecipe[0])],
-        }
+        },
       )
       const res = await addReferencesToInstanceNames(
         elements.concat(recipeWithNullBook),
         transformationConfigByType,
-        transformationDefaultConfig
+        transformationDefaultConfig,
       )
-      const recipeWithNullBookRes = res.filter(isInstanceElement).find(e => e.value.name === 'recipeWithNullBook') as InstanceElement
-      expect(recipeWithNullBookRes.elemID.getFullName()).toEqual('myAdapter.recipe.instance.recipe123_123_ROOT__recipeWithNullBook')
+      const recipeWithNullBookRes = res
+        .filter(isInstanceElement)
+        .find(e => e.value.name === 'recipeWithNullBook') as InstanceElement
+      expect(recipeWithNullBookRes.elemID.getFullName()).toEqual(
+        'myAdapter.recipe.instance.recipe123_123_ROOT__recipeWithNullBook',
+      )
     })
   })
 })

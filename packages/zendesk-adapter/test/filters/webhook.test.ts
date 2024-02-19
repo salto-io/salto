@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -34,25 +34,19 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('webhook filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
-  const webhook = new InstanceElement(
-    'test',
-    new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }),
-    {
-      name: 'test',
-      description: 'desc',
-      status: 'active',
-      subscriptions: [
-        'conditional_ticket_events',
-      ],
-      endpoint: 'https://www.example.com/token',
-      http_method: 'GET',
-      request_format: 'json',
-      authentication: {
-        type: 'basic_auth',
-        add_position: 'header',
-      },
+  const webhook = new InstanceElement('test', new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }), {
+    name: 'test',
+    description: 'desc',
+    status: 'active',
+    subscriptions: ['conditional_ticket_events'],
+    endpoint: 'https://www.example.com/token',
+    http_method: 'GET',
+    request_format: 'json',
+    authentication: {
+      type: 'basic_auth',
+      add_position: 'header',
     },
-  )
+  })
   const webhookAPI = new InstanceElement(
     'test-api auth',
     new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }),
@@ -60,9 +54,7 @@ describe('webhook filter', () => {
       name: 'test',
       description: 'desc',
       status: 'active',
-      subscriptions: [
-        'conditional_ticket_events',
-      ],
+      subscriptions: ['conditional_ticket_events'],
       endpoint: 'https://www.example.com/token',
       http_method: 'GET',
       request_format: 'json',
@@ -84,9 +76,8 @@ describe('webhook filter', () => {
       const id = 2
       const clonedWebhook = webhook.clone()
       const deployedWebhook = webhook.clone()
-      deployedWebhook.value.authentication.data = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[
-        deployedWebhook.value.authentication.type
-      ]
+      deployedWebhook.value.authentication.data =
+        AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[deployedWebhook.value.authentication.type]
       deployedWebhook.value.id = id
       mockDeployChange.mockImplementation(async () => ({ webhook: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
@@ -100,16 +91,14 @@ describe('webhook filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: clonedWebhook } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedWebhook } }])
     })
     it('should pass the correct params to deployChange on create - api auth', async () => {
       const id = 2
       const clonedWebhook = webhookAPI.clone()
       const deployedWebhook = webhookAPI.clone()
-      deployedWebhook.value.authentication.data = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[
-        deployedWebhook.value.authentication.type
-      ]
+      deployedWebhook.value.authentication.data =
+        AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[deployedWebhook.value.authentication.type]
       deployedWebhook.value.id = id
       mockDeployChange.mockImplementation(async () => ({ webhook: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
@@ -123,8 +112,7 @@ describe('webhook filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: clonedWebhook } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedWebhook } }])
     })
     it('should pass the correct params to deployChange on create - no auth', async () => {
       const id = 2
@@ -144,8 +132,7 @@ describe('webhook filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: clonedWebhook } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedWebhook } }])
     })
 
     it('should pass the correct params to deployChange on update - changed auth', async () => {
@@ -156,12 +143,12 @@ describe('webhook filter', () => {
       clonedWebhookAfter.value.id = id
       clonedWebhookAfter.value.authentication.type = 'bearer_token'
       const deployedWebhookAfter = clonedWebhookAfter.clone()
-      deployedWebhookAfter.value.authentication.data = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[
-        deployedWebhookAfter.value.authentication.type
-      ]
+      deployedWebhookAfter.value.authentication.data =
+        AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[deployedWebhookAfter.value.authentication.type]
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
@@ -172,13 +159,12 @@ describe('webhook filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
+        },
+      ])
     })
     it('should pass the correct params to deployChange on update - auth was not changed', async () => {
       const id = 2
@@ -190,8 +176,9 @@ describe('webhook filter', () => {
       const deployedWebhookAfter = clonedWebhookAfter.clone()
       delete deployedWebhookAfter.value.authentication
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
@@ -202,13 +189,12 @@ describe('webhook filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
+        },
+      ])
     })
 
     it('should pass the correct params to deployChange on update - auth was deleted', async () => {
@@ -221,8 +207,9 @@ describe('webhook filter', () => {
       const deployedWebhookAfter = clonedWebhookAfter.clone()
       deployedWebhookAfter.value.authentication = null
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
@@ -233,13 +220,12 @@ describe('webhook filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedWebhookBefore, after: deployedWebhookAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: deployedWebhookAfter },
+        },
+      ])
     })
 
     it('should not handle remove changes', async () => {
@@ -260,9 +246,8 @@ describe('webhook filter', () => {
       })
       const clonedWebhook = webhook.clone()
       const deployedWebhook = webhook.clone()
-      deployedWebhook.value.authentication.data = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[
-        deployedWebhook.value.authentication.type
-      ]
+      deployedWebhook.value.authentication.data =
+        AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[deployedWebhook.value.authentication.type]
       const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({

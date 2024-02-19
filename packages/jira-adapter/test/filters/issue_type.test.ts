@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
@@ -28,10 +28,12 @@ describe('issueTypeFilter', () => {
     const { client: cli, paginator } = mockClient(true)
     client = cli
 
-    filter = issueTypeFilter(getFilterParams({
-      client,
-      paginator,
-    }))
+    filter = issueTypeFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    )
     const issueType = new ObjectType({
       elemID: new ElemID(JIRA, ISSUE_TYPE_NAME),
       fields: {
@@ -39,13 +41,9 @@ describe('issueTypeFilter', () => {
         screenSchemeId: { refType: BuiltinTypes.STRING },
       },
     })
-    instance = new InstanceElement(
-      'instance',
-      issueType,
-      {
-        subtask: true,
-      },
-    )
+    instance = new InstanceElement('instance', issueType, {
+      subtask: true,
+    })
   })
 
   describe('onFetch', () => {
@@ -66,10 +64,12 @@ describe('issueTypeFilter', () => {
       const { client: cli, paginator } = mockClient(false)
       client = cli
 
-      filter = issueTypeFilter(getFilterParams({
-        client,
-        paginator,
-      }))
+      filter = issueTypeFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      )
       await filter.onFetch?.([instance])
       expect(instance.value.hierarchyLevel).toBeUndefined()
       expect(instance.value.subtask).toBeUndefined()
@@ -81,9 +81,7 @@ describe('issueTypeFilter', () => {
       instance.value = {
         hierarchyLevel: -1,
       }
-      await filter.preDeploy?.([
-        toChange({ after: instance }),
-      ])
+      await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         type: 'subtask',
       })
@@ -93,9 +91,7 @@ describe('issueTypeFilter', () => {
       instance.value = {
         hierarchyLevel: 0,
       }
-      await filter.preDeploy?.([
-        toChange({ after: instance }),
-      ])
+      await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         type: 'standard',
       })
@@ -105,16 +101,16 @@ describe('issueTypeFilter', () => {
       const { client: cli, paginator } = mockClient(false)
       client = cli
 
-      filter = issueTypeFilter(getFilterParams({
-        client,
-        paginator,
-      }))
+      filter = issueTypeFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      )
       instance.value = {
         hierarchyLevel: 0,
       }
-      await filter.preDeploy?.([
-        toChange({ after: instance }),
-      ])
+      await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         hierarchyLevel: 0,
       })
@@ -126,9 +122,7 @@ describe('issueTypeFilter', () => {
       instance.value = {
         type: 'subtask',
       }
-      await filter.onDeploy?.([
-        toChange({ after: instance }),
-      ])
+      await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         hierarchyLevel: -1,
       })
@@ -138,9 +132,7 @@ describe('issueTypeFilter', () => {
       instance.value = {
         type: 'standard',
       }
-      await filter.onDeploy?.([
-        toChange({ after: instance }),
-      ])
+      await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         hierarchyLevel: 0,
       })
@@ -150,16 +142,16 @@ describe('issueTypeFilter', () => {
       const { client: cli, paginator } = mockClient(false)
       client = cli
 
-      filter = issueTypeFilter(getFilterParams({
-        client,
-        paginator,
-      }))
+      filter = issueTypeFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      )
       instance.value = {
         type: 'standard',
       }
-      await filter.onDeploy?.([
-        toChange({ after: instance }),
-      ])
+      await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         type: 'standard',
       })

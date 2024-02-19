@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -20,16 +20,10 @@ import { PaginationFunction } from '../../../definitions/system/requests/paginat
 import { DATA_FIELD_ENTIRE_OBJECT } from '../../../definitions'
 import { ResponseValue } from '../../../client'
 
-const getItems = (
-  value: ResponseValue | ResponseValue[],
-  dataField: string,
-): unknown[] => (
-  collections.array.makeArray(value).map(item => (
-    dataField === DATA_FIELD_ENTIRE_OBJECT
-      ? _.get(item, dataField)
-      : item
-  ))
-)
+const getItems = (value: ResponseValue | ResponseValue[], dataField: string): unknown[] =>
+  collections.array
+    .makeArray(value)
+    .map(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? _.get(item, dataField) : item))
 
 /**
  * Make paginated requests using the specified pagination field
@@ -52,10 +46,12 @@ export const itemOffsetPagination = ({
   const nextPage: PaginationFunction = ({ currentParams, responseData }) => {
     const { queryParams } = currentParams
 
-    const itemsPerPage = (pageSizeArgName !== undefined && queryParams !== undefined
-      && !Number.isNaN(Number(queryParams?.[pageSizeArgName])))
-      ? Number(queryParams[pageSizeArgName])
-      : pageSize
+    const itemsPerPage =
+      pageSizeArgName !== undefined &&
+      queryParams !== undefined &&
+      !Number.isNaN(Number(queryParams?.[pageSizeArgName]))
+        ? Number(queryParams[pageSizeArgName])
+        : pageSize
 
     const items = getItems(responseData, dataField)
     if (paginationField === undefined || items.length < itemsPerPage || items.length === 0) {
@@ -64,8 +60,9 @@ export const itemOffsetPagination = ({
     return [
       _.merge({}, currentParams, {
         queryParams: {
-          [paginationField]:
-            (Number(currentParams.queryParams?.[paginationField] ?? firstIndex) + itemsPerPage).toString(),
+          [paginationField]: (
+            Number(currentParams.queryParams?.[paginationField] ?? firstIndex) + itemsPerPage
+          ).toString(),
         },
       }),
     ]
@@ -78,7 +75,12 @@ export const itemOffsetPagination = ({
  * next page is prev+1 and first page is as specified.
  * Also supports recursive queries (see example under computeRecursiveArgs).
  */
-export const pageOffsetPagination = ({ firstPage, paginationField, pageSize, dataField }: {
+export const pageOffsetPagination = ({
+  firstPage,
+  paginationField,
+  pageSize,
+  dataField,
+}: {
   firstPage: number
   paginationField: string
   pageSize: number
@@ -92,8 +94,7 @@ export const pageOffsetPagination = ({ firstPage, paginationField, pageSize, dat
     return [
       _.merge({}, currentParams, {
         queryParams: {
-          [paginationField]:
-            (Number(currentParams.queryParams?.[paginationField] ?? firstPage) + 1).toString(),
+          [paginationField]: (Number(currentParams.queryParams?.[paginationField] ?? firstPage) + 1).toString(),
         },
       }),
     ]
@@ -106,7 +107,10 @@ export const pageOffsetPagination = ({ firstPage, paginationField, pageSize, dat
  * next page is prev+1 and first page is as specified.
  * Also supports recursive queries (see example under computeRecursiveArgs).
  */
-export const pageOffsetAndLastPagination = ({ firstPage, paginationField }: {
+export const pageOffsetAndLastPagination = ({
+  firstPage,
+  paginationField,
+}: {
   firstPage: number
   paginationField: string
 }): PaginationFunction => {
@@ -118,8 +122,7 @@ export const pageOffsetAndLastPagination = ({ firstPage, paginationField }: {
     return [
       _.merge({}, currentParams, {
         queryParams: {
-          [paginationField]:
-            (Number(currentParams.queryParams?.[paginationField] ?? firstPage) + 1).toString(),
+          [paginationField]: (Number(currentParams.queryParams?.[paginationField] ?? firstPage) + 1).toString(),
         },
       }),
     ]
@@ -127,27 +130,20 @@ export const pageOffsetAndLastPagination = ({ firstPage, paginationField }: {
   return nextPageFullPages
 }
 
-export const offsetAndLimitPagination = ({ paginationField }: {
-  paginationField: string
-}): PaginationFunction => {
-  // TODO allow customizing the field values (`isLast` + `values`)
+export const offsetAndLimitPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
+  // TODO allow customizing the field values (`isLastvalues`)
   type PageResponse = {
     isLast: boolean
     values: unknown[]
     [k: string]: unknown
   }
-  const isPageResponse = (
-    responseData: ResponseValue | ResponseValue[],
-  ): responseData is PageResponse => (
-    _.isObject(responseData)
-    && _.isBoolean(_.get(responseData, 'isLast'))
-    && Array.isArray(_.get(responseData, 'values'))
-    && _.isNumber(_.get(responseData, paginationField))
-  )
+  const isPageResponse = (responseData: ResponseValue | ResponseValue[]): responseData is PageResponse =>
+    _.isObject(responseData) &&
+    _.isBoolean(_.get(responseData, 'isLast')) &&
+    Array.isArray(_.get(responseData, 'values')) &&
+    _.isNumber(_.get(responseData, paginationField))
 
-  const getNextPage: PaginationFunction = (
-    { responseData, currentParams }
-  ) => {
+  const getNextPage: PaginationFunction = ({ responseData, currentParams }) => {
     if (!isPageResponse(responseData)) {
       throw new Error(`Expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
     }
@@ -175,10 +171,7 @@ export const offsetAndLimitPagination = ({ paginationField }: {
  * @return true if the configured endpoint can be used to get the next path, false otherwise.
  */
 export type PathCheckerFunc = (endpointPath: string, nextPath: string) => boolean
-export const defaultPathChecker: PathCheckerFunc = (
-  endpointPath,
-  nextPath
-) => (endpointPath === nextPath)
+export const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => endpointPath === nextPath
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified
@@ -192,9 +185,7 @@ export const cursorPagination = ({
   pathChecker: PathCheckerFunc
   paginationField: string
 }): PaginationFunction => {
-  const nextPageCursorPages: PaginationFunction = ({
-    responseData, currentParams, endpointIdentifier,
-  }) => {
+  const nextPageCursorPages: PaginationFunction = ({ responseData, currentParams, endpointIdentifier }) => {
     const { path } = endpointIdentifier
     const nextPagePath = _.get(responseData, paginationField)
     if (!_.isString(nextPagePath)) {

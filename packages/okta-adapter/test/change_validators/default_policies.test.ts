@@ -1,52 +1,52 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { toChange, ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  toChange,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { defaultPoliciesValidator } from '../../src/change_validators/default_policies'
 import { OKTA, ACCESS_POLICY_TYPE_NAME, ACCESS_POLICY_RULE_TYPE_NAME, INACTIVE_STATUS } from '../../src/constants'
 
 describe('defaultPoliciesValidator', () => {
   const policyType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME) })
   const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
-  const policyInstance = new InstanceElement(
-    'defaultPolicy',
-    policyType,
-    {
-      name: 'policy',
-      status: 'ACTIVE',
-      system: true,
-      type: 'ACCESS_POLICY',
+  const policyInstance = new InstanceElement('defaultPolicy', policyType, {
+    name: 'policy',
+    status: 'ACTIVE',
+    system: true,
+    type: 'ACCESS_POLICY',
+  })
+  const policyRuleInstance = new InstanceElement('defaultRule', policyRuleType, {
+    name: 'rule',
+    status: 'ACTIVE',
+    system: true,
+    conditions: {
+      network: { connection: 'ANYWHERE' },
     },
-  )
-  const policyRuleInstance = new InstanceElement(
-    'defaultRule',
-    policyRuleType,
-    {
-      name: 'rule',
-      status: 'ACTIVE',
-      system: true,
-      conditions: {
-        network: { connection: 'ANYWHERE' },
-      },
-    },
-  )
+  })
 
   it('should return an error when removing a default policy or policy rule', async () => {
-    const changeErrors = await defaultPoliciesValidator(
-      [toChange({ before: policyInstance }), toChange({ before: policyRuleInstance })]
-    )
+    const changeErrors = await defaultPoliciesValidator([
+      toChange({ before: policyInstance }),
+      toChange({ before: policyRuleInstance }),
+    ])
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors).toEqual([
       {
@@ -102,17 +102,13 @@ describe('defaultPoliciesValidator', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should not return an error when removing default rule with its parent', async () => {
-    const somePolicy = new InstanceElement(
-      'policy',
-      policyType,
-      { id: '123', status: 'ACTIVE', system: false },
-    )
+    const somePolicy = new InstanceElement('policy', policyType, { id: '123', status: 'ACTIVE', system: false })
     const defaultRule = new InstanceElement(
       'rule',
       policyRuleType,
       { id: '234', status: 'ACTIVE', system: true },
       undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(somePolicy.elemID, somePolicy)] }
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(somePolicy.elemID, somePolicy)] },
     )
     const changeErrors = await defaultPoliciesValidator([
       toChange({ before: somePolicy }),

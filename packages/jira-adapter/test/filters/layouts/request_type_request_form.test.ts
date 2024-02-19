@@ -1,20 +1,34 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression, Element, isInstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  filterUtils,
+  client as clientUtils,
+  elements as elementUtils,
+  elements as adapterElements,
+} from '@salto-io/adapter-components'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  BuiltinTypes,
+  ReferenceExpression,
+  Element,
+  isInstanceElement,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
@@ -66,7 +80,7 @@ describe('requestTypeLayoutsFilter', () => {
           simplified: false,
           projectTypeKey: 'service_desk',
         },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
+        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
       requestTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'RequestType') })
       requestTypeInstance = new InstanceElement(
@@ -78,32 +92,22 @@ describe('requestTypeLayoutsFilter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'issueType1'],
         {
-          [CORE_ANNOTATIONS.PARENT]: [
-            new ReferenceExpression(projectInstance.elemID, projectInstance),
-          ],
-        }
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+        },
       )
       fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
-      fieldInstance1 = new InstanceElement(
-        'testField1',
-        fieldType,
-        {
-          id: 'testField1',
-          name: 'TestField1',
-          type: 'testField1',
-        }
-      )
-      fieldInstance2 = new InstanceElement(
-        'testField2',
-        fieldType,
-        {
-          id: 'testField2',
-          name: 'TestField2',
-          schema: {
-            system: 'testField2',
-          },
-        }
-      )
+      fieldInstance1 = new InstanceElement('testField1', fieldType, {
+        id: 'testField1',
+        name: 'TestField1',
+        type: 'testField1',
+      })
+      fieldInstance2 = new InstanceElement('testField2', fieldType, {
+        id: 'testField2',
+        name: 'TestField2',
+        schema: {
+          system: 'testField2',
+        },
+      })
 
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
@@ -195,8 +199,7 @@ describe('requestTypeLayoutsFilter', () => {
     it('should not add layout if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({
         status: 200,
-        data: {
-        },
+        data: {},
       }))
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
@@ -277,11 +280,13 @@ describe('requestTypeLayoutsFilter', () => {
     })
     it('should not fetch layouts if it was excluded', async () => {
       fetchQuery = elementUtils.query.createMockQuery()
-      filter = requestTypeLayoutsFilter(getFilterParams({
-        client,
-        config,
-        fetchQuery,
-      })) as FilterType
+      filter = requestTypeLayoutsFilter(
+        getFilterParams({
+          client,
+          config,
+          fetchQuery,
+        }),
+      ) as FilterType
       filter = requestTypeLayoutsFilter(getFilterParams({ config, client, fetchQuery })) as FilterType
       fetchQuery.isTypeMatch.mockReturnValue(false)
       await filter.onFetch(elements)
@@ -290,21 +295,25 @@ describe('requestTypeLayoutsFilter', () => {
     it('should not fetch issue layouts if it is a data center instance', async () => {
       const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
       configWithDataCenterTrue.fetch.enableJSM = true
-      filter = requestTypeLayoutsFilter(getFilterParams({
-        client,
-        config: configWithDataCenterTrue,
-      })) as FilterType
+      filter = requestTypeLayoutsFilter(
+        getFilterParams({
+          client,
+          config: configWithDataCenterTrue,
+        }),
+      ) as FilterType
 
       filter = requestTypeLayoutsFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
       await filter.onFetch(elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
     it('should use elemIdGetter', async () => {
-      filter = requestTypeLayoutsFilter(getFilterParams({
-        client,
-        config,
-        getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-      })) as FilterType
+      filter = requestTypeLayoutsFilter(
+        getFilterParams({
+          client,
+          config,
+          getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+        }),
+      ) as FilterType
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)

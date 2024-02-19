@@ -1,37 +1,43 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   AdditionChange,
   Change,
   ChangeError,
   ChangeValidator,
-  getChangeData, InstanceElement,
+  getChangeData,
+  InstanceElement,
   isAdditionChange,
-  isInstanceChange, isModificationChange, isReferenceExpression,
-  isRemovalChange, ModificationChange, ReferenceExpression, RemovalChange, Value,
+  isInstanceChange,
+  isModificationChange,
+  isReferenceExpression,
+  isRemovalChange,
+  ModificationChange,
+  ReferenceExpression,
+  RemovalChange,
+  Value,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { WEBHOOK_TYPE_NAME } from '../constants'
 
-
 type ExternalSourceWithApp = {
-    data: {
-      // eslint-disable-next-line camelcase
-        installation_id: ReferenceExpression
-    }
+  data: {
+    // eslint-disable-next-line camelcase
+    installation_id: ReferenceExpression
+  }
 }
 
 const isExternalSourceWithApp = (externalSource: Value): externalSource is ExternalSourceWithApp =>
@@ -58,14 +64,20 @@ const createExternalSourceChangeError = (webhook: InstanceElement): ChangeError 
   detailedMessage: `Cannot modify 'external_source' field of a webhook (${webhook.elemID.name})`,
 })
 
-const handleModificationChanges = (
-  { change, appMessage }: {change: ModificationChange<InstanceElement>; appMessage: string}
-) : ChangeError[] => {
+const handleModificationChanges = ({
+  change,
+  appMessage,
+}: {
+  change: ModificationChange<InstanceElement>
+  appMessage: string
+}): ChangeError[] => {
   const errors: ChangeError[] = []
   const detailedChanges = detailedCompare(change.data.before, change.data.after)
 
   // It's impossible to change external_source field in a webhook using Zendesk's api
-  if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')) {
+  if (
+    detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')
+  ) {
     errors.push(createExternalSourceChangeError(change.data.after))
   }
 
@@ -76,7 +88,8 @@ const handleModificationChanges = (
 
   // Filter all the changes we already handled, if there are any other - we have a different warning for them
   const otherChanges = detailedChanges.filter(detailedChange =>
-    ['external_source', 'status'].every(field => detailedChange.id.createTopLevelParentID().path[0] !== field))
+    ['external_source', 'status'].every(field => detailedChange.id.createTopLevelParentID().path[0] !== field),
+  )
   if (otherChanges.length > 0) {
     errors.push(createExternalSourceWebhookChangeWarning(change.data.after, appMessage))
   }
@@ -84,7 +97,7 @@ const handleModificationChanges = (
   return errors
 }
 
-const getAppMessageFromChange = <T extends Change<InstanceElement>>(change: T): {change : T; appMessage: string} => {
+const getAppMessageFromChange = <T extends Change<InstanceElement>>(change: T): { change: T; appMessage: string } => {
   const webhook = getChangeData(change)
   const externalSource = webhook.value.external_source
   // If the external_source contains an installation_id, we can get the app name from it
@@ -94,8 +107,13 @@ const getAppMessageFromChange = <T extends Change<InstanceElement>>(change: T): 
   return { change, appMessage }
 }
 
-const createAdditionError = ({ change, appMessage }: {change: AdditionChange<InstanceElement>; appMessage: string})
-    : ChangeError => {
+const createAdditionError = ({
+  change,
+  appMessage,
+}: {
+  change: AdditionChange<InstanceElement>
+  appMessage: string
+}): ChangeError => {
   const webhook = getChangeData(change)
   return {
     elemID: webhook.elemID,
@@ -105,8 +123,13 @@ const createAdditionError = ({ change, appMessage }: {change: AdditionChange<Ins
   }
 }
 
-const createRemovalErrorMessage = ({ change, appMessage }: {change: RemovalChange<InstanceElement>; appMessage: string})
-    : ChangeError => {
+const createRemovalErrorMessage = ({
+  change,
+  appMessage,
+}: {
+  change: RemovalChange<InstanceElement>
+  appMessage: string
+}): ChangeError => {
   const webhook = getChangeData(change)
   return {
     elemID: webhook.elemID,
@@ -125,14 +148,18 @@ const createRemovalErrorMessage = ({ change, appMessage }: {change: RemovalChang
  *  * If they are modified, a warning is added
  */
 export const externalSourceWebhookValidator: ChangeValidator = async changes => {
-  const externalSourceWebhookChanges = changes.filter(isInstanceChange)
+  const externalSourceWebhookChanges = changes
+    .filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
     .filter(change => getChangeData(change).value.external_source !== undefined)
 
   return [
     externalSourceWebhookChanges.filter(isAdditionChange).map(getAppMessageFromChange).map(createAdditionError),
     externalSourceWebhookChanges.filter(isRemovalChange).map(getAppMessageFromChange).map(createRemovalErrorMessage),
-    externalSourceWebhookChanges.filter(isModificationChange).map(getAppMessageFromChange)
-      .map(handleModificationChanges).flat(),
+    externalSourceWebhookChanges
+      .filter(isModificationChange)
+      .map(getAppMessageFromChange)
+      .map(handleModificationChanges)
+      .flat(),
   ].flat()
 }

@@ -1,27 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
 import { getFilterParams, mockClient } from '../../../utils'
 import workflowFilter from '../../../../src/filters/script_runner/workflow/workflow_filter'
-import { CONDITION_CONFIGURATION, JIRA, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import {
+  CONDITION_CONFIGURATION,
+  JIRA,
+  POST_FUNCTION_CONFIGURATION,
+  WORKFLOW_TYPE_NAME,
+} from '../../../../src/constants'
 import { getDefaultConfig } from '../../../../src/config/config'
-
 
 const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {
   const toObject = (obj: string): Value => JSON.parse(Buffer.from(obj.substring(4), 'base64').toString())
@@ -40,50 +44,53 @@ describe('Scriptrunner DC Workflow', () => {
   const objectNoNullsBase64 = 'YCFgeyJhIjoxfQ==' // YCFg followed by base64 of '{"a":1}'
   const objectScriptOnlyBase64 = 'YCFgeyJzY3JpcHQiOjEsInNjcmlwdFBhdGgiOm51bGx9' // YCFg followed by base64 of '{"script":1,"scriptPath":null}'
   const objectPathOnlyBase64 = 'YCFgeyJzY3JpcHQiOm51bGwsInNjcmlwdFBhdGgiOjF9'
-  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_MESSAGE', 'FIELD_INCLUDE_ATTACHMENTS_CALLBACK', 'FIELD_EMAIL_TEMPLATE', 'FIELD_EMAIL_SUBJECT_TEMPLATE']
+  const FIELD_NAMES_STRINGS = [
+    'FIELD_NOTES',
+    'FIELD_MESSAGE',
+    'FIELD_INCLUDE_ATTACHMENTS_CALLBACK',
+    'FIELD_EMAIL_TEMPLATE',
+    'FIELD_EMAIL_SUBJECT_TEMPLATE',
+  ]
   const FIELD_NAMES_OBJECTS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
-
 
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
     const { client } = mockClient(true)
     config.fetch.enableScriptRunnerAddon = true
-    filter = workflowFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    filterOff = workflowFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    instance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        transitions: {
-          tran1: {
-            name: 'tran1',
-            rules: {
-              postFunctions: [
-                {
-                  configuration: {
-                    doNotDecode: goodBase64,
-                    FIELD_COMMENT: goodBase64,
-                  },
+    filter = workflowFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
+    filterOff = workflowFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
+    instance = new InstanceElement('instance', workflowType, {
+      transitions: {
+        tran1: {
+          name: 'tran1',
+          rules: {
+            postFunctions: [
+              {
+                configuration: {
+                  doNotDecode: goodBase64,
+                  FIELD_COMMENT: goodBase64,
                 },
-              ],
-              conditions: [
-                {
-                  configuration: {
-                  },
-                },
-              ],
-              validators: [
-                {
-                  configuration: {
-                  },
-                },
-              ],
-            },
+              },
+            ],
+            conditions: [
+              {
+                configuration: {},
+              },
+            ],
+            validators: [
+              {
+                configuration: {},
+              },
+            ],
           },
         },
-      }
-    )
+      },
+    })
   })
   describe('post functions', () => {
     const scriptRunnerPostFunctionType = 'com.onresolve.jira.groovy.GroovyFunctionPlugin'
@@ -105,32 +112,37 @@ describe('Scriptrunner DC Workflow', () => {
       it('should decode properly string fields', async () => {
         await filter.onFetch([instance])
         FIELD_NAMES_STRINGS.forEach(fieldName => {
-          expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[fieldName]).toEqual('demo string')
-        })
-        FIELD_NAMES_OBJECTS.forEach(fieldName => {
           expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[fieldName]).toEqual(
-            { script: 1 }
+            'demo string',
           )
         })
-        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_COMMENT).toEqual('demo string')
+        FIELD_NAMES_OBJECTS.forEach(fieldName => {
+          expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[fieldName]).toEqual({
+            script: 1,
+          })
+        })
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_COMMENT).toEqual(
+          'demo string',
+        )
       })
       it('should decode properly different object field formations', async () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = objectPathOnlyBase64
-        instance.value.transitions.tran1.rules.postFunctions[0].configuration
-          .FIELD_SCRIPT_FILE_OR_SCRIPT = objectNoNullsBase64
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT =
+          objectNoNullsBase64
         await filter.onFetch([instance])
-        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual(
-          { scriptPath: 1 }
-        )
-        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT)
-          .toEqual(
-            { a: 1 }
-          )
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual({
+          scriptPath: 1,
+        })
+        expect(
+          instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
+        ).toEqual({ a: 1 })
       })
       it('should not decode if does not start with prefix', async () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES = 'ZGVtbyBzdHJpbmc='
         await filter.onFetch([instance])
-        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES).toEqual('ZGVtbyBzdHJpbmc=')
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES).toEqual(
+          'ZGVtbyBzdHJpbmc=',
+        )
       })
       it('should not decode if not in the declared fields', async () => {
         await filter.onFetch([instance])
@@ -158,33 +170,36 @@ describe('Scriptrunner DC Workflow', () => {
       it('should fail if script not in json format', async () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = goodBase64
         await filter.onFetch([instance])
-        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION)
-          .toEqual(goodBase64)
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual(
+          goodBase64,
+        )
       })
       it('should delete empty fields', async () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES = ''
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = ''
         await filter.onFetch([instance])
         expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES).toBeUndefined()
-        expect(instance.value.transitions.tran1.rules.postFunctions[0]
-          .configuration.FIELD_SCRIPT_FILE_OR_SCRIPT).toBeUndefined()
+        expect(
+          instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
+        ).toBeUndefined()
       })
     })
     describe('pre deploy', () => {
       it('should encode properly', async () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES = 'demo string'
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = { scriptPath: 1 }
-        instance.value.transitions.tran1.rules.postFunctions[0].configuration
-          .FIELD_SCRIPT_FILE_OR_SCRIPT = { script: 1 }
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = {
+          script: 1,
+        }
         await filter.preDeploy([toChange({ after: instance })])
         expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES).toEqual(goodBase64)
         compareScriptObjectsBase64(
           instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION,
-          objectPathOnlyBase64
+          objectPathOnlyBase64,
         )
         compareScriptObjectsBase64(
           instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
-          objectScriptOnlyBase64
+          objectScriptOnlyBase64,
         )
       })
       it('should not encode if script runner not supported', async () => {
@@ -217,8 +232,8 @@ describe('Scriptrunner DC Workflow', () => {
           instance.value.transitions.tran1.rules.validators[0].configuration[fieldName] = goodBase64
         })
         instance.value.transitions.tran1.rules.validators[0].configuration.FIELD_CONDITION = objectPathOnlyBase64
-        instance.value.transitions.tran1.rules.validators[0].configuration
-          .FIELD_SCRIPT_FILE_OR_SCRIPT = objectScriptOnlyBase64
+        instance.value.transitions.tran1.rules.validators[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT =
+          objectScriptOnlyBase64
         await filter.onFetch([instance])
         FIELD_NAMES_STRINGS.forEach(fieldName => {
           expect(instance.value.transitions.tran1.rules.validators[0].configuration[fieldName]).toEqual('demo string')
@@ -245,11 +260,11 @@ describe('Scriptrunner DC Workflow', () => {
         expect(instance.value.transitions.tran1.rules.validators[0].configuration.FIELD_NOTES).toEqual(goodBase64)
         compareScriptObjectsBase64(
           instance.value.transitions.tran1.rules.validators[0].configuration.FIELD_CONDITION,
-          objectPathOnlyBase64
+          objectPathOnlyBase64,
         )
         compareScriptObjectsBase64(
           instance.value.transitions.tran1.rules.validators[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
-          objectScriptOnlyBase64
+          objectScriptOnlyBase64,
         )
       })
       it('should not fail if undefined', async () => {

@@ -1,19 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange, getChangeData } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  ListType,
+  InstanceElement,
+  DetailedChange,
+  isAdditionChange,
+  isRemovalChange,
+  isModificationChange,
+  getChangeData,
+} from '@salto-io/adapter-api'
 import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges, createRestorePathChanges } from '../../src/core/restore'
@@ -95,24 +107,42 @@ describe('restore', () => {
     path: ['salto', 'obj', 'multi', 'fields'],
   })
   // singlePathInstance
-  const singlePathInstance = new InstanceElement('singlePathInst', singlePathObject, { simple: 'Simple',
-    nested: {
-      str: 'Str',
-      num: 7,
-      list: [1, 2, 3],
-    } },
-  ['salto', 'inst', 'simple'],)
+  const singlePathInstance = new InstanceElement(
+    'singlePathInst',
+    singlePathObject,
+    {
+      simple: 'Simple',
+      nested: {
+        str: 'Str',
+        num: 7,
+        list: [1, 2, 3],
+      },
+    },
+    ['salto', 'inst', 'simple'],
+  )
   // multiPathInstance
-  const multiPathInstace1 = new InstanceElement('multiPathInst', singlePathObject, { simple: 'Simple',
-    nested: {
-      list: [1, 2, 3],
-    } },
-  ['salto', 'inst', 'nested', '1'],)
-  const multiPathInstace2 = new InstanceElement('multiPathInst', singlePathObject, { nested: {
-    str: 'Str',
-    num: 7,
-  } },
-  ['salto', 'inst', 'nested', '2'],)
+  const multiPathInstace1 = new InstanceElement(
+    'multiPathInst',
+    singlePathObject,
+    {
+      simple: 'Simple',
+      nested: {
+        list: [1, 2, 3],
+      },
+    },
+    ['salto', 'inst', 'nested', '1'],
+  )
+  const multiPathInstace2 = new InstanceElement(
+    'multiPathInst',
+    singlePathObject,
+    {
+      nested: {
+        str: 'Str',
+        num: 7,
+      },
+    },
+    ['salto', 'inst', 'nested', '2'],
+  )
 
   const elementfragments = [
     singlePathInstance,
@@ -159,7 +189,7 @@ describe('restore', () => {
           new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           undefined,
           undefined,
-          'changes'
+          'changes',
         )
         expect(changes).toHaveLength(0)
       })
@@ -172,17 +202,9 @@ describe('restore', () => {
     let singlePathInstMergedAfter: InstanceElement
     beforeAll(async () => {
       singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
-      wsElements = [
-        singlePathObjMerged,
-        multiPathInstMerged,
-        singlePathInstMerged,
-      ]
+      wsElements = [singlePathObjMerged, multiPathInstMerged, singlePathInstMerged]
       singlePathInstMergedAfter.value.nested.str = 'modified'
-      stateElements = [
-        multiPathObjMerged,
-        singlePathInstMergedAfter,
-        multiPathInstMerged,
-      ]
+      stateElements = [multiPathObjMerged, singlePathInstMergedAfter, multiPathInstMerged]
     })
 
     describe('detailedChanges', () => {
@@ -220,8 +242,9 @@ describe('restore', () => {
         it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
           const modifyChange = changes.find(isModificationChange)
           expect(modifyChange).toBeDefined()
-          expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
-            .createNestedID('nested').createNestedID('str'))
+          expect(modifyChange?.id).toEqual(
+            singlePathInstMergedAfter.elemID.createNestedID('nested').createNestedID('str'),
+          )
           expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
           expect(modifyChange?.data.before).toEqual('Str')
           expect(modifyChange?.data.after).toEqual('modified')
@@ -239,7 +262,7 @@ describe('restore', () => {
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
             undefined,
             undefined,
-            'changes'
+            'changes',
           )
         })
         it('should create all changes', () => {
@@ -273,8 +296,9 @@ describe('restore', () => {
           expect(modifyChanges[0].data.after.elemID).toEqual(singlePathInstMergedAfter.elemID)
           const detailedChanges = modifyChanges[0].detailedChanges()
           expect(detailedChanges).toHaveLength(1)
-          expect(detailedChanges[0].id).toEqual(singlePathInstMergedAfter.elemID
-            .createNestedID('nested').createNestedID('str'))
+          expect(detailedChanges[0].id).toEqual(
+            singlePathInstMergedAfter.elemID.createNestedID('nested').createNestedID('str'),
+          )
           expect(detailedChanges[0].path).toEqual(['salto', 'inst', 'simple'])
         })
       })
@@ -306,7 +330,7 @@ describe('restore', () => {
           new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           undefined,
           undefined,
-          'changes'
+          'changes',
         )
       })
       it('should return only on change (avoid spliting by path hint)', () => {
@@ -333,22 +357,15 @@ describe('restore', () => {
         ['salto', 'type', 'field1'],
         ['salto', 'type', 'field2'],
       ])
-      await index.set(type.fields.field1.elemID.getFullName(), [
-        ['salto', 'type', 'field1'],
-      ])
-      await index.set(type.fields.field2.elemID.getFullName(), [
-        ['salto', 'type', 'field2'],
-      ])
+      await index.set(type.fields.field1.elemID.getFullName(), [['salto', 'type', 'field1']])
+      await index.set(type.fields.field2.elemID.getFullName(), [['salto', 'type', 'field2']])
       await index.set('salto.type.field', [
         ['salto', 'type', 'field1'],
         ['salto', 'type', 'field2'],
       ])
     })
     it('should create deletion and addition references', async () => {
-      const changes = await createRestorePathChanges(
-        [type],
-        index,
-      )
+      const changes = await createRestorePathChanges([type], index)
 
       expect(changes).toHaveLength(3)
       const [removalChange, additionChange1, additionChange2] = changes
@@ -374,15 +391,9 @@ describe('restore', () => {
         elemID: new ElemID('salto2', 'type2'),
       })
 
-      await index.set(type2.elemID.getFullName(), [
-        ['salto2', 'type2'],
-      ])
+      await index.set(type2.elemID.getFullName(), [['salto2', 'type2']])
 
-      const changes = await createRestorePathChanges(
-        [type, type2],
-        index,
-        ['salto'],
-      )
+      const changes = await createRestorePathChanges([type, type2], index, ['salto'])
 
       expect(changes).toHaveLength(3)
       const [removalChange, additionChange1, additionChange2] = changes

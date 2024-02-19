@@ -1,20 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
-import { addAdapter, installAdapter, LoginStatus, verifyCredentials, updateCredentials, loadLocalWorkspace } from '@salto-io/core'
+import {
+  addAdapter,
+  installAdapter,
+  LoginStatus,
+  verifyCredentials,
+  updateCredentials,
+  loadLocalWorkspace,
+} from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
 import { accountAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/account'
@@ -36,34 +43,30 @@ jest.mock('@salto-io/core', () => {
   const actual = jest.requireActual('@salto-io/core')
   return {
     ...actual,
-    getAdaptersCredentialsTypes: jest.fn().mockImplementation((serviceNames: string[]):
-          Record<string, AdapterAuthentication> => {
-      if (serviceNames[0] === 'noAdapter') {
-        throw new Error('no adapter')
-      }
-      return {
-        newAdapter: mocks.mockCredentialsType('newAdapter'),
-        netsuite: mocks.mockCredentialsType('netsuite'),
-        '': mocks.mockCredentialsType(''),
-        oauthAdapter: mocks.mockOauthCredentialsType('oauthAdapter', { url: '',
-          oauthRequiredFields: [''] }),
-      }
-    }),
-    addAdapter: jest.fn().mockImplementation((
-      _workspace: Workspace,
-      adapterName: string
-    ): Promise<AdapterAuthentication> => {
-      if (adapterName === 'noAdapter') {
-        throw new Error('no adapter')
-      }
-      return Promise.resolve(mocks.mockAdapterAuthentication(mocks.mockConfigType(adapterName)))
-    }),
+    getAdaptersCredentialsTypes: jest
+      .fn()
+      .mockImplementation((serviceNames: string[]): Record<string, AdapterAuthentication> => {
+        if (serviceNames[0] === 'noAdapter') {
+          throw new Error('no adapter')
+        }
+        return {
+          newAdapter: mocks.mockCredentialsType('newAdapter'),
+          netsuite: mocks.mockCredentialsType('netsuite'),
+          '': mocks.mockCredentialsType(''),
+          oauthAdapter: mocks.mockOauthCredentialsType('oauthAdapter', { url: '', oauthRequiredFields: [''] }),
+        }
+      }),
+    addAdapter: jest
+      .fn()
+      .mockImplementation((_workspace: Workspace, adapterName: string): Promise<AdapterAuthentication> => {
+        if (adapterName === 'noAdapter') {
+          throw new Error('no adapter')
+        }
+        return Promise.resolve(mocks.mockAdapterAuthentication(mocks.mockConfigType(adapterName)))
+      }),
     verifyCredentials: jest.fn().mockResolvedValue({ success: true, accountId: '1' }),
     updateCredentials: jest.fn().mockResolvedValue(true),
-    getLoginStatuses: jest.fn().mockImplementation((
-      _workspace: Workspace,
-      accountNames: string[],
-    ) => {
+    getLoginStatuses: jest.fn().mockImplementation((_workspace: Workspace, accountNames: string[]) => {
       const loginStatuses: Record<string, LoginStatus> = {}
       accountNames.forEach(accountName => {
         if (accountName === 'salesforce') {
@@ -74,8 +77,7 @@ jest.mock('@salto-io/core', () => {
         } else if (accountName === 'oauthAdapter') {
           loginStatuses[accountName] = {
             isLoggedIn: true,
-            configTypeOptions: mocks.mockOauthCredentialsType(accountName, { url: '',
-              oauthRequiredFields: [''] }),
+            configTypeOptions: mocks.mockOauthCredentialsType(accountName, { url: '', oauthRequiredFields: [''] }),
           }
         } else {
           loginStatuses[accountName] = {
@@ -87,8 +89,7 @@ jest.mock('@salto-io/core', () => {
       return loginStatuses
     }),
     installAdapter: jest.fn(),
-    getSupportedServiceAdapterNames: jest.fn()
-      .mockReturnValue(['salesforce', 'newAdapter', 'workato', 'netsuite']),
+    getSupportedServiceAdapterNames: jest.fn().mockReturnValue(['salesforce', 'newAdapter', 'workato', 'netsuite']),
     loadLocalWorkspace: jest.fn().mockImplementation(actual.loadLocalWorkspace),
   }
 })
@@ -130,8 +131,11 @@ describe('account command group', () => {
         })
         it('should not print private services', () => {
           expect(output.stdout.content).toContain('Additional supported services are:')
-          expect(!getPrivateAdaptersNames().some(privateName =>
-            output.stdout.content.split('Additional supported services are:')[1].includes(privateName))).toBeTruthy()
+          expect(
+            !getPrivateAdaptersNames().some(privateName =>
+              output.stdout.content.split('Additional supported services are:')[1].includes(privateName),
+            ),
+          ).toBeTruthy()
         })
         it('should print configured services under configured services', () => {
           expect(output.stdout.content).toContain('The configured accounts are:')
@@ -139,9 +143,12 @@ describe('account command group', () => {
         })
         it('should print other services under additional services', () => {
           expect(output.stdout.content).toContain('Additional supported services are:')
-          expect(!['workato', 'newAdapter'].some(serviceName => !output.stdout.content
-            .split('Additional supported services are:')[1]
-            .includes(serviceName))).toBeTruthy()
+          expect(
+            !['workato', 'newAdapter'].some(
+              serviceName =>
+                !output.stdout.content.split('Additional supported services are:')[1].includes(serviceName),
+            ),
+          ).toBeTruthy()
         })
         it('should use current env', () => {
           expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
@@ -170,10 +177,11 @@ describe('account command group', () => {
       cliCommandArgs = mocks.mockCliCommandArgs('add', cliArgs)
       installAdapterMock.mockReset()
     })
-    beforeAll((() => {
-      jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
-        Promise.resolve(mockGetCredentialsFromUser(obj)))
-    }))
+    beforeAll(() => {
+      jest
+        .spyOn(callbacks, 'getCredentialsFromUser')
+        .mockImplementation((obj: ObjectType) => Promise.resolve(mockGetCredentialsFromUser(obj)))
+    })
 
     describe('when calling account add via the commander wrapper', () => {
       const { action } = accountAddDef
@@ -208,17 +216,23 @@ describe('account command group', () => {
 
       describe('when using unknown service type', () => {
         it('should send telemetry without any adapter tags', async () => {
-          await expect(action({
-            ...cliArgs,
-            workspacePath: '.',
-            commanderInput: ['unknownAdapter', { login: false }],
-          })).rejects.toThrow(new CliError(CliExitCode.UserInputError))
+          await expect(
+            action({
+              ...cliArgs,
+              workspacePath: '.',
+              commanderInput: ['unknownAdapter', { login: false }],
+            }),
+          ).rejects.toThrow(new CliError(CliExitCode.UserInputError))
 
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({ app: 'test', installationID: '1234', workspaceID: 'test' })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
+              app: 'test',
+              installationID: '1234',
+              workspaceID: 'test',
+            })
           })
         })
       })
@@ -226,17 +240,23 @@ describe('account command group', () => {
         it('should send telemetry with any adapter tags', async () => {
           installAdapterMock.mockRejectedValueOnce(new Error('Failed to install Adapter!'))
 
-          await expect(action({
-            ...cliArgs,
-            workspacePath: '.',
-            commanderInput: ['unknownAdapter', { login: false }],
-          })).rejects.toThrow(new CliError(CliExitCode.AppError))
+          await expect(
+            action({
+              ...cliArgs,
+              workspacePath: '.',
+              commanderInput: ['unknownAdapter', { login: false }],
+            }),
+          ).rejects.toThrow(new CliError(CliExitCode.AppError))
 
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('add', eventType)
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({ app: 'test', installationID: '1234', workspaceID: 'test' })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
+              app: 'test',
+              installationID: '1234',
+              workspaceID: 'test',
+            })
           })
         })
       })
@@ -321,7 +341,8 @@ describe('account command group', () => {
             ...cliCommandArgs,
             input: {
               serviceType: 'salesforce',
-              accountName: 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz',
+              accountName:
+                'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz',
               authType: 'basic',
               login: true,
             },
@@ -343,12 +364,7 @@ describe('account command group', () => {
                 serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
-                loginParameters: [
-                  'username=testUser',
-                  'password="testPass\\"w==ord"',
-                  'token=testToken',
-                  'sandbox=y',
-                ],
+                loginParameters: ['username=testUser', 'password="testPass\\"w==ord"', 'token=testToken', 'sandbox=y'],
               },
               workspace,
             })
@@ -365,11 +381,7 @@ describe('account command group', () => {
                 serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
-                loginParameters: [
-                  'username=testUser',
-                  'password=testPassword',
-                  'token=testToken',
-                ],
+                loginParameters: ['username=testUser', 'password=testPassword', 'token=testToken'],
               },
               workspace,
             })
@@ -382,12 +394,7 @@ describe('account command group', () => {
                 serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
-                loginParameters: [
-                  'username=testUser',
-                  'password=testPassword',
-                  'testToken',
-                  'sandbox=y',
-                ],
+                loginParameters: ['username=testUser', 'password=testPassword', 'testToken', 'sandbox=y'],
               },
               workspace,
             })
@@ -434,7 +441,7 @@ describe('account command group', () => {
                 login: true,
               },
               workspace,
-            })
+            }),
           ).rejects.toThrow()
         })
 
@@ -452,13 +459,15 @@ describe('account command group', () => {
           })
 
           it('fails with no such auth type error', () => {
-            expect(output.stderr.content).toContain('Error: Could not login to newAdapter: Adapter does not support authentication of type oauth')
+            expect(output.stderr.content).toContain(
+              'Error: Could not login to newAdapter: Adapter does not support authentication of type oauth',
+            )
           })
         })
 
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
-            (verifyCredentials as jest.Mock).mockRejectedValue(new Error('Rejected!'))
+            ;(verifyCredentials as jest.Mock).mockRejectedValue(new Error('Rejected!'))
             await addAction({
               ...cliCommandArgs,
               input: {
@@ -470,7 +479,7 @@ describe('account command group', () => {
             })
           })
           afterEach(() => {
-            (verifyCredentials as jest.Mock).mockResolvedValue({ success: true, accountId: '1' })
+            ;(verifyCredentials as jest.Mock).mockResolvedValue({ success: true, accountId: '1' })
           })
 
           it('should print login error', () => {
@@ -504,9 +513,7 @@ describe('account command group', () => {
           })
           it('should add without login', () => {
             expect(output.stdout.content).toContain('added to the environment')
-            expect(output.stdout.content).not.toContain(
-              'Please enter your Newadapter credentials:'
-            )
+            expect(output.stdout.content).not.toContain('Please enter your Newadapter credentials:')
           })
           it('should invoke the adapter install method', () => {
             expect(installAdapter).toHaveBeenCalled()
@@ -564,8 +571,9 @@ describe('account command group', () => {
             expect(errCode).toBe(CliExitCode.UserInputError)
           })
           it('should not print private accounts', async () => {
-            expect(getPrivateAdaptersNames().some(privateName =>
-              output.stdout.content.includes(privateName))).toBeFalsy()
+            expect(
+              getPrivateAdaptersNames().some(privateName => output.stdout.content.includes(privateName)),
+            ).toBeFalsy()
           })
         })
         describe('without login', () => {
@@ -585,8 +593,9 @@ describe('account command group', () => {
             expect(errCode).toBe(CliExitCode.UserInputError)
           })
           it('should not print private accounts', async () => {
-            expect(getPrivateAdaptersNames().some(privateName =>
-              output.stdout.content.includes(privateName))).toBeFalsy()
+            expect(
+              getPrivateAdaptersNames().some(privateName => output.stdout.content.includes(privateName)),
+            ).toBeFalsy()
           })
         })
       })
@@ -598,10 +607,11 @@ describe('account command group', () => {
     beforeEach(() => {
       cliCommandArgs = mocks.mockCliCommandArgs('login', cliArgs)
     })
-    beforeAll((() => {
-      jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
-        Promise.resolve(mockGetCredentialsFromUser(obj)))
-    }))
+    beforeAll(() => {
+      jest
+        .spyOn(callbacks, 'getCredentialsFromUser')
+        .mockImplementation((obj: ObjectType) => Promise.resolve(mockGetCredentialsFromUser(obj)))
+    })
 
     describe('when calling login via the commander wrapper', () => {
       const { action } = accountLoginDef
@@ -624,12 +634,7 @@ describe('account command group', () => {
               'salesforce',
               {
                 authType: 'basic',
-                loginParameters: [
-                  'username=testUser',
-                  'password=testPassword',
-                  'token=testToken',
-                  'sandbox=y',
-                ],
+                loginParameters: ['username=testUser', 'password=testPassword', 'token=testToken', 'sandbox=y'],
               },
             ],
           })
@@ -640,40 +645,57 @@ describe('account command group', () => {
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-salesforce': true, installationID: '1234', app: 'test', workspaceID: 'test' })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({
+              'adapter-salesforce': true,
+              installationID: '1234',
+              app: 'test',
+              workspaceID: 'test',
+            })
           })
         })
       })
 
       describe('when specifying an unknown account', () => {
         it('should send telemetry without any adapter tags', async () => {
-          await expect(action({
-            ...cliArgs,
-            workspacePath: '.',
-            commanderInput: ['unknownAdapter', {}],
-          })).rejects.toThrow(new CliError(CliExitCode.UserInputError))
+          await expect(
+            action({
+              ...cliArgs,
+              workspacePath: '.',
+              commanderInput: ['unknownAdapter', {}],
+            }),
+          ).rejects.toThrow(new CliError(CliExitCode.UserInputError))
 
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({ app: 'test', installationID: '1234', workspaceID: 'test' })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
+              app: 'test',
+              installationID: '1234',
+              workspaceID: 'test',
+            })
           })
         })
       })
       describe('when login params are incorrect', () => {
         it('should send telemetry with any adapter tags', async () => {
-          await expect(action({
-            ...cliArgs,
-            workspacePath: '.',
-            commanderInput: ['unknownAdapter', { loginParameters: ['badParam=X'] }],
-          })).rejects.toThrow(new CliError(CliExitCode.AppError))
+          await expect(
+            action({
+              ...cliArgs,
+              workspacePath: '.',
+              commanderInput: ['unknownAdapter', { loginParameters: ['badParam=X'] }],
+            }),
+          ).rejects.toThrow(new CliError(CliExitCode.AppError))
 
           const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
           eventTypes.forEach(eventType => {
             const eventName = buildEventName('login', eventType)
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({ app: 'test', installationID: '1234', workspaceID: 'test' })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({
+              app: 'test',
+              installationID: '1234',
+              workspaceID: 'test',
+            })
           })
         })
       })
@@ -727,8 +749,9 @@ describe('account command group', () => {
 
       describe('when login called with unsupported auth type', () => {
         beforeEach(async () => {
-          jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
-            Promise.resolve(mockGetOAuthCredentialsFromUser(obj)))
+          jest
+            .spyOn(callbacks, 'getCredentialsFromUser')
+            .mockImplementation((obj: ObjectType) => Promise.resolve(mockGetOAuthCredentialsFromUser(obj)))
           await loginAction({
             ...cliCommandArgs,
             input: {
@@ -740,14 +763,17 @@ describe('account command group', () => {
         })
 
         it('fails with no such auth type error', () => {
-          expect(output.stderr.content).toContain('Error: Could not login to salesforce: Adapter does not support authentication of type oauth')
+          expect(output.stderr.content).toContain(
+            'Error: Could not login to salesforce: Adapter does not support authentication of type oauth',
+          )
         })
       })
 
       describe('when called with oauth credentials', () => {
         beforeEach(async () => {
-          jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
-            Promise.resolve(mockGetOAuthCredentialsFromUser(obj)))
+          jest
+            .spyOn(callbacks, 'getCredentialsFromUser')
+            .mockImplementation((obj: ObjectType) => Promise.resolve(mockGetOAuthCredentialsFromUser(obj)))
           await loginAction({
             ...cliCommandArgs,
             input: {
@@ -827,12 +853,7 @@ describe('account command group', () => {
             input: {
               accountName: 'salesforce',
               authType: 'basic',
-              loginParameters: [
-                'username=testUser',
-                'password=testPassword',
-                token,
-                sandbox ? 'sandbox=y' : '',
-              ],
+              loginParameters: ['username=testUser', 'password=testPassword', token, sandbox ? 'sandbox=y' : ''],
             },
             workspace,
           })

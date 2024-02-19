@@ -1,29 +1,51 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable,
-  INSTANCE_ANNOTATIONS, TypeReference } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  PrimitiveType,
+  PrimitiveTypes,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Variable,
+  INSTANCE_ANNOTATIONS,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Keywords } from '../../../language'
 import { ParseContext, ConsumerReturnType } from '../types'
 import { SourceRange } from '../../types'
-import { invalidPrimitiveTypeDef, unknownPrimitiveTypeError, invalidFieldsInPrimitiveType,
-  invalidBlocksInInstance, invalidVarDefinition, missingLabelsError, missingBlockOpen,
-  ambigiousBlock } from '../errors'
-import { primitiveType, registerRange, positionAtStart, positionAtEnd,
-  parseTopLevelID, INVALID_ELEM_ID } from '../helpers'
+import {
+  invalidPrimitiveTypeDef,
+  unknownPrimitiveTypeError,
+  invalidFieldsInPrimitiveType,
+  invalidBlocksInInstance,
+  invalidVarDefinition,
+  missingLabelsError,
+  missingBlockOpen,
+  ambigiousBlock,
+} from '../errors'
+import {
+  primitiveType,
+  registerRange,
+  positionAtStart,
+  positionAtEnd,
+  parseTopLevelID,
+  INVALID_ELEM_ID,
+} from '../helpers'
 import { consumeBlockBody, recoverInvalidItemDefinition, isAttrDef } from './blocks'
 import { TOKEN_TYPES } from '../lexer'
 import { consumeWords, consumeValue } from './values'
@@ -31,11 +53,11 @@ import { consumeWords, consumeValue } from './values'
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 
 const getElementIfValid = <T extends Element>(element: T, typeID?: ElemID): T | undefined =>
-  ((typeID ?? element.elemID).isEqual(INVALID_ELEM_ID) ? undefined : element)
+  (typeID ?? element.elemID).isEqual(INVALID_ELEM_ID) ? undefined : element
 
 const consumePrimitive = (
   context: ParseContext,
-  labels: ConsumerReturnType<string[]>
+  labels: ConsumerReturnType<string[]>,
 ): ConsumerReturnType<PrimitiveType | undefined> => {
   // Note - this method is called *only* if labels has 4 tokens (the first of which
   // is 'type' which we can ignore
@@ -46,10 +68,15 @@ const consumePrimitive = (
   // We don't need to recover. We'll just pretend the wrong word is 'is' (hihi)
   // and parse as usual.
   if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
-    context.errors.push(invalidPrimitiveTypeDef({
-      ...labels.range,
-      filename: context.filename,
-    }, kw))
+    context.errors.push(
+      invalidPrimitiveTypeDef(
+        {
+          ...labels.range,
+          filename: context.filename,
+        },
+        kw,
+      ),
+    )
   }
 
   let primitive = primitiveType(baseType)
@@ -58,10 +85,15 @@ const consumePrimitive = (
   // just treat the type as unknown and add an error. Again - no need to recover since
   // structre is unharmed.
   if (primitive === undefined) {
-    context.errors.push(unknownPrimitiveTypeError({
-      ...labels.range,
-      filename: context.filename,
-    }, baseType))
+    context.errors.push(
+      unknownPrimitiveTypeError(
+        {
+          ...labels.range,
+          filename: context.filename,
+        },
+        baseType,
+      ),
+    )
     primitive = PrimitiveTypes.UNKNOWN
   }
 
@@ -70,18 +102,22 @@ const consumePrimitive = (
   // You can't define fields on a primitive type. But no need to recover
   // we just ignore the fields.
   if (!_.isEmpty(consumedBlock.value.fields)) {
-    context.errors.push(invalidFieldsInPrimitiveType({
-      ...consumedBlock.range,
-      filename: context.filename,
-    }))
+    context.errors.push(
+      invalidFieldsInPrimitiveType({
+        ...consumedBlock.range,
+        filename: context.filename,
+      }),
+    )
   }
   return {
-    value: getElementIfValid(new PrimitiveType({
-      elemID,
-      primitive,
-      annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
-      annotations: consumedBlock.value.attrs,
-    })),
+    value: getElementIfValid(
+      new PrimitiveType({
+        elemID,
+        primitive,
+        annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
+        annotations: consumedBlock.value.attrs,
+      }),
+    ),
     range: consumedBlock.range,
   }
 }
@@ -90,18 +126,20 @@ const consumeObjectType = (
   context: ParseContext,
   typeName: string,
   range: SourceRange,
-  isSettings: boolean
+  isSettings: boolean,
 ): ConsumerReturnType<ObjectType | undefined> => {
   const elemID = parseTopLevelID(context, typeName, range)
   const consumedBlock = consumeBlockBody(context, elemID)
   return {
-    value: getElementIfValid(new ObjectType({
-      elemID,
-      fields: consumedBlock.value.fields,
-      annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
-      annotations: consumedBlock.value.attrs,
-      isSettings,
-    })),
+    value: getElementIfValid(
+      new ObjectType({
+        elemID,
+        fields: consumedBlock.value.fields,
+        annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
+        annotations: consumedBlock.value.attrs,
+        isSettings,
+      }),
+    ),
     range: consumedBlock.range,
   }
 }
@@ -110,25 +148,20 @@ const consumeInstanceElement = (
   context: ParseContext,
   instanceType: string,
   range: SourceRange,
-  instanceName: string = ElemID.CONFIG_NAME
+  instanceName: string = ElemID.CONFIG_NAME,
 ): ConsumerReturnType<InstanceElement | undefined> => {
   let typeID = parseTopLevelID(context, instanceType, range)
   if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
     // In this case if there is just a single name we have to assume it is actually the adapter
     typeID = new ElemID(typeID.name)
   }
-  const instance = new InstanceElement(
-    instanceName,
-    new TypeReference(typeID)
-  )
+  const instance = new InstanceElement(instanceName, new TypeReference(typeID))
   const consumedBlockBody = consumeBlockBody(context, instance.elemID)
 
   // You can't define a block inside an instance. Blocks will be ignored.
   const { attrs, fields, annotationRefTypes } = consumedBlockBody.value
   if (!_.isEmpty(annotationRefTypes) || !_.isEmpty(fields)) {
-    context.errors.push(
-      invalidBlocksInInstance({ ...consumedBlockBody.range, filename: context.filename })
-    )
+    context.errors.push(invalidBlocksInInstance({ ...consumedBlockBody.range, filename: context.filename }))
   }
 
   // Using pick to get the instance annotations since they are defined as regular
@@ -156,11 +189,13 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
 
   const nextToken = context.lexer.next()
   if (nextToken.type !== TOKEN_TYPES.OCURLY) {
-    context.errors.push(missingBlockOpen({
-      start: positionAtStart(nextToken),
-      end: positionAtEnd(nextToken),
-      filename: context.filename,
-    }))
+    context.errors.push(
+      missingBlockOpen({
+        start: positionAtStart(nextToken),
+        end: positionAtEnd(nextToken),
+        filename: context.filename,
+      }),
+    )
   }
   const start = positionAtStart(nextToken)
 
@@ -190,40 +225,40 @@ export const consumeVariableBlock = (context: ParseContext): ConsumerReturnType<
 // We consider a block def with 2 labels to be a primitive type def with the 'is'
 // keyword missing, since in all other block types there is only 1 legal label.
 // the primitive type consumer handles the missing 'is'.
-const isPrimitiveTypeDef = (elementType: string, elementLabels: string[]): boolean => (
+const isPrimitiveTypeDef = (elementType: string, elementLabels: string[]): boolean =>
   elementType === Keywords.TYPE_DEFINITION && elementLabels.length >= 2 && elementLabels.length < 4
-)
 
-const isObjectTypeDef = (
-  elementType: string,
-  elementLabels: string[],
-  isSettings: boolean
-): boolean => (
+const isObjectTypeDef = (elementType: string, elementLabels: string[], isSettings: boolean): boolean =>
   (elementType === Keywords.TYPE_DEFINITION || isSettings) && elementLabels.length === 1
-)
 
 // No labels is allowed to support config instances
-const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolean => (
+const isInstanceTypeDef = (elementType: string, elementLabels: string[]): boolean =>
   elementType !== undefined && elementLabels.length <= 1
-)
 
 export const consumeElement = (context: ParseContext): ConsumerReturnType<Element | undefined> => {
   const consumedLabels = consumeWords(context)
   const nextToken = context.lexer.peek()
   if (nextToken && consumedLabels.value.length === 0) {
-    context.errors.push(missingLabelsError({
-      start: positionAtStart(nextToken),
-      end: positionAtEnd(nextToken),
-      filename: context.filename,
-    }, nextToken?.value ?? 'EOF'))
+    context.errors.push(
+      missingLabelsError(
+        {
+          start: positionAtStart(nextToken),
+          end: positionAtEnd(nextToken),
+          filename: context.filename,
+        },
+        nextToken?.value ?? 'EOF',
+      ),
+    )
   }
 
   if (nextToken?.type !== TOKEN_TYPES.OCURLY) {
-    context.errors.push(missingBlockOpen({
-      start: nextToken ? positionAtStart(nextToken) : consumedLabels.range.end,
-      end: nextToken ? positionAtEnd(nextToken) : consumedLabels.range.end,
-      filename: context.filename,
-    }))
+    context.errors.push(
+      missingBlockOpen({
+        start: nextToken ? positionAtStart(nextToken) : consumedLabels.range.end,
+        end: nextToken ? positionAtEnd(nextToken) : consumedLabels.range.end,
+        filename: context.filename,
+      }),
+    )
   }
   const [elementType, ...elementLabels] = consumedLabels.value
   let consumedElement: ConsumerReturnType<Element | undefined>
@@ -234,7 +269,8 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
     consumedElement = consumePrimitive(context, consumedLabels)
   } else if (isObjectTypeDef(elementType, elementLabels, isSettings)) {
     consumedElement = consumeObjectType(
-      context, elementLabels[0],
+      context,
+      elementLabels[0],
       { ...consumedLabels.range, filename: context.filename },
       isSettings,
     )
@@ -243,7 +279,7 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
       context,
       elementType,
       { ...consumedLabels.range, filename: context.filename },
-      elementLabels[0]
+      elementLabels[0],
     )
   } else {
     // If we don't know which type of block is defined here, we need to ignore

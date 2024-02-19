@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { isString } from 'util'
 import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
@@ -28,11 +28,10 @@ describe('buildGroupGraph', () => {
     origin.clear()
   })
 
-  const getGroupNodes = (): Group<string>[] => [...subject.evaluationOrder()]
-    .map(groupId => subject.getData(groupId) as Group<string>)
+  const getGroupNodes = (): Group<string>[] =>
+    [...subject.evaluationOrder()].map(groupId => subject.getData(groupId) as Group<string>)
 
-  const compareGroup = (group: Group<string>, key: string, items: {key: string; data: string}[]):
-  void => {
+  const compareGroup = (group: Group<string>, key: string, items: { key: string; data: string }[]): void => {
     expect(group.groupKey).toBe(key)
     expect(group.items.size).toBe(items.length)
     items.forEach(item => expect(group.items.get(item.key)).toBe(item.data))
@@ -64,8 +63,11 @@ describe('buildGroupGraph', () => {
 
     const groupGraph = getGroupNodes()
     expect(groupGraph).toHaveLength(1)
-    compareGroup(groupGraph[0], 'group1', [{ key: 'group1_n3', data: 'n3_data' },
-      { key: 'group1_n2', data: 'n2_data' }, { key: 'group1_n1', data: 'n1_data' }])
+    compareGroup(groupGraph[0], 'group1', [
+      { key: 'group1_n3', data: 'n3_data' },
+      { key: 'group1_n2', data: 'n2_data' },
+      { key: 'group1_n1', data: 'n1_data' },
+    ])
   })
 
   describe('disjoint groups', () => {
@@ -78,8 +80,10 @@ describe('buildGroupGraph', () => {
       const groupGraph = getGroupNodes()
       expect(groupGraph).toHaveLength(2)
       compareGroup(groupGraph[0], 'group1', [{ key: 'group1_n3', data: 'n3_data' }])
-      compareGroup(groupGraph[1], 'group1',
-        [{ key: 'group1_n1', data: 'n1_data' }, { key: 'group1_n2', data: 'n2_data' }])
+      compareGroup(groupGraph[1], 'group1', [
+        { key: 'group1_n1', data: 'n1_data' },
+        { key: 'group1_n2', data: 'n2_data' },
+      ])
     })
     it('should not split the group if there are no dependencies', () => {
       origin.addNode('group1_n1', [], 'n1_data')
@@ -120,7 +124,7 @@ describe('buildGroupGraph', () => {
   describe('dependencies handling', () => {
     const buildSrcGraphAndGroupKeyFunc = (
       nodes: Record<string, string[]>,
-      edges: Edge[]
+      edges: Edge[],
     ): [DataNodeMap<string>, GroupKeyFunc] => {
       const groupIndex = new Map()
       const src = new DataNodeMap<string>()
@@ -134,11 +138,7 @@ describe('buildGroupGraph', () => {
       return [src, id => groupIndex.get(id) ?? id]
     }
 
-    const verifyGroupGraphOrder = <T>(
-      graph: GroupDAG<T>,
-      edges: Edge[],
-      maxSize: number
-    ): void => {
+    const verifyGroupGraphOrder = <T>(graph: GroupDAG<T>, edges: Edge[], maxSize: number): void => {
       let size = 0
       const seen = new Set()
       const nodeDeps = edges.reduce((acc, [from, to]) => {

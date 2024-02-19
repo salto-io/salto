@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { andQuery, buildNetsuiteQuery, notQuery, convertToQueryParams } from '../../src/config/query'
 
 describe('netsuite config query', () => {
@@ -27,10 +27,7 @@ describe('netsuite config query', () => {
           { name: 'customrecordtype', ids: ['customrecord_cseg123'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
-        customRecords: [
-          { name: 'custrecord1' },
-          { name: 'custrecord2', ids: ['record1', 'record2'] },
-        ],
+        customRecords: [{ name: 'custrecord1' }, { name: 'custrecord2', ids: ['record1', 'record2'] }],
       })
 
       describe('isTypeMatch', () => {
@@ -113,15 +110,17 @@ describe('netsuite config query', () => {
         })
       })
       describe('validQueryWithOldFormat', () => {
-        const queryOldFormat = buildNetsuiteQuery(convertToQueryParams({
-          types: {
-            addressForm: ['aaa.*', 'bbb.*'],
-          },
-          filePaths: ['eee.*', 'fff.*'],
-          customRecords: {
-            customrecord1: ['.*'],
-          },
-        }))
+        const queryOldFormat = buildNetsuiteQuery(
+          convertToQueryParams({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+            },
+            filePaths: ['eee.*', 'fff.*'],
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          }),
+        )
         it('should match the received types from (old format)', () => {
           expect(queryOldFormat.isTypeMatch('addressForm')).toBeTruthy()
         })
@@ -169,9 +168,7 @@ describe('netsuite config query', () => {
     // For the migration between the PascalCase and the camelCase in the SuiteApp type names
     it('Support PascalCase SuiteApp names', () => {
       const query = buildNetsuiteQuery({
-        types: [
-          { name: 'Subsidiary' },
-        ],
+        types: [{ name: 'Subsidiary' }],
         fileCabinet: [],
       })
       expect(query.isTypeMatch('subsidiary')).toBeTruthy()
@@ -179,13 +176,18 @@ describe('netsuite config query', () => {
     })
 
     it('support complex file cabinet regexes', () => {
-      const query = andQuery(buildNetsuiteQuery({
-        types: [],
-        fileCabinet: ['^/SuiteScripts.*'],
-      }), notQuery(buildNetsuiteQuery({
-        types: [],
-        fileCabinet: ['^/SuiteScripts/[^/]+\\.xml'],
-      })))
+      const query = andQuery(
+        buildNetsuiteQuery({
+          types: [],
+          fileCabinet: ['^/SuiteScripts.*'],
+        }),
+        notQuery(
+          buildNetsuiteQuery({
+            types: [],
+            fileCabinet: ['^/SuiteScripts/[^/]+\\.xml'],
+          }),
+        ),
+      )
       expect(query.isFileMatch('/SuiteScripts/inner/test.xml')).toBeTruthy()
       expect(query.isFileMatch('/SuiteScripts/test.xml')).toBeFalsy()
     })
@@ -199,9 +201,7 @@ describe('netsuite config query', () => {
         { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['bbb.*'],
-      customRecords: [
-        { name: 'cust.*' },
-      ],
+      customRecords: [{ name: 'cust.*' }],
     })
     const secondQuery = buildNetsuiteQuery({
       types: [
@@ -210,10 +210,7 @@ describe('netsuite config query', () => {
         { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['.*ddd'],
-      customRecords: [
-        { name: '.*record1' },
-        { name: '.*record2', ids: ['record1', 'record2'] },
-      ],
+      customRecords: [{ name: '.*record1' }, { name: '.*record2', ids: ['record1', 'record2'] }],
     })
     const bothQuery = andQuery(firstQuery, secondQuery)
 
@@ -269,13 +266,9 @@ describe('netsuite config query', () => {
 
   describe('notQuery', () => {
     const query = buildNetsuiteQuery({
-      types: [
-        { name: 'addressForm', ids: ['aaa.*'] },
-      ],
+      types: [{ name: 'addressForm', ids: ['aaa.*'] }],
       fileCabinet: ['bbb.*'],
-      customRecords: [
-        { name: 'custrecord1', ids: ['record1'] },
-      ],
+      customRecords: [{ name: 'custrecord1', ids: ['record1'] }],
     })
     const inverseQuery = notQuery(query)
 

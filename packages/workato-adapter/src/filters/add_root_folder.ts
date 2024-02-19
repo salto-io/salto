@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  Element, InstanceElement, isInstanceElement, isObjectType,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { Element, InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -40,9 +38,7 @@ const filterCreator: FilterCreator = () => ({
       log.warn('Could not find object type for folder - not adding a root folder instance')
       return
     }
-    const folders = elements
-      .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === FOLDER_TYPE)
+    const folders = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === FOLDER_TYPE)
     const existingIDs = new Set(folders.map(f => f.value.id).filter(val => val !== undefined))
     const parentIDs = new Set(folders.map(f => f.value.parent_id).filter(val => val !== undefined))
     const missingParents = [...parentIDs].filter(id => !existingIDs.has(id))

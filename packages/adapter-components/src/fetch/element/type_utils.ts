@@ -1,20 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, Field, FieldDefinition, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, LIST_ID_PREFIX, ListType, MAP_ID_PREFIX, MapType, ObjectType, PrimitiveType, PrimitiveTypes, TypeElement, createRefToElmWithValue, createRestriction, isEqualElements, isPrimitiveType, isTypeReference } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  Field,
+  FieldDefinition,
+  GENERIC_ID_PREFIX,
+  GENERIC_ID_SUFFIX,
+  LIST_ID_PREFIX,
+  ListType,
+  MAP_ID_PREFIX,
+  MapType,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  TypeElement,
+  createRefToElmWithValue,
+  createRestriction,
+  isEqualElements,
+  isPrimitiveType,
+  isTypeReference,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -24,9 +44,8 @@ const log = logger(module)
 
 export const NESTING_SEPARATOR = '__'
 
-export const toNestedTypeName = (parentName: string, nestedTypeName: string): string => (
+export const toNestedTypeName = (parentName: string, nestedTypeName: string): string =>
   `${parentName}${NESTING_SEPARATOR}${nestedTypeName}`
-)
 
 /**
  * calculate mapping from original type name to new type name. there are two ways to rename a type:
@@ -34,20 +53,27 @@ export const toNestedTypeName = (parentName: string, nestedTypeName: string): st
  * - when extracting a standalone field, the provided typename will be used as the extracted instances' type
  *   (and the referring field's type as well)
  */
-export const computeTypesToRename = ({ defQuery, typeNameOverrides }: {
+export const computeTypesToRename = ({
+  defQuery,
+  typeNameOverrides,
+}: {
   defQuery: ElementAndResourceDefFinder
   typeNameOverrides?: Record<string, string>
-}): Record<string, string> => (
-  typeNameOverrides ?? _.merge(
-    _.invert(_.pickBy(
-      _.mapValues(defQuery.getAll(), def => def.element?.sourceTypeName),
-      isDefined,
-    )),
+}): Record<string, string> =>
+  typeNameOverrides ??
+  _.merge(
+    _.invert(
+      _.pickBy(
+        _.mapValues(defQuery.getAll(), def => def.element?.sourceTypeName),
+        isDefined,
+      ),
+    ),
     Object.fromEntries(
-      Object.entries(_.pickBy(
-        defQuery.getAll(),
-        def => Object.values(def.element?.fieldCustomizations ?? {}).some(val => val.standalone?.typeName)
-      )).flatMap(([typeName, def]) => (
+      Object.entries(
+        _.pickBy(defQuery.getAll(), def =>
+          Object.values(def.element?.fieldCustomizations ?? {}).some(val => val.standalone?.typeName),
+        ),
+      ).flatMap(([typeName, def]) =>
         Object.entries(def.element?.fieldCustomizations ?? {})
           .map(([fieldName, { standalone }]) => {
             if (standalone?.typeName !== undefined) {
@@ -55,34 +81,38 @@ export const computeTypesToRename = ({ defQuery, typeNameOverrides }: {
             }
             return undefined
           })
-          .filter(isDefined)
-      ))
-    )
+          .filter(isDefined),
+      ),
+    ),
   )
-)
 
-export const toPrimitiveType = (val: string): PrimitiveType => _.get(
-  {
-    string: BuiltinTypes.STRING,
-    boolean: BuiltinTypes.BOOLEAN,
-    number: BuiltinTypes.NUMBER,
-  },
-  val,
-  BuiltinTypes.UNKNOWN,
-)
+export const toPrimitiveType = (val: string): PrimitiveType =>
+  _.get(
+    {
+      string: BuiltinTypes.STRING,
+      boolean: BuiltinTypes.BOOLEAN,
+      number: BuiltinTypes.NUMBER,
+    },
+    val,
+    BuiltinTypes.UNKNOWN,
+  )
 
 /**
  * Helper function for creating the right type element from the type name specified in the config.
  * This can be called recursively to generate the right type from existing types, potentially
  * wrapped in containers - such as list<map<list<someTypeName>>>
  */
-export const getContainerForType = (typeName: string): {
-  container: 'list' | 'map'
-  typeNameSubstring: string
-} | undefined => {
+export const getContainerForType = (
+  typeName: string,
+):
+  | {
+      container: 'list' | 'map'
+      typeNameSubstring: string
+    }
+  | undefined => {
   if (
-    typeName.toLowerCase().startsWith(`${LIST_ID_PREFIX.toLowerCase()}${GENERIC_ID_PREFIX}`)
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
+    typeName.toLowerCase().startsWith(`${LIST_ID_PREFIX.toLowerCase()}${GENERIC_ID_PREFIX}`) &&
+    typeName.endsWith(GENERIC_ID_SUFFIX)
   ) {
     return {
       container: 'list',
@@ -92,10 +122,7 @@ export const getContainerForType = (typeName: string): {
       ),
     }
   }
-  if (
-    typeName.toLowerCase().startsWith(MAP_ID_PREFIX.toLowerCase())
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
+  if (typeName.toLowerCase().startsWith(MAP_ID_PREFIX.toLowerCase()) && typeName.endsWith(GENERIC_ID_SUFFIX)) {
     return {
       container: 'map',
       typeNameSubstring: typeName.substring(
@@ -107,7 +134,10 @@ export const getContainerForType = (typeName: string): {
   return undefined
 }
 
-const toTypeWithContainers = ({ definedTypes, typeName }: {
+const toTypeWithContainers = ({
+  definedTypes,
+  typeName,
+}: {
   definedTypes: Record<string, ObjectType>
   typeName: string
 }): TypeElement => {
@@ -125,7 +155,12 @@ const toTypeWithContainers = ({ definedTypes, typeName }: {
   return type
 }
 
-const overrideFieldType = ({ type, fieldName, fieldTypeName, definedTypes }: {
+const overrideFieldType = ({
+  type,
+  fieldName,
+  fieldTypeName,
+  definedTypes,
+}: {
   type: ObjectType
   fieldName: string
   fieldTypeName: string
@@ -133,16 +168,16 @@ const overrideFieldType = ({ type, fieldName, fieldTypeName, definedTypes }: {
 }): void => {
   const newFieldType = toTypeWithContainers({ definedTypes, typeName: fieldTypeName })
   if (type.fields[fieldName] === undefined) {
-    log.debug(
-      'Creating field type for %s.%s with type %s',
-      type.elemID.name, fieldName, newFieldType.elemID.name
-    )
+    log.debug('Creating field type for %s.%s with type %s', type.elemID.name, fieldName, newFieldType.elemID.name)
     type.fields[fieldName] = new Field(type, fieldName, newFieldType)
   }
   const field = type.fields[fieldName]
   log.debug(
     'Modifying field type for %s.%s from %s to %s',
-    type.elemID.name, fieldName, field.refType.elemID.name, newFieldType.elemID.name
+    type.elemID.name,
+    fieldName,
+    field.refType.elemID.name,
+    newFieldType.elemID.name,
   )
   field.refType = createRefToElmWithValue(newFieldType)
 }
@@ -155,32 +190,30 @@ export const markServiceIdField = (
   typeFields: Record<string, FieldDefinition | Field>,
   typeName: string,
 ): void => {
-  const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
-    ? typeFields[fieldName]
-    : undefined
+  const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName) ? typeFields[fieldName] : undefined
   if (field === undefined) {
     return
   }
   log.debug('Mark field %s.%s as service_id', typeName, fieldName)
-  const fieldType = isTypeReference(field.refType)
-    ? field.refType.type
-    : field.refType
+  const fieldType = isTypeReference(field.refType) ? field.refType.type : field.refType
 
   if (!isPrimitiveType(fieldType)) {
     log.warn('field %s.%s type is not primitive, cannot mark it as service_id', typeName, fieldName)
     return
   }
   switch (fieldType.primitive) {
-    case (PrimitiveTypes.NUMBER):
+    case PrimitiveTypes.NUMBER:
       field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID_NUMBER)
       return
-    case (PrimitiveTypes.STRING):
+    case PrimitiveTypes.STRING:
       field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
       return
     default:
       log.warn(
         'Failed to mark field %s.%s as service id, since its primitive type id (%d) is not supported',
-        typeName, fieldName, fieldType.primitive
+        typeName,
+        fieldName,
+        fieldType.primitive,
       )
   }
 }
@@ -188,7 +221,11 @@ export const markServiceIdField = (
 /**
  * Adjust field definitions based on the defined customization.
  */
-export const adjustFieldTypes = ({ definedTypes, defQuery, finalTypeNames }: {
+export const adjustFieldTypes = ({
+  definedTypes,
+  defQuery,
+  finalTypeNames,
+}: {
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder
   finalTypeNames: Set<string>
@@ -212,25 +249,16 @@ export const adjustFieldTypes = ({ definedTypes, defQuery, finalTypeNames }: {
       }
       const { hide, restrictions, standalone, omit } = customization
       if (restrictions) {
-        log.debug(
-          'applying restrictions to field %s.%s',
-          type.elemID.name, fieldName,
-        )
+        log.debug('applying restrictions to field %s.%s', type.elemID.name, fieldName)
         field.annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
       }
       if (hide) {
-        log.debug(
-          'hiding field %s.%s',
-          type.elemID.name, fieldName,
-        )
+        log.debug('hiding field %s.%s', type.elemID.name, fieldName)
 
         field.annotate({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
       }
       if (omit || standalone?.referenceFromParent === false) {
-        log.debug(
-          'omitting field %s.%s from type',
-          type.elemID.name, fieldName,
-        )
+        log.debug('omitting field %s.%s from type', type.elemID.name, fieldName)
         // the field's value is removed when constructing the value in extractStandaloneInstances
         delete type.fields[fieldName]
       }

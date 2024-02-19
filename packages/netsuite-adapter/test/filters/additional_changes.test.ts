@@ -1,19 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isObjectTypeChange, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isModificationChange,
+  isObjectTypeChange,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/additional_changes'
@@ -38,19 +51,18 @@ describe('additional changes filter', () => {
   })
   describe('field changes', () => {
     it('should add field parent with correct before & after', async () => {
-      const changes: Change[] = [
-        toChange({ after: customRecordType.fields.custom_field }),
-      ]
+      const changes: Change[] = [toChange({ after: customRecordType.fields.custom_field })]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(2)
       const [parentChange] = changes.filter(isObjectTypeChange)
       expect(parentChange.action).toEqual('modify')
       expect(getChangeData(parentChange)).toBe(customRecordType)
-      expect(isModificationChange(parentChange) && parentChange.data.before)
-        .toEqual(new ObjectType({
+      expect(isModificationChange(parentChange) && parentChange.data.before).toEqual(
+        new ObjectType({
           elemID: customRecordType.elemID,
           annotations: customRecordType.annotations,
-        }))
+        }),
+      )
     })
     it('should add field parent one time if there are multiple fields', async () => {
       const beforeCustomRecordType = customRecordType.clone()
@@ -71,14 +83,15 @@ describe('additional changes filter', () => {
       expect(parentChanges).toHaveLength(1)
       expect(parentChanges[0].action).toEqual('modify')
       expect(getChangeData(parentChanges[0])).toBe(customRecordType)
-      expect(isModificationChange(parentChanges[0]) && parentChanges[0].data.before)
-        .toEqual(new ObjectType({
+      expect(isModificationChange(parentChanges[0]) && parentChanges[0].data.before).toEqual(
+        new ObjectType({
           elemID: beforeCustomRecordType.elemID,
           annotations: beforeCustomRecordType.annotations,
           fields: { custom_field: beforeCustomRecordType.fields.custom_field },
-        }))
+        }),
+      )
     })
-    it('should not add field parent if it\'s in changes', async () => {
+    it("should not add field parent if it's in changes", async () => {
       const changes: Change[] = [
         toChange({ after: customRecordType }),
         toChange({ after: customRecordType.fields.custom_field }),
@@ -89,9 +102,7 @@ describe('additional changes filter', () => {
       expect(parentChange.action).toEqual('add')
     })
     it('should not add field parent if field is deleted', async () => {
-      const changes: Change[] = [
-        toChange({ before: customRecordType.fields.custom_field }),
-      ]
+      const changes: Change[] = [toChange({ before: customRecordType.fields.custom_field })]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(1)
       expect(getChangeData(changes[0])).toBe(customRecordType.fields.custom_field)
@@ -104,9 +115,7 @@ describe('additional changes filter', () => {
       })
     })
     it('should add required referenced element', async () => {
-      const changes: Change[] = [
-        toChange({ after: customRecordType }),
-      ]
+      const changes: Change[] = [toChange({ after: customRecordType })]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(2)
       const [requiredInstanceChange] = changes.filter(isInstanceChange)
@@ -114,32 +123,23 @@ describe('additional changes filter', () => {
       expect(getChangeData(requiredInstanceChange)).toEqual(customSegmentInstance)
     })
     it('should add field parent and required referenced element', async () => {
-      const changes: Change[] = [
-        toChange({ after: customRecordType.fields.custom_field }),
-      ]
+      const changes: Change[] = [toChange({ after: customRecordType.fields.custom_field })]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(3)
-      expect(changes.map(getChangeData)).toEqual(expect.arrayContaining([
-        customRecordType,
-        customRecordType.fields.custom_field,
-        customSegmentInstance,
-      ]))
+      expect(changes.map(getChangeData)).toEqual(
+        expect.arrayContaining([customRecordType, customRecordType.fields.custom_field, customSegmentInstance]),
+      )
     })
-    it('should not add required referenced element if it\'s in changes', async () => {
-      const changes: Change[] = [
-        toChange({ after: customRecordType }),
-        toChange({ after: customSegmentInstance }),
-      ]
+    it("should not add required referenced element if it's in changes", async () => {
+      const changes: Change[] = [toChange({ after: customRecordType }), toChange({ after: customSegmentInstance })]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(2)
       const [requiredInstanceChange] = changes.filter(isInstanceChange)
       expect(requiredInstanceChange.action).toEqual('add')
       expect(getChangeData(requiredInstanceChange)).toBe(customSegmentInstance)
     })
-    it('should not add required referenced element if it\'s a deletion change', async () => {
-      const changes: Change[] = [
-        toChange({ before: customRecordType }),
-      ]
+    it("should not add required referenced element if it's a deletion change", async () => {
+      const changes: Change[] = [toChange({ before: customRecordType })]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(1)
     })

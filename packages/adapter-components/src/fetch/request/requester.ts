@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -52,36 +52,33 @@ const createExtractor = <ClientOptions extends string>(
   typeName: string,
 ): ItemExtractor => {
   const transform = createValueTransformer(extractorDef.transformation)
-  return pages => (
-    pages.flatMap(page => collections.array.makeArray(transform({
-      value: page,
-      typeName,
-      context: extractorDef.context ?? {},
-    })))
-  )
+  return pages =>
+    pages.flatMap(page =>
+      collections.array.makeArray(
+        transform({
+          value: page,
+          typeName,
+          context: extractorDef.context ?? {},
+        }),
+      ),
+    )
 }
 
-export const getRequester = <
-  ClientOptions extends string,
-  PaginationOptions extends string | 'none',
->({
-    adapterName,
-    clients,
-    pagination,
-    requestDefQuery,
-  }: {
+export const getRequester = <ClientOptions extends string, PaginationOptions extends string | 'none'>({
+  adapterName,
+  clients,
+  pagination,
+  requestDefQuery,
+}: {
   adapterName: string
   clients: ApiDefinitions<ClientOptions, PaginationOptions>['clients']
   pagination: ApiDefinitions<ClientOptions, PaginationOptions>['pagination']
   requestDefQuery: DefQuery<FetchRequestDefinition<ClientOptions>[]>
 }): Requester<ClientOptions> => {
-  const clientDefs = _.mapValues(
-    clients.options,
-    ({ endpoints, ...def }) => ({
-      endpoints: queryWithDefault(endpoints),
-      ...def,
-    })
-  )
+  const clientDefs = _.mapValues(clients.options, ({ endpoints, ...def }) => ({
+    endpoints: queryWithDefault(endpoints),
+    ...def,
+  }))
 
   const getMergedRequestDefinition = (
     requestDef: FetchRequestDefinition<ClientOptions>,
@@ -94,8 +91,12 @@ export const getRequester = <
     const clientDef = clientDefs[clientName]
     const endpointDef = clientDef.endpoints.query(requestEndpoint.path)?.[requestEndpoint.method ?? 'get']
     if (!endpointDef?.readonly) {
-      log.error(`Endpoint [${clientName}]${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`)
-      throw new Error(`Endpoint [${clientName}]${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`)
+      log.error(
+        `Endpoint [${clientName}]${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`,
+      )
+      throw new Error(
+        `Endpoint [${clientName}]${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`,
+      )
     }
     return {
       merged: {
@@ -113,9 +114,10 @@ export const getRequester = <
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)
 
     const paginationOption = mergedRequestDef.endpoint.pagination
-    const paginationDef = paginationOption !== undefined
-      ? pagination[paginationOption]
-      : { funcCreator: noPagination, clientArgs: undefined }
+    const paginationDef =
+      paginationOption !== undefined
+        ? pagination[paginationOption]
+        : { funcCreator: noPagination, clientArgs: undefined }
 
     const { clientArgs } = paginationDef
     // order of precedence in case of overlaps: pagination defaults < endpoint < resource-specific request
@@ -123,12 +125,17 @@ export const getRequester = <
 
     const extractor = createExtractor(requestDef, typeName)
 
-    const callArgs = (mergedEndpointDef.omitBody
+    const callArgs = mergedEndpointDef.omitBody
       ? _.pick(mergedEndpointDef, ['queryArgs', 'headers'])
-      : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body']))
+      : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body'])
 
-
-    log.trace('traversing pages for adapter %s client %s endpoint %s.%s', adapterName, clientName, mergedRequestDef.endpoint.path, mergedRequestDef.endpoint.method)
+    log.trace(
+      'traversing pages for adapter %s client %s endpoint %s.%s',
+      adapterName,
+      clientName,
+      mergedRequestDef.endpoint.path,
+      mergedRequestDef.endpoint.method,
+    )
     const pagesWithContext = await traversePages({
       client: clientDefs[clientName].httpClient,
       paginationDef,
@@ -140,31 +147,39 @@ export const getRequester = <
     const itemsWithContext = pagesWithContext
       .map(({ context, pages }) => ({ items: extractor(pages), context }))
       .flatMap(({ items, context }) => items.flatMap(item => ({ ...item, context })))
-    return itemsWithContext
-      .filter(item => {
-        if (!lowerdashValues.isPlainRecord(item.value)) {
-          log.warn('extracted invalid item for endpoint %s.%s:%s %s',
-            clientName, mergedRequestDef.endpoint.path, mergedRequestDef.endpoint.method ?? 'get', typeName)
-          return false
-        }
-        return true
-      }) as ValueGeneratedItem[]
+    return itemsWithContext.filter(item => {
+      if (!lowerdashValues.isPlainRecord(item.value)) {
+        log.warn(
+          'extracted invalid item for endpoint %s.%s:%s %s',
+          clientName,
+          mergedRequestDef.endpoint.path,
+          mergedRequestDef.endpoint.method ?? 'get',
+          typeName,
+        )
+        return false
+      }
+      return true
+    }) as ValueGeneratedItem[]
   }
 
   const requestAllForResource: Requester<ClientOptions>['requestAllForResource'] = async ({
-    callerIdentifier, contextPossibleArgs,
-  }) => (
-    (await Promise.all((requestDefQuery.query(callerIdentifier.typeName) ?? []).map(requestDef => {
-      const allArgs = findAllUnresolvedArgs(getMergedRequestDefinition(requestDef).merged)
-      const relevantArgRoots = _.uniq(allArgs.map(arg => arg.split('.')[0]).filter(arg => arg.length > 0))
-      const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots)
-      return request({
-        contexts,
-        requestDef,
-        typeName: callerIdentifier.typeName,
-      })
-    }))).flat()
-  )
+    callerIdentifier,
+    contextPossibleArgs,
+  }) =>
+    (
+      await Promise.all(
+        (requestDefQuery.query(callerIdentifier.typeName) ?? []).map(requestDef => {
+          const allArgs = findAllUnresolvedArgs(getMergedRequestDefinition(requestDef).merged)
+          const relevantArgRoots = _.uniq(allArgs.map(arg => arg.split('.')[0]).filter(arg => arg.length > 0))
+          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots)
+          return request({
+            contexts,
+            requestDef,
+            typeName: callerIdentifier.typeName,
+          })
+        }),
+      )
+    ).flat()
 
   return { request, requestAllForResource }
 }

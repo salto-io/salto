@@ -1,19 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, TypeReference, isAdditionChange, isRemovalChange, isModificationChange, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  ListType,
+  InstanceElement,
+  DetailedChange,
+  TypeReference,
+  isAdditionChange,
+  isRemovalChange,
+  isModificationChange,
+  getChangeData,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { merger, createElementSelector, elementSource, createElementSelectors, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockWorkspace } from '../common/workspace'
@@ -99,24 +113,42 @@ describe('diff', () => {
     path: ['salto', 'obj', 'multi', 'fields'],
   })
   // singlePathInstance
-  const singlePathInstance = new InstanceElement('singlePathInst', singlePathObject, { simple: 'Simple',
-    nested: {
-      str: 'Str',
-      num: 7,
-      list: [1, 2, 3],
-    } },
-  ['salto', 'inst', 'simple'],)
+  const singlePathInstance = new InstanceElement(
+    'singlePathInst',
+    singlePathObject,
+    {
+      simple: 'Simple',
+      nested: {
+        str: 'Str',
+        num: 7,
+        list: [1, 2, 3],
+      },
+    },
+    ['salto', 'inst', 'simple'],
+  )
   // multiPathInstance
-  const multiPathInstace1 = new InstanceElement('multiPathInst', singlePathObject, { simple: 'Simple',
-    nested: {
-      list: [1, 2, 3],
-    } },
-  ['salto', 'inst', 'nested', '1'],)
-  const multiPathInstace2 = new InstanceElement('multiPathInst', singlePathObject, { nested: {
-    str: 'Str',
-    num: 7,
-  } },
-  ['salto', 'inst', 'nested', '2'],)
+  const multiPathInstace1 = new InstanceElement(
+    'multiPathInst',
+    singlePathObject,
+    {
+      simple: 'Simple',
+      nested: {
+        list: [1, 2, 3],
+      },
+    },
+    ['salto', 'inst', 'nested', '1'],
+  )
+  const multiPathInstace2 = new InstanceElement(
+    'multiPathInst',
+    singlePathObject,
+    {
+      nested: {
+        str: 'Str',
+        num: 7,
+      },
+    },
+    ['salto', 'inst', 'nested', '2'],
+  )
 
   const elementfragments = [
     singlePathInstance,
@@ -160,7 +192,7 @@ describe('diff', () => {
           new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           undefined,
           undefined,
-          'changes'
+          'changes',
         )
         expect(changes).toHaveLength(0)
       })
@@ -174,19 +206,9 @@ describe('diff', () => {
       let afterElements: Element[]
       beforeAll(async () => {
         singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
-        beforeElements = [
-          singlePathObjMerged,
-          multiPathInstMerged,
-          singlePathInstMerged,
-          nestedType,
-        ]
+        beforeElements = [singlePathObjMerged, multiPathInstMerged, singlePathInstMerged, nestedType]
         singlePathInstMergedAfter.value.nested.str = 'modified'
-        afterElements = [
-          multiPathObjMerged,
-          singlePathInstMergedAfter,
-          multiPathInstMerged,
-          nestedType,
-        ]
+        afterElements = [multiPathObjMerged, singlePathInstMergedAfter, multiPathInstMerged, nestedType]
       })
       describe('without filters', () => {
         let changes: DetailedChange[]
@@ -214,8 +236,9 @@ describe('diff', () => {
         it('should create remove changes for elements which have different values in the fromElements and toElements', () => {
           const modifyChange = changes.find(c => c.action === 'modify')
           expect(modifyChange).toBeDefined()
-          expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
-            .createNestedID('nested').createNestedID('str'))
+          expect(modifyChange?.id).toEqual(
+            singlePathInstMergedAfter.elemID.createNestedID('nested').createNestedID('str'),
+          )
         })
       })
       describe('with filters', () => {
@@ -248,7 +271,7 @@ describe('diff', () => {
             createElementSource(beforeElements.concat(beforeInstance)),
             createElementSource(afterElements.concat(afterInstance, addedInstance)),
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors
+            selectors,
           )
         })
         it('should filter out changes that did not pass any of the filters', () => {
@@ -258,7 +281,9 @@ describe('diff', () => {
           expect(changes.find(c => c.id.isEqual(singlePathObjMerged.elemID))).toBeTruthy()
         })
         it('should include changes that matches as child of a selector', () => {
-          expect(changes.find(c => c.id.isEqual(singlePathInstMerged.elemID.createNestedID('nested', 'str')))).toBeTruthy()
+          expect(
+            changes.find(c => c.id.isEqual(singlePathInstMerged.elemID.createNestedID('nested', 'str'))),
+          ).toBeTruthy()
         })
         it('should include changes that matches as parent of a selector', () => {
           expect(changes.find(c => c.id.isEqual(addedInstance.elemID))).toBeTruthy()
@@ -266,9 +291,7 @@ describe('diff', () => {
       })
       describe('check diff handling of selectors', () => {
         it('returns empty diff when element id exists but is not in diff', async () => {
-          const selectors = [
-            createElementSelector(multiPathInstMerged.elemID.getFullName()),
-          ]
+          const selectors = [createElementSelector(multiPathInstMerged.elemID.getFullName())]
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(afterElements),
@@ -280,32 +303,23 @@ describe('diff', () => {
         // test disabled because validation is disabled.
         // eslint-disable-next-line
         it.skip('throws error when selector catches nothing', async () => {
-          const selectors = [
-            createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname'),
-          ]
-          await expect(createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-          )).rejects.toThrow()
+          const selectors = [createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname')]
+          await expect(
+            createDiffChanges(
+              createElementSource(beforeElements),
+              createElementSource(afterElements),
+              new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+              selectors,
+            ),
+          ).rejects.toThrow()
         })
         it('includes child elements when their parent is selected ', async () => {
-          const nestedID = singlePathInstMerged.elemID
-            .createNestedID('nested')
-            .createNestedID('str').getFullName()
-          const simpleId = singlePathInstMerged.elemID
-            .createNestedID('simple').getFullName()
+          const nestedID = singlePathInstMerged.elemID.createNestedID('nested').createNestedID('str').getFullName()
+          const simpleId = singlePathInstMerged.elemID.createNestedID('simple').getFullName()
           const newSinglePathInstMergedAfter = singlePathInstMergedAfter.clone() as InstanceElement
           newSinglePathInstMergedAfter.value.simple = 'old simple'
-          const newAfterElements = [
-            multiPathObjMerged,
-            multiPathInstMerged,
-            newSinglePathInstMergedAfter,
-          ]
-          const selectors = [
-            createElementSelector(singlePathInstMerged.elemID.getFullName()),
-          ]
+          const newAfterElements = [multiPathObjMerged, multiPathInstMerged, newSinglePathInstMergedAfter]
+          const selectors = [createElementSelector(singlePathInstMerged.elemID.getFullName())]
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(newAfterElements),
@@ -313,24 +327,22 @@ describe('diff', () => {
             selectors,
           )
           expect(changes).toHaveLength(2)
-          expect(changes.map(change => change.id.getFullName())
-            .sort()).toEqual([nestedID, simpleId].sort())
+          expect(changes.map(change => change.id.getFullName()).sort()).toEqual([nestedID, simpleId].sort())
         })
         it('includes field inner annotations when the field is selected', async () => {
           const newSinglePathObjMerged = singlePathObjMerged.clone() as ObjectType
           newSinglePathObjMerged.fields.simple.annotations.description = 'new description'
           const simpleFieldId = newSinglePathObjMerged.elemID.createNestedID('field', 'simple')
-          const selectors = [
-            createElementSelector(simpleFieldId.getFullName()),
-          ]
+          const selectors = [createElementSelector(simpleFieldId.getFullName())]
           const changes = await createDiffChanges(
             createInMemoryElementSource([newSinglePathObjMerged]),
             createInMemoryElementSource([singlePathObjMerged]),
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors
+            selectors,
           )
-          expect(changes.map(change => change.id.getFullName()))
-            .toEqual([simpleFieldId.createNestedID('description').getFullName()])
+          expect(changes.map(change => change.id.getFullName())).toEqual([
+            simpleFieldId.createNestedID('description').getFullName(),
+          ])
         })
       })
     })
@@ -340,19 +352,9 @@ describe('diff', () => {
       let afterElements: Element[]
       beforeAll(async () => {
         singlePathInstMergedAfter = singlePathInstMerged.clone() as InstanceElement
-        beforeElements = [
-          singlePathObjMerged,
-          multiPathInstMerged,
-          singlePathInstMerged,
-          nestedType,
-        ]
+        beforeElements = [singlePathObjMerged, multiPathInstMerged, singlePathInstMerged, nestedType]
         singlePathInstMergedAfter.value.nested.str = 'modified'
-        afterElements = [
-          multiPathObjMerged,
-          singlePathInstMergedAfter,
-          multiPathInstMerged,
-          nestedType,
-        ]
+        afterElements = [multiPathObjMerged, singlePathInstMergedAfter, multiPathInstMerged, nestedType]
       })
       describe('without filters', () => {
         let changes: ChangeWithDetails[]
@@ -363,7 +365,7 @@ describe('diff', () => {
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
             undefined,
             undefined,
-            'changes'
+            'changes',
           )
         })
         it('should create all changes', () => {
@@ -430,7 +432,7 @@ describe('diff', () => {
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
             selectors,
             undefined,
-            'changes'
+            'changes',
           )
         })
         it('should filter out changes that did not pass any of the filters', () => {
@@ -466,84 +468,74 @@ describe('diff', () => {
       })
       describe('check diff handling of selectors', () => {
         it('returns empty diff when element id exists but is not in diff', async () => {
-          const selectors = [
-            createElementSelector(multiPathInstMerged.elemID.getFullName()),
-          ]
+          const selectors = [createElementSelector(multiPathInstMerged.elemID.getFullName())]
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(afterElements),
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
             selectors,
             undefined,
-            'changes'
+            'changes',
           )
           expect(changes).toHaveLength(0)
         })
         // test disabled because validation is disabled.
         // eslint-disable-next-line
         it.skip('throws error when selector catches nothing', async () => {
-          const selectors = [
-            createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname'),
-          ]
-          await expect(createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-            undefined,
-            'changes'
-          )).rejects.toThrow()
+          const selectors = [createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname')]
+          await expect(
+            createDiffChanges(
+              createElementSource(beforeElements),
+              createElementSource(afterElements),
+              new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+              selectors,
+              undefined,
+              'changes',
+            ),
+          ).rejects.toThrow()
         })
         it('includes child elements when their parent is selected', async () => {
-          const nestedID = singlePathInstMerged.elemID
-            .createNestedID('nested')
-            .createNestedID('str').getFullName()
-          const simpleId = singlePathInstMerged.elemID
-            .createNestedID('simple').getFullName()
+          const nestedID = singlePathInstMerged.elemID.createNestedID('nested').createNestedID('str').getFullName()
+          const simpleId = singlePathInstMerged.elemID.createNestedID('simple').getFullName()
           const newSinglePathInstMergedAfter = singlePathInstMergedAfter.clone() as InstanceElement
           newSinglePathInstMergedAfter.value.simple = 'old simple'
-          const newAfterElements = [
-            multiPathObjMerged,
-            multiPathInstMerged,
-            newSinglePathInstMergedAfter,
-          ]
-          const selectors = [
-            createElementSelector(singlePathInstMerged.elemID.getFullName()),
-          ]
+          const newAfterElements = [multiPathObjMerged, multiPathInstMerged, newSinglePathInstMergedAfter]
+          const selectors = [createElementSelector(singlePathInstMerged.elemID.getFullName())]
           const changes = await createDiffChanges(
             createElementSource(beforeElements),
             createElementSource(newAfterElements),
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
             selectors,
             undefined,
-            'changes'
+            'changes',
           )
           expect(changes).toHaveLength(1)
           expect(getChangeData(changes[0]).elemID).toEqual(singlePathInstMerged.elemID)
-          expect(changes[0].detailedChanges()
-            .map(detailed => detailed.id.getFullName())
-            .sort()).toEqual([nestedID, simpleId].sort())
+          expect(
+            changes[0]
+              .detailedChanges()
+              .map(detailed => detailed.id.getFullName())
+              .sort(),
+          ).toEqual([nestedID, simpleId].sort())
         })
         it('includes field inner annotations when the field is selected', async () => {
           const newSinglePathObjMerged = singlePathObjMerged.clone() as ObjectType
           newSinglePathObjMerged.fields.simple.annotations.description = 'new description'
           const simpleFieldId = newSinglePathObjMerged.elemID.createNestedID('field', 'simple')
-          const selectors = [
-            createElementSelector(simpleFieldId.getFullName()),
-          ]
+          const selectors = [createElementSelector(simpleFieldId.getFullName())]
           const changes = await createDiffChanges(
             createInMemoryElementSource([newSinglePathObjMerged]),
             createInMemoryElementSource([singlePathObjMerged]),
             new remoteMap.InMemoryRemoteMap<ElemID[]>(),
             selectors,
             undefined,
-            'changes'
+            'changes',
           )
           expect(changes).toHaveLength(1)
           expect(getChangeData(changes[0]).elemID).toEqual(simpleFieldId)
-          expect(changes[0].detailedChanges()
-            .map(detailed => detailed.id.getFullName()))
-            .toEqual([simpleFieldId.createNestedID('description').getFullName()])
+          expect(changes[0].detailedChanges().map(detailed => detailed.id.getFullName())).toEqual([
+            simpleFieldId.createNestedID('description').getFullName(),
+          ])
         })
       })
     })
@@ -559,7 +551,12 @@ describe('getEnvsDeletionsDiff', () => {
     const getElementIdsBySelectorsMock = workspace.getElementIdsBySelectors as jest.Mock
     getElementIdsBySelectorsMock.mockResolvedValueOnce([idInSource, new ElemID('adapter', 'type2')])
     getElementIdsBySelectorsMock.mockResolvedValueOnce([idInSource])
-    const elementsToDelete = await getEnvsDeletionsDiff(workspace, [idInSource], ['env2', 'env3'], selectors.validSelectors)
+    const elementsToDelete = await getEnvsDeletionsDiff(
+      workspace,
+      [idInSource],
+      ['env2', 'env3'],
+      selectors.validSelectors,
+    )
     expect(elementsToDelete).toEqual({
       env2: [new ElemID('adapter', 'type2')],
     })

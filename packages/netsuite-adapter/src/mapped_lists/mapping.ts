@@ -1,19 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 const translationsMapping = {
   translation: ['locale', 'language'],
@@ -22,7 +21,7 @@ const translationsMapping = {
 }
 
 export const dataTypesToConvert: ReadonlySet<string> = new Set(
-  Object.keys(translationsMapping).map(key => `${key}List`)
+  Object.keys(translationsMapping).map(key => `${key}List`),
 )
 
 const unorderedListMappedByFieldMapping = {
@@ -49,7 +48,8 @@ const unorderedListMappedByFieldMapping = {
   // role access mapping
   sdfinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
   workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess: 'role',
-  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess: 'role',
+  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess:
+    'role',
   entitycustomfield_roleaccesses_roleaccess: 'role',
   itemoptioncustomfield_roleaccesses_roleaccess: 'role',
   crmcustomfield_roleaccesses_roleaccess: 'role',
@@ -101,39 +101,56 @@ const unorderedListMappedByFieldMapping = {
   workflow_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters_parameter:
+    'name',
+  workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters_parameter:
+    'name',
+  workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters_parameter: 'name',
-  workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter: 'name',
+  workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters_parameter:
+    'name',
+  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters_parameter:
+    'name',
+  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters_parameter:
+    'name',
+  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters_parameter:
+    'name',
+  workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter:
+    'name',
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameter: 'name',
 
   // workflow custom action parameters
-  workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting: 'targetparameter',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting: 'targetparameter',
+  workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting:
+    'targetparameter',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting:
+    'targetparameter',
 
   // workflow initiate workflow action parameters
-  workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting: 'targetworkflowfield',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting: 'targetworkflowfield',
+  workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting:
+    'targetworkflowfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting:
+    'targetworkflowfield',
 }
 
 export const listMappedByFieldMapping: Record<string, string | string[]> = {
@@ -208,11 +225,16 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings_fieldsetting: 'targetfield',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings_fieldsetting: 'targetfield',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings_fieldsetting: 'targetfield',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsetting: 'targetfield',
-  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings_fieldsetting:
+    'targetfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings_fieldsetting:
+    'targetfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsetting:
+    'targetfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsetting:
+    'targetfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting:
+    'targetfield',
 
   // custom field filters
   bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
@@ -236,7 +258,8 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   transactioncolumncustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
   usereventscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
   workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
-  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter:
+    'fldfilter',
   workflowactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
 }
 
@@ -256,5 +279,5 @@ const scriptdeploymentsTypes = [
 ]
 
 export const mapsWithoutIndex: ReadonlySet<string> = new Set(
-  scriptdeploymentsTypes.concat(Object.keys(unorderedListMappedByFieldMapping))
+  scriptdeploymentsTypes.concat(Object.keys(unorderedListMappedByFieldMapping)),
 )

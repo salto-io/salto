@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   AdapterOperations,
@@ -21,7 +21,12 @@ import {
   DeployResult as AdapterDeployResult,
   getChangeData,
   isAdditionOrModificationChange,
-  SaltoElementError, SaltoError, SeverityLevel, ChangeDataType, SaltoErrorType, ProgressReporter,
+  SaltoElementError,
+  SaltoError,
+  SeverityLevel,
+  ChangeDataType,
+  SaltoErrorType,
+  ProgressReporter,
   Progress,
 } from '@salto-io/adapter-api'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
@@ -43,18 +48,21 @@ type DeployOrValidateParams = {
 }
 
 const addElemIDsToError = (
-  changes: readonly Change<ChangeDataType>[], error: Error
+  changes: readonly Change<ChangeDataType>[],
+  error: Error,
 ): ReadonlyArray<SaltoElementError> =>
-  (changes.map(change => (
-    { message: error.message,
-      severity: 'Error' as SeverityLevel,
-      elemID: getChangeData(change).elemID }
-  ))
-  )
+  changes.map(change => ({
+    message: error.message,
+    severity: 'Error' as SeverityLevel,
+    elemID: getChangeData(change).elemID,
+  }))
 
-const deployOrValidate = async (
-  { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
-): Promise<AdapterDeployResult> => {
+const deployOrValidate = async ({
+  adapter,
+  adapterName,
+  opts,
+  checkOnly,
+}: DeployOrValidateParams): Promise<AdapterDeployResult> => {
   const deployOrValidateFn = checkOnly ? adapter.validate?.bind(adapter) : adapter.deploy.bind(adapter)
   if (deployOrValidateFn === undefined) {
     throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
@@ -100,9 +108,8 @@ type DeployActionResult = {
 }
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
-  const planElementById = _.keyBy(
-    [...item.items.values()].map(getChangeData),
-    changeData => changeData.elemID.getFullName()
+  const planElementById = _.keyBy([...item.items.values()].map(getChangeData), changeData =>
+    changeData.elemID.getFullName(),
   )
   appliedChanges
     .filter(isAdditionOrModificationChange)
@@ -126,7 +133,7 @@ export const deployActions = async (
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
-  checkOnly: boolean
+  checkOnly: boolean,
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: GroupProperties[] = []
@@ -144,22 +151,19 @@ export const deployActions = async (
         }
         const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
-        makeArray(result.extraProperties?.groups)
-          .forEach(group => groups.push({
+        makeArray(result.extraProperties?.groups).forEach(group =>
+          groups.push({
             ...group,
             accountName: item.account,
             id: item.groupKey,
-          }))
+          }),
+        )
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
         await postDeployAction(result.appliedChanges)
         if (result.errors.length > 0) {
-          log.warn(
-            'Failed to deploy %s, errors: %s',
-            item.groupKey,
-            result.errors.map(err => err.message).join('\n\n'),
-          )
+          log.warn('Failed to deploy %s, errors: %s', item.groupKey, result.errors.map(err => err.message).join('\n\n'))
           throw new WalkDeployError(result.errors)
         }
         reportProgress(item, 'finished')
@@ -177,14 +181,15 @@ export const deployActions = async (
         const item = deployPlan.getItem(key) as PlanItem
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
-          deployErrors.push(...[...item.changes()].map(change =>
-            ({
+          deployErrors.push(
+            ...[...item.changes()].map(change => ({
               elemID: getChangeData(change).elemID,
               groupId: item.groupKey,
               message: `Element was not deployed, as it depends on ${nodeError.causingNode} which failed to deploy`,
               severity: 'Error' as SeverityLevel,
               type: 'dependency' as SaltoErrorType,
-            })))
+            })),
+          )
         } else if (nodeError instanceof WalkDeployError) {
           deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))
         } else {
@@ -195,7 +200,11 @@ export const deployActions = async (
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
           const item = deployPlan.getItem(id) as PlanItem
           reportProgress(item, 'error', error.circularDependencyError.message)
-          deployErrors.push({ groupId: item.groupKey, message: error.circularDependencyError.message, severity: 'Error' as SeverityLevel })
+          deployErrors.push({
+            groupId: item.groupKey,
+            message: error.circularDependencyError.message,
+            severity: 'Error' as SeverityLevel,
+          })
         })
       }
     }

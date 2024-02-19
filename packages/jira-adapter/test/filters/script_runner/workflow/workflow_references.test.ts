@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
 import { Change, ElemID, InstanceElement, ReferenceExpression, Value, toChange } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
@@ -27,42 +27,15 @@ const WORKFLOW_V1 = 'workflowV1'
 const WORKFLOW_V2 = 'workflowV2'
 const TRANSITION_KEY = naclCase('tran1::From: Open::Directed')
 
-const resolvedInstance = new InstanceElement(
-  'instance',
-  createEmptyType(WORKFLOW_TYPE_NAME),
-  {
-    transitions: {
-      [TRANSITION_KEY]: {
-        name: 'tran1',
-        rules: {
-          postFunctions: [
-            {
-              type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
-              configuration: {
-                scriptRunner: {
-                  field: 1,
-                  transitionId: 11,
-                },
-              },
-            },
-          ],
-        },
-      },
-    },
-  }
-)
-
-const resolvedWorkflowV2Instance = new InstanceElement(
-  'instance',
-  createEmptyType(JIRA_WORKFLOW_TYPE),
-  {
-    transitions: {
-      [TRANSITION_KEY]: {
-        name: 'tran1',
-        actions: [
+const resolvedInstance = new InstanceElement('instance', createEmptyType(WORKFLOW_TYPE_NAME), {
+  transitions: {
+    [TRANSITION_KEY]: {
+      name: 'tran1',
+      rules: {
+        postFunctions: [
           {
-            parameters: {
-              appKey: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+            type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+            configuration: {
               scriptRunner: {
                 field: 1,
                 transitionId: 11,
@@ -72,45 +45,37 @@ const resolvedWorkflowV2Instance = new InstanceElement(
         ],
       },
     },
-  }
-)
+  },
+})
 
-const restoredInstance = new InstanceElement(
-  'instance',
-  createEmptyType(WORKFLOW_TYPE_NAME),
-  {
-    transitions: {
-      [TRANSITION_KEY]: {
-        name: 'tran1',
-        rules: {
-          postFunctions: [
-            {
-              type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
-              configuration: {
-                scriptRunner: {
-                  field: 2,
-                  transitionId: 21,
-                },
-              },
+const resolvedWorkflowV2Instance = new InstanceElement('instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+  transitions: {
+    [TRANSITION_KEY]: {
+      name: 'tran1',
+      actions: [
+        {
+          parameters: {
+            appKey: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+            scriptRunner: {
+              field: 1,
+              transitionId: 11,
             },
-          ],
+          },
         },
-      },
+      ],
     },
-  }
-)
+  },
+})
 
-const restoredWorkflowV2Instance = new InstanceElement(
-  'instance',
-  createEmptyType(JIRA_WORKFLOW_TYPE),
-  {
-    transitions: {
-      [TRANSITION_KEY]: {
-        name: 'tran1',
-        actions: [
+const restoredInstance = new InstanceElement('instance', createEmptyType(WORKFLOW_TYPE_NAME), {
+  transitions: {
+    [TRANSITION_KEY]: {
+      name: 'tran1',
+      rules: {
+        postFunctions: [
           {
-            parameters: {
-              appKey: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+            type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+            configuration: {
               scriptRunner: {
                 field: 2,
                 transitionId: 21,
@@ -120,8 +85,27 @@ const restoredWorkflowV2Instance = new InstanceElement(
         ],
       },
     },
-  }
-)
+  },
+})
+
+const restoredWorkflowV2Instance = new InstanceElement('instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+  transitions: {
+    [TRANSITION_KEY]: {
+      name: 'tran1',
+      actions: [
+        {
+          parameters: {
+            appKey: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+            scriptRunner: {
+              field: 2,
+              transitionId: 21,
+            },
+          },
+        },
+      ],
+    },
+  },
+})
 
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
@@ -215,10 +199,18 @@ describe('Scriptrunner references', () => {
     config.fetch.enableScriptRunnerAddon = true
     configWithoutMissingReferences.fetch.enableScriptRunnerAddon = true
     configWithoutMissingReferences.fetch.enableMissingReferences = false
-    filter = referencesFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    filterOff = referencesFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    filterCloud = referencesFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    filterCloudWithoutMissingReferences = referencesFilter(getFilterParams({ config: configWithoutMissingReferences })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = referencesFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
+    filterOff = referencesFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
+    filterCloud = referencesFilter(getFilterParams({ config })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
+    filterCloudWithoutMissingReferences = referencesFilter(
+      getFilterParams({ config: configWithoutMissingReferences }),
+    ) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
     reference = new ReferenceExpression(new ElemID('jira', 'temp', 'instance', 'reference'))
     const transitionV1 = {
       name: 'tran1',
@@ -236,21 +228,17 @@ describe('Scriptrunner references', () => {
         ],
       },
     }
-    instance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        transitions: {
-          [TRANSITION_KEY]: transitionV1,
-        },
-      }
-    )
+    instance = new InstanceElement('instance', workflowType, {
+      transitions: {
+        [TRANSITION_KEY]: transitionV1,
+      },
+    })
     transitionV1Reference = new ReferenceExpression(
       instance.elemID.createNestedID('transitions', TRANSITION_KEY),
-      transitionV1
+      transitionV1,
     )
-    instance.value.transitions[TRANSITION_KEY].rules.postFunctions[0]
-      .configuration.scriptRunner.transitionId = transitionV1Reference
+    instance.value.transitions[TRANSITION_KEY].rules.postFunctions[0].configuration.scriptRunner.transitionId =
+      transitionV1Reference
     const transitionV2 = {
       name: 'tran1',
       id: '11',
@@ -266,37 +254,30 @@ describe('Scriptrunner references', () => {
         },
       ],
     }
-    workflowV2Instance = new InstanceElement(
-      'instance',
-      workflowV2Type,
-      {
-        name: 'instance',
-        version: {
-          versionNumber: 1,
-          id: '123',
-        },
-        scope: {
-          project: 'project',
-          type: 'type',
-        },
+    workflowV2Instance = new InstanceElement('instance', workflowV2Type, {
+      name: 'instance',
+      version: {
+        versionNumber: 1,
         id: '123',
-        statuses: [],
-        transitions: {
-          [TRANSITION_KEY]: transitionV2,
-        },
-      }
-    )
+      },
+      scope: {
+        project: 'project',
+        type: 'type',
+      },
+      id: '123',
+      statuses: [],
+      transitions: {
+        [TRANSITION_KEY]: transitionV2,
+      },
+    })
     transitionV2Reference = new ReferenceExpression(
       workflowV2Instance.elemID.createNestedID('transitions', TRANSITION_KEY),
-      transitionV2
+      transitionV2,
     )
-    workflowV2Instance.value.transitions[TRANSITION_KEY].actions[0]
-      .parameters.scriptRunner.transitionId = transitionV2Reference
+    workflowV2Instance.value.transitions[TRANSITION_KEY].actions[0].parameters.scriptRunner.transitionId =
+      transitionV2Reference
   })
-  describe.each([
-    [WORKFLOW_V1],
-    [WORKFLOW_V2],
-  ])('%s ', workflowVersion => {
+  describe.each([[WORKFLOW_V1], [WORKFLOW_V2]])('%s ', workflowVersion => {
     beforeEach(() => {
       changes = [getChange(workflowVersion)]
     })
@@ -388,18 +369,36 @@ describe('Scriptrunner references', () => {
       })
       it('should create references to transitions', async () => {
         await filterCloud.onFetch([getElement(workflowVersion)])
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId)
-          .toBeInstanceOf(ReferenceExpression)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId
-          .elemID.getFullName()).toEndWith('transitions.tran2')
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 1 }).transitionId)
-          .toBeInstanceOf(ReferenceExpression)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 1 }).transitionId
-          .elemID.getFullName()).toEndWith('transitions.tran1')
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran2', postFunctionIndex: 0 }).transitionId)
-          .toBeInstanceOf(ReferenceExpression)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran2', postFunctionIndex: 0 }).transitionId
-          .elemID.getFullName()).toEndWith('transitions.tran1')
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId,
+        ).toBeInstanceOf(ReferenceExpression)
+        expect(
+          getScriptRunnerField({
+            workflowVersion,
+            transitionKey: 'tran1',
+            postFunctionIndex: 0,
+          }).transitionId.elemID.getFullName(),
+        ).toEndWith('transitions.tran2')
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 1 }).transitionId,
+        ).toBeInstanceOf(ReferenceExpression)
+        expect(
+          getScriptRunnerField({
+            workflowVersion,
+            transitionKey: 'tran1',
+            postFunctionIndex: 1,
+          }).transitionId.elemID.getFullName(),
+        ).toEndWith('transitions.tran1')
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: 'tran2', postFunctionIndex: 0 }).transitionId,
+        ).toBeInstanceOf(ReferenceExpression)
+        expect(
+          getScriptRunnerField({
+            workflowVersion,
+            transitionKey: 'tran2',
+            postFunctionIndex: 0,
+          }).transitionId.elemID.getFullName(),
+        ).toEndWith('transitions.tran1')
       })
       it('should not fail if wrong structure', async () => {
         workflowV2Instance.value.transitions = {
@@ -410,28 +409,23 @@ describe('Scriptrunner references', () => {
           tran2: {
             id: '21',
             name: 'tran2',
-            actions: [
-            ],
+            actions: [],
           },
           tran3: {
             id: '31',
             name: 'tran3',
-            actions: [
-              { },
-            ],
+            actions: [{}],
           },
           tran4: {
             id: '41',
             name: 'tran4',
             actions: [
               {
-                parameters: {
-                },
+                parameters: {},
               },
               {
                 parameters: {
-                  scriptRunner: {
-                  },
+                  scriptRunner: {},
                 },
               },
             ],
@@ -445,17 +439,13 @@ describe('Scriptrunner references', () => {
           tran2: {
             id: '21',
             name: 'tran2',
-            rules: {
-            },
+            rules: {},
           },
           tran3: {
             id: '31',
             name: 'tran3',
             rules: {
-              postFunctions: [
-                {
-                },
-              ],
+              postFunctions: [{}],
             },
           },
           tran4: {
@@ -468,14 +458,12 @@ describe('Scriptrunner references', () => {
                 },
                 {
                   type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
-                  configuration: {
-                  },
+                  configuration: {},
                 },
                 {
                   type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
                   configuration: {
-                    scriptRunner: {
-                    },
+                    scriptRunner: {},
                   },
                 },
               ],
@@ -527,13 +515,15 @@ describe('Scriptrunner references', () => {
       })
       it('should not change anything if script runner is not enabled', async () => {
         await filterOff.onFetch([getElement(workflowVersion)])
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId)
-          .toEqual('21')
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId,
+        ).toEqual('21')
       })
       it('should not change anything if dc', async () => {
         await filter.onFetch([getElement(workflowVersion)])
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId)
-          .toEqual('21')
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId,
+        ).toEqual('21')
       })
       it('should not create a missing reference if enableMissingReference is off', async () => {
         instance.value.transitions = {
@@ -572,71 +562,87 @@ describe('Scriptrunner references', () => {
           },
         }
         await filterCloudWithoutMissingReferences.onFetch([getElement(workflowVersion)])
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId)
-          .toEqual('21')
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0 }).transitionId,
+        ).toEqual('21')
       })
     })
     describe('pre deploy', () => {
       it('should store reference and replace correctly', async () => {
         await filter.preDeploy(changes)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(1)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(11)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(1)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(11)
       })
       it('should store reference and replace correctly in modification', async () => {
         await filter.preDeploy([
           toChange({ before: instance, after: instance }),
           toChange({ before: workflowV2Instance, after: workflowV2Instance }),
         ])
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(1)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(11)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(1)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(11)
       })
       it('should not change if script runner not supported', async () => {
         await filterOff.preDeploy(changes)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(reference)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(getTransitionReference(workflowVersion))
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(reference)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(getTransitionReference(workflowVersion))
       })
       it('should change if cloud', async () => {
         await filterCloud.preDeploy(changes)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(1)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(11)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(1)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(11)
       })
       it('should return the transitionId when it is not a reference', async () => {
         instance.value.transitions[TRANSITION_KEY].rules.postFunctions[0].configuration.scriptRunner.transitionId = '11'
         workflowV2Instance.value.transitions[TRANSITION_KEY].actions[0].parameters.scriptRunner.transitionId = '11'
         await filter.preDeploy([getChange(workflowVersion)])
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(11)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(11)
       })
     })
     describe('on deploy', () => {
       it('should return reference', async () => {
         await filter.onDeploy(changes)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(2)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(21)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(2)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(21)
       })
       it('should do nothing if scirptrunner not supported', async () => {
         await filterOff.onDeploy(changes)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(reference)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(getTransitionReference(workflowVersion))
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(reference)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(getTransitionReference(workflowVersion))
       })
       it('should return if cloud', async () => {
         await filterCloud.onDeploy(changes)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field)
-          .toEqual(2)
-        expect(getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 })
-          .transitionId).toEqual(21)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).field,
+        ).toEqual(2)
+        expect(
+          getScriptRunnerField({ workflowVersion, transitionKey: TRANSITION_KEY, postFunctionIndex: 0 }).transitionId,
+        ).toEqual(21)
       })
     })
   })

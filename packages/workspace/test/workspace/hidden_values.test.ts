@@ -1,20 +1,38 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression, MapType, isRemovalChange, isAdditionChange, ListType } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  PrimitiveType,
+  PrimitiveTypes,
+  isObjectType,
+  InstanceElement,
+  isInstanceElement,
+  CORE_ANNOTATIONS,
+  DetailedChange,
+  getChangeData,
+  INSTANCE_ANNOTATIONS,
+  ReferenceExpression,
+  MapType,
+  isRemovalChange,
+  isAdditionChange,
+  ListType,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
@@ -25,13 +43,12 @@ import { createAddChange, createRemoveChange } from '../../src/workspace/nacl_fi
 const { awu } = collections.asynciterable
 
 describe('mergeWithHidden', () => {
-  const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType => (
+  const getFieldType = (typeName: string, primitive: PrimitiveTypes): PrimitiveType =>
     new PrimitiveType({
       elemID: new ElemID('test', typeName),
       primitive,
       annotationRefsOrTypes: { hiddenAnno: BuiltinTypes.HIDDEN_STRING },
     })
-  )
   describe('when parent value is deleted in the workspace', () => {
     let result: MergeResult
     beforeEach(async () => {
@@ -49,12 +66,11 @@ describe('mergeWithHidden', () => {
       delete workspaceObjType.fields.f1
       result = await mergeWithHidden(
         awu([fieldType, workspaceObjType]),
-        createInMemoryElementSource([fieldType, mockObjType])
+        createInMemoryElementSource([fieldType, mockObjType]),
       )
     })
     it('should omit the hidden value', async () => {
-      const mergedWorkspaceObj = (await awu(result.merged.values())
-        .find(isObjectType)) as ObjectType
+      const mergedWorkspaceObj = (await awu(result.merged.values()).find(isObjectType)) as ObjectType
       expect(mergedWorkspaceObj?.fields).not.toHaveProperty('f1')
     })
   })
@@ -80,7 +96,7 @@ describe('mergeWithHidden', () => {
       })
       result = await mergeWithHidden(
         awu([workspaceFieldType, workspaceType]),
-        createInMemoryElementSource([stateFieldType, stateType])
+        createInMemoryElementSource([stateFieldType, stateType]),
       )
     })
     it('should not have merge errors', async () => {
@@ -118,26 +134,18 @@ describe('mergeWithHidden', () => {
         },
       })
 
-      const stateInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          obj1: { hidden: 'hidden', notHidden: 'notHidden' },
-          obj2: { hidden: 'hidden', notHidden: 'notHidden' },
-          obj3: { hidden: 'hidden', notHidden: 'notHidden' },
-          obj4: { hidden: 'hidden', notHidden: 'notHidden' },
-        },
-      )
+      const stateInstance = new InstanceElement('instance', type, {
+        obj1: { hidden: 'hidden', notHidden: 'notHidden' },
+        obj2: { hidden: 'hidden', notHidden: 'notHidden' },
+        obj3: { hidden: 'hidden', notHidden: 'notHidden' },
+        obj4: { hidden: 'hidden', notHidden: 'notHidden' },
+      })
 
-      const workspaceInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          obj2: 2,
-          obj3: [],
-          obj4: { notHidden: 'notHidden2' },
-        }
-      )
+      const workspaceInstance = new InstanceElement('instance', type, {
+        obj2: 2,
+        obj3: [],
+        obj4: { notHidden: 'notHidden2' },
+      })
 
       result = await mergeWithHidden(
         awu([workspaceInstance, type, innerType]),
@@ -148,8 +156,7 @@ describe('mergeWithHidden', () => {
       expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
     })
     it('should not add the hidden value to the instance when parent value is not an object', async () => {
-      const instance = (await awu(result.merged.values())
-        .find(isInstanceElement)) as InstanceElement
+      const instance = (await awu(result.merged.values()).find(isInstanceElement)) as InstanceElement
       expect(instance.value).toEqual({
         obj2: 2,
         obj3: [],
@@ -179,23 +186,15 @@ describe('mergeWithHidden', () => {
         },
       })
 
-      const stateInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          obj: { hidden: 'hidden' },
-          ref: { hidden: 'hidden' },
-        }
-      )
+      const stateInstance = new InstanceElement('instance', type, {
+        obj: { hidden: 'hidden' },
+        ref: { hidden: 'hidden' },
+      })
 
-      const workspaceInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          obj: {},
-          ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'obj')),
-        }
-      )
+      const workspaceInstance = new InstanceElement('instance', type, {
+        obj: {},
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'obj')),
+      })
 
       result = await mergeWithHidden(
         awu([workspaceInstance, type, innerType]),
@@ -206,13 +205,11 @@ describe('mergeWithHidden', () => {
       expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
     })
     it('should not change the reference', async () => {
-      const instance = (await awu(result.merged.values())
-        .find(isInstanceElement)) as InstanceElement
+      const instance = (await awu(result.merged.values()).find(isInstanceElement)) as InstanceElement
       expect(instance.value.ref).toBeInstanceOf(ReferenceExpression)
     })
     it('should add the hidden value to the non reference value', async () => {
-      const instance = (await awu(result.merged.values())
-        .find(isInstanceElement)) as InstanceElement
+      const instance = (await awu(result.merged.values()).find(isInstanceElement)) as InstanceElement
       expect(instance.value.obj).toEqual({ hidden: 'hidden' })
     })
   })
@@ -234,14 +231,10 @@ describe('mergeWithHidden', () => {
         }),
         {},
         undefined,
-        { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
+        { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
       )
 
-
-      result = await mergeWithHidden(
-        awu([workspaceInstance]),
-        createInMemoryElementSource([stateInstance])
-      )
+      result = await mergeWithHidden(awu([workspaceInstance]), createInMemoryElementSource([stateInstance]))
     })
     it('should not have merge errors', async () => {
       expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
@@ -274,17 +267,13 @@ describe('mergeWithHidden', () => {
         },
       })
 
-
-      result = await mergeWithHidden(
-        awu([workspaceObject]),
-        createInMemoryElementSource([stateObject])
-      )
+      result = await mergeWithHidden(awu([workspaceObject]), createInMemoryElementSource([stateObject]))
     })
     it('should not have merge errors', async () => {
       expect(await awu(result.errors.values()).flat().isEmpty()).toBeTruthy()
     })
     it('should have the hidden annotation value', async () => {
-      const object = await awu(result.merged.values()).find(isObjectType) as ObjectType
+      const object = (await awu(result.merged.values()).find(isObjectType)) as ObjectType
       expect(object?.fields?.field?.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toBe('someUrl')
     })
   })
@@ -301,13 +290,9 @@ describe('handleHiddenChanges', () => {
           val: { refType: BuiltinTypes.STRING },
         },
       })
-      instance = new InstanceElement(
-        'instance',
-        instanceType,
-        { val: 'asd' },
-        undefined,
-        { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' }
-      )
+      instance = new InstanceElement('instance', instanceType, { val: 'asd' }, undefined, {
+        [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+      })
     })
 
     describe('when adding the whole instance', () => {
@@ -321,11 +306,7 @@ describe('handleHiddenChanges', () => {
           data: { after: instance },
         }
 
-        result = await handleHiddenChanges(
-          [change],
-          mockState(),
-          createInMemoryElementSource(),
-        )
+        result = await handleHiddenChanges([change], mockState(), createInMemoryElementSource())
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(1)
         visibleInstance = getChangeData(result.visible[0])
@@ -342,7 +323,7 @@ describe('handleHiddenChanges', () => {
     })
 
     describe('when adding only the hidden annotation', () => {
-      let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
       beforeAll(async () => {
         const change: DetailedChange = {
           id: instance.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL),
@@ -350,11 +331,7 @@ describe('handleHiddenChanges', () => {
           data: { after: instance.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] },
         }
 
-        result = await handleHiddenChanges(
-          [change],
-          mockState([instanceType, instance]),
-          createInMemoryElementSource(),
-        )
+        result = await handleHiddenChanges([change], mockState([instanceType, instance]), createInMemoryElementSource())
       })
       it('should not have a visible change', () => {
         expect(result.visible).toHaveLength(0)
@@ -380,11 +357,11 @@ describe('handleHiddenChanges', () => {
         },
       }
       it('should return the entire change and both hidden and visible', async () => {
-        const res = (await handleHiddenChanges(
+        const res = await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
           createInMemoryElementSource(),
-        ))
+        )
         expect(res.visible).toHaveLength(1)
         expect(res.hidden).toHaveLength(1)
         expect(res.hidden[0].id).toEqual(change.id)
@@ -394,7 +371,7 @@ describe('handleHiddenChanges', () => {
   })
 
   describe('hidden annotation of field', () => {
-    let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+    let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
     beforeAll(async () => {
       const object = new ObjectType({
         elemID: new ElemID('test', 'type'),
@@ -410,11 +387,7 @@ describe('handleHiddenChanges', () => {
         action: 'add',
         data: { after: 'someUrl' },
       }
-      result = await handleHiddenChanges(
-        [change],
-        mockState([object]),
-        createInMemoryElementSource(),
-      )
+      result = await handleHiddenChanges([change], mockState([object]), createInMemoryElementSource())
     })
 
     it('should not have a visible change', () => {
@@ -444,7 +417,7 @@ describe('handleHiddenChanges', () => {
     })
 
     describe('when adding a reference expression', () => {
-      let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
       let filteredValue: unknown
       beforeEach(async () => {
         const change: DetailedChange = {
@@ -455,11 +428,7 @@ describe('handleHiddenChanges', () => {
           },
         }
 
-        result = await handleHiddenChanges(
-          [change],
-          mockState([instance]),
-          createInMemoryElementSource(),
-        )
+        result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource())
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
         filteredValue = getChangeData(result.visible[0])
@@ -469,7 +438,7 @@ describe('handleHiddenChanges', () => {
       })
     })
     describe('when converting a value to a reference expression', () => {
-      let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
       let filteredValue: unknown
       beforeEach(async () => {
         const change: DetailedChange = {
@@ -481,11 +450,7 @@ describe('handleHiddenChanges', () => {
           },
         }
 
-        result = await handleHiddenChanges(
-          [change],
-          mockState([instance]),
-          createInMemoryElementSource(),
-        )
+        result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource())
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
         filteredValue = getChangeData(result.visible[0])
@@ -516,11 +481,7 @@ describe('handleHiddenChanges', () => {
     }
 
     it('should not hide anything if there is no hidden part, even if nested values are undefined', async () => {
-      const result = await handleHiddenChanges(
-        [change],
-        mockState([]),
-        createInMemoryElementSource(),
-      )
+      const result = await handleHiddenChanges([change], mockState([]), createInMemoryElementSource())
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)
     })
@@ -540,27 +501,19 @@ describe('handleHiddenChanges', () => {
         val: { refType: valType },
       },
     })
-    const instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        val: {
-          list: [],
-          obj: {},
-        },
-      }
-    )
+    const instance = new InstanceElement('instance', type, {
+      val: {
+        list: [],
+        obj: {},
+      },
+    })
 
     const change: DetailedChange = {
       id: instance.elemID.createNestedID('val'),
       action: 'add',
       data: { after: instance.value.val },
     }
-    const result = await handleHiddenChanges(
-      [change],
-      mockState([instance]),
-      createInMemoryElementSource([]),
-    )
+    const result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource([]))
     expect(result.visible).toEqual([change])
     expect(result.hidden.length).toBe(0)
   })
@@ -569,10 +522,12 @@ describe('handleHiddenChanges', () => {
     const type = new ObjectType({
       elemID: new ElemID('test', 'type'),
       fields: {
-        val: { refType: new ObjectType({
-          elemID: new ElemID('test', 'type'),
-          fields: { inner: { refType: BuiltinTypes.STRING } },
-        }) },
+        val: {
+          refType: new ObjectType({
+            elemID: new ElemID('test', 'type'),
+            fields: { inner: { refType: BuiltinTypes.STRING } },
+          }),
+        },
       },
     })
 
@@ -587,11 +542,7 @@ describe('handleHiddenChanges', () => {
     }
 
     it('should not have a hidden change', async () => {
-      const result = await handleHiddenChanges(
-        [change],
-        mockState([stateInstance]),
-        createInMemoryElementSource(),
-      )
+      const result = await handleHiddenChanges([change], mockState([stateInstance]), createInMemoryElementSource())
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)
     })
@@ -672,7 +623,7 @@ describe('handleHiddenChanges', () => {
     })
   })
 
-  describe('when an instance type\'s hidden_value value is changes', () => {
+  describe("when an instance type's hidden_value value is changes", () => {
     const obj = new ObjectType({
       elemID: ElemID.fromFullName('salto.obj'),
       path: ['this', 'is', 'path', 'to', 'obj'],
@@ -690,22 +641,15 @@ describe('handleHiddenChanges', () => {
     const hidden = new InstanceElement('hidden', hiddenObj, { a: 1, b: 2 })
     const state = mockState([obj, hiddenObj, inst, hidden])
     const visibleSource = createInMemoryElementSource([obj, hiddenObj, inst])
-    describe('when the type\'s hidden_value values is changed to true', () => {
+    describe("when the type's hidden_value values is changed to true", () => {
       let changes: DetailedChange[]
 
       beforeEach(async () => {
         const objClone = obj.clone()
         objClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
         await state.set(objClone)
-        const toHiddenChange = createAddChange(
-          true,
-          obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE)
-        )
-        changes = (await handleHiddenChanges(
-          [toHiddenChange],
-          state,
-          visibleSource
-        )).visible
+        const toHiddenChange = createAddChange(true, obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE))
+        changes = (await handleHiddenChanges([toHiddenChange], state, visibleSource)).visible
       })
 
       it('should create remove changes for instances with this type', () => {
@@ -715,7 +659,7 @@ describe('handleHiddenChanges', () => {
       })
     })
 
-    describe('when the type\'s hidden_value values is changed to false', () => {
+    describe("when the type's hidden_value values is changed to false", () => {
       let changes: DetailedChange[]
 
       beforeEach(async () => {
@@ -730,30 +674,25 @@ describe('handleHiddenChanges', () => {
 
         const fromHiddenChange = createRemoveChange(
           true,
-          hiddenObj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE)
+          hiddenObj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
         )
-        changes = (await handleHiddenChanges(
-          [fromHiddenChange],
-          state,
-          visibleSource
-        )).visible
+        changes = (await handleHiddenChanges([fromHiddenChange], state, visibleSource)).visible
       })
       it('should create add changes with the instance value from the state', () => {
-        const addChanges = changes
-          .filter(c => c.id.getFullName() === hidden.elemID.getFullName() && isAdditionChange(c))
-        expect(addChanges).toHaveLength(2)
-        expect(addChanges.map(c => c.path)).toEqual(
-          [
-            ['this', 'is', 'path', 'to', 'hidden'],
-            ['this', 'is', 'path', 'to', 'hidden2'],
-          ]
+        const addChanges = changes.filter(
+          c => c.id.getFullName() === hidden.elemID.getFullName() && isAdditionChange(c),
         )
+        expect(addChanges).toHaveLength(2)
+        expect(addChanges.map(c => c.path)).toEqual([
+          ['this', 'is', 'path', 'to', 'hidden'],
+          ['this', 'is', 'path', 'to', 'hidden2'],
+        ])
       })
     })
   })
 
   describe('field annotation change when the field is not in the state', () => {
-    let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+    let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
     let change: DetailedChange
     beforeAll(async () => {
       const stateObject = new ObjectType({ elemID: new ElemID('test', 'type') })
@@ -770,11 +709,7 @@ describe('handleHiddenChanges', () => {
         action: 'add',
         data: { after: 'someUrl' },
       }
-      result = await handleHiddenChanges(
-        [change],
-        mockState([stateObject]),
-        createInMemoryElementSource(),
-      )
+      result = await handleHiddenChanges([change], mockState([stateObject]), createInMemoryElementSource())
     })
 
     it('should make the change visible', () => {

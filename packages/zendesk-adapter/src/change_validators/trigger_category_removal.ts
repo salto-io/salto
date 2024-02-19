@@ -1,25 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   isInstanceChange,
   ChangeValidator,
   ChangeError,
   getChangeData,
   InstanceElement,
-  isRemovalChange, isReferenceExpression,
+  isRemovalChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -37,8 +38,8 @@ const log = logger(module)
  * Warns about removal of a trigger category that is used by an inactive trigger
  * Warns about removal of a trigger category if omitInactive is true for triggers
  */
-export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
-  => ChangeValidator = apiConfig => async (changes, elementSource) => {
+export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig) => ChangeValidator =
+  apiConfig => async (changes, elementSource) => {
     if (elementSource === undefined) {
       log.error('Failed to run triggerCategoryRemovalValidator because element source is undefined')
       return []
@@ -57,7 +58,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
     const elementSourceTriggers = await getInstancesFromElementSource(elementSource, [TRIGGER_TYPE_NAME])
 
     const triggersByRemovedTriggerCategory: Record<string, InstanceElement[]> = _.fromPairs(
-      removedTriggerCategories.map(instance => instance.elemID.name).map(name => [name, []])
+      removedTriggerCategories.map(instance => instance.elemID.name).map(name => [name, []]),
     )
 
     elementSourceTriggers.forEach(trigger => {
@@ -70,25 +71,26 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       triggersByRemovedTriggerCategory[triggerCategoryName].push(trigger)
     })
 
-
     const removalErrors = removedTriggerCategories.map((removedTriggerCategory): ChangeError | undefined => {
       const triggerCategoryActiveTriggers = triggersByRemovedTriggerCategory[removedTriggerCategory.elemID.name]
         .filter(trigger => trigger.value.active)
         .map(trigger => trigger.elemID.name)
 
-      return triggerCategoryActiveTriggers.length > 0 ? {
-        elemID: removedTriggerCategory.elemID,
-        severity: 'Error',
-        message: 'Cannot remove a trigger category with active triggers',
-        detailedMessage: `Trigger category is used by the following active triggers: [${triggerCategoryActiveTriggers.join(', ')}], please deactivate or remove them before removing this category`
-        ,
-      } : undefined
+      return triggerCategoryActiveTriggers.length > 0
+        ? {
+            elemID: removedTriggerCategory.elemID,
+            severity: 'Error',
+            message: 'Cannot remove a trigger category with active triggers',
+            detailedMessage: `Trigger category is used by the following active triggers: [${triggerCategoryActiveTriggers.join(', ')}], please deactivate or remove them before removing this category`,
+          }
+        : undefined
     })
 
-    const inactiveTriggersOmitted = configUtils.getConfigWithDefault(
-      apiConfig.types?.[TRIGGER_TYPE_NAME]?.transformation,
-      apiConfig.typeDefaults.transformation
-    ).omitInactive === true
+    const inactiveTriggersOmitted =
+      configUtils.getConfigWithDefault(
+        apiConfig.types?.[TRIGGER_TYPE_NAME]?.transformation,
+        apiConfig.typeDefaults.transformation,
+      ).omitInactive === true
     const removalWarnings = removedTriggerCategories.map((removedTriggerCategory): ChangeError | undefined => {
       // If we omitted inactive triggers, we can't warn about them specifically, so we return a general warning
       if (inactiveTriggersOmitted) {
@@ -104,12 +106,14 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
         .filter(trigger => !trigger.value.active)
         .map(trigger => trigger.elemID.name)
 
-      return triggerCategoryInactiveTriggers.length > 0 ? {
-        elemID: removedTriggerCategory.elemID,
-        severity: 'Warning',
-        message: 'Removal of trigger category with inactive triggers',
-        detailedMessage: `Trigger category is used by the following inactive triggers: [${triggerCategoryInactiveTriggers.join(', ')}], and they will be automatically removed with the removal of this category`,
-      } : undefined
+      return triggerCategoryInactiveTriggers.length > 0
+        ? {
+            elemID: removedTriggerCategory.elemID,
+            severity: 'Warning',
+            message: 'Removal of trigger category with inactive triggers',
+            detailedMessage: `Trigger category is used by the following inactive triggers: [${triggerCategoryInactiveTriggers.join(', ')}], and they will be automatically removed with the removal of this category`,
+          }
+        : undefined
     })
 
     return [...removalErrors, ...removalWarnings].filter(isDefined)

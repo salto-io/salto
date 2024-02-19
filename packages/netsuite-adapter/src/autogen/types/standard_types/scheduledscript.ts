@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
 import { TypeAndInnerTypes } from '../../../types/object_types'
@@ -26,19 +32,21 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
 
   const scheduledscriptElemID = new ElemID(constants.NETSUITE, 'scheduledscript')
-  const scheduledscript_customplugintypes_plugintypeElemID = new ElemID(constants.NETSUITE, 'scheduledscript_customplugintypes_plugintype')
+  const scheduledscript_customplugintypes_plugintypeElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_customplugintypes_plugintype',
+  )
 
   const scheduledscript_customplugintypes_plugintype = new ObjectType({
     elemID: scheduledscript_customplugintypes_plugintypeElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       plugintype: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the plugintype custom type. */
+      } /* Original description: This field accepts references to the plugintype custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
@@ -49,13 +57,11 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   const scheduledscript_customplugintypes = new ObjectType({
     elemID: scheduledscript_customplugintypesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       plugintype: {
         refType: createRefToElmWithValue(new ListType(scheduledscript_customplugintypes_plugintype)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
@@ -67,15 +73,14 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   const scheduledscript_libraries_library = new ObjectType({
     elemID: scheduledscript_libraries_libraryElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptfile: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field must reference a .js file. */
+      } /* Original description: This field must reference a .js file. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
@@ -86,13 +91,11 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   const scheduledscript_libraries = new ObjectType({
     elemID: scheduledscript_librariesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       library: {
         refType: createRefToElmWithValue(new ListType(scheduledscript_libraries_library)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
@@ -100,133 +103,142 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   innerTypes.scheduledscript_libraries = scheduledscript_libraries
 
-  const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter')
+  const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter',
+  )
 
   const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter = new ObjectType({
     elemID: scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       fldfilter: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+      } /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */,
       fldfilterchecked: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       fldfiltercomparetype: {
         refType: createRefToElmWithValue(enums.generic_customfield_fldfiltercomparetype),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */,
       fldfiltersel: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
-        annotations: {
-        },
-      }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+        annotations: {},
+      } /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */,
       fldfilterval: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       fldfilternotnull: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       fldfilternull: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       fldcomparefield: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+        annotations: {},
+      } /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter = scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter
+  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter =
+    scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter
 
-  const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters')
+  const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters',
+  )
 
   const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters = new ObjectType({
     elemID: scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       customfieldfilter: {
-        refType: createRefToElmWithValue(new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters = scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters
+  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters =
+    scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters
 
-  const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess')
+  const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess',
+  )
 
   const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess = new ObjectType({
     elemID: scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       role: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+      } /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */,
       accesslevel: {
         refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+      } /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */,
       searchlevel: {
         refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+      } /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess = scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess
+  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess =
+    scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess
 
-  const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses')
+  const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses',
+  )
 
   const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses = new ObjectType({
     elemID: scheduledscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       roleaccess: {
-        refType: createRefToElmWithValue(new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses = scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses
+  innerTypes.scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses =
+    scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses
 
-  const scheduledscript_scriptcustomfields_scriptcustomfieldElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptcustomfields_scriptcustomfield')
+  const scheduledscript_scriptcustomfields_scriptcustomfieldElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptcustomfields_scriptcustomfield',
+  )
 
   const scheduledscript_scriptcustomfields_scriptcustomfield = new ObjectType({
     elemID: scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -234,154 +246,127 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
         },
-      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
+      } /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */,
       fieldtype: {
         refType: createRefToElmWithValue(enums.generic_customfield_fieldtype),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
+      } /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */,
       label: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
         },
-      }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */,
       selectrecordtype: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
+        annotations: {},
+      } /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */,
       applyformatting: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is T. */
+        annotations: {},
+      } /* Original description: The default value is T. */,
       defaultchecked: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       defaultselection: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+        annotations: {},
+      } /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */,
       defaultvalue: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       description: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       displaytype: {
         refType: createRefToElmWithValue(enums.generic_customfield_displaytype),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */,
       dynamicdefault: {
         refType: createRefToElmWithValue(enums.generic_customfield_dynamicdefault),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */,
       help: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the string custom type. */
+        annotations: {},
+      } /* Original description: This field accepts references to the string custom type. */,
       linktext: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       minvalue: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       maxvalue: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       storevalue: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is T. */
+        annotations: {},
+      } /* Original description: The default value is T. */,
       accesslevel: {
         refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */,
       checkspelling: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       displayheight: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-        },
-      }, /* Original description: This field value must be greater than or equal to 0. */
+        annotations: {},
+      } /* Original description: This field value must be greater than or equal to 0. */,
       displaywidth: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-        },
-      }, /* Original description: This field value must be greater than or equal to 0. */
+        annotations: {},
+      } /* Original description: This field value must be greater than or equal to 0. */,
       isformula: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       ismandatory: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       maxlength: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       onparentdelete: {
         refType: createRefToElmWithValue(enums.generic_customfield_onparentdelete),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_customfield_onparentdelete. */,
       searchcomparefield: {
         refType: createRefToElmWithValue(enums.generic_standard_field),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_standard_field. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_standard_field. */,
       searchdefault: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the savedsearch custom type. */
+        annotations: {},
+      } /* Original description: This field accepts references to the savedsearch custom type. */,
       searchlevel: {
         refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */,
       setting: {
         refType: createRefToElmWithValue(enums.script_setting),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see script_setting. */
+        annotations: {},
+      } /* Original description: For information about possible values, see script_setting. */,
       customfieldfilters: {
         refType: createRefToElmWithValue(scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters),
-        annotations: {
-        },
+        annotations: {},
       },
       roleaccesses: {
         refType: createRefToElmWithValue(scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
@@ -393,13 +378,11 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   const scheduledscript_scriptcustomfields = new ObjectType({
     elemID: scheduledscript_scriptcustomfieldsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptcustomfield: {
         refType: createRefToElmWithValue(new ListType(scheduledscript_scriptcustomfields_scriptcustomfield)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
@@ -407,12 +390,14 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   innerTypes.scheduledscript_scriptcustomfields = scheduledscript_scriptcustomfields
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -431,29 +416,30 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
+      } /* Original description: This field value must range from 1 through 1000. (inclusive) */,
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily = scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -469,26 +455,27 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
       },
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday = scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -507,29 +494,30 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
+      } /* Original description: This field value must range from 1 through 1000. (inclusive) */,
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly = scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -548,41 +536,42 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_order_of_week. */
+      } /* Original description: For information about possible values, see generic_order_of_week. */,
       dayofweek: {
         refType: createRefToElmWithValue(enums.generic_day_of_week),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_day_of_week. */
+      } /* Original description: For information about possible values, see generic_day_of_week. */,
       everyxmonths: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
+      } /* Original description: This field value must range from 1 through 1000. (inclusive) */,
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek = scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_singleElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_single')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_singleElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_single',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_single = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_singleElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -598,21 +587,23 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_single = scheduledscript_scriptdeployments_scriptdeployment_recurrence_single
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_single =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_single
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -631,71 +622,72 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
+      } /* Original description: This field value must range from 1 through 1000. (inclusive) */,
       sunday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       monday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       tuesday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       wednesday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       thursday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       friday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       saturday: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly = scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -711,26 +703,27 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
       },
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly = scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       startdate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -749,88 +742,86 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_order_of_week. */
+      } /* Original description: For information about possible values, see generic_order_of_week. */,
       dayofweek: {
         refType: createRefToElmWithValue(enums.generic_day_of_week),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see generic_day_of_week. */
+      } /* Original description: For information about possible values, see generic_day_of_week. */,
       enddate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       repeat: {
         refType: createRefToElmWithValue(enums.generic_repeat_time),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_repeat_time. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_repeat_time. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek = scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek
 
-  const scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment_recurrence')
+  const scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment_recurrence',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment_recurrence = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       daily: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily),
-        annotations: {
-        },
+        annotations: {},
       },
       everyweekday: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday),
-        annotations: {
-        },
+        annotations: {},
       },
       monthly: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly),
-        annotations: {
-        },
+        annotations: {},
       },
       monthlydayofweek: {
-        refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek,
+        ),
+        annotations: {},
       },
       single: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_single),
-        annotations: {
-        },
+        annotations: {},
       },
       weekly: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly),
-        annotations: {
-        },
+        annotations: {},
       },
       yearly: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly),
-        annotations: {
-        },
+        annotations: {},
       },
       yearlydayofweek: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
 
-  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence = scheduledscript_scriptdeployments_scriptdeployment_recurrence
+  innerTypes.scheduledscript_scriptdeployments_scriptdeployment_recurrence =
+    scheduledscript_scriptdeployments_scriptdeployment_recurrence
 
-  const scheduledscript_scriptdeployments_scriptdeploymentElemID = new ElemID(constants.NETSUITE, 'scheduledscript_scriptdeployments_scriptdeployment')
+  const scheduledscript_scriptdeployments_scriptdeploymentElemID = new ElemID(
+    constants.NETSUITE,
+    'scheduledscript_scriptdeployments_scriptdeployment',
+  )
 
   const scheduledscript_scriptdeployments_scriptdeployment = new ObjectType({
     elemID: scheduledscript_scriptdeployments_scriptdeploymentElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -838,13 +829,13 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
         },
-      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
+      } /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */,
       status: {
         refType: createRefToElmWithValue(enums.script_status),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
+      } /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */,
       title: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
@@ -853,18 +844,15 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
       },
       isdeployed: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is T. */
+        annotations: {},
+      } /* Original description: The default value is T. */,
       loglevel: {
         refType: createRefToElmWithValue(enums.script_loglevel),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */,
       recurrence: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments_scriptdeployment_recurrence),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
@@ -876,13 +864,11 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   const scheduledscript_scriptdeployments = new ObjectType({
     elemID: scheduledscript_scriptdeploymentsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptdeployment: {
         refType: createRefToElmWithValue(new ListType(scheduledscript_scriptdeployments_scriptdeployment)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
@@ -890,11 +876,9 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
 
   innerTypes.scheduledscript_scriptdeployments = scheduledscript_scriptdeployments
 
-
   const scheduledscript = new ObjectType({
     elemID: scheduledscriptElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -903,81 +887,71 @@ export const scheduledscriptType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customscript[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+      } /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */,
       name: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
         },
-      }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */,
       scriptfile: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field must reference a .js file. */
+      } /* Original description: This field must reference a .js file. */,
       defaultfunction: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
+        annotations: {},
       },
       description: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
         },
-      }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
+      } /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */,
       isinactive: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       notifyadmins: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       notifyemails: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
         },
-      }, /* Original description: This field value can be up to 999 characters long. */
+      } /* Original description: This field value can be up to 999 characters long. */,
       notifygroup: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-        },
-      }, /* Original description: Note Account-specific values are not supported by SDF. */
+        annotations: {},
+      } /* Original description: Note Account-specific values are not supported by SDF. */,
       notifyowner: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is T. */
+        annotations: {},
+      } /* Original description: The default value is T. */,
       customplugintypes: {
         refType: createRefToElmWithValue(scheduledscript_customplugintypes),
-        annotations: {
-        },
+        annotations: {},
       },
       libraries: {
         refType: createRefToElmWithValue(scheduledscript_libraries),
-        annotations: {
-        },
+        annotations: {},
       },
       scriptcustomfields: {
         refType: createRefToElmWithValue(scheduledscript_scriptcustomfields),
-        annotations: {
-        },
+        annotations: {},
       },
       scriptdeployments: {
         refType: createRefToElmWithValue(scheduledscript_scriptdeployments),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
   })
-
 
   return { type: scheduledscript, innerTypes }
 }

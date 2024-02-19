@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  NodeId, CircularDependencyError, WalkError, NodeSkippedError, DataNodeMap, DAG, AbstractNodeMap,
+  NodeId,
+  CircularDependencyError,
+  WalkError,
+  NodeSkippedError,
+  DataNodeMap,
+  DAG,
+  AbstractNodeMap,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -136,9 +142,7 @@ describe('NodeMap', () => {
   describe('get', () => {
     describe('when a node exists and has successors', () => {
       beforeEach(() => {
-        subject = new MyNodeMap([
-          [1, new Set<NodeId>([2, 3])],
-        ])
+        subject = new MyNodeMap([[1, new Set<NodeId>([2, 3])]])
       })
 
       it('should return them', () => {
@@ -148,9 +152,7 @@ describe('NodeMap', () => {
 
     describe('when a node exists and has no successors', () => {
       beforeEach(() => {
-        subject = new MyNodeMap([
-          [1, new Set<NodeId>([2])],
-        ])
+        subject = new MyNodeMap([[1, new Set<NodeId>([2])]])
       })
 
       it('should return an empty iterator', () => {
@@ -160,9 +162,7 @@ describe('NodeMap', () => {
 
     describe('when a node does not exist', () => {
       beforeEach(() => {
-        subject = new MyNodeMap([
-          [1, new Set<NodeId>([2])],
-        ])
+        subject = new MyNodeMap([[1, new Set<NodeId>([2])]])
       })
 
       it('should return an empty iterator', () => {
@@ -203,16 +203,18 @@ describe('NodeMap', () => {
 
       it('should not add it to the graph', () => {
         subject.getReverse(4)
-        expect(subject.edges()).toEqual([[1, 2], [1, 3], [2, 3]])
+        expect(subject.edges()).toEqual([
+          [1, 2],
+          [1, 3],
+          [2, 3],
+        ])
       })
     })
   })
 
   describe('addNode', () => {
     beforeEach(() => {
-      subject = new MyNodeMap([
-        [1, new Set<NodeId>([2, 3])],
-      ])
+      subject = new MyNodeMap([[1, new Set<NodeId>([2, 3])]])
     })
 
     describe('when adding a non-existing node with no dependencies', () => {
@@ -478,7 +480,11 @@ describe('NodeMap', () => {
       })
 
       it('should return the cycles', () => {
-        expect(subject.getCycle()).toEqual([[2, 3], [3, 4], [4, 2]])
+        expect(subject.getCycle()).toEqual([
+          [2, 3],
+          [3, 4],
+          [4, 2],
+        ])
       })
     })
   })
@@ -574,15 +580,14 @@ describe('NodeMap', () => {
 
           it('should have a proper message', () => {
             expect(String(depError)).toContain(
-              'Circular dependencies exist among these items: 2->[1], 1->[4], 3->[2], 4->[2]'
+              'Circular dependencies exist among these items: 2->[1], 1->[4], 3->[2], 4->[2]',
             )
           })
         })
       })
 
       describe('when the handler throws an error', () => {
-        class MyError extends Error {
-        }
+        class MyError extends Error {}
 
         let handlerError: MyError
         let error: Error
@@ -611,7 +616,7 @@ describe('NodeMap', () => {
             message = error.message
           })
 
-          it('should contain the id of the errored node with the error\'s message', () => {
+          it("should contain the id of the errored node with the error's message", () => {
             expect(message).toContain('2: Error: My error message')
           })
 
@@ -639,8 +644,7 @@ describe('NodeMap', () => {
       })
 
       describe('when there is a circular dependency AND the handler throws an error', () => {
-        class MyError extends Error {
-        }
+        class MyError extends Error {}
 
         let handlerError: MyError
         let error: WalkError
@@ -671,7 +675,7 @@ describe('NodeMap', () => {
             message = error.message
           })
 
-          it('should contain the id of the errored node with the error\'s message', () => {
+          it("should contain the id of the errored node with the error's message", () => {
             expect(message).toContain('5: Error: My error message')
           })
 
@@ -706,16 +710,13 @@ describe('NodeMap', () => {
           })
 
           it('should have a proper message', () => {
-            expect(String(depError)).toContain(
-              'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
-            )
+            expect(String(depError)).toContain('Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]')
           })
         })
       })
 
       describe('when there is a circular dependency AND the handler throws an error in a', () => {
-        class MyError extends Error {
-        }
+        class MyError extends Error {}
 
         let handlerError: MyError
         let error: WalkError
@@ -760,8 +761,7 @@ describe('NodeMap', () => {
       let concurrencyCounter: MaxCounter
 
       // simulates an async operation in zero time
-      const dummyAsyncOperation = (): Promise<void> =>
-        new Promise(resolve => setTimeout(resolve, 0))
+      const dummyAsyncOperation = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0))
 
       beforeEach(() => {
         concurrencyCounter = new MaxCounter()
@@ -823,29 +823,28 @@ describe('NodeMap', () => {
           })
 
           it('should have a proper message', () => {
-            expect(String(depError)).toContain(
-              'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
-            )
+            expect(String(depError)).toContain('Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]')
           })
         })
       })
 
       describe('when the handler throws an error', () => {
-        class MyError extends Error {
-        }
+        class MyError extends Error {}
 
         let handlerError: MyError
         let error: Error
 
         beforeEach(async () => {
-          await subject.walkAsync(async (id: NodeId) => {
-            if (id === 2) {
-              handlerError = new MyError('My error message')
-              throw handlerError
-            }
-          }).catch(e => {
-            error = e
-          })
+          await subject
+            .walkAsync(async (id: NodeId) => {
+              if (id === 2) {
+                handlerError = new MyError('My error message')
+                throw handlerError
+              }
+            })
+            .catch(e => {
+              error = e
+            })
           expect(error).toBeDefined()
         })
 
@@ -859,7 +858,7 @@ describe('NodeMap', () => {
             message = error.message
           })
 
-          it('should contain the id of the errored node with the error\'s message', () => {
+          it("should contain the id of the errored node with the error's message", () => {
             expect(message).toContain('2: Error: My error message')
           })
 
@@ -887,8 +886,7 @@ describe('NodeMap', () => {
       })
 
       describe('when there is a circular dependency AND the handler throws an error', () => {
-        class MyError extends Error {
-        }
+        class MyError extends Error {}
 
         let handlerError: MyError
         let error: WalkError
@@ -896,14 +894,16 @@ describe('NodeMap', () => {
         beforeEach(async () => {
           subject.addNode(2, [3])
           subject.addNode(6, [5])
-          await subject.walkAsync(async (id: NodeId) => {
-            if (id === 5) {
-              handlerError = new MyError('My error message')
-              throw handlerError
-            }
-          }).catch(e => {
-            error = e
-          })
+          await subject
+            .walkAsync(async (id: NodeId) => {
+              if (id === 5) {
+                handlerError = new MyError('My error message')
+                throw handlerError
+              }
+            })
+            .catch(e => {
+              error = e
+            })
           expect(error).toBeDefined()
         })
 
@@ -917,7 +917,7 @@ describe('NodeMap', () => {
             message = error.message
           })
 
-          it('should contain the id of the errored node with the error\'s message', () => {
+          it("should contain the id of the errored node with the error's message", () => {
             expect(message).toContain('5: Error: My error message')
           })
 
@@ -952,9 +952,7 @@ describe('NodeMap', () => {
           })
 
           it('should have a proper message', () => {
-            expect(String(depError)).toContain(
-              'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
-            )
+            expect(String(depError)).toContain('Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]')
           })
         })
       })
@@ -1101,18 +1099,17 @@ describe('AbstractNodeMap', () => {
     })
 
     it('should return the connected components of a node in reverse order', () => {
-      expect([...subject.getComponent({ roots: [3], reverse: true }).keys()].sort())
-        .toEqual([1, 2, 3, 4, 6])
+      expect([...subject.getComponent({ roots: [3], reverse: true }).keys()].sort()).toEqual([1, 2, 3, 4, 6])
     })
 
     it('should filter out nodes that are filtered by the filter func', () => {
-      expect([...subject.getComponent({ roots: [3], filterFunc: id => id !== 4 }).keys()].sort())
-        .toEqual([1, 2, 3])
+      expect([...subject.getComponent({ roots: [3], filterFunc: id => id !== 4 }).keys()].sort()).toEqual([1, 2, 3])
     })
 
     it('should return the connected components of multiple roots', () => {
-      expect([...subject.getComponent({ roots: [3, 6], filterFunc: id => id !== 4 }).keys()].sort())
-        .toEqual([1, 2, 3, 6, 7])
+      expect([...subject.getComponent({ roots: [3, 6], filterFunc: id => id !== 4 }).keys()].sort()).toEqual([
+        1, 2, 3, 6, 7,
+      ])
     })
   })
 })
@@ -1213,18 +1210,17 @@ describe('DataNodeMap', () => {
     })
 
     it('should return the connected components of a node in reverse order', () => {
-      expect([...subject.getComponent({ roots: [3], reverse: true }).keys()].sort())
-        .toEqual([1, 2, 3, 4, 6])
+      expect([...subject.getComponent({ roots: [3], reverse: true }).keys()].sort()).toEqual([1, 2, 3, 4, 6])
     })
 
     it('should filter out nodes that are filtered by the filter func', () => {
-      expect([...subject.getComponent({ roots: [3], filterFunc: id => id !== 4 }).keys()].sort())
-        .toEqual([1, 2, 3])
+      expect([...subject.getComponent({ roots: [3], filterFunc: id => id !== 4 }).keys()].sort()).toEqual([1, 2, 3])
     })
 
     it('should return the connected components of multiple roots', () => {
-      expect([...subject.getComponent({ roots: [3, 6], filterFunc: id => id !== 4 }).keys()].sort())
-        .toEqual([1, 2, 3, 6, 7])
+      expect([...subject.getComponent({ roots: [3, 6], filterFunc: id => id !== 4 }).keys()].sort()).toEqual([
+        1, 2, 3, 6, 7,
+      ])
     })
   })
 })

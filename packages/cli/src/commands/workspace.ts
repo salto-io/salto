@@ -1,23 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
 import { ProviderOptionsS3, StateConfig, WorkspaceComponents } from '@salto-io/workspace'
 import { getUserBooleanInput } from '../callbacks'
-import { header, formatCleanWorkspace, formatCancelCommand, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
+import {
+  header,
+  formatCleanWorkspace,
+  formatCancelCommand,
+  formatStepStart,
+  formatStepFailed,
+  formatStepCompleted,
+} from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
 import { CliExitCode } from '../types'
@@ -44,10 +51,8 @@ export const cleanAction: WorkspaceCommandAction<CleanArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  outputLine(header(
-    formatCleanWorkspace(cleanArgs)
-  ), output)
-  if (!(force || await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN))) {
+  outputLine(header(formatCleanWorkspace(cleanArgs)), output)
+  if (!(force || (await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN)))) {
     outputLine(formatCancelCommand, output)
     return CliExitCode.Success
   }
@@ -69,7 +74,8 @@ export const cleanAction: WorkspaceCommandAction<CleanArgs> = async ({
 const wsCleanDef = createWorkspaceCommand({
   properties: {
     name: 'clean',
-    description: 'Maintenance command for cleaning workspace data. This operation cannot be undone, it\'s highly recommended to backup the workspace data before executing it.',
+    description:
+      "Maintenance command for cleaning workspace data. This operation cannot be undone, it's highly recommended to backup the workspace data before executing it.",
     keyedOptions: [
       {
         name: 'force',
@@ -125,10 +131,7 @@ const wsCleanDef = createWorkspaceCommand({
 })
 
 type CacheUpdateArgs = {}
-export const cacheUpdateAction: WorkspaceCommandAction<CacheUpdateArgs> = async ({
-  workspace,
-  output,
-}) => {
+export const cacheUpdateAction: WorkspaceCommandAction<CacheUpdateArgs> = async ({ workspace, output }) => {
   outputLine('Updating workspace cache', output)
   await workspace.flush()
   return CliExitCode.Success
@@ -147,9 +150,7 @@ const cacheGroupDef = createCommandGroupDef({
     name: 'cache',
     description: 'Commands for workspace cache administration',
   },
-  subCommands: [
-    cacheUpdateDef,
-  ],
+  subCommands: [cacheUpdateDef],
 })
 
 type SetStateProviderArgs = {
@@ -214,11 +215,7 @@ const wsGroupDef = createCommandGroupDef({
     name: 'workspace',
     description: 'Workspace administration commands',
   },
-  subCommands: [
-    wsCleanDef,
-    cacheGroupDef,
-    setStateProviderDef,
-  ],
+  subCommands: [wsCleanDef, cacheGroupDef, setStateProviderDef],
 })
 
 export default wsGroupDef

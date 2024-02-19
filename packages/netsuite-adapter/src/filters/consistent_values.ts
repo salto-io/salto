@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable camelcase */
 import { Element, ElemID, isInstanceElement, isObjectType, Value } from '@salto-io/adapter-api'
 import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
@@ -66,13 +66,33 @@ const entryFormJobRecordType = {
 
 const entryFormServiceItemRecordType = {
   fieldElemID: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
-  inconsistentValues: ['OTHERCHARGEPURCHASEITEM', 'OTHERCHARGERESALEITEM', 'NONINVENTORYSALEITEM', 'SERVICEPURCHASEITEM', 'GIFTCERTIFICATEITEM', 'DOWNLOADITEM', 'SERVICERESALEITEM', 'OTHERCHARGEITEM', 'SERVICEITEM', 'NONINVENTORYPURCHASEITEM', 'OTHERCHARGESALEITEM', 'NONINVENTORYRESALEITEM', 'SERVICESALEITEM', 'NONINVENTORYITEM'],
+  inconsistentValues: [
+    'OTHERCHARGEPURCHASEITEM',
+    'OTHERCHARGERESALEITEM',
+    'NONINVENTORYSALEITEM',
+    'SERVICEPURCHASEITEM',
+    'GIFTCERTIFICATEITEM',
+    'DOWNLOADITEM',
+    'SERVICERESALEITEM',
+    'OTHERCHARGEITEM',
+    'SERVICEITEM',
+    'NONINVENTORYPURCHASEITEM',
+    'OTHERCHARGESALEITEM',
+    'NONINVENTORYRESALEITEM',
+    'SERVICESALEITEM',
+    'NONINVENTORYITEM',
+  ],
   consistentValue: 'SERVICEITEM',
 }
 
 const transactionFormJournalEntryRecordType = {
   fieldElemID: new ElemID(NETSUITE, TRANSACTION_FORM, 'field', RECORD_TYPE),
-  inconsistentValues: ['JOURNALENTRY', 'INTERCOMPANYJOURNALENTRY', 'ADVINTERCOMPANYJOURNALENTRY', 'STATISTICALJOURNALENTRY'],
+  inconsistentValues: [
+    'JOURNALENTRY',
+    'INTERCOMPANYJOURNALENTRY',
+    'ADVINTERCOMPANYJOURNALENTRY',
+    'STATISTICALJOURNALENTRY',
+  ],
   consistentValue: 'JOURNALENTRY',
 }
 
@@ -99,30 +119,31 @@ const typeToFieldMappings: Record<string, InconsistentFieldMapping[]> = {
 }
 
 const setConsistentValues = async (element: Element): Promise<void> => {
-  const transformFunc = (
-    fieldMappings: InconsistentFieldMapping[]
-  ): TransformFunc => ({ value, field }) => {
-    const matchingFieldMapping = fieldMappings.find(fieldMapping =>
-      field
-      && fieldMapping.fieldElemID.isEqual(field.elemID)
-      && fieldMapping.inconsistentValues.includes(value))
-    if (matchingFieldMapping) {
-      return matchingFieldMapping.consistentValue
+  const transformFunc =
+    (fieldMappings: InconsistentFieldMapping[]): TransformFunc =>
+    ({ value, field }) => {
+      const matchingFieldMapping = fieldMappings.find(
+        fieldMapping =>
+          field && fieldMapping.fieldElemID.isEqual(field.elemID) && fieldMapping.inconsistentValues.includes(value),
+      )
+      if (matchingFieldMapping) {
+        return matchingFieldMapping.consistentValue
+      }
+      return value
     }
-    return value
-  }
 
   if (isInstanceElement(element)) {
     const fieldMappings = typeToFieldMappings[element.refType.elemID.name]
     if (!fieldMappings) {
       return
     }
-    element.value = await transformValues({
-      values: element.value,
-      type: await element.getType(),
-      transformFunc: transformFunc(fieldMappings),
-      strict: false,
-    }) ?? element.value
+    element.value =
+      (await transformValues({
+        values: element.value,
+        type: await element.getType(),
+        transformFunc: transformFunc(fieldMappings),
+        strict: false,
+      })) ?? element.value
   }
 
   if (isObjectType(element) && isCustomRecordType(element)) {

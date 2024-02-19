@@ -1,47 +1,41 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
 import { createEmptyType } from '../../utils'
 import { accountIdInfoType } from '../../../src/filters/account_id/types'
 import { AUTOMATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import { OWNER_STYLE_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
 
-export const createObjectedNestedType = (
-  name: string
-): ObjectType => new ObjectType({
-  elemID: new ElemID(JIRA, name),
-  fields:
-  {
-    str: { refType: BuiltinTypes.STRING },
-    bool: { refType: BuiltinTypes.BOOLEAN },
-    accountId: { refType: accountIdInfoType },
-    leadAccountId: { refType: accountIdInfoType },
-    authorAccountId: { refType: accountIdInfoType },
-  },
-})
+export const createObjectedNestedType = (name: string): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(JIRA, name),
+    fields: {
+      str: { refType: BuiltinTypes.STRING },
+      bool: { refType: BuiltinTypes.BOOLEAN },
+      accountId: { refType: accountIdInfoType },
+      leadAccountId: { refType: accountIdInfoType },
+      authorAccountId: { refType: accountIdInfoType },
+    },
+  })
 
-export const createObjectedType = (
-  name: string,
-  nestedName = 'nested',
-): ObjectType => {
+export const createObjectedType = (name: string, nestedName = 'nested'): ObjectType => {
   const nestedType = createObjectedNestedType(nestedName)
   return new ObjectType({
     elemID: new ElemID(JIRA, name),
-    fields:
-    {
+    fields: {
       str: { refType: BuiltinTypes.STRING },
       bool: { refType: BuiltinTypes.BOOLEAN },
       accountId: { refType: accountIdInfoType },
@@ -53,29 +47,23 @@ export const createObjectedType = (
   })
 }
 
-export const createNestedType = (
-  name: string
-): ObjectType => new ObjectType({
-  elemID: new ElemID(JIRA, name),
-  fields:
-  {
-    str: { refType: BuiltinTypes.STRING },
-    bool: { refType: BuiltinTypes.BOOLEAN },
-    accountId: { refType: BuiltinTypes.STRING },
-    leadAccountId: { refType: BuiltinTypes.STRING },
-    authorAccountId: { refType: BuiltinTypes.STRING },
-  },
-})
+export const createNestedType = (name: string): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(JIRA, name),
+    fields: {
+      str: { refType: BuiltinTypes.STRING },
+      bool: { refType: BuiltinTypes.BOOLEAN },
+      accountId: { refType: BuiltinTypes.STRING },
+      leadAccountId: { refType: BuiltinTypes.STRING },
+      authorAccountId: { refType: BuiltinTypes.STRING },
+    },
+  })
 
-export const createType = (
-  name: string,
-  nestedName = 'nested',
-): ObjectType => {
+export const createType = (name: string, nestedName = 'nested'): ObjectType => {
   const nestedType = createNestedType(nestedName)
   return new ObjectType({
     elemID: new ElemID(JIRA, name),
-    fields:
-    {
+    fields: {
       str: { refType: BuiltinTypes.STRING },
       bool: { refType: BuiltinTypes.BOOLEAN },
       accountId: { refType: BuiltinTypes.STRING },
@@ -132,14 +120,8 @@ export const createFieldContextType = (): ObjectType => {
   })
 }
 
-export const createInstance = (
-  id: string,
-  objectType: ObjectType,
-  overrides: Values = {}
-): InstanceElement => new InstanceElement(
-  `inst${id}`,
-  objectType,
-  {
+export const createInstance = (id: string, objectType: ObjectType, overrides: Values = {}): InstanceElement =>
+  new InstanceElement(`inst${id}`, objectType, {
     str: 'str',
     bool: false,
     accountId: id,
@@ -163,14 +145,8 @@ export const createInstance = (
       parameter: `${id}h`,
     },
     owner: `${id}owner`,
-    users: [
-      `${id}users1`,
-      `${id}users2`,
-    ],
-    list: [
-      { accountId: `${id}list1` },
-      { accountId: `${id}list2` },
-    ],
+    users: [`${id}users1`, `${id}users2`],
+    list: [{ accountId: `${id}list1` }, { accountId: `${id}list2` }],
     value: {
       operations: [
         {
@@ -327,22 +303,15 @@ export const createInstance = (
           value: {
             assignee: {
               type: 'ID',
-              values: [
-                `${id}automation8a`,
-                `${id}automation8b`,
-              ],
+              values: [`${id}automation8a`, `${id}automation8b`],
             },
           },
         },
       ],
     },
-    accountIds: [
-      `${id}Ids1`,
-      `${id}Ids2`,
-    ],
+    accountIds: [`${id}Ids1`, `${id}Ids2`],
     ...overrides,
-  }
-)
+  })
 
 export const createObjectedInstance = (id: string, objectType: ObjectType): InstanceElement => {
   const object = createInstance(id, objectType, {
@@ -390,12 +359,16 @@ export const createObjectedInstance = (id: string, objectType: ObjectType): Inst
       },
     ],
     list: [
-      { accountId: {
-        id: `${id}list1`,
-      } },
-      { accountId: {
-        id: `${id}list2`,
-      } },
+      {
+        accountId: {
+          id: `${id}list1`,
+        },
+      },
+      {
+        accountId: {
+          id: `${id}list2`,
+        },
+      },
     ],
     value: {
       operations: [
@@ -596,9 +569,7 @@ export const createObjectedInstance = (id: string, objectType: ObjectType): Inst
   return object
 }
 
-export const checkObjectedInstanceIds = (
-  objInstance: InstanceElement, id: string,
-): void => {
+export const checkObjectedInstanceIds = (objInstance: InstanceElement, id: string): void => {
   const type = objInstance.elemID.typeName
   expect(objInstance.value.accountId.id).toEqual(id)
   expect(objInstance.value.actor.value.id).toEqual(`${id}${id}`)
@@ -608,9 +579,9 @@ export const checkObjectedInstanceIds = (
   expect(objInstance.value.nested.actor2.value.id).toEqual(`${id}${id}n`)
   expect(objInstance.value.list[0].accountId.id).toEqual(`${id}list1`)
   expect(objInstance.value.list[1].accountId.id).toEqual(`${id}list2`)
-  expect(PARAMETER_STYLE_TYPES.includes(type)
-    ? objInstance.value.holder.parameter.id
-    : objInstance.value.holder.parameter).toEqual(`${id}h`)
+  expect(
+    PARAMETER_STYLE_TYPES.includes(type) ? objInstance.value.holder.parameter.id : objInstance.value.holder.parameter,
+  ).toEqual(`${id}h`)
   if (type === AUTOMATION_TYPE) {
     expect(objInstance.value.value.operations[3].value.value.id).toEqual(`${id}operations1`)
     expect(objInstance.value.automation1.compareFieldValue.value.id).toEqual(`${id}automation1`)
@@ -619,7 +590,9 @@ export const checkObjectedInstanceIds = (
     expect(objInstance.value.automation4.compareFieldValue.value.id).toEqual(`${id}automation4`)
     expect(objInstance.value.automation5.compareFieldValue.value.id).toEqual(`${id}automation5`)
     expect(objInstance.value.automation9.compareFieldValue.value.id).toEqual(`${id}automation9`)
-    expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value.id).toEqual(`${id}automation6`)
+    expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value.id).toEqual(
+      `${id}automation6`,
+    )
     expect(objInstance.value.automation61.compareFieldValue.value.operations[0].value[0].value).toEqual('assignee')
     expect(objInstance.value.automation62.compareFieldValue.value.operations[0].value[0].value).toEqual('reporter')
     expect(objInstance.value.automation7.value.conditions[1].criteria[0].value.id).toEqual(`${id}automation7`)
@@ -631,10 +604,7 @@ export const checkObjectedInstanceIds = (
   }
 }
 
-export const checkSimpleInstanceIds = (
-  objInstance: InstanceElement,
-  id: string
-): void => {
+export const checkSimpleInstanceIds = (objInstance: InstanceElement, id: string): void => {
   expect(objInstance.value.accountId).toEqual(id)
   expect(objInstance.value.actor.value).toEqual(`${id}${id}`)
   expect(objInstance.value.leadAccountId).toEqual(`${id}l`)
@@ -653,7 +623,9 @@ export const checkSimpleInstanceIds = (
     expect(objInstance.value.automation4.compareFieldValue.value).toEqual(`${id}automation4`)
     expect(objInstance.value.automation5.compareFieldValue.value).toEqual(`${id}automation5`)
     expect(objInstance.value.automation9.compareFieldValue.value).toEqual(`${id}automation9`)
-    expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value).toEqual(`${id}automation6`)
+    expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value).toEqual(
+      `${id}automation6`,
+    )
     expect(objInstance.value.automation61.compareFieldValue.value.operations[0].value[0].value).toEqual('assignee')
     expect(objInstance.value.automation62.compareFieldValue.value.operations[0].value[0].value).toEqual('reporter')
     expect(objInstance.value.automation7.value.conditions[1].criteria[0].value).toEqual(`${id}automation7`)
@@ -663,10 +635,7 @@ export const checkSimpleInstanceIds = (
     expect(objInstance.value.accountIds[1]).toEqual(`${id}Ids2`)
   }
 }
-export const checkDisplayNames = (
-  instance: InstanceElement,
-  id: string
-) : void => {
+export const checkDisplayNames = (instance: InstanceElement, id: string): void => {
   const type = instance.elemID.typeName
   expect(instance.value.accountId.displayName).toEqual(`disp${id}`)
   expect(instance.value.leadAccountId.displayName).toEqual(`disp${id}l`)
@@ -694,10 +663,16 @@ export const checkDisplayNames = (
     expect(instance.value.automation4.compareFieldValue.value.displayName).toEqual(`disp${id}automation4`)
     expect(instance.value.automation5.compareFieldValue.value.displayName).toEqual(`disp${id}automation5`)
     expect(instance.value.automation9.compareFieldValue.value.displayName).toEqual(`disp${id}automation9`)
-    expect(instance.value.automation6.compareFieldValue.value.operations[0].value[0].value.displayName).toEqual(`disp${id}automation6`)
+    expect(instance.value.automation6.compareFieldValue.value.operations[0].value[0].value.displayName).toEqual(
+      `disp${id}automation6`,
+    )
     expect(instance.value.automation7.value.conditions[1].criteria[0].value.displayName).toEqual(`disp${id}automation7`)
-    expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[0].displayName).toEqual(`disp${id}automation8a`)
-    expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[1].displayName).toEqual(`disp${id}automation8b`)
+    expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[0].displayName).toEqual(
+      `disp${id}automation8a`,
+    )
+    expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[1].displayName).toEqual(
+      `disp${id}automation8b`,
+    )
   }
   expect(instance.value.accountIds[0].displayName).toEqual(`disp${id}Ids1`)
   expect(instance.value.accountIds[1].displayName).toEqual(`disp${id}Ids2`)
@@ -706,8 +681,8 @@ export const checkInstanceUserIds = (
   instance: InstanceElement,
   id: string,
   prefix: string,
-  holderType = true
-) : void => {
+  holderType = true,
+): void => {
   expect(instance.value.accountId.id).toEqual(`${prefix}${id}`)
   expect(instance.value.leadAccountId.id).toEqual(`${prefix}${id}l`)
   expect(instance.value.nested.accountId.id).toEqual(`${prefix}${id}n`)
@@ -724,10 +699,7 @@ export const checkInstanceUserIds = (
   expect(instance.value.accountIds[1].id).toEqual(`${prefix}${id}Ids2`)
 }
 
-export const createInstanceElementArrayWithDisplayNames = (
-  size: number,
-  objectType: ObjectType
-): InstanceElement[] => {
+export const createInstanceElementArrayWithDisplayNames = (size: number, objectType: ObjectType): InstanceElement[] => {
   const elements: InstanceElement[] = []
   for (let i = 0; i < size; i += 1) {
     elements[i] = createObjectedInstance(i.toString(), objectType)

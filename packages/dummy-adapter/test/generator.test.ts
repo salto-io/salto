@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   isObjectType,
   isInstanceElement,
@@ -48,10 +48,13 @@ describe('elements generator', () => {
     })
     it('should create different results when invoked with different seeds', async () => {
       const run1 = await generateElements(testParams, mockProgressReporter)
-      const run2 = await generateElements({
-        ...testParams,
-        seed: 3.14,
-      }, mockProgressReporter)
+      const run2 = await generateElements(
+        {
+          ...testParams,
+          seed: 3.14,
+        },
+        mockProgressReporter,
+      )
       expect(run1).not.toEqual(run2)
     })
     it('should create the amount of elements as the params specified', async () => {
@@ -59,51 +62,64 @@ describe('elements generator', () => {
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
-        e => e.path !== undefined && e.path[1] === 'Types'
+        e => e.path !== undefined && e.path[1] === 'Types',
       )
       const [profiles, records] = _.partition(
         elements.filter(isInstanceElement),
-        e => e.path !== undefined && e.path[2] === 'Profile'
+        e => e.path !== undefined && e.path[2] === 'Profile',
       )
       expect(primitives).toHaveLength(testParams.numOfPrimitiveTypes)
       expect(types).toHaveLength(testParams.numOfTypes)
-      expect(
-        _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(testParams.numOfObjs + 7) // 5 default types + 2q additional type
+      expect(_.uniq(objects.map(obj => obj.elemID.getFullName()))).toHaveLength(testParams.numOfObjs + 7) // 5 default types + 2q additional type
       expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
-      expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
-        testParams.numOfProfiles
-      )
+      expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(testParams.numOfProfiles)
       expect(records).toHaveLength(testParams.numOfRecords + 5) // 5 default instance fragments
     })
     // eslint-disable-next-line
     it.skip('should create list and map types', async () => {
-      const run1 = await generateElements({
-        ...testParams,
-        listFieldFreq: 1,
-        mapFieldFreq: 0,
-      }, mockProgressReporter)
-      const run2 = await generateElements({
-        ...testParams,
-        listFieldFreq: 0,
-        mapFieldFreq: 1,
-      }, mockProgressReporter)
-      const fields = ([...run1, ...run2]).filter(isObjectType).flatMap(e => _.values(e.fields))
-      const maps = await awu(fields).filter(async f => isMapType(await f.getType())).toArray()
-      const lists = await awu(fields).filter(async f => isListType(await f.getType())).toArray()
+      const run1 = await generateElements(
+        {
+          ...testParams,
+          listFieldFreq: 1,
+          mapFieldFreq: 0,
+        },
+        mockProgressReporter,
+      )
+      const run2 = await generateElements(
+        {
+          ...testParams,
+          listFieldFreq: 0,
+          mapFieldFreq: 1,
+        },
+        mockProgressReporter,
+      )
+      const fields = [...run1, ...run2].filter(isObjectType).flatMap(e => _.values(e.fields))
+      const maps = await awu(fields)
+        .filter(async f => isMapType(await f.getType()))
+        .toArray()
+      const lists = await awu(fields)
+        .filter(async f => isListType(await f.getType()))
+        .toArray()
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)
     })
 
     it('should return elements in the extra nacl dir and handle static file correctly', async () => {
-      const elements = await generateElements({
-        ...testParams,
-        extraNaclPaths: [EXTRA_NACL_PATH, 'should/handle/path/not/exists'],
-      }, mockProgressReporter)
+      const elements = await generateElements(
+        {
+          ...testParams,
+          extraNaclPaths: [EXTRA_NACL_PATH, 'should/handle/path/not/exists'],
+        },
+        mockProgressReporter,
+      )
       const singleFileObj = elements.find(e => e.elemID.getFullName() === 'dummy.singleFileObj')
       const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
-      const instWithStatic1 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic1')
-      const instWithStatic2 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic2')
+      const instWithStatic1 = elements.find(
+        e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic1',
+      )
+      const instWithStatic2 = elements.find(
+        e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic2',
+      )
       expect(singleFileObj).toBeDefined()
       expect(multiFilesObj).toHaveLength(2)
       expect(singleFileObj?.path).toEqual(['dummy', 'extra', 'single'])
@@ -143,9 +159,7 @@ describe('elements generator', () => {
   describe('important values', () => {
     const isValidImportantValue = (importantValue: ImportantValue): boolean => {
       const { value, highlighted, indexed } = importantValue
-      return _.isString(value)
-        && _.isBoolean(highlighted)
-        && _.isBoolean(indexed)
+      return _.isString(value) && _.isBoolean(highlighted) && _.isBoolean(indexed)
     }
     it('should not create important values if importantValuesFreq is 0', async () => {
       const importantValuesTestParams: GeneratorParams = {
@@ -160,11 +174,13 @@ describe('elements generator', () => {
       const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
       const elementsWithImportantValues = elements
         .filter(isObjectType)
-        .filter(obj =>
-          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
-          && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
-          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
-        && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
+        .filter(
+          obj =>
+            (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined &&
+              obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue)) ||
+            (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined &&
+              obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)),
+        )
       expect(_.isEmpty(elementsWithImportantValues)).toBeTruthy()
     })
     it('should create some important values if importantValuesFreq is 0.75', async () => {
@@ -179,11 +195,13 @@ describe('elements generator', () => {
       const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
       const elementsWithImportantValues = elements
         .filter(isObjectType)
-        .filter(obj =>
-          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
-            && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
-          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
-            && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
+        .filter(
+          obj =>
+            (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined &&
+              obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue)) ||
+            (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined &&
+              obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)),
+        )
       expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
     })
     it('should create some important values if importantValuesFreq is undefined', async () => {
@@ -199,11 +217,13 @@ describe('elements generator', () => {
       const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
       const elementsWithImportantValues = elements
         .filter(isObjectType)
-        .filter(obj =>
-          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
-            && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
-          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
-            && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
+        .filter(
+          obj =>
+            (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined &&
+              obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue)) ||
+            (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined &&
+              obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)),
+        )
       expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
     })
   })
@@ -212,14 +232,10 @@ describe('elements generator', () => {
       const envName = 'env'
       process.env.SALTO_ENV = envName
       const elements = await generateElements(testParams, mockProgressReporter)
-      expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj'))
-        .toBeDefined()
-      expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj.instance.envEnvInst'))
-        .toBeDefined()
-      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj'))
-        .toBeDefined()
-      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj.instance.EnvInst'))
-        .toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj')).toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.envEnvObj.instance.envEnvInst')).toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj')).toBeDefined()
+      expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj.instance.EnvInst')).toBeDefined()
     })
   })
 })

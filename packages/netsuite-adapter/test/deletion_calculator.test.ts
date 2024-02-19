@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import NetsuiteClient from '../src/client/client'
@@ -45,14 +45,9 @@ describe('deletion calculator', () => {
 
   beforeEach(() => {
     mockRunSuiteQL.mockReset()
-    mockRunSuiteQL.mockResolvedValueOnce([
-      { scriptid: 'customrecord1' },
-      { scriptid: 'customrecord2' },
-    ])
+    mockRunSuiteQL.mockResolvedValueOnce([{ scriptid: 'customrecord1' }, { scriptid: 'customrecord2' }])
     mockRunSuiteQL.mockResolvedValueOnce([])
-    mockRunSuiteQL.mockResolvedValueOnce([
-      { scriptid: 'custom_record_script_id' },
-    ])
+    mockRunSuiteQL.mockResolvedValueOnce([{ scriptid: 'custom_record_script_id' }])
   })
 
   describe('get deleted elements', () => {
@@ -68,7 +63,7 @@ describe('deletion calculator', () => {
       const stdInstance = new InstanceElement(
         'std_instance',
         new ObjectType({ elemID: new ElemID(NETSUITE, 'role') }),
-        { [SCRIPT_ID]: 'std_instance_script_id' }
+        { [SCRIPT_ID]: 'std_instance_script_id' },
       )
       const customRecordType1 = new ObjectType({
         elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -82,7 +77,7 @@ describe('deletion calculator', () => {
         'custom_record',
         customRecordType2,
         { [SCRIPT_ID]: 'custom_record_script_id' },
-        []
+        [],
       )
       const dataElement = new InstanceElement(
         'data_element',
@@ -186,8 +181,10 @@ describe('deletion calculator', () => {
           ...DEFAULT_PARAMS,
           elementsSource,
           requestedCustomRecordTypes: [customRecordType1, customRecordType2],
-          serviceInstanceIds: [{ type: CUSTOM_RECORD_TYPE, instanceId: customRecordType1.elemID.typeName },
-            { type: CUSTOM_RECORD_TYPE, instanceId: customRecordType2.elemID.typeName }],
+          serviceInstanceIds: [
+            { type: CUSTOM_RECORD_TYPE, instanceId: customRecordType1.elemID.typeName },
+            { type: CUSTOM_RECORD_TYPE, instanceId: customRecordType2.elemID.typeName },
+          ],
         })
 
         expect(mockRunSuiteQL).toHaveBeenCalledTimes(1)
@@ -200,12 +197,8 @@ describe('deletion calculator', () => {
 
       it('should not return current custom record that still exists in service', async () => {
         mockRunSuiteQL.mockReset()
-        mockRunSuiteQL.mockResolvedValueOnce([
-          { scriptid: 'customrecord2' },
-        ])
-        mockRunSuiteQL.mockResolvedValueOnce([
-          { scriptid: 'custom_record_script_id' },
-        ])
+        mockRunSuiteQL.mockResolvedValueOnce([{ scriptid: 'customrecord2' }])
+        mockRunSuiteQL.mockResolvedValueOnce([{ scriptid: 'custom_record_script_id' }])
         const { deletedElements } = await getDeletedElements({
           ...DEFAULT_PARAMS,
           elementsSource,

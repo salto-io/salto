@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Workspace } from '@salto-io/workspace'
 import { cleanWorkspace } from '../../src/core/clean'
 import * as adapters from '../../src/core/adapters'
@@ -52,10 +52,16 @@ describe('clean', () => {
     })
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce', 'salesforce')
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite', 'netsuite')
-    expect(workspace.updateAccountConfig).toHaveBeenCalledWith('salesforce',
-      { account: 'salesforce', aaa: 'aaa' }, 'salesforce')
-    expect(workspace.updateAccountConfig).toHaveBeenCalledWith('netsuite',
-      { account: 'netsuite', aaa: 'aaa' }, 'netsuite')
+    expect(workspace.updateAccountConfig).toHaveBeenCalledWith(
+      'salesforce',
+      { account: 'salesforce', aaa: 'aaa' },
+      'salesforce',
+    )
+    expect(workspace.updateAccountConfig).toHaveBeenCalledWith(
+      'netsuite',
+      { account: 'netsuite', aaa: 'aaa' },
+      'netsuite',
+    )
     expect(workspace.flush).toHaveBeenCalled()
   })
 
@@ -81,7 +87,8 @@ describe('clean', () => {
   })
 
   it('should finish even if some account configs cannot be restored', async () => {
-    jest.spyOn(adapters, 'getDefaultAdapterConfig')
+    jest
+      .spyOn(adapters, 'getDefaultAdapterConfig')
       .mockImplementationOnce(async () => undefined)
       .mockImplementationOnce(async () => undefined)
     await cleanWorkspace(workspace, {

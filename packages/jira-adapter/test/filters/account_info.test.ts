@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -32,62 +32,67 @@ describe('accountInfoFilter', () => {
       const applicationRoleType = new ObjectType({
         elemID: new ElemID('jira', 'ApplicationRole'),
       })
-      const applicationRoleSoftware = new InstanceElement(
-        'jira-software',
-        applicationRoleType,
-        { key: 'jira-software', userCount: '10' },
-      )
-      const applicationRoleOther = new InstanceElement(
-        'jira-other',
-        applicationRoleType,
-        { key: 'jira-other', userCount: '8' },
-      )
-      const applicationRoleServiceDesk = new InstanceElement(
-        'jira-servicedesk',
-        applicationRoleType,
-        { key: 'jira-servicedesk', userCount: '11' },
-      )
+      const applicationRoleSoftware = new InstanceElement('jira-software', applicationRoleType, {
+        key: 'jira-software',
+        userCount: '10',
+      })
+      const applicationRoleOther = new InstanceElement('jira-other', applicationRoleType, {
+        key: 'jira-other',
+        userCount: '8',
+      })
+      const applicationRoleServiceDesk = new InstanceElement('jira-servicedesk', applicationRoleType, {
+        key: 'jira-servicedesk',
+        userCount: '11',
+      })
       elements = [applicationRoleOther, applicationRoleSoftware, applicationRoleServiceDesk]
     })
     describe('onFetch', () => {
       it('should populate license successfully', async () => {
         connection.get.mockResolvedValueOnce({
           status: 200,
-          data: { applications: [
-            {
-              id: 'jira-software',
-              plan: 'FREE',
-            },
-            {
-              id: 'other-app',
-              plan: 'PAID',
-            },
-            {
-              id: 'jira-servicedesk',
-              plan: 'FREE',
-            },
-          ] },
+          data: {
+            applications: [
+              {
+                id: 'jira-software',
+                plan: 'FREE',
+              },
+              {
+                id: 'other-app',
+                plan: 'PAID',
+              },
+              {
+                id: 'jira-servicedesk',
+                plan: 'FREE',
+              },
+            ],
+          },
         })
         await filter.onFetch?.(elements)
         expect(elements.length).toEqual(7)
         expect(elements[3].elemID.getFullName()).toEqual('jira.License')
         expect(elements[4].elemID.getFullName()).toEqual('jira.LicensedApplication')
         expect(elements[5].elemID.getFullName()).toEqual('jira.AccountInfo')
-        expect(elements[6].value).toEqual({ license: { applications: [
-          { id: 'jira-software', plan: 'FREE' },
-          { id: 'other-app', plan: 'PAID' },
-          { id: 'jira-servicedesk', plan: 'FREE' },
-        ] } })
+        expect(elements[6].value).toEqual({
+          license: {
+            applications: [
+              { id: 'jira-software', plan: 'FREE' },
+              { id: 'other-app', plan: 'PAID' },
+              { id: 'jira-servicedesk', plan: 'FREE' },
+            ],
+          },
+        })
       })
       it('should do nothing for a wrong license answer', async () => {
         connection.get.mockResolvedValueOnce({
           status: 200,
-          data: { other: [
-            {
-              id: 'jira-software',
-              plan: 'FREE',
-            },
-          ] },
+          data: {
+            other: [
+              {
+                id: 'jira-software',
+                plan: 'FREE',
+              },
+            ],
+          },
         })
         await filter.onFetch?.(elements)
         expect(elements.length).toEqual(3)
@@ -128,24 +133,32 @@ describe('accountInfoFilter', () => {
         expect(elements[0].elemID.getFullName()).toEqual('jira.License')
         expect(elements[1].elemID.getFullName()).toEqual('jira.LicensedApplication')
         expect(elements[2].elemID.getFullName()).toEqual('jira.AccountInfo')
-        expect(elements[3].value).toEqual({ license: { applications: [
-          { id: 'jira-software',
-            plan: 'Developer',
-            raw: {
-              licenseType: 'Developer',
-              expired: false,
-            } },
-        ] } })
+        expect(elements[3].value).toEqual({
+          license: {
+            applications: [
+              {
+                id: 'jira-software',
+                plan: 'Developer',
+                raw: {
+                  licenseType: 'Developer',
+                  expired: false,
+                },
+              },
+            ],
+          },
+        })
       })
       it('should do nothing for a wrong license answer', async () => {
         connection.get.mockResolvedValueOnce({
           status: 200,
-          data: { other: [
-            {
-              id: 'jira-software',
-              plan: 'FREE',
-            },
-          ] },
+          data: {
+            other: [
+              {
+                id: 'jira-software',
+                plan: 'FREE',
+              },
+            ],
+          },
         })
         await filter.onFetch?.(elements)
         expect(elements.length).toEqual(0)

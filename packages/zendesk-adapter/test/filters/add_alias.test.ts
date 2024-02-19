@@ -1,25 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
-import {
-  CORE_ANNOTATIONS,
-  ElemID,
-  InstanceElement,
-  ObjectType, ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_alias'
 import {
   CATEGORY_ORDER_TYPE_NAME,
@@ -54,65 +49,50 @@ describe('add alias filter', () => {
   const categoryOrderType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryOrderTypeName) })
   const categoryTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryTranslationTypeName) })
 
+  const localeInstance = new InstanceElement('instance4', localeType, {
+    locale: 'en-us', // will be used for category translation
+    presentation_name: 'en-us',
+  })
 
-  const localeInstance = new InstanceElement(
-    'instance4',
-    localeType,
-    {
-      locale: 'en-us', // will be used for category translation
-      presentation_name: 'en-us',
-    },
-  )
-
-  const categoryInstance = new InstanceElement(
-    'instance6',
-    categoryType,
-    {
-      name: 'category name',
-    },
-  )
+  const categoryInstance = new InstanceElement('instance6', categoryType, {
+    name: 'category name',
+  })
 
   beforeEach(async () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator(createFilterCreatorParams({
-      client,
-      config: {
-        ...DEFAULT_CONFIG,
-        [FETCH_CONFIG]: {
-          include: [{
-            type: '.*',
-          }],
-          exclude: [],
-          guide: {
-            brands: ['.*'],
+    filter = filterCreator(
+      createFilterCreatorParams({
+        client,
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            include: [
+              {
+                type: '.*',
+              },
+            ],
+            exclude: [],
+            guide: {
+              brands: ['.*'],
+            },
+            addAlias: true,
           },
-          addAlias: true,
         },
-      },
-    })) as FilterType
+      }),
+    ) as FilterType
   })
 
   describe('onFetch', () => {
     it('should add alias annotation correctly', async () => {
-      const appInstallationInstance = new InstanceElement(
-        'instance1',
-        appInstallationType,
-        { settings: { name: 'app installation name' } },
-      )
-      const appInstallationInstanceInvalid = new InstanceElement(
-        'instance2',
-        appInstallationType,
-        {},
-      )
-      const dynamicContentItemInstance = new InstanceElement(
-        'instance3',
-        dynamicContentItemType,
-        {
-          name: 'dynamic content name',
-        },
-      )
+      const appInstallationInstance = new InstanceElement('instance1', appInstallationType, {
+        settings: { name: 'app installation name' },
+      })
+      const appInstallationInstanceInvalid = new InstanceElement('instance2', appInstallationType, {})
+      const dynamicContentItemInstance = new InstanceElement('instance3', dynamicContentItemType, {
+        name: 'dynamic content name',
+      })
       const dynamicContentItemVariantsInstance = new InstanceElement(
         'instance5',
         dynamicContentItemVariantsType,
@@ -122,17 +102,11 @@ describe('add alias filter', () => {
         undefined,
         {
           _parent: [new ReferenceExpression(dynamicContentItemInstance.elemID, dynamicContentItemInstance)],
-        }
+        },
       )
-      const categoryOrderInstance = new InstanceElement(
-        'instance7',
-        categoryOrderType,
-        {},
-        undefined,
-        {
-          _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
-        }
-      )
+      const categoryOrderInstance = new InstanceElement('instance7', categoryOrderType, {}, undefined, {
+        _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
+      })
       const categoryTranslationInstance = new InstanceElement(
         'instance8',
         categoryTranslationType,
@@ -142,15 +116,11 @@ describe('add alias filter', () => {
         undefined,
         {
           _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
-        }
-      )
-      const categoryTranslationInstanceInvalid = new InstanceElement(
-        'instance9',
-        categoryTranslationType,
-        {
-          locale: new ReferenceExpression(localeInstance.elemID),
         },
       )
+      const categoryTranslationInstanceInvalid = new InstanceElement('instance9', categoryTranslationType, {
+        locale: new ReferenceExpression(localeInstance.elemID),
+      })
       const elements = [
         appInstallationInstance,
         appInstallationInstanceInvalid,
@@ -176,14 +146,10 @@ describe('add alias filter', () => {
       ])
     })
     it('should not crush when one of the values is undefined', async () => {
-      const appInstallationInstanceInvalid = new InstanceElement(
-        'instance2',
-        appInstallationType,
-        { settings: { name: undefined } },
-      )
-      const elements = [
-        appInstallationInstanceInvalid,
-      ]
+      const appInstallationInstanceInvalid = new InstanceElement('instance2', appInstallationType, {
+        settings: { name: undefined },
+      })
+      const elements = [appInstallationInstanceInvalid]
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })
@@ -196,9 +162,7 @@ describe('add alias filter', () => {
         },
         undefined,
       )
-      const elements = [
-        categoryTranslationInstance,
-      ]
+      const elements = [categoryTranslationInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })
@@ -212,25 +176,17 @@ describe('add alias filter', () => {
         undefined,
         {
           _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
-        }
+        },
       )
-      const elements = [
-        categoryTranslationInstance,
-      ]
+      const elements = [categoryTranslationInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })
     it('should not crush when there is a reference instead of a value', async () => {
-      const dynamicContentItemInstance = new InstanceElement(
-        'instance3',
-        dynamicContentItemType,
-        {
-          name: new ReferenceExpression(localeInstance.elemID, localeInstance),
-        },
-      )
-      const elements = [
-        dynamicContentItemInstance,
-      ]
+      const dynamicContentItemInstance = new InstanceElement('instance3', dynamicContentItemType, {
+        name: new ReferenceExpression(localeInstance.elemID, localeInstance),
+      })
+      const elements = [dynamicContentItemInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })

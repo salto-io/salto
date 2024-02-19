@@ -1,22 +1,25 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  getChangeData, isModificationChange, InstanceElement, isInstanceChange,
+  getChangeData,
+  isModificationChange,
+  InstanceElement,
+  isInstanceChange,
   ModificationChange,
   ElemID,
   ChangeError,
@@ -26,12 +29,11 @@ import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID } from '../constants'
 import { NetsuiteChangeValidator } from './types'
 
-
 const { awu } = collections.asynciterable
 
-
-const getScriptIdsUnderLists = async (instance: InstanceElement):
-  Promise<collections.map.DefaultMap<string, Set<string>>> => {
+const getScriptIdsUnderLists = async (
+  instance: InstanceElement,
+): Promise<collections.map.DefaultMap<string, Set<string>>> => {
   const pathToScriptIds = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
   walkOnElement({
     element: instance,
@@ -48,32 +50,34 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
   return pathToScriptIds
 }
 
-const getRemovedListItems = async (change: ModificationChange<InstanceElement>):
-  Promise<{
-    removedListItems: string[]
-    elemID: ElemID
-  }> => {
+const getRemovedListItems = async (
+  change: ModificationChange<InstanceElement>,
+): Promise<{
+  removedListItems: string[]
+  elemID: ElemID
+}> => {
   const idsUnderListsBefore = await getScriptIdsUnderLists(change.data.before)
   const idsUnderListsAfter = await getScriptIdsUnderLists(change.data.after)
-  const removedListItems = wu(idsUnderListsBefore.entries()).map(
-    ([path, beforeIds]) =>
-      wu(beforeIds).filter(beforeId => !idsUnderListsAfter.get(path).has(beforeId))
-  ).flatten().toArray()
+  const removedListItems = wu(idsUnderListsBefore.entries())
+    .map(([path, beforeIds]) => wu(beforeIds).filter(beforeId => !idsUnderListsAfter.get(path).has(beforeId)))
+    .flatten()
+    .toArray()
   return { removedListItems, elemID: getChangeData(change).elemID }
 }
 
 const changeValidator: NetsuiteChangeValidator = async changes => {
-  const instanceChanges = await awu(changes)
+  const instanceChanges = (await awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .toArray() as ModificationChange<InstanceElement>[]
+    .toArray()) as ModificationChange<InstanceElement>[]
 
-  return awu(instanceChanges).map(getRemovedListItems)
-    .filter(({ removedListItems }: {removedListItems: string[]}) => !_.isEmpty(removedListItems))
-    .map(({ elemID, removedListItems }: {removedListItems: string[]; elemID: ElemID}) => ({
+  return awu(instanceChanges)
+    .map(getRemovedListItems)
+    .filter(({ removedListItems }: { removedListItems: string[] }) => !_.isEmpty(removedListItems))
+    .map(({ elemID, removedListItems }: { removedListItems: string[]; elemID: ElemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Can\'t remove inner elements',
+      message: "Can't remove inner elements",
       detailedMessage: `Can't remove the inner element${removedListItems.length > 1 ? 's' : ''} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from their UI.`,
     }))
     .toArray() as Promise<ChangeError[]>

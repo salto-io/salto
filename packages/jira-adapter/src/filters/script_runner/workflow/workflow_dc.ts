@@ -1,27 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { Value } from '@salto-io/adapter-api'
 
 const log = logger(module)
-export const SCRIPT_RUNNER_DC_TYPES = ['com.onresolve.jira.groovy.GroovyFunctionPlugin',
+export const SCRIPT_RUNNER_DC_TYPES = [
+  'com.onresolve.jira.groovy.GroovyFunctionPlugin',
   'com.onresolve.jira.groovy.GroovyValidator',
-  'com.onresolve.jira.groovy.GroovyCondition']
+  'com.onresolve.jira.groovy.GroovyCondition',
+]
 const DC_ENCODE_PREFIX = '`!`'
 const CANNED_SCRIPT = 'canned-script'
 const FIELD_COMMENT_TYPE = 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.CommentIssue'
@@ -94,7 +96,8 @@ const fieldToEncodeMap: FieldToCodeFuncMap = new Map([
   ['FIELD_COMMENT', encodeBase64],
 ])
 
-const transformConfigFields = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
+const transformConfigFields =
+  (funcMap: FieldToCodeFuncMap): WalkOnFunc =>
   ({ value }): WALK_NEXT_STEP => {
     if (value === undefined) {
       return WALK_NEXT_STEP.SKIP
@@ -108,15 +111,17 @@ const transformConfigFields = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
       })
       funcMap.forEach((_value, fieldName) => {
         // Field comment is base64 encoded only in some cases. In others the field is plain text
-        if (value.configuration[fieldName] !== undefined
-          && (fieldName !== 'FIELD_COMMENT' || value.configuration[CANNED_SCRIPT] === FIELD_COMMENT_TYPE)) {
+        if (
+          value.configuration[fieldName] !== undefined &&
+          (fieldName !== 'FIELD_COMMENT' || value.configuration[CANNED_SCRIPT] === FIELD_COMMENT_TYPE)
+        ) {
           value.configuration[fieldName] = funcMap.get(fieldName)(value.configuration[fieldName])
         }
       })
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
-  })
+  }
 
 export const decodeDcFields = transformConfigFields(fieldToDecodeMap)
 export const encodeDcFields = transformConfigFields(fieldToEncodeMap)

@@ -6,11 +6,9 @@
       "command": "yarn watch-ts",
       "type": "shell",
       "args": [],
-      "problemMatcher": [
-        "$tsc-watch"
-      ],
+      "problemMatcher": ["$tsc-watch"],
       "isBackground": true,
       "group": "build"
-    },
+    }
   ]
 }

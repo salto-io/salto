@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -32,7 +32,7 @@ const COUNTER_TYPES = [
   'PersistentDbConnectionReuse',
   'TmpDbConnectionReuse',
 ] as const
-type CounterType = typeof COUNTER_TYPES[number]
+type CounterType = (typeof COUNTER_TYPES)[number]
 
 type Counter = {
   inc: () => void
@@ -51,7 +51,9 @@ type StatCounters = {
 const createCounter = (): Counter => {
   let counterValue = 0
   return {
-    inc: () => { counterValue += 1 },
+    inc: () => {
+      counterValue += 1
+    },
     value: () => counterValue,
   }
 }
@@ -59,18 +61,22 @@ const createCounter = (): Counter => {
 const createLocationCounters = (location: string): LocationCounters => {
   const counters = Object.fromEntries([
     ...COUNTER_TYPES.map(counterType => [counterType, createCounter()]),
-    ['dump', () => {
-      log.debug('Remote Map Stats for location \'%s\': %o',
-        location, Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, counters[counterType].value()])))
-    }],
+    [
+      'dump',
+      () => {
+        log.debug(
+          "Remote Map Stats for location '%s': %o",
+          location,
+          Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, counters[counterType].value()])),
+        )
+      },
+    ],
   ])
   return counters
 }
 
 const createStatCounters = (): StatCounters => {
-  const locations = new DefaultMap(
-    (location: string) => ({ refCnt: 0, counters: createLocationCounters(location) })
-  )
+  const locations = new DefaultMap((location: string) => ({ refCnt: 0, counters: createLocationCounters(location) }))
   return {
     get: location => {
       locations.get(location).refCnt += 1

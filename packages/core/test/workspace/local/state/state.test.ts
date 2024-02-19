@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { Readable } from 'stream'
 import { createGzip } from 'zlib'
@@ -20,7 +20,15 @@ import getStream from 'get-stream'
 import { chain } from 'stream-chain'
 import { ObjectType, ElemID, isObjectType, Element, toChange, InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { getDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
-import { state as wsState, pathIndex, remoteMap, staticFiles, serialization, StateConfig, ProviderOptionsS3 } from '@salto-io/workspace'
+import {
+  state as wsState,
+  pathIndex,
+  remoteMap,
+  staticFiles,
+  serialization,
+  StateConfig,
+  ProviderOptionsS3,
+} from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
@@ -43,9 +51,13 @@ type MockStateContentArgs = {
   version?: string
   extraLine?: string
 }
-const mockStateContent = async (
-  { elements, date, pathIndexLine = '[]', version = '0.0.1', extraLine }: MockStateContentArgs
-): Promise<Buffer> => {
+const mockStateContent = async ({
+  elements,
+  date,
+  pathIndexLine = '[]',
+  version = '0.0.1',
+  extraLine,
+}: MockStateContentArgs): Promise<Buffer> => {
   const elementsLine = await serialization.serialize(elements)
   const dateLine = safeJsonStringify({ [elements[0].elemID.adapter]: date ?? new Date() })
   const lines = [elementsLine, dateLine, pathIndexLine]
@@ -55,11 +67,8 @@ const mockStateContent = async (
   if (extraLine !== undefined) {
     lines.push(extraLine)
   }
-  return getStream.buffer(
-    chain([Readable.from(lines.join('\n')), createGzip()])
-  )
+  return getStream.buffer(chain([Readable.from(lines.join('\n')), createGzip()]))
 }
-
 
 describe('localState', () => {
   const mockElement = getTopLevelElements().find(isObjectType) as ObjectType
@@ -67,20 +76,27 @@ describe('localState', () => {
   const mockContentProvider = (fileContents: Record<string, Buffer>): jest.Mocked<StateContentProvider> => {
     let currentContent = fileContents
     return {
-      findStateFiles: mockFunction<StateContentProvider['findStateFiles']>().mockImplementation(async () => Object.keys(currentContent)),
+      findStateFiles: mockFunction<StateContentProvider['findStateFiles']>().mockImplementation(async () =>
+        Object.keys(currentContent),
+      ),
       clear: mockFunction<StateContentProvider['clear']>(),
       rename: mockFunction<StateContentProvider['rename']>(),
-      getHash: mockFunction<StateContentProvider['getHash']>().mockImplementation(async filePaths => (
-        getHashFromHashes(Object.values(_.pick(currentContent, filePaths))
-          .map(content => toMD5(content.toString())))
-      )),
-      readContents: mockFunction<StateContentProvider['readContents']>().mockImplementation(filePaths => (
-        awu(Object.entries(_.pick(currentContent, filePaths)))
-          .map(([name, content]) => ({ name, stream: Readable.from(content) }))
-      )),
-      writeContents: mockFunction<StateContentProvider['writeContents']>().mockImplementation(async (prefix, newContents) => {
-        currentContent = Object.fromEntries(newContents.map(({ account, content }) => [`${prefix}/${account}`, content]))
-      }),
+      getHash: mockFunction<StateContentProvider['getHash']>().mockImplementation(async filePaths =>
+        getHashFromHashes(Object.values(_.pick(currentContent, filePaths)).map(content => toMD5(content.toString()))),
+      ),
+      readContents: mockFunction<StateContentProvider['readContents']>().mockImplementation(filePaths =>
+        awu(Object.entries(_.pick(currentContent, filePaths))).map(([name, content]) => ({
+          name,
+          stream: Readable.from(content),
+        })),
+      ),
+      writeContents: mockFunction<StateContentProvider['writeContents']>().mockImplementation(
+        async (prefix, newContents) => {
+          currentContent = Object.fromEntries(
+            newContents.map(({ account, content }) => [`${prefix}/${account}`, content]),
+          )
+        },
+      ),
       staticFilesSource: mockStaticFilesSource(),
     }
   }
@@ -101,8 +117,16 @@ describe('localState', () => {
       sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
       nsUpdateDate = new Date('2023-02-02T00:00:00.000Z')
       contentProvider = mockContentProvider({
-        [`${pathPrefix}/netsuite`]: await mockStateContent({ elements: nsElements, date: nsUpdateDate, version: '0.1.23' }),
-        [`${pathPrefix}/salesforce`]: await mockStateContent({ elements: sfElements, date: sfUpdateDate, version: '0.0.1' }),
+        [`${pathPrefix}/netsuite`]: await mockStateContent({
+          elements: nsElements,
+          date: nsUpdateDate,
+          version: '0.1.23',
+        }),
+        [`${pathPrefix}/salesforce`]: await mockStateContent({
+          elements: sfElements,
+          date: sfUpdateDate,
+          version: '0.0.1',
+        }),
       })
       mapCreator = inMemRemoteMapCreator()
       state = localState(pathPrefix, 'env', mapCreator, contentProvider)
@@ -146,8 +170,11 @@ describe('localState', () => {
         expect(contentProvider.writeContents).toHaveBeenCalledWith(
           pathPrefix,
           expect.arrayContaining(
-            ['netsuite', 'salesforce', 'salto']
-              .map(account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) }))
+            ['netsuite', 'salesforce', 'salto'].map(account => ({
+              account,
+              content: expect.any(Buffer),
+              contentHash: expect.any(String),
+            })),
           ),
         )
       })
@@ -163,9 +190,10 @@ describe('localState', () => {
 
     describe('flush after updateStateFromChanges', () => {
       it('should write new contents', async () => {
-        await state.updateStateFromChanges(
-          { changes: getDetailedChanges(toChange({ after: mockElement })), unmergedElements: [mockElement] }
-        )
+        await state.updateStateFromChanges({
+          changes: getDetailedChanges(toChange({ after: mockElement })),
+          unmergedElements: [mockElement],
+        })
         await state.flush()
         expect(contentProvider.writeContents).toHaveBeenCalled()
       })
@@ -234,10 +262,12 @@ describe('localState', () => {
         expect(contentProvider.writeContents).toHaveBeenLastCalledWith(
           pathPrefix,
           expect.arrayContaining(
-            ['netsuite', 'salesforce', 'newAccount', 'newerAccount'].map(
-              account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) })
-            )
-          )
+            ['netsuite', 'salesforce', 'newAccount', 'newerAccount'].map(account => ({
+              account,
+              content: expect.any(Buffer),
+              contentHash: expect.any(String),
+            })),
+          ),
         )
       })
     })
@@ -261,10 +291,12 @@ describe('localState', () => {
           expect(newContentProvider.writeContents).toHaveBeenLastCalledWith(
             expect.any(String),
             expect.arrayContaining(
-              ['netsuite', 'salesforce'].map(
-                account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) })
-              )
-            )
+              ['netsuite', 'salesforce'].map(account => ({
+                account,
+                content: expect.any(Buffer),
+                contentHash: expect.any(String),
+              })),
+            ),
           )
         })
         it('should clear the old content provider', () => {
@@ -351,7 +383,7 @@ describe('localState', () => {
       clone.fields.newfield = newField
       await state.set(clone)
 
-      const fromState = await state.get(mockElement.elemID) as ObjectType
+      const fromState = (await state.get(mockElement.elemID)) as ObjectType
       expect(fromState.fields.newfield).toBeDefined()
     })
 
@@ -434,7 +466,9 @@ describe('localState', () => {
     let overridingStateFilesSource: staticFiles.StateStaticFilesSource
     let instanceWithStaticFile: InstanceElement
     beforeEach(() => {
-      instanceWithStaticFile = new InstanceElement('inst', mockElement, { content: new StaticFile({ filepath: 'path', content: Buffer.from('asd') }) })
+      instanceWithStaticFile = new InstanceElement('inst', mockElement, {
+        content: new StaticFile({ filepath: 'path', content: Buffer.from('asd') }),
+      })
       overridingStateFilesSource = mockStaticFilesSource([])
       contentProvider = mockContentProvider({})
       state = localState('empty', '', inMemRemoteMapCreator(), contentProvider, overridingStateFilesSource)
@@ -472,7 +506,10 @@ describe('getStateContentProvider', () => {
     describe('when local storage is provided in the config', () => {
       it('should use the local storage from the config', () => {
         const createFileStateContentProvider = jest.spyOn(contentProviders, 'createFileStateContentProvider')
-        getStateContentProvider('workspaceId', { provider: 'file', options: { file: { localStorageDir: 'myLocalStorage' } } })
+        getStateContentProvider('workspaceId', {
+          provider: 'file',
+          options: { file: { localStorageDir: 'myLocalStorage' } },
+        })
         expect(createFileStateContentProvider).toHaveBeenCalledWith('myLocalStorage')
       })
     })
@@ -490,13 +527,20 @@ describe('getStateContentProvider', () => {
       it('should fail', () => {
         expect(() => getStateContentProvider('workspaceId', { provider: 's3' })).toThrow()
         expect(() => getStateContentProvider('workspaceId', { provider: 's3', options: {} })).toThrow()
-        expect(() => getStateContentProvider('workspaceId', { provider: 's3', options: { s3: {} as unknown as ProviderOptionsS3 } })).toThrow()
+        expect(() =>
+          getStateContentProvider('workspaceId', {
+            provider: 's3',
+            options: { s3: {} as unknown as ProviderOptionsS3 },
+          }),
+        ).toThrow()
       })
     })
   })
   describe('when state config says unknown provider', () => {
     it('should fail', () => {
-      expect(() => getStateContentProvider('workspaceId', { provider: 'something' } as unknown as StateConfig)).toThrow()
+      expect(() =>
+        getStateContentProvider('workspaceId', { provider: 'something' } as unknown as StateConfig),
+      ).toThrow()
     })
   })
 })

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, getChangeData, InstanceElement, ListType, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
@@ -39,10 +39,12 @@ describe('workflowPropertiesFilter', () => {
 
     const { client: cli, paginator } = mockClient()
     client = cli
-    filter = workflowPropertiesFilter(getFilterParams({
-      client,
-      paginator,
-    })) as typeof filter
+    filter = workflowPropertiesFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    ) as typeof filter
   })
 
   describe('onFetch', () => {
@@ -61,27 +63,23 @@ describe('workflowPropertiesFilter', () => {
     })
 
     it('should replace properties from map to list in statuses', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          statuses: [
-            {
-              properties: {
-                a: '1',
-                b: '2',
-              },
+      const instance = new InstanceElement('instance', workflowType, {
+        statuses: [
+          {
+            properties: {
+              a: '1',
+              b: '2',
             },
-            {
-              properties: {
-                c: '3',
-                d: '4',
-              },
+          },
+          {
+            properties: {
+              c: '3',
+              d: '4',
             },
-          ],
-          transitions: {},
-        }
-      )
+          },
+        ],
+        transitions: {},
+      })
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
         statuses: [
@@ -103,28 +101,24 @@ describe('workflowPropertiesFilter', () => {
     })
 
     it('should replace properties from map to list in transitions', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: {
-            a: {
-              name: 'a',
-              properties: {
-                a: '1',
-                b: '2',
-              },
-            },
-            b: {
-              name: 'b',
-              properties: {
-                c: '3',
-                d: '4',
-              },
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: {
+          a: {
+            name: 'a',
+            properties: {
+              a: '1',
+              b: '2',
             },
           },
-        }
-      )
+          b: {
+            name: 'b',
+            properties: {
+              c: '3',
+              d: '4',
+            },
+          },
+        },
+      })
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
         transitions: {
@@ -149,27 +143,23 @@ describe('workflowPropertiesFilter', () => {
 
   describe('pre/on Deploy', () => {
     it('should replace properties from list to map statuses', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          statuses: [
-            {
-              properties: [
-                { key: 'a', value: '1' },
-                { key: 'b', value: '2' },
-              ],
-            },
-            {
-              properties: [
-                { key: 'c', value: '3' },
-                { key: 'd', value: '4' },
-              ],
-            },
-          ],
-          transitions: {},
-        }
-      )
+      const instance = new InstanceElement('instance', workflowType, {
+        statuses: [
+          {
+            properties: [
+              { key: 'a', value: '1' },
+              { key: 'b', value: '2' },
+            ],
+          },
+          {
+            properties: [
+              { key: 'c', value: '3' },
+              { key: 'd', value: '4' },
+            ],
+          },
+        ],
+        transitions: {},
+      })
       const changes = [toChange({ after: instance })]
       await filter.preDeploy?.(changes)
 
@@ -199,28 +189,24 @@ describe('workflowPropertiesFilter', () => {
     })
 
     it('should replace properties from list to map transitions', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: {
-            a: {
-              name: 'a',
-              properties: [
-                { key: 'a', value: '1' },
-                { key: 'b', value: '2' },
-              ],
-            },
-            b: {
-              name: 'b',
-              properties: [
-                { key: 'c', value: '3' },
-                { key: 'd', value: '4' },
-              ],
-            },
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: {
+          a: {
+            name: 'a',
+            properties: [
+              { key: 'a', value: '1' },
+              { key: 'b', value: '2' },
+            ],
           },
-        }
-      )
+          b: {
+            name: 'b',
+            properties: [
+              { key: 'c', value: '3' },
+              { key: 'd', value: '4' },
+            ],
+          },
+        },
+      })
       const changes = [toChange({ after: instance })]
       await filter.preDeploy?.(changes)
 

@@ -1,19 +1,18 @@
-
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import _ from 'lodash'
 import axios from 'axios'
@@ -69,20 +68,17 @@ export type CountEvent = Event & { type: EVENT_TYPES.COUNTER; value: number }
 export type StackEvent = Event & { type: EVENT_TYPES.STACK; value: string[] }
 export type TelemetryEvent = CountEvent | StackEvent
 
-export const isCountEvent = (event: TelemetryEvent): event is CountEvent => (
+export const isCountEvent = (event: TelemetryEvent): event is CountEvent =>
   event.type === EVENT_TYPES.COUNTER && _.isNumber(event.value)
-)
 
-export const isStackEvent = (event: TelemetryEvent): event is StackEvent => (
+export const isStackEvent = (event: TelemetryEvent): event is StackEvent =>
   event.type === EVENT_TYPES.STACK && _.isArray(event.value)
-)
 
 const stacktraceFromError = (err: Error): string[] => {
   if (err.stack === undefined) {
     return []
   }
-  const stackWithoutMessage = err.stack
-    .replace(err.toString(), '')
+  const stackWithoutMessage = err.stack.replace(err.toString(), '')
   return _(stackWithoutMessage)
     .split(EOL)
     .map(line => line.trim())
@@ -103,7 +99,7 @@ export type Telemetry = {
 export const telemetrySender = (
   config: TelemetryConfig,
   tags: RequiredTags & Tags,
-  eventNamePrefix = DEFAULT_EVENT_NAME_PREFIX
+  eventNamePrefix = DEFAULT_EVENT_NAME_PREFIX,
 ): Telemetry => {
   const newEvents = [] as Array<TelemetryEvent>
   let queuedEvents = [] as Array<TelemetryEvent>
@@ -127,23 +123,18 @@ export const telemetrySender = (
     },
   })
 
-  const transformTags = (extraTags: OptionalTags): Tags => (
-    _({ ...commonTags, ...extraTags }).mapKeys((_v, k) => _.snakeCase(k)).value()
-  )
+  const transformTags = (extraTags: OptionalTags): Tags =>
+    _({ ...commonTags, ...extraTags })
+      .mapKeys((_v, k) => _.snakeCase(k))
+      .value()
 
-  const transformName = (eventName: string): string => (
-    [namePrefix, eventName].join(EVENT_NAME_SEPARATOR)
-  )
+  const transformName = (eventName: string): string => [namePrefix, eventName].join(EVENT_NAME_SEPARATOR)
 
   const flush = async (): Promise<void> => {
     queuedEvents.push(...newEvents.splice(0, MAX_EVENTS_PER_REQUEST - queuedEvents.length))
     if (enabled && queuedEvents.length > 0) {
       try {
-        await httpClient.post(
-          EVENTS_API_PATH,
-          { events: queuedEvents },
-          { timeout: httpRequestTimeout },
-        )
+        await httpClient.post(EVENTS_API_PATH, { events: queuedEvents }, { timeout: httpRequestTimeout })
         queuedEvents = []
         consecutiveRetryCount = 0
       } catch (e) {

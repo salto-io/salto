@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -41,35 +41,32 @@ const DEF_REF_PREFIX = '#/definitions/'
 
 const toSchemasAndRefs = (defs: SettingsInfoDef[]): elementUtils.swagger.SchemasAndRefs => {
   const extractDetails = (settingsInfo: SettingsInfoDef): OperationInfo | undefined => {
-    const getOperation = settingsInfo.httpOperations.find(
-      (op: { method: string }) => op.method === 'GET'
-    )
-    if (
-      getOperation === undefined
-      || getOperation.url === undefined
-      || getOperation.responseType === undefined
-    ) {
+    const getOperation = settingsInfo.httpOperations.find((op: { method: string }) => op.method === 'GET')
+    if (getOperation === undefined || getOperation.url === undefined || getOperation.responseType === undefined) {
       // nothing to retrieve
       return undefined
     }
     return getOperation
   }
 
-  const addSettingsTypePrefix = (opInfo: OperationInfo): OperationInfo => (
-    _.cloneDeepWith(opInfo, (val, key) => (
-      (key === '$ref' && _.isString(val))
+  const addSettingsTypePrefix = (opInfo: OperationInfo): OperationInfo =>
+    _.cloneDeepWith(opInfo, (val, key) =>
+      key === '$ref' && _.isString(val)
         ? val.replace(DEF_REF_PREFIX, `${DEF_REF_PREFIX}${SETTINGS_TYPE_PREFIX}`)
-        : undefined
-    ))
-  )
+        : undefined,
+    )
 
   const parsedDefs = defs.flatMap(extractDetails).filter(isDefined).map(addSettingsTypePrefix)
   return {
     schemas: Object.fromEntries(parsedDefs.map(({ url, responseType }) => [url, responseType])),
     // assuming recurring types are consistent
-    refs: new Map(parsedDefs.flatMap(
-      op => Object.entries(_.mapKeys(op.responseType.definitions, (_val, key) => `${DEF_REF_PREFIX}${SETTINGS_TYPE_PREFIX}${key}`))
-    )),
+    refs: new Map(
+      parsedDefs.flatMap(op =>
+        Object.entries(
+          _.mapKeys(op.responseType.definitions, (_val, key) => `${DEF_REF_PREFIX}${SETTINGS_TYPE_PREFIX}${key}`),
+        ),
+      ),
+    ),
   }
 }
 
@@ -83,8 +80,8 @@ export const generateBillingSettingsTypes = async (
   settingsOpInfoInstances: InstanceElement[],
   apiDefConfig: ZuoraApiConfig,
 ): Promise<elementUtils.swagger.ParsedTypes> => {
-  const settingsInfos = settingsOpInfoInstances.flatMap(
-    inst => (Array.isArray(inst.value.settings) ? inst.value.settings : [])
+  const settingsInfos = settingsOpInfoInstances.flatMap(inst =>
+    Array.isArray(inst.value.settings) ? inst.value.settings : [],
   )
 
   const schemasAndRefs = toSchemasAndRefs(settingsInfos)
@@ -97,9 +94,5 @@ export const generateBillingSettingsTypes = async (
       typeNameOverrides: apiDefConfig.settingsSwagger?.typeNameOverrides,
     },
   }
-  return generateTypes(
-    ZUORA_BILLING,
-    settingsApiDefConfig,
-    schemasAndRefs,
-  )
+  return generateTypes(ZUORA_BILLING, settingsApiDefConfig, schemasAndRefs)
 }

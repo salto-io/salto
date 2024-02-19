@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import { convertSavedSearchStringToDate, convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
@@ -27,17 +27,19 @@ const parseGeneralRolesChanges = (
     log.warn('general roles changes query failed')
     return []
   }
-  return changes.filter((res): res is { scriptid: string; time: string } => {
-    if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
-      log.warn('Got invalid result from roles changes query, %o', res)
-      return false
-    }
-    return true
-  }).map(res => ({
-    type: 'object',
-    objectId: res.scriptid,
-    time: convertSuiteQLStringToDate(res.time, dateRange.end),
-  }))
+  return changes
+    .filter((res): res is { scriptid: string; time: string } => {
+      if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
+        log.warn('Got invalid result from roles changes query, %o', res)
+        return false
+      }
+      return true
+    })
+    .map(res => ({
+      type: 'object',
+      objectId: res.scriptid,
+      time: convertSuiteQLStringToDate(res.time, dateRange.end),
+    }))
 }
 
 const parsePermissionRolesChanges = (
@@ -63,20 +65,24 @@ const parsePermissionRolesChanges = (
           return false
         }
         return true
-      }).map(res => ([parseInt(res.id, 10), res.scriptid]))
+      })
+      .map(res => [parseInt(res.id, 10), res.scriptid]),
   )
 
   const changesInternalIds = permissionChanges
     .filter((res): res is { internalid: [{ value: string }]; permchangedate: string } => {
-      if (!Array.isArray(res.internalid)
-      || typeof res.internalid[0] !== 'object'
-      || typeof (res.internalid[0] as Record<string, unknown>).value !== 'string'
-      || typeof res.permchangedate !== 'string') {
+      if (
+        !Array.isArray(res.internalid) ||
+        typeof res.internalid[0] !== 'object' ||
+        typeof (res.internalid[0] as Record<string, unknown>).value !== 'string' ||
+        typeof res.permchangedate !== 'string'
+      ) {
         log.warn('Got invalid result from roles permission changes query, %o', res)
         return false
       }
       return true
-    }).map(res => ({
+    })
+    .map(res => ({
       id: parseInt(res.internalid[0].value, 10),
       time: convertSavedSearchStringToDate(res.permchangedate, dateRange.end),
     }))
@@ -115,20 +121,18 @@ const changesDetector: TypeChangesDetector = {
       ORDER BY id ASC
     `)
 
-    const [
-      rolesChanges,
-      permissionChanges,
-      allRoles,
-    ] = await Promise.all([rolesChangesPromise, permissionChangesPromise, allRolesPromise])
+    const [rolesChanges, permissionChanges, allRoles] = await Promise.all([
+      rolesChangesPromise,
+      permissionChangesPromise,
+      allRolesPromise,
+    ])
 
     return [
       ...parseGeneralRolesChanges(rolesChanges, dateRange),
       ...parsePermissionRolesChanges(permissionChanges, allRoles, dateRange),
     ]
   },
-  getTypes: () => ([
-    'role',
-  ]),
+  getTypes: () => ['role'],
 }
 
 export default changesDetector

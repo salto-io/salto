@@ -70,7 +70,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     )
 
     const netsuiteSupportedTypesSet = new Set(netsuiteSupportedTypes)
-    types.filter(type => netsuiteSupportedTypesSet.has(type.elemID.name)).forEach(type => {
+    types.filter(type => netsuiteSupportedTypesSet.has(type.elemID.name) && !type.isSettings).forEach(type => {
       const importantValues = getImportantValues(type)
       if (importantValues.length > 0) {
         type.annotations[IMPORTANT_VALUES] = importantValues

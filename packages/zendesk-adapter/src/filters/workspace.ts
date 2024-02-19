@@ -67,13 +67,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           && response.errors !== undefined
           && Array.isArray(response.errors)
           && response.errors.length > 0) {
-          if (response.errors !== undefined) {
-            throw createSaltoElementError({ // caught by deployChanges
-              message: response.errors[0],
-              severity: 'Error',
-              elemID: getChangeData(change).elemID,
-            })
-          }
+          throw createSaltoElementError({ // caught by deployChanges
+            message: response.errors[0],
+            severity: 'Error',
+            elemID: getChangeData(change).elemID,
+          })
         }
       },
     )

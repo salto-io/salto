@@ -31,6 +31,7 @@ import { walkOnElement, WALK_NEXT_STEP, resolvePath } from '@salto-io/adapter-ut
 import { ACCOUNT_SPECIFIC_VALUE, INIT_CONDITION, WORKFLOW } from '../constants'
 import { resolveWorkflowsAccountSpecificValues } from '../filters/workflow_account_specific_values'
 import { NetsuiteChangeValidator } from './types'
+import { toAccountSpecificValuesWarning } from './account_specific_values'
 
 const SEND_EMAIL_ACTION = 'sendemailaction'
 const SENDER = 'sender'
@@ -79,6 +80,7 @@ const getChangeErrorsOnAccountSpecificValues = (
   const instance = getChangeData(change)
   const sendEmailActionFieldsWithAccountSpecificValues = new Set<string>()
   const conditionsWithAccountSpecificValues = new Set<string>()
+  let returnGenericAccountSpecificValuesWarning = false
 
   walkOnElement({
     element: instance,
@@ -104,6 +106,14 @@ const getChangeErrorsOnAccountSpecificValues = (
           conditionsWithAccountSpecificValues.add(conditionElemId.getFullName())
         }
       }
+      if (
+        typeof value === 'string'
+        && value.includes(ACCOUNT_SPECIFIC_VALUE)
+        && ![SENDER, RECIPIENT].includes(path.name)
+        && path.createParentID(2).name !== PARAMETER
+      ) {
+        returnGenericAccountSpecificValuesWarning = true
+      }
       return WALK_NEXT_STEP.RECURSE
     },
   })
@@ -116,7 +126,9 @@ const getChangeErrorsOnAccountSpecificValues = (
     .map(ElemID.fromFullName)
     .map(toConditionParametersWarning)
 
-  return sendEmailActionErrors.concat(conditionWarnings)
+  return sendEmailActionErrors
+    .concat(conditionWarnings)
+    .concat(returnGenericAccountSpecificValuesWarning ? toAccountSpecificValuesWarning(instance) : [])
 }
 
 const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {

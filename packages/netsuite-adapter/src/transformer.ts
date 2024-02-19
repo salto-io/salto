@@ -110,19 +110,15 @@ export const addBundleFieldToType = (type: ObjectType, bundleType: ObjectType): 
 }
 
 const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
-  awu(Object.values(type.fields)).find(async f => {
-    const fType = await f.getType()
-    return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-  })
-const getServiceIdFieldName = (type: ObjectType): string => {
-  if (isBundleType(type)) {
-    return ID_FIELD
-  }
-  return isStandardType(type) ? SCRIPT_ID : PATH
-}
+  awu(Object.values(type.fields))
+    .find(async f => {
+      const fType = await f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
 
-const addBundlePrefix = (desiredName: string, type: ObjectType): string =>
-  isBundleType(type) ? `${BUNDLE}_${desiredName}` : desiredName
+const getServiceIdFieldName = (type: ObjectType): string => (
+  isStandardType(type) ? SCRIPT_ID : PATH
+)
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
@@ -134,7 +130,10 @@ export const createInstanceElement = async (
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
     }
-    if (!isStandardType(type) && !isFileCabinetType(type) && !isBundleType(type)) {
+    if (isBundleType(type)) {
+      return `${BUNDLE}_${transformedValues[ID_FIELD]}`
+    }
+    if (!isStandardType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
     const serviceIdFieldName = getServiceIdFieldName(type)
@@ -145,12 +144,10 @@ export const createInstanceElement = async (
       }),
     }
     const desiredName = naclCase(
-      addBundlePrefix(transformedValues[serviceIdFieldName], type).replace(
-        new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`),
-        '',
-      ),
+      transformedValues[serviceIdFieldName]
+        .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), '')
     )
-    return getElemIdFunc && !isBundleType(type) ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
+    return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
   const getInstancePath = (instanceName: string): string[] => {
@@ -261,9 +258,8 @@ export const createElements = async (
 
   topLevelStandardTypes.concat(Object.values(additionalTypes)).forEach(addApplicationIdToType)
 
-  topLevelStandardTypes
-    .concat(Object.values(additionalTypes).filter(isFileCabinetType))
-    .forEach(type => addBundleFieldToType(type, additionalTypes.bundle))
+  topLevelStandardTypes.concat(Object.values(additionalTypes).filter(isFileCabinetType))
+    .forEach(type => addBundleFieldToType(type, additionalTypes[BUNDLE]))
 
   const customizationInfosWithTypes = customizationInfos
     .map(customizationInfo => ({

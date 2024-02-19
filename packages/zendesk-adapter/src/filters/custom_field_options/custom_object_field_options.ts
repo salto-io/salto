@@ -101,7 +101,7 @@ const onFetch = async (elements: Element[]): Promise<void> => {
         customObjectFieldOptionType,
         option,
         [...nestedPath, pathNaclCase(instanceName)],
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] }
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] },
       )
     })
 

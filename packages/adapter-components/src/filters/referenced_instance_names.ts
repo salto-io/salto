@@ -16,12 +16,27 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID,
-  ElemIdGetter, ReferenceExpression, isTemplateExpression
+  Element,
+  isInstanceElement,
+  isReferenceExpression,
+  InstanceElement,
+  ElemID,
+  ElemIdGetter,
+  ReferenceExpression,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import {
-  filter, references, getParents, transformElement, setPath,
-  walkOnElement, WalkOnFunc, WALK_NEXT_STEP, resolvePath, createTemplateExpression, getParent
+  filter,
+  references,
+  getParents,
+  transformElement,
+  setPath,
+  walkOnElement,
+  WalkOnFunc,
+  WALK_NEXT_STEP,
+  resolvePath,
+  createTemplateExpression,
+  getParent,
 } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -119,14 +134,20 @@ const isStandalone = (instance: InstanceElement, configByType: Record<string, Tr
     return false
   }
   const { standaloneFields, nestStandaloneInstances } = configByType[parentElemID.typeName]
-  return (nestStandaloneInstances
-    && standaloneFields?.some(field =>
-      toNestedTypeName(parentElemID.name, field.fieldName) === instance.elemID.typeName
-      || field.fieldName === instance.elemID.typeName)) ?? false
+  return (
+    (nestStandaloneInstances &&
+      standaloneFields?.some(
+        field =>
+          toNestedTypeName(parentElemID.name, field.fieldName) === instance.elemID.typeName ||
+          field.fieldName === instance.elemID.typeName,
+      )) ??
+    false
+  )
 }
 
 const nestedPath = (
-  instance: InstanceElement, configByType: Record<string, TransformationConfig>
+  instance: InstanceElement,
+  configByType: Record<string, TransformationConfig>,
 ): string[] | undefined => {
   if (!isStandalone(instance, configByType)) {
     return undefined
@@ -134,7 +155,7 @@ const nestedPath = (
   const parent = getParent(instance)
   const fieldName = instance.elemID.typeName.split('__').pop() ?? instance.elemID.typeName
   // Remove adapter, Records and the parent instance type name
-  return [...parent.path?.slice(2, parent.path.length - 1) ?? [], fieldName]
+  return [...(parent.path?.slice(2, parent.path.length - 1) ?? []), fieldName]
 }
 
 /* Calculates the new instance name and file path */
@@ -293,7 +314,7 @@ const shouldChangeElemId = (idFields: string[], extendsParentId: boolean | undef
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = (
   instances: InstanceElement[],
-  instanceToIdConfig: { instance: InstanceElement; idConfig: TransformationIdConfig }[]
+  instanceToIdConfig: { instance: InstanceElement; idConfig: TransformationIdConfig }[],
 ): DAG<InstanceElement> => {
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
@@ -330,8 +351,7 @@ export const createReferenceIndex = (
   allInstances: InstanceElement[],
   instancesNamesToRename: Set<string>,
 ): Record<string, { path: ElemID; value: ReferenceExpression }[]> => {
-  const allReferences = allInstances
-    .flatMap(instance => getReferencesToElemIds(instance, instancesNamesToRename))
+  const allReferences = allInstances.flatMap(instance => getReferencesToElemIds(instance, instancesNamesToRename))
   const referenceIndex = _(allReferences)
     .groupBy(({ value }) => value.elemID.createTopLevelParentID().parent.getFullName())
     .value()
@@ -407,17 +427,17 @@ export const referencedInstanceNamesFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void,
-  >(
+>(
   customApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> =
   customApiDefinitions =>
-    ({ config, getElemIdFunc }) => ({
-      name: 'referencedInstanceNames',
-      onFetch: async (elements: Element[]) => {
-        const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
-        const transformationDefault = apiDefinitions.typeDefaults.transformation
-        const configByType = apiDefinitions.types
-        const transformationByType = getTransformationConfigByType(configByType)
-        await addReferencesToInstanceNames(elements, transformationByType, transformationDefault, getElemIdFunc)
-      },
-    })
+  ({ config, getElemIdFunc }) => ({
+    name: 'referencedInstanceNames',
+    onFetch: async (elements: Element[]) => {
+      const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
+      const transformationDefault = apiDefinitions.typeDefaults.transformation
+      const configByType = apiDefinitions.types
+      const transformationByType = getTransformationConfigByType(configByType)
+      await addReferencesToInstanceNames(elements, transformationByType, transformationDefault, getElemIdFunc)
+    },
+  })

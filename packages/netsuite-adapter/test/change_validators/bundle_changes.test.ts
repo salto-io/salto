@@ -46,28 +46,26 @@ describe('bundle changes', () => {
       toChange({ after: bundleInstanceAfter, before: bundleInstanceBefore }),
     ])
     expect(changeError).toHaveLength(1)
-    expect(changeError[0]).toEqual(
-      {
-        message: 'Cannot add, modify, or remove bundles',
-        severity: 'Error',
-        elemID: bundleInstanceAfter.elemID,
-        detailedMessage: 'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
-      }
-    )
+    expect(changeError[0]).toEqual({
+      message: 'Cannot add, modify, or remove bundles',
+      severity: 'Error',
+      elemID: bundleInstanceAfter.elemID,
+      detailedMessage:
+        'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
+    })
   })
 
   it('should have changeError when trying to deploy a new element with bundle field', async () => {
     fileInstanceAfter.value.availablewithoutlogin = true
     const changeError = await bundleChangesValidation([toChange({ after: fileInstanceAfter })])
     expect(changeError).toHaveLength(1)
-    expect(changeError[0]).toEqual(
-      {
-        message: 'Can\'t add new elements to bundle',
-        severity: 'Error',
-        elemID: fileInstanceAfter.elemID,
-        detailedMessage: 'Adding elements to a bundle is not supported. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
-      }
-    )
+    expect(changeError[0]).toEqual({
+      message: "Can't add new elements to bundle",
+      severity: 'Error',
+      elemID: fileInstanceAfter.elemID,
+      detailedMessage:
+        'Adding elements to a bundle is not supported. Learn more at https://help.salto.io/en/articles/8963376-enhancing-the-visibility-of-bundles-in-netsuite-with-salto-s-suiteapp',
+    })
   })
 
   it('should not have changeError', async () => {

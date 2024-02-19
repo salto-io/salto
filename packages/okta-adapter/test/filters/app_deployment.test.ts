@@ -299,29 +299,25 @@ describe('appDeploymentFilter', () => {
       expect(customAppInstance?.value.status).toEqual('INACTIVE')
     })
     it('Should convert removed values in apps settings to null', async () => {
-      const app = new InstanceElement(
-        'app',
-        appType,
-        {
-          id: 'appId',
-          signOnMode: 'SAML_2_0',
-          settings: {
-            app: {
-              customDomain: 'subdomain',
-              loginUrl: 'http://example.com',
-            },
-            notes: { admin: 'admin note', endUser: 'notes' },
-            signOn: {
-              url: 'a',
-              attributeStatements: [{ type: 'a' }, { type: 'b' }],
-            },
+      const app = new InstanceElement('app', appType, {
+        id: 'appId',
+        signOnMode: 'SAML_2_0',
+        settings: {
+          app: {
+            customDomain: 'subdomain',
+            loginUrl: 'http://example.com',
           },
-          credentials: {
-            scheme: 'SCHEME',
-            revealPassword: true,
+          notes: { admin: 'admin note', endUser: 'notes' },
+          signOn: {
+            url: 'a',
+            attributeStatements: [{ type: 'a' }, { type: 'b' }],
           },
-        }
-      )
+        },
+        credentials: {
+          scheme: 'SCHEME',
+          revealPassword: true,
+        },
+      })
       const appAfter = app.clone()
       delete appAfter.value.settings.notes
       delete appAfter.value.settings.app.loginUrl

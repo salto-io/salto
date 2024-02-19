@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ModificationChange,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPError, HTTPWriteClientInterface } from '../../src/client/http_client'
 import { deployChange, filterUndeployableValues, transformRemovedValuesToNull } from '../../src/deployment/deployment'
@@ -274,43 +282,35 @@ describe('transformRemovedValuesToNull', () => {
 
   beforeEach(() => {
     const type = new ObjectType({ elemID: new ElemID('adapter', 'test') })
-    before = new InstanceElement(
-      'instance',
-      type,
-      {
-        name: 'inst',
-        status: 'active',
-        nested1: {
-          field: [1, 2, 3],
-          nested2: {
-            some: 'value',
-            another: { type: 'type' },
-          },
-          removedArray: [{ idx: 1 }, { idx: 2 }, { idx: 3 }],
+    before = new InstanceElement('instance', type, {
+      name: 'inst',
+      status: 'active',
+      nested1: {
+        field: [1, 2, 3],
+        nested2: {
+          some: 'value',
+          another: { type: 'type' },
         },
-        settings: {
-          url: 'http://example.com',
-          urlb: 'http://example.com',
-        }
-      }
-    )
-    after = new InstanceElement(
-      'instance',
-      type,
-      {
-        name: 'inst',
-        status: 'active',
-        nested1: {
-          field: [1, 2],
-          nested2: {
-            some: 'value',
-          },
+        removedArray: [{ idx: 1 }, { idx: 2 }, { idx: 3 }],
+      },
+      settings: {
+        url: 'http://example.com',
+        urlb: 'http://example.com',
+      },
+    })
+    after = new InstanceElement('instance', type, {
+      name: 'inst',
+      status: 'active',
+      nested1: {
+        field: [1, 2],
+        nested2: {
+          some: 'value',
         },
-        settings: {
-          url: 'http://example.com',
-        }
-      }
-    )
+      },
+      settings: {
+        url: 'http://example.com',
+      },
+    })
   })
   it('should transform removed values to null', () => {
     const change = toChange({ before, after }) as ModificationChange<InstanceElement>
@@ -330,7 +330,7 @@ describe('transformRemovedValuesToNull', () => {
       settings: {
         url: 'http://example.com',
         urlb: null,
-      }
+      },
     })
   })
 
@@ -338,21 +338,19 @@ describe('transformRemovedValuesToNull', () => {
     const change = toChange({ before, after }) as ModificationChange<InstanceElement>
     const result = transformRemovedValuesToNull(change, ['nested1', 'nested2'])
     expect(result.data.before.value).toEqual(before.value)
-    expect(result.data.after.value).toEqual(
-      {
-        name: 'inst',
-        status: 'active',
-        nested1: {
-          field: [1, 2],
-          nested2: {
-            some: 'value',
-            another: { type: null },
-          },
+    expect(result.data.after.value).toEqual({
+      name: 'inst',
+      status: 'active',
+      nested1: {
+        field: [1, 2],
+        nested2: {
+          some: 'value',
+          another: { type: null },
         },
-        settings: {
-          url: 'http://example.com',
-        }
-      }
-    )
+      },
+      settings: {
+        url: 'http://example.com',
+      },
+    })
   })
 })

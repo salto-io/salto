@@ -15,7 +15,24 @@
  */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  Change,
+  InstanceElement,
+  Element,
+  isInstanceChange,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isAdditionChange,
+  AdditionChange,
+  isInstanceElement,
+  ElemID,
+  ReadOnlyElementsSource,
+  Values,
+  isModificationChange,
+  ModificationChange,
+  isObjectType,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -147,7 +164,9 @@ const deployApp = async (
     }
 
     const response = await defaultDeployChange(
-      isModificationChange(change) ? deployment.transformRemovedValuesToNull(_.cloneDeep(change), ['settings']) : change,
+      isModificationChange(change)
+        ? deployment.transformRemovedValuesToNull(_.cloneDeep(change), ['settings'])
+        : change,
       client,
       apiDefinitions,
       fieldsToIgnore,

@@ -22,9 +22,17 @@ import {
   InstanceElement,
   ReadOnlyElementsSource,
   isAdditionOrModificationChange,
-  isRemovalChange, ModificationChange,
+  isRemovalChange,
+  ModificationChange,
 } from '@salto-io/adapter-api'
-import { transformElement, inspectValue, walkOnValue, resolvePath, setPath, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import {
+  transformElement,
+  inspectValue,
+  walkOnValue,
+  resolvePath,
+  setPath,
+  WALK_NEXT_STEP,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../fetch/resource'
 import { HTTPError, HTTPWriteClientInterface } from '../client/http_client'
@@ -62,19 +70,19 @@ export const filterIgnoredValues = async (
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<InstanceElement> => {
   const filteredInstance = _.isFunction(fieldsToIgnore)
-    ? (await transformElement({
-      element: instance,
-      strict: false,
-      allowEmpty: true,
-      elementsSource,
-      transformFunc: ({ value, path }) => {
-        if (path !== undefined && fieldsToIgnore(path)) {
-          return undefined
-        }
-        return value
-      },
-    })) : instance
-
+    ? await transformElement({
+        element: instance,
+        strict: false,
+        allowEmpty: true,
+        elementsSource,
+        transformFunc: ({ value, path }) => {
+          if (path !== undefined && fieldsToIgnore(path)) {
+            return undefined
+          }
+          return value
+        },
+      })
+    : instance
 
   filteredInstance.value = _.omit(filteredInstance.value, [
     ...configFieldsToIgnore,

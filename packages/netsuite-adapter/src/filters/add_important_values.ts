@@ -67,12 +67,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const [customRecordTypes, types] = _.partition(elements.filter(isObjectType), isCustomRecordType)
 
     const netsuiteSupportedTypesSet = new Set(netsuiteSupportedTypes)
-    types.filter(type => netsuiteSupportedTypesSet.has(type.elemID.name) && !type.isSettings).forEach(type => {
-      const importantValues = getImportantValues(type)
-      if (importantValues.length > 0) {
-        type.annotations[IMPORTANT_VALUES] = importantValues
-      }
-    })
+    types
+      .filter(type => netsuiteSupportedTypesSet.has(type.elemID.name) && !type.isSettings)
+      .forEach(type => {
+        const importantValues = getImportantValues(type)
+        if (importantValues.length > 0) {
+          type.annotations[IMPORTANT_VALUES] = importantValues
+        }
+      })
 
     const customRecordType = types.find(type => type.elemID.name === CUSTOM_RECORD_TYPE)
     customRecordTypes.forEach(type => {

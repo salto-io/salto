@@ -286,6 +286,7 @@ describe('transformRemovedValuesToNull', () => {
             some: 'value',
             another: { type: 'type' },
           },
+          removedArray: [{ idx: 1 }, { idx: 2 }, { idx: 3 }],
         },
         settings: {
           url: 'http://example.com',
@@ -318,8 +319,9 @@ describe('transformRemovedValuesToNull', () => {
         field: [1, 2],
         nested2: {
           some: 'value',
-          another: null,
+          another: { type: null },
         },
+        removedArray: null,
       },
       settings: {
         url: 'http://example.com',
@@ -338,7 +340,7 @@ describe('transformRemovedValuesToNull', () => {
           field: [1, 2],
           nested2: {
             some: 'value',
-            another: null,
+            another: { type: null },
           },
         },
         settings: {

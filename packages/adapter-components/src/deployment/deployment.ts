@@ -93,8 +93,12 @@ export const transformRemovedValuesToNull = (
     func: ({ value, path }) => {
       const valueInAfter = resolvePath(after, path)
       if (valueInAfter === undefined) {
-        setPath(after, path, null)
-        return WALK_NEXT_STEP.SKIP
+        if (!_.isPlainObject(value)) {
+          setPath(after, path, null)
+          return WALK_NEXT_STEP.SKIP
+        }
+        // if value is an object, we want to recurse into it to set all its values to null
+        return WALK_NEXT_STEP.RECURSE
       }
       // Arrays are being skipped to avoid setting null to removed array elements
       if (Array.isArray(value)) {

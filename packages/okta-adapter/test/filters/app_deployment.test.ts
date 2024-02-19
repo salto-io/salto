@@ -341,6 +341,10 @@ describe('appDeploymentFilter', () => {
               loginUrl: 'http://example.com',
             },
             notes: { admin: 'admin note', endUser: 'notes' },
+            signOn: {
+              url: 'a',
+              attributeStatements: [{ type: 'a' }, { type: 'b' }],
+            },
           },
           credentials: {
             scheme: 'SCHEME',
@@ -352,6 +356,7 @@ describe('appDeploymentFilter', () => {
       delete appAfter.value.settings.notes
       delete appAfter.value.settings.app.loginUrl
       delete appAfter.value.credentials.revealPassword
+      delete appAfter.value.settings.signOn.attributeStatements
       await filter.deploy([toChange({ before: app, after: appAfter })])
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/api/v1/apps/appId',
@@ -362,7 +367,8 @@ describe('appDeploymentFilter', () => {
               customDomain: 'subdomain',
               loginUrl: null,
             },
-            notes: null,
+            notes: { admin: null, endUser: null },
+            signOn: { url: 'a', attributeStatements: null },
           },
           credentials: {
             scheme: 'SCHEME',

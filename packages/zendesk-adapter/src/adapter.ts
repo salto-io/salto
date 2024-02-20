@@ -165,7 +165,7 @@ import customObjectFieldsOrderFilter from './filters/custom_objects/custom_objec
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
-import { User } from './users/types'
+import { GetUsersResponse } from './users/types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -458,7 +458,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }> | undefined
+  private usersPromise: Promise<GetUsersResponse> | undefined
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -468,7 +468,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
-    usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
+    usersPromise: Promise<GetUsersResponse>
   }) => Promise<Required<Filter>>
 
   public constructor({
@@ -526,8 +526,16 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
+<<<<<<< HEAD
       usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
     }) =>
+||||||| parent of fcd58d658 (fix build errors)
+      usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
+    }) => (
+=======
+      usersPromise: Promise<GetUsersResponse>
+    }) => (
+>>>>>>> fcd58d658 (fix build errors)
       filtersRunner(
         {
           client: filterRunnerClient ?? this.client,
@@ -739,7 +747,13 @@ export default class ZendeskAdapter implements AdapterOperations {
     return { elements, errors: fetchErrors, updatedConfig: configWithOmitInactive }
   }
 
+<<<<<<< HEAD
   private getUsersPromise(): Promise<{ users: User[]; errors?: SaltoError[] | undefined }> {
+||||||| parent of fcd58d658 (fix build errors)
+  private getUsersPromise(): Promise<{users: User[]; errors?: SaltoError[] | undefined}> {
+=======
+  private getUsersPromise(): Promise<GetUsersResponse> {
+>>>>>>> fcd58d658 (fix build errors)
     if (this.usersPromise === undefined) {
       this.usersPromise = getUsers(this.paginator, this.userConfig[FETCH_CONFIG].resolveUserIDs)
     }

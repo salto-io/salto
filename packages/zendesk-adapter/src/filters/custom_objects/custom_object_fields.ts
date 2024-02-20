@@ -372,10 +372,13 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client, usersPromise 
     // non-user references are handled by handle_template_expressions.ts
     preDeploy: async changes => {
       const userConditions = getUserConditions(changes)
-      if (userConditions.length === 0) {
+      if (userConditions.length === 0 || usersPromise === undefined) {
         return
       }
       const { users } = await usersPromise
+      // eslint-disable-next-line no-console
+      console.log(`(3/5) in custom objects fields filter, ${users.length}  users`)
+
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

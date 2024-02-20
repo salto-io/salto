@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { SaltoError } from '@salto-io/adapter-api'
+
 export type User = {
   id: number
   name: string
@@ -26,3 +28,5 @@ export type User = {
 export type CurrentUserResponse = {
   user: User
 }
+
+export type GetUsersResponse = { users: User[]; errors?: SaltoError[] }

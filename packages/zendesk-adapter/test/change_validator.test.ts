@@ -23,34 +23,33 @@ describe('change validator creator', () => {
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
   describe('deployNotSupportedValidator', () => {
     it('should not fail if there are no deploy changes', async () => {
-      expect(
-        await createChangeValidator({
-          client,
-          config: DEFAULT_CONFIG,
-          apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-          fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
-          deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
-          typesDeployedViaParent: [],
-          typesWithNoDeploy: [],
-        })([]),
-      ).toEqual([])
+      expect(await createChangeValidator({
+        client,
+        config: DEFAULT_CONFIG,
+        apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+        fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
+        deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
+        typesDeployedViaParent: [],
+        typesWithNoDeploy: [],
+        usersPromise: Promise.resolve({ users: [], errors: [] }),
+      })([]))
+        .toEqual([])
     })
 
     it('should fail each change individually', async () => {
-      expect(
-        await createChangeValidator({
-          client,
-          config: DEFAULT_CONFIG,
-          apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-          fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
-          deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
-          typesDeployedViaParent: [],
-          typesWithNoDeploy: [],
-        })([
-          toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') }) }),
-          toChange({ before: new ObjectType({ elemID: new ElemID(ZENDESK, 'obj2') }) }),
-        ]),
-      ).toEqual([
+      expect(await createChangeValidator({
+        client,
+        config: DEFAULT_CONFIG,
+        apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+        fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
+        deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
+        typesDeployedViaParent: [],
+        typesWithNoDeploy: [],
+        usersPromise: Promise.resolve({ users: [], errors: [] }),
+      })([
+        toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') }) }),
+        toChange({ before: new ObjectType({ elemID: new ElemID(ZENDESK, 'obj2') }) }),
+      ])).toEqual([
         {
           elemID: new ElemID(ZENDESK, 'obj'),
           severity: 'Error',
@@ -71,20 +70,19 @@ describe('change validator creator', () => {
   describe('checkDeploymentBasedOnConfigValidator', () => {
     it('should fail each change individually', async () => {
       const type = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
-      expect(
-        await createChangeValidator({
-          client,
-          config: DEFAULT_CONFIG,
-          apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-          fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
-          deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
-          typesDeployedViaParent: [],
-          typesWithNoDeploy: [],
-        })([
-          toChange({ after: new InstanceElement('inst1', type) }),
-          toChange({ before: new InstanceElement('inst2', type) }),
-        ]),
-      ).toEqual([
+      expect(await createChangeValidator({
+        client,
+        config: DEFAULT_CONFIG,
+        apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+        fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
+        deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
+        typesDeployedViaParent: [],
+        typesWithNoDeploy: [],
+        usersPromise: Promise.resolve({ users: [], errors: [] }),
+      })([
+        toChange({ after: new InstanceElement('inst1', type) }),
+        toChange({ before: new InstanceElement('inst2', type) }),
+      ])).toEqual([
         {
           elemID: new ElemID(ZENDESK, 'obj', 'instance', 'inst1'),
           severity: 'Error',

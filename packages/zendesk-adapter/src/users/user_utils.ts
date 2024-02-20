@@ -23,7 +23,7 @@ import { SaltoError, Values } from '@salto-io/adapter-api'
 import ZendeskClient from '../client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from '../replacers_utils'
 import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from '../config'
-import { CurrentUserResponse, User } from './types'
+import { CurrentUserResponse, GetUsersResponse, User } from './types'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -226,20 +226,18 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<{ user
 }
 
 /*
- * Fetch all users with admin and agent roles.
- * Results are cached after the initial call to improve performance.
- *
- */
-const getUsersFunc = (): ((
-  paginator: clientUtils.Paginator,
-  runQuery: boolean | undefined,
-) => Promise<{ users: User[]; errors?: SaltoError[] }>) => {
-  let calculatedUsersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
+* Fetch all users with admin and agent roles.
+* Results are cached after the initial call to improve performance.
+*
+*/
+const getUsersFunc = ():
+  (paginator: clientUtils.Paginator, runQuery: boolean | undefined)
+=> Promise<GetUsersResponse> => {
+  let calculatedUsersPromise: Promise<GetUsersResponse>
 
   const getUsers = async (
-    paginator: clientUtils.Paginator,
-    runQuery: boolean | undefined,
-  ): Promise<{ users: User[]; errors?: SaltoError[] }> => {
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<GetUsersResponse> => {
     if (calculatedUsersPromise === undefined) {
       if (runQuery === false) {
         calculatedUsersPromise = Promise.resolve({ users: [], errors: [] })

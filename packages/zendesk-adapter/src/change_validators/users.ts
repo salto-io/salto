@@ -23,7 +23,6 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
-  SaltoError,
 } from '@salto-io/adapter-api'
 import { resolvePath, resolveValues } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -37,7 +36,7 @@ import {
 } from '../users/user_utils'
 import { lookupFunc } from '../filters/field_references'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
-import { User } from '../users/types'
+import { GetUsersResponse, User } from '../users/types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
@@ -102,7 +101,7 @@ const handleExistingUsers = ({
  *  1. If we could not use user fallback value for some reason, we will return an error.
  *  2. If the user has no permissions to its field, we will return a warning (default user included).
  */
-export const usersValidator: (usersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>) => ChangeValidator =
+export const usersValidator: (usersPromise: Promise<GetUsersResponse>) => ChangeValidator =
   usersPromise => async (changes, elementSource) => {
     const relevantInstances = await awu(changes)
       .filter(isAdditionOrModificationChange)
@@ -117,6 +116,8 @@ export const usersValidator: (usersPromise: Promise<{ users: User[]; errors?: Sa
     }
 
     const { users } = await usersPromise
+    // eslint-disable-next-line no-console
+    console.log(`(2/5) in users CV, ${users.length}  users`)
 
     const existingUsersEmails = new Set(users.map(user => user.email))
     const instancesUserPaths = relevantInstances.flatMap(instance => {

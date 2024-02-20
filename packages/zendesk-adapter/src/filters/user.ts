@@ -40,17 +40,26 @@ const filterCreator: FilterCreator = ({ client, config, usersPromise }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const { errors } = await usersPromise
+
       const mapping = await getIdByEmail(paginator, resolveUserIDs)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
+
+      if (usersPromise === undefined) {
+        return {}
+      }
+
+      const { errors } = await usersPromise
+      // eslint-disable-next-line no-console
+      console.log(`(4/5)[a] in users filter, ${errors?.length}  errors`)
+
       return { errors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
-      if (_.isEmpty(relevantChanges)) {
+      if (_.isEmpty(relevantChanges) || usersPromise === undefined) {
         return
       }
       const paginator = createPaginator({
@@ -58,6 +67,8 @@ const filterCreator: FilterCreator = ({ client, config, usersPromise }) => {
         paginationFuncCreator: paginate,
       })
       const { users } = await usersPromise
+      // eslint-disable-next-line no-console
+      console.log(`(4/5)[b] in users filter, ${users.length} users`)
       if (_.isEmpty(users)) {
         return
       }

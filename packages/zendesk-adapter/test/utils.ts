@@ -21,14 +21,32 @@ import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { BrandIdToClient } from '../src/filter'
+import { GetUsersResponse } from '../src/users/types'
 
 type FilterCreatorParams = {
+<<<<<<< HEAD
   client: ZendeskClient
   paginator: clientUtils.Paginator
   config: ZendeskConfig
   fetchQuery: elementUtils.query.ElementQuery
   elementsSource: ReadOnlyElementsSource
   brandIdToClient: BrandIdToClient
+||||||| parent of 4b62d6efb (fix build errors)
+    client: ZendeskClient
+    paginator: clientUtils.Paginator
+    config: ZendeskConfig
+    fetchQuery: elementUtils.query.ElementQuery
+    elementsSource: ReadOnlyElementsSource
+    brandIdToClient: BrandIdToClient
+=======
+    client: ZendeskClient
+    paginator: clientUtils.Paginator
+    config: ZendeskConfig
+    fetchQuery: elementUtils.query.ElementQuery
+    elementsSource: ReadOnlyElementsSource
+    brandIdToClient: BrandIdToClient
+    usersPromise: Promise<GetUsersResponse>
+>>>>>>> 4b62d6efb (fix build errors)
 }
 
 export const createFilterCreatorParams = ({
@@ -43,6 +61,7 @@ export const createFilterCreatorParams = ({
   fetchQuery = elementUtils.query.createMockQuery(),
   elementsSource = buildElementsSourceFromElements([]),
   brandIdToClient = {},
+<<<<<<< HEAD
 }: Partial<FilterCreatorParams>): FilterCreatorParams => ({
   client,
   paginator,
@@ -50,4 +69,12 @@ export const createFilterCreatorParams = ({
   fetchQuery,
   elementsSource,
   brandIdToClient,
+||||||| parent of 4b62d6efb (fix build errors)
+} : Partial<FilterCreatorParams>) : FilterCreatorParams => ({
+  client, paginator, config, fetchQuery, elementsSource, brandIdToClient,
+=======
+  usersPromise = Promise.resolve({ users: [], errors: [] }),
+} : Partial<FilterCreatorParams>) : FilterCreatorParams => ({
+  client, paginator, config, fetchQuery, elementsSource, brandIdToClient, usersPromise,
+>>>>>>> 4b62d6efb (fix build errors)
 })

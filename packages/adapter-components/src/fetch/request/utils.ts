@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { Values, isPrimitiveValue } from '@salto-io/adapter-api'
 import { ContextParams } from '../../definitions'
 
-export const ARG_PLACEHOLDER_MATCHER = /\{([\w_]+)\}/g
+export const ARG_PLACEHOLDER_MATCHER = /\{([\w_.]+)\}/g
 
 export const findUnresolvedArgs = (value: string, definedParams: Set<string> = new Set()): string[] => {
   const urlParams = value.match(ARG_PLACEHOLDER_MATCHER)?.map(m => m.slice(1, -1)) ?? []

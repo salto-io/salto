@@ -22,24 +22,30 @@ import {
   isAdditionChange,
   isInstanceChange,
   isInstanceElement,
+  isReferenceExpression,
+  Values,
 } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter_utils'
 import { AdapterApiConfig } from '../config'
 import { createUrl } from '../fetch/resource'
 
-export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
-  instance: InstanceElement,
-  baseUrl: string,
-  config: TContext,
-  otherApiDefinitions?: AdapterApiConfig,
-): void => {
-  const definitions = otherApiDefinitions ?? config.apiDefinitions
-  const serviceUrl = definitions.types[instance.elemID.typeName]?.transformation?.serviceUrl
+export const addUrlToInstance = (instance: InstanceElement, baseUrl: string, apiDefs: AdapterApiConfig): void => {
+  const serviceUrl = apiDefs.types[instance.elemID.typeName]?.transformation?.serviceUrl
   if (serviceUrl === undefined) {
     return
   }
-  const url = createUrl({ instance, baseUrl: serviceUrl })
+  // parent is ReferenceExpression during fetch, and serialized into full value during deploy
+  const parentValues = instance.annotations[CORE_ANNOTATIONS.PARENT]?.map((parent: unknown) =>
+    isReferenceExpression(parent) ? parent.value.value : parent,
+  )
+  const parentContext = parentValues?.reduce((result: Values, parentVal: Values, idx: number) => {
+    Object.entries(parentVal).forEach(([key, value]) => {
+      result[`_parent.${idx}.${key}`] = value
+    })
+    return result
+  }, {})
+  const url = createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars: parentContext })
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, baseUrl).href
 }
 
@@ -49,20 +55,28 @@ export const serviceUrlFilterCreator: <
   TResult extends void | filter.FilterResult = void,
 >(
   baseUrl: string,
-  otherApiDefinitions?: AdapterApiConfig,
+  additionalApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> =
-  (baseUrl, otherApiDefinitions) =>
+  (baseUrl, additionalApiDefinitions) =>
   ({ config }) => ({
     name: 'serviceUrlFilter',
     onFetch: async (elements: Element[]) => {
-      elements
-        .filter(isInstanceElement)
-        .forEach(instance => addUrlToInstance(instance, baseUrl, config, otherApiDefinitions))
+      elements.filter(isInstanceElement).forEach(instance => {
+        const apiDefinitions =
+          additionalApiDefinitions?.types[instance.elemID.typeName] !== undefined
+            ? additionalApiDefinitions
+            : config.apiDefinitions
+        addUrlToInstance(instance, baseUrl, apiDefinitions)
+      })
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
-      relevantChanges
-        .map(getChangeData)
-        .forEach(instance => addUrlToInstance(instance, baseUrl, config, otherApiDefinitions))
+      relevantChanges.map(getChangeData).forEach(instance => {
+        const apiDefinitions =
+          additionalApiDefinitions?.types[instance.elemID.typeName] !== undefined
+            ? additionalApiDefinitions
+            : config.apiDefinitions
+        addUrlToInstance(instance, baseUrl, apiDefinitions)
+      })
     },
   })

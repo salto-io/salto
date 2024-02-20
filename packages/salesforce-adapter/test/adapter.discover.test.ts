@@ -2720,9 +2720,7 @@ public class LargeClass${index} {
         ...mockFetchOpts,
         withChangesDetection: true,
       })
-      expect(elements.filter(isMetadataObjectType)).toEqual([
-        mockTypes.ApexClass,
-      ])
+      expect(elements.filter(isMetadataObjectType).map(type => apiNameSync(type))).toEqual(['ApexClass'])
     })
     it('should get the ChangedAtSingleton from the ElementsSource when fetchWithChangesDetection is true', async () => {
       await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })

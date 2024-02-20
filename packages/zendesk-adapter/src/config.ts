@@ -1492,6 +1492,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         url: '/api/v2/dynamic_content/items/{dynamicContentItemId}',
         method: 'put',
         deployAsField: 'item',
+        fieldsToIgnore: ['variants'],
         urlParamsToFields: {
           dynamicContentItemId: 'id',
         },

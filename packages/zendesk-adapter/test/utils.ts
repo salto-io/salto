@@ -46,16 +46,9 @@ export const createFilterCreatorParams =
     fetchQuery = elementUtils.query.createMockQuery(),
     elementsSource = buildElementsSourceFromElements([]),
     brandIdToClient = {},
+    usersPromise = Promise.resolve({ users: [], errors: [] }),
   }: Partial<FilterCreatorParams>): FilterCreatorParams =>
   ({
-    client,
-    paginator,
-    config,
-    fetchQuery,
-    elementsSource,
-    brandIdToClient,
-    usersPromise = Promise.resolve({ users: [], errors: [] }),
-  }: Partial<FilterCreatorParams>): FilterCreatorParams => ({
     client,
     paginator,
     config,

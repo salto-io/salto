@@ -44,6 +44,7 @@ export const toLargeTypesExcludedMessage = (updatedLargeTypes: string[]): string
 
 export const toLargeSuiteQLTablesExcludedMessage = (largeSuiteQLTables: string[]): string =>
   `The following SuiteQL tables were excluded from the fetch as the records of that table were too numerous: ${largeSuiteQLTables.join(', ')}.` +
+  " Those tables are used to resolve ACCOUNT_SPECIFIC_VALUEs, and without them Salto won't be able to resolve ACCOUNT_SPECIFIC_VALUEs of those types." +
   " To include them, increase the table records' size limitations and remove their exclusion rules."
 
 export const ALIGNED_INACTIVE_CRITERIAS = 'The exclusion criteria of inactive elements was modified.'

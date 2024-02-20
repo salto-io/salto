@@ -184,7 +184,7 @@ const createWorkflowInstances = async ({
           if (workflow.id === undefined) {
         // should never happen
         errors.push(workflowFetchError('Workflow id is missing'))
-        return undefined // add ut
+        return undefined
       }
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
@@ -529,8 +529,6 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
         .filter(isAdditionOrModificationWorkflowChange)
         .forEach(async change => {
           const workflowInstance = getChangeData(change)
-          // transitionIds are not multi-env friendly, but it is required field in the API
-          // addTransitionIds(workflowInstance)
           originalInstances[workflowInstance.elemID.getFullName()] = workflowInstance.clone()
           const statusInstances = getStatusInstances(change)
           const statusIdToUuid = getUuidMap(statusInstances)

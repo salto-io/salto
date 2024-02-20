@@ -301,22 +301,55 @@ describe('handle templates filter', () => {
     ],
   })
 
-  const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: newId(), actions: [{ value: `almost template {{ticket.not_an_actual_field_${placeholder1.value.id}}} and {{ticket.ticket_field_0}}`, field: 'comment_value_html' }] })
-  const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: newId(), actions: [{ value: `{{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'not_template_field' }] })
-  const target = new InstanceElement('target', targetType, { id: newId(), target_url: `url: {{ticket.ticket_field_${placeholder1.value.id}}}` })
-  const trigger = new InstanceElement('trigger', triggerType, { id: newId(),
-    actions: [{
-      field: 'notification_webhook',
-      value: [
-        ['my test', '{{dc.dynamic_content_test}}'],
-        ['dcno', '{{dc.not_exists}}'],
-        ['testJson', `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder3.value.id},\n\t\t\t\t"testdc": "${dynamicContentRecord.value.placeholder}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`],
-      ],
-    }] })
-  const webhook = new InstanceElement('webhook', webhookType, { id: newId(), endpoint: `endpoint: {{ticket.ticket_field_${placeholder1.value.id}}}` })
-  const automation = new InstanceElement('automation', automationType, { id: newId(), actions: [{ value: `ticket: {{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'notification_webhook' }] })
-  const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: newId(), content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}` })
-  const dynamicContentWithEquals = new InstanceElement('dynamicContentWithEquals', dynamicContentItemType, { id: newId(), content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}== true` })
+  const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, {
+    id: newId(),
+    actions: [
+      {
+        value: `almost template {{ticket.not_an_actual_field_${placeholder1.value.id}}} and {{ticket.ticket_field_0}}`,
+        field: 'comment_value_html',
+      },
+    ],
+  })
+  const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, {
+    id: newId(),
+    actions: [{ value: `{{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'not_template_field' }],
+  })
+  const target = new InstanceElement('target', targetType, {
+    id: newId(),
+    target_url: `url: {{ticket.ticket_field_${placeholder1.value.id}}}`,
+  })
+  const trigger = new InstanceElement('trigger', triggerType, {
+    id: newId(),
+    actions: [
+      {
+        field: 'notification_webhook',
+        value: [
+          ['my test', '{{dc.dynamic_content_test}}'],
+          ['dcno', '{{dc.not_exists}}'],
+          [
+            'testJson',
+            `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder3.value.id},\n\t\t\t\t"testdc": "${dynamicContentRecord.value.placeholder}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`,
+          ],
+        ],
+      },
+    ],
+  })
+  const webhook = new InstanceElement('webhook', webhookType, {
+    id: newId(),
+    endpoint: `endpoint: {{ticket.ticket_field_${placeholder1.value.id}}}`,
+  })
+  const automation = new InstanceElement('automation', automationType, {
+    id: newId(),
+    actions: [{ value: `ticket: {{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'notification_webhook' }],
+  })
+  const dynamicContent = new InstanceElement('dc', dynamicContentItemType, {
+    id: newId(),
+    content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}`,
+  })
+  const dynamicContentWithEquals = new InstanceElement('dynamicContentWithEquals', dynamicContentItemType, {
+    id: newId(),
+    content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}== true`,
+  })
 
   const appInstallation = new InstanceElement('appInstallation', appInstallationType, {
     id: newId(),
@@ -338,16 +371,49 @@ describe('handle templates filter', () => {
     },
   )
 
-  const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
-    placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
-    macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
-    automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
-    appInstallationType, macroWithDC, macroWithHyphenDC, dynamicContentRecord, dynamicContentWithEquals,
-    hyphenDynamicContentRecord, macroComplicated, macroDifferentBracket,
-    macroWithSideConversationTicketTemplate, placeholder3, placeholderOrganization1, placeholderOrganization2,
-    placeholderUser1, placeholderUser2, macroOrganization, macroUser, macroMissingUserAndOrganization,
-    article, articleTranslation])
-    .map(element => element.clone())
+  const generateElements = (): (InstanceElement | ObjectType)[] =>
+    [
+      testType,
+      placeholder1Type,
+      placeholder2Type,
+      placeholder1,
+      placeholder2,
+      macro1,
+      macro2,
+      macro3,
+      macroAlmostTemplate,
+      macroAlmostTemplate2,
+      target,
+      trigger,
+      webhook,
+      targetType,
+      triggerType,
+      webhookType,
+      automation,
+      automationType,
+      dynamicContent,
+      dynamicContentItemType,
+      appInstallation,
+      appInstallationType,
+      macroWithDC,
+      macroWithHyphenDC,
+      dynamicContentRecord,
+      dynamicContentWithEquals,
+      hyphenDynamicContentRecord,
+      macroComplicated,
+      macroDifferentBracket,
+      macroWithSideConversationTicketTemplate,
+      placeholder3,
+      placeholderOrganization1,
+      placeholderOrganization2,
+      placeholderUser1,
+      placeholderUser2,
+      macroOrganization,
+      macroUser,
+      macroMissingUserAndOrganization,
+      article,
+      articleTranslation,
+    ].map(element => element.clone())
 
   describe('on fetch', () => {
     let elements: (InstanceElement | ObjectType)[]
@@ -503,26 +569,43 @@ describe('handle templates filter', () => {
 
     it('should resolve more complicated templates correctly', () => {
       const fetchedMacroComplicated = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroComplicated')
-      expect(fetchedMacroComplicated?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: [`{{some other irrelevancies-${TICKET_TICKET_FIELD}_`,
-          new ReferenceExpression(placeholder1.elemID, placeholder1),
-          ' | something irrelevant | dynamic content now: ',
-          new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          ' | and done}}'],
-      }))
-      const fetchedMacroDifferentBracket = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDifferentBracket')
-      expect(fetchedMacroDifferentBracket?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: [`{%some other irrelevancies-${TICKET_TICKET_FIELD}_`,
-          new ReferenceExpression(placeholder1.elemID, placeholder1),
-          ' | something irrelevant | dynamic content now: ',
-          new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          ' | and done%}'],
-      }))
-      const fetchedDynamicContentWithEquals = elements.filter(isInstanceElement).find(i => i.elemID.name === 'dynamicContentWithEquals')
-      expect(fetchedDynamicContentWithEquals?.value.content).toEqual(new TemplateExpression({ parts: [
-        `content: {{${TICKET_TICKET_FIELD}_`,
-        new ReferenceExpression(placeholder1.elemID, placeholder1),
-        '}}== true'] }))
+      expect(fetchedMacroComplicated?.value.actions[0].value).toEqual(
+        new TemplateExpression({
+          parts: [
+            `{{some other irrelevancies-${TICKET_TICKET_FIELD}_`,
+            new ReferenceExpression(placeholder1.elemID, placeholder1),
+            ' | something irrelevant | dynamic content now: ',
+            new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+            ' | and done}}',
+          ],
+        }),
+      )
+      const fetchedMacroDifferentBracket = elements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'macroDifferentBracket')
+      expect(fetchedMacroDifferentBracket?.value.actions[0].value).toEqual(
+        new TemplateExpression({
+          parts: [
+            `{%some other irrelevancies-${TICKET_TICKET_FIELD}_`,
+            new ReferenceExpression(placeholder1.elemID, placeholder1),
+            ' | something irrelevant | dynamic content now: ',
+            new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+            ' | and done%}',
+          ],
+        }),
+      )
+      const fetchedDynamicContentWithEquals = elements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'dynamicContentWithEquals')
+      expect(fetchedDynamicContentWithEquals?.value.content).toEqual(
+        new TemplateExpression({
+          parts: [
+            `content: {{${TICKET_TICKET_FIELD}_`,
+            new ReferenceExpression(placeholder1.elemID, placeholder1),
+            '}}== true',
+          ],
+        }),
+      )
     })
 
     it('should resolve multiple templates correctly', () => {

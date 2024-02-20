@@ -1,21 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, isInstanceElement, ReferenceExpression, isField, ElemID,
+  Element,
+  InstanceElement,
+  isInstanceElement,
+  ReferenceExpression,
+  isField,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, multiIndex } from '@salto-io/lowerdash'
@@ -88,9 +93,8 @@ const filterCreator: FilterCreator = () => ({
   name: 'objectReferencesFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const objectDefs = await getObjectDefs(elements)
-    const {
-      typeLowercaseLookup, fieldLowercaseLookup,
-    } = await multiIndex.buildMultiIndex<Element>()
+    const { typeLowercaseLookup, fieldLowercaseLookup } = await multiIndex
+      .buildMultiIndex<Element>()
       .addIndex({
         name: 'typeLowercaseLookup',
         filter: isObjectDef,
@@ -100,27 +104,24 @@ const filterCreator: FilterCreator = () => ({
       .addIndex({
         name: 'fieldLowercaseLookup',
         filter: isField,
-        key: async field => [
-          await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase(),
-        ],
+        key: async field => [await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase()],
         map: field => field.elemID,
       })
-      .process(
-        flatMapAsync(toAsyncIterable(objectDefs), obj => [obj, ...Object.values(obj.fields)])
-      )
+      .process(flatMapAsync(toAsyncIterable(objectDefs), obj => [obj, ...Object.values(obj.fields)]))
 
     const instances = elements.filter(isInstanceElement)
     dependencies.forEach(dependency => {
-      const dependentInstances = instances.filter(inst =>
-        dependency.parentTypes.includes(inst.elemID.typeName))
+      const dependentInstances = instances.filter(inst => dependency.parentTypes.includes(inst.elemID.typeName))
       if (!_.isEmpty(dependentInstances)) {
-        dependentInstances.forEach(instance => addObjectFieldDependency(
-          instance,
-          typeLowercaseLookup,
-          fieldLowercaseLookup,
-          dependency.typeReferencePath,
-          dependency.fieldReferencePath
-        ))
+        dependentInstances.forEach(instance =>
+          addObjectFieldDependency(
+            instance,
+            typeLowercaseLookup,
+            fieldLowercaseLookup,
+            dependency.typeReferencePath,
+            dependency.fieldReferencePath,
+          ),
+        )
       }
     })
   },

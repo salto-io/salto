@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Values } from '@salto-io/adapter-api'
 import { fetchDefault } from '../../src/config/types'
 import { validateConfig } from '../../src/config/validations'
@@ -87,7 +87,9 @@ describe('netsuite config validations', () => {
 
     it('should throw an error if the include is non-valid', () => {
       config.fetch.include = {}
-      expect(() => validateConfig(config)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n')
+      expect(() => validateConfig(config)).toThrow(
+        'Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n',
+      )
     })
 
     it('should throw an error if the exclude is undefined', () => {
@@ -97,12 +99,16 @@ describe('netsuite config validations', () => {
 
     it('should throw an error if the exclude is non-valid', () => {
       config.fetch.exclude = {}
-      expect(() => validateConfig(config)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n')
+      expect(() => validateConfig(config)).toThrow(
+        'Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n',
+      )
     })
 
     it('should throw an error if include contains criteria query', () => {
       config.fetch.include.types.push({ name: '.*', criteria: { isinactive: false } })
-      expect(() => validateConfig(config)).toThrow('Failed to load Netsuite config: The "criteria" configuration option is exclusively permitted within the "fetch.exclude" configuration and should not be used within the "fetch.include" configuration.')
+      expect(() => validateConfig(config)).toThrow(
+        'Failed to load Netsuite config: The "criteria" configuration option is exclusively permitted within the "fetch.exclude" configuration and should not be used within the "fetch.include" configuration.',
+      )
     })
 
     it('should not throw an error if exclude contains criteria query', () => {
@@ -112,10 +118,9 @@ describe('netsuite config validations', () => {
 
     describe('default fetch config', () => {
       it('should exclude all types in a correct syntax', () => {
-        expect(fetchDefault.exclude.types)
-          .toContainEqual({
-            name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
-          })
+        expect(fetchDefault.exclude.types).toContainEqual({
+          name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
+        })
       })
     })
 
@@ -138,22 +143,22 @@ describe('netsuite config validations', () => {
 
       it('invalid regexes should throw an error with the regexes', () => {
         config.fetch.include = {
-          types: [
-            { name: 'addressForm', ids: ['aa(a.*', 'bbb.*'] },
-          ],
+          types: [{ name: 'addressForm', ids: ['aa(a.*', 'bbb.*'] }],
           fileCabinet: ['eee.*', 'f(ff.*'],
-          customRecords: [
-            { name: 'customrecord.*', ids: ['val_123.*', 'val_(456.*'] },
-          ],
+          customRecords: [{ name: 'customrecord.*', ids: ['val_123.*', 'val_(456.*'] }],
         }
-        expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid:\naa(a.*,val_(456.*,f(ff.*.')
+        expect(() => validateConfig(config)).toThrow(
+          'The following regular expressions are invalid:\naa(a.*,val_(456.*,f(ff.*.',
+        )
       })
 
       it('should throw an error when type has invalid "name" reg expression', () => {
         config.fetch.include = {
-          types: [{
-            name: 'aa(a.*',
-          }],
+          types: [
+            {
+              name: 'aa(a.*',
+            },
+          ],
           fileCabinet: [],
         }
         expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid:\naa(a.*.')
@@ -164,7 +169,9 @@ describe('netsuite config validations', () => {
           types: [{ name: 'aa' }, {}],
           fileCabinet: [],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected the type name to be a string without both "ids" and "criteria", but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected the type name to be a string without both "ids" and "criteria", but found:',
+        )
       })
 
       it('should throw an error when type has both ids & criteria', () => {
@@ -178,47 +185,53 @@ describe('netsuite config validations', () => {
           ],
           fileCabinet: [],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected the type name to be a string without both "ids" and "criteria", but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected the type name to be a string without both "ids" and "criteria", but found:',
+        )
       })
 
       it('should throw an error when customRecords has undefined "name"', () => {
         config.fetch.include = {
           types: [],
           fileCabinet: [],
-          customRecords: [
-            { name: 'aa' },
-            {},
-          ],
+          customRecords: [{ name: 'aa' }, {}],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected the custom record name to be a string without both "ids" and "criteria", but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected the custom record name to be a string without both "ids" and "criteria", but found:',
+        )
       })
 
       it('should throw an error when customRecords has both ids & criteria', () => {
         config.fetch.include = {
           types: [],
           fileCabinet: [],
-          customRecords: [
-            { name: 'aa' },
-            { name: '.*', ids: ['abc'], criteria: { isinactive: true } },
-          ],
+          customRecords: [{ name: 'aa' }, { name: '.*', ids: ['abc'], criteria: { isinactive: true } }],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected the custom record name to be a string without both "ids" and "criteria", but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected the custom record name to be a string without both "ids" and "criteria", but found:',
+        )
       })
 
       it('should throw an error when fileCabinet is undefined', () => {
         config.fetch.include = {
-          types: [{
-            name: 'aaa',
-          }],
+          types: [
+            {
+              name: 'aaa',
+            },
+          ],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. "fileCabinet" field is expected to be an array')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. "fileCabinet" field is expected to be an array',
+        )
       })
 
       it('should throw an error when types is undefined', () => {
         config.fetch.include = {
           fileCabinet: [],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. "types" field is expected to be an array')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. "types" field is expected to be an array',
+        )
       })
 
       it('should throw an error when customRecords is not array', () => {
@@ -227,18 +240,24 @@ describe('netsuite config validations', () => {
           fileCabinet: [],
           customRecords: {},
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. "customRecords" field is expected to be an array')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. "customRecords" field is expected to be an array',
+        )
       })
 
       it('should throw an error when types has invalid ids field', () => {
         config.fetch.include = {
-          types: [{
-            name: 'aaa',
-            ids: ['string', 1],
-          }],
+          types: [
+            {
+              name: 'aaa',
+              ids: ['string', 1],
+            },
+          ],
           fileCabinet: [],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected type "ids" to be an array of strings, but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected type "ids" to be an array of strings, but found:',
+        )
       })
 
       it('should throw an error when types has invalid criteria field', () => {
@@ -259,31 +278,41 @@ describe('netsuite config validations', () => {
           ],
           fileCabinet: [],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected type "criteria" to be a non-empty object, but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected type "criteria" to be a non-empty object, but found:',
+        )
       })
 
       it('should throw an error when customRecords has invalid ids field', () => {
         config.fetch.include = {
           types: [],
           fileCabinet: [],
-          customRecords: [{
-            name: 'aaa',
-            ids: ['string', 1],
-          }],
+          customRecords: [
+            {
+              name: 'aaa',
+              ids: ['string', 1],
+            },
+          ],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected custom record "ids" to be an array of strings, but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected custom record "ids" to be an array of strings, but found:',
+        )
       })
 
       it('should throw an error when customRecords has invalid criteria field', () => {
         config.fetch.include = {
           types: [],
           fileCabinet: [],
-          customRecords: [{
-            name: 'aaa',
-            criteria: {},
-          }],
+          customRecords: [
+            {
+              name: 'aaa',
+              criteria: {},
+            },
+          ],
         }
-        expect(() => validateConfig(config)).toThrow('Received invalid adapter config input. Expected custom record "criteria" to be a non-empty object, but found:')
+        expect(() => validateConfig(config)).toThrow(
+          'Received invalid adapter config input. Expected custom record "criteria" to be a non-empty object, but found:',
+        )
       })
 
       it('should throw an error with all invalid types', () => {
@@ -294,7 +323,9 @@ describe('netsuite config validations', () => {
           ],
           fileCabinet: [],
         }
-        expect(() => validateConfig(config)).toThrow('The following types or regular expressions do not match any supported type:\ninvalidType.')
+        expect(() => validateConfig(config)).toThrow(
+          'The following types or regular expressions do not match any supported type:\ninvalidType.',
+        )
       })
     })
 
@@ -338,6 +369,26 @@ describe('netsuite config validations', () => {
 
         config.fetch.fieldsToOmit = [{ type: 'aaa.*', subtype: 'cc(c.*', fields: ['bbb.*'] }]
         expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid')
+      })
+    })
+
+    describe('skip resolving account specific values to types', () => {
+      it('should not throw', () => {
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = []
+        expect(() => validateConfig(config)).not.toThrow()
+
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = ['.*']
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw if value is not a list of strings', () => {
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = '.*'
+        expect(() => validateConfig(config)).toThrow(
+          'fetch.skipResolvingAccountSpecificValuesToTypes should be a list of strings',
+        )
+      })
+      it('should throw if value contain invalid regex', () => {
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = ['.*', '(']
+        expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid: (')
       })
     })
   })

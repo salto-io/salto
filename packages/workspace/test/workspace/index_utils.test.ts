@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, getChangeData, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -26,10 +26,7 @@ describe('index utils', () => {
     const firstObject = new ObjectType({ elemID: new ElemID('adapter', 'type1') })
     const secondObject = new ObjectType({ elemID: new ElemID('adapter', 'type2') })
     const thirdObject = new ObjectType({ elemID: new ElemID('adapter', 'type3') })
-    const elements = [
-      firstObject,
-      secondObject,
-    ]
+    const elements = [firstObject, secondObject]
     const elementsSource = buildElementsSourceFromElements(elements)
     it('should return all elements', async () => {
       const result = await getAllElementsChanges([], elementsSource)
@@ -151,7 +148,7 @@ describe('index utils', () => {
       expect(mapVersions.set).toHaveBeenCalled()
       expect(updateChangesMock).toHaveBeenCalledWith([objectChange], index)
     })
-    it('should clear index when index version isn\'t updated', async () => {
+    it("should clear index when index version isn't updated", async () => {
       mapVersions.get.mockResolvedValue(0)
       await elementsSource.set(getChangeData(objectChange))
       await updateIndex({

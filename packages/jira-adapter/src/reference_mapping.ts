@@ -1,40 +1,91 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
-  BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
-  AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
-  AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME,
-  AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME,
-  PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME,
-  ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION,
-  BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME,
-  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE,
-  SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE,
-  REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME,
-  ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, SCREEN_TYPE_NAME, WEBHOOK_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE, OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE, JIRA_WORKFLOW_TYPE, DELETE_LINK_TYPES, OBJECT_SCHEMA_TYPE } from './constants'
+import {
+  AUTOMATION_PROJECT_TYPE,
+  AUTOMATION_FIELD,
+  AUTOMATION_COMPONENT_VALUE_TYPE,
+  BOARD_ESTIMATION_TYPE,
+  ISSUE_TYPE_NAME,
+  ISSUE_TYPE_SCHEMA_NAME,
+  AUTOMATION_STATUS,
+  AUTOMATION_CONDITION,
+  AUTOMATION_CONDITION_CRITERIA,
+  AUTOMATION_SUBTASK,
+  AUTOMATION_ROLE,
+  AUTOMATION_GROUP,
+  AUTOMATION_EMAIL_RECIPENT,
+  PROJECT_TYPE,
+  SECURITY_LEVEL_TYPE,
+  SECURITY_SCHEME_TYPE,
+  STATUS_TYPE_NAME,
+  WORKFLOW_TYPE_NAME,
+  AUTOMATION_COMPARE_VALUE,
+  AUTOMATION_TYPE,
+  AUTOMATION_LABEL_TYPE,
+  GROUP_TYPE_NAME,
+  PRIORITY_SCHEME_TYPE_NAME,
+  SCRIPT_RUNNER_TYPE,
+  POST_FUNCTION_CONFIGURATION,
+  RESOLUTION_TYPE_NAME,
+  ISSUE_EVENT_TYPE_NAME,
+  CONDITION_CONFIGURATION,
+  PROJECT_ROLE_TYPE,
+  VALIDATOR_CONFIGURATION,
+  BOARD_TYPE_NAME,
+  ISSUE_LINK_TYPE_NAME,
+  DIRECTED_LINK_TYPE,
+  MAIL_LIST_TYPE_NAME,
+  SCRIPT_RUNNER_LISTENER_TYPE,
+  SCRIPTED_FIELD_TYPE,
+  BEHAVIOR_TYPE,
+  ISSUE_LAYOUT_TYPE,
+  SCRIPT_RUNNER_SETTINGS_TYPE,
+  SCRIPT_FRAGMENT_TYPE,
+  CUSTOMER_PERMISSIONS_TYPE,
+  QUEUE_TYPE,
+  REQUEST_TYPE_NAME,
+  CALENDAR_TYPE,
+  PORTAL_GROUP_TYPE,
+  PORTAL_SETTINGS_TYPE_NAME,
+  SLA_TYPE_NAME,
+  ISSUE_VIEW_TYPE,
+  REQUEST_FORM_TYPE,
+  OBJECT_TYPE_ATTRIBUTE_TYPE,
+  OBJECT_TYPE_TYPE,
+  SCREEN_TYPE_NAME,
+  WEBHOOK_TYPE,
+  OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
+  OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
+  JIRA_WORKFLOW_TYPE,
+  DELETE_LINK_TYPES,
+  OBJECT_SCHEMA_TYPE,
+} from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
-import { gadgetValuesContextFunc, gadgetValueSerialize, gadgetDashboradValueLookup } from './references/dashboard_gadget_properties'
+import {
+  gadgetValuesContextFunc,
+  gadgetValueSerialize,
+  gadgetDashboradValueLookup,
+} from './references/dashboard_gadget_properties'
 
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
@@ -42,7 +93,8 @@ const { neighborContextGetter, basicLookUp } = referenceUtils
 type jiraMissingReferenceStrategyName = referenceUtils.MissingReferenceStrategyName
 
 export const JiraMissingReferenceStrategyLookup: Record<
-jiraMissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+  jiraMissingReferenceStrategyName,
+  referenceUtils.MissingReferenceStrategy
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
@@ -59,10 +111,11 @@ const neighborContextFunc = (args: {
   levelsUp?: number
   contextValueMapper?: referenceUtils.ContextValueMapperFunc
   getLookUpName?: GetLookupNameFunc
-}): referenceUtils.ContextFunc => neighborContextGetter({
-  getLookUpName: async ({ ref }) => ref.elemID.name,
-  ...args,
-})
+}): referenceUtils.ContextFunc =>
+  neighborContextGetter({
+    getLookUpName: async ({ ref }) => ref.elemID.name,
+    ...args,
+  })
 
 const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'issuetype') {
@@ -87,27 +140,45 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
-export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesContext'
-| 'parentFieldId' | 'gadgetPropertyValue' | 'referenceTypeTypeName'
+export type ReferenceContextStrategyName =
+  | 'parentSelectedFieldType'
+  | 'parentFieldType'
+  | 'workflowStatusPropertiesContext'
+  | 'parentFieldId'
+  | 'gadgetPropertyValue'
+  | 'referenceTypeTypeName'
 
-export const contextStrategyLookup: Record<
-  ReferenceContextStrategyName, referenceUtils.ContextFunc
-> = {
-  parentSelectedFieldType: neighborContextFunc({ contextFieldName: 'selectedFieldType', levelsUp: 1, contextValueMapper: toTypeName }),
+export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
+  parentSelectedFieldType: neighborContextFunc({
+    contextFieldName: 'selectedFieldType',
+    levelsUp: 1,
+    contextValueMapper: toTypeName,
+  }),
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   workflowStatusPropertiesContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefType }),
-  parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
+  parentFieldId: neighborContextFunc({
+    contextFieldName: 'fieldId',
+    contextValueMapper: resolutionAndPriorityToTypeName,
+  }),
   gadgetPropertyValue: gadgetValuesContextFunc,
-  referenceTypeTypeName: neighborContextFunc({ contextFieldName: 'additionalValue', contextValueMapper: toReferenceTypeTypeName }),
+  referenceTypeTypeName: neighborContextFunc({
+    contextFieldName: 'additionalValue',
+    contextValueMapper: toReferenceTypeTypeName,
+  }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
-  (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id)
+  ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id
 
 const groupIdSerialize: GetLookupNameFunc = ({ ref }) =>
-  (isInstanceElement(ref.value) ? ref.value.value.groupId : ref.value)
+  isInstanceElement(ref.value) ? ref.value.value.groupId : ref.value
 
-type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | 'groupId' | 'key' | 'dashboradGadgetsValues'
+type JiraReferenceSerializationStrategyName =
+  | 'groupStrategyById'
+  | 'groupStrategyByOriginalName'
+  | 'groupId'
+  | 'key'
+  | 'dashboradGadgetsValues'
 const JiraReferenceSerializationStrategyLookup: Record<
   JiraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
@@ -141,23 +212,18 @@ const JiraReferenceSerializationStrategyLookup: Record<
   },
 }
 
-type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
-ReferenceContextStrategyName
-> & {
+type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<ReferenceContextStrategyName> & {
   jiraSerializationStrategy?: JiraReferenceSerializationStrategyName
   jiraMissingRefStrategy?: jiraMissingReferenceStrategyName
 }
-export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
-ReferenceContextStrategyName
-> {
+export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<ReferenceContextStrategyName> {
   constructor(def: JiraFieldReferenceDefinition) {
     super({ src: def.src, sourceTransformation: def.sourceTransformation ?? 'asString' })
-    this.serializationStrategy = JiraReferenceSerializationStrategyLookup[
-      def.jiraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-    ]
-    this.target = def.target
-      ? { ...def.target, lookup: this.serializationStrategy.lookup }
-      : undefined
+    this.serializationStrategy =
+      JiraReferenceSerializationStrategyLookup[
+        def.jiraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+      ]
+    this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
     this.missingRefStrategy = def.jiraMissingRefStrategy
       ? JiraMissingReferenceStrategyLookup[def.jiraMissingRefStrategy]
       : undefined
@@ -166,7 +232,15 @@ ReferenceContextStrategyName
 
 export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
-    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem', SCRIPT_RUNNER_TYPE, REQUEST_TYPE_NAME] },
+    src: {
+      field: 'issueTypeId',
+      parentTypes: [
+        'IssueTypeScreenSchemeItem',
+        'FieldConfigurationIssueTypeItem',
+        SCRIPT_RUNNER_TYPE,
+        REQUEST_TYPE_NAME,
+      ],
+    },
     serializationStrategy: 'id',
     // No missing references strategy - field can be a string
     target: { type: ISSUE_TYPE_NAME },
@@ -912,23 +986,27 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_ROLE_TYPE },
   },
-  { // for cloud
+  {
+    // for cloud
     src: { field: 'groupIds', parentTypes: ['CustomFieldContextDefaultValue'] },
     jiraSerializationStrategy: 'groupId',
     target: { type: GROUP_TYPE_NAME },
   },
-  { // for cloud
+  {
+    // for cloud
     src: { field: 'groupId', parentTypes: ['CustomFieldContextDefaultValue'] },
     jiraSerializationStrategy: 'groupId',
     target: { type: GROUP_TYPE_NAME },
   },
-  { // for DC
+  {
+    // for DC
     src: { field: 'groupIds', parentTypes: ['CustomFieldContextDefaultValue'] },
     serializationStrategy: 'nameWithPath',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
-  { // for DC
+  {
+    // for DC
     src: { field: 'groupId', parentTypes: ['CustomFieldContextDefaultValue'] },
     serializationStrategy: 'nameWithPath',
     jiraMissingRefStrategy: 'typeAndValue',
@@ -1152,7 +1230,20 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: PROJECT_TYPE },
   },
   {
-    src: { field: 'projectKey', parentTypes: [CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME, PORTAL_GROUP_TYPE, CALENDAR_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
+    src: {
+      field: 'projectKey',
+      parentTypes: [
+        CUSTOMER_PERMISSIONS_TYPE,
+        QUEUE_TYPE,
+        REQUEST_TYPE_NAME,
+        PORTAL_GROUP_TYPE,
+        CALENDAR_TYPE,
+        PORTAL_SETTINGS_TYPE_NAME,
+        SLA_TYPE_NAME,
+        REQUEST_FORM_TYPE,
+        ISSUE_VIEW_TYPE,
+      ],
+    },
     jiraSerializationStrategy: 'key',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
@@ -1235,8 +1326,7 @@ const lookupNameFuncs: GetLookupNameFunc[] = [
   referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]
 
-export const getLookUpName: GetLookupNameFunc = async args => (
+export const getLookUpName: GetLookupNameFunc = async args =>
   awu(lookupNameFuncs)
     .map(lookupFunc => lookupFunc(args))
     .find(res => !isReferenceExpression(res))
-)

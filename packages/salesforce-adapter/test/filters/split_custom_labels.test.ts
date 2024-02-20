@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   Element,
@@ -23,19 +23,21 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import filterCreator, { CUSTOM_LABEL_INSTANCES_FILE_PATH } from '../../src/filters/split_custom_labels'
+import filterCreator, {
+  CUSTOM_LABEL_INSTANCES_FILE_PATH,
+} from '../../src/filters/split_custom_labels'
 import { defaultFilterContext } from '../utils'
 import {
   CUSTOM_LABEL_METADATA_TYPE,
   CUSTOM_LABELS_METADATA_TYPE,
-  INSTANCE_FULL_NAME_FIELD, METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
 import { isInstanceOfType } from '../../src/filters/utils'
 import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
-
 
 describe('Test split custom labels filter', () => {
   let customLabelsType: ObjectType
@@ -55,9 +57,10 @@ describe('Test split custom labels filter', () => {
     })
   })
   describe('fetch', () => {
-    const filter = (): FilterWith<'onFetch'> => filterCreator({
-      config: defaultFilterContext,
-    }) as FilterWith<'onFetch'>
+    const filter = (): FilterWith<'onFetch'> =>
+      filterCreator({
+        config: defaultFilterContext,
+      }) as FilterWith<'onFetch'>
 
     const runFetch = async (...elements: Element[]): Promise<Element[]> => {
       await filter().onFetch(elements)
@@ -94,9 +97,13 @@ describe('Test split custom labels filter', () => {
       })
 
       it('should split CustomLabels instance into CustomLabel instances with the same path, and remove it', async () => {
-        const receivedElements = await runFetch(customLabelsInstance, customLabelType)
-        const receivedCustomLabelInstances = receivedElements
-          .filter(e => e.elemID.typeName === CUSTOM_LABEL_METADATA_TYPE)
+        const receivedElements = await runFetch(
+          customLabelsInstance,
+          customLabelType,
+        )
+        const receivedCustomLabelInstances = receivedElements.filter(
+          (e) => e.elemID.typeName === CUSTOM_LABEL_METADATA_TYPE,
+        )
         expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([
           {
             value: customLabelsInstance.value.labels[0],
@@ -108,8 +115,9 @@ describe('Test split custom labels filter', () => {
           },
         ])
         // validates the custom labels instance was removed
-        expect(receivedElements)
-          .not.toSatisfyAny(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
+        expect(receivedElements).not.toSatisfyAny(
+          (e) => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE,
+        )
       })
     })
     describe('when labels is a single value', () => {
@@ -128,14 +136,19 @@ describe('Test split custom labels filter', () => {
         )
       })
       it('should create a CustomLabel instance', async () => {
-        const receivedElements = await runFetch(customLabelsInstance, customLabelType)
+        const receivedElements = await runFetch(
+          customLabelsInstance,
+          customLabelType,
+        )
         const receivedCustomLabelInstances = await awu(receivedElements)
           .filter(isInstanceOfTypeCustomLabel)
           .toArray()
-        expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([{
-          value: customLabelsInstance.value.labels,
-          path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
-        }])
+        expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([
+          {
+            value: customLabelsInstance.value.labels,
+            path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
+          },
+        ])
       })
     })
   })
@@ -151,7 +164,6 @@ describe('Test split custom labels filter', () => {
     let filter: FilterWith<'preDeploy' | 'onDeploy'>
 
     let preDeployChanges: Change[]
-
 
     const runPreDeploy = async (...changes: Change[]): Promise<Change[]> => {
       await filter.preDeploy(changes)
@@ -177,43 +189,31 @@ describe('Test split custom labels filter', () => {
           protected: true,
           shortDescription: 'Test Custom Label',
           value: 'Test Label Value',
-        }
+        },
       )
       customLabelChange = {
         action: 'modify',
         data: {
-          before: new InstanceElement(
-            CUSTOM_LABEL_NAME,
-            customLabelType,
-            {
-              [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABEL_NAME,
-              categories: 'testCategory',
-              language: 'en-US',
-              protected: true,
-              shortDescription: 'Test Custom Label',
-              value: 'Test Label Value',
-            }
-          ),
+          before: new InstanceElement(CUSTOM_LABEL_NAME, customLabelType, {
+            [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABEL_NAME,
+            categories: 'testCategory',
+            language: 'en-US',
+            protected: true,
+            shortDescription: 'Test Custom Label',
+            value: 'Test Label Value',
+          }),
           after: afterCustomLabelInstance,
         },
       }
       otherChange = {
         action: 'modify',
         data: {
-          before: new InstanceElement(
-            OTHER_CHANGE_NAME,
-            otherChangeType,
-            {
-              testField: 'testValue',
-            }
-          ),
-          after: new InstanceElement(
-            OTHER_CHANGE_NAME,
-            otherChangeType,
-            {
-              testField: 'modified testValue',
-            }
-          ),
+          before: new InstanceElement(OTHER_CHANGE_NAME, otherChangeType, {
+            testField: 'testValue',
+          }),
+          after: new InstanceElement(OTHER_CHANGE_NAME, otherChangeType, {
+            testField: 'modified testValue',
+          }),
         },
       }
       filter = filterCreator({ config: defaultFilterContext }) as typeof filter
@@ -225,7 +225,7 @@ describe('Test split custom labels filter', () => {
         const customLabelsChangeInstance = preDeployChanges
           .map(getChangeData)
           .filter(isInstanceElement)
-          .find(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
+          .find((e) => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
         expect(customLabelsChangeInstance?.value).toMatchObject({
           labels: [afterCustomLabelInstance.value],
         })
@@ -236,14 +236,17 @@ describe('Test split custom labels filter', () => {
       it('should remove CustomLabels change and add the original CustomLabel changes', async () => {
         const onDeployChanges = await runOnDeploy(...preDeployChanges)
         expect(onDeployChanges).toHaveLength(2)
-        const receivedCustomLabelChange = onDeployChanges
-          .find(c => getChangeData(c).elemID.typeName === CUSTOM_LABEL_METADATA_TYPE)
+        const receivedCustomLabelChange = onDeployChanges.find(
+          (c) =>
+            getChangeData(c).elemID.typeName === CUSTOM_LABEL_METADATA_TYPE,
+        )
         expect(receivedCustomLabelChange).toEqual(customLabelChange)
       })
       it('should not add CustomLabel changes if no CustomLabels change occurred', async () => {
         const onDeployChanges = await runOnDeploy(otherChange)
         expect(onDeployChanges).toHaveLength(1)
-        const receivedChangeType = getChangeData(onDeployChanges[0]).elemID.typeName
+        const receivedChangeType = getChangeData(onDeployChanges[0]).elemID
+          .typeName
         expect(receivedChangeType).toEqual(OTHER_CHANGE_TYPE)
       })
     })

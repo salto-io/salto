@@ -25,8 +25,10 @@ Workato recipes can connect entities across different business applications. If 
     }
   }
 ```
+
 Where:
-* "Salesforce connection name" is the name of the Salesforce or Salesforce secondary connection that is connected to the Salesforce account configured in the current environment
-* "Netsuite connection name" is the name of the Netsuite or Netsuite secondary connection that is connected to the Netsuite account configured in the current environment
+
+- "Salesforce connection name" is the name of the Salesforce or Salesforce secondary connection that is connected to the Salesforce account configured in the current environment
+- "Netsuite connection name" is the name of the Netsuite or Netsuite secondary connection that is connected to the Netsuite account configured in the current environment
 
 Note that if multiple Workato connections are pointing to the same Salesforce/Netsuite account, they can all be listed.

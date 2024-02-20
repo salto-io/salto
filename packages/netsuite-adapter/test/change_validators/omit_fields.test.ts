@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -47,14 +47,15 @@ describe('omit fields change validator test', () => {
     const changeErrors = await omitFieldsValidation(
       [toChange({ after: instance })],
       undefined,
-      buildElementsSourceFromElements([instance, type, innerType])
+      buildElementsSourceFromElements([instance, type, innerType]),
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Warning',
-      message: 'This element will be deployed without the following fields: \'currency\'',
-      detailedMessage: 'This element will be deployed without the following fields: \'currency\', as NetSuite does not support deploying them.',
+      message: "This element will be deployed without the following fields: 'currency'",
+      detailedMessage:
+        "This element will be deployed without the following fields: 'currency', as NetSuite does not support deploying them.",
     })
   })
 
@@ -64,13 +65,14 @@ describe('omit fields change validator test', () => {
     const changeErrors = await omitFieldsValidation(
       [toChange({ before: instance, after })],
       undefined,
-      buildElementsSourceFromElements([instance, type, innerType])
+      buildElementsSourceFromElements([instance, type, innerType]),
     )
     expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Warning',
-      message: 'This element will be deployed without the following fields: \'currency\'',
-      detailedMessage: 'This element will be deployed without the following fields: \'currency\', as NetSuite does not support deploying them.',
+      message: "This element will be deployed without the following fields: 'currency'",
+      detailedMessage:
+        "This element will be deployed without the following fields: 'currency', as NetSuite does not support deploying them.",
     })
   })
 
@@ -84,14 +86,15 @@ describe('omit fields change validator test', () => {
       {
         fetch: fullFetchConfig(),
         deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] },
-      }
+      },
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Error',
       message: 'This element contains an undeployable change',
-      detailedMessage: 'This element will be removed from deployment because it only contains changes to the undeployable fields: \'currency\', \'field2\'.',
+      detailedMessage:
+        "This element will be removed from deployment because it only contains changes to the undeployable fields: 'currency', 'field2'.",
     })
   })
 
@@ -104,14 +107,15 @@ describe('omit fields change validator test', () => {
       {
         fetch: fullFetchConfig(),
         deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] },
-      }
+      },
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Warning',
-      message: 'This element will be deployed without the following fields: \'currency\', \'innerField.inner2\'',
-      detailedMessage: 'This element will be deployed without the following fields: \'currency\', \'innerField.inner2\', as NetSuite does not support deploying them.',
+      message: "This element will be deployed without the following fields: 'currency', 'innerField.inner2'",
+      detailedMessage:
+        "This element will be deployed without the following fields: 'currency', 'innerField.inner2', as NetSuite does not support deploying them.",
     })
   })
 
@@ -120,7 +124,7 @@ describe('omit fields change validator test', () => {
     const changeErrors = await omitFieldsValidation(
       [toChange({ after: instance })],
       undefined,
-      buildElementsSourceFromElements([instance, type, innerType])
+      buildElementsSourceFromElements([instance, type, innerType]),
     )
     expect(changeErrors).toHaveLength(0)
   })

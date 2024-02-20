@@ -1,21 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { createSchemeGuard, WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Value } from '@salto-io/adapter-api'
+import {
+  isInstanceElement,
+  Element,
+  isInstanceChange,
+  isAdditionOrModificationChange,
+  getChangeData,
+  Value,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -40,10 +47,7 @@ export const OR_FIELDS = [
   'FIELD_LINKED_ISSUE_STATUS',
 ]
 
-export const MAIL_LISTS_FIELDS = [
-  'FIELD_TO_USER_FIELDS',
-  'FIELD_CC_USER_FIELDS',
-]
+export const MAIL_LISTS_FIELDS = ['FIELD_TO_USER_FIELDS', 'FIELD_CC_USER_FIELDS']
 
 const GROUP_PREFIX = 'group:'
 const ROLE_PREFIX = 'role:'
@@ -64,11 +68,8 @@ const LINK_OBJECT_SCHEME = Joi.object({
 
 const isLinkObject = createSchemeGuard<LinkObject>(LINK_OBJECT_SCHEME, 'Link object does not fit the scheme')
 
-
 const createLinkString = (linkObj: LinkObject, separator: string): string =>
-  (linkObj.direction !== undefined
-    ? `${linkObj.linkType}${separator}${linkObj.direction}`
-    : linkObj.linkType)
+  linkObj.direction !== undefined ? `${linkObj.linkType}${separator}${linkObj.direction}` : linkObj.linkType
 
 const stringifyDirectionFields = (value: Value): void => {
   if (_.isPlainObject(value)) {
@@ -90,7 +91,7 @@ const stringifyDirectionFields = (value: Value): void => {
 const createLinkObject = (
   directionString: string,
   separator: string,
-  directionDefault?: string
+  directionDefault?: string,
 ): LinkObject | string => {
   const splitString = directionString.split(separator)
   if (directionDefault !== undefined && splitString.length === 1) {
@@ -114,8 +115,7 @@ const objectifyDirectionFields = (value: Value): void => {
       .filter(([key]) => key === FIELD_LINK_DIRECTION)
       .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]))
       .forEach(([key, val]) => {
-        value[key] = val.map(directionString => createLinkObject(directionString, '-'))
-          .sort() // sort to make sure the order is consistent
+        value[key] = val.map(directionString => createLinkObject(directionString, '-')).sort() // sort to make sure the order is consistent
       })
     Object.entries(value)
       .filter(([key]) => key === FIELD_LINK_TYPE)
@@ -125,7 +125,6 @@ const objectifyDirectionFields = (value: Value): void => {
       })
   }
 }
-
 
 // splits a string by spaces that are not in quotes
 // for example:
@@ -167,10 +166,8 @@ const joinWithPrefixes = (object: MailListObject | undefined): string => {
     return ''
   }
   const { group = [], role = [], field = [] } = object
-  const prefixedGroup = group.map((groupItem: string) => GROUP_PREFIX + quoteIfSpaces(groupItem))
-    .join(SPACE)
-  const prefixedRole = role.map((roleItem: string) => ROLE_PREFIX + quoteIfSpaces(roleItem))
-    .join(SPACE)
+  const prefixedGroup = group.map((groupItem: string) => GROUP_PREFIX + quoteIfSpaces(groupItem)).join(SPACE)
+  const prefixedRole = role.map((roleItem: string) => ROLE_PREFIX + quoteIfSpaces(roleItem)).join(SPACE)
   const plainField = field.join(SPACE)
   return [prefixedGroup, prefixedRole, plainField].filter(item => item !== '').join(SPACE)
 }
@@ -211,8 +208,7 @@ const convertMailStringToObject = (value: Value): void => {
       .filter(([key]) => MAIL_LISTS_FIELDS.includes(key))
       .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
       .forEach(([key, val]) => {
-        const valuesArr = splitBySpaceNotInQuotes(val)
-          .map((token: string) => token.replace(/"/g, '')) // remove quotes
+        const valuesArr = splitBySpaceNotInQuotes(val).map((token: string) => token.replace(/"/g, '')) // remove quotes
         value[key] = createEmailObject(valuesArr)
       })
   }
@@ -240,7 +236,8 @@ const replaceOr = (value: Value): void => {
   }
 }
 
-const findScriptRunnerDC = (funcs: Value[]): WalkOnFunc => (
+const findScriptRunnerDC =
+  (funcs: Value[]): WalkOnFunc =>
   ({ value }): WALK_NEXT_STEP => {
     if (value === undefined) {
       return WALK_NEXT_STEP.SKIP
@@ -250,7 +247,7 @@ const findScriptRunnerDC = (funcs: Value[]): WalkOnFunc => (
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
-  })
+  }
 
 // Changes script runners strings that represent several values
 // one option is strings that are split by '|||' to an array
@@ -267,9 +264,11 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
+        walkOnValue({
+          elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([replaceOr, convertMailStringToObject, objectifyDirectionFields]) })
+          func: findScriptRunnerDC([replaceOr, convertMailStringToObject, objectifyDirectionFields]),
+        })
       })
   },
   preDeploy: async changes => {
@@ -282,9 +281,11 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
+        walkOnValue({
+          elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([stringifyDirectionFields, returnOr, convertMailObjectToString]) })
+          func: findScriptRunnerDC([stringifyDirectionFields, returnOr, convertMailObjectToString]),
+        })
       })
   },
   onDeploy: async changes => {
@@ -297,9 +298,11 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
+        walkOnValue({
+          elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([replaceOr, convertMailStringToObject, objectifyDirectionFields]) })
+          func: findScriptRunnerDC([replaceOr, convertMailStringToObject, objectifyDirectionFields]),
+        })
       })
   },
 })

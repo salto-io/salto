@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as path from 'path'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -28,14 +28,15 @@ describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
   let definitionsTree: PositionContext
   let fullElementSource: ReadOnlyElementsSource | undefined
-  const getRefLines = (
-    defs: SaltoElemLocation[]
-  ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
+  const getRefLines = (defs: SaltoElemLocation[]): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   const baseDir = path.resolve(`${__dirname}/../test/test-nacls/`)
   const naclFileName = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace([naclFileName], ['path/to/content', 'path/to/deep_content']))
+    workspace = new EditorWorkspace(
+      baseDir,
+      await mockWorkspace([naclFileName], ['path/to/content', 'path/to/deep_content']),
+    )
     definitionsTree = buildDefinitionsTree(
       (await workspace.getNaclFile(naclFileName))?.buffer as string,
       await workspace.getSourceMap(naclFileName),
@@ -52,9 +53,7 @@ describe('Test go to definitions', () => {
     }
     const context = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)
     const defs = await provideWorkspaceReferences(workspace, token, context)
-    expect(getRefLines(defs)).toEqual(
-      [1, 33, 37, 50, 67, 114, 128, 131, 144, 147, 150, 153, 156, 159, 162, 165]
-    )
+    expect(getRefLines(defs)).toEqual([1, 33, 37, 50, 67, 114, 128, 131, 144, 147, 150, 153, 156, 159, 162, 165])
   })
 
   it('should give all instance and annotationType usages of a type', async () => {
@@ -111,12 +110,7 @@ describe('Test go to definitions', () => {
     }
     const context = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)
     const defs = await provideWorkspaceReferences(workspace, token, context)
-    expect(getRefLines(defs)).toEqual([
-      67,
-      88,
-      151,
-      209,
-    ])
+    expect(getRefLines(defs)).toEqual([67, 88, 151, 209])
   })
 
   it('should find (salto) references to nested type annotations', async () => {
@@ -127,10 +121,7 @@ describe('Test go to definitions', () => {
     }
     const context = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)
     const defs = await provideWorkspaceReferences(workspace, token, context)
-    expect(getRefLines(defs)).toEqual([
-      178,
-      226,
-    ])
+    expect(getRefLines(defs)).toEqual([178, 226])
   })
 
   it('should find (salto) references to nested field annotations', async () => {

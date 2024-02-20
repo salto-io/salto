@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
 export const EMPLOYEE_SCHEMA = {
   items: {
@@ -24,10 +24,7 @@ export const EMPLOYEE_SCHEMA = {
         type: 'string',
       },
     },
-    required: [
-      'entityid',
-      'id',
-    ],
+    required: ['entityid', 'id'],
     type: 'object',
   },
   type: 'array',
@@ -56,12 +53,7 @@ export const SYSTEM_NOTE_SCHEMA = {
             type: 'string',
           },
         },
-        required: [
-          'name',
-          'field',
-          'recordid',
-          'date',
-        ],
+        required: ['name', 'field', 'recordid', 'date'],
         type: 'object',
       },
       {
@@ -79,12 +71,7 @@ export const SYSTEM_NOTE_SCHEMA = {
             type: 'string',
           },
         },
-        required: [
-          'name',
-          'recordid',
-          'recordtypeid',
-          'date',
-        ],
+        required: ['name', 'recordid', 'recordtypeid', 'date'],
         type: 'object',
       },
     ],
@@ -92,17 +79,19 @@ export const SYSTEM_NOTE_SCHEMA = {
   type: 'array',
 }
 
-export type SystemNoteResult = {
-  name: string
-  field: string
-  recordid: string
-  date: string
-} | {
-  name: string
-  recordid: string
-  recordtypeid: string
-  date: string
-}
+export type SystemNoteResult =
+  | {
+      name: string
+      field: string
+      recordid: string
+      date: string
+    }
+  | {
+      name: string
+      recordid: string
+      recordtypeid: string
+      date: string
+    }
 
 export const SAVED_SEARCH_RESULT_SCHEMA = {
   items: {
@@ -123,20 +112,13 @@ export const SAVED_SEARCH_RESULT_SCHEMA = {
               type: 'string',
             },
           },
-          required: [
-            'text',
-            'value',
-          ],
+          required: ['text', 'value'],
           type: 'object',
         },
         type: 'array',
       },
     },
-    required: [
-      'id',
-      'modifiedby',
-      'datemodified',
-    ],
+    required: ['id', 'modifiedby', 'datemodified'],
     type: 'object',
   },
   type: 'array',

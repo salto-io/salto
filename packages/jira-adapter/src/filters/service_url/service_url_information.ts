@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  InstanceElement,
+  isInstanceElement,
+  CORE_ANNOTATIONS,
+  getChangeData,
+  isInstanceChange,
+  isAdditionChange,
+} from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { PRIORITY_SCHEME_TYPE_NAME } from '../../constants'
@@ -22,12 +30,11 @@ import { FilterCreator } from '../../filter'
 const log = logger(module)
 
 type ServiceUrlSupplier = {
-    typeName: string
-    supplier: (instance: InstanceElement) => string | undefined
+  typeName: string
+  supplier: (instance: InstanceElement) => string | undefined
 }
 
-const getParentId = (instance: InstanceElement): string =>
-  getParents(instance)[0].resValue.value.id
+const getParentId = (instance: InstanceElement): string => getParents(instance)[0].resValue.value.id
 
 const createBoardServiceUrl = (instance: InstanceElement): string =>
   `/jira/software/c/projects/${instance.value.name.replace(' board', '')}/boards/${instance.value.id}`
@@ -110,19 +117,12 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
   prioritySchemeInformation,
 ]
 
-const supplyServiceUrl = (
-  instances: InstanceElement[],
-  supplier: ServiceUrlSupplier,
-  baseUrl: string
-): void => {
+const supplyServiceUrl = (instances: InstanceElement[], supplier: ServiceUrlSupplier, baseUrl: string): void => {
   try {
     instances.forEach(instance => {
       const serviceUrl = supplier.supplier(instance)
       if (serviceUrl) {
-        instance.annotate(
-          { [CORE_ANNOTATIONS.SERVICE_URL]:
-            new URL(serviceUrl, baseUrl).href },
-        )
+        instance.annotate({ [CORE_ANNOTATIONS.SERVICE_URL]: new URL(serviceUrl, baseUrl).href })
       }
     })
   } catch (error) {

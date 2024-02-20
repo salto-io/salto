@@ -1,19 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, ReadOnlyElementsSource, CORE_ANNOTATIONS, ListType, Field, BuiltinTypes, Change } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+  ReferenceExpression,
+  ReadOnlyElementsSource,
+  CORE_ANNOTATIONS,
+  ListType,
+  Field,
+  BuiltinTypes,
+  Change,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -39,7 +51,6 @@ jest.mock('uuid', () => ({
   ...jest.requireActual('uuid'),
   v4: jest.fn().mockReturnValue('uuid'),
 }))
-
 
 describe('workflowModificationFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -74,45 +85,22 @@ describe('workflowModificationFilter', () => {
     client = cli
     paginator = pagi
 
+    workflowInstance = new InstanceElement('workflowInstance', workflowType, {
+      name: 'workflowName',
+    })
+    workflowBeforeInstance = new InstanceElement('workflowInstance', workflowType, {
+      name: 'workflowName2',
+    })
 
-    workflowInstance = new InstanceElement(
-      'workflowInstance',
-      workflowType,
-      {
-        name: 'workflowName',
-      }
-    )
-    workflowBeforeInstance = new InstanceElement(
-      'workflowInstance',
-      workflowType,
-      {
-        name: 'workflowName2',
-      }
-    )
+    workflowSchemeInstance = new InstanceElement('workflowSchemeInstance', workflowSchemeType, {
+      id: '1',
+      defaultWorkflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+    })
 
-    workflowSchemeInstance = new InstanceElement(
-      'workflowSchemeInstance',
-      workflowSchemeType,
-      {
-        id: '1',
-        defaultWorkflow: new ReferenceExpression(
-          workflowInstance.elemID,
-          workflowInstance,
-        ),
-      }
-    )
-
-    newWorkflowSchemeInstance = new InstanceElement(
-      'newWorkflowSchemeInstance',
-      workflowSchemeType,
-      {
-        id: '2',
-        defaultWorkflow: new ReferenceExpression(
-          workflowInstance.elemID,
-          workflowInstance,
-        ),
-      }
-    )
+    newWorkflowSchemeInstance = new InstanceElement('newWorkflowSchemeInstance', workflowSchemeType, {
+      id: '2',
+      defaultWorkflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+    })
 
     elementsSource = buildElementsSourceFromElements([
       workflowSchemeInstance,
@@ -122,12 +110,14 @@ describe('workflowModificationFilter', () => {
 
     elementsSourceSpy = jest.spyOn(elementsSource, 'list')
 
-    filter = workflowModificationFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      elementsSource,
-    })) as typeof filter
+    filter = workflowModificationFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        elementsSource,
+      }),
+    ) as typeof filter
   })
 
   describe('onFetch', () => {
@@ -150,13 +140,9 @@ describe('workflowModificationFilter', () => {
   })
 
   describe('deploy', () => {
-    const deployWorkflowMock = deployWorkflow as jest.MockedFunction<
-      typeof deployWorkflow
-    >
+    const deployWorkflowMock = deployWorkflow as jest.MockedFunction<typeof deployWorkflow>
 
-    const deployWorkflowSchemeMock = deployWorkflowScheme as jest.MockedFunction<
-      typeof deployWorkflowScheme
-    >
+    const deployWorkflowSchemeMock = deployWorkflowScheme as jest.MockedFunction<typeof deployWorkflowScheme>
     let change: Change<InstanceElement>
     let tempInstance: InstanceElement
     let tempSchemeInstance: InstanceElement
@@ -209,12 +195,7 @@ describe('workflowModificationFilter', () => {
     }
 
     const expectCreateOfTempWorkflow = (callNum: number): void => {
-      expect(deployWorkflowMock).toHaveBeenNthCalledWith(
-        callNum,
-        toChange({ after: tempInstance }),
-        client,
-        config,
-      )
+      expect(deployWorkflowMock).toHaveBeenNthCalledWith(callNum, toChange({ after: tempInstance }), client, config)
     }
 
     const expectDeleteOfBeforeWorkflow = (callNum: number): void => {
@@ -227,21 +208,11 @@ describe('workflowModificationFilter', () => {
     }
 
     const expectCreateOfNewWorkflow = (callNum: number): void => {
-      expect(deployWorkflowMock).toHaveBeenNthCalledWith(
-        callNum,
-        toChange({ after: workflowInstance }),
-        client,
-        config,
-      )
+      expect(deployWorkflowMock).toHaveBeenNthCalledWith(callNum, toChange({ after: workflowInstance }), client, config)
     }
 
     const expectDeleteOfTempWorkflow = (callNum: number): void => {
-      expect(deployWorkflowMock).toHaveBeenNthCalledWith(
-        callNum,
-        toChange({ before: tempInstance }),
-        client,
-        config,
-      )
+      expect(deployWorkflowMock).toHaveBeenNthCalledWith(callNum, toChange({ before: tempInstance }), client, config)
     }
 
     beforeEach(() => {
@@ -263,18 +234,12 @@ describe('workflowModificationFilter', () => {
       newSchemeInstance.value.issueTypeMappings = {}
 
       tempSchemeInstance = workflowSchemeInstance.clone()
-      tempSchemeInstance.value.defaultWorkflow = new ReferenceExpression(
-        tempInstance.elemID,
-        tempInstance,
-      )
+      tempSchemeInstance.value.defaultWorkflow = new ReferenceExpression(tempInstance.elemID, tempInstance)
       tempSchemeInstance.value.updateDraftIfNeeded = true
       tempSchemeInstance.value.issueTypeMappings = {}
 
       tempNewSchemeInstance = newWorkflowSchemeInstance.clone()
-      tempNewSchemeInstance.value.defaultWorkflow = new ReferenceExpression(
-        tempInstance.elemID,
-        tempInstance,
-      )
+      tempNewSchemeInstance.value.defaultWorkflow = new ReferenceExpression(tempInstance.elemID, tempInstance)
       tempNewSchemeInstance.value.updateDraftIfNeeded = true
       tempNewSchemeInstance.value.issueTypeMappings = {}
     })
@@ -294,23 +259,28 @@ describe('workflowModificationFilter', () => {
     })
 
     it('should throw when change is not backward compatible', async () => {
-      deployWorkflowSchemeMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-        status: 400,
-        data: {
-          errorMessages: ['is missing the mappings required for statuses with'],
-        },
-      }))
+      deployWorkflowSchemeMock.mockRejectedValueOnce(
+        new clientUtils.HTTPError('message', {
+          status: 400,
+          data: {
+            errorMessages: ['is missing the mappings required for statuses with'],
+          },
+        }),
+      )
 
       deployWorkflowMock.mockResolvedValueOnce()
       deployWorkflowMock.mockRejectedValueOnce(new Error('error'))
 
       const res = await filter.deploy([change])
 
-      expect(res.deployResult.errors).toEqual([{
-        message: 'Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
-        severity: 'Error',
-        elemID: workflowInstance.elemID,
-      }])
+      expect(res.deployResult.errors).toEqual([
+        {
+          message:
+            'Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
+          severity: 'Error',
+          elemID: workflowInstance.elemID,
+        },
+      ])
 
       expectCreateOfTempWorkflow(1)
       expectDeleteOfTempWorkflow(2)
@@ -319,12 +289,14 @@ describe('workflowModificationFilter', () => {
     })
 
     it('should clean when failure in deploy of temp instance', async () => {
-      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-        status: 400,
-        data: {
-          errorMessages: ['some error'],
-        },
-      }))
+      deployWorkflowMock.mockRejectedValueOnce(
+        new clientUtils.HTTPError('message', {
+          status: 400,
+          data: {
+            errorMessages: ['some error'],
+          },
+        }),
+      )
       await filter.deploy([change])
 
       expectCreateOfTempWorkflow(1)
@@ -334,12 +306,14 @@ describe('workflowModificationFilter', () => {
     })
     it('should clean when failure in deploy of the actual instance not related to sync', async () => {
       deployWorkflowMock.mockResolvedValueOnce()
-      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-        status: 400,
-        data: {
-          errorMessages: ['other error'],
-        },
-      }))
+      deployWorkflowMock.mockRejectedValueOnce(
+        new clientUtils.HTTPError('message', {
+          status: 400,
+          data: {
+            errorMessages: ['other error'],
+          },
+        }),
+      )
       await filter.deploy([change])
       expectDeleteOfTempWorkflow(3)
       expectSchemeChangeBack(3)
@@ -351,19 +325,24 @@ describe('workflowModificationFilter', () => {
 
     it('should clean when failure in deploy of the actual instance', async () => {
       deployWorkflowMock.mockResolvedValueOnce()
-      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-        status: 400,
-        data: {
-          errorMessages: ['Cannot delete an active workflow'],
-        },
-      }))
+      deployWorkflowMock.mockRejectedValueOnce(
+        new clientUtils.HTTPError('message', {
+          status: 400,
+          data: {
+            errorMessages: ['Cannot delete an active workflow'],
+          },
+        }),
+      )
       const res = await filter.deploy([change])
 
-      expect(res.deployResult.errors).toEqual([{
-        message: 'Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
-        severity: 'Error',
-        elemID: workflowInstance.elemID,
-      }])
+      expect(res.deployResult.errors).toEqual([
+        {
+          message:
+            'Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
+          severity: 'Error',
+          elemID: workflowInstance.elemID,
+        },
+      ])
 
       expectCreateOfTempWorkflow(1)
       expectDeleteOfBeforeWorkflow(2)

@@ -1,20 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import { ObjectType, ElemID, isInstanceElement, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  isInstanceElement,
+  InstanceElement,
+  CORE_ANNOTATIONS,
+  toChange,
+  getChangeData,
+  BuiltinTypes,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getParent } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -32,54 +41,42 @@ describe('userSchemaFilter', () => {
     fields: { description: { refType: BuiltinTypes.STRING } },
   })
   const userTypeType = new ObjectType({ elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME) })
-  const userTypeInstanceA = new InstanceElement(
-    'test1',
-    userTypeType,
-    {
-      id: 123,
-      name: 'A',
-      _links: {
-        additionalProperties: {
-          schema: {
-            href: 'https://okta.com/api/v1/meta/schemas/user/A123',
-          },
+  const userTypeInstanceA = new InstanceElement('test1', userTypeType, {
+    id: 123,
+    name: 'A',
+    _links: {
+      additionalProperties: {
+        schema: {
+          href: 'https://okta.com/api/v1/meta/schemas/user/A123',
         },
       },
-      default: false,
     },
-  )
-  const userTypeInstanceB = new InstanceElement(
-    'test2',
-    userTypeType,
-    {
-      id: 234,
-      name: 'B',
-      _links: {
-        additionalProperties: {
-          schema: {
-            href: 'https://okta.com/api/v1/meta/schemas/user/B123',
-          },
+    default: false,
+  })
+  const userTypeInstanceB = new InstanceElement('test2', userTypeType, {
+    id: 234,
+    name: 'B',
+    _links: {
+      additionalProperties: {
+        schema: {
+          href: 'https://okta.com/api/v1/meta/schemas/user/B123',
         },
       },
-      default: false,
     },
-  )
-  const defaultUserTypeInstance = new InstanceElement(
-    'test3',
-    userTypeType,
-    {
-      id: 345,
-      name: 'C',
-      _links: {
-        additionalProperties: {
-          schema: {
-            href: 'https://okta.com/api/v1/meta/schemas/user/C123',
-          },
+    default: false,
+  })
+  const defaultUserTypeInstance = new InstanceElement('test3', userTypeType, {
+    id: 345,
+    name: 'C',
+    _links: {
+      additionalProperties: {
+        schema: {
+          href: 'https://okta.com/api/v1/meta/schemas/user/C123',
         },
       },
-      default: true,
     },
-  )
+    default: true,
+  })
 
   const userSchemaResponse = {
     status: 200,
@@ -188,16 +185,18 @@ describe('userSchemaFilter', () => {
           },
         },
         undefined,
-        { [CORE_ANNOTATIONS.PARENT]: [
-          {
-            id: 'userType',
-            _links: {
-              schema: {
-                href: 'https://okta.com/api/v1/meta/schemas/user/555',
+        {
+          [CORE_ANNOTATIONS.PARENT]: [
+            {
+              id: 'userType',
+              _links: {
+                schema: {
+                  href: 'https://okta.com/api/v1/meta/schemas/user/555',
+                },
               },
             },
-          },
-        ] },
+          ],
+        },
       )
       const changes = [toChange({ after: userSchemaInstace })]
       await filter.preDeploy(changes)
@@ -213,16 +212,18 @@ describe('userSchemaFilter', () => {
           },
         },
         undefined,
-        { [CORE_ANNOTATIONS.PARENT]: [
-          {
-            id: 'userType',
-            _links: {
-              self: {
-                value: 'val',
+        {
+          [CORE_ANNOTATIONS.PARENT]: [
+            {
+              id: 'userType',
+              _links: {
+                self: {
+                  value: 'val',
+                },
               },
             },
-          },
-        ] },
+          ],
+        },
       )
       const changes = [toChange({ after: userSchemaInstace })]
       await filter.preDeploy(changes)
@@ -231,16 +232,12 @@ describe('userSchemaFilter', () => {
   })
   describe('onDeploy', () => {
     it('should fix UserSchema id after deploy', async () => {
-      const userSchemaInstace = new InstanceElement(
-        'schema',
-        userSchemaType,
-        {
-          id: 'https://okta.com/api/v1/meta/schemas/user/555',
-          definitions: {
-            value: 'value',
-          },
+      const userSchemaInstace = new InstanceElement('schema', userSchemaType, {
+        id: 'https://okta.com/api/v1/meta/schemas/user/555',
+        definitions: {
+          value: 'value',
         },
-      )
+      })
       const changes = [toChange({ after: userSchemaInstace })]
       await filter.onDeploy(changes)
       expect(getChangeData(changes[0]).value.id).toEqual('555')

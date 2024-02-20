@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  InstanceElement, ObjectType, Element, ReadOnlyElementsSource,
-} from './elements'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { InstanceElement, ObjectType, Element, ReadOnlyElementsSource } from './elements'
 import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
 import { Change } from './change'
@@ -28,9 +26,8 @@ export type PartialFetchData = {
   deletedElements?: ElemID[]
 }
 
-export const setPartialFetchData = (isPartial: boolean, deletedElements?: ElemID[]): PartialFetchData | undefined => (
+export const setPartialFetchData = (isPartial: boolean, deletedElements?: ElemID[]): PartialFetchData | undefined =>
   isPartial ? { isPartial, deletedElements } : undefined
-)
 
 export interface FetchResult {
   elements: Element[]
@@ -122,10 +119,12 @@ export type UnresolvedReferenceError = ChangeError & {
 
 export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
-export const isUnresolvedReferenceError = (err: ChangeError): err is UnresolvedReferenceError => err.type === 'unresolvedReferences' && 'unresolvedElemIds' in err
+export const isUnresolvedReferenceError = (err: ChangeError): err is UnresolvedReferenceError =>
+  err.type === 'unresolvedReferences' && 'unresolvedElemIds' in err
 
 export type ChangeValidator<T extends ChangeError = ChangeError> = (
-  changes: ReadonlyArray<Change>, elementsSource?: ReadOnlyElementsSource
+  changes: ReadonlyArray<Change>,
+  elementsSource?: ReadOnlyElementsSource,
 ) => Promise<ReadonlyArray<T>>
 
 export type DeployModifiers = {
@@ -171,8 +170,8 @@ export type AdapterSuccessInstallResult = { success: true; installedVersion: str
 export type AdapterFailureInstallResult = { success: false; errors: string[] }
 export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureInstallResult
 
-export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
-  result is AdapterSuccessInstallResult => result.success
+export const isAdapterSuccessInstallResult = (result: AdapterInstallResult): result is AdapterSuccessInstallResult =>
+  result.success
 
 export type AccountInfo = {
   accountId: string
@@ -183,8 +182,7 @@ export type AccountInfo = {
 
 export type ConfigCreator = {
   optionsType: ObjectType
-  getConfig: (options?: InstanceElement)
-    => Promise<InstanceElement>
+  getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 
 export type LoadElementsFromFolderArgs = {
@@ -230,5 +228,4 @@ export const OBJECT_SERVICE_ID = 'object_service_id'
 export const OBJECT_NAME = 'object_name'
 export const FIELD_NAME = 'field_name'
 export const INSTANCE_NAME = 'instance_name'
-export const toServiceIdsString = (serviceIds: ServiceIds): string =>
-  Object.entries(serviceIds).sort().toString()
+export const toServiceIdsString = (serviceIds: ServiceIds): string => Object.entries(serviceIds).sort().toString()

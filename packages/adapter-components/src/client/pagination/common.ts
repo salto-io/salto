@@ -1,25 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ResponseValue } from '../http_connection'
 import { ClientBaseParams, HTTPReadClientInterface } from '../http_client'
 
 const { isDefined } = lowerdashValues
-
 
 type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 
@@ -52,12 +51,13 @@ export type PaginationFunc = ({
   responseHeaders?: unknown
 }) => Record<string, string>[]
 
-export type PaginationFuncCreator<T = {}> = (args: {
-  client: HTTPReadClientInterface
-  pageSize: number
-  getParams: ClientGetWithPaginationParams
-} & T) => PaginationFunc
-
+export type PaginationFuncCreator<T = {}> = (
+  args: {
+    client: HTTPReadClientInterface
+    pageSize: number
+    getParams: ClientGetWithPaginationParams
+  } & T,
+) => PaginationFunc
 
 /**
  * Helper function for generating individual recursive queries based on past responses.
@@ -69,19 +69,17 @@ export type PaginationFuncCreator<T = {}> = (args: {
 export const computeRecursiveArgs = (
   responses: ResponseValue[],
   recursiveQueryParams?: RecursiveQueryArgFunc,
-): Record<string, string>[] => (
-  (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0)
+): Record<string, string>[] =>
+  recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0
     ? responses
-      .map(res => _.pickBy(
-        _.mapValues(
-          recursiveQueryParams,
-          mapper => mapper(res),
-        ),
-        isDefined,
-      ))
-      .filter(args => Object.keys(args).length > 0)
+        .map(res =>
+          _.pickBy(
+            _.mapValues(recursiveQueryParams, mapper => mapper(res)),
+            isDefined,
+          ),
+        )
+        .filter(args => Object.keys(args).length > 0)
     : []
-)
 
 export type Paginator = (
   params: ClientGetWithPaginationParams,

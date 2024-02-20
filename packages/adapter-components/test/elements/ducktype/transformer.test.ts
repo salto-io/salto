@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import {
   ObjectType,
@@ -41,9 +41,8 @@ describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
     let mockPaginator: jest.MockedFunction<Paginator>
 
-
     beforeEach(() => {
-      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get() {
+      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function* get() {
         yield [{ name: 'bla1' }]
         yield [{ missing: 'something' }]
       })
@@ -58,19 +57,20 @@ describe('ducktype_transformer', () => {
           nestedTypes: [someNested, anotherNested],
         }
       })
-      jest.spyOn(instanceElements, 'toInstance').mockImplementation(({
-        type,
-        transformationConfigByType,
-        transformationDefaultConfig,
-        entry,
-      }) => Promise.resolve(new InstanceElement(
-        ((
-          transformationConfigByType[type.elemID.name]?.idFields
-          ?? transformationDefaultConfig.idFields
-        ).map(f => entry[f]).filter(e => e !== undefined)).join('_') || 'bla',
-        type,
-        entry,
-      )))
+      jest
+        .spyOn(instanceElements, 'toInstance')
+        .mockImplementation(({ type, transformationConfigByType, transformationDefaultConfig, entry }) =>
+          Promise.resolve(
+            new InstanceElement(
+              (transformationConfigByType[type.elemID.name]?.idFields ?? transformationDefaultConfig.idFields)
+                .map(f => entry[f])
+                .filter(e => e !== undefined)
+                .join('_') || 'bla',
+              type,
+              entry,
+            ),
+          ),
+        )
     })
 
     afterEach(() => {
@@ -108,7 +108,10 @@ describe('ducktype_transformer', () => {
         'something.myType.instance.bla',
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -158,15 +161,17 @@ describe('ducktype_transformer', () => {
           nestedTypes: [someNested],
         }
       })
-      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
-        yield [{
-          meta: { has_more: false },
-          links: {
-            first: 'one',
-            last: 'two',
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function* get() {
+        yield [
+          {
+            meta: { has_more: false },
+            links: {
+              first: 'one',
+              last: 'two',
+            },
+            articles: [],
           },
-          articles: [],
-        }]
+        ]
       })
       const res = await getTypeAndInstances({
         adapterName: 'something',
@@ -191,12 +196,12 @@ describe('ducktype_transformer', () => {
         reversedSupportedTypes: { myTypes: ['myType'] },
       })
       expect(res).toHaveLength(2)
-      expect(res.map(e => e.elemID.getFullName())).toEqual([
-        'something.myType',
-        'something.myType__some_nested',
-      ])
+      expect(res.map(e => e.elemID.getFullName())).toEqual(['something.myType', 'something.myType__some_nested'])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(0)
     })
@@ -235,7 +240,10 @@ describe('ducktype_transformer', () => {
         'something.myType.instance.bla',
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -283,8 +291,8 @@ describe('ducktype_transformer', () => {
       })
     })
 
-    it('should return nested instances when nestedFieldFinder returns a specific field\'s details', async () => {
-      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+    it("should return nested instances when nestedFieldFinder returns a specific field's details", async () => {
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function* get() {
         yield [{ someNested: { name: 'bla1' } }]
         yield [{ someNested: [{ missing: 'something' }] }]
       })
@@ -319,7 +327,10 @@ describe('ducktype_transformer', () => {
         'something.myType__some_nested.instance.bla',
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -356,9 +367,12 @@ describe('ducktype_transformer', () => {
     })
 
     it('should call paginator with correct context and additional context', async () => {
-      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get(params) {
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function* get(params) {
         if (params.url === '/folders') {
-          yield [{ id: 1, name: 'folder1' }, { id: 2, name: 'folder2' }]
+          yield [
+            { id: 1, name: 'folder1' },
+            { id: 2, name: 'folder2' },
+          ]
         }
         if (params.url === '/folders/1/subfolders/extra') {
           yield [{ id: 3, name: 'subfolder1' }]
@@ -410,62 +424,81 @@ describe('ducktype_transformer', () => {
         additionalRequestContext: { extraContext: 'extra' },
       })
       expect(mockPaginator).toHaveBeenCalledTimes(3)
-      expect(mockPaginator.mock.calls[0][0]).toEqual({ url: '/folders', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
-      expect(mockPaginator.mock.calls[1][0]).toEqual({ url: '/folders/1/subfolders/extra', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
-      expect(mockPaginator.mock.calls[2][0]).toEqual({ url: '/folders/2/subfolders/extra', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator.mock.calls[0][0]).toEqual({
+        url: '/folders',
+        queryParams: undefined,
+        recursiveQueryParams: undefined,
+        paginationField: undefined,
+      })
+      expect(mockPaginator.mock.calls[1][0]).toEqual({
+        url: '/folders/1/subfolders/extra',
+        queryParams: undefined,
+        recursiveQueryParams: undefined,
+        paginationField: undefined,
+      })
+      expect(mockPaginator.mock.calls[2][0]).toEqual({
+        url: '/folders/2/subfolders/extra',
+        queryParams: undefined,
+        recursiveQueryParams: undefined,
+        paginationField: undefined,
+      })
     })
 
     it('should fail if type is missing from config', async () => {
-      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function* get() {
         yield [{ someNested: { name: 'bla1' } }]
         yield [{ someNested: [{ missing: 'something' }] }]
       })
-      await expect(() => getTypeAndInstances({
-        adapterName: 'something',
-        paginator: mockPaginator,
-        computeGetArgs: simpleGetArgs,
-        typeName: 'myType',
-        typesConfig: {
-          myType: {},
-        },
-        typeDefaultConfig: {
-          transformation: {
-            idFields: ['name'],
-            fileNameFields: ['also_name'],
+      await expect(() =>
+        getTypeAndInstances({
+          adapterName: 'something',
+          paginator: mockPaginator,
+          computeGetArgs: simpleGetArgs,
+          typeName: 'myType',
+          typesConfig: {
+            myType: {},
           },
-        },
-        nestedFieldFinder: findDataField,
-        reversedSupportedTypes: { myTypes: ['myType'] },
-      })).rejects.toThrow(new Error('Invalid type config - type something.myType has no request config'))
-    })
-    it('should fail if type does not have request details', async () => {
-      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
-        yield [{ someNested: { name: 'bla1' } }]
-        yield [{ someNested: [{ missing: 'something' }] }]
-      })
-      await expect(() => getTypeAndInstances({
-        adapterName: 'something',
-        paginator: mockPaginator,
-        computeGetArgs: simpleGetArgs,
-        typeName: 'missing',
-        typesConfig: {
-          myType: {
-            request: {
-              url: 'url',
+          typeDefaultConfig: {
+            transformation: {
+              idFields: ['name'],
+              fileNameFields: ['also_name'],
             },
           },
-        },
-        typeDefaultConfig: {
-          transformation: {
-            idFields: ['name'],
-            fileNameFields: ['also_name'],
-          },
-        },
-        nestedFieldFinder: findDataField,
-        reversedSupportedTypes: { myTypes: ['myType'] },
-      })).rejects.toThrow(new Error('could not find type missing'))
+          nestedFieldFinder: findDataField,
+          reversedSupportedTypes: { myTypes: ['myType'] },
+        }),
+      ).rejects.toThrow(new Error('Invalid type config - type something.myType has no request config'))
     })
-    it('should fail if type is setting but there\'s more than one instance', async () => {
+    it('should fail if type does not have request details', async () => {
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function* get() {
+        yield [{ someNested: { name: 'bla1' } }]
+        yield [{ someNested: [{ missing: 'something' }] }]
+      })
+      await expect(() =>
+        getTypeAndInstances({
+          adapterName: 'something',
+          paginator: mockPaginator,
+          computeGetArgs: simpleGetArgs,
+          typeName: 'missing',
+          typesConfig: {
+            myType: {
+              request: {
+                url: 'url',
+              },
+            },
+          },
+          typeDefaultConfig: {
+            transformation: {
+              idFields: ['name'],
+              fileNameFields: ['also_name'],
+            },
+          },
+          nestedFieldFinder: findDataField,
+          reversedSupportedTypes: { myTypes: ['myType'] },
+        }),
+      ).rejects.toThrow(new Error('could not find type missing'))
+    })
+    it("should fail if type is setting but there's more than one instance", async () => {
       jest.spyOn(typeElements, 'generateType').mockImplementation(({ adapterName, name }) => {
         const someNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) })
         const anotherNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__another_nested`) })
@@ -478,39 +511,46 @@ describe('ducktype_transformer', () => {
           nestedTypes: [someNested, anotherNested],
         }
       })
-      await expect(getTypeAndInstances({
-        adapterName: 'something',
-        paginator: mockPaginator,
-        computeGetArgs: simpleGetArgs,
-        typeName: 'myType',
-        typesConfig: {
-          myType: {
-            request: {
-              url: 'url',
+      await expect(
+        getTypeAndInstances({
+          adapterName: 'something',
+          paginator: mockPaginator,
+          computeGetArgs: simpleGetArgs,
+          typeName: 'myType',
+          typesConfig: {
+            myType: {
+              request: {
+                url: 'url',
+              },
+              transformation: {
+                isSingleton: true,
+              },
             },
+          },
+          typeDefaultConfig: {
             transformation: {
-              isSingleton: true,
+              idFields: ['name'],
+              fileNameFields: ['also_name'],
             },
           },
-        },
-        typeDefaultConfig: {
-          transformation: {
-            idFields: ['name'],
-            fileNameFields: ['also_name'],
-          },
-        },
-        nestedFieldFinder: returnFullEntry,
-        reversedSupportedTypes: { myTypes: ['myType'] },
-      })).rejects.toThrow(new Error('Could not fetch type myType, singleton types should not have more than one instance'))
+          nestedFieldFinder: returnFullEntry,
+          reversedSupportedTypes: { myTypes: ['myType'] },
+        }),
+      ).rejects.toThrow(
+        new Error('Could not fetch type myType, singleton types should not have more than one instance'),
+      )
     })
     it('should returns recurseInto values in the instances', async () => {
       jest.spyOn(typeElements, 'generateType').mockRestore()
       jest.spyOn(instanceElements, 'toInstance').mockRestore()
       const res = await getTypeAndInstances({
         adapterName: 'something',
-        paginator: mockFunction<Paginator>().mockImplementation(async function *get(params) {
+        paginator: mockFunction<Paginator>().mockImplementation(async function* get(params) {
           if (params.url === '/folders') {
-            yield [{ id: 1, name: 'folder1' }, { id: 2, name: 'folder2' }]
+            yield [
+              { id: 1, name: 'folder1' },
+              { id: 2, name: 'folder2' },
+            ]
           }
           if (params.url === '/folders/1/subfolders') {
             yield [{ id: 3, name: 'subfolder1' }]
@@ -564,43 +604,39 @@ describe('ducktype_transformer', () => {
         'something.subfolder.instance.folder1__subfolder1',
         'something.subfolder.instance.folder2__subfolder2',
       ])
-      const folder1 = res.find(e =>
-        e.elemID.getFullName() === 'something.folder.instance.folder1') as InstanceElement
-      const folder2 = res.find(e =>
-        e.elemID.getFullName() === 'something.folder.instance.folder2') as InstanceElement
+      const folder1 = res.find(e => e.elemID.getFullName() === 'something.folder.instance.folder1') as InstanceElement
+      const folder2 = res.find(e => e.elemID.getFullName() === 'something.folder.instance.folder2') as InstanceElement
       const subfolder1 = res.find(
-        e => e.elemID.getFullName() === 'something.subfolder.instance.folder1__subfolder1'
+        e => e.elemID.getFullName() === 'something.subfolder.instance.folder1__subfolder1',
       ) as InstanceElement
       const subfolder2 = res.find(
-        e => e.elemID.getFullName() === 'something.subfolder.instance.folder2__subfolder2'
+        e => e.elemID.getFullName() === 'something.subfolder.instance.folder2__subfolder2',
       ) as InstanceElement
-      expect(folder1.value)
-        .toEqual({
-          id: 1,
-          name: 'folder1',
-          subfolders: [new ReferenceExpression(subfolder1.elemID, subfolder1)],
-        })
-      expect(folder2.value)
-        .toEqual({
-          id: 2,
-          name: 'folder2',
-          subfolders: [new ReferenceExpression(subfolder2.elemID, subfolder2)],
-        })
+      expect(folder1.value).toEqual({
+        id: 1,
+        name: 'folder1',
+        subfolders: [new ReferenceExpression(subfolder1.elemID, subfolder1)],
+      })
+      expect(folder2.value).toEqual({
+        id: 2,
+        name: 'folder2',
+        subfolders: [new ReferenceExpression(subfolder2.elemID, subfolder2)],
+      })
       expect(subfolder1.value).toEqual({ id: 3, name: 'subfolder1' })
-      expect(subfolder1.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(folder1.elemID, folder1),
-      ] })
+      expect(subfolder1.annotations).toEqual({
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder1.elemID, folder1)],
+      })
       expect(subfolder2.value).toEqual({ id: 4, name: 'subfolder2' })
-      expect(subfolder2.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(folder2.elemID, folder2),
-      ] })
+      expect(subfolder2.annotations).toEqual({
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder2.elemID, folder2)],
+      })
     })
     it('should not return filtered-out instances or their standalone children', async () => {
       jest.spyOn(typeElements, 'generateType').mockRestore()
       jest.spyOn(instanceElements, 'toInstance').mockRestore()
       const res = await getTypeAndInstances({
         adapterName: 'something',
-        paginator: mockFunction<Paginator>().mockImplementation(async function *get(params) {
+        paginator: mockFunction<Paginator>().mockImplementation(async function* get(params) {
           if (params.url === '/folders') {
             yield [
               {
@@ -650,31 +686,27 @@ describe('ducktype_transformer', () => {
         'something.folder.instance.folder1',
         'something.subfolder.instance.folder1__subfolder1',
       ])
-      const folder1 = res.find(e =>
-        e.elemID.getFullName() === 'something.folder.instance.folder1') as InstanceElement
+      const folder1 = res.find(e => e.elemID.getFullName() === 'something.folder.instance.folder1') as InstanceElement
       const subfolder1 = res.find(
-        e => e.elemID.getFullName() === 'something.subfolder.instance.folder1__subfolder1'
+        e => e.elemID.getFullName() === 'something.subfolder.instance.folder1__subfolder1',
       ) as InstanceElement
-      expect(folder1.value)
-        .toEqual({
-          id: 1,
-          name: 'folder1',
-          subfolders: [new ReferenceExpression(subfolder1.elemID, subfolder1)],
-        })
+      expect(folder1.value).toEqual({
+        id: 1,
+        name: 'folder1',
+        subfolders: [new ReferenceExpression(subfolder1.elemID, subfolder1)],
+      })
       expect(subfolder1.value).toEqual({ id: 3, name: 'subfolder1' })
-      expect(subfolder1.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(folder1.elemID, folder1),
-      ] })
+      expect(subfolder1.annotations).toEqual({
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder1.elemID, folder1)],
+      })
     })
   })
 
   describe('getAllElements', () => {
-    const mockPaginator: Paginator = mockFunction<Paginator>().mockImplementation(
-      async function *get() {
-        yield [{ name: 'bla1' }]
-        yield [{ missing: 'something' }]
-      }
-    )
+    const mockPaginator: Paginator = mockFunction<Paginator>().mockImplementation(async function* get() {
+      yield [{ name: 'bla1' }]
+      yield [{ missing: 'something' }]
+    })
 
     const typesConfig: Record<string, TypeDuckTypeConfig> = {
       folder: {
@@ -727,24 +759,13 @@ describe('ducktype_transformer', () => {
     it('should return the type, nested types and instances', async () => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(async ({ adapterName, typeName }) => {
         const type = new ObjectType({ elemID: new ElemID(adapterName, typeName) })
-        return [
-          type,
-          new InstanceElement(
-            'abc',
-            type,
-            { bla: 'bla' },
-          ),
-        ]
+        return [type, new InstanceElement('abc', type, { bla: 'bla' })]
       })
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'folder' },
-            { type: 'file' },
-            { type: 'permission' },
-          ],
+          include: [{ type: 'folder' }, { type: 'file' }, { type: 'permission' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -811,9 +832,7 @@ describe('ducktype_transformer', () => {
         adapterName: 'something',
         paginator: mockPaginator,
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'folder' },
-          ],
+          include: [{ type: 'folder' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -827,10 +846,7 @@ describe('ducktype_transformer', () => {
         shouldAddRemainingTypes: false,
       })
       const { elements } = res
-      expect(elements.map(e => e.elemID.getFullName())).toEqual([
-        'something.folder',
-        'something.folder.instance.abc',
-      ])
+      expect(elements.map(e => e.elemID.getFullName())).toEqual(['something.folder', 'something.folder.instance.abc'])
       expect(transformer.getTypeAndInstances).toHaveBeenCalledTimes(1)
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -853,9 +869,7 @@ describe('ducktype_transformer', () => {
         adapterName: 'something',
         paginator: mockPaginator,
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'folder' },
-          ],
+          include: [{ type: 'folder' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -882,15 +896,16 @@ describe('ducktype_transformer', () => {
           },
         },
         typeDefaults: typeDefaultConfig,
-        isErrorTurnToConfigSuggestion: error =>
-          error instanceof HTTPError && (error.response.status === 403),
+        isErrorTurnToConfigSuggestion: error => error instanceof HTTPError && error.response.status === 403,
       })
       const { configChanges } = res
-      expect(configChanges).toEqual([{
-        type: 'typeToExclude',
-        value: 'folder',
-        reason: 'Salto failed to fetch folder type',
-      }])
+      expect(configChanges).toEqual([
+        {
+          type: 'typeToExclude',
+          value: 'folder',
+          reason: 'Salto failed to fetch folder type',
+        },
+      ])
     })
     it('should return singleton type errors as fetch warnings', async () => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
@@ -900,9 +915,7 @@ describe('ducktype_transformer', () => {
         adapterName: 'something',
         paginator: mockPaginator,
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'folder' },
-          ],
+          include: [{ type: 'folder' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -925,42 +938,40 @@ describe('ducktype_transformer', () => {
       const { errors } = res
       expect(errors).toEqual([{ message: 'singleton err', severity: 'Warning' }])
     })
-    test.each<{ severity: SeverityLevel }>([
-      { severity: 'Error' },
-      { severity: 'Warning' },
-    ])('should return fetch errors correctly with severity %s', async ({ severity }) => {
-      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
-        throw new AdapterFetchError('fetch err', severity)
-      })
-      const res = await getAllElements({
-        adapterName: 'something',
-        paginator: mockPaginator,
-        fetchQuery: createElementQuery({
-          include: [
-            { type: 'folder' },
-          ],
-          exclude: [],
-        }),
-        supportedTypes: {
-          folder: ['folders'],
-        },
-        computeGetArgs: simpleGetArgs,
-        nestedFieldFinder: returnFullEntry,
-        types: {
-          folders: {
-            request: {
-              url: '/folders',
-            },
-            transformation: {
-              idFields: ['name'],
+    test.each<{ severity: SeverityLevel }>([{ severity: 'Error' }, { severity: 'Warning' }])(
+      'should return fetch errors correctly with severity %s',
+      async ({ severity }) => {
+        jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+          throw new AdapterFetchError('fetch err', severity)
+        })
+        const res = await getAllElements({
+          adapterName: 'something',
+          paginator: mockPaginator,
+          fetchQuery: createElementQuery({
+            include: [{ type: 'folder' }],
+            exclude: [],
+          }),
+          supportedTypes: {
+            folder: ['folders'],
+          },
+          computeGetArgs: simpleGetArgs,
+          nestedFieldFinder: returnFullEntry,
+          types: {
+            folders: {
+              request: {
+                url: '/folders',
+              },
+              transformation: {
+                idFields: ['name'],
+              },
             },
           },
-        },
-        typeDefaults: typeDefaultConfig,
-      })
-      const { errors } = res
-      expect(errors).toEqual([{ message: 'fetch err', severity }])
-    })
+          typeDefaults: typeDefaultConfig,
+        })
+        const { errors } = res
+        expect(errors).toEqual([{ message: 'fetch err', severity }])
+      },
+    )
   })
 
   describe('getNewElementsFromInstances', () => {
@@ -979,26 +990,18 @@ describe('ducktype_transformer', () => {
         },
       })
       const oldInstances = [
-        new InstanceElement(
-          'old1',
-          oldType,
-          {
-            id: 123,
-            nestedType: {
-              name: 'one',
-            },
-          }
-        ),
-        new InstanceElement(
-          'old1',
-          oldType,
-          {
-            id: 123,
-            nestedType: {
-              name: 'two',
-            },
-          }
-        ),
+        new InstanceElement('old1', oldType, {
+          id: 123,
+          nestedType: {
+            name: 'one',
+          },
+        }),
+        new InstanceElement('old1', oldType, {
+          id: 123,
+          nestedType: {
+            name: 'two',
+          },
+        }),
       ]
 
       const { instances, type, nestedTypes } = transformer.getNewElementsFromInstances({

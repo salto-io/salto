@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  ObjectType, ElemID, InstanceElement,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
@@ -47,7 +45,7 @@ describe('business hours schedule filter', () => {
       name: 'Test Schedule',
       time_zone: 'Central Time (US & Canada)',
       intervals,
-    }
+    },
   )
 
   beforeEach(async () => {
@@ -80,8 +78,7 @@ describe('business hours schedule filter', () => {
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([{ action: 'add', data: { after: clonedSchedule } }])
+    expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedSchedule } }])
   })
   it('should pass the correct params to deployChange and client on modify', async () => {
     const id = 2
@@ -94,9 +91,9 @@ describe('business hours schedule filter', () => {
     mockDeployChange.mockImplementation(async () => ({ schedule: { id } }))
     mockPut = jest.spyOn(client, 'put')
     mockPut.mockResolvedValue({ status: 200, data: { schedule: { id } } })
-    const res = await filter.deploy(
-      [{ action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } }]
-    )
+    const res = await filter.deploy([
+      { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
+    ])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
     expect(mockDeployChange).toHaveBeenCalledWith({
       change: { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
@@ -112,10 +109,9 @@ describe('business hours schedule filter', () => {
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([
-        { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
-      ])
+    expect(res.deployResult.appliedChanges).toEqual([
+      { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
+    ])
   })
   it('should pass the correct params to deployChange and client on remove', async () => {
     const id = 2
@@ -136,8 +132,7 @@ describe('business hours schedule filter', () => {
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([{ action: 'remove', data: { before: clonedSchedule } }])
+    expect(res.deployResult.appliedChanges).toEqual([{ action: 'remove', data: { before: clonedSchedule } }])
   })
   it('should not update intervals if there was not change in intervals', async () => {
     const id = 2
@@ -149,9 +144,9 @@ describe('business hours schedule filter', () => {
     mockDeployChange.mockImplementation(async () => ({ schedule: { id } }))
     mockPut = jest.spyOn(client, 'put')
     mockPut.mockResolvedValue({ status: 200, data: { schedule: { id } } })
-    const res = await filter.deploy(
-      [{ action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } }]
-    )
+    const res = await filter.deploy([
+      { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
+    ])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
     expect(mockDeployChange).toHaveBeenCalledWith({
       change: { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
@@ -163,15 +158,16 @@ describe('business hours schedule filter', () => {
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([
-        { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
-      ])
+    expect(res.deployResult.appliedChanges).toEqual([
+      { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
+    ])
   })
   it('should return error if deployChange failed', async () => {
     const id = 2
     const clonedSchedule = schedule.clone()
-    mockDeployChange.mockImplementation(async () => { throw new Error('err') })
+    mockDeployChange.mockImplementation(async () => {
+      throw new Error('err')
+    })
     mockPut = jest.spyOn(client, 'put')
     mockPut.mockResolvedValue({ status: 200, data: { schedule: { id } } })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedSchedule } }])
@@ -192,7 +188,9 @@ describe('business hours schedule filter', () => {
     const clonedSchedule = schedule.clone()
     mockDeployChange.mockImplementation(async () => ({ schedule: { id } }))
     mockPut = jest.spyOn(client, 'put')
-    mockPut.mockImplementation(async () => { throw new Error('err') })
+    mockPut.mockImplementation(async () => {
+      throw new Error('err')
+    })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedSchedule } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
     expect(mockDeployChange).toHaveBeenCalledWith({

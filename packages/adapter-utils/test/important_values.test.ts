@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import {
   BuiltinTypes,
@@ -21,7 +21,8 @@ import {
   Field,
   InstanceElement,
   ObjectType,
-  ReadOnlyElementsSource, ReferenceExpression,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '../src/element_source'
 import { getImportantValues, toImportantValues } from '../src/important_values'
@@ -100,54 +101,50 @@ const obj = new ObjectType({
     ],
   },
 })
-const inst = new InstanceElement(
-  'test inst',
-  obj,
-  {
-    active: true,
-    name: 'test inst',
-    user: {
-      id: 12345,
-    },
-  }
-)
+const inst = new InstanceElement('test inst', obj, {
+  active: true,
+  name: 'test inst',
+  user: {
+    id: 12345,
+  },
+})
 
 describe('toImportantValues', () => {
   it('should return only existing fields', () => {
-    expect(toImportantValues(obj, ['name', 'description'], { indexed: true }))
-      .toEqual([
-        {
-          value: 'name',
-          indexed: true,
-          highlighted: false,
-        },
-      ])
+    expect(toImportantValues(obj, ['name', 'description'], { indexed: true })).toEqual([
+      {
+        value: 'name',
+        indexed: true,
+        highlighted: false,
+      },
+    ])
   })
   it('should return fields in the given order', () => {
-    expect(toImportantValues(obj, ['user', 'name', 'active'], { highlighted: true }))
-      .toEqual([
-        {
-          value: 'user',
-          indexed: false,
-          highlighted: true,
-        },
-        {
-          value: 'name',
-          indexed: false,
-          highlighted: true,
-        },
-        {
-          value: 'active',
-          indexed: false,
-          highlighted: true,
-        },
-      ])
+    expect(toImportantValues(obj, ['user', 'name', 'active'], { highlighted: true })).toEqual([
+      {
+        value: 'user',
+        indexed: false,
+        highlighted: true,
+      },
+      {
+        value: 'name',
+        indexed: false,
+        highlighted: true,
+      },
+      {
+        value: 'active',
+        indexed: false,
+        highlighted: true,
+      },
+    ])
   })
 })
 
 describe('getImportantValues', () => {
   let elementSource: ReadOnlyElementsSource
-  beforeEach(() => { elementSource = buildElementsSourceFromElements([obj, userType]) })
+  beforeEach(() => {
+    elementSource = buildElementsSourceFromElements([obj, userType])
+  })
   it('should get the right important values for an object type', async () => {
     const res = await getImportantValues({
       element: obj,
@@ -171,14 +168,9 @@ describe('getImportantValues', () => {
     ])
   })
   it('should get the right important values for a field', async () => {
-    const field = new Field(
-      obj,
-      'test field',
-      userType,
-      {
-        label: 'Active',
-      }
-    )
+    const field = new Field(obj, 'test field', userType, {
+      label: 'Active',
+    })
     const res = await getImportantValues({
       element: field,
       elementSource,
@@ -264,16 +256,12 @@ describe('getImportantValues', () => {
         ],
       },
     })
-    const inst2 = new InstanceElement(
-      'test inst2',
-      obj2,
-      {
-        name: 'test inst',
-        user: {
-          id: 12345,
-        },
-      }
-    )
+    const inst2 = new InstanceElement('test inst2', obj2, {
+      name: 'test inst',
+      user: {
+        id: 12345,
+      },
+    })
     elementSource = buildElementsSourceFromElements([obj2])
     const res = await getImportantValues({
       element: inst2,
@@ -355,21 +343,17 @@ describe('getImportantValues', () => {
         ],
       },
     })
-    const inst2 = new InstanceElement(
-      'test inst2',
-      obj2,
-      {
-        string: 'test inst',
-        number: 1,
-        boolean: true,
-        stringArray: ['1', '2'],
-        undefinedVal: undefined,
-        reference: new ReferenceExpression(inst.elemID),
-        obj: {
-          id: 12345,
-        },
-      }
-    )
+    const inst2 = new InstanceElement('test inst2', obj2, {
+      string: 'test inst',
+      number: 1,
+      boolean: true,
+      stringArray: ['1', '2'],
+      undefinedVal: undefined,
+      reference: new ReferenceExpression(inst.elemID),
+      obj: {
+        id: 12345,
+      },
+    })
     const res = await getImportantValues({
       element: inst2,
       elementSource,

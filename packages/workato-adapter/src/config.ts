@@ -1,31 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
+import {
+  WORKATO,
+  PROPERTY_TYPE,
+  ROLE_TYPE,
+  API_COLLECTION_TYPE,
+  FOLDER_TYPE,
+  RECIPE_TYPE,
+  CONNECTION_TYPE,
+  API_ENDPOINT_TYPE,
+  API_CLIENT_TYPE,
+  API_ACCESS_PROFILE_TYPE,
+  RECIPE_CODE_TYPE,
+} from './constants'
 
 type UserDeployConfig = definitions.UserDeployConfig
 
 const { createClientConfigType } = definitions
-const {
-  createDucktypeAdapterApiConfigType,
-  validateDuckTypeFetchConfig,
-} = configUtils
+const { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig } = configUtils
 
 export const DEFAULT_SERVICE_ID_FIELD = 'id'
 export const DEFAULT_ID_FIELDS = ['name']
@@ -74,10 +83,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/connections',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
       fieldsToOmit: [
         ...FIELDS_TO_OMIT,
         { fieldName: 'authorized_at', fieldType: 'string' },
@@ -92,11 +98,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', '&folder_id'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-        { fieldName: 'user_id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }, { fieldName: 'user_id' }],
       fieldsToOmit: [
         ...FIELDS_TO_OMIT,
         { fieldName: 'last_run_at' },
@@ -105,9 +107,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'copy_count' },
         { fieldName: 'lifetime_task_count' },
       ],
-      standaloneFields: [
-        { fieldName: 'code', parseJSON: true },
-      ],
+      standaloneFields: [{ fieldName: 'code', parseJSON: true }],
     },
   },
   [RECIPE_CODE_TYPE]: {
@@ -127,10 +127,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', '&parent_id'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_COLLECTION_TYPE]: {
@@ -139,10 +136,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_ENDPOINT_TYPE]: {
@@ -152,10 +146,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', 'base_path'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_CLIENT_TYPE]: {
@@ -164,10 +155,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [API_ACCESS_PROFILE_TYPE]: {
@@ -176,10 +164,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [ROLE_TYPE]: {
@@ -187,10 +172,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/roles',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
     },
   },
   [PROPERTY_TYPE]: {
@@ -227,9 +209,7 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
   },
 }
 
-export type ChangeValidatorName = (
-  | 'deployNotSupported'
-)
+export type ChangeValidatorName = 'deployNotSupported'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -268,9 +248,7 @@ export const configType = new ObjectType({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(
-      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`
-    ),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
@@ -279,7 +257,6 @@ export type FilterContext = {
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
 }
-
 
 export const validateFetchConfig = (
   fetchConfigPath: string,

@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, InstanceElement, ElemID, toChange, CORE_ANNOTATIONS, ReferenceExpression, DependencyChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  InstanceElement,
+  ElemID,
+  toChange,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  DependencyChange,
+} from '@salto-io/adapter-api'
 import { dashboardGadgetsDependencyChanger } from '../../src/dependency_changers/dashboard_gadgets'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../src/constants'
 
@@ -34,10 +42,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
     dashboardGadgetType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),
     })
-    dashboard = new InstanceElement(
-      'dashboard',
-      dashboardType,
-    )
+    dashboard = new InstanceElement('dashboard', dashboardType)
 
     dashboardGadget1 = new InstanceElement(
       'dashboardGadget1',
@@ -50,9 +55,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(dashboard.elemID, dashboard),
-        ],
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)],
       },
     )
 
@@ -67,9 +70,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(dashboard.elemID, dashboard),
-        ],
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)],
       },
     )
 
@@ -84,9 +85,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(dashboard.elemID, dashboard),
-        ],
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)],
       },
     )
 
@@ -101,9 +100,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'other'), {}),
-        ],
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'other'), {})],
       },
     )
 
@@ -115,7 +112,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
       [4, toChange({ after: dashboard })],
     ])
 
-    dependencyChanges = [...await dashboardGadgetsDependencyChanger(inputChanges, new Map())]
+    dependencyChanges = [...(await dashboardGadgetsDependencyChanger(inputChanges, new Map()))]
   })
 
   it('should add dependency from gadget to its dashboard', async () => {

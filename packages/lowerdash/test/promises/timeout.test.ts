@@ -1,38 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { PromiseTimedOutError, withTimeout, sleep } from '../../src/promises/timeout'
 
 describe('withTimeout', () => {
-  const wait = (
-    timeout: number,
-  ): Promise<void> => new Promise(resolve => setTimeout(resolve, timeout))
+  const wait = (timeout: number): Promise<void> => new Promise(resolve => setTimeout(resolve, timeout))
 
-  const waitAndReturn = async <T>(
-    timeout: number,
-    result: T,
-  ): Promise<T> => {
+  const waitAndReturn = async <T>(timeout: number, result: T): Promise<T> => {
     await wait(timeout)
     return result
   }
 
-  const waitAndReject = async <T>(
-    timeout: number,
-    error: Error,
-  ): Promise<T> => {
+  const waitAndReject = async <T>(timeout: number, error: Error): Promise<T> => {
     await wait(timeout)
     throw error
   }
@@ -44,9 +36,7 @@ describe('withTimeout', () => {
   // if an unhandled exception exists in the node job queue.
   // See: https://github.com/facebook/jest/issues/9210#issuecomment-657568115
   // This is also why we can't use expect(...).rejects in tests here
-  const wrapPromiseRejection = <T>(
-    promise: Promise<T>,
-  ): Promise<T | Error> => promise.catch(e => e)
+  const wrapPromiseRejection = <T>(promise: Promise<T>): Promise<T | Error> => promise.catch(e => e)
 
   describe('when the promise is already resolved', () => {
     it('should return it', async () => {
@@ -103,7 +93,9 @@ describe('sleep', () => {
   let setTimeout: jest.SpyInstance
   beforeEach(() => {
     jest.clearAllMocks()
-    setTimeout = jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
+    setTimeout = jest
+      .spyOn(global, 'setTimeout')
+      .mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
   })
   afterAll(() => {
     jest.clearAllMocks()

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, StaticFile, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { updateReferencedStaticFilesIndex, STATIC_FILES_INDEX_VERSION } from '../../src/workspace/static_files_index'
@@ -75,13 +75,7 @@ describe('static files index', () => {
       undefined,
       {},
     )
-    unKnownUserInstance = new InstanceElement(
-      'instance2',
-      object,
-      {},
-      undefined,
-      {},
-    )
+    unKnownUserInstance = new InstanceElement('instance2', object, {}, undefined, {})
   })
   describe('mixed changes', () => {
     beforeEach(async () => {
@@ -91,24 +85,23 @@ describe('static files index', () => {
         toChange({ before: unKnownUserInstance }),
         toChange({ after: object }),
       ]
-      await updateReferencedStaticFilesIndex(
-        changes,
-        staticFilesIndex,
-        mapVersions,
-        elementsSource,
-        true
-      )
+      await updateReferencedStaticFilesIndex(changes, staticFilesIndex, mapVersions, elementsSource, true)
     })
     it('should add the new instances changed by values to index', () => {
-      expect(staticFilesIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: knownUserInstance.elemID.getFullName(), value: expect.arrayContaining(['static1.nacl']) }]
-      ))
-      expect(staticFilesIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: knownUserSecondInstance.elemID.getFullName(), value: expect.arrayContaining(['static2.nacl']) }]
-      ))
-      expect(staticFilesIndex.deleteAll).toHaveBeenCalledWith(
-        [object.elemID.getFullName(), unKnownUserInstance.elemID.getFullName()]
+      expect(staticFilesIndex.setAll).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { key: knownUserInstance.elemID.getFullName(), value: expect.arrayContaining(['static1.nacl']) },
+        ]),
       )
+      expect(staticFilesIndex.setAll).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { key: knownUserSecondInstance.elemID.getFullName(), value: expect.arrayContaining(['static2.nacl']) },
+        ]),
+      )
+      expect(staticFilesIndex.deleteAll).toHaveBeenCalledWith([
+        object.elemID.getFullName(),
+        unKnownUserInstance.elemID.getFullName(),
+      ])
     })
   })
 
@@ -125,17 +118,20 @@ describe('static files index', () => {
           staticFilesIndex,
           mapVersions,
           elementsSource,
-          false
+          false,
         )
       })
       it('should update changed by index with all additions', () => {
         expect(staticFilesIndex.clear).toHaveBeenCalled()
-        expect(staticFilesIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: knownUserInstance.elemID.getFullName(), value: expect.arrayContaining(['static1.nacl']) }]
-        ))
-        expect(staticFilesIndex.deleteAll).toHaveBeenCalledWith(
-          [unKnownUserInstance.elemID.getFullName(), object.elemID.getFullName()]
+        expect(staticFilesIndex.setAll).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            { key: knownUserInstance.elemID.getFullName(), value: expect.arrayContaining(['static1.nacl']) },
+          ]),
         )
+        expect(staticFilesIndex.deleteAll).toHaveBeenCalledWith([
+          unKnownUserInstance.elemID.getFullName(),
+          object.elemID.getFullName(),
+        ])
       })
     })
 
@@ -145,22 +141,19 @@ describe('static files index', () => {
         await elementsSource.set(unKnownUserInstance)
         await elementsSource.set(object)
         mapVersions.get.mockResolvedValue(0)
-        await updateReferencedStaticFilesIndex(
-          [],
-          staticFilesIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
+        await updateReferencedStaticFilesIndex([], staticFilesIndex, mapVersions, elementsSource, true)
       })
       it('should update changed by index using the element source', () => {
         expect(staticFilesIndex.clear).toHaveBeenCalled()
-        expect(staticFilesIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: knownUserInstance.elemID.getFullName(), value: expect.arrayContaining(['static1.nacl']) }]
-        ))
-        expect(staticFilesIndex.deleteAll).toHaveBeenCalledWith(
-          [object.elemID.getFullName(), unKnownUserInstance.elemID.getFullName()]
+        expect(staticFilesIndex.setAll).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            { key: knownUserInstance.elemID.getFullName(), value: expect.arrayContaining(['static1.nacl']) },
+          ]),
         )
+        expect(staticFilesIndex.deleteAll).toHaveBeenCalledWith([
+          object.elemID.getFullName(),
+          unKnownUserInstance.elemID.getFullName(),
+        ])
       })
     })
   })

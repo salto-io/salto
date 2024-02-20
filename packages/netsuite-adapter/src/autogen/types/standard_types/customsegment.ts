@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
 import { TypeAndInnerTypes } from '../../../types/object_types'
@@ -26,34 +32,33 @@ export const customsegmentType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
 
   const customsegmentElemID = new ElemID(constants.NETSUITE, 'customsegment')
-  const customsegment_permissions_permissionElemID = new ElemID(constants.NETSUITE, 'customsegment_permissions_permission')
+  const customsegment_permissions_permissionElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_permissions_permission',
+  )
 
   const customsegment_permissions_permission = new ObjectType({
     elemID: customsegment_permissions_permissionElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       role: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+      } /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */,
       valuemgmtaccesslevel: {
         refType: createRefToElmWithValue(enums.generic_permission_level),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */,
       recordaccesslevel: {
         refType: createRefToElmWithValue(enums.customsegment_access_search_level),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_access_search_level. */,
       searchaccesslevel: {
         refType: createRefToElmWithValue(enums.customsegment_access_search_level),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_access_search_level. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
@@ -64,13 +69,11 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   const customsegment_permissions = new ObjectType({
     elemID: customsegment_permissionsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       permission: {
         refType: createRefToElmWithValue(new ListType(customsegment_permissions_permission)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -78,42 +81,46 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_permissions = customsegment_permissions
 
-  const customsegment_segmentapplication_crm_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_crm_applications_application')
+  const customsegment_segmentapplication_crm_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_crm_applications_application',
+  )
 
   const customsegment_segmentapplication_crm_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_crm_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(enums.customsegment_crm_application_id),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see customsegment_crm_application_id. */
+      } /* Original description: For information about possible values, see customsegment_crm_application_id. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_crm_applications_application = customsegment_segmentapplication_crm_applications_application
+  innerTypes.customsegment_segmentapplication_crm_applications_application =
+    customsegment_segmentapplication_crm_applications_application
 
-  const customsegment_segmentapplication_crm_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_crm_applications')
+  const customsegment_segmentapplication_crm_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_crm_applications',
+  )
 
   const customsegment_segmentapplication_crm_applications = new ObjectType({
     elemID: customsegment_segmentapplication_crm_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
         refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_crm_applications_application)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -121,22 +128,22 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_crm_applications = customsegment_segmentapplication_crm_applications
 
-  const customsegment_segmentapplication_crmElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_crm')
+  const customsegment_segmentapplication_crmElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_crm',
+  )
 
   const customsegment_segmentapplication_crm = new ObjectType({
     elemID: customsegment_segmentapplication_crmElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       sourcelist: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the crmcustomfield custom type.   For information about other possible values, see customsegment_crm_sourcelist. */
+        annotations: {},
+      } /* Original description: This field accepts references to the crmcustomfield custom type.   For information about other possible values, see customsegment_crm_sourcelist. */,
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_crm_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -144,65 +151,72 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_crm = customsegment_segmentapplication_crm
 
-  const customsegment_segmentapplication_customrecords_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_customrecords_applications_application')
+  const customsegment_segmentapplication_customrecords_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_customrecords_applications_application',
+  )
 
   const customsegment_segmentapplication_customrecords_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_customrecords_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the customrecordtype custom type. */
+      } /* Original description: This field accepts references to the customrecordtype custom type. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
       sourcelist: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the isapplied value is equal to T.   This field accepts references to the customrecordcustomfield custom type. */
+        annotations: {},
+      } /* Original description: This field is available when the isapplied value is equal to T.   This field accepts references to the customrecordcustomfield custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_customrecords_applications_application = customsegment_segmentapplication_customrecords_applications_application
+  innerTypes.customsegment_segmentapplication_customrecords_applications_application =
+    customsegment_segmentapplication_customrecords_applications_application
 
-  const customsegment_segmentapplication_customrecords_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_customrecords_applications')
+  const customsegment_segmentapplication_customrecords_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_customrecords_applications',
+  )
 
   const customsegment_segmentapplication_customrecords_applications = new ObjectType({
     elemID: customsegment_segmentapplication_customrecords_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
-        refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_customrecords_applications_application)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(customsegment_segmentapplication_customrecords_applications_application),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_customrecords_applications = customsegment_segmentapplication_customrecords_applications
+  innerTypes.customsegment_segmentapplication_customrecords_applications =
+    customsegment_segmentapplication_customrecords_applications
 
-  const customsegment_segmentapplication_customrecordsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_customrecords')
+  const customsegment_segmentapplication_customrecordsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_customrecords',
+  )
 
   const customsegment_segmentapplication_customrecords = new ObjectType({
     elemID: customsegment_segmentapplication_customrecordsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_customrecords_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -210,65 +224,72 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_customrecords = customsegment_segmentapplication_customrecords
 
-  const customsegment_segmentapplication_entities_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_entities_applications_application')
+  const customsegment_segmentapplication_entities_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_entities_applications_application',
+  )
 
   const customsegment_segmentapplication_entities_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_entities_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(enums.customsegment_entities_application_id),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see customsegment_entities_application_id. */
+      } /* Original description: For information about possible values, see customsegment_entities_application_id. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_entities_applications_application = customsegment_segmentapplication_entities_applications_application
+  innerTypes.customsegment_segmentapplication_entities_applications_application =
+    customsegment_segmentapplication_entities_applications_application
 
-  const customsegment_segmentapplication_entities_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_entities_applications')
+  const customsegment_segmentapplication_entities_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_entities_applications',
+  )
 
   const customsegment_segmentapplication_entities_applications = new ObjectType({
     elemID: customsegment_segmentapplication_entities_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
-        refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_entities_applications_application)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(customsegment_segmentapplication_entities_applications_application),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_entities_applications = customsegment_segmentapplication_entities_applications
+  innerTypes.customsegment_segmentapplication_entities_applications =
+    customsegment_segmentapplication_entities_applications
 
-  const customsegment_segmentapplication_entitiesElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_entities')
+  const customsegment_segmentapplication_entitiesElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_entities',
+  )
 
   const customsegment_segmentapplication_entities = new ObjectType({
     elemID: customsegment_segmentapplication_entitiesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       sourcelist: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see customsegment_entities_sourcelist. */
+        annotations: {},
+      } /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see customsegment_entities_sourcelist. */,
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_entities_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -276,42 +297,46 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_entities = customsegment_segmentapplication_entities
 
-  const customsegment_segmentapplication_items_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_items_applications_application')
+  const customsegment_segmentapplication_items_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_items_applications_application',
+  )
 
   const customsegment_segmentapplication_items_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_items_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(enums.customsegment_items_application_id),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see customsegment_items_application_id. */
+      } /* Original description: For information about possible values, see customsegment_items_application_id. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_items_applications_application = customsegment_segmentapplication_items_applications_application
+  innerTypes.customsegment_segmentapplication_items_applications_application =
+    customsegment_segmentapplication_items_applications_application
 
-  const customsegment_segmentapplication_items_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_items_applications')
+  const customsegment_segmentapplication_items_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_items_applications',
+  )
 
   const customsegment_segmentapplication_items_applications = new ObjectType({
     elemID: customsegment_segmentapplication_items_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
         refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_items_applications_application)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -319,28 +344,28 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_items_applications = customsegment_segmentapplication_items_applications
 
-  const customsegment_segmentapplication_itemsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_items')
+  const customsegment_segmentapplication_itemsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_items',
+  )
 
   const customsegment_segmentapplication_items = new ObjectType({
     elemID: customsegment_segmentapplication_itemsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       subtype: {
         refType: createRefToElmWithValue(enums.customsegment_items_subtype),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see customsegment_items_subtype.   The default value is 'BOTH'. */
+      } /* Original description: For information about possible values, see customsegment_items_subtype.   The default value is 'BOTH'. */,
       sourcelist: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see customsegment_items_sourcelist. */
+        annotations: {},
+      } /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see customsegment_items_sourcelist. */,
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_items_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -348,60 +373,68 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_items = customsegment_segmentapplication_items
 
-  const customsegment_segmentapplication_otherrecords_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords_applications_application')
+  const customsegment_segmentapplication_otherrecords_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_otherrecords_applications_application',
+  )
 
   const customsegment_segmentapplication_otherrecords_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_otherrecords_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(enums.customsegment_otherrecords_application_id),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: For information about possible values, see customsegment_otherrecords_application_id. */
+      } /* Original description: For information about possible values, see customsegment_otherrecords_application_id. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_otherrecords_applications_application = customsegment_segmentapplication_otherrecords_applications_application
+  innerTypes.customsegment_segmentapplication_otherrecords_applications_application =
+    customsegment_segmentapplication_otherrecords_applications_application
 
-  const customsegment_segmentapplication_otherrecords_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords_applications')
+  const customsegment_segmentapplication_otherrecords_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_otherrecords_applications',
+  )
 
   const customsegment_segmentapplication_otherrecords_applications = new ObjectType({
     elemID: customsegment_segmentapplication_otherrecords_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
-        refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_otherrecords_applications_application)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(customsegment_segmentapplication_otherrecords_applications_application),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_otherrecords_applications = customsegment_segmentapplication_otherrecords_applications
+  innerTypes.customsegment_segmentapplication_otherrecords_applications =
+    customsegment_segmentapplication_otherrecords_applications
 
-  const customsegment_segmentapplication_otherrecordsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords')
+  const customsegment_segmentapplication_otherrecordsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_otherrecords',
+  )
 
   const customsegment_segmentapplication_otherrecords = new ObjectType({
     elemID: customsegment_segmentapplication_otherrecordsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_otherrecords_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -409,65 +442,72 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_otherrecords = customsegment_segmentapplication_otherrecords
 
-  const customsegment_segmentapplication_transactionbody_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionbody_applications_application')
+  const customsegment_segmentapplication_transactionbody_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_transactionbody_applications_application',
+  )
 
   const customsegment_segmentapplication_transactionbody_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_transactionbody_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionbody_application_id. */
+      } /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionbody_application_id. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_transactionbody_applications_application = customsegment_segmentapplication_transactionbody_applications_application
+  innerTypes.customsegment_segmentapplication_transactionbody_applications_application =
+    customsegment_segmentapplication_transactionbody_applications_application
 
-  const customsegment_segmentapplication_transactionbody_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionbody_applications')
+  const customsegment_segmentapplication_transactionbody_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_transactionbody_applications',
+  )
 
   const customsegment_segmentapplication_transactionbody_applications = new ObjectType({
     elemID: customsegment_segmentapplication_transactionbody_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
-        refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_transactionbody_applications_application)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(customsegment_segmentapplication_transactionbody_applications_application),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_transactionbody_applications = customsegment_segmentapplication_transactionbody_applications
+  innerTypes.customsegment_segmentapplication_transactionbody_applications =
+    customsegment_segmentapplication_transactionbody_applications
 
-  const customsegment_segmentapplication_transactionbodyElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionbody')
+  const customsegment_segmentapplication_transactionbodyElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_transactionbody',
+  )
 
   const customsegment_segmentapplication_transactionbody = new ObjectType({
     elemID: customsegment_segmentapplication_transactionbodyElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       sourcelist: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the transactionbodycustomfield custom type.   For information about other possible values, see customsegment_transactionbody_sourcelist. */
+        annotations: {},
+      } /* Original description: This field accepts references to the transactionbodycustomfield custom type.   For information about other possible values, see customsegment_transactionbody_sourcelist. */,
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_transactionbody_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -475,65 +515,72 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication_transactionbody = customsegment_segmentapplication_transactionbody
 
-  const customsegment_segmentapplication_transactionline_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionline_applications_application')
+  const customsegment_segmentapplication_transactionline_applications_applicationElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_transactionline_applications_application',
+  )
 
   const customsegment_segmentapplication_transactionline_applications_application = new ObjectType({
     elemID: customsegment_segmentapplication_transactionline_applications_applicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionline_application_id. */
+      } /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionline_application_id. */,
       isapplied: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: The default value is F. */
+      } /* Original description: The default value is F. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_transactionline_applications_application = customsegment_segmentapplication_transactionline_applications_application
+  innerTypes.customsegment_segmentapplication_transactionline_applications_application =
+    customsegment_segmentapplication_transactionline_applications_application
 
-  const customsegment_segmentapplication_transactionline_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionline_applications')
+  const customsegment_segmentapplication_transactionline_applicationsElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_transactionline_applications',
+  )
 
   const customsegment_segmentapplication_transactionline_applications = new ObjectType({
     elemID: customsegment_segmentapplication_transactionline_applicationsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       application: {
-        refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_transactionline_applications_application)),
-        annotations: {
-        },
+        refType: createRefToElmWithValue(
+          new ListType(customsegment_segmentapplication_transactionline_applications_application),
+        ),
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
 
-  innerTypes.customsegment_segmentapplication_transactionline_applications = customsegment_segmentapplication_transactionline_applications
+  innerTypes.customsegment_segmentapplication_transactionline_applications =
+    customsegment_segmentapplication_transactionline_applications
 
-  const customsegment_segmentapplication_transactionlineElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionline')
+  const customsegment_segmentapplication_transactionlineElemID = new ElemID(
+    constants.NETSUITE,
+    'customsegment_segmentapplication_transactionline',
+  )
 
   const customsegment_segmentapplication_transactionline = new ObjectType({
     elemID: customsegment_segmentapplication_transactionlineElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       sourcelist: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   For information about other possible values, see customsegment_transactionline_sourcelist. */
+        annotations: {},
+      } /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   For information about other possible values, see customsegment_transactionline_sourcelist. */,
       applications: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_transactionline_applications),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -545,43 +592,35 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   const customsegment_segmentapplication = new ObjectType({
     elemID: customsegment_segmentapplicationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       crm: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_crm),
-        annotations: {
-        },
+        annotations: {},
       },
       customrecords: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_customrecords),
-        annotations: {
-        },
+        annotations: {},
       },
       entities: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_entities),
-        annotations: {
-        },
+        annotations: {},
       },
       items: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_items),
-        annotations: {
-        },
+        annotations: {},
       },
       otherrecords: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_otherrecords),
-        annotations: {
-        },
+        annotations: {},
       },
       transactionbody: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_transactionbody),
-        annotations: {
-        },
+        annotations: {},
       },
       transactionline: {
         refType: createRefToElmWithValue(customsegment_segmentapplication_transactionline),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
@@ -589,11 +628,9 @@ export const customsegmentType = (): TypeAndInnerTypes => {
 
   innerTypes.customsegment_segmentapplication = customsegment_segmentapplication
 
-
   const customsegment = new ObjectType({
     elemID: customsegmentElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -602,91 +639,79 @@ export const customsegmentType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^cseg[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 19 characters long.   The default value is ‘cseg’. */
+      } /* Original description: This attribute value can be up to 19 characters long.   The default value is ‘cseg’. */,
       label: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
         },
-      }, /* Original description: This field value can be up to 40 characters long. */
+      } /* Original description: This field value can be up to 40 characters long. */,
       recordtype: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the customrecordtype custom type. */
+      } /* Original description: This field accepts references to the customrecordtype custom type. */,
       filteredby: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
-        annotations: {
-        },
-      }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customsegment custom type.   For information about other possible values, see customsegment_parent. */
+        annotations: {},
+      } /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customsegment custom type.   For information about other possible values, see customsegment_parent. */,
       fieldtype: {
         refType: createRefToElmWithValue(enums.customsegment_fieldtype),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_fieldtype. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_fieldtype. */,
       description: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
         },
-      }, /* Original description: This field value can be up to 999 characters long. */
+      } /* Original description: This field value can be up to 999 characters long. */,
       help: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
         },
-      }, /* Original description: This field value can be up to 999 characters long. */
+      } /* Original description: This field value can be up to 999 characters long. */,
       hasglimpact: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       ismandatory: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       displaytype: {
         refType: createRefToElmWithValue(enums.customsegment_displaytype),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_displaytype.   The default value is 'NORMAL'. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_displaytype.   The default value is 'NORMAL'. */,
       defaultselection: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-        annotations: {
-        },
-      }, /* Original description: This field is available when the fieldtype value is not equal to MULTISELECT.   This field accepts references to the instance custom type. */
+        annotations: {},
+      } /* Original description: This field is available when the fieldtype value is not equal to MULTISELECT.   This field accepts references to the instance custom type. */,
       defaultrecordaccesslevel: {
         refType: createRefToElmWithValue(enums.customsegment_access_search_level),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_access_search_level. */,
       defaultsearchaccesslevel: {
         refType: createRefToElmWithValue(enums.customsegment_access_search_level),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_access_search_level. */,
       valuesdisplayorder: {
         refType: createRefToElmWithValue(enums.customsegment_valuesdisplayorder),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see customsegment_valuesdisplayorder. */
+        annotations: {},
+      } /* Original description: For information about possible values, see customsegment_valuesdisplayorder. */,
       permissions: {
         refType: createRefToElmWithValue(customsegment_permissions),
-        annotations: {
-        },
+        annotations: {},
       },
       segmentapplication: {
         refType: createRefToElmWithValue(customsegment_segmentapplication),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
   })
-
 
   return { type: customsegment, innerTypes }
 }

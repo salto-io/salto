@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   ChangeError,
@@ -29,17 +29,17 @@ import changeValidator from '../../src/change_validators/last_layout_removal'
 const { awu } = collections.asynciterable
 
 describe('lastLayoutRemoval Change Validator', () => {
-  const createLayoutInstance = (objectName: string, layoutName: string): InstanceElement => (
-    new InstanceElement(
-      layoutName,
-      mockTypes.Layout,
-      {
-        [INSTANCE_FULL_NAME_FIELD]: `${objectName}-${layoutName}`,
-      },
-    )
-  )
+  const createLayoutInstance = (
+    objectName: string,
+    layoutName: string,
+  ): InstanceElement =>
+    new InstanceElement(layoutName, mockTypes.Layout, {
+      [INSTANCE_FULL_NAME_FIELD]: `${objectName}-${layoutName}`,
+    })
 
-  const createMockElementsSource = (instances: InstanceElement[]): ReadOnlyElementsSource => ({
+  const createMockElementsSource = (
+    instances: InstanceElement[],
+  ): ReadOnlyElementsSource => ({
     getAll: async () => awu(instances),
     list: async () => awu([]),
     has: async () => true,
@@ -55,7 +55,7 @@ describe('lastLayoutRemoval Change Validator', () => {
       createLayoutInstance('Account', 'AccountLayout2'),
       createLayoutInstance('Account', 'AccountLayout3'),
       createLayoutInstance('Account', 'AccountLayout4'),
-    ].map(instance => toChange({ before: instance }))
+    ].map((instance) => toChange({ before: instance }))
   })
 
   describe('when all layouts of Object are removed', () => {
@@ -66,8 +66,11 @@ describe('lastLayoutRemoval Change Validator', () => {
       )
     })
     it('should create change errors', () => {
-      expect(changeErrors.map(error => error.elemID))
-        .toEqual(removedLayoutChanges.map(getChangeData).map(instance => instance.elemID))
+      expect(changeErrors.map((error) => error.elemID)).toEqual(
+        removedLayoutChanges
+          .map(getChangeData)
+          .map((instance) => instance.elemID),
+      )
     })
   })
 
@@ -75,7 +78,9 @@ describe('lastLayoutRemoval Change Validator', () => {
     beforeEach(async () => {
       changeErrors = await changeValidator(
         removedLayoutChanges,
-        createMockElementsSource([createLayoutInstance('Account', 'remainingAccountLayout')]),
+        createMockElementsSource([
+          createLayoutInstance('Account', 'remainingAccountLayout'),
+        ]),
       )
     })
     it('should not create change errors', () => {

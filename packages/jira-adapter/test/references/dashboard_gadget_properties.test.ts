@@ -1,22 +1,34 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, Field } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Element,
+  Field,
+} from '@salto-io/adapter-api'
 import { multiIndex, collections } from '@salto-io/lowerdash'
 import { DASHBOARD_GADGET_TYPE, FILTER_TYPE_NAME, JIRA } from '../../src/constants'
-import { gadgetValuesContextFunc, gadgetValueSerialize, gadgetDashboradValueLookup } from '../../src/references/dashboard_gadget_properties'
+import {
+  gadgetValuesContextFunc,
+  gadgetValueSerialize,
+  gadgetDashboradValueLookup,
+} from '../../src/references/dashboard_gadget_properties'
 
 const { awu } = collections.asynciterable
 
@@ -41,43 +53,33 @@ describe('DashboardGadgetReferences', () => {
       },
     })
 
-    filterInst = new InstanceElement(
-      'filter', filterType, { id: '123' },
-    )
+    filterInst = new InstanceElement('filter', filterType, { id: '123' })
     filterRef = new ReferenceExpression(filterInst.elemID, filterInst)
 
-    instance = new InstanceElement(
-      'instance',
-      dashboardGadgetType,
-      {
-        properties: {
-          key: 'config',
-          values: [
-            { key: 'filterId', value: 'filter-123' },
-            { key: 'filterId', value: '123' },
-            { key: 'projectOrFilterId', value: 'project-123' },
-            { key: 'projectOrFilterId', value: 'filter-123' },
-            { key: 'statType', value: 'customfield_123' },
-          ],
-        },
+    instance = new InstanceElement('instance', dashboardGadgetType, {
+      properties: {
+        key: 'config',
+        values: [
+          { key: 'filterId', value: 'filter-123' },
+          { key: 'filterId', value: '123' },
+          { key: 'projectOrFilterId', value: 'project-123' },
+          { key: 'projectOrFilterId', value: 'filter-123' },
+          { key: 'statType', value: 'customfield_123' },
+        ],
       },
-    )
+    })
 
-    instanceWithRefs = new InstanceElement(
-      'instance',
-      dashboardGadgetType,
-      {
-        properties: {
-          key: 'config',
-          values: [
-            { key: 'filterId', value: filterRef },
-            { key: 'filterId', value: filterRef },
-            { key: 'projectOrFilterId', value: 'project-123' },
-            { key: 'projectOrFilterId', value: filterRef },
-          ],
-        },
+    instanceWithRefs = new InstanceElement('instance', dashboardGadgetType, {
+      properties: {
+        key: 'config',
+        values: [
+          { key: 'filterId', value: filterRef },
+          { key: 'filterId', value: filterRef },
+          { key: 'projectOrFilterId', value: 'project-123' },
+          { key: 'projectOrFilterId', value: filterRef },
+        ],
       },
-    )
+    })
   })
 
   describe('gadgetValuesCont{extFunc', () => {

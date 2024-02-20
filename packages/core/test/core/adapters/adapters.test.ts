@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import 'jest-extended'
 import {
   InstanceElement,
@@ -22,7 +22,13 @@ import {
   AdapterOperationsContext,
   Adapter,
   ReadOnlyElementsSource,
-  isObjectType, TypeElement, Field, isType, ContainerType, ListType, isContainerType,
+  isObjectType,
+  TypeElement,
+  Field,
+  isType,
+  ContainerType,
+  ListType,
+  isContainerType,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
@@ -32,10 +38,13 @@ import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { expressions } from '@salto-io/workspace'
 import {
-  initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
+  initAdapters,
+  getAdaptersCredentialsTypes,
+  getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   adapterCreators,
-  getAdaptersConfigTypesMap, createResolvedTypesElementsSource,
+  getAdaptersConfigTypesMap,
+  createResolvedTypesElementsSource,
 } from '../../../src/core/adapters'
 
 const { toArrayAsync } = collections.asynciterable
@@ -68,16 +77,12 @@ jest.mock('../../../src/core/adapters/creators', () => {
 describe('adapters.ts', () => {
   const { authenticationMethods } = adapter
   const accounts = ['salesforce']
-  const sfConfig = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    authenticationMethods.basic.credentialsType,
-    {
-      username: 'nacluser',
-      password: 'naclpass',
-      token: 'nacltoken',
-      sandbox: false,
-    }
-  )
+  const sfConfig = new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods.basic.credentialsType, {
+    username: 'nacluser',
+    password: 'naclpass',
+    token: 'nacltoken',
+    sandbox: false,
+  })
 
   let resolveSpy: jest.SpyInstance
 
@@ -109,15 +114,18 @@ describe('adapters.ts', () => {
       _.assign(mockAdapter, {
         configType: mockConfigType,
         configCreator: {
-          getConfig: mockFunction<NonNullable<Adapter['configCreator']>['getConfig']>()
-            .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
+          getConfig: mockFunction<NonNullable<Adapter['configCreator']>['getConfig']>().mockResolvedValue(
+            new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' }),
+          ),
           options: new ObjectType({
             elemID: new ElemID('test'),
           }),
         },
       })
 
-      createDefaultInstanceFromTypeMock.mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }))
+      createDefaultInstanceFromTypeMock.mockResolvedValue(
+        new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }),
+      )
     })
 
     afterAll(() => {
@@ -137,8 +145,7 @@ describe('adapters.ts', () => {
       })
       const mockOptions = new InstanceElement('test', mockObjType)
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockOptions)
-      expect(mockAdapter.configCreator?.getConfig)
-        .toHaveBeenCalledWith(mockOptions)
+      expect(mockAdapter.configCreator?.getConfig).toHaveBeenCalledWith(mockOptions)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })
@@ -182,14 +189,14 @@ describe('adapters.ts', () => {
         { [sfConfig.elemID.adapter]: sfConfig },
         async () => undefined,
         buildElementsSourceFromElements([]),
-        { [serviceName]: serviceName }
+        { [serviceName]: serviceName },
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
           config: undefined,
           getElemIdFunc: undefined,
-        })
+        }),
       )
       expect(Object.keys(result)).toEqual([serviceName])
     })
@@ -207,7 +214,7 @@ describe('adapters.ts', () => {
           credentials: sfConfig,
           config: sfConfig,
           getElemIdFunc: undefined,
-        })
+        }),
       )
       expect(Object.keys(result)).toEqual([serviceName])
     })
@@ -219,10 +226,7 @@ describe('adapters.ts', () => {
           [serviceName, 'd1'],
           { [sfConfig.elemID.adapter]: sfConfig },
           async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
-          buildElementsSourceFromElements([
-            objectType,
-            d1Type,
-          ]),
+          buildElementsSourceFromElements([objectType, d1Type]),
           { [serviceName]: serviceName, d1: 'dummy' },
         )
       })
@@ -234,33 +238,34 @@ describe('adapters.ts', () => {
         expect(await elementsSource.has(new ElemID('d1', 'type2'))).toBeFalsy()
         expect(await elementsSource.has(new ElemID('dummy', 'type2'))).toBeFalsy()
 
-
         expect(await elementsSource.get(objectType.elemID)).toBeDefined()
         expect(await elementsSource.get(new ElemID('d1', 'type2'))).toBeUndefined()
         expect(await elementsSource.get(new ElemID('dummy', 'type2'))).toBeUndefined()
 
-        expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll()))
-          .toEqual([objectType])
+        expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll())).toEqual([objectType])
 
-        expect(await collections.asynciterable.toArrayAsync(await elementsSource.list()))
-          .toEqual([objectType.elemID])
+        expect(await collections.asynciterable.toArrayAsync(await elementsSource.list())).toEqual([objectType.elemID])
       })
 
       it('should return renamed elements when account name is different from adapter name', async () => {
         const d1ElementsSource = result.d1?.elementsSource
         // since element source is used inside the adapter, it should receive and return
         // values with default adapter name as account name
-        expect(await d1ElementsSource.get(new ElemID('dummy', 'type2'))).toEqual(new ObjectType({
-          elemID: new ElemID('dummy', 'type2'),
-        }))
+        expect(await d1ElementsSource.get(new ElemID('dummy', 'type2'))).toEqual(
+          new ObjectType({
+            elemID: new ElemID('dummy', 'type2'),
+          }),
+        )
       })
 
       it('should not modify elements in the origin elements source', async () => {
         const d1ElementsSource = result.d1?.elementsSource
         await d1ElementsSource.get(new ElemID('dummy', 'type2'))
-        expect(d1Type).not.toEqual(new ObjectType({
-          elemID: new ElemID('dummy', 'type2'),
-        }))
+        expect(d1Type).not.toEqual(
+          new ObjectType({
+            elemID: new ElemID('dummy', 'type2'),
+          }),
+        )
       })
     })
   })
@@ -282,25 +287,25 @@ describe('adapters.ts', () => {
 
     it('should throw an error when no proper config exists', async () => {
       const credentials: InstanceElement | undefined = undefined
-      expect(() => initAdapters(
-        {
+      expect(() =>
+        initAdapters({
           [accounts[0]]: {
-            credentials: (credentials as unknown as InstanceElement),
+            credentials: credentials as unknown as InstanceElement,
             elementsSource: utils.buildElementsSourceFromElements([]),
           },
-        }
-      )).toThrow()
+        }),
+      ).toThrow()
     })
 
     it('should throw an error when no proper creator exists', async () => {
-      expect(() => initAdapters(
-        {
+      expect(() =>
+        initAdapters({
           notExist: {
             credentials: sfConfig,
             elementsSource: utils.buildElementsSourceFromElements([]),
           },
-        }
-      )).toThrow()
+        }),
+      ).toThrow()
     })
   })
   describe('createResolvedTypesElementsSource', () => {
@@ -333,30 +338,26 @@ describe('adapters.ts', () => {
       field = type.fields.field
       instance = new InstanceElement('TestInstance', type)
       containerType = new ListType(new ListType(type))
-      elementsSource = createResolvedTypesElementsSource(utils.buildElementsSourceFromElements([
-        type,
-        field,
-        nestedType,
-        nestedNestedType,
-        instance,
-      ]))
+      elementsSource = createResolvedTypesElementsSource(
+        utils.buildElementsSourceFromElements([type, field, nestedType, nestedNestedType, instance]),
+      )
     })
 
     describe('get', () => {
       it('should return fully resolved TypeElement', async () => {
-        const resolvedType = await elementsSource.get(type.elemID) as ObjectType
+        const resolvedType = (await elementsSource.get(type.elemID)) as ObjectType
         const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
         const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
         expect([resolvedType, resolvedNestedType, resolvedNestedNestedType]).toSatisfyAll(isType)
       })
       it('should return Field with fully resolved type', async () => {
-        const resolvedField = await elementsSource.get(field.elemID) as Field
+        const resolvedField = (await elementsSource.get(field.elemID)) as Field
         const resolvedNestedType = resolvedField.refType.type as ObjectType
         const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
         expect([resolvedNestedType, resolvedNestedNestedType]).toSatisfyAll(isType)
       })
       it('should return Instance with fully resolved type', async () => {
-        const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
+        const resolvedInstance = (await elementsSource.get(instance.elemID)) as InstanceElement
         const resolvedType = resolvedInstance.refType.type as ObjectType
         expect(isObjectType(resolvedType)).toBeTrue()
         const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
@@ -365,7 +366,7 @@ describe('adapters.ts', () => {
         expect(isObjectType(resolvedNestedNestedType)).toBeTrue()
       })
       it('should return fully resolved ContainerType', async () => {
-        const resolvedContainerType = await elementsSource.get(containerType.elemID) as ContainerType
+        const resolvedContainerType = (await elementsSource.get(containerType.elemID)) as ContainerType
         const resolvedInnerContainerType = resolvedContainerType.refInnerType.type as ContainerType
         expect(isContainerType(resolvedInnerContainerType)).toBeTrue()
         const resolvedInnerType = resolvedInnerContainerType.refInnerType.type as ObjectType
@@ -379,10 +380,7 @@ describe('adapters.ts', () => {
       it('should return all elements with resolved types, and resolve all the types ones', async () => {
         const resolvedElements = await toArrayAsync(await elementsSource.getAll())
         expect(resolvedElements).toHaveLength(5)
-        const resolvedElementsByElemId = _.keyBy(
-          resolvedElements,
-          element => element.elemID.getFullName(),
-        )
+        const resolvedElementsByElemId = _.keyBy(resolvedElements, element => element.elemID.getFullName())
         const resolvedType = resolvedElementsByElemId[type.elemID.getFullName()] as ObjectType
         const resolvedInnerType = resolvedElementsByElemId[nestedType.elemID.getFullName()] as ObjectType
         const resolvedInnerInnerType = resolvedElementsByElemId[nestedNestedType.elemID.getFullName()] as ObjectType

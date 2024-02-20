@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { InstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { compactTemplate, createTemplateExpression, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
@@ -48,8 +48,10 @@ export const createMissingTemplate = ({
   buildTemplateFunc,
 }: MissingTemplateArgs & {
   enableMissingReferences: boolean
-  buildTemplateFunc:
-    (firstInstance: string | ReferenceExpression, secondInstance: string | ReferenceExpression) => TemplateExpression
+  buildTemplateFunc: (
+    firstInstance: string | ReferenceExpression,
+    secondInstance: string | ReferenceExpression,
+  ) => TemplateExpression
 }): TemplateExpression | string => {
   if (!enableMissingReferences) {
     return compactTemplate(buildTemplateFunc(ticketField, customKey))
@@ -67,15 +69,13 @@ type TransformResult = {
   customObjectField?: InstanceElement
 }
 
-const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: string | ReferenceExpression)
-  : TemplateExpression => createTemplateExpression({
-  parts: [
-    'lookup:ticket.ticket_field_',
-    ticketField,
-    '.custom_fields.',
-    option,
-  ],
-})
+const buildFieldTemplate = (
+  ticketField: string | ReferenceExpression,
+  option: string | ReferenceExpression,
+): TemplateExpression =>
+  createTemplateExpression({
+    parts: ['lookup:ticket.ticket_field_', ticketField, '.custom_fields.', option],
+  })
 
 /**
  * Transforms a 'lookup' value to template expressions
@@ -88,17 +88,18 @@ export const transformCustomObjectLookupField = ({
   instancesById,
   customObjectsByKey,
   enableMissingReferences,
-} : {
+}: {
   field: string
   instancesById: Record<string, InstanceElement>
   customObjectsByKey: Record<string, InstanceElement>
   enableMissingReferences: boolean
 }): TransformResult => {
-  const createMissingRefTemplate = (args: MissingTemplateArgs): TemplateExpression | string => createMissingTemplate({
-    ...args,
-    enableMissingReferences,
-    buildTemplateFunc: buildFieldTemplate,
-  })
+  const createMissingRefTemplate = (args: MissingTemplateArgs): TemplateExpression | string =>
+    createMissingTemplate({
+      ...args,
+      enableMissingReferences,
+      buildTemplateFunc: buildFieldTemplate,
+    })
 
   // Lookup of the ticket field
   const { ticketFieldId, optionKey } = field.match(LOOKUP_REGEX)?.groups ?? {}
@@ -154,26 +155,25 @@ export const transformCustomObjectLookupField = ({
   }
 }
 
-const buildFilterTemplate = (customObject: string | ReferenceExpression, field: string | ReferenceExpression)
-  : TemplateExpression => createTemplateExpression({
-  parts: [
-    'custom_object.',
-    customObject,
-    '.custom_fields.',
-    field,
-  ],
-})
+const buildFilterTemplate = (
+  customObject: string | ReferenceExpression,
+  field: string | ReferenceExpression,
+): TemplateExpression =>
+  createTemplateExpression({
+    parts: ['custom_object.', customObject, '.custom_fields.', field],
+  })
 
 export const transformRelationshipFilterField = (
   field: string,
   enableMissingReferences: boolean,
-  customObjectsByKey: Record<string, InstanceElement>
+  customObjectsByKey: Record<string, InstanceElement>,
 ): TransformResult => {
-  const createMissingRefTemplate = (args: MissingTemplateArgs): TemplateExpression | string => createMissingTemplate({
-    ...args,
-    enableMissingReferences,
-    buildTemplateFunc: buildFilterTemplate,
-  })
+  const createMissingRefTemplate = (args: MissingTemplateArgs): TemplateExpression | string =>
+    createMissingTemplate({
+      ...args,
+      enableMissingReferences,
+      buildTemplateFunc: buildFilterTemplate,
+    })
   const { customObjectKey, fieldKey } = field.match(RELATIONSHIP_FILTER_REGEX)?.groups ?? {}
 
   // Lookup of the custom_object
@@ -192,7 +192,8 @@ export const transformRelationshipFilterField = (
   const customObjectRef = new ReferenceExpression(customObject.elemID, customObject)
 
   // Lookup of the relevant custom_object_field of the custom_object
-  const customObjectFieldRef = (customObject.value.custom_object_fields ?? []).filter(isResolvedReferenceExpression)
+  const customObjectFieldRef = (customObject.value.custom_object_fields ?? [])
+    .filter(isResolvedReferenceExpression)
     .find((customField: ReferenceExpression) => customField.value.value.key === fieldKey)
   if (customObjectFieldRef === undefined) {
     return {

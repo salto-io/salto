@@ -1,56 +1,71 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, strings } from '@salto-io/lowerdash'
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  isObjectType,
+  ReferenceExpression,
+  TypeElement,
+} from '@salto-io/adapter-api'
 import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { isStandardType, isDataObjectType, isFileCabinetType } from '../types'
-import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID, IS_SUB_INSTANCE, NAME_FIELD, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
+import {
+  ACCOUNT_SPECIFIC_VALUE,
+  ID_FIELD,
+  INTERNAL_ID,
+  IS_SUB_INSTANCE,
+  NAME_FIELD,
+  NETSUITE,
+  RECORDS_PATH,
+  RECORD_REF,
+} from '../constants'
 import { LocalFilterCreator } from '../filter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 const getSubInstanceName = (path: ElemID, internalId: string): string => {
-  const name = _.findLast(
-    path.getFullNameParts(), part => !strings.isNumberStr(part) && part !== RECORD_REF
-  )
+  const name = _.findLast(path.getFullNameParts(), part => !strings.isNumberStr(part) && part !== RECORD_REF)
   return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
 
 const hasInternalIdHiddenField = (type: unknown): boolean =>
-  isObjectType(type)
-  && type.fields[INTERNAL_ID]
-  && type.fields[INTERNAL_ID].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+  isObjectType(type) && type.fields[INTERNAL_ID] && type.fields[INTERNAL_ID].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
 
 const shouldUseIdField = (fieldType: TypeElement | undefined): boolean =>
   fieldType?.elemID.name === RECORD_REF || hasInternalIdHiddenField(fieldType)
 
-const isNestedPath = (path: ElemID | undefined): path is ElemID =>
-  path !== undefined && !path.isTopLevel()
+const isNestedPath = (path: ElemID | undefined): path is ElemID => path !== undefined && !path.isTopLevel()
 
 /**
  * Extract to a new instance every object in a list that contains an internal id
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'dataInstancesInternalId',
   onFetch: async elements => {
+    if (config.fetch.resolveAccountSpecificValues !== false) {
+      return
+    }
     const newInstancesMap: Record<string, InstanceElement> = {}
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === RECORD_REF)
 
@@ -63,13 +78,8 @@ const filterCreator: LocalFilterCreator = () => ({
       const fieldType = await field?.getType()
       const isInsideList = path.getFullNameParts().some(part => strings.isNumberStr(part))
 
-      if (!(isObjectType(fieldType)
-        && (isInsideList
-          || isStandardType(fieldType)
-          || isFileCabinetType(fieldType)))) {
-        value[
-          hasInternalIdHiddenField(fieldType) ? ID_FIELD : INTERNAL_ID
-        ] = ACCOUNT_SPECIFIC_VALUE
+      if (!(isObjectType(fieldType) && (isInsideList || isStandardType(fieldType) || isFileCabinetType(fieldType)))) {
+        value[hasInternalIdHiddenField(fieldType) ? ID_FIELD : INTERNAL_ID] = ACCOUNT_SPECIFIC_VALUE
         delete value.typeId
         return value
       }
@@ -80,11 +90,11 @@ const filterCreator: LocalFilterCreator = () => ({
           // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
           // errors because SDF types has fields with a "required" annotation which might not
           // be fulfilled
-          (isStandardType(fieldType) || isFileCabinetType(fieldType))
-            && recordRefType !== undefined
-            ? recordRefType : fieldType,
+          (isStandardType(fieldType) || isFileCabinetType(fieldType)) && recordRefType !== undefined
+            ? recordRefType
+            : fieldType,
           { ...value, [IS_SUB_INSTANCE]: true },
-          [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
+          [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName],
         )
         newInstancesMap[instanceName] = newInstance
       }
@@ -96,13 +106,14 @@ const filterCreator: LocalFilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(async e => isDataObjectType(await e.getType()))
       .forEach(async element => {
-        const values = await transformValues({
-          values: element.value,
-          type: await element.getType(),
-          transformFunc: transformIds,
-          strict: false,
-          pathID: element.elemID,
-        }) ?? element.value
+        const values =
+          (await transformValues({
+            values: element.value,
+            type: await element.getType(),
+            transformFunc: transformIds,
+            strict: false,
+            pathID: element.elemID,
+          })) ?? element.value
         element.value = values
       })
 
@@ -110,38 +121,38 @@ const filterCreator: LocalFilterCreator = () => ({
   },
 
   preDeploy: async changes => {
+    if (config.fetch.resolveAccountSpecificValues !== false) {
+      return
+    }
     await awu(changes).forEach(async change => {
       await awu(Object.values(change.data))
         .filter(isInstanceElement)
         .filter(async instance => isDataObjectType(await instance.getType()))
         .forEach(async instance => {
-          instance.value = await transformValues({
-            values: instance.value,
-            type: await instance.getType(),
-            strict: false,
-            pathID: instance.elemID,
-            transformFunc: async ({ value, field, path }) => {
-              if (
-                isNestedPath(path)
-                && shouldUseIdField(await field?.getType())
-                && value[ID_FIELD] !== undefined
-              ) {
-                if (value[ID_FIELD] !== ACCOUNT_SPECIFIC_VALUE) {
-                  value[INTERNAL_ID] = value[ID_FIELD]
+          instance.value =
+            (await transformValues({
+              values: instance.value,
+              type: await instance.getType(),
+              strict: false,
+              pathID: instance.elemID,
+              transformFunc: async ({ value, field, path }) => {
+                if (isNestedPath(path) && shouldUseIdField(await field?.getType()) && value[ID_FIELD] !== undefined) {
+                  if (value[ID_FIELD] !== ACCOUNT_SPECIFIC_VALUE) {
+                    value[INTERNAL_ID] = value[ID_FIELD]
+                  }
+                  delete value[ID_FIELD]
                 }
-                delete value[ID_FIELD]
-              }
-              if (isNestedPath(path) && value[INTERNAL_ID] !== undefined) {
-                // we want to remove the 'name' field if it is the only one except internalId
-                const otherFields = Object.keys(value).filter(key => key !== INTERNAL_ID)
-                if (otherFields.length === 1 && otherFields[0] === NAME_FIELD) {
-                  log.debug('removing name field from reference in %s', path.getFullName())
-                  delete value[NAME_FIELD]
+                if (isNestedPath(path) && value[INTERNAL_ID] !== undefined) {
+                  // we want to remove the 'name' field if it is the only one except internalId
+                  const otherFields = Object.keys(value).filter(key => key !== INTERNAL_ID)
+                  if (otherFields.length === 1 && otherFields[0] === NAME_FIELD) {
+                    log.debug('removing name field from reference in %s', path.getFullName())
+                    delete value[NAME_FIELD]
+                  }
                 }
-              }
-              return value
-            },
-          }) ?? {}
+                return value
+              },
+            })) ?? {}
         })
     })
   },

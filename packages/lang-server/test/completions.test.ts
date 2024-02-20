@@ -1,27 +1,25 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import path from 'path'
 import { EditorWorkspace } from '../src/workspace'
 import { getPositionContext, PositionContext, buildDefinitionsTree } from '../src/context'
-import {
-  provideWorkspaceCompletionItems, SaltoCompletion,
-} from '../src/completions/provider'
+import { provideWorkspaceCompletionItems, SaltoCompletion } from '../src/completions/provider'
 import { mockWorkspace } from './workspace'
 
 const { awu } = collections.asynciterable
@@ -33,47 +31,23 @@ interface Pos {
 // TODO: figure how to fix this
 
 describe('Test auto complete', () => {
-  const getLine = async (
-    workspace: EditorWorkspace,
-    filename: string,
-    pos: Pos
-  ): Promise<string> => {
+  const getLine = async (workspace: EditorWorkspace, filename: string, pos: Pos): Promise<string> => {
     const naclFile = await workspace.getNaclFile(filename)
-    const fullLine = (naclFile) ? naclFile.buffer.toString().split('\n')[pos.line - 1] : ''
+    const fullLine = naclFile ? naclFile.buffer.toString().split('\n')[pos.line - 1] : ''
     return _.trimStart(fullLine.slice(0, pos.col))
   }
 
-  const checkSuggestions = (
-    suggestions: SaltoCompletion[],
-    include: string[],
-    exclude: string[]
-  ): boolean => {
-    const intersect = (
-      arrA: unknown[],
-      arrB: unknown[]
-    ): unknown[] => arrA.filter(x => arrB.includes(x))
+  const checkSuggestions = (suggestions: SaltoCompletion[], include: string[], exclude: string[]): boolean => {
+    const intersect = (arrA: unknown[], arrB: unknown[]): unknown[] => arrA.filter(x => arrB.includes(x))
 
     const labels = suggestions.map(s => _.last(s.label.split(ElemID.NAMESPACE_SEPARATOR)))
-    return intersect(labels, include).length === include.length
-           && intersect(labels, exclude).length === 0
+    return intersect(labels, include).length === include.length && intersect(labels, exclude).length === 0
   }
 
   const kw = ['type']
   const adapterRef = ['vs']
-  const types = [
-    'str',
-    'num',
-    'bool',
-    'person',
-    'car',
-    'loan',
-    'ref_tester',
-    'annotated',
-  ]
-  const instances = [
-    'weekend_car',
-    'not_a_loan',
-  ]
+  const types = ['str', 'num', 'bool', 'person', 'car', 'loan', 'ref_tester', 'annotated']
+  const instances = ['weekend_car', 'not_a_loan']
 
   let workspace: EditorWorkspace
   let definitionsTree: PositionContext
@@ -483,7 +457,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-
     it('should suggest annotations when base is an object type with 1 level nesting', async () => {
       const pos = { line: 151, col: 37 }
       const line = await getLine(workspace, naclFileName, pos)
@@ -534,7 +507,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all field\'s annotations inside string template', async () => {
+    it("should suggest all field's annotations inside string template", async () => {
       const pos = { line: 154, col: 41 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)
@@ -584,8 +557,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-
-    it('should suggest all field\'s annotations inside string template with prefix', async () => {
+    it("should suggest all field's annotations inside string template with prefix", async () => {
       const pos = { line: 157, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)
@@ -635,7 +607,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all field\'s annotations inside string template with empty prefix', async () => {
+    it("should suggest all field's annotations inside string template with empty prefix", async () => {
       const pos = { line: 160, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)
@@ -688,7 +660,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all field\'s annotations inside string template with complex prefix', async () => {
+    it("should suggest all field's annotations inside string template with complex prefix", async () => {
       const pos = { line: 163, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(naclFileName, pos, definitionsTree, fullElementSource)

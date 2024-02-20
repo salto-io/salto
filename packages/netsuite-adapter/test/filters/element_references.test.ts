@@ -1,22 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
-  ElemID, Field, InstanceElement, isReferenceExpression, ObjectType, ReferenceExpression, StaticFile, toChange,
+  ElemID,
+  Field,
+  InstanceElement,
+  isReferenceExpression,
+  ObjectType,
+  ReferenceExpression,
+  StaticFile,
+  toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/element_references'
@@ -27,7 +34,6 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '..
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 import { LocalFilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
-
 
 describe('instance_references filter', () => {
   describe('onFetch', () => {
@@ -102,8 +108,10 @@ describe('instance_references filter', () => {
           refToCustomSegment: '[type=customsegment, scriptid=cseg_1]',
           refToNonExistingTypedScriptId: '[type=customsegment, scriptid=non_existing_script_id]',
           refToScriptIdOfAnotherType: '[type=transactionbodycustomfield, scriptid=cseg_1]',
-          stringWithMultipleRef: '[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]',
-          stringWithMultipleNonExistingRef: '[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]',
+          stringWithMultipleRef:
+            '[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]',
+          stringWithMultipleNonExistingRef:
+            '[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]',
           refWithAppId: '[appid=foo.bar, scriptid=top_level]',
           refToCustomSegmentWithAppId: '[appid=foo.bar, type=customsegment, scriptid=cseg_1]',
           refWithBundleId: '[bundleid=123, scriptid=top_level]',
@@ -113,7 +121,7 @@ describe('instance_references filter', () => {
           refToFilePath: '[/Templates/file.name]',
           refToScriptId: '[scriptid=top_level]',
           [CORE_ANNOTATIONS.PARENT]: ['[/Templates/file.name]'],
-        }
+        },
       )
 
       customRecordType = new ObjectType({
@@ -143,8 +151,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-      expect(instanceWithRefs.value.refToFilePath)
-        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'))
+      expect(instanceWithRefs.value.refToFilePath).toEqual(
+        new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'),
+      )
     })
 
     it('should replace scriptid references', async () => {
@@ -155,9 +164,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'))
+      expect(instanceWithRefs.value.refToScriptId).toEqual(
+        new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'),
+      )
     })
 
     it('should replace annotations references', async () => {
@@ -168,11 +177,12 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.annotations.refToFilePath)
-        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'))
-      expect(instanceWithRefs.annotations.refToScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'))
+      expect(instanceWithRefs.annotations.refToFilePath).toEqual(
+        new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'),
+      )
+      expect(instanceWithRefs.annotations.refToScriptId).toEqual(
+        new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'),
+      )
     })
 
     it('should replace references in custom record type', async () => {
@@ -182,10 +192,12 @@ describe('instance_references filter', () => {
         isPartial: false,
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([customSegmentInstance, customRecordType])
-      expect(customRecordType.annotations.customsegment)
-        .toEqual(new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID), 'cseg_1'))
-      expect(customRecordType.fields.custom_field.annotations.parent)
-        .toEqual(new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1'))
+      expect(customRecordType.annotations.customsegment).toEqual(
+        new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID), 'cseg_1'),
+      )
+      expect(customRecordType.fields.custom_field.annotations.parent).toEqual(
+        new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1'),
+      )
     })
 
     it('should replace references to custom record type in instances', async () => {
@@ -195,8 +207,9 @@ describe('instance_references filter', () => {
         isPartial: false,
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([customSegmentInstance, customRecordType])
-      expect(customSegmentInstance.value.recordtype)
-        .toEqual(new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1'))
+      expect(customSegmentInstance.value.recordtype).toEqual(
+        new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1'),
+      )
     })
 
     it('parent should reference the element itself', async () => {
@@ -207,9 +220,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.PARENT])
-        .toEqual([new ReferenceExpression(fileInstance.elemID)])
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
+        new ReferenceExpression(fileInstance.elemID),
+      ])
     })
 
     it('should replace scriptid with 1 nesting level references', async () => {
@@ -220,9 +233,12 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToOneLevelNestedScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', SCRIPT_ID), 'one_nesting'))
+      expect(instanceWithRefs.value.refToOneLevelNestedScriptId).toEqual(
+        new ReferenceExpression(
+          workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', SCRIPT_ID),
+          'one_nesting',
+        ),
+      )
     })
 
     it('should replace scriptid with 2 nesting level references', async () => {
@@ -233,9 +249,21 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToTwoLevelNestedScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID), 'two_nesting'))
+      expect(instanceWithRefs.value.refToTwoLevelNestedScriptId).toEqual(
+        new ReferenceExpression(
+          workflowInstance.elemID.createNestedID(
+            'workflowstates',
+            'workflowstate',
+            '0',
+            'workflowactions',
+            '0',
+            'setfieldvalueaction',
+            '0',
+            SCRIPT_ID,
+          ),
+          'two_nesting',
+        ),
+      )
     })
 
     it('should replace inner scriptid references', async () => {
@@ -246,10 +274,23 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(workflowInstance.value.workflowstates.workflowstate[0].workflowactions[0]
-        .setfieldvalueaction[1].field)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID), 'two_nesting'))
+      expect(
+        workflowInstance.value.workflowstates.workflowstate[0].workflowactions[0].setfieldvalueaction[1].field,
+      ).toEqual(
+        new ReferenceExpression(
+          workflowInstance.elemID.createNestedID(
+            'workflowstates',
+            'workflowstate',
+            '0',
+            'workflowactions',
+            '0',
+            'setfieldvalueaction',
+            '0',
+            SCRIPT_ID,
+          ),
+          'two_nesting',
+        ),
+      )
     })
 
     it('should replace type and scriptid references', async () => {
@@ -260,9 +301,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([customSegmentInstance, fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToCustomSegment)
-        .toEqual(new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID), 'cseg_1'))
+      expect(instanceWithRefs.value.refToCustomSegment).toEqual(
+        new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID), 'cseg_1'),
+      )
     })
 
     it('should not replace scriptid references for non existing scriptid', async () => {
@@ -273,9 +314,7 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToNonExistingScriptId)
-        .toEqual('[scriptid=non_existing_script_id]')
+      expect(instanceWithRefs.value.refToNonExistingScriptId).toEqual('[scriptid=non_existing_script_id]')
     })
 
     it('should not replace type and scriptid references for non existing scriptid', async () => {
@@ -286,9 +325,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToNonExistingTypedScriptId)
-        .toEqual('[type=customsegment, scriptid=non_existing_script_id]')
+      expect(instanceWithRefs.value.refToNonExistingTypedScriptId).toEqual(
+        '[type=customsegment, scriptid=non_existing_script_id]',
+      )
     })
 
     it('should not replace type and scriptid references when scriptid is of another type', async () => {
@@ -299,9 +338,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToScriptIdOfAnotherType)
-        .toEqual('[type=transactionbodycustomfield, scriptid=cseg_1]')
+      expect(instanceWithRefs.value.refToScriptIdOfAnotherType).toEqual(
+        '[type=transactionbodycustomfield, scriptid=cseg_1]',
+      )
     })
 
     it('should not replace appid and scriptid references', async () => {
@@ -312,9 +351,7 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refWithAppId)
-        .toEqual('[appid=foo.bar, scriptid=top_level]')
+      expect(instanceWithRefs.value.refWithAppId).toEqual('[appid=foo.bar, scriptid=top_level]')
     })
 
     it('should not replace appid, type and scriptid references', async () => {
@@ -325,9 +362,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToCustomSegmentWithAppId)
-        .toEqual('[appid=foo.bar, type=customsegment, scriptid=cseg_1]')
+      expect(instanceWithRefs.value.refToCustomSegmentWithAppId).toEqual(
+        '[appid=foo.bar, type=customsegment, scriptid=cseg_1]',
+      )
     })
 
     it('should not replace bundleid and scriptid references', async () => {
@@ -338,9 +375,7 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refWithBundleId)
-        .toEqual('[bundleid=123, scriptid=top_level]')
+      expect(instanceWithRefs.value.refWithBundleId).toEqual('[bundleid=123, scriptid=top_level]')
     })
 
     it('should not replace path references for unresolved ref', async () => {
@@ -351,9 +386,7 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToNonExistingPath)
-        .toEqual('[/Templates/non.existing]')
+      expect(instanceWithRefs.value.refToNonExistingPath).toEqual('[/Templates/non.existing]')
     })
 
     it('should use elements source for creating the references with fetch is partial', async () => {
@@ -370,9 +403,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToInstanceInElementSourcePath)
-        .toEqual(new ReferenceExpression(instanceInElementsSource.elemID.createNestedID(PATH)))
+      expect(instanceWithRefs.value.refToInstanceInElementSourcePath).toEqual(
+        new ReferenceExpression(instanceInElementsSource.elemID.createNestedID(PATH)),
+      )
     })
 
     it('should not use elements source for creating the references when fetch is not partial', async () => {
@@ -389,9 +422,7 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.refToInstanceInElementSourcePath)
-        .toEqual('[/Templates/instanceInElementsSource]')
+      expect(instanceWithRefs.value.refToInstanceInElementSourcePath).toEqual('[/Templates/instanceInElementsSource]')
     })
 
     it('should create _genereated_dependencies annotation and not replace the value in complexed values', async () => {
@@ -402,33 +433,36 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([customSegmentInstance, workflowInstance, instanceWithRefs])
 
+      expect(instanceWithRefs.value.stringWithMultipleRef).toEqual(
+        '[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]',
+      )
 
-      expect(instanceWithRefs.value.stringWithMultipleRef)
-        .toEqual('[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]')
-
-      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
-        .toHaveLength(3)
-      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
-        .toEqual([
-          {
-            reference: new ReferenceExpression(
-              customSegmentInstance.elemID.createNestedID(SCRIPT_ID)
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(3)
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
+        {
+          reference: new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID)),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(
+            workflowInstance.elemID.createNestedID(
+              'workflowstates',
+              'workflowstate',
+              '0',
+              'workflowactions',
+              '0',
+              'setfieldvalueaction',
+              '0',
+              SCRIPT_ID,
             ),
-            occurrences: undefined,
-          },
-          {
-            reference: new ReferenceExpression(
-              workflowInstance.elemID.createNestedID(SCRIPT_ID)
-            ),
-            occurrences: undefined,
-          },
-          {
-            reference: new ReferenceExpression(
-              workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)
-            ),
-            occurrences: undefined,
-          },
-        ])
+          ),
+          occurrences: undefined,
+        },
+      ])
     })
 
     it('should not replace complexed strings and ignore non existing refs', async () => {
@@ -439,9 +473,9 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([instanceWithRefs])
 
-
-      expect(instanceWithRefs.value.stringWithMultipleNonExistingRef)
-        .toEqual('[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]')
+      expect(instanceWithRefs.value.stringWithMultipleNonExistingRef).toEqual(
+        '[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]',
+      )
 
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
@@ -484,32 +518,26 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, syntacticFileInstance, syntacticFileInstance2, innerFileInstance, customRecordType])
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
-        {
-          reference: new ReferenceExpression(
-            innerFileInstance.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-        {
-          reference: new ReferenceExpression(
-            syntacticFileInstance.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-        {
-          reference: new ReferenceExpression(
-            syntacticFileInstance2.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-        {
-          reference: new ReferenceExpression(
-            customRecordType.elemID.createNestedID('attr', SCRIPT_ID)
-          ),
-          occurrences: undefined,
-        },
-      ]))
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        expect.arrayContaining([
+          {
+            reference: new ReferenceExpression(innerFileInstance.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(syntacticFileInstance.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(syntacticFileInstance2.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
+            occurrences: undefined,
+          },
+        ]),
+      )
     })
 
     it('should add generated dependency for for paths that dont start with path prefix', async () => {
@@ -539,20 +567,18 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, noExtensionInstance, fileWithExtension])
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
-        {
-          reference: new ReferenceExpression(
-            noExtensionInstance.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-        {
-          reference: new ReferenceExpression(
-            fileWithExtension.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-      ]))
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        expect.arrayContaining([
+          {
+            reference: new ReferenceExpression(noExtensionInstance.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(fileWithExtension.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+        ]),
+      )
     })
 
     it('should add generated dependency from comment', async () => {
@@ -574,14 +600,10 @@ describe('instance_references filter', () => {
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, commentRefFileInstance])
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toContainEqual(
-        {
-          reference: new ReferenceExpression(
-            commentRefFileInstance.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        }
-      )
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toContainEqual({
+        reference: new ReferenceExpression(commentRefFileInstance.elemID.createNestedID(PATH)),
+        occurrences: undefined,
+      })
     })
     // TODO: should be updated when SALTO-4305 is communicated and opened to all
     it('should add generated dependency for custom record fields referenced by field ID', async () => {
@@ -603,9 +625,7 @@ describe('instance_references filter', () => {
       }).onFetch?.([fileInstance, customRecordType])
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
         {
-          reference: new ReferenceExpression(
-            customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)
-          ),
+          reference: new ReferenceExpression(customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)),
           occurrences: undefined,
         },
       ])
@@ -636,9 +656,7 @@ describe('instance_references filter', () => {
       }).onFetch?.([fileInstance])
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
         {
-          reference: new ReferenceExpression(
-            customRecordField.elemID.createNestedID(SCRIPT_ID)
-          ),
+          reference: new ReferenceExpression(customRecordField.elemID.createNestedID(SCRIPT_ID)),
           occurrences: undefined,
         },
       ])
@@ -661,14 +679,10 @@ describe('instance_references filter', () => {
           },
         },
       })
-      instanceWithReferences = new InstanceElement(
-        'customworkflow_test',
-        type,
-        {
-          [SCRIPT_ID]: 'customworkflow_test',
-          ref: new ReferenceExpression(instance.elemID.createNestedID(SCRIPT_ID), 'customworkflow1', instance),
-        }
-      )
+      instanceWithReferences = new InstanceElement('customworkflow_test', type, {
+        [SCRIPT_ID]: 'customworkflow_test',
+        ref: new ReferenceExpression(instance.elemID.createNestedID(SCRIPT_ID), 'customworkflow1', instance),
+      })
       customRecordTypeWithReferences = new ObjectType({
         elemID: new ElemID(NETSUITE, 'customrecord1'),
         fields: {
@@ -677,17 +691,23 @@ describe('instance_references filter', () => {
         annotations: {
           [SCRIPT_ID]: 'customrecord1',
           [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-          ref: new ReferenceExpression(instance.elemID.createNestedID('workflowstate', 'workflowstate1', SCRIPT_ID), 'workflowstate1', instance),
+          ref: new ReferenceExpression(
+            instance.elemID.createNestedID('workflowstate', 'workflowstate1', SCRIPT_ID),
+            'workflowstate1',
+            instance,
+          ),
         },
       })
       customRecordTypeWithReferences.fields.custom_field.annotate({
-        ref: new ReferenceExpression(customRecordTypeWithReferences.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1', customRecordTypeWithReferences),
+        ref: new ReferenceExpression(
+          customRecordTypeWithReferences.elemID.createNestedID('attr', SCRIPT_ID),
+          'customrecord1',
+          customRecordTypeWithReferences,
+        ),
       })
-      fileInstanceWithContent = new InstanceElement(
-        'file',
-        fileType(),
-        { content: new StaticFile({ filepath: '/file.txt', content: Buffer.from('some content') }) }
-      )
+      fileInstanceWithContent = new InstanceElement('file', fileType(), {
+        content: new StaticFile({ filepath: '/file.txt', content: Buffer.from('some content') }),
+      })
     })
     it('should resolve references in instance', async () => {
       await filterCreator(filterOpts).preDeploy?.([toChange({ after: instanceWithReferences })])

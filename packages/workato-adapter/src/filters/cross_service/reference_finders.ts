@@ -1,21 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
+import {
+  transformElement,
+  TransformFunc,
+  safeJsonStringify,
+  setPath,
+  extendGeneratedDependencies,
+  FlatDetailedDependency,
+  DependencyDirection,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
 import { SalesforceBlock } from './salesforce/recipe_block_types'
@@ -31,7 +39,6 @@ const log = logger(module)
 
 type SupportedRecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock | JiraBlock | ZendeskBlock
 
-
 export type MappedReference = FlatDetailedDependency & {
   // pathToOverride is used to denote where in the element to put the reference.
   // it is usually related to the dependency location, but may not be identical -
@@ -40,15 +47,9 @@ export type MappedReference = FlatDetailedDependency & {
   pathToOverride?: ElemID
 }
 
-export type ReferenceFinder<T extends SupportedRecipeBlock> = (
-  value: T,
-  path: ElemID,
-) => MappedReference[]
+export type ReferenceFinder<T extends SupportedRecipeBlock> = (value: T, path: ElemID) => MappedReference[]
 
-export type FormulaReferenceFinder = (
-  value: string,
-  path: ElemID,
-) => MappedReference[]
+export type FormulaReferenceFinder = (value: string, path: ElemID) => MappedReference[]
 
 export const addReferencesForService = async <T extends SupportedRecipeBlock>(
   inst: InstanceElement,
@@ -61,16 +62,9 @@ export const addReferencesForService = async <T extends SupportedRecipeBlock>(
 
   const findReferences: TransformFunc = ({ value, path }) => {
     if (typeGuard(value, appName)) {
-      dependencyMapping.push(...addReferences(
-        value,
-        path ?? inst.elemID,
-      ))
-    // we can't have both cases because on expects an object and the other a string
-    } else if (
-      addFormulaReferences !== undefined
-      && path !== undefined
-      && _.isString(value)
-    ) {
+      dependencyMapping.push(...addReferences(value, path ?? inst.elemID))
+      // we can't have both cases because on expects an object and the other a string
+    } else if (addFormulaReferences !== undefined && path !== undefined && _.isString(value)) {
       dependencyMapping.push(...addFormulaReferences(value, path))
     }
     return value
@@ -85,31 +79,34 @@ export const addReferencesForService = async <T extends SupportedRecipeBlock>(
   if (dependencyMapping.length === 0) {
     return
   }
-  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.pathToOverride?.getFullName(), dep.reference.elemID.getFullName()])))
+  log.debug(
+    'found the following references: %s',
+    safeJsonStringify(
+      dependencyMapping.map(dep => [dep.pathToOverride?.getFullName(), dep.reference.elemID.getFullName()]),
+    ),
+  )
   dependencyMapping.forEach(({ pathToOverride, reference }) => {
     if (pathToOverride !== undefined) {
       setPath(inst, pathToOverride, reference)
     }
   })
-  extendGeneratedDependencies(inst, dependencyMapping.map(dep => _.omit(dep, 'pathToOverride')))
+  extendGeneratedDependencies(
+    inst,
+    dependencyMapping.map(dep => _.omit(dep, 'pathToOverride')),
+  )
 }
 
 export type Matcher<T> = (value: string) => T[]
-export const createMatcher = <T>(
-  matchers: RegExp[],
-  typeGuard: types.TypeGuard<Values, T>,
-): Matcher<T> => (
-    value => {
-      const matchGroups = (
-        matchers
-          .flatMap(m => [...matchAll(value, m)])
-          .map(r => r.groups)
-          .filter(isDefined)
-      ) as Values[]
-      const x: T[] = matchGroups.filter(typeGuard)
-      return x
-    }
-  )
+export const createMatcher =
+  <T>(matchers: RegExp[], typeGuard: types.TypeGuard<Values, T>): Matcher<T> =>
+  value => {
+    const matchGroups = matchers
+      .flatMap(m => [...matchAll(value, m)])
+      .map(r => r.groups)
+      .filter(isDefined) as Values[]
+    const x: T[] = matchGroups.filter(typeGuard)
+    return x
+  }
 
 const DIRECTED_BLOCK_TYPES: Record<string, DependencyDirection> = {
   trigger: 'input',
@@ -117,6 +114,5 @@ const DIRECTED_BLOCK_TYPES: Record<string, DependencyDirection> = {
   action: 'output',
   // other known block types: foreach, else
 }
-export const getBlockDependencyDirection = (block: BlockBase): DependencyDirection | undefined => (
+export const getBlockDependencyDirection = (block: BlockBase): DependencyDirection | undefined =>
   DIRECTED_BLOCK_TYPES[block.keyword]
-)

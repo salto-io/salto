@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  ObjectType, ElemID, InstanceElement, toChange,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/view'
@@ -36,104 +34,100 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('views filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
-  const view = new InstanceElement(
-    'Test',
-    new ObjectType({ elemID: new ElemID(ZENDESK, 'view') }),
-    {
-      title: 'Test',
-      active: true,
-      position: 1,
-      description: 'description test - 2',
-      restriction: {
-        type: 'Group',
-        ids: [1],
+  const view = new InstanceElement('Test', new ObjectType({ elemID: new ElemID(ZENDESK, 'view') }), {
+    title: 'Test',
+    active: true,
+    position: 1,
+    description: 'description test - 2',
+    restriction: {
+      type: 'Group',
+      ids: [1],
+    },
+    execution: {
+      group_by: 123,
+      group_order: 'asc',
+      sort_by: 'nice_id',
+      sort_order: 'desc',
+      group: {
+        id: 123,
+        title: 'Requester',
+        type: 'tagger',
+        order: 'asc',
       },
-      execution: {
-        group_by: 123,
-        group_order: 'asc',
-        sort_by: 'nice_id',
-        sort_order: 'desc',
-        group: {
-          id: 123,
+      sort: {
+        id: 'ticket_id',
+        title: 'ID',
+        order: 'desc',
+      },
+      columns: [
+        {
+          id: 'subject',
+          title: 'Subject',
+        },
+        {
+          id: 'requester',
           title: 'Requester',
-          type: 'tagger',
-          order: 'asc',
         },
-        sort: {
-          id: 'ticket_id',
-          title: 'ID',
-          order: 'desc',
+        {
+          id: 2,
+          title: 'zip code with validation',
+          type: 'regexp',
         },
-        columns: [
-          {
-            id: 'subject',
-            title: 'Subject',
-          },
-          {
-            id: 'requester',
-            title: 'Requester',
-          },
-          {
-            id: 2,
-            title: 'zip code with validation',
-            type: 'regexp',
-          },
-        ],
-        fields: [
-          {
-            id: 'subject',
-            title: 'Subject',
-          },
-          {
-            id: 'requester',
-            title: 'Requester',
-          },
-        ],
-        custom_fields: [
-          {
-            id: 2,
-            title: 'zip code with validation',
-            type: 'regexp',
-          },
-        ],
-      },
-      conditions: {
-        all: [
-          {
-            field: 'status',
-            operator: 'is',
-            value: 'open',
-          },
-          {
-            field: 'brand_id',
-            operator: 'is',
-            value: 3,
-          },
-          {
-            field: 'custom_status_id',
-            operator: 'includes',
-            value: [5, 6],
-          },
-          {
-            field: 'custom_fields_1500009152882',
-            operator: 'not_present',
-          },
-        ],
-        any: [
-          {
-            field: 'priority',
-            operator: 'is_not',
-            value: 'low',
-          },
-          {
-            field: 'custom_fields_1500009152882',
-            operator: 'includes',
-            value: 'v1',
-          },
-        ],
-      },
-    }
-  )
+      ],
+      fields: [
+        {
+          id: 'subject',
+          title: 'Subject',
+        },
+        {
+          id: 'requester',
+          title: 'Requester',
+        },
+      ],
+      custom_fields: [
+        {
+          id: 2,
+          title: 'zip code with validation',
+          type: 'regexp',
+        },
+      ],
+    },
+    conditions: {
+      all: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: 'open',
+        },
+        {
+          field: 'brand_id',
+          operator: 'is',
+          value: 3,
+        },
+        {
+          field: 'custom_status_id',
+          operator: 'includes',
+          value: [5, 6],
+        },
+        {
+          field: 'custom_fields_1500009152882',
+          operator: 'not_present',
+        },
+      ],
+      any: [
+        {
+          field: 'priority',
+          operator: 'is_not',
+          value: 'low',
+        },
+        {
+          field: 'custom_fields_1500009152882',
+          operator: 'includes',
+          value: 'v1',
+        },
+      ],
+    },
+  })
   beforeEach(async () => {
     jest.clearAllMocks()
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
@@ -184,6 +178,9 @@ describe('views filter', () => {
       expect(anotherClonedView.value.any).toBeDefined()
       expect(anotherClonedView.value.any).toHaveLength(0)
     })
+    it('should copy raw_title to title', async () => {
+      expect(clonedView.value.raw_title).toEqual(clonedView.value.title)
+    })
   })
 
   describe('onDeploy', () => {
@@ -229,8 +226,7 @@ describe('views filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: clonedView } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedView } }])
     })
 
     it('should pass the correct params to deployChange on update', async () => {
@@ -241,8 +237,9 @@ describe('views filter', () => {
       clonedViewAfter.value.id = id
       clonedViewAfter.value.description = 'edited'
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedViewBefore, after: clonedViewAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedViewBefore, after: clonedViewAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedViewBefore, after: clonedViewAfter } },
@@ -253,13 +250,12 @@ describe('views filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedViewBefore, after: clonedViewAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedViewBefore, after: clonedViewAfter },
+        },
+      ])
     })
 
     it('should pass the correct params to deployChange on remove', async () => {

@@ -1,19 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalOrModificationChange, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isRemovalOrModificationChange,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { PROJECT_TYPE } from '../../constants'
@@ -34,17 +46,15 @@ const getProjectReferencesFromSource = async (
     .filter(id => id.idType === 'instance')
     .filter(id => !deployedProjectIds.has(id.getFullName()))
     .map(id => elementsSource.get(id))
-    .filter(projectInstance => projectInstance.value[PROJECT_CONTEXTS_FIELD]?.some(
-      (context: ReferenceExpression) => context.elemID.isEqual(contextId)
-    ))
+    .filter(projectInstance =>
+      projectInstance.value[PROJECT_CONTEXTS_FIELD]?.some((context: ReferenceExpression) =>
+        context.elemID.isEqual(contextId),
+      ),
+    )
     .map(projectInstance => new ReferenceExpression(projectInstance.elemID, projectInstance))
     .toArray()
 
-const appendReference = (
-  map: Record<string, ReferenceExpression[]>,
-  key: string,
-  value: ReferenceExpression,
-): void => {
+const appendReference = (map: Record<string, ReferenceExpression[]>, key: string, value: ReferenceExpression): void => {
   map[key] = collections.array.makeArray(map[key])
   map[key].push(value)
 }
@@ -61,25 +71,23 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
 
   const updateContextToProjectChanges = (projectChange: Change<InstanceElement>): void => {
     if (isAdditionOrModificationChange(projectChange)) {
-      projectChange.data.after.value[PROJECT_CONTEXTS_FIELD]
-        ?.forEach((context: ReferenceExpression) => {
-          appendReference(
-            adapterContext.afterContextToProjects,
-            context.elemID.getFullName(),
-            new ReferenceExpression(projectChange.data.after.elemID, projectChange.data.after),
-          )
-        })
+      projectChange.data.after.value[PROJECT_CONTEXTS_FIELD]?.forEach((context: ReferenceExpression) => {
+        appendReference(
+          adapterContext.afterContextToProjects,
+          context.elemID.getFullName(),
+          new ReferenceExpression(projectChange.data.after.elemID, projectChange.data.after),
+        )
+      })
     }
 
     if (isRemovalOrModificationChange(projectChange)) {
-      projectChange.data.before.value[PROJECT_CONTEXTS_FIELD]
-        ?.forEach((context: ReferenceExpression) => {
-          appendReference(
-            adapterContext.beforeContextToProjects,
-            context.elemID.getFullName(),
-            new ReferenceExpression(projectChange.data.before.elemID, projectChange.data.before)
-          )
-        })
+      projectChange.data.before.value[PROJECT_CONTEXTS_FIELD]?.forEach((context: ReferenceExpression) => {
+        appendReference(
+          adapterContext.beforeContextToProjects,
+          context.elemID.getFullName(),
+          new ReferenceExpression(projectChange.data.before.elemID, projectChange.data.before),
+        )
+      })
     }
   }
 
@@ -111,7 +119,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
               appendReference(
                 ref.value.value,
                 PROJECT_CONTEXTS_FIELD,
-                new ReferenceExpression(instance.elemID, instance)
+                new ReferenceExpression(instance.elemID, instance),
               )
             })
 
@@ -144,16 +152,14 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
           if (isAdditionOrModificationChange(change)) {
             change.data.after.value.projectIds = [
               ...projectReferencesFromSource,
-              ...(adapterContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
-                ?? []),
+              ...(adapterContext.afterContextToProjects[getChangeData(change).elemID.getFullName()] ?? []),
             ]
           }
 
           if (isRemovalOrModificationChange(change)) {
             change.data.before.value.projectIds = [
               ...projectReferencesFromSource,
-              ...(adapterContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
-                ?? []),
+              ...(adapterContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()] ?? []),
             ]
           }
 
@@ -162,18 +168,16 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
         })
     },
 
-    onDeploy: async changes => (
+    onDeploy: async changes =>
       awu(changes)
         .filter(isInstanceChange)
         .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-        .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
-          change,
-          async instance => {
+        .forEach(change =>
+          applyFunctionToChangeData<Change<InstanceElement>>(change, async instance => {
             delete instance.value.projectIds
             return instance
-          }
-        ))
-    ),
+          }),
+        ),
   }
 }
 

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
@@ -21,18 +21,14 @@ import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, JSM_DUCKTYPE_API_DEFINITIONS, FETC
 import { getProductSettings } from '../product_settings'
 import { JiraDuckTypeConfig } from './api_config'
 
-const {
-  createSwaggerAdapterApiConfigType,
-  createDucktypeAdapterApiConfigType,
-  defaultMissingUserFallbackField,
-} = configUtils
+const { createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType, defaultMissingUserFallbackField } =
+  configUtils
 
-type JiraClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
-  & {
-    fieldConfigurationItemsDeploymentLimit: number
-    usePrivateAPI: boolean
-    boardColumnRetry: number
-  }
+type JiraClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig> & {
+  fieldConfigurationItemsDeploymentLimit: number
+  usePrivateAPI: boolean
+  boardColumnRetry: number
+}
 
 export type JspUrls = {
   add: string
@@ -43,19 +39,23 @@ export type JspUrls = {
 }
 
 type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
-  types: Record<string, configUtils.TypeConfig & {
-    jspRequests?: JspUrls
-  }>
+  types: Record<
+    string,
+    configUtils.TypeConfig & {
+      jspRequests?: JspUrls
+    }
+  >
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = definitions.UserDeployConfig & definitions.DefaultMissingUserFallbackConfig & {
-  forceDelete: boolean
-  taskMaxRetries: number
-  taskRetryDelay: number
-}
+type JiraDeployConfig = definitions.UserDeployConfig &
+  definitions.DefaultMissingUserFallbackConfig & {
+    forceDelete: boolean
+    taskMaxRetries: number
+    taskRetryDelay: number
+  }
 
 type JiraFetchFilters = definitions.DefaultFetchCriteria & {
   type?: string
@@ -106,7 +106,6 @@ const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
   },
 })
 
-
 const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({
   adapter: JIRA,
   additionalTypeFields: {
@@ -115,7 +114,6 @@ const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({
     },
   },
 })
-
 
 const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
@@ -147,7 +145,7 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
 
 export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   client: {
-  // Jira does not allow more items in a single request than this
+    // Jira does not allow more items in a single request than this
     fieldConfigurationItemsDeploymentLimit: 100,
     usePrivateAPI: true,
     boardColumnRetry: 5,
@@ -160,11 +158,10 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: false,
-
   },
   deploy: {
     forceDelete: false,
-    taskMaxRetries: 120,
+    taskMaxRetries: 180,
     taskRetryDelay: 1000,
   },
   masking: {
@@ -183,19 +180,17 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
 const createClientConfigType = (): ObjectType => {
   const configType = definitions.createClientConfigType(JIRA)
   configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
-    configType, 'FieldConfigurationItemsDeploymentLimit', BuiltinTypes.NUMBER
+    configType,
+    'FieldConfigurationItemsDeploymentLimit',
+    BuiltinTypes.NUMBER,
   )
-  configType.fields.usePrivateAPI = new Field(
-    configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
-  )
+  configType.fields.usePrivateAPI = new Field(configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN)
 
-  configType.fields.boardColumnRetry = new Field(
-    configType, 'boardColumnRetry', BuiltinTypes.NUMBER
-  )
+  configType.fields.boardColumnRetry = new Field(configType, 'boardColumnRetry', BuiltinTypes.NUMBER)
   return configType
 }
 
-export type ChangeValidatorName = (
+export type ChangeValidatorName =
   | 'unresolvedReference'
   | 'brokenReferences'
   | 'deployTypesNotSupported'
@@ -246,7 +241,6 @@ export type ChangeValidatorName = (
   | 'addJsmProject'
   | 'deleteLabelAtttribute'
   | 'jsmPermissions'
-  )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -308,14 +302,10 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
-const jiraDeployConfigType = definitions.createUserDeployConfigType(
-  JIRA,
-  changeValidatorConfigType,
-  {
-    ...defaultMissingUserFallbackField,
-    forceDelete: { refType: BuiltinTypes.BOOLEAN },
-  }
-)
+const jiraDeployConfigType = definitions.createUserDeployConfigType(JIRA, changeValidatorConfigType, {
+  ...defaultMissingUserFallbackField,
+  forceDelete: { refType: BuiltinTypes.BOOLEAN },
+})
 
 const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   elemID: new ElemID(JIRA, 'FetchFilters'),
@@ -373,14 +363,18 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     fetch: { refType: fetchConfigType },
     apiDefinitions: { refType: apiDefinitionsType },
     masking: { refType: maskingConfigType },
-    [SCRIPT_RUNNER_API_DEFINITIONS]: { refType: createDucktypeAdapterApiConfigType({
-      adapter: JIRA,
-      elemIdPrefix: 'ducktype',
-    }) },
-    [JSM_DUCKTYPE_API_DEFINITIONS]: { refType: createDucktypeAdapterApiConfigType({
-      adapter: JIRA,
-      elemIdPrefix: 'ducktype',
-    }) },
+    [SCRIPT_RUNNER_API_DEFINITIONS]: {
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: JIRA,
+        elemIdPrefix: 'ducktype',
+      }),
+    },
+    [JSM_DUCKTYPE_API_DEFINITIONS]: {
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: JIRA,
+        elemIdPrefix: 'ducktype',
+      }),
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, [
@@ -395,12 +389,15 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS,
-      JSM_DUCKTYPE_API_DEFINITIONS]),
+      JSM_DUCKTYPE_API_DEFINITIONS,
+    ]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
-export const getApiDefinitions = (config: JiraApiConfig): {
+export const getApiDefinitions = (
+  config: JiraApiConfig,
+): {
   platform: configUtils.AdapterSwaggerApiConfig
   jira: configUtils.AdapterSwaggerApiConfig
 } => {
@@ -423,15 +420,13 @@ export const validateJiraFetchConfig = ({
   jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
   const jsmSupportedTypes = fetchConfig.enableJSM ? Object.keys(jsmApiDefinitions.supportedTypes) : []
-  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon && scriptRunnerApiDefinitions !== undefined
-    ? Object.keys(scriptRunnerApiDefinitions.supportedTypes) : []
+  const scriptRunnerSupportedTypes =
+    fetchConfig.enableScriptRunnerAddon && scriptRunnerApiDefinitions !== undefined
+      ? Object.keys(scriptRunnerApiDefinitions.supportedTypes)
+      : []
   const supportedTypes = Object.keys(apiDefinitions.supportedTypes)
     .concat(jsmSupportedTypes)
     .concat(scriptRunnerSupportedTypes)
 
-  configUtils.validateSupportedTypes(
-    FETCH_CONFIG,
-    fetchConfig,
-    supportedTypes
-  )
+  configUtils.validateSupportedTypes(FETCH_CONFIG, fetchConfig, supportedTypes)
 }

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
@@ -59,34 +59,25 @@ export interface State extends ElementsSource {
   updateConfig(args: UpdateConfigArgs): Promise<void>
 }
 
-
-export const createStateNamespace = (envName: string, namespace: string): string =>
-  `state-${envName}-${namespace}`
+export const createStateNamespace = (envName: string, namespace: string): string => `state-${envName}-${namespace}`
 
 export const buildStateData = async (
   envName: string,
   remoteMapCreator: RemoteMapCreator,
   staticFilesSource: StateStaticFilesSource,
-  persistent: boolean
-):
-Promise<StateData> => ({
-  elements: new RemoteElementSource(await remoteMapCreator<Element>({
-    namespace: createStateNamespace(envName, 'elements'),
-    serialize: elem => serialize(
-      [elem],
-      'replaceRefWithValue',
-      file => staticFilesSource.persistStaticFile(file)
-    ),
-    deserialize: elem => deserializeSingleElement(
-      elem,
-      staticFile => staticFilesSource.getStaticFile(
-        staticFile.filepath,
-        staticFile.encoding,
-        staticFile.hash,
-      )
-    ),
-    persistent,
-  })),
+  persistent: boolean,
+): Promise<StateData> => ({
+  elements: new RemoteElementSource(
+    await remoteMapCreator<Element>({
+      namespace: createStateNamespace(envName, 'elements'),
+      serialize: elem => serialize([elem], 'replaceRefWithValue', file => staticFilesSource.persistStaticFile(file)),
+      deserialize: elem =>
+        deserializeSingleElement(elem, staticFile =>
+          staticFilesSource.getStaticFile(staticFile.filepath, staticFile.encoding, staticFile.hash),
+        ),
+      persistent,
+    }),
+  ),
   pathIndex: await remoteMapCreator<Path[]>({
     namespace: createStateNamespace(envName, 'path_index'),
     serialize: async paths => safeJsonStringify(paths),

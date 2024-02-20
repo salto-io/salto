@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
 import { TypeAndInnerTypes } from '../../../types/object_types'
@@ -30,8 +36,7 @@ export const centertabType = (): TypeAndInnerTypes => {
 
   const centertab_portlets_portlet = new ObjectType({
     elemID: centertab_portlets_portletElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -39,22 +44,19 @@ export const centertabType = (): TypeAndInnerTypes => {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
         },
-      }, /* Original description: This attribute value can be up to 40 characters long. */
+      } /* Original description: This attribute value can be up to 40 characters long. */,
       portlet: {
         refType: createRefToElmWithValue(enums.generic_portlet),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_portlet. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_portlet. */,
       portletcolumn: {
         refType: createRefToElmWithValue(enums.generic_portletcolumn),
-        annotations: {
-        },
-      }, /* Original description: For information about possible values, see generic_portletcolumn. */
+        annotations: {},
+      } /* Original description: For information about possible values, see generic_portletcolumn. */,
       isportletshown: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is T. */
+        annotations: {},
+      } /* Original description: The default value is T. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
   })
@@ -65,13 +67,11 @@ export const centertabType = (): TypeAndInnerTypes => {
 
   const centertab_portlets = new ObjectType({
     elemID: centertab_portletsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       portlet: {
         refType: createRefToElmWithValue(new ListType(centertab_portlets_portlet)),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
@@ -79,11 +79,9 @@ export const centertabType = (): TypeAndInnerTypes => {
 
   innerTypes.centertab_portlets = centertab_portlets
 
-
   const centertab = new ObjectType({
     elemID: centertabElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -92,58 +90,50 @@ export const centertabType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custcentertab[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */
+      } /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */,
       label: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the string custom type. */
+      } /* Original description: This field accepts references to the string custom type. */,
       center: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
+      } /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */,
       allvendors: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       allroles: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       allpartners: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+        annotations: {},
+      } /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */,
       allcustomers: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       allemployees: {
         refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-        annotations: {
-        },
-      }, /* Original description: The default value is F. */
+        annotations: {},
+      } /* Original description: The default value is F. */,
       audslctrole: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
-        annotations: {
-        },
-      }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+        annotations: {},
+      } /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */,
       portlets: {
         refType: createRefToElmWithValue(centertab_portlets),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
   })
-
 
   return { type: centertab, innerTypes }
 }

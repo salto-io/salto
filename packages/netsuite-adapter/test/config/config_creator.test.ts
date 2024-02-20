@@ -1,24 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { regex } from '@salto-io/lowerdash'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { InstanceLimiterFunc, configType } from '../../src/config/types'
 import { instanceLimiterCreator, netsuiteConfigFromConfig, fullFetchConfig } from '../../src/config/config_creator'
-import { GROUPS_TO_DATA_FILE_TYPES, DEFAULT_MAX_INSTANCES_VALUE, UNLIMITED_INSTANCES_VALUE } from '../../src/config/constants'
+import {
+  GROUPS_TO_DATA_FILE_TYPES,
+  DEFAULT_MAX_INSTANCES_VALUE,
+  UNLIMITED_INSTANCES_VALUE,
+} from '../../src/config/constants'
 
 describe('netsuite config creator', () => {
   let config: InstanceElement
@@ -107,26 +111,26 @@ describe('netsuite config creator', () => {
     it('should return same fetch.include.customRecords when undefined', () => {
       config.value.includeCustomRecords = undefined
       expect(netsuiteConfigFromConfig(config).fetch.include.customRecords).toEqual(
-        config.value.fetch.include.customRecords ?? []
+        config.value.fetch.include.customRecords ?? [],
       )
     })
     it('should return same fetch.include.customRecords when empty', () => {
       config.value.includeCustomRecords = []
       expect(netsuiteConfigFromConfig(config).fetch.include.customRecords).toEqual(
-        config.value.fetch.include.customRecords ?? []
+        config.value.fetch.include.customRecords ?? [],
       )
     })
     it('should return all types match in fetch.include.customRecords when has "All"', () => {
       config.value.includeCustomRecords = ['All', 'customrecord2']
       expect(netsuiteConfigFromConfig(config).fetch.include.customRecords).toEqual([
-        ...config.value.fetch.include.customRecords ?? [],
+        ...(config.value.fetch.include.customRecords ?? []),
         { name: '.*' },
       ])
     })
     it('should return given types match in fetch.include.customRecords', () => {
       config.value.includeCustomRecords = ['customrecord2', 'customrecord3']
       expect(netsuiteConfigFromConfig(config).fetch.include.customRecords).toEqual([
-        ...config.value.fetch.include.customRecords ?? [],
+        ...(config.value.fetch.include.customRecords ?? []),
         { name: 'customrecord2|customrecord3' },
       ])
     })
@@ -135,22 +139,16 @@ describe('netsuite config creator', () => {
   describe('include inactive records', () => {
     it('should return same fetch.exclude.types when undefined', () => {
       config.value.includeInactiveRecords = undefined
-      expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual(
-        config.value.fetch.exclude.types
-      )
+      expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual(config.value.fetch.exclude.types)
     })
     it('should return same fetch.exclude.types when has "All"', () => {
       config.value.includeInactiveRecords = ['All', 'workflow']
-      expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual(
-        config.value.fetch.exclude.types
-      )
+      expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual(config.value.fetch.exclude.types)
     })
     it('should return all types match in fetch.exclude.types when empty', () => {
       config.value.includeInactiveRecords = []
       expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual([
         ...config.value.fetch.exclude.types,
-        { name: '.*', criteria: { isinactive: true } },
-        { name: '.*', criteria: { inactive: true } },
         { name: '.*', criteria: { isInactive: true } },
       ])
     })
@@ -159,8 +157,6 @@ describe('netsuite config creator', () => {
       const allExceptRegex = '(?!(workflow|file|folder)$).*'
       expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual([
         ...config.value.fetch.exclude.types,
-        { name: allExceptRegex, criteria: { isinactive: true } },
-        { name: allExceptRegex, criteria: { inactive: true } },
         { name: allExceptRegex, criteria: { isInactive: true } },
       ])
       expect(regex.isFullRegexMatch('workflow', allExceptRegex)).toBeFalsy()
@@ -175,15 +171,11 @@ describe('netsuite config creator', () => {
   describe('include data file types', () => {
     it('should return same fetch.exclude.fileCabinet when undefined', () => {
       config.value.includeDataFileTypes = undefined
-      expect(netsuiteConfigFromConfig(config).fetch.exclude.fileCabinet).toEqual(
-        config.value.fetch.exclude.fileCabinet
-      )
+      expect(netsuiteConfigFromConfig(config).fetch.exclude.fileCabinet).toEqual(config.value.fetch.exclude.fileCabinet)
     })
     it('should return same fetch.exclude.fileCabinet when has all data file types', () => {
       config.value.includeDataFileTypes = Object.keys(GROUPS_TO_DATA_FILE_TYPES)
-      expect(netsuiteConfigFromConfig(config).fetch.exclude.fileCabinet).toEqual(
-        config.value.fetch.exclude.fileCabinet
-      )
+      expect(netsuiteConfigFromConfig(config).fetch.exclude.fileCabinet).toEqual(config.value.fetch.exclude.fileCabinet)
     })
     it('should return all data file types in fetch.exclude.fileCabinet when empty', () => {
       config.value.includeDataFileTypes = []
@@ -206,15 +198,11 @@ describe('netsuite config creator', () => {
   describe('include file cabinet folders', () => {
     it('should return same fetch.include.fileCabinet when undefined', () => {
       config.value.includeFileCabinetFolders = undefined
-      expect(netsuiteConfigFromConfig(config).fetch.include.fileCabinet).toEqual(
-        config.value.fetch.include.fileCabinet
-      )
+      expect(netsuiteConfigFromConfig(config).fetch.include.fileCabinet).toEqual(config.value.fetch.include.fileCabinet)
     })
     it('should return same fetch.include.fileCabinet when empty', () => {
       config.value.includeFileCabinetFolders = []
-      expect(netsuiteConfigFromConfig(config).fetch.include.fileCabinet).toEqual(
-        config.value.fetch.include.fileCabinet
-      )
+      expect(netsuiteConfigFromConfig(config).fetch.include.fileCabinet).toEqual(config.value.fetch.include.fileCabinet)
     })
     it('should return given folders in fetch.include.fileCabinet', () => {
       config.value.includeFileCabinetFolders = ['/test1', '/test2/', 'test3/', 'test4']
@@ -236,12 +224,14 @@ describe('netsuite config creator', () => {
       let limiter: InstanceLimiterFunc
 
       beforeAll(() => {
-        limiter = instanceLimiterCreator({ maxInstancesPerType: [
-          { name: 'customsegment', limit: 30 },
-          { name: 'customsegment', limit: 6000 },
-          { name: 'unlimited', limit: UNLIMITED_INSTANCES_VALUE },
-          { name: 'savedsearch', limit: 50_000 },
-        ] })
+        limiter = instanceLimiterCreator({
+          maxInstancesPerType: [
+            { name: 'customsegment', limit: 30 },
+            { name: 'customsegment', limit: 6000 },
+            { name: 'unlimited', limit: UNLIMITED_INSTANCES_VALUE },
+            { name: 'savedsearch', limit: 50_000 },
+          ],
+        })
       })
 
       it('should apply limit only if over the default', () => {

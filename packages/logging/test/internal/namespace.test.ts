@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
 
 describe('namespace', () => {
@@ -39,24 +39,24 @@ describe('namespace', () => {
     describe('when a module is specified', () => {
       describe('when the id property is a string', () => {
         it('should return the correct namespace', () => {
-          expect(normalizeNamespace(module))
-            .toEqual('packages/logging/test/internal/namespace.test')
+          expect(normalizeNamespace(module)).toEqual('packages/logging/test/internal/namespace.test')
         })
         it('should return the correct namespace with extra fragments', () => {
-          expect(normalizeNamespace(module, ['foo', 'bar']))
-            .toEqual('packages/logging/test/internal/namespace.test/foo/bar')
+          expect(normalizeNamespace(module, ['foo', 'bar'])).toEqual(
+            'packages/logging/test/internal/namespace.test/foo/bar',
+          )
         })
       })
 
       describe('when the id property is a number', () => {
         describe('when the lastLibraryFilename is found in the stack', () => {
           it('should return the correct namespace', () => {
-            expect(normalizeNamespace({ id: 12 }))
-              .toEqual('packages/logging/test/internal/namespace.test')
+            expect(normalizeNamespace({ id: 12 })).toEqual('packages/logging/test/internal/namespace.test')
           })
           it('should return the correct namespace with extra fragments', () => {
-            expect(normalizeNamespace({ id: 12 }, ['foo', 'bar']))
-              .toEqual('packages/logging/test/internal/namespace.test/foo/bar')
+            expect(normalizeNamespace({ id: 12 }, ['foo', 'bar'])).toEqual(
+              'packages/logging/test/internal/namespace.test/foo/bar',
+            )
           })
         })
 
@@ -65,9 +65,7 @@ describe('namespace', () => {
             expect(namespaceNormalizer('NOSUCHFILENAME')({ id: 12 })).toEqual('12')
           })
           it('should return the id as string with more fragments', () => {
-            expect(
-              namespaceNormalizer('NOSUCHFILENAME')({ id: 12 }, ['foo', 'bar'])
-            ).toEqual('12/foo/bar')
+            expect(namespaceNormalizer('NOSUCHFILENAME')({ id: 12 }, ['foo', 'bar'])).toEqual('12/foo/bar')
           })
         })
       })

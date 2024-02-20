@@ -1,22 +1,22 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { Transition, TransitionFrom, WorkflowInstance } from '../../../src/filters/workflow/types'
+import { Transition, TransitionFrom, WorkflowV1Instance } from '../../../src/filters/workflow/types'
 import { createEmptyType } from '../../utils'
 import { getTransitionKey, transitionKeysToExpectedIds } from '../../../src/filters/workflow/transition_structure'
 
@@ -30,19 +30,15 @@ const keys = {
 
 describe('transitionKeysToExpectedIds', () => {
   it('should return a map with expected transition IDs for each transition key', () => {
-    const workflowInstance: WorkflowInstance = new InstanceElement(
-      'instance',
-      createEmptyType('Workflow'),
-      {
-        transitions: {
-          [keys.t1]: { name: 'transition1' },
-          [keys.t2]: { name: 'transition2' },
-          [keys.t3]: { name: 'transition3' },
-          [keys.t4]: { name: 'transition4' },
-          [keys.t5]: { name: 'transition5' },
-        },
-      }
-    ) as WorkflowInstance
+    const workflowInstance: WorkflowV1Instance = new InstanceElement('instance', createEmptyType('Workflow'), {
+      transitions: {
+        [keys.t1]: { name: 'transition1' },
+        [keys.t2]: { name: 'transition2' },
+        [keys.t3]: { name: 'transition3' },
+        [keys.t4]: { name: 'transition4' },
+        [keys.t5]: { name: 'transition5' },
+      },
+    }) as WorkflowV1Instance
     const result = transitionKeysToExpectedIds(workflowInstance)
     expect(result.get(keys.t1)).toEqual('31')
     expect(result.get(keys.t2)).toEqual('1')
@@ -52,29 +48,20 @@ describe('transitionKeysToExpectedIds', () => {
   })
 
   it('should handle empty transition groups', () => {
-    const workflowInstance: WorkflowInstance = new InstanceElement(
-      'instance',
-      createEmptyType('Workflow'),
-      {
-        transitions: {
-        },
-      }
-    ) as WorkflowInstance
+    const workflowInstance: WorkflowV1Instance = new InstanceElement('instance', createEmptyType('Workflow'), {
+      transitions: {},
+    }) as WorkflowV1Instance
 
     const result = transitionKeysToExpectedIds(workflowInstance)
 
     expect(result).toEqual(new Map())
   })
   it('should handle wrong transition keys', () => {
-    const workflowInstance: WorkflowInstance = new InstanceElement(
-      'instance',
-      createEmptyType('Workflow'),
-      {
-        transitions: {
-          '': { name: 'transition1' },
-        },
-      }
-    ) as WorkflowInstance
+    const workflowInstance: WorkflowV1Instance = new InstanceElement('instance', createEmptyType('Workflow'), {
+      transitions: {
+        '': { name: 'transition1' },
+      },
+    }) as WorkflowV1Instance
 
     const result = transitionKeysToExpectedIds(workflowInstance)
 

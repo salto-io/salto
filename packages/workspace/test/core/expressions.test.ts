@@ -1,20 +1,42 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, Field, PlaceholderObjectType, UnresolvedReference, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  InstanceElement,
+  Element,
+  ReferenceExpression,
+  VariableExpression,
+  TemplateExpression,
+  ListType,
+  Variable,
+  isVariableExpression,
+  isReferenceExpression,
+  StaticFile,
+  PrimitiveType,
+  PrimitiveTypes,
+  TypeReference,
+  MapType,
+  Field,
+  PlaceholderObjectType,
+  UnresolvedReference,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, CircularReference } from '../../src/expressions'
@@ -23,9 +45,8 @@ import { createInMemoryElementSource, mapReadOnlyElementsSource } from '../../sr
 const { awu } = collections.asynciterable
 
 describe('Test Salto Expressions', () => {
-  const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
+  const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression =>
     new ReferenceExpression(path.length === 0 ? elemID : elemID.createNestedID(...path))
-  )
 
   describe('Reference Expression', () => {
     const baseElemID = new ElemID('salto', 'base')
@@ -69,8 +90,7 @@ describe('Test Salto Expressions', () => {
       arr: ['A', 'B'],
     })
 
-    const varRef = new Variable(varRefElemID,
-      new ReferenceExpression(baseInst.elemID.createNestedID('simple')))
+    const varRef = new Variable(varRefElemID, new ReferenceExpression(baseInst.elemID.createNestedID('simple')))
 
     const simpleRefType = new ObjectType({
       elemID: new ElemID('salto', 'simple_ref_type'),
@@ -165,19 +185,13 @@ describe('Test Salto Expressions', () => {
 
     let resolved: Element[]
 
-    const findResolved = <T extends Element>(
-      target: Element): T => resolved.filter(
-        e => _.isEqual(e.elemID, target.elemID)
-      )[0] as T
+    const findResolved = <T extends Element>(target: Element): T =>
+      resolved.filter(e => _.isEqual(e.elemID, target.elemID))[0] as T
 
     describe('when shouldResolveReferences is false', () => {
       beforeEach(async () => {
         resolved = await awu(
-          await resolve(
-            elements,
-            createInMemoryElementSource(elements),
-            { shouldResolveReferences: false },
-          )
+          await resolve(elements, createInMemoryElementSource(elements), { shouldResolveReferences: false }),
         ).toArray()
       })
       it('should not resolve references', () => {
@@ -190,9 +204,7 @@ describe('Test Salto Expressions', () => {
 
     describe('when shouldResolveReferences is true', () => {
       beforeEach(async () => {
-        resolved = await awu(
-          await resolve(elements, createInMemoryElementSource(elements))
-        ).toArray()
+        resolved = await awu(await resolve(elements, createInMemoryElementSource(elements))).toArray()
       })
 
       it('should not modify the origin value', () => {
@@ -297,11 +309,14 @@ describe('Test Salto Expressions', () => {
         firstRef.value.test = refTo(secondRef, 'test')
         secondRef.value.test = refTo(firstRef, 'test')
         const chained = [firstRef, secondRef]
-        const inst = (await awu(await resolve(chained, createInMemoryElementSource([
-          ...chained,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-        ]))).toArray())[0] as InstanceElement
+        const inst = (
+          await awu(
+            await resolve(
+              chained,
+              createInMemoryElementSource([...chained, simpleRefType, ...(await getFieldsAndAnnoTypes(simpleRefType))]),
+            ),
+          ).toArray()
+        )[0] as InstanceElement
         expect(inst.value.test.value).toBeInstanceOf(CircularReference)
       })
 
@@ -311,50 +326,58 @@ describe('Test Salto Expressions', () => {
           test: refTo(firstRef, 'test'),
         })
         const bad = [firstRef, secondRef]
-        const res = (await awu(await resolve(bad, createInMemoryElementSource([
-          ...bad,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-        ]))).toArray())[1] as InstanceElement
+        const res = (
+          await awu(
+            await resolve(
+              bad,
+              createInMemoryElementSource([...bad, simpleRefType, ...(await getFieldsAndAnnoTypes(simpleRefType))]),
+            ),
+          ).toArray()
+        )[1] as InstanceElement
         expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
       })
 
       it('should fail on unresolvable roots', async () => {
         const target = new ElemID('noop', 'test')
-        const firstRef = new InstanceElement(
-          'first',
-          simpleRefType,
-          { test: new ReferenceExpression(target) },
-        )
+        const firstRef = new InstanceElement('first', simpleRefType, { test: new ReferenceExpression(target) })
         const bad = [firstRef]
-        const res = (await awu(await resolve(bad, createInMemoryElementSource([
-          firstRef,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-        ]))).toArray())[0] as InstanceElement
+        const res = (
+          await awu(
+            await resolve(
+              bad,
+              createInMemoryElementSource([firstRef, simpleRefType, ...(await getFieldsAndAnnoTypes(simpleRefType))]),
+            ),
+          ).toArray()
+        )[0] as InstanceElement
         expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
         expect(res.value.test.value.target).toEqual(target)
       })
 
       it('should use additional context', async () => {
         const context = new InstanceElement('second', simpleRefType, {})
-        const firstRef = new InstanceElement(
-          'first',
-          simpleRefType,
-          { test: refTo(context) },
-        )
+        const firstRef = new InstanceElement('first', simpleRefType, { test: refTo(context) })
         const bad = [firstRef]
-        const res = (await awu(await resolve(bad, createInMemoryElementSource([
-          firstRef,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-          context,
-        ]))).toArray())[0] as InstanceElement
-        const noContextRes = (await awu(await resolve(bad, createInMemoryElementSource([
-          firstRef,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-        ]))).toArray())[0] as InstanceElement
+        const res = (
+          await awu(
+            await resolve(
+              bad,
+              createInMemoryElementSource([
+                firstRef,
+                simpleRefType,
+                ...(await getFieldsAndAnnoTypes(simpleRefType)),
+                context,
+              ]),
+            ),
+          ).toArray()
+        )[0] as InstanceElement
+        const noContextRes = (
+          await awu(
+            await resolve(
+              bad,
+              createInMemoryElementSource([firstRef, simpleRefType, ...(await getFieldsAndAnnoTypes(simpleRefType))]),
+            ),
+          ).toArray()
+        )[0] as InstanceElement
         expect(noContextRes.value.test.value).toBeInstanceOf(UnresolvedReference)
         expect(res.value.test.value).toBeInstanceOf(InstanceElement)
         expect(res.value.test.value).toEqual(context)
@@ -362,22 +385,20 @@ describe('Test Salto Expressions', () => {
 
       it('should not resolve additional context', async () => {
         const inst = new InstanceElement('second', simpleRefType, {})
-        const context = new Variable(
-          new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'),
-          refTo(inst),
-        )
-        const refInst = new InstanceElement(
-          'first',
-          simpleRefType,
-          { test: new VariableExpression(context.elemID) },
-        )
+        const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), refTo(inst))
+        const refInst = new InstanceElement('first', simpleRefType, { test: new VariableExpression(context.elemID) })
         const contextElements = [context, inst]
-        const res = (await awu(await resolve([refInst], createInMemoryElementSource([
-          refInst,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-          ...contextElements,
-        ]))).toArray())
+        const res = await awu(
+          await resolve(
+            [refInst],
+            createInMemoryElementSource([
+              refInst,
+              simpleRefType,
+              ...(await getFieldsAndAnnoTypes(simpleRefType)),
+              ...contextElements,
+            ]),
+          ),
+        ).toArray()
         expect(res).toHaveLength(1)
         expect((res[0] as InstanceElement).value.test.value).toEqual(inst)
         // Should not resolve the input
@@ -388,25 +409,24 @@ describe('Test Salto Expressions', () => {
       it('should use elements over additional context', async () => {
         const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 'a')
         const inputElem = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 'b')
-        const refInst = new InstanceElement(
-          'first',
-          simpleRefType,
-          { test: new VariableExpression(context.elemID) },
-        )
+        const refInst = new InstanceElement('first', simpleRefType, { test: new VariableExpression(context.elemID) })
         const elementsToResolve = [refInst, inputElem]
-        const res = (await awu(await resolve([refInst, inputElem], createInMemoryElementSource([
-          ...elementsToResolve,
-          simpleRefType,
-          ...await getFieldsAndAnnoTypes(simpleRefType),
-          context,
-        ]))).toArray())
+        const res = await awu(
+          await resolve(
+            [refInst, inputElem],
+            createInMemoryElementSource([
+              ...elementsToResolve,
+              simpleRefType,
+              ...(await getFieldsAndAnnoTypes(simpleRefType)),
+              context,
+            ]),
+          ),
+        ).toArray()
         expect((res[0] as InstanceElement).value.test.value).toEqual('b')
       })
 
       it('should not create copies of types', async () => {
-        const primType = new PrimitiveType(
-          { elemID: new ElemID('test', 'prim'), primitive: PrimitiveTypes.NUMBER }
-        )
+        const primType = new PrimitiveType({ elemID: new ElemID('test', 'prim'), primitive: PrimitiveTypes.NUMBER })
         const newObjType = new ObjectType({
           elemID: new ElemID('test', 'obj'),
           fields: { f: { refType: primType } },
@@ -414,15 +434,9 @@ describe('Test Salto Expressions', () => {
         })
         const inst = new InstanceElement('test', newObjType, { f: 1 })
         const elems = [inst, newObjType, primType]
-        const all = (await awu(await resolve(
-          elems,
-          createInMemoryElementSource(
-            [
-              ...elems,
-              ...await getFieldsAndAnnoTypes(newObjType),
-            ]
-          )
-        )).toArray()) as [InstanceElement, ObjectType, PrimitiveType]
+        const all = (await awu(
+          await resolve(elems, createInMemoryElementSource([...elems, ...(await getFieldsAndAnnoTypes(newObjType))])),
+        ).toArray()) as [InstanceElement, ObjectType, PrimitiveType]
         const [resInst, resObj, resPrim] = all
         expect(resObj.fields.f.refType.type).toBe(resPrim)
         expect(resObj.annotationRefTypes.a.type).toBe(resPrim)
@@ -445,40 +459,33 @@ describe('Test Salto Expressions', () => {
           test: refTo(refTargetInst, 'test'),
         })
         const elems = [instanceToResolve]
-        const resovledElems = (await awu(await resolve(
-          elems,
-          createInMemoryElementSource(
-            [
-              refTargetInstObj, instanceToResolveObj, refTargetInst, instanceToResolve,
-            ]
+        const resovledElems = (await awu(
+          await resolve(
+            elems,
+            createInMemoryElementSource([refTargetInstObj, instanceToResolveObj, refTargetInst, instanceToResolve]),
           ),
-        )).toArray()) as [InstanceElement]
+        ).toArray()) as [InstanceElement]
         const resolvedRef = resovledElems[0].value.test as ReferenceExpression
         const resolvedValue = resolvedRef.topLevelParent as InstanceElement
-        const resolvedValueType = await resolvedValue.getType() as ObjectType
+        const resolvedValueType = (await resolvedValue.getType()) as ObjectType
         expect(resolvedValueType).toEqual(refTargetInstObj)
       })
 
       it('should resolve instance with references to itself', async () => {
         const type = new ObjectType({ elemID: new ElemID('adapter', 'type') })
-        const instance = new InstanceElement(
-          'instance',
-          type,
-          {
-            a: {
-              ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'b')),
-            },
-            b: {
-              ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'c')),
-            },
-            c: 2,
+        const instance = new InstanceElement('instance', type, {
+          a: {
+            ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'b')),
           },
-        )
-        const [resolvedInstance] = await resolve([instance], createInMemoryElementSource([
-          instance,
-          type,
-          ...await getFieldsAndAnnoTypes(type),
-        ])) as [InstanceElement]
+          b: {
+            ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'c')),
+          },
+          c: 2,
+        })
+        const [resolvedInstance] = (await resolve(
+          [instance],
+          createInMemoryElementSource([instance, type, ...(await getFieldsAndAnnoTypes(type))]),
+        )) as [InstanceElement]
         expect(resolvedInstance.value.b.ref.value).toBe(2)
         expect(resolvedInstance.value.a.ref.value.ref.value).toBe(2)
       })
@@ -511,9 +518,7 @@ describe('Test Salto Expressions', () => {
       const fieldToResolve = objectType.fields.field
       const resolved = await resolve(
         [fieldToResolve],
-        createInMemoryElementSource(
-          [fieldType, referencedType, objectType]
-        )
+        createInMemoryElementSource([fieldType, referencedType, objectType]),
       )
       expect(resolved).toHaveLength(1)
       expect(resolved[0]).toBeInstanceOf(Field)
@@ -559,9 +564,7 @@ describe('Test Salto Expressions', () => {
       const fieldToResolve = objectType.fields.field
       const resolved = await resolve(
         [objectType, fieldToResolve],
-        createInMemoryElementSource(
-          [fieldType, referencedType, objectType]
-        )
+        createInMemoryElementSource([fieldType, referencedType, objectType]),
       )
       expect(resolved).toHaveLength(2)
       expect(resolved[0]).toBeInstanceOf(ObjectType)
@@ -590,59 +593,38 @@ describe('Test Salto Expressions', () => {
       const refType = new ObjectType({
         elemID: new ElemID('salto', 'simple'),
       })
-      const firstRef = new InstanceElement(
-        'first',
-        refType,
-        { from: 'Milano', to: 'Minsk' }
-      )
-      const secondRef = new InstanceElement(
-        'second',
-        refType,
-        {
-          into: new TemplateExpression({
-            parts: [
-              'Well, you made a long journey from ',
-              refTo(firstRef, 'from'),
-              ' to ',
-              refTo(firstRef, 'to'),
-              ', Rochelle Rochelle',
-            ],
-          }),
-        }
-      )
+      const firstRef = new InstanceElement('first', refType, { from: 'Milano', to: 'Minsk' })
+      const secondRef = new InstanceElement('second', refType, {
+        into: new TemplateExpression({
+          parts: [
+            'Well, you made a long journey from ',
+            refTo(firstRef, 'from'),
+            ' to ',
+            refTo(firstRef, 'to'),
+            ', Rochelle Rochelle',
+          ],
+        }),
+      })
       const elements = [firstRef, secondRef]
       const resolvedElements = await resolve(
         elements,
-        createInMemoryElementSource([
-          firstRef,
-          secondRef,
-          refType,
-          ...await getFieldsAndAnnoTypes(refType),
-        ]),
+        createInMemoryElementSource([firstRef, secondRef, refType, ...(await getFieldsAndAnnoTypes(refType))]),
       )
       const element = resolvedElements[1] as InstanceElement
-      expect(element.value.into.value).toEqual(
-        'Well, you made a long journey from Milano to Minsk, Rochelle Rochelle'
-      )
+      expect(element.value.into.value).toEqual('Well, you made a long journey from Milano to Minsk, Rochelle Rochelle')
     })
     it('should detect circular reference in template expressions', async () => {
       const refType = new ObjectType({
         elemID: new ElemID('salto', 'simple'),
       })
-      const firstRef = new InstanceElement(
-        'first',
-        refType,
-        { value: new ReferenceExpression(refType.elemID.createNestedID('instance', 'second', 'template')) }
-      )
-      const secondRef = new InstanceElement(
-        'second',
-        refType,
-        {
-          template: new TemplateExpression({
-            parts: ['template value is: ', refTo(firstRef, 'value')],
-          }),
-        }
-      )
+      const firstRef = new InstanceElement('first', refType, {
+        value: new ReferenceExpression(refType.elemID.createNestedID('instance', 'second', 'template')),
+      })
+      const secondRef = new InstanceElement('second', refType, {
+        template: new TemplateExpression({
+          parts: ['template value is: ', refTo(firstRef, 'value')],
+        }),
+      })
       const origElements = [refType, firstRef, secondRef]
       const resolvedElements = await resolve(origElements, createInMemoryElementSource())
       expect(resolvedElements).toHaveLength(origElements.length)
@@ -681,10 +663,7 @@ describe('Test Salto Expressions', () => {
         })
       })
       it('should resolve field types to the same inner object type', async () => {
-        const resolved = await resolve(
-          [outerObjType],
-          createInMemoryElementSource([innerObjType]),
-        ) as [ObjectType]
+        const resolved = (await resolve([outerObjType], createInMemoryElementSource([innerObjType]))) as [ObjectType]
         expect(resolved[0].fields.listObj.refType.type).toBeInstanceOf(ListType)
         expect(resolved[0].fields.mapObj.refType.type).toBeInstanceOf(MapType)
         const listInner = (resolved[0].fields.listObj.refType.type as ListType).refInnerType.type
@@ -692,10 +671,7 @@ describe('Test Salto Expressions', () => {
         expect(listInner).toBe(mapInner)
       })
       it('should handle multi-level containers', async () => {
-        const resolved = await resolve(
-          [outerObjType],
-          createInMemoryElementSource([innerObjType]),
-        ) as [ObjectType]
+        const resolved = (await resolve([outerObjType], createInMemoryElementSource([innerObjType]))) as [ObjectType]
         const resolvedInnerType = (resolved[0].fields.listObj.refType.type as ListType)?.refInnerType.type
         const nestedFieldType = resolved[0].fields.nestedContainers.refType.type
         expect(nestedFieldType).toBeInstanceOf(ListType)
@@ -717,13 +693,15 @@ describe('Test Salto Expressions', () => {
         objType = new ObjectType({
           elemID: new ElemID('salto_2', 'obj'),
           fields: {
-            listObj: { refType: new TypeReference(ListType.createElemID(new TypeReference(new ElemID('salto_2', 'obj')))) },
+            listObj: {
+              refType: new TypeReference(ListType.createElemID(new TypeReference(new ElemID('salto_2', 'obj')))),
+            },
           },
         })
         buggyElementSource = mapReadOnlyElementsSource(
           createInMemoryElementSource([objType]),
           // Intentionally return a different element ID than the one requested
-          async elem => _.set(elem.clone(), 'elemID', new ElemID('salto', 'obj'))
+          async elem => _.set(elem.clone(), 'elemID', new ElemID('salto', 'obj')),
         )
       })
       it('should return with an unresolved type', async () => {

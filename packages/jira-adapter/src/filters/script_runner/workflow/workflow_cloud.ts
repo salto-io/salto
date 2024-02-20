@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { gzip, ungzip } from 'pako'
 import { logger } from '@salto-io/logging'
@@ -43,7 +43,10 @@ const COMPRESSED_OBJECT_SCHEME = Joi.object({
   compressed: Joi.array().items(Joi.number()).required(),
 })
 
-export const isCompressedObject = createSchemeGuard<CompressedObject>(COMPRESSED_OBJECT_SCHEME, 'ScriptRunner object not as expected')
+export const isCompressedObject = createSchemeGuard<CompressedObject>(
+  COMPRESSED_OBJECT_SCHEME,
+  'ScriptRunner object not as expected',
+)
 
 const decodeScriptRunner = (scriptRunnerString: string): unknown => {
   try {
@@ -100,8 +103,7 @@ const transformAndEncode = (object: Value, fieldName: string): void => {
   if (object[fieldName].accountIds !== undefined) {
     object[fieldName].accountIds = object[fieldName].accountIds.join(',')
   }
-  if (object[fieldName].className === SCRIPT_RUNNER_SEND_NOTIFICATIONS
-    && object[fieldName].groupName !== undefined) {
+  if (object[fieldName].className === SCRIPT_RUNNER_SEND_NOTIFICATIONS && object[fieldName].groupName !== undefined) {
     object[fieldName].groupName = object[fieldName].groupName.join(',')
   }
   object[fieldName] = encodeScriptRunner(object[fieldName])
@@ -116,8 +118,10 @@ const transformAndDecode = (object: Value, fieldName: string): void => {
   if (object[SCRIPT_RUNNER_FIELD].accountIds !== undefined) {
     object[SCRIPT_RUNNER_FIELD].accountIds = object[SCRIPT_RUNNER_FIELD].accountIds.split(',')
   }
-  if (object[SCRIPT_RUNNER_FIELD].className === SCRIPT_RUNNER_SEND_NOTIFICATIONS
-    && object[SCRIPT_RUNNER_FIELD].groupName !== undefined) {
+  if (
+    object[SCRIPT_RUNNER_FIELD].className === SCRIPT_RUNNER_SEND_NOTIFICATIONS &&
+    object[SCRIPT_RUNNER_FIELD].groupName !== undefined
+  ) {
     object[SCRIPT_RUNNER_FIELD].groupName = object[SCRIPT_RUNNER_FIELD].groupName.split(',')
   }
 }
@@ -152,35 +156,34 @@ const typeToDecodeFuncMap: TypeToCodeFuncMap = new Map([
   [SCRIPT_RUNNER_CONDITION_TYPE, transformAndObjectify],
 ])
 
-const transformConfigValue = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
+const transformConfigValue =
+  (typeMap: TypeToCodeFuncMap): WalkOnFunc =>
   ({ value }): WALK_NEXT_STEP => {
     if (value !== undefined && typeMap.has(value.type) && value.configuration !== undefined) {
       typeMap.get(value.type)(value.configuration, VALUE)
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
-  })
+  }
 
 // workflowV2 has a different structure that requires a different WalkOnFunc
-const transformConfigValueV2 = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
+const transformConfigValueV2 =
+  (typeMap: TypeToCodeFuncMap): WalkOnFunc =>
   ({ value }): WALK_NEXT_STEP => {
-    if (value !== undefined
-      && value.parameters !== undefined
-      && value.parameters.appKey !== undefined
-      && typeMap.has(value.parameters.appKey)) {
+    if (
+      value !== undefined &&
+      value.parameters !== undefined &&
+      value.parameters.appKey !== undefined &&
+      typeMap.has(value.parameters.appKey)
+    ) {
       typeMap.get(value.parameters.appKey)(value.parameters, CONFIG)
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
-  })
-
+  }
 
 export const decodeCloudFields = (enableNewWorkflowAPI: boolean): WalkOnFunc =>
-  (enableNewWorkflowAPI
-    ? transformConfigValueV2(typeToDecodeFuncMap)
-    : transformConfigValue(typeToDecodeFuncMap))
+  enableNewWorkflowAPI ? transformConfigValueV2(typeToDecodeFuncMap) : transformConfigValue(typeToDecodeFuncMap)
 
 export const encodeCloudFields = (enableNewWorkflowAPI: boolean): WalkOnFunc =>
-  (enableNewWorkflowAPI
-    ? transformConfigValueV2(typeToEncodeFuncMap)
-    : transformConfigValue(typeToEncodeFuncMap))
+  enableNewWorkflowAPI ? transformConfigValueV2(typeToEncodeFuncMap) : transformConfigValue(typeToEncodeFuncMap)

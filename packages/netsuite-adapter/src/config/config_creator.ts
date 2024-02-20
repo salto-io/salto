@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -20,18 +20,34 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, INACTIVE_FIELDS } from '../constants'
 import { removeCustomRecordTypePrefix } from '../types'
 import { fileCabinetTypesNames } from '../types/file_cabinet_types'
-import { ClientConfig, CriteriaQuery, FETCH_PARAMS, FetchParams, FetchTypeQueryParams, InstanceLimiterFunc, NetsuiteConfig, NetsuiteQueryParameters, QueryParams } from './types'
-import { ALL_TYPES_REGEX, DATA_FILE_TYPES, DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_INSTANCES_VALUE, FILE_CABINET, GROUPS_TO_DATA_FILE_TYPES, INCLUDE_ALL, UNLIMITED_INSTANCES_VALUE } from './constants'
+import {
+  ClientConfig,
+  CriteriaQuery,
+  FETCH_PARAMS,
+  FetchParams,
+  FetchTypeQueryParams,
+  InstanceLimiterFunc,
+  NetsuiteConfig,
+  NetsuiteQueryParameters,
+  QueryParams,
+} from './types'
+import {
+  ALL_TYPES_REGEX,
+  DATA_FILE_TYPES,
+  DEFAULT_MAX_INSTANCES_PER_TYPE,
+  DEFAULT_MAX_INSTANCES_VALUE,
+  FILE_CABINET,
+  GROUPS_TO_DATA_FILE_TYPES,
+  INCLUDE_ALL,
+  UNLIMITED_INSTANCES_VALUE,
+} from './constants'
 import { validateConfig } from './validations'
 
 const log = logger(module)
 
 const loggableConfig = (config: NetsuiteConfig): NetsuiteConfig => ({
   ...config,
-  fetch: _.omit(
-    config.fetch,
-    FETCH_PARAMS.lockedElementsToExclude,
-  ),
+  fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
 })
 
 export const fullQueryParams = (): QueryParams => ({
@@ -50,9 +66,7 @@ export const fullFetchConfig = (): FetchParams => ({
   exclude: emptyQueryParams(),
 })
 
-const updatedFetchTarget = (
-  config: NetsuiteConfig
-): NetsuiteQueryParameters | undefined => {
+const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | undefined => {
   if (config.fetchTarget?.customRecords === undefined) {
     return config.fetchTarget
   }
@@ -80,8 +94,7 @@ const updatedFetchTarget = (
 
 const includeFileCabinetFolders = (config: NetsuiteConfig): string[] =>
   config.includeFileCabinetFolders?.map(
-    folderName =>
-      `^${folderName.startsWith('/') ? '' : '/'}${folderName}${folderName.endsWith('/') ? '' : '/'}.*`
+    folderName => `^${folderName.startsWith('/') ? '' : '/'}${folderName}${folderName.endsWith('/') ? '' : '/'}.*`,
   ) ?? []
 
 const includeCustomRecords = (config: NetsuiteConfig): FetchTypeQueryParams[] => {
@@ -94,25 +107,27 @@ const includeCustomRecords = (config: NetsuiteConfig): FetchTypeQueryParams[] =>
   return [{ name: config.includeCustomRecords.join('|') }]
 }
 
-const excludeInactiveRecords = (config: NetsuiteConfig): CriteriaQuery[] => {
+const excludeInactiveRecords = (config: NetsuiteConfig): CriteriaQuery | undefined => {
   if (config.includeInactiveRecords === undefined || config.includeInactiveRecords.includes(INCLUDE_ALL)) {
-    return []
+    return undefined
   }
 
-  const typesToInclude = config.includeInactiveRecords
-    .flatMap(typeName => (typeName === FILE_CABINET ? fileCabinetTypesNames : typeName))
+  const typesToInclude = config.includeInactiveRecords.flatMap(typeName =>
+    typeName === FILE_CABINET ? fileCabinetTypesNames : typeName,
+  )
 
-  const inactiveRecordsToExcludeRegex = typesToInclude.length === 0
-    ? ALL_TYPES_REGEX
-    // match all except for the exact strings in typesToInclude
-    : `(?!(${typesToInclude.join('|')})$).*`
+  const inactiveRecordsToExcludeRegex =
+    typesToInclude.length === 0
+      ? ALL_TYPES_REGEX
+      : // match all except for the exact strings in typesToInclude
+        `(?!(${typesToInclude.join('|')})$).*`
 
-  return Object.values(INACTIVE_FIELDS).map(fieldName => ({
+  return {
     name: inactiveRecordsToExcludeRegex,
     criteria: {
-      [fieldName]: true,
+      [INACTIVE_FIELDS.isInactive]: true,
     },
-  }))
+  }
 }
 
 const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
@@ -120,18 +135,16 @@ const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
     return []
   }
   const dataFileTypesToInclude = new Set(
-    config.includeDataFileTypes.flatMap(group => GROUPS_TO_DATA_FILE_TYPES[group] ?? [])
+    config.includeDataFileTypes.flatMap(group => GROUPS_TO_DATA_FILE_TYPES[group] ?? []),
   )
-  const dataFileTypesToExclude = Object.values(DATA_FILE_TYPES)
-    .filter(fileType => !dataFileTypesToInclude.has(fileType))
+  const dataFileTypesToExclude = Object.values(DATA_FILE_TYPES).filter(
+    fileType => !dataFileTypesToInclude.has(fileType),
+  )
   if (dataFileTypesToExclude.length === 0) {
     return []
   }
   const dataFileTypesToExcludeRegex = `.*\\.(${dataFileTypesToExclude.join('|')})`
-  return [
-    dataFileTypesToExcludeRegex.toLowerCase(),
-    dataFileTypesToExcludeRegex.toUpperCase(),
-  ]
+  return [dataFileTypesToExcludeRegex.toLowerCase(), dataFileTypesToExcludeRegex.toUpperCase()]
 }
 
 const updatedFetchInclude = (config: NetsuiteConfig): QueryParams => ({
@@ -142,7 +155,7 @@ const updatedFetchInclude = (config: NetsuiteConfig): QueryParams => ({
 
 const updatedFetchExclude = (config: NetsuiteConfig): QueryParams => ({
   ...config.fetch.exclude,
-  types: config.fetch.exclude.types.concat(excludeInactiveRecords(config)),
+  types: config.fetch.exclude.types.concat(excludeInactiveRecords(config) ?? []),
   fileCabinet: config.fetch.exclude.fileCabinet.concat(excludeDataFileTypes(config)),
 })
 
@@ -163,7 +176,8 @@ const updatedConfig = (config: NetsuiteConfig): NetsuiteConfig => {
   return updated
 }
 
-export const instanceLimiterCreator = (clientConfig?: ClientConfig): InstanceLimiterFunc =>
+export const instanceLimiterCreator =
+  (clientConfig?: ClientConfig): InstanceLimiterFunc =>
   (type, instanceCount): boolean => {
     // Return true if there are more `instanceCount` of the `type` than any of the rules matched.
     // The rules matched include the default amount defined: DEFAULT_MAX_INSTANCES_VALUE.
@@ -181,9 +195,7 @@ export const instanceLimiterCreator = (clientConfig?: ClientConfig): InstanceLim
     return maxInstancesOptions.every(limit => instanceCount > limit)
   }
 
-export const netsuiteConfigFromConfig = (
-  configInstance: Readonly<InstanceElement> | undefined
-): NetsuiteConfig => {
+export const netsuiteConfigFromConfig = (configInstance: Readonly<InstanceElement> | undefined): NetsuiteConfig => {
   if (!configInstance) {
     log.warn('missing config instance - using netsuite adapter config with full fetch')
     return { fetch: fullFetchConfig() }

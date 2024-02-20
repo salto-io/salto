@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -42,59 +42,31 @@ describe('behavior_mappings', () => {
     })
     const projectType = createEmptyType(PROJECT_TYPE)
     const issueTypes = createEmptyType('issueType')
-    issueType1 = new InstanceElement(
-      'issueType1',
-      issueTypes,
-      {
-        id: 'i1',
-        name: 'issueType1',
-      }
-    )
-    issueType2 = new InstanceElement(
-      'issueType2',
-      issueTypes,
-      {
-        id: 'i2',
-        name: 'issueType2',
-      }
-    )
-    issueType3 = new InstanceElement(
-      'issueType3',
-      issueTypes,
-      {
-        id: 'i3',
-        name: 'issueType3',
-      }
-    )
-    issueTypeNoUse = new InstanceElement(
-      'issueTypeNoUse',
-      issueTypes,
-      {
-        id: 'i4',
-        name: 'issueTypeNoUse',
-      }
-    )
-    project1 = new InstanceElement(
-      'project1',
-      projectType,
-      {
-        id: 'p1',
-        name: 'project1',
-      }
-    )
-    project2 = new InstanceElement(
-      'project2',
-      projectType,
-      {
-        id: 'p2',
-        name: 'project2',
-      }
-    )
-    instance = new InstanceElement(
-      'instance',
-      behaviorType,
-      {}
-    )
+    issueType1 = new InstanceElement('issueType1', issueTypes, {
+      id: 'i1',
+      name: 'issueType1',
+    })
+    issueType2 = new InstanceElement('issueType2', issueTypes, {
+      id: 'i2',
+      name: 'issueType2',
+    })
+    issueType3 = new InstanceElement('issueType3', issueTypes, {
+      id: 'i3',
+      name: 'issueType3',
+    })
+    issueTypeNoUse = new InstanceElement('issueTypeNoUse', issueTypes, {
+      id: 'i4',
+      name: 'issueTypeNoUse',
+    })
+    project1 = new InstanceElement('project1', projectType, {
+      id: 'p1',
+      name: 'project1',
+    })
+    project2 = new InstanceElement('project2', projectType, {
+      id: 'p2',
+      name: 'project2',
+    })
+    instance = new InstanceElement('instance', behaviorType, {})
   })
   describe('when script runner is enabled', () => {
     beforeEach(() => {
@@ -126,28 +98,20 @@ describe('behavior_mappings', () => {
     })
     describe('Deploy', () => {
       beforeEach(() => {
-        const issueTypeScheme1 = new InstanceElement(
-          'issueTypeScheme',
-          createEmptyType('issueTypeScheme'),
-          {
-            issueTypeIds: [
-              new ReferenceExpression(issueType1.elemID, issueType1),
-              new ReferenceExpression(issueType2.elemID, issueType2),
-              new ReferenceExpression(issueTypeNoUse.elemID, issueTypeNoUse),
-            ],
-          }
-        )
-        const issueTypeScheme2 = new InstanceElement(
-          'issueTypeScheme',
-          createEmptyType('issueTypeScheme'),
-          {
-            issueTypeIds: [
-              new ReferenceExpression(issueType2.elemID, issueType2),
-              new ReferenceExpression(issueType3.elemID, issueType3),
-              new ReferenceExpression(issueTypeNoUse.elemID, issueTypeNoUse),
-            ],
-          }
-        )
+        const issueTypeScheme1 = new InstanceElement('issueTypeScheme', createEmptyType('issueTypeScheme'), {
+          issueTypeIds: [
+            new ReferenceExpression(issueType1.elemID, issueType1),
+            new ReferenceExpression(issueType2.elemID, issueType2),
+            new ReferenceExpression(issueTypeNoUse.elemID, issueTypeNoUse),
+          ],
+        })
+        const issueTypeScheme2 = new InstanceElement('issueTypeScheme', createEmptyType('issueTypeScheme'), {
+          issueTypeIds: [
+            new ReferenceExpression(issueType2.elemID, issueType2),
+            new ReferenceExpression(issueType3.elemID, issueType3),
+            new ReferenceExpression(issueTypeNoUse.elemID, issueTypeNoUse),
+          ],
+        })
         project1.value.issueTypeScheme = new ReferenceExpression(issueTypeScheme1.elemID, issueTypeScheme1)
         project2.value.issueTypeScheme = new ReferenceExpression(issueTypeScheme2.elemID, issueTypeScheme2)
         instance.value.projects = [

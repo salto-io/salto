@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   Element,
@@ -21,7 +21,8 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
-  isReferenceExpression, isTemplateExpression,
+  isReferenceExpression,
+  isTemplateExpression,
   ReferenceExpression,
   TemplateExpression,
   TemplatePart,
@@ -35,8 +36,10 @@ import { BRAND_TYPE_NAME, SUPPORT_ADDRESS_TYPE_NAME } from '../constants'
 const log = logger(module)
 export const INVALID_USERNAME = 'INVALID_USERNAME'
 
-
-const referenceEmail = ({ emailPart, brandInstances }: {
+const referenceEmail = ({
+  emailPart,
+  brandInstances,
+}: {
   emailPart: string
   brandInstances: Record<string, InstanceElement>
 }): TemplatePart[] => {
@@ -60,11 +63,10 @@ const referenceEmail = ({ emailPart, brandInstances }: {
   return [emailPart]
 }
 
-
 const turnEmailToTemplateExpression = ({
   supportAddressInstance,
   brandList,
-} : {
+}: {
   supportAddressInstance: InstanceElement
   brandList: Record<string, InstanceElement>
 }): void => {
@@ -73,21 +75,20 @@ const turnEmailToTemplateExpression = ({
     log.error(`email of ${supportAddressInstance.elemID.getFullName()} is not a string`)
     return
   }
-  supportAddressInstance.value.email = extractTemplate(
-    originalEmail,
-    [],
-    emailPart => referenceEmail({
+  supportAddressInstance.value.email = extractTemplate(originalEmail, [], emailPart =>
+    referenceEmail({
       emailPart,
       brandInstances: brandList,
-    })
+    }),
   )
 }
 
-const replaceIfReferenceExpression = (part: TemplatePart): string =>
-  (isReferenceExpression(part) ? part.value : part)
+const replaceIfReferenceExpression = (part: TemplatePart): string => (isReferenceExpression(part) ? part.value : part)
 
-const templateToEmail = (change: Change<InstanceElement>, deployTemplateMapping: Record<string, TemplateExpression>)
-  : void => {
+const templateToEmail = (
+  change: Change<InstanceElement>,
+  deployTemplateMapping: Record<string, TemplateExpression>,
+): void => {
   const inst = getChangeData(change)
   const { email } = inst.value
   deployTemplateMapping[inst.elemID.getFullName()] = email
@@ -120,18 +121,16 @@ const extractUsernameFromEmail = (instance: InstanceElement): void => {
  */
 const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
-  return ({
+  return {
     name: 'supportAddress',
     onFetch: async (elements: Element[]): Promise<void> => {
-      const instances = elements
-        .filter(isInstanceElement)
-      const supportAddressInstances = instances
-        .filter(inst => inst.elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
+      const instances = elements.filter(isInstanceElement)
+      const supportAddressInstances = instances.filter(inst => inst.elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
       const brandBySubdomains: Record<string, InstanceElement> = _.keyBy(
-        (instances
+        instances
           .filter(inst => inst.elemID.typeName === BRAND_TYPE_NAME)
-          .filter(inst => inst.value.subdomain !== undefined)),
-        (inst: InstanceElement): string => inst.value.subdomain
+          .filter(inst => inst.value.subdomain !== undefined),
+        (inst: InstanceElement): string => inst.value.subdomain,
       )
       supportAddressInstances.forEach(supportInstance => {
         extractUsernameFromEmail(supportInstance)
@@ -157,7 +156,7 @@ const filterCreator: FilterCreator = () => {
           inst.value.email = deployTemplateMapping[inst.elemID.getFullName()]
         })
     },
-  })
+  }
 }
 
 export default filterCreator

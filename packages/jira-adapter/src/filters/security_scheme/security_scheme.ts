@@ -1,19 +1,36 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, DeployResult, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalChange, MapType, toChange, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  DeployResult,
+  Element,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isRemovalChange,
+  MapType,
+  toChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { objects } from '@salto-io/lowerdash'
@@ -81,28 +98,15 @@ const deploySecurityLevels = async (
     }),
   })
 
-
   const membersDeployResult = await deployChanges(
-    deployResult.appliedChanges
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange),
+    deployResult.appliedChanges.filter(isAdditionOrModificationChange).filter(isInstanceChange),
 
-    change => deployMembers(
-      change,
-      config,
-      client,
-    )
+    change => deployMembers(change, config, client),
   )
 
   return {
-    appliedChanges: [
-      ...deployResult.appliedChanges.filter(isRemovalChange),
-      ...membersDeployResult.appliedChanges,
-    ],
-    errors: [
-      ...deployResult.errors,
-      ...membersDeployResult.errors,
-    ],
+    appliedChanges: [...deployResult.appliedChanges.filter(isRemovalChange), ...membersDeployResult.appliedChanges],
+    errors: [...deployResult.errors, ...membersDeployResult.errors],
   }
 }
 
@@ -124,14 +128,17 @@ const filter: FilterCreator = ({ client, config }) => ({
         if (Array.isArray(instance.value.members)) {
           instance.value.members = instance.value.members.filter(member => {
             if (!isMember(member)) {
-              log.error(`Invalid member ${safeJsonStringify(member)} in security level ${instance.elemID.getFullName()}`)
+              log.error(
+                `Invalid member ${safeJsonStringify(member)} in security level ${instance.elemID.getFullName()}`,
+              )
               return false
             }
             return true
           })
         }
-        instance.value.memberIds = Object.fromEntries((instance.value.members ?? [])
-          .map((member: Values) => [getMemberKey(member), member.id]))
+        instance.value.memberIds = Object.fromEntries(
+          (instance.value.members ?? []).map((member: Values) => [getMemberKey(member), member.id]),
+        )
 
         instance.value.members?.forEach((member: Values) => {
           delete member.id
@@ -153,19 +160,11 @@ const filter: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    securitySchemeType.fields.defaultLevel = new Field(
-      securitySchemeType,
-      'defaultLevel',
-      securityLevelType
-    )
+    securitySchemeType.fields.defaultLevel = new Field(securitySchemeType, 'defaultLevel', securityLevelType)
 
-    securityLevelType.fields.memberIds = new Field(
-      securityLevelType,
-      'memberIds',
-      new MapType(BuiltinTypes.NUMBER),
-      { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true }
-    )
-
+    securityLevelType.fields.memberIds = new Field(securityLevelType, 'memberIds', new MapType(BuiltinTypes.NUMBER), {
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    })
 
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping security scheme filter because private API is not enabled')
@@ -236,63 +235,57 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const deployFunction = client.isDataCenter
       ? {
-        deployScheme: (schemeChange: Change<InstanceElement>) => deployChanges(
-          [schemeChange] as Change<InstanceElement>[],
-          async change => {
-            await defaultDeployChange({
-              change,
-              client,
-              apiDefinitions: config.apiDefinitions,
-            })
-          },
-        ),
-        deployLevels: (levelsChanges: Change<InstanceElement>[]) => deployChanges(
-          levelsChanges as Change<InstanceElement>[],
-          async change => {
-            try {
+          deployScheme: (schemeChange: Change<InstanceElement>) =>
+            deployChanges([schemeChange] as Change<InstanceElement>[], async change => {
               await defaultDeployChange({
                 change,
                 client,
                 apiDefinitions: config.apiDefinitions,
               })
-            } catch (err) {
-              if (err instanceof clientUtils.HTTPError
-                && err.response.status === 404
-                && isRemovalChange(change)) {
-                // if delete fails on 404 it can be considered a success
-                log.debug(`Received 404 error ${err.message} for ${getChangeData(change).elemID.getFullName()}. The element is already removed`)
-                return
+            }),
+          deployLevels: (levelsChanges: Change<InstanceElement>[]) =>
+            deployChanges(levelsChanges as Change<InstanceElement>[], async change => {
+              try {
+                await defaultDeployChange({
+                  change,
+                  client,
+                  apiDefinitions: config.apiDefinitions,
+                })
+              } catch (err) {
+                if (err instanceof clientUtils.HTTPError && err.response.status === 404 && isRemovalChange(change)) {
+                  // if delete fails on 404 it can be considered a success
+                  log.debug(
+                    `Received 404 error ${err.message} for ${getChangeData(change).elemID.getFullName()}. The element is already removed`,
+                  )
+                  return
+                }
+                throw err
               }
-              throw err
-            }
-          }
-        ),
-      }
+            }),
+        }
       : {
-        deployScheme: (change: Change<InstanceElement>) => deploySecurityScheme(change, config, client),
-        deployLevels: (levelChanges: Change<InstanceElement>[]) =>
-          deploySecurityLevels(levelChanges, config, client),
-      }
+          deployScheme: (change: Change<InstanceElement>) => deploySecurityScheme(change, config, client),
+          deployLevels: (levelChanges: Change<InstanceElement>[]) => deploySecurityLevels(levelChanges, config, client),
+        }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && (
-          getChangeData(change).elemID.typeName === SECURITY_SCHEME_TYPE
-          || getChangeData(change).elemID.typeName === SECURITY_LEVEL_TYPE
-        )
+      change =>
+        isInstanceChange(change) &&
+        (getChangeData(change).elemID.typeName === SECURITY_SCHEME_TYPE ||
+          getChangeData(change).elemID.typeName === SECURITY_LEVEL_TYPE),
     )
 
     const securitySchemeChange = relevantChanges
       .filter(isInstanceChange)
       .find(change => getChangeData(change).elemID.typeName === SECURITY_SCHEME_TYPE)
 
-    const schemesDeployResult = securitySchemeChange !== undefined
-      && isAdditionChange(securitySchemeChange)
-      ? await deployFunction.deployScheme(securitySchemeChange)
-      : {
-        appliedChanges: [],
-        errors: [],
-      }
+    const schemesDeployResult =
+      securitySchemeChange !== undefined && isAdditionChange(securitySchemeChange)
+        ? await deployFunction.deployScheme(securitySchemeChange)
+        : {
+            appliedChanges: [],
+            errors: [],
+          }
 
     if (schemesDeployResult.errors.length !== 0) {
       return {
@@ -306,18 +299,19 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(change => getChangeData(change).elemID.typeName === SECURITY_LEVEL_TYPE)
 
     levelsChanges.forEach(change => {
-      getChangeData(change).value.schemeId = securitySchemeChange !== undefined
-        ? getChangeData(securitySchemeChange).value.id
-        : getParents(getChangeData(change))[0].value.value.id
+      getChangeData(change).value.schemeId =
+        securitySchemeChange !== undefined
+          ? getChangeData(securitySchemeChange).value.id
+          : getParents(getChangeData(change))[0].value.value.id
     })
 
     const levelsDeployResult = await deployFunction.deployLevels(levelsChanges)
 
     if (
-      securitySchemeChange === undefined
-      || levelsDeployResult.appliedChanges.length !== levelsChanges.length
-      || (isAdditionChange(securitySchemeChange)
-        && getChangeData(securitySchemeChange).value.defaultLevel === NO_DEFAULT_VALUE)
+      securitySchemeChange === undefined ||
+      levelsDeployResult.appliedChanges.length !== levelsChanges.length ||
+      (isAdditionChange(securitySchemeChange) &&
+        getChangeData(securitySchemeChange).value.defaultLevel === NO_DEFAULT_VALUE)
     ) {
       return {
         leftoverChanges,
@@ -328,9 +322,9 @@ const filter: FilterCreator = ({ client, config }) => ({
     const securitySchemeInstance = getChangeData(securitySchemeChange)
 
     if (
-      isResolvedReferenceExpression(securitySchemeInstance.value.defaultLevel)
-      && isInstanceElement(securitySchemeInstance.value.defaultLevel.value)
-      && securitySchemeInstance.value.defaultLevel.value.value.id === undefined
+      isResolvedReferenceExpression(securitySchemeInstance.value.defaultLevel) &&
+      isInstanceElement(securitySchemeInstance.value.defaultLevel.value) &&
+      securitySchemeInstance.value.defaultLevel.value.value.id === undefined
     ) {
       const defaultLevelId = securitySchemeInstance.value.defaultLevel.elemID
       securitySchemeInstance.value.defaultLevel.value.value.id = levelsChanges
@@ -359,19 +353,16 @@ const filter: FilterCreator = ({ client, config }) => ({
       // were successful, we would want to return schemesDeployResult.appliedChanges because
       // it contains the original addition change and not the modification change we created
       // in this function
-      appliedChanges: schemesDefaultLevelDeployResult.appliedChanges.length === 1
-        && schemesDeployResult.appliedChanges.length === 1
-        ? schemesDeployResult.appliedChanges
-        : schemesDefaultLevelDeployResult.appliedChanges,
+      appliedChanges:
+        schemesDefaultLevelDeployResult.appliedChanges.length === 1 && schemesDeployResult.appliedChanges.length === 1
+          ? schemesDeployResult.appliedChanges
+          : schemesDefaultLevelDeployResult.appliedChanges,
       errors: [...schemesDeployResult.errors, ...schemesDefaultLevelDeployResult.errors],
     }
 
     return {
       leftoverChanges,
-      deployResult: objects.concatObjects([
-        levelsDeployResult,
-        schemesResults,
-      ]),
+      deployResult: objects.concatObjects([levelsDeployResult, schemesResults]),
     }
   },
 })

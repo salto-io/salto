@@ -1,19 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { DetailedChange, Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { calculatePatch } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
@@ -29,9 +29,7 @@ jest.mock('@salto-io/core', () => {
   }
 })
 
-const mockCalculatePatch = (
-  calculatePatch as jest.MockedFunction<typeof calculatePatch>
-)
+const mockCalculatePatch = calculatePatch as jest.MockedFunction<typeof calculatePatch>
 
 describe('apply-patch command', () => {
   const commandName = 'apply-patch'
@@ -61,14 +59,13 @@ describe('apply-patch command', () => {
       updatedInstance = originalInstance.clone()
       updatedInstance.value.newVal = 'asd'
       newInstance = new InstanceElement('new', type, { val: 1 }, ['path'])
-      const modifyInstanceChanges = detailedCompare(
-        originalInstance,
-        updatedInstance,
-      )
+      const modifyInstanceChanges = detailedCompare(originalInstance, updatedInstance)
+      const baseChange = toChange({ after: newInstance })
       const additionChange = {
-        ...toChange({ after: newInstance }),
+        ...baseChange,
         id: newInstance.elemID,
-      } as DetailedChange
+        baseChange,
+      }
       mockCalculatePatch.mockResolvedValue({
         changes: [
           ...modifyInstanceChanges.map(c => ({ change: c, serviceChanges: [c] })),
@@ -162,14 +159,8 @@ describe('apply-patch command', () => {
       const toDirEmployeeType = unchangedEmployeeType.clone()
       fromDirEmployeeType.annotations.conflict = 'from'
       toDirEmployeeType.annotations.conflict = 'to'
-      const modifyTypeChanges = detailedCompare(
-        fromDirEmployeeType,
-        toDirEmployeeType,
-      )
-      const pendingChange = detailedCompare(
-        unchangedEmployeeType,
-        toDirEmployeeType,
-      )
+      const modifyTypeChanges = detailedCompare(fromDirEmployeeType, toDirEmployeeType)
+      const pendingChange = detailedCompare(unchangedEmployeeType, toDirEmployeeType)
       mockCalculatePatch.mockResolvedValue({
         changes: [
           { change: modifyTypeChanges[0], serviceChanges: [modifyTypeChanges[0]], pendingChanges: [pendingChange[0]] },
@@ -204,15 +195,17 @@ describe('apply-patch command', () => {
       const employeeType = baseElements[3] as ObjectType
       mockCalculatePatch.mockResolvedValue({
         changes: [],
-        mergeErrors: [{
-          error: new merger.DuplicateAnnotationError({
-            elemID: employeeType.elemID,
-            key: 'conflict',
-            newValue: 'to',
-            existingValue: 'from',
-          }),
-          elements: [employeeType],
-        }],
+        mergeErrors: [
+          {
+            error: new merger.DuplicateAnnotationError({
+              elemID: employeeType.elemID,
+              key: 'conflict',
+              newValue: 'to',
+              existingValue: 'from',
+            }),
+            elements: [employeeType],
+          },
+        ],
         fetchErrors: [],
         success: true,
         updatedConfig: {},

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { crmcustomfieldType } from '../../src/autogen/types/standard_types/crmcustomfield'
 import NetsuiteClient from '../../src/client/client'
@@ -25,7 +25,6 @@ import { othercustomfieldType } from '../../src/autogen/types/standard_types/oth
 import { transactionbodycustomfieldType } from '../../src/autogen/types/standard_types/transactionbodycustomfield'
 import { transactioncolumncustomfieldType } from '../../src/autogen/types/standard_types/transactioncolumncustomfield'
 import { INTERNAL_ID } from '../../src/constants'
-
 
 describe('setCustomFieldsUrls', () => {
   const client = {
@@ -48,18 +47,40 @@ describe('setCustomFieldsUrls', () => {
       new InstanceElement('D', itemnumbercustomfield, { scriptid: 'itemnumbercustomfieldid', [INTERNAL_ID]: '4' }),
       new InstanceElement('E', itemoptioncustomfield, { scriptid: 'itemoptioncustomfieldid', [INTERNAL_ID]: '5' }),
       new InstanceElement('F', othercustomfield, { scriptid: 'othercustomfieldid', [INTERNAL_ID]: '6' }),
-      new InstanceElement('G', transactionbodycustomfield, { scriptid: 'transactionbodycustomfieldid', [INTERNAL_ID]: '7' }),
-      new InstanceElement('H', transactioncolumncustomfield, { scriptid: 'transactioncolumncustomfieldid', [INTERNAL_ID]: '8' }),
+      new InstanceElement('G', transactionbodycustomfield, {
+        scriptid: 'transactionbodycustomfieldid',
+        [INTERNAL_ID]: '7',
+      }),
+      new InstanceElement('H', transactioncolumncustomfield, {
+        scriptid: 'transactioncolumncustomfieldid',
+        [INTERNAL_ID]: '8',
+      }),
     ]
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/eventcustfield.nl?id=1')
-    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/entitycustfield.nl?id=2')
-    expect(elements[2].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/itemcustfield.nl?id=3')
-    expect(elements[3].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/itemnumbercustfield.nl?id=4')
-    expect(elements[4].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/itemoption.nl?id=5')
-    expect(elements[5].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/othercustfield.nl?id=6')
-    expect(elements[6].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/bodycustfield.nl?id=7')
-    expect(elements[7].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/columncustfield.nl?id=8')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/eventcustfield.nl?id=1',
+    )
+    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/entitycustfield.nl?id=2',
+    )
+    expect(elements[2].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/itemcustfield.nl?id=3',
+    )
+    expect(elements[3].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/itemnumbercustfield.nl?id=4',
+    )
+    expect(elements[4].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/itemoption.nl?id=5',
+    )
+    expect(elements[5].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/othercustfield.nl?id=6',
+    )
+    expect(elements[6].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/bodycustfield.nl?id=7',
+    )
+    expect(elements[7].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://accountid.app.netsuite.com/app/common/custom/columncustfield.nl?id=8',
+    )
   })
 
   it('should not set url if not found internal id', async () => {

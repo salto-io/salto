@@ -1,24 +1,37 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  Change, Element, getChangeData, InstanceElement, isInstanceElement,
+  Change,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
   isTemplateExpression,
-  ReferenceExpression, SaltoError, TemplateExpression, TemplatePart, Values,
+  ReferenceExpression,
+  SaltoError,
+  TemplateExpression,
+  TemplatePart,
+  Values,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  createSchemeGuard,
+  replaceTemplatesWithValues,
+  resolveTemplates,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import Joi from 'joi'
@@ -29,7 +42,6 @@ import { FIELD_TYPE_NAME } from '../../fields/constants'
 import { stringToTemplate } from './template_expression_generator'
 
 const log = logger(module)
-
 
 type Component = {
   value?: Values | boolean
@@ -55,17 +67,19 @@ const AUTOMATION_INSTANCE_SCHEME = Joi.object({
   }).unknown(true),
 }).unknown(true)
 
-const isAutomationInstance = createSchemeGuard<AutomationInstance>(AUTOMATION_INSTANCE_SCHEME, 'Received an invalid automation')
+const isAutomationInstance = createSchemeGuard<AutomationInstance>(
+  AUTOMATION_INSTANCE_SCHEME,
+  'Received an invalid automation',
+)
 
 const filterAutomations = (instances: InstanceElement[]): AutomationInstance[] =>
-  instances
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-    .filter(isAutomationInstance)
+  instances.filter(instance => instance.elemID.typeName === AUTOMATION_TYPE).filter(isAutomationInstance)
 
 type SmartValueContainer = { obj: Values; key: string }
 
 const getPossibleSmartValues = (automation: AutomationInstance): SmartValueContainer[] =>
-  _(automation.value.components ?? []).concat(automation.value.trigger)
+  _(automation.value.components ?? [])
+    .concat(automation.value.trigger)
     .flatMap(component => {
       const containers: SmartValueContainer[] = []
 
@@ -76,26 +90,28 @@ const getPossibleSmartValues = (automation: AutomationInstance): SmartValueConta
           .map(key => ({
             key,
             obj: value,
-          })).forEach(container => containers.push(container))
+          }))
+          .forEach(container => containers.push(container))
       }
 
       if (_.isString(component.rawValue) || isTemplateExpression(component.rawValue)) {
         containers.push({ key: 'rawValue', obj: component })
       }
       return containers
-    }).value()
+    })
+    .value()
 
-const replaceFormulasWithTemplates = async (instances: InstanceElement[])
-: Promise<SaltoError[]> => {
+const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<SaltoError[]> => {
   const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
   const fieldInstancesByName = _(fieldInstances)
     .filter(instance => _.isString(instance.value.name))
     .groupBy(instance => instance.value.name)
     .value()
 
-  const fieldInstancesById = _.keyBy(fieldInstances.filter(instance => instance.value.id),
-    (instance: InstanceElement): number => instance.value.id)
-
+  const fieldInstancesById = _.keyBy(
+    fieldInstances.filter(instance => instance.value.id),
+    (instance: InstanceElement): number => instance.value.id,
+  )
 
   const ambiguousTokensWarnings = filterAutomations(instances)
     .map(instance => {
@@ -141,7 +157,9 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
     return part.value.value.id
   }
   if (!_.isString(part.value)) {
-    throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
+    throw new Error(
+      `Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`,
+    )
   }
   return part.value
 }
@@ -151,7 +169,7 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
  */
 const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
-  return ({
+  return {
     name: 'smartValueReferenceFilter',
     onFetch: async (elements: Element[]) => {
       if (config.fetch.parseTemplateExpressions === false) {
@@ -167,38 +185,31 @@ const filterCreator: FilterCreator = ({ config }) => {
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       filterAutomations(changes.map(getChangeData))
         .filter(isInstanceElement)
-        .forEach(
-          instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+        .forEach(instance =>
+          getPossibleSmartValues(instance).forEach(({ obj, key }) => {
             try {
-              replaceTemplatesWithValues(
-                { values: [obj], fieldName: key },
-                deployTemplateMapping,
-                prepRef,
-              )
+              replaceTemplatesWithValues({ values: [obj], fieldName: key }, deployTemplateMapping, prepRef)
             } catch (e) {
               log.error('Error parsing templates in deployment', e)
             }
-          })
+          }),
         )
     },
 
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       filterAutomations(changes.map(getChangeData))
         .filter(isInstanceElement)
-        .forEach(
-          instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+        .forEach(instance =>
+          getPossibleSmartValues(instance).forEach(({ obj, key }) => {
             try {
-              resolveTemplates(
-                { values: [obj], fieldName: key },
-                deployTemplateMapping,
-              )
+              resolveTemplates({ values: [obj], fieldName: key }, deployTemplateMapping)
             } catch (e) {
               log.error('Error restoring templates in deployment', e)
             }
-          })
+          }),
         )
     },
-  })
+  }
 }
 
 export default filterCreator

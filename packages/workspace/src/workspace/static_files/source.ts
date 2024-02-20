@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salto-io/adapter-api'
 
 import wu from 'wu'
@@ -20,9 +20,7 @@ import { values, promises } from '@salto-io/lowerdash'
 import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore } from '../dir_store'
 
-import {
-  InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
-} from './common'
+import { InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -62,7 +60,7 @@ export class LazyStaticFile extends AbsoluteStaticFile {
     hash: string,
     absoluteFilePath: string,
     private getContentFunc: () => Promise<Buffer | undefined>,
-    encoding?: BufferEncoding
+    encoding?: BufferEncoding,
   ) {
     super({ filepath, hash, encoding, absoluteFilePath })
   }
@@ -79,9 +77,9 @@ export const buildStaticFilesSource = (
   staticFilesDirStore: DirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
 ): Required<StaticFilesSource> => {
-  const getStaticFileData = async (filepath: string): Promise<
-    ({ hasChanged: boolean; buffer?: Buffer }) & StaticFilesData
-  > => {
+  const getStaticFileData = async (
+    filepath: string,
+  ): Promise<{ hasChanged: boolean; buffer?: Buffer } & StaticFilesData> => {
     const cachedResult = await staticFilesCache.get(filepath)
     let modified: number | undefined
     try {
@@ -95,9 +93,7 @@ export const buildStaticFilesSource = (
 
     const cacheModified = cachedResult ? cachedResult.modified : undefined
 
-    if (cachedResult === undefined
-        || cacheModified === undefined
-        || modified > cacheModified) {
+    if (cachedResult === undefined || cacheModified === undefined || modified > cacheModified) {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
         throw new MissingStaticFileError(filepath)
@@ -134,18 +130,18 @@ export const buildStaticFilesSource = (
         .filter(name => !existingFiles.has(name))
         .toArray()
 
-      const modifiedFilesSet = new Set((await withLimitedConcurrency(
-        wu(existingFiles.keys())
-          .filter(name => cachedFileNames.has(name))
-          .map(name => async () => ((await getStaticFileData(name)).hasChanged ? name : undefined)),
-        CACHE_READ_CONCURRENCY
-      )).filter(values.isDefined))
+      const modifiedFilesSet = new Set(
+        (
+          await withLimitedConcurrency(
+            wu(existingFiles.keys())
+              .filter(name => cachedFileNames.has(name))
+              .map(name => async () => ((await getStaticFileData(name)).hasChanged ? name : undefined)),
+            CACHE_READ_CONCURRENCY,
+          )
+        ).filter(values.isDefined),
+      )
 
-      return [
-        ...newFiles,
-        ...deletedFiles,
-        ...modifiedFilesSet.keys(),
-      ]
+      return [...newFiles, ...deletedFiles, ...modifiedFilesSet.keys()]
     },
     getStaticFile: async (
       filepath: string,
@@ -164,14 +160,12 @@ export const buildStaticFilesSource = (
         }
 
         if (staticFileData.buffer !== undefined) {
-          const staticFileWithHashAndContent = new AbsoluteStaticFile(
-            {
-              filepath,
-              content: staticFileData.buffer,
-              encoding,
-              absoluteFilePath: staticFilesDirStore.getFullPath(filepath),
-            },
-          )
+          const staticFileWithHashAndContent = new AbsoluteStaticFile({
+            filepath,
+            content: staticFileData.buffer,
+            encoding,
+            absoluteFilePath: staticFilesDirStore.getFullPath(filepath),
+          })
           return staticFileWithHashAndContent
         }
         return new LazyStaticFile(
@@ -202,18 +196,14 @@ export const buildStaticFilesSource = (
         throw e
       }
     },
-    getContent: async (
-      filepath: string
-    ): Promise<Buffer> => {
+    getContent: async (filepath: string): Promise<Buffer> => {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
         throw new Error(`Missing content on static file: ${filepath}`)
       }
       return file.buffer
     },
-    persistStaticFile: async (
-      staticFile: StaticFile,
-    ): Promise<void> => {
+    persistStaticFile: async (staticFile: StaticFile): Promise<void> => {
       const buffer = await staticFile.getContent()
       if (buffer === undefined) {
         throw new Error(`Missing content on static file: ${staticFile.filepath}`)
@@ -233,25 +223,17 @@ export const buildStaticFilesSource = (
       await staticFilesCache.rename(name)
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
-    clone: (): StaticFilesSource => buildStaticFilesSource(
-      staticFilesDirStore.clone() as DirectoryStore<Buffer>,
-      staticFilesCache.clone(),
-    ),
-    delete: async (staticFile: StaticFile): Promise<void> => (
-      staticFilesDirStore.delete(staticFile.filepath)
-    ),
+    clone: (): StaticFilesSource =>
+      buildStaticFilesSource(staticFilesDirStore.clone() as DirectoryStore<Buffer>, staticFilesCache.clone()),
+    delete: async (staticFile: StaticFile): Promise<void> => staticFilesDirStore.delete(staticFile.filepath),
     isPathIncluded: filePath => staticFilesSource.isPathIncluded(filePath),
   }
   return staticFilesSource
 }
 
-export const buildInMemStaticFilesSource = (
-  files: Map<string, StaticFile> = new Map()
-): StaticFilesSource => ({
+export const buildInMemStaticFilesSource = (files: Map<string, StaticFile> = new Map()): StaticFilesSource => ({
   load: async () => [],
-  getStaticFile: async filepath => (
-    files.get(filepath) ?? new MissingStaticFile(filepath)
-  ),
+  getStaticFile: async filepath => files.get(filepath) ?? new MissingStaticFile(filepath),
   persistStaticFile: async file => {
     files.set(file.filepath, file)
   },
@@ -266,9 +248,7 @@ export const buildInMemStaticFilesSource = (
   clear: async () => {
     files.clear()
   },
-  clone: () => (
-    buildInMemStaticFilesSource(new Map(files.entries()))
-  ),
+  clone: () => buildInMemStaticFilesSource(new Map(files.entries())),
   delete: async file => {
     files.delete(file.filepath)
   },

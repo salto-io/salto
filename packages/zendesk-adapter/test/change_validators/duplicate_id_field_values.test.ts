@@ -1,24 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  InstanceElement,
-  ObjectType,
-  ElemID,
-  toChange,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { InstanceElement, ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
 import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
 import { ZENDESK } from '../../src/constants'
@@ -29,13 +24,9 @@ import * as duplicateIdFieldValuesModule from '../../src/change_validators/dupli
 const { createInMemoryElementSource } = elementSourceUtils
 
 const createGroupInstance = (elemId: string, name: string): InstanceElement =>
-  new InstanceElement(
-    elemId,
-    new ObjectType({ elemID: new ElemID(ZENDESK, 'group') }),
-    {
-      name,
-    },
-  )
+  new InstanceElement(elemId, new ObjectType({ elemID: new ElemID(ZENDESK, 'group') }), {
+    name,
+  })
 
 describe('duplicateIdFieldValuesValidator', () => {
   let apiConfig: ZendeskApiConfig
@@ -53,10 +44,7 @@ describe('duplicateIdFieldValuesValidator', () => {
     const uniqueGroup2 = createGroupInstance('unique2', 'name2')
     const uniqueGroup3 = createGroupInstance('unique3', 'name3')
 
-    const changes = [
-      toChange({ after: uniqueGroup1 }),
-      toChange({ after: uniqueGroup2 }),
-    ]
+    const changes = [toChange({ after: uniqueGroup1 }), toChange({ after: uniqueGroup2 })]
     const elementSource = createInMemoryElementSource([uniqueGroup1, uniqueGroup2, uniqueGroup3])
     const errors = await duplicateIdFieldValuesValidator(apiConfig)(changes, elementSource)
     expect(errors).toEqual([])
@@ -88,19 +76,22 @@ describe('duplicateIdFieldValuesValidator', () => {
         elemID: duplicateGroup1.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate2\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids',
+        detailedMessage:
+          "This group cannot be deployed as it is a duplicate of 'duplicate2'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids",
       },
       {
         elemID: duplicateGroup3.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate4, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids',
+        detailedMessage:
+          "This group cannot be deployed as it is a duplicate of 'duplicate4, duplicate5'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids",
       },
       {
         elemID: duplicateGroup4.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate3, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids',
+        detailedMessage:
+          "This group cannot be deployed as it is a duplicate of 'duplicate3, duplicate5'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids",
       },
     ])
   })
@@ -120,7 +111,8 @@ describe('duplicateIdFieldValuesValidator', () => {
         elemID: duplicateGroup1.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed due to duplication of fields \'name\' with existing instances \'duplicate2\'. Please ensure that these field values are unique before deploying.',
+        detailedMessage:
+          "This group cannot be deployed due to duplication of fields 'name' with existing instances 'duplicate2'. Please ensure that these field values are unique before deploying.",
       },
     ])
   })

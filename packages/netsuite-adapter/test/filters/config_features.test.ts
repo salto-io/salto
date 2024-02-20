@@ -1,19 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isListType, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isListType,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/config_features'
 import { CONFIG_FEATURES, NETSUITE } from '../../src/constants'
 import { featuresType } from '../../src/types/configuration_types'
@@ -27,16 +36,8 @@ const getChange = (): Change<InstanceElement> => {
       DEF: { refType: BuiltinTypes.BOOLEAN },
     },
   })
-  const before = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    type,
-    { ABC: false, DEF: false }
-  )
-  const after = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    type,
-    { ABC: true, DEF: true }
-  )
+  const before = new InstanceElement(ElemID.CONFIG_NAME, type, { ABC: false, DEF: false })
+  const after = new InstanceElement(ElemID.CONFIG_NAME, type, { ABC: true, DEF: true })
   return toChange({ before, after })
 }
 
@@ -44,17 +45,13 @@ describe('config features filter', () => {
   describe('onFetch', () => {
     let instance: InstanceElement
     beforeEach(() => {
-      instance = new InstanceElement(
-        '_config',
-        featuresType(),
-        {
-          feature: [
-            { id: 'ABC', label: 'A Blue Cat', status: 'ENABLED' },
-            { id: 'DEF', label: 'Delightful Elephents Family', status: 'DISABLED' },
-            { id: 'NO', label: 'Not O', status: 'UNKNOWN' },
-          ],
-        }
-      )
+      instance = new InstanceElement('_config', featuresType(), {
+        feature: [
+          { id: 'ABC', label: 'A Blue Cat', status: 'ENABLED' },
+          { id: 'DEF', label: 'Delightful Elephents Family', status: 'DISABLED' },
+          { id: 'NO', label: 'Not O', status: 'UNKNOWN' },
+        ],
+      })
     })
 
     it('should transform values', async () => {
@@ -82,8 +79,7 @@ describe('config features filter', () => {
       const { feature } = type.fields
       const fieldType = await feature.getType()
       expect(isListType(fieldType)).toBeTruthy()
-      expect(isListType(fieldType) && fieldType.refInnerType.elemID.typeName)
-        .toEqual(`${CONFIG_FEATURES}_feature`)
+      expect(isListType(fieldType) && fieldType.refInnerType.elemID.typeName).toEqual(`${CONFIG_FEATURES}_feature`)
       expect(instance.value).toEqual({
         feature: [
           { id: 'ABC', status: 'ENABLED' },
@@ -100,7 +96,11 @@ describe('config features filter', () => {
     })
     it('should restore failed to deploy features', async () => {
       const change = getChange()
-      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { failedFeaturesIds: ['ABC'], appliedChanges: [], errors: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], {
+        failedFeaturesIds: ['ABC'],
+        appliedChanges: [],
+        errors: [],
+      })
       expect(getChangeData(change).value).toEqual({ ABC: false, DEF: true })
     })
   })

@@ -1,32 +1,69 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import {
-  Change, CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
-  InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement,
-  isObjectType, ObjectType, ProgressReporter, ReferenceExpression, TemplateExpression, toChange, Values,
+  Change,
+  CORE_ANNOTATIONS,
+  DeployResult,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isEqualValues,
+  isInstanceChange,
+  isInstanceElement,
+  isObjectType,
+  ObjectType,
+  ProgressReporter,
+  ReferenceExpression,
+  TemplateExpression,
+  toChange,
+  Values,
 } from '@salto-io/adapter-api'
-import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  buildElementsSourceFromElements,
+  detailedCompare,
+  getParents,
+  naclCase,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  APPLICATION_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  INACTIVE_STATUS,
+  NETWORK_ZONE_TYPE_NAME,
+  ORG_SETTING_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+  ROLE_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
+  USERTYPE_TYPE_NAME,
+} from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
@@ -44,7 +81,7 @@ const createInstance = ({
   types,
   parent,
   name,
-} :{
+}: {
   typeName: string
   valuesOverride: Values
   types: ObjectType[]
@@ -71,9 +108,7 @@ const createInstance = ({
     type,
     instValues,
     undefined,
-    parent
-      ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
-      : undefined
+    parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] } : undefined,
   )
 }
 
@@ -101,11 +136,13 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
       name: createName('testRule'),
       conditions: {
         expression: {
-          value: new TemplateExpression({ parts: [
-            'isMemberOfAnyGroup(',
-            new ReferenceExpression(anotherGroupInstance.elemID, anotherGroupInstance),
-            ')',
-          ] }),
+          value: new TemplateExpression({
+            parts: [
+              'isMemberOfAnyGroup(',
+              new ReferenceExpression(anotherGroupInstance.elemID, anotherGroupInstance),
+              ')',
+            ],
+          }),
           type: 'urn:okta:expression:1.0',
         },
       },
@@ -161,7 +198,7 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
             {
               name: new ReferenceExpression(
                 userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'email'),
-                userSchema.value.definitions?.base?.properties?.email
+                userSchema.value.definitions?.base?.properties?.email,
               ),
               label: 'Email',
               required: true,
@@ -169,7 +206,7 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
             {
               name: new ReferenceExpression(
                 userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'lastName'),
-                userSchema.value.definitions?.base?.properties?.lastName
+                userSchema.value.definitions?.base?.properties?.lastName,
               ),
               label: 'Last name',
               required: true,
@@ -177,7 +214,7 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
             {
               name: new ReferenceExpression(
                 userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'firstName'),
-                userSchema.value.definitions?.base?.properties?.firstName
+                userSchema.value.definitions?.base?.properties?.firstName,
               ),
               label: 'First name',
               required: true,
@@ -202,8 +239,17 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
       profileEnrollment: new ReferenceExpression(profileEnrollment.elemID, profileEnrollment),
     },
   })
-  return [groupInstance, anotherGroupInstance, ruleInstance, zoneInstance, accessPolicy,
-    accessPolicyRule, profileEnrollment, profileEnrollmentRule, app]
+  return [
+    groupInstance,
+    anotherGroupInstance,
+    ruleInstance,
+    zoneInstance,
+    accessPolicy,
+    accessPolicyRule,
+    profileEnrollment,
+    profileEnrollmentRule,
+    app,
+  ]
 }
 
 const nullProgressReporter: ProgressReporter = {
@@ -211,9 +257,7 @@ const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
 
-const deployChanges = async (
-  adapterAttr: Reals, instancesToAdd: InstanceElement[],
-): Promise<DeployResult[]> => {
+const deployChanges = async (adapterAttr: Reals, instancesToAdd: InstanceElement[]): Promise<DeployResult[]> => {
   const planElementById = _.keyBy(instancesToAdd, inst => inst.elemID.getFullName())
   const deployResults = await awu(instancesToAdd)
     .map(async instance => {
@@ -257,8 +301,9 @@ const removeApp = async (adapterAttr: Reals, changes: Change<InstanceElement>[])
     progressReporter: nullProgressReporter,
   })
 
-  const appRemovalChange = appDeployResult.appliedChanges
-    .find(change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME)
+  const appRemovalChange = appDeployResult.appliedChanges.find(
+    change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
+  )
   if (appRemovalChange === undefined) {
     throw new Error('Could not find deployed application, failed to clean e2e changes')
   }
@@ -282,8 +327,7 @@ describe('Okta adapter E2E', () => {
     const deployAndFetch = async (instancesToAdd: InstanceElement[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, instancesToAdd)
       const fetchResult = await adapterAttr.adapter.fetch({
-        progressReporter:
-          { reportProgress: () => null },
+        progressReporter: { reportProgress: () => null },
       })
       elements = fetchResult.elements
       // TODO: return this check when the second error is fixed
@@ -296,9 +340,8 @@ describe('Okta adapter E2E', () => {
       //   },
       // ])
       adapterAttr = realAdapter(
-        { credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements(elements) },
-        DEFAULT_CONFIG
+        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements(elements) },
+        DEFAULT_CONFIG,
       )
     }
 
@@ -306,15 +349,14 @@ describe('Okta adapter E2E', () => {
       credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
-        DEFAULT_CONFIG
+        DEFAULT_CONFIG,
       )
       const firstFetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
 
       adapterAttr = realAdapter(
-        { credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements(firstFetchResult.elements) },
+        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements(firstFetchResult.elements) },
         DEFAULT_CONFIG,
       )
 
@@ -348,14 +390,17 @@ describe('Okta adapter E2E', () => {
           })
       })
 
-      deployResults = await awu(removalChanges).map(change =>
-        adapterAttr.adapter.deploy({
-          changeGroup: {
-            groupID: getChangeData(change).elemID.getFullName(),
-            changes: [change],
-          },
-          progressReporter: nullProgressReporter,
-        })).toArray()
+      deployResults = await awu(removalChanges)
+        .map(change =>
+          adapterAttr.adapter.deploy({
+            changeGroup: {
+              groupID: getChangeData(change).elemID.getFullName(),
+              changes: [change],
+            },
+            progressReporter: nullProgressReporter,
+          }),
+        )
+        .toArray()
 
       const errors = deployResults.flatMap(res => res.errors)
       if (errors.length) {
@@ -413,9 +458,18 @@ describe('Okta adapter E2E', () => {
         'Automation',
         'AutomationRule',
       ]
-      const typesWithInstances = new Set([GROUP_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
-        ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME,
-        AUTHENTICATOR_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME, APPLICATION_TYPE_NAME])
+      const typesWithInstances = new Set([
+        GROUP_TYPE_NAME,
+        ROLE_TYPE_NAME,
+        ACCESS_POLICY_TYPE_NAME,
+        ACCESS_POLICY_RULE_TYPE_NAME,
+        PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+        PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+        AUTHENTICATOR_TYPE_NAME,
+        USER_SCHEMA_TYPE_NAME,
+        USERTYPE_TYPE_NAME,
+        APPLICATION_TYPE_NAME,
+      ])
 
       const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
       const createdInstances = elements.filter(isInstanceElement)
@@ -436,13 +490,12 @@ describe('Okta adapter E2E', () => {
         .flat()
         .map(change => getChangeData(change)) as InstanceElement[]
 
-      deployInstances
-        .forEach(deployedInstance => {
-          const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
-          expect(instance).toBeDefined()
-          // Omit '_links' as this field is hidden
-          expect(isEqualValues(_.omit(instance?.value, '_links'), deployedInstance.value)).toBeTruthy()
-        })
+      deployInstances.forEach(deployedInstance => {
+        const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
+        expect(instance).toBeDefined()
+        // Omit '_links' as this field is hidden
+        expect(isEqualValues(_.omit(instance?.value, '_links'), deployedInstance.value)).toBeTruthy()
+      })
     })
   })
 })

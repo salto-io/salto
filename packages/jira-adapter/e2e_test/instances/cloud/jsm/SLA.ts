@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { ElemID, Values, Element, TemplateExpression } from '@salto-io/adapter-api'
 import { createReference } from '../../../utils'
@@ -55,20 +55,28 @@ export const createSLAValues = (name: string, allElements: Element[]): Values =>
     },
     goals: [
       {
-        jqlQuery: new TemplateExpression({ parts: [
-          createReference(new ElemID(JIRA, 'Field', 'instance', 'Priority__priority'), allElements),
-          ' = ',
-          createReference(new ElemID(JIRA, 'Priority', 'instance', 'Highest'), allElements, ['name']),
-        ] }),
+        jqlQuery: new TemplateExpression({
+          parts: [
+            createReference(new ElemID(JIRA, 'Field', 'instance', 'Priority__priority'), allElements),
+            ' = ',
+            createReference(new ElemID(JIRA, 'Priority', 'instance', 'Highest'), allElements, ['name']),
+          ],
+        }),
         duration: 7200000,
-        calendarId: createReference(new ElemID(JIRA, 'Calendar', 'instance', 'Sample_9_5_Calendar_SUP@sbsu'), allElements),
+        calendarId: createReference(
+          new ElemID(JIRA, 'Calendar', 'instance', 'Sample_9_5_Calendar_SUP@sbsu'),
+          allElements,
+        ),
         defaultGoal: false,
         timeMetricId: 0,
       },
       {
         jqlQuery: '',
         duration: 28800000,
-        calendarId: createReference(new ElemID(JIRA, 'Calendar', 'instance', 'Sample_9_5_Calendar_SUP@sbsu'), allElements),
+        calendarId: createReference(
+          new ElemID(JIRA, 'Calendar', 'instance', 'Sample_9_5_Calendar_SUP@sbsu'),
+          allElements,
+        ),
         defaultGoal: true,
         timeMetricId: 0,
       },

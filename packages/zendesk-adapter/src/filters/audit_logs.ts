@@ -1,24 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   Element,
-  ElemID, InstanceElement, isInstanceElement,
-  ObjectType, ReadOnlyElementsSource,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -29,17 +32,26 @@ import moment from 'moment-timezone'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
-  APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME,
-  AUDIT_TIME_TYPE_NAME, AUTOMATION_TYPE_NAME, BRAND_TYPE_NAME,
+  APP_INSTALLATION_TYPE_NAME,
+  APP_OWNED_TYPE_NAME,
+  AUDIT_TIME_TYPE_NAME,
+  AUTOMATION_TYPE_NAME,
+  BRAND_TYPE_NAME,
   BUSINESS_HOUR_SCHEDULE,
-  BUSINESS_HOUR_SCHEDULE_HOLIDAY, CUSTOM_OBJECT_TYPE_NAME, CUSTOM_ROLE_TYPE_NAME,
-  CUSTOM_STATUS_TYPE_NAME, GROUP_TYPE_NAME, LOCALE_TYPE_NAME,
-  MACRO_TYPE_NAME, ORG_FIELD_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY,
+  CUSTOM_OBJECT_TYPE_NAME,
+  CUSTOM_ROLE_TYPE_NAME,
+  CUSTOM_STATUS_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  LOCALE_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
   SLA_POLICY_TYPE_NAME,
   SUPPORT_ADDRESS_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
-  TRANSLATION_TYPE_NAMES, TRIGGER_TYPE_NAME,
+  TRANSLATION_TYPE_NAMES,
+  TRIGGER_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
   VIEW_TYPE_NAME,
   ZENDESK,
@@ -93,29 +105,37 @@ type ValidAuditResWithCount = {
 }
 
 const AUDIT_SCHEMA = Joi.object({
-  audit_logs: Joi.array().items(Joi.object({
-    created_at: Joi.string().required(),
-    actor_name: Joi.string().required().not(''),
-  }).unknown(true)).required(),
-}).unknown(true).required()
+  audit_logs: Joi.array()
+    .items(
+      Joi.object({
+        created_at: Joi.string().required(),
+        actor_name: Joi.string().required().not(''),
+      }).unknown(true),
+    )
+    .required(),
+})
+  .unknown(true)
+  .required()
 
 const isValidAuditRes = createSchemeGuard<ValidAuditRes>(
-  AUDIT_SCHEMA, 'Received an invalid value for audit_logs response'
+  AUDIT_SCHEMA,
+  'Received an invalid value for audit_logs response',
 )
 
-const isValidAuditResWithCount = (res: unknown): res is ValidAuditResWithCount =>
-  _.isObject(res) && 'count' in res
+const isValidAuditResWithCount = (res: unknown): res is ValidAuditResWithCount => _.isObject(res) && 'count' in res
 
 const getLastAuditTime = async (client: ZendeskClient): Promise<string | undefined> => {
   try {
-    const res = (await client.get({
-      url: '/api/v2/audit_logs',
-      queryParams: {
-        'page[size]': '1',
-        // this is the log creation time and not when the source was created
-        sort: '-created_at',
-      },
-    })).data
+    const res = (
+      await client.get({
+        url: '/api/v2/audit_logs',
+        queryParams: {
+          'page[size]': '1',
+          // this is the log creation time and not when the source was created
+          sort: '-created_at',
+        },
+      })
+    ).data
     if (isValidAuditRes(res)) {
       return res.audit_logs[0].created_at
     }
@@ -151,8 +171,11 @@ const createTimeElements = async (lastAuditTime: string): Promise<Element[]> => 
 }
 
 const getChangedByName = async ({
-  instance, client, start, end,
-}:{
+  instance,
+  client,
+  start,
+  end,
+}: {
   instance: InstanceElement
   client: ZendeskClient
   start: string
@@ -165,36 +188,45 @@ const getChangedByName = async ({
   }
   try {
     const sourceType = TYPE_TO_SOURCE_TYPE[instance.elemID.typeName]
-    const queryParams: Record<string, string | string[]> = sourceType !== undefined
-      ? {
-        'page[size]': '1',
-        // this is the log creation time and not when the source was created
-        sort: '-created_at',
-        'filter[source_id]': id,
-        'filter[created_at]': [start, end],
-        'filter[source_type]': sourceType,
-      }
-      : {
-        'page[size]': '1',
-        // this is the log creation time and not when the source was created
-        sort: '-created_at',
-        'filter[source_id]': id,
-        'filter[created_at]': [start, end],
-      }
-    const res = (await client.get({
-      url: '/api/v2/audit_logs',
-      queryParams,
-    })).data
+    const queryParams: Record<string, string | string[]> =
+      sourceType !== undefined
+        ? {
+            'page[size]': '1',
+            // this is the log creation time and not when the source was created
+            sort: '-created_at',
+            'filter[source_id]': id,
+            'filter[created_at]': [start, end],
+            'filter[source_type]': sourceType,
+          }
+        : {
+            'page[size]': '1',
+            // this is the log creation time and not when the source was created
+            sort: '-created_at',
+            'filter[source_id]': id,
+            'filter[created_at]': [start, end],
+          }
+    const res = (
+      await client.get({
+        url: '/api/v2/audit_logs',
+        queryParams,
+      })
+    ).data
     if (isValidAuditRes(res)) {
       if (_.isEmpty(res.audit_logs)) {
-        log.debug(`there was no change for instance ${instance.elemID.getFullName()} with id ${id} between the times ${start} and ${end}`)
+        log.debug(
+          `there was no change for instance ${instance.elemID.getFullName()} with id ${id} between the times ${start} and ${end}`,
+        )
         return undefined
       }
       return res.audit_logs[0].actor_name
     }
-    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, the result of get was not valid.`)
+    log.error(
+      `could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, the result of get was not valid.`,
+    )
   } catch (e) {
-    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, get returned an error'. error: ${e}`)
+    log.error(
+      `could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, get returned an error'. error: ${e}`,
+    )
   }
   return undefined
 }
@@ -222,9 +254,13 @@ const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string,
     })
 }
 
-const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, idByInstance: Record<string, InstanceElement>)
-  : Promise<void> => {
-  const prevInstances = await (awu(await elementsSource.getAll()).filter(isInstanceElement).toArray())
+const addPrevChangedBy = async (
+  elementsSource: ReadOnlyElementsSource,
+  idByInstance: Record<string, InstanceElement>,
+): Promise<void> => {
+  const prevInstances = await awu(await elementsSource.getAll())
+    .filter(isInstanceElement)
+    .toArray()
   prevInstances
     .filter(inst => !GUIDE_ELEMENTS.has(inst.elemID.typeName))
     .forEach(prevInst => {
@@ -265,9 +301,11 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
 const calculateLogNumber = async (client: ZendeskClient): Promise<string> => {
   // we do not use cursor base pagination as the field 'count' would not exist
   try {
-    const res = (await client.get({
-      url: '/api/v2/audit_logs',
-    })).data
+    const res = (
+      await client.get({
+        url: '/api/v2/audit_logs',
+      })
+    ).data
     if (isValidAuditResWithCount(res)) {
       return res.count.toString()
     }
@@ -283,12 +321,12 @@ const addChangedByUsingAuditLog = async ({
   newLastAuditTime,
   auditTimeInstance,
   client,
-}:{
+}: {
   instances: InstanceElement[]
   newLastAuditTime: string
   auditTimeInstance: InstanceElement
   client: ZendeskClient
-}):Promise<void> => {
+}): Promise<void> => {
   const newLastAuditTimeMoment = moment.utc(newLastAuditTime)
   const prevLastAuditTimeMoment = moment.utc(auditTimeInstance.value.time)
   const updatedInstances = instances
@@ -300,7 +338,9 @@ const addChangedByUsingAuditLog = async ({
       const isBeforeNewFetch = instTime.isSameOrBefore(newLastAuditTimeMoment)
       if (!isBeforeNewFetch) {
         // can happen for changes in ticket_fields, routing_attribute(_value), and user_fields for example
-        log.debug(`There is a change that happened after the last audit time received for instance ${inst.elemID.getFullName()}`)
+        log.debug(
+          `There is a change that happened after the last audit time received for instance ${inst.elemID.getFullName()}`,
+        )
         inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = undefined
       }
       return isAfterPrevFetch && isBeforeNewFetch
@@ -309,7 +349,9 @@ const addChangedByUsingAuditLog = async ({
     return
   }
   const logNumber = await calculateLogNumber(client)
-  log.debug(`about to update changed_by for ${updatedInstances.length} instances, the amount of audit_logs is ${logNumber}`)
+  log.debug(
+    `about to update changed_by for ${updatedInstances.length} instances, the amount of audit_logs is ${logNumber}`,
+  )
 
   // updated_by for everything else (some types are not supported by zendesk - listed above)
   await awu(updatedInstances)
@@ -336,7 +378,7 @@ const addNewChangedBy = async ({
   newLastAuditTime,
   auditTimeInstance,
   client,
-}:{
+}: {
   instances: InstanceElement[]
   idToName: Record<string, string>
   newLastAuditTime: string
@@ -380,7 +422,9 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     // if this is a second fetch the elementSource should have the time instance already
     const auditTimeInstance = await elementsSource.get(AUDIT_TIME_INSTANCE_ID)
     if (auditTimeInstance === undefined) {
-      log.debug('could not find audit time instance in elementSource so this is likely a first fetch, not populating changed-by information')
+      log.debug(
+        'could not find audit time instance in elementSource so this is likely a first fetch, not populating changed-by information',
+      )
       return
     }
     await addPrevChangedBy(elementsSource, idByInstance)

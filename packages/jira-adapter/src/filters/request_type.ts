@@ -1,34 +1,53 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import Joi from 'joi'
-import { AdditionChange, Change, InstanceElement, ModificationChange, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  Change,
+  InstanceElement,
+  ModificationChange,
+  ReferenceExpression,
+  getChangeData,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isEqualValues,
+  isInstanceChange,
+  isModificationChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../constants'
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
 import JiraClient from '../client/client'
 import { LayoutConfigItem } from './layouts/layout_types'
-import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, LAYOUT_TYPE_NAME_TO_DETAILS } from './layouts/layout_service_operations'
+import {
+  LayoutTypeName,
+  getLayoutResponse,
+  isIssueLayoutResponse,
+  LAYOUT_TYPE_NAME_TO_DETAILS,
+} from './layouts/layout_service_operations'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 type statusType = {
   id: ReferenceExpression
@@ -42,21 +61,17 @@ type workflowStatusesType = statusType[]
 const WORKFLOW_STATUS_TYPE = Joi.array().items(STATUS_TYPE)
 const isWorkFlowStatuses = createSchemeGuard<workflowStatusesType>(WORKFLOW_STATUS_TYPE)
 
-const FIELDS_TO_IGNORE = [
-  'issueView',
-  'requestForm',
-  'workflowStatuses',
-  'avatarId',
-  'groupIds',
-]
-
+const FIELDS_TO_IGNORE = ['issueView', 'requestForm', 'workflowStatuses', 'avatarId', 'groupIds']
 
 const deployWorkflowStatuses = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  client: JiraClient): Promise<void> => {
-  if ((isAdditionChange(change))
-    || (isModificationChange(change)
-    && !isEqualValues(change.data.before.value.workflowStatuses, change.data.after.value.workflowStatuses))) {
+  client: JiraClient,
+): Promise<void> => {
+  if (
+    isAdditionChange(change) ||
+    (isModificationChange(change) &&
+      !isEqualValues(change.data.before.value.workflowStatuses, change.data.after.value.workflowStatuses))
+  ) {
     const instance = getChangeData(change)
     const parent = getParent(instance)
     if (!isWorkFlowStatuses(instance.value.workflowStatuses)) {
@@ -74,13 +89,12 @@ const deployWorkflowStatuses = async (
   }
 }
 
-const isRequestTypeDetailsChange = (
-  change: ModificationChange<InstanceElement>,
-  fieldName: string,
-): boolean => fieldName === 'requestForm'
-  && ['name', 'description', 'helpText'].some(additionalFieldName =>
-    change.data.before.value[additionalFieldName] !== change.data.after.value[additionalFieldName])
-
+const isRequestTypeDetailsChange = (change: ModificationChange<InstanceElement>, fieldName: string): boolean =>
+  fieldName === 'requestForm' &&
+  ['name', 'description', 'helpText'].some(
+    additionalFieldName =>
+      change.data.before.value[additionalFieldName] !== change.data.after.value[additionalFieldName],
+  )
 
 const deployRequestTypeLayout = async (
   change: Change<InstanceElement>,
@@ -90,35 +104,38 @@ const deployRequestTypeLayout = async (
   const requestType = getChangeData(change)
   const { fieldName } = LAYOUT_TYPE_NAME_TO_DETAILS[typeName]
   if (
-    !isAdditionChange(change)
-    && (!isModificationChange(change)
-      || (
-        isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName])
-        && !isRequestTypeDetailsChange(change, fieldName)
-      ))
+    !isAdditionChange(change) &&
+    (!isModificationChange(change) ||
+      (isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName]) &&
+        !isRequestTypeDetailsChange(change, fieldName)))
   ) {
     return undefined
   }
   const layout = requestType.value[fieldName]
-  const items = layout.issueLayoutConfig.items.map((item: LayoutConfigItem) => {
-    if (!isResolvedReferenceExpression(item.key)) {
-      log.error(`Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`)
-      throw new Error(`Failed to deploy requestType ${fieldName} due to a bad item key: ${item.key}`)
-    }
-    const key = item.key.value.value.id
-    return {
-      type: item.type,
-      sectionType: item.sectionType.toLowerCase(),
-      key,
-      data: {
-        name: item.key.value.value.name,
-        type: item.key.value.value.type
-          ?? item.key.value.value.schema?.system
-          ?? item.key.value.value.name.toLowerCase?.(),
-        ...item.data,
-      },
-    }
-  }).filter(isDefined)
+  const items = layout.issueLayoutConfig.items
+    .map((item: LayoutConfigItem) => {
+      if (!isResolvedReferenceExpression(item.key)) {
+        log.error(
+          `Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`,
+        )
+        throw new Error(`Failed to deploy requestType ${fieldName} due to a bad item key: ${item.key}`)
+      }
+      const key = item.key.value.value.id
+      return {
+        type: item.type,
+        sectionType: item.sectionType.toLowerCase(),
+        key,
+        data: {
+          name: item.key.value.value.name,
+          type:
+            item.key.value.value.type ??
+            item.key.value.value.schema?.system ??
+            item.key.value.value.name.toLowerCase?.(),
+          ...item.data,
+        },
+      }
+    })
+    .filter(isDefined)
 
   const data = {
     projectId: getParent(requestType).value.id,
@@ -148,8 +165,12 @@ const deployRequestTypeLayout = async (
     }
     const response = await getLayoutResponse({ variables, client, typeName })
     if (!isIssueLayoutResponse(response.data)) {
-      log.error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
-      throw new Error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
+      log.error(
+        `Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`,
+      )
+      throw new Error(
+        `Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`,
+      )
     }
     layout.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
   }
@@ -159,9 +180,9 @@ const deployRequestTypeLayout = async (
 }
 
 /*
-* Deploy requestType filter. Using it because it needs to be deployed
-* through different API calls.
-*/
+ * Deploy requestType filter. Using it because it needs to be deployed
+ * through different API calls.
+ */
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'requestTypeFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -174,27 +195,21 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change =>
-        getChangeData(change).elemID.typeName === REQUEST_TYPE_NAME
-        && isInstanceChange(change)
+      change => getChangeData(change).elemID.typeName === REQUEST_TYPE_NAME && isInstanceChange(change),
     )
+    const typeFixedChanges = relevantChanges.map(change => ({
+      action: change.action,
+      data: _.mapValues(change.data, (instance: InstanceElement) =>
+        replaceInstanceTypeForDeploy({
+          instance,
+          config: jsmApiDefinitions,
+        }),
+      ),
+    })) as Change<InstanceElement>[]
 
-    const deployResult = await deployChanges(
-      relevantChanges,
-      async change => {
-        if (isAdditionOrModificationChange(change)) {
-          if (isAdditionChange(change)) {
-            await defaultDeployChange({
-              change,
-              client,
-              apiDefinitions: jsmApiDefinitions,
-              fieldsToIgnore: FIELDS_TO_IGNORE,
-            })
-          }
-          await deployRequestTypeLayout(change, client, REQUEST_FORM_TYPE)
-          await deployRequestTypeLayout(change, client, ISSUE_VIEW_TYPE)
-          await deployWorkflowStatuses(change, client)
-        } else {
+    const deployResult = await deployChanges(typeFixedChanges, async change => {
+      if (isAdditionOrModificationChange(change)) {
+        if (isAdditionChange(change)) {
           await defaultDeployChange({
             change,
             client,
@@ -202,8 +217,18 @@ const filter: FilterCreator = ({ config, client }) => ({
             fieldsToIgnore: FIELDS_TO_IGNORE,
           })
         }
+        await deployRequestTypeLayout(change, client, REQUEST_FORM_TYPE)
+        await deployRequestTypeLayout(change, client, ISSUE_VIEW_TYPE)
+        await deployWorkflowStatuses(change, client)
+      } else {
+        await defaultDeployChange({
+          change,
+          client,
+          apiDefinitions: jsmApiDefinitions,
+          fieldsToIgnore: FIELDS_TO_IGNORE,
+        })
       }
-    )
+    })
     return { deployResult, leftoverChanges }
   },
 })

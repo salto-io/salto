@@ -1,23 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  Change, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceChange, isModificationChange,
+  Change,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME } from '../constants'
@@ -37,57 +42,63 @@ export const isRelevantChange = (change: Change<InstanceElement>): boolean => {
   const instance = getChangeData(change)
   const changeTypeName = instance.elemID.typeName
   if (RELEVANT_PARENT_AND_CHILD_TYPES.some(pair => pair.parent === changeTypeName)) {
-    return (instance.value.type === CHECKBOX_TYPE_NAME)
-      && !(
-        isModificationChange(change)
-        && (change.data.before.value.tag === change.data.after.value.tag)
-      )
-      && !_.isEmpty(instance.value.tag)
+    return (
+      instance.value.type === CHECKBOX_TYPE_NAME &&
+      !(isModificationChange(change) && change.data.before.value.tag === change.data.after.value.tag) &&
+      !_.isEmpty(instance.value.tag)
+    )
   }
   if (RELEVANT_PARENT_AND_CHILD_TYPES.some(pair => pair.child === changeTypeName)) {
-    return !(
-      isModificationChange(change)
-      && (change.data.before.value.value === change.data.after.value.value)
-    )
+    return !(isModificationChange(change) && change.data.before.value.value === change.data.after.value.value)
   }
   return false
 }
 
-const getRelevantPairType = (change: Change<InstanceElement>):
-ParentAndChildTypePair | undefined => {
+const getRelevantPairType = (change: Change<InstanceElement>): ParentAndChildTypePair | undefined => {
   const { typeName } = getChangeData(change).elemID
   return RELEVANT_PARENT_AND_CHILD_TYPES.find(pair => [pair.parent, pair.child].includes(typeName))
 }
 
 const findConflictedInstances = ({
-  instanceToCheck, relevantInstances, fieldName, value,
+  instanceToCheck,
+  relevantInstances,
+  fieldName,
+  value,
 }: {
   instanceToCheck: InstanceElement
   relevantInstances: InstanceElement[]
   fieldName: string
   value: string
-}): string[] => relevantInstances
-  .filter(inst => inst.value[fieldName] === value)
-  .filter(inst => inst.elemID.getFullName() !== instanceToCheck.elemID.getFullName())
-  .map(inst => inst.elemID.getFullName())
+}): string[] =>
+  relevantInstances
+    .filter(inst => inst.value[fieldName] === value)
+    .filter(inst => inst.elemID.getFullName() !== instanceToCheck.elemID.getFullName())
+    .map(inst => inst.elemID.getFullName())
 
 const getConflictedIds = ({
-  change, pair, childInstances, parentInstances,
+  change,
+  pair,
+  childInstances,
+  parentInstances,
 }: {
   change: Change<InstanceElement>
   pair: ParentAndChildTypePair
   childInstances: InstanceElement[]
   parentInstances: InstanceElement[]
-}): {instanceNames: string[]; tag: string} => {
+}): { instanceNames: string[]; tag: string } => {
   const instance = getChangeData(change)
-  const value = instance.elemID.typeName === pair.parent
-    ? instance.value.tag
-    : instance.value.value
+  const value = instance.elemID.typeName === pair.parent ? instance.value.tag : instance.value.value
   const conflictedChildInstanceNames = findConflictedInstances({
-    instanceToCheck: instance, relevantInstances: childInstances, fieldName: 'value', value,
+    instanceToCheck: instance,
+    relevantInstances: childInstances,
+    fieldName: 'value',
+    value,
   })
   const conflictedParentInstanceNames = findConflictedInstances({
-    instanceToCheck: instance, relevantInstances: parentInstances, fieldName: 'tag', value,
+    instanceToCheck: instance,
+    relevantInstances: parentInstances,
+    fieldName: 'tag',
+    value,
   })
   return {
     instanceNames: [...conflictedChildInstanceNames, ...conflictedParentInstanceNames],
@@ -95,47 +106,52 @@ const getConflictedIds = ({
   }
 }
 
-export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async (
-  changes, elementSource
-) => {
+export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async (changes, elementSource) => {
   const relevantChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(isRelevantChange)
-  if (_.isEmpty(relevantChanges) || (elementSource === undefined)) {
+  if (_.isEmpty(relevantChanges) || elementSource === undefined) {
     return []
   }
-  const relevantTypes = _.uniqBy(
-    relevantChanges
-      .map(getRelevantPairType)
-      .filter(values.isDefined),
-    pair => pair.parent,
-  )
+  const relevantTypes = _.uniqBy(relevantChanges.map(getRelevantPairType).filter(values.isDefined), pair => pair.parent)
   const relevantTypeToInstances = _.groupBy(
-    await getInstancesFromElementSource(elementSource, relevantTypes.flatMap(pair => [pair.parent, pair.child])),
+    await getInstancesFromElementSource(
+      elementSource,
+      relevantTypes.flatMap(pair => [pair.parent, pair.child]),
+    ),
     instance => instance.elemID.typeName,
   )
-  return awu(relevantTypes).map(async pair => {
-    const childInstances = relevantTypeToInstances[pair.child] ?? []
-    const parentInstances = (relevantTypeToInstances[pair.parent] ?? [])
-      .filter(inst => inst.value.type === CHECKBOX_TYPE_NAME && !_.isEmpty(inst.value.tag))
-    return relevantChanges
-      .filter(change => getRelevantPairType(change)?.parent === pair.parent)
-      .flatMap(change => {
-        const instance = getChangeData(change)
-        const conflictedInstanceNames = getConflictedIds({
-          change, pair, childInstances, parentInstances,
-        })
-        if (conflictedInstanceNames.instanceNames.length > 0) {
-          return [{
-            elemID: instance.elemID,
-            severity: 'Error',
-            message: 'Cannot do this change since this tag value is already in use',
-            detailedMessage: `The tag ‘${conflictedInstanceNames.tag}’ is already used by the following elements:
+  return awu(relevantTypes)
+    .map(async pair => {
+      const childInstances = relevantTypeToInstances[pair.child] ?? []
+      const parentInstances = (relevantTypeToInstances[pair.parent] ?? []).filter(
+        inst => inst.value.type === CHECKBOX_TYPE_NAME && !_.isEmpty(inst.value.tag),
+      )
+      return relevantChanges
+        .filter(change => getRelevantPairType(change)?.parent === pair.parent)
+        .flatMap(change => {
+          const instance = getChangeData(change)
+          const conflictedInstanceNames = getConflictedIds({
+            change,
+            pair,
+            childInstances,
+            parentInstances,
+          })
+          if (conflictedInstanceNames.instanceNames.length > 0) {
+            return [
+              {
+                elemID: instance.elemID,
+                severity: 'Error',
+                message: 'Cannot do this change since this tag value is already in use',
+                detailedMessage: `The tag ‘${conflictedInstanceNames.tag}’ is already used by the following elements:
 ${conflictedInstanceNames.instanceNames.join(', ')}`,
-          }]
-        }
-        return []
-      })
-  }).flat().toArray()
+              },
+            ]
+          }
+          return []
+        })
+    })
+    .flat()
+    .toArray()
 }

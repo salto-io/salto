@@ -1,30 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
-import { client as clientUtils, combineCustomReferenceGetters, config as configUtils, definitions } from '@salto-io/adapter-components'
+import {
+  InstanceElement,
+  Adapter,
+  Values,
+  OAuthRequestParameters,
+  OauthAccessTokenResponse,
+  ElemID,
+} from '@salto-io/adapter-api'
+import {
+  client as clientUtils,
+  combineCustomReferenceGetters,
+  config as configUtils,
+  definitions,
+} from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
-import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
+import {
+  Credentials,
+  oauthAccessTokenCredentialsType,
+  oauthRequestParametersType,
+  usernamePasswordCredentialsType,
+} from './auth'
 import {
   configType,
   ZendeskConfig,
   CLIENT_CONFIG,
   FETCH_CONFIG,
   validateFetchConfig,
+  validateOmitInactiveConfig,
   API_DEFINITIONS_CONFIG,
   DEFAULT_CONFIG,
   ZendeskFetchConfig,
@@ -66,9 +84,7 @@ see https://support.zendesk.com/hc/en-us/articles/4408845965210 for more informa
 
 const EMAIL_REGEX = /^[\w+]+([.-]?[\w+]+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
-  const domain = config.value.domain === undefined || config.value.domain === ''
-    ? undefined
-    : config.value.domain
+  const domain = config.value.domain === undefined || config.value.domain === '' ? undefined : config.value.domain
   if (config.value.authType === 'oauth') {
     return {
       accessToken: config.value.accessToken,
@@ -94,7 +110,7 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   oauthRequiredFields: ['access_token'],
 })
 
-const isValidUser = (user: string): boolean => (EMAIL_REGEX.test(user))
+const isValidUser = (user: string): boolean => EMAIL_REGEX.test(user)
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
@@ -104,13 +120,10 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     : { ...DEFAULT_CONFIG.apiDefinitions.supportedTypes, ...GUIDE_SUPPORTED_TYPES }
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
-    config?.value.apiDefinitions
+    config?.value.apiDefinitions,
   ) as configUtils.AdapterDuckTypeApiConfig
 
-  const fetch = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG.fetch,
-    config?.value.fetch
-  ) as ZendeskFetchConfig
+  const fetch = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
@@ -123,6 +136,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)
+  validateOmitInactiveConfig(adapterConfig.fetch.omitInactive, apiDefinitions)
   if (adapterConfig.deploy !== undefined) {
     validateDefaultMissingUserFallbackConfig(DEPLOY_CONFIG, adapterConfig.deploy, isValidUser)
   }
@@ -138,11 +152,7 @@ export const adapter: Adapter = {
     // This can be removed once all the workspaces configs were migrated
     const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
       // Creating new instance is required because the type is not resolved in context.config
-      new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        context.config?.value
-      ),
+      new InstanceElement(ElemID.CONFIG_NAME, configType, context.config?.value),
       DEFAULT_CONFIG,
     )
     const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
@@ -173,12 +183,10 @@ export const adapter: Adapter = {
       fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }
   },
-  validateCredentials: async config => validateCredentials(
-    credentialsFromConfig(config),
-    {
+  validateCredentials: async config =>
+    validateCredentials(credentialsFromConfig(config), {
       createConnection,
-    },
-  ),
+    }),
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,
@@ -201,6 +209,6 @@ export const adapter: Adapter = {
   configType,
   configCreator,
   getCustomReferences: combineCustomReferenceGetters(
-    _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences)
+    _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences),
   ),
 }

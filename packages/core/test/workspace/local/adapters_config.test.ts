@@ -1,24 +1,23 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { nacl, remoteMap, validator } from '@salto-io/workspace'
 import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
 import { buildLocalAdaptersConfigSource } from '../../../src/local-workspace/adapters_config'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-
 
 jest.mock('@salto-io/workspace', () => {
   const actual = jest.requireActual('@salto-io/workspace')
@@ -41,8 +40,8 @@ describe('adapters local config', () => {
 
   beforeEach(async () => {
     jest.resetAllMocks()
-    mockNaclFilesSource = createMockNaclFileSource();
-    (nacl.naclFilesSource as jest.Mock).mockResolvedValue(mockNaclFilesSource)
+    mockNaclFilesSource = createMockNaclFileSource()
+    ;(nacl.naclFilesSource as jest.Mock).mockResolvedValue(mockNaclFilesSource)
     mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: true })
 
     validationErrorsMap = {
@@ -63,7 +62,13 @@ describe('adapters local config', () => {
       isEmpty: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['isEmpty']>(),
     }
 
-    await buildLocalAdaptersConfigSource('baseDir', mockFunction<remoteMap.RemoteMapCreator>().mockResolvedValue(validationErrorsMap), true, [], [])
+    await buildLocalAdaptersConfigSource(
+      'baseDir',
+      mockFunction<remoteMap.RemoteMapCreator>().mockResolvedValue(validationErrorsMap),
+      true,
+      [],
+      [],
+    )
   })
 
   describe('initialization', () => {

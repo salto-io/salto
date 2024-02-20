@@ -1,26 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   BuiltinTypes,
-  Change, createSaltoElementErrorFromError, DeployResult,
-  Element, ElemID,
+  Change,
+  createSaltoElementErrorFromError,
+  DeployResult,
+  Element,
+  ElemID,
   getChangeData,
   InstanceElement,
   isInstanceChange,
-  isInstanceElement, ObjectType,
+  isInstanceElement,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -28,7 +32,9 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_STATUS_TYPE_NAME,
-  DEFAULT_CUSTOM_STATUSES_TYPE_NAME, HOLD_CATEGORY, OPEN_CATEGORY,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  HOLD_CATEGORY,
+  OPEN_CATEGORY,
   PENDING_CATEGORY,
   SOLVED_CATEGORY,
   ZENDESK,
@@ -68,19 +74,17 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    const defaultCustomStatusesType = new ObjectType(
-      {
-        elemID: new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME),
-        fields: {
-          [PENDING_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-          [SOLVED_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-          [OPEN_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-          [HOLD_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-        },
-        isSettings: true,
-        path: [ZENDESK, elementsUtils.TYPES_PATH, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
-      }
-    )
+    const defaultCustomStatusesType = new ObjectType({
+      elemID: new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME),
+      fields: {
+        [PENDING_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+        [SOLVED_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+        [OPEN_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+        [HOLD_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+      },
+      isSettings: true,
+      path: [ZENDESK, elementsUtils.TYPES_PATH, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
+    })
 
     const defaultCustomStatusesInstance = new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -106,12 +110,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes,
       change => CUSTOM_STATUS_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
-    const customStatusesDeployResult = await deployChanges(
-      customStatusChanges,
-      async change => {
-        await deployChange(change, client, config.apiDefinitions)
-      }
-    )
+    const customStatusesDeployResult = await deployChanges(customStatusChanges, async change => {
+      await deployChange(change, client, config.apiDefinitions)
+    })
     const [defaultCustomStatusChanges, leftoverChanges] = _.partition(
       firstLeftoverChanges,
       change => DEFAULT_CUSTOM_STATUSES_TYPE_NAME === getChangeData(change).elemID.typeName,
@@ -132,11 +133,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           data: { ids: defaults },
         })
       } catch (e) {
-        error.push(createSaltoElementErrorFromError({
-          error: e,
-          severity: 'Error',
-          elemID: defaultCustomStatusChange.elemID,
-        }))
+        error.push(
+          createSaltoElementErrorFromError({
+            error: e,
+            severity: 'Error',
+            elemID: defaultCustomStatusChange.elemID,
+          }),
+        )
       }
     }
     const appliedChanges = _.isEmpty(error) ? defaultCustomStatusChanges : []

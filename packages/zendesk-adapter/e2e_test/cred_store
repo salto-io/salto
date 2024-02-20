@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require('@salto-io/e2e-credentials-store').cli.main({
   adapters: {
-    zendesk: require('../dist/e2e_test/credentials_store/adapter').default
+    zendesk: require('../dist/e2e_test/credentials_store/adapter').default,
   },
 })

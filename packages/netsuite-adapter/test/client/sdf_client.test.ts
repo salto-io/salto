@@ -1,35 +1,57 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { readFile, writeFile, mkdirp, rm, rename } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/config/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
-import SdfClient, {
-  COMMANDS,
-  MINUTE_IN_MILLISECONDS,
-} from '../../src/client/sdf_client'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, SDFObjectNode, TemplateCustomTypeInfo } from '../../src/client/types'
+import SdfClient, { COMMANDS, MINUTE_IN_MILLISECONDS } from '../../src/client/sdf_client'
+import {
+  CustomizationInfo,
+  CustomTypeInfo,
+  FileCustomizationInfo,
+  FolderCustomizationInfo,
+  SdfDeployParams,
+  SDFObjectNode,
+  TemplateCustomTypeInfo,
+} from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config/constants'
-import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
+import {
+  FeaturesDeployError,
+  ManifestValidationError,
+  MissingManifestFeaturesError,
+  ObjectsDeployError,
+  SettingsDeployError,
+} from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, OBJECTS_DIR_FILES, readFileMockFunction, statMockFunction } from './mocks'
+import {
+  MOCK_FEATURES_XML,
+  MOCK_FILE_ATTRS_PATH,
+  MOCK_FILE_PATH,
+  MOCK_FOLDER_ATTRS_PATH,
+  MOCK_FOLDER_PATH,
+  MOCK_MANIFEST_VALID_DEPENDENCIES,
+  MOCK_TEMPLATE_CONTENT,
+  OBJECTS_DIR_FILES,
+  readFileMockFunction,
+  statMockFunction,
+} from './mocks'
 import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
@@ -101,8 +123,7 @@ jest.mock('../../src/client/file_cabinet_utils', () => ({
 const mockLargeFoldersToExclude = largeFoldersToExclude as jest.Mock
 
 describe('sdf client', () => {
-  const createProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
+  const createProjectCommandMatcher = expect.objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SAVE_TOKEN,
     arguments: expect.objectContaining({
@@ -128,36 +149,27 @@ describe('sdf client', () => {
   })
   const typeNamesQueries = { originFetchQuery: typeNamesQuery, updatedFetchQuery: typeNamesQuery }
 
-  const importObjectsCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
-  const importConfigurationCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.IMPORT_CONFIGURATION })
-  const listObjectsCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.LIST_OBJECTS })
-  const listFilesCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.LIST_FILES })
-  const importFilesCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.IMPORT_FILES })
-  const addDependenciesCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
-  const deployProjectCommandMatcher = expect
-    .objectContaining({
-      commandName: COMMANDS.DEPLOY_PROJECT,
-      arguments: { accountspecificvalues: 'WARNING' },
-    })
-  const deploySuiteAppProjectCommandMatcher = expect
-    .objectContaining({
-      commandName: COMMANDS.DEPLOY_PROJECT,
-      arguments: {},
-    })
-  const validateProjectCommandMatcher = expect
-    .objectContaining({
-      commandName: COMMANDS.VALIDATE_PROJECT,
-      arguments: {
-        accountspecificvalues: 'WARNING',
-        server: true,
-      },
-    })
+  const importObjectsCommandMatcher = expect.objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
+  const importConfigurationCommandMatcher = expect.objectContaining({ commandName: COMMANDS.IMPORT_CONFIGURATION })
+  const listObjectsCommandMatcher = expect.objectContaining({ commandName: COMMANDS.LIST_OBJECTS })
+  const listFilesCommandMatcher = expect.objectContaining({ commandName: COMMANDS.LIST_FILES })
+  const importFilesCommandMatcher = expect.objectContaining({ commandName: COMMANDS.IMPORT_FILES })
+  const addDependenciesCommandMatcher = expect.objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
+  const deployProjectCommandMatcher = expect.objectContaining({
+    commandName: COMMANDS.DEPLOY_PROJECT,
+    arguments: { accountspecificvalues: 'WARNING' },
+  })
+  const deploySuiteAppProjectCommandMatcher = expect.objectContaining({
+    commandName: COMMANDS.DEPLOY_PROJECT,
+    arguments: {},
+  })
+  const validateProjectCommandMatcher = expect.objectContaining({
+    commandName: COMMANDS.VALIDATE_PROJECT,
+    arguments: {
+      accountspecificvalues: 'WARNING',
+      server: true,
+    },
+  })
   const deleteAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.MANAGE_AUTH,
     arguments: expect.objectContaining({
@@ -171,8 +183,7 @@ describe('sdf client', () => {
 
   it('should set command timeout when initializing client', () => {
     mockClient()
-    expect(mockSetCommandTimeout)
-      .toHaveBeenCalledWith(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES * MINUTE_IN_MILLISECONDS)
+    expect(mockSetCommandTimeout).toHaveBeenCalledWith(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES * MINUTE_IN_MILLISECONDS)
   })
 
   describe('validateCredentials', () => {
@@ -201,14 +212,17 @@ describe('sdf client', () => {
       const credentialsWithSpaces = expect.objectContaining({
         commandName: COMMANDS.SAVE_TOKEN,
         arguments: expect.objectContaining({
-          account: '\'account with space\'',
+          account: "'account with space'",
           tokenid: DUMMY_CREDENTIALS.tokenId,
           tokensecret: DUMMY_CREDENTIALS.tokenSecret,
           authid: expect.anything(),
         }),
       })
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const { accountId } = await SdfClient.validateCredentials({ ...DUMMY_CREDENTIALS, accountId: 'account with space' })
+      const { accountId } = await SdfClient.validateCredentials({
+        ...DUMMY_CREDENTIALS,
+        accountId: 'account with space',
+      })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, credentialsWithSpaces)
       expect(accountId).toEqual('account with space')
@@ -223,9 +237,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(
-        typeNames, typeNamesQueries
-      )).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -238,9 +250,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(
-        mockClient().getCustomObjects(typeNames, typeNamesQueries)
-      ).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -374,32 +384,35 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a b',
-      }))
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a b',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a',
-      }))
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'b',
-      }))
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'b',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
-      expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
     it('should retry chunks with size 1 when IMPORT_OBJECTS has failed', async () => {
-      const ids = [
-        { type: 'addressForm', scriptId: 'a' },
-      ]
+      const ids = [{ type: 'addressForm', scriptId: 'a' }]
       let numberOfTries = 0
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -432,26 +445,31 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a',
-      }))
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a',
-      }))
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a',
-      }))
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
-      expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
     it('should split to chunks without mixing different types in the same chunk', async () => {
@@ -486,26 +504,31 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'a b',
-      }))
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'a b',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-        scriptid: 'c',
-      }))
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'addressForm',
+          scriptid: 'c',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
-        type: 'advancedpdftemplate',
-        scriptid: 'd',
-      }))
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'advancedpdftemplate',
+          scriptid: 'd',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
-      expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
     it('should exclude types with too many instances', async () => {
@@ -541,14 +564,15 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'advancedpdftemplate',
-        scriptid: 'd',
-      }))
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(
+        expect.objectContaining({
+          type: 'advancedpdftemplate',
+          scriptid: 'd',
+        }),
+      )
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importConfigurationCommandMatcher)
-      expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed', async () => {
@@ -580,32 +604,36 @@ describe('sdf client', () => {
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
       expect(customizationInfos).toHaveLength(3)
-      expect(customizationInfos).toEqual([{
-        typeName: 'addressForm',
-        scriptId: 'a',
-        values: {
-          '@_filename': 'a.xml',
+      expect(customizationInfos).toEqual([
+        {
+          typeName: 'addressForm',
+          scriptId: 'a',
+          values: {
+            '@_filename': 'a.xml',
+          },
+          fileContent: MOCK_TEMPLATE_CONTENT,
+          fileExtension: 'html',
         },
-        fileContent: MOCK_TEMPLATE_CONTENT,
-        fileExtension: 'html',
-      },
-      {
-        typeName: 'addressForm',
-        scriptId: 'b',
-        values: {
-          '@_filename': 'b.xml',
+        {
+          typeName: 'addressForm',
+          scriptId: 'b',
+          values: {
+            '@_filename': 'b.xml',
+          },
         },
-      },
-      {
-        scriptId: CONFIG_FEATURES,
-        typeName: CONFIG_FEATURES,
-        values: {
-          feature: [{
-            id: 'SUITEAPPCONTROLCENTER',
-            status: 'ENABLED',
-          }],
+        {
+          scriptId: CONFIG_FEATURES,
+          typeName: CONFIG_FEATURES,
+          values: {
+            feature: [
+              {
+                id: 'SUITEAPPCONTROLCENTER',
+                status: 'ENABLED',
+              },
+            ],
+          },
         },
-      }])
+      ])
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -648,50 +676,54 @@ describe('sdf client', () => {
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
-      expect(customizationInfos).toEqual([{
-        typeName: 'addressForm',
-        scriptId: 'a',
-        values: {
-          '@_filename': 'a.xml',
+      expect(customizationInfos).toEqual([
+        {
+          typeName: 'addressForm',
+          scriptId: 'a',
+          values: {
+            '@_filename': 'a.xml',
+          },
+          fileContent: MOCK_TEMPLATE_CONTENT,
+          fileExtension: 'html',
         },
-        fileContent: MOCK_TEMPLATE_CONTENT,
-        fileExtension: 'html',
-      },
-      {
-        typeName: 'addressForm',
-        scriptId: 'b',
-        values: {
-          '@_filename': 'b.xml',
+        {
+          typeName: 'addressForm',
+          scriptId: 'b',
+          values: {
+            '@_filename': 'b.xml',
+          },
         },
-      },
-      {
-        scriptId: CONFIG_FEATURES,
-        typeName: CONFIG_FEATURES,
-        values: {
-          feature: [{
-            id: 'SUITEAPPCONTROLCENTER',
-            status: 'ENABLED',
-          }],
+        {
+          scriptId: CONFIG_FEATURES,
+          typeName: CONFIG_FEATURES,
+          values: {
+            feature: [
+              {
+                id: 'SUITEAPPCONTROLCENTER',
+                status: 'ENABLED',
+              },
+            ],
+          },
         },
-      },
-      {
-        typeName: 'addressForm',
-        scriptId: 'a',
-        values: {
-          '@_filename': 'a.xml',
-          [APPLICATION_ID]: 'a.b.c',
+        {
+          typeName: 'addressForm',
+          scriptId: 'a',
+          values: {
+            '@_filename': 'a.xml',
+            [APPLICATION_ID]: 'a.b.c',
+          },
+          fileContent: MOCK_TEMPLATE_CONTENT,
+          fileExtension: 'html',
         },
-        fileContent: MOCK_TEMPLATE_CONTENT,
-        fileExtension: 'html',
-      },
-      {
-        typeName: 'addressForm',
-        scriptId: 'b',
-        values: {
-          '@_filename': 'b.xml',
-          [APPLICATION_ID]: 'a.b.c',
+        {
+          typeName: 'addressForm',
+          scriptId: 'b',
+          values: {
+            '@_filename': 'b.xml',
+            [APPLICATION_ID]: 'a.b.c',
+          },
         },
-      }])
+      ])
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, createProjectCommandMatcher)
@@ -741,7 +773,7 @@ describe('sdf client', () => {
                   type: 'csvimport',
                   result: {
                     code: 'FAILED',
-                    message: 'Une erreur inattendue s\'est produite.',
+                    message: "Une erreur inattendue s'est produite.",
                   },
                 },
               },
@@ -790,14 +822,12 @@ describe('sdf client', () => {
       })
 
       const query = buildNetsuiteQuery({
-        types: [
-          { name: 'savedcsvimport' },
-          { name: 'advancedpdftemplate' },
-        ],
+        types: [{ name: 'savedcsvimport' }, { name: 'advancedpdftemplate' }],
       })
-      const {
-        failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
+      const { failedTypes } = await mockClient().getCustomObjects(typeNames, {
+        originFetchQuery: query,
+        updatedFetchQuery: query,
+      })
       expect(failedTypes).toEqual({
         lockedError: {
           savedcsvimport: ['d'],
@@ -832,16 +862,18 @@ describe('sdf client', () => {
             return Promise.resolve({
               isSuccess: () => true,
               data: {
-                failedImports: [{
-                  customObject: {
-                    id: context.arguments.scriptid,
-                    type: 'addressForm',
-                    result: {
-                      code: 'FAILED',
-                      message: 'An unexpected error has occurred',
+                failedImports: [
+                  {
+                    customObject: {
+                      id: context.arguments.scriptid,
+                      type: 'addressForm',
+                      result: {
+                        code: 'FAILED',
+                        message: 'An unexpected error has occurred',
+                      },
                     },
                   },
-                }],
+                ],
               },
             })
           }
@@ -853,9 +885,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const {
-        failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      const { failedTypes } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
@@ -888,39 +918,45 @@ describe('sdf client', () => {
       })
 
       const query = buildNetsuiteQuery({
-        types: [
-          { name: 'addressForm', ids: ['a'] },
-        ],
+        types: [{ name: 'addressForm', ids: ['a'] }],
       })
       await mockClient().getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
-      expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
-        commandName: COMMANDS.LIST_OBJECTS,
-        arguments: {
-          type: 'addressForm',
-        },
-      }))
-
-      expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
-        commandName: COMMANDS.IMPORT_OBJECTS,
-        arguments: expect.objectContaining({
-          type: 'addressForm',
-          scriptid: 'a',
+      expect(mockExecuteAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          commandName: COMMANDS.LIST_OBJECTS,
+          arguments: {
+            type: 'addressForm',
+          },
         }),
-      }))
+      )
 
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(expect.objectContaining({
-        commandName: COMMANDS.IMPORT_OBJECTS,
-        arguments: expect.objectContaining({
-          type: 'addressForm',
-          scriptid: 'b',
+      expect(mockExecuteAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          commandName: COMMANDS.IMPORT_OBJECTS,
+          arguments: expect.objectContaining({
+            type: 'addressForm',
+            scriptid: 'a',
+          }),
         }),
-      }))
+      )
+
+      expect(mockExecuteAction).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          commandName: COMMANDS.IMPORT_OBJECTS,
+          arguments: expect.objectContaining({
+            type: 'addressForm',
+            scriptid: 'b',
+          }),
+        }),
+      )
     })
 
     it('should do nothing of no files are matched', async () => {
       const netsuiteQuery = buildNetsuiteQuery({ types: [] })
-      const { elements, failedToFetchAllAtOnce } = await mockClient()
-        .getCustomObjects(typeNames, { originFetchQuery: netsuiteQuery, updatedFetchQuery: netsuiteQuery })
+      const { elements, failedToFetchAllAtOnce } = await mockClient().getCustomObjects(typeNames, {
+        originFetchQuery: netsuiteQuery,
+        updatedFetchQuery: netsuiteQuery,
+      })
       expect(elements).toHaveLength(0)
       expect(failedToFetchAllAtOnce).toBeFalsy()
       expect(mockExecuteAction).not.toHaveBeenCalledWith()
@@ -1007,13 +1043,12 @@ describe('sdf client', () => {
 
     it('should fail to importFiles when failing to import a certain file', async () => {
       const failedPath = 'error'
-      const filesPathResult = [
-        MOCK_FILE_PATH,
-        failedPath,
-      ]
+      const filesPathResult = [MOCK_FILE_PATH, failedPath]
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+        if (
+          context.commandName === COMMANDS.LIST_FILES &&
+          context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`
+        ) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
@@ -1068,18 +1103,17 @@ describe('sdf client', () => {
 
     it('should succeed when having duplicated paths', async () => {
       mockExecuteAction.mockImplementation(context => {
-        const filesPathResult = [
-          MOCK_FILE_PATH,
-        ]
-        if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+        const filesPathResult = [MOCK_FILE_PATH]
+        if (
+          context.commandName === COMMANDS.LIST_FILES &&
+          context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`
+        ) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_FILES
-          && _.isEqual(context.arguments.paths, filesPathResult)) {
+        if (context.commandName === COMMANDS.IMPORT_FILES && _.isEqual(context.arguments.paths, filesPathResult)) {
           return Promise.resolve({
             isSuccess: () => true,
             data: {
@@ -1109,45 +1143,47 @@ describe('sdf client', () => {
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(elements).toHaveLength(4)
-      expect(elements).toEqual([{
-        typeName: 'file',
-        values: {
-          description: 'file description',
+      expect(elements).toEqual([
+        {
+          typeName: 'file',
+          values: {
+            description: 'file description',
+          },
+          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
+          fileContent: 'dummy file content',
+          hadMissingAttributes: false,
         },
-        path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
-        fileContent: 'dummy file content',
-        hadMissingAttributes: false,
-      },
-      {
-        typeName: 'folder',
-        values: {
-          description: 'folder description',
+        {
+          typeName: 'folder',
+          values: {
+            description: 'folder description',
+          },
+          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+          hadMissingAttributes: false,
         },
-        path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-        hadMissingAttributes: false,
-      },
-      {
-        typeName: 'folder',
-        values: {
-          bundleable: 'F',
-          description: '',
-          isinactive: 'F',
-          isprivate: 'F',
+        {
+          typeName: 'folder',
+          values: {
+            bundleable: 'F',
+            description: '',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates'],
+          hadMissingAttributes: true,
         },
-        path: ['Templates'],
-        hadMissingAttributes: true,
-      },
-      {
-        typeName: 'folder',
-        values: {
-          bundleable: 'F',
-          description: '',
-          isinactive: 'F',
-          isprivate: 'F',
+        {
+          typeName: 'folder',
+          values: {
+            bundleable: 'F',
+            description: '',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates', 'E-mail Templates'],
+          hadMissingAttributes: true,
         },
-        path: ['Templates', 'E-mail Templates'],
-        hadMissingAttributes: true,
-      }])
+      ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1159,11 +1195,11 @@ describe('sdf client', () => {
 
     it('should filter out paths that do not match the query', async () => {
       mockExecuteAction.mockImplementation(context => {
-        const filesPathResult = [
-          MOCK_FILE_PATH,
-        ]
-        if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+        const filesPathResult = [MOCK_FILE_PATH]
+        if (
+          context.commandName === COMMANDS.LIST_FILES &&
+          context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`
+        ) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
@@ -1171,9 +1207,11 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const query = notQuery(buildNetsuiteQuery({
-        fileCabinet: [MOCK_FILE_PATH],
-      }))
+      const query = notQuery(
+        buildNetsuiteQuery({
+          fileCabinet: [MOCK_FILE_PATH],
+        }),
+      )
       const { elements, failedPaths } = await client.importFileCabinetContent(query, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
@@ -1188,10 +1226,12 @@ describe('sdf client', () => {
     })
 
     it('should do nothing of no files are matched', async () => {
-      const { elements, failedPaths } = await client
-        .importFileCabinetContent(buildNetsuiteQuery({
+      const { elements, failedPaths } = await client.importFileCabinetContent(
+        buildNetsuiteQuery({
           fileCabinet: [],
-        }), maxFileCabinetSizeInGB)
+        }),
+        maxFileCabinetSizeInGB,
+      )
 
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual({ lockedError: [], otherError: [], largeFolderError: [] })
@@ -1200,18 +1240,17 @@ describe('sdf client', () => {
 
     it('should return only loaded files', async () => {
       mockExecuteAction.mockImplementation(context => {
-        const filesPathResult = [
-          MOCK_FILE_PATH,
-        ]
-        if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+        const filesPathResult = [MOCK_FILE_PATH]
+        if (
+          context.commandName === COMMANDS.LIST_FILES &&
+          context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`
+        ) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_FILES
-          && _.isEqual(context.arguments.paths, filesPathResult)) {
+        if (context.commandName === COMMANDS.IMPORT_FILES && _.isEqual(context.arguments.paths, filesPathResult)) {
           return Promise.resolve({
             isSuccess: () => true,
             data: {
@@ -1237,32 +1276,33 @@ describe('sdf client', () => {
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(1)
-      expect(elements).toEqual([{
-        typeName: 'folder',
-        values: {
-          description: 'folder description',
+      expect(elements).toEqual([
+        {
+          typeName: 'folder',
+          values: {
+            description: 'folder description',
+          },
+          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+          hadMissingAttributes: false,
         },
-        path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-        hadMissingAttributes: false,
-      }])
+      ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(rmMock).toHaveBeenCalledTimes(1)
     })
 
     it('should filter out paths under excluded large folders', async () => {
       mockExecuteAction.mockImplementation(context => {
-        const filesPathResult = [
-          MOCK_FILE_PATH,
-        ]
-        if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+        const filesPathResult = [MOCK_FILE_PATH]
+        if (
+          context.commandName === COMMANDS.LIST_FILES &&
+          context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`
+        ) {
           return Promise.resolve({
             isSuccess: () => true,
             data: filesPathResult,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_FILES
-          && _.isEqual(context.arguments.paths, filesPathResult)) {
+        if (context.commandName === COMMANDS.IMPORT_FILES && _.isEqual(context.arguments.paths, filesPathResult)) {
           return Promise.resolve({
             isSuccess: () => true,
             data: {
@@ -1287,11 +1327,14 @@ describe('sdf client', () => {
       })
       mockLargeFoldersToExclude.mockReturnValue([MOCK_FOLDER_PATH])
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
-      expect(mockLargeFoldersToExclude).toHaveBeenCalledWith([
-        { path: MOCK_FILE_PATH, size: 33 },
-        { path: MOCK_FILE_ATTRS_PATH, size: 0 },
-        { path: MOCK_FOLDER_ATTRS_PATH, size: 0 },
-      ], maxFileCabinetSizeInGB)
+      expect(mockLargeFoldersToExclude).toHaveBeenCalledWith(
+        [
+          { path: MOCK_FILE_PATH, size: 33 },
+          { path: MOCK_FILE_ATTRS_PATH, size: 0 },
+          { path: MOCK_FOLDER_ATTRS_PATH, size: 0 },
+        ],
+        maxFileCabinetSizeInGB,
+      )
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [MOCK_FOLDER_PATH], otherError: [] })
     })
@@ -1324,20 +1367,22 @@ describe('sdf client', () => {
         const scriptId = 'filename'
         customTypeInfo.scriptId = scriptId
         testGraph.addNodes([
-          new GraphNode<SDFObjectNode>(
-            'name',
-            {
-              serviceid: scriptId,
-              changeType: 'addition',
-              customizationInfo: customTypeInfo,
-            } as unknown as SDFObjectNode,
-          ),
+          new GraphNode<SDFObjectNode>('name', {
+            serviceid: scriptId,
+            changeType: 'addition',
+            customizationInfo: customTypeInfo,
+          } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(3)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
-          '<typeName><key>val</key></typeName>')
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining(`${scriptId}.xml`),
+          '<typeName><key>val</key></typeName>',
+        )
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining('manifest.xml'),
+          MOCK_MANIFEST_VALID_DEPENDENCIES,
+        )
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -1350,21 +1395,23 @@ describe('sdf client', () => {
         const scriptId = 'filename'
         customTypeInfo.scriptId = scriptId
         testGraph.addNodes([
-          new GraphNode<SDFObjectNode>(
-            scriptId,
-            {
-              serviceid: scriptId,
-              changeType: 'addition',
-              customizationInfo: customTypeInfo,
-            } as unknown as SDFObjectNode,
-          ),
+          new GraphNode<SDFObjectNode>(scriptId, {
+            serviceid: scriptId,
+            changeType: 'addition',
+            customizationInfo: customTypeInfo,
+          } as unknown as SDFObjectNode),
         ])
         await client.deploy('a.b.c', DEFAULT_DEPLOY_PARAMS[1], DEFAULT_DEPLOY_PARAMS[2])
         expect(renameMock).toHaveBeenCalled()
         expect(writeFileMock).toHaveBeenCalledTimes(3)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
-          '<typeName><key>val</key></typeName>')
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining(`${scriptId}.xml`),
+          '<typeName><key>val</key></typeName>',
+        )
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining('manifest.xml'),
+          MOCK_MANIFEST_VALID_DEPENDENCIES,
+        )
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -1384,22 +1431,26 @@ describe('sdf client', () => {
           fileExtension: 'html',
         } as TemplateCustomTypeInfo
         testGraph.addNodes([
-          new GraphNode<SDFObjectNode>(
-            scriptId,
-            {
-              serviceid: scriptId,
-              changeType: 'addition',
-              customizationInfo: templateCustomTypeInfo,
-            } as unknown as SDFObjectNode,
-          ),
+          new GraphNode<SDFObjectNode>(scriptId, {
+            serviceid: scriptId,
+            changeType: 'addition',
+            customizationInfo: templateCustomTypeInfo,
+          } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(4)
-        expect(writeFileMock)
-          .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
-        expect(writeFileMock)
-          .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.template.html`), MOCK_TEMPLATE_CONTENT)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining(`${scriptId}.xml`),
+          '<typeName><key>val</key></typeName>',
+        )
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining(`${scriptId}.template.html`),
+          MOCK_TEMPLATE_CONTENT,
+        )
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining('manifest.xml'),
+          MOCK_MANIFEST_VALID_DEPENDENCIES,
+        )
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -1411,8 +1462,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw errorMessage
         })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
-          .toThrow(new Error(errorMessage))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(new Error(errorMessage))
       })
 
       it('should throw Error object', async () => {
@@ -1420,22 +1470,14 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw new Error(errorMessage)
         })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
-          .toThrow(new Error(errorMessage))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(new Error(errorMessage))
       })
       it('should throw error when sdf result contain error in other language', async () => {
-        const sdfResult = [
-          'Starting deploy',
-          '*** ERREUR ***',
-          'some error',
-        ]
+        const sdfResult = ['Starting deploy', '*** ERREUR ***', 'some error']
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
-          .toThrow(new Error(
-            'Starting deploy\n'
-            + '*** ERREUR ***\n'
-            + 'some error'
-          ))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(
+          new Error('Starting deploy\n*** ERREUR ***\nsome error'),
+        )
       })
       it('should throw ObjectsDeployError when deploy failed on object validation', async () => {
         const errorMessage = `
@@ -1476,15 +1518,21 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
-            'custform_114_t1441298_782',
-            [{
-              message: `An error occurred during custom object validation. (custform_114_t1441298_782)
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(
+            new Map([
+              [
+                'custform_114_t1441298_782',
+                [
+                  {
+                    message: `An error occurred during custom object validation. (custform_114_t1441298_782)
 File: ~/Objects/custform_114_t1441298_782.xml
         `,
-              scriptId: 'custform_114_t1441298_782',
-            }],
-          ]]))
+                    scriptId: 'custform_114_t1441298_782',
+                  },
+                ],
+              ],
+            ]),
+          )
         }
         expect(isRejected).toBe(true)
       })
@@ -1521,15 +1569,21 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
-            'custform_114_t1441298_782',
-            [{
-              message: `Une erreur s'est produite lors de la validation de l'objet personnalis.. (custform_114_t1441298_782)
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(
+            new Map([
+              [
+                'custform_114_t1441298_782',
+                [
+                  {
+                    message: `Une erreur s'est produite lors de la validation de l'objet personnalis.. (custform_114_t1441298_782)
 File: ~/Objects/custform_114_t1441298_782.xml
         `,
-              scriptId: 'custform_114_t1441298_782',
-            }],
-          ]]))
+                    scriptId: 'custform_114_t1441298_782',
+                  },
+                ],
+              ],
+            ]),
+          )
         }
         expect(isRejected).toBe(true)
       })
@@ -1581,15 +1635,21 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
-            'custform_15_t1049933_143',
-            [{
-              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(
+            new Map([
+              [
+                'custform_15_t1049933_143',
+                [
+                  {
+                    message: `An unexpected error has occurred. (custform_15_t1049933_143)
 File: ~/Objects/custform_15_t1049933_143.xml
 `,
-              scriptId: 'custform_15_t1049933_143',
-            }],
-          ]]))
+                    scriptId: 'custform_15_t1049933_143',
+                  },
+                ],
+              ],
+            ]),
+          )
         }
         expect(isRejected).toBe(true)
       })
@@ -1639,15 +1699,21 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
-            'custform_15_t1049933_143',
-            [{
-              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(
+            new Map([
+              [
+                'custform_15_t1049933_143',
+                [
+                  {
+                    message: `An unexpected error has occurred. (custform_15_t1049933_143)
 File: ~/Objects/custform_15_t1049933_143.xml
 `,
-              scriptId: 'custform_15_t1049933_143',
-            }],
-          ]]))
+                    scriptId: 'custform_15_t1049933_143',
+                  },
+                ],
+              ],
+            ]),
+          )
         }
         expect(isRejected).toBe(true)
       })
@@ -1798,13 +1864,21 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
-            'customrecord_flo_customization',
-            [{ message: `An error occurred during custom object update.
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(
+            new Map([
+              [
+                'customrecord_flo_customization',
+                [
+                  {
+                    message: `An error occurred during custom object update.
 File: ~/Objects/customrecord_flo_customization.xml
 Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcustomfield)
-` }],
-          ]]))
+`,
+                  },
+                ],
+              ],
+            ]),
+          )
         }
         expect(isRejected).toBe(true)
       })
@@ -1858,12 +1932,20 @@ File: ~/AccountConfiguration/features.xml`
         } catch (e) {
           isRejected = true
           expect(e instanceof SettingsDeployError).toBeTruthy()
-          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Map([[
-            'companyFeatures',
-            [{ message: `An error occurred during configuration validation.
+          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(
+            new Map([
+              [
+                'companyFeatures',
+                [
+                  {
+                    message: `An error occurred during configuration validation.
 Details: Disable the SUPPLYCHAINPREDICTEDRISKS(Supply Chain Predicted Risks) feature before disabling the SUPPLYCHAINCONTROLTOWER(Supply Chain Control Tower) feature.
-File: ~/AccountConfiguration/features.xml` }],
-          ]]))
+File: ~/AccountConfiguration/features.xml`,
+                  },
+                ],
+              ],
+            ]),
+          )
         }
         expect(isRejected).toBe(true)
       })
@@ -1880,23 +1962,28 @@ File: ~/AccountConfiguration/features.xml` }],
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         }
         testGraph.addNodes([
-          new GraphNode(
-            'name',
-            {
-              serviceid: 'Templates/E-mail Templates/InnerFolder',
-              changeType: 'addition',
-              customizationInfo: folderCustomizationInfo,
-            } as unknown as SDFObjectNode,
-          ),
+          new GraphNode('name', {
+            serviceid: 'Templates/E-mail Templates/InnerFolder',
+            changeType: 'addition',
+            customizationInfo: folderCustomizationInfo,
+          } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
-        expect(mkdirpMock)
-          .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
+        expect(mkdirpMock).toHaveBeenCalledWith(
+          expect.stringContaining(
+            `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`,
+          ),
+        )
         expect(writeFileMock).toHaveBeenCalledTimes(3)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
-          '<folder><description>folder description</description></folder>')
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
+          '<folder><description>folder description</description></folder>',
+        )
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining('manifest.xml'),
+          MOCK_MANIFEST_VALID_DEPENDENCIES,
+        )
         expect(rmMock).toHaveBeenCalledTimes(2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1918,27 +2005,34 @@ File: ~/AccountConfiguration/features.xml` }],
           fileContent: dummyFileContent,
         }
         testGraph.addNodes([
-          new GraphNode(
-            'name',
-            {
-              serviceid: 'Templates/E-mail Templates/InnerFolder/content.html',
-              changeType: 'addition',
-              customizationInfo: fileCustomizationInfo,
-            } as unknown as SDFObjectNode,
-          ),
+          new GraphNode('name', {
+            serviceid: 'Templates/E-mail Templates/InnerFolder/content.html',
+            changeType: 'addition',
+            customizationInfo: fileCustomizationInfo,
+          } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
-        expect(mkdirpMock)
-          .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-        expect(mkdirpMock)
-          .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
+        expect(mkdirpMock).toHaveBeenCalledWith(
+          expect.stringContaining(
+            `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`,
+          ),
+        )
+        expect(mkdirpMock).toHaveBeenCalledWith(
+          expect.stringContaining(
+            `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`,
+          ),
+        )
         expect(writeFileMock).toHaveBeenCalledTimes(4)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
-          '<file><description>file description</description></file>')
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
-          dummyFileContent)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining(MOCK_FILE_ATTRS_PATH),
+          '<file><description>file description</description></file>',
+        )
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH), dummyFileContent)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining('manifest.xml'),
+          MOCK_MANIFEST_VALID_DEPENDENCIES,
+        )
         expect(rmMock).toHaveBeenCalledTimes(2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1961,20 +2055,23 @@ File: ~/AccountConfiguration/features.xml` }],
       }
       it('should succeed', async () => {
         testGraph.addNodes([
-          new GraphNode(
-            'name',
-            {
-              serviceid: '',
-              changeType: 'addition',
-              customizationInfo: featuresCustomizationInfo,
-            } as SDFObjectNode,
-          ),
+          new GraphNode('name', {
+            serviceid: '',
+            changeType: 'addition',
+            customizationInfo: featuresCustomizationInfo,
+          } as SDFObjectNode),
         ])
-        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
+        mockExecuteAction.mockResolvedValue({
+          isSuccess: () => true,
+          data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'],
+        })
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(writeFileMock).toHaveBeenCalledWith(
+          expect.stringContaining('manifest.xml'),
+          MOCK_MANIFEST_VALID_DEPENDENCIES,
+        )
         expect(rmMock).toHaveBeenCalledTimes(2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1983,20 +2080,19 @@ File: ~/AccountConfiguration/features.xml` }],
       })
 
       it('should throw FeaturesDeployError on failed features deploy', async () => {
-        const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
+        const errorMessage =
+          'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
         testGraph.addNodes([
-          new GraphNode(
-            'name',
-            {
-              serviceid: '',
-              changeType: 'addition',
-              customizationInfo: featuresCustomizationInfo,
-            } as SDFObjectNode,
-          ),
+          new GraphNode('name', {
+            serviceid: '',
+            changeType: 'addition',
+            customizationInfo: featuresCustomizationInfo,
+          } as SDFObjectNode),
         ])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
-          .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(
+          new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']),
+        )
       })
 
       it('should throw FeaturesDeployError on failed features deploy - in other language', async () => {
@@ -2005,8 +2101,9 @@ File: ~/AccountConfiguration/features.xml` }],
           'Configurer la fonction -- La d.sactivation de la fonction SUITEAPPCONTROLCENTER(SuiteApp Control Center) a .chou.',
         ]
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessages })
-        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
-          .rejects.toThrow(new FeaturesDeployError(errorMessages[1], ['SUITEAPPCONTROLCENTER']))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects.toThrow(
+          new FeaturesDeployError(errorMessages[1], ['SUITEAPPCONTROLCENTER']),
+        )
       })
     })
 
@@ -2025,30 +2122,31 @@ File: ~/AccountConfiguration/features.xml` }],
         scriptId: scriptId2,
       }
       testGraph.addNodes([
-        new GraphNode(
-          'name1',
-          {
-            serviceid: scriptId1,
-            changeType: 'addition',
-            customizationInfo: customTypeInfo1,
-          } as unknown as SDFObjectNode,
-        ),
-        new GraphNode(
-          'name2',
-          {
-            serviceid: scriptId2,
-            changeType: 'addition',
-            customizationInfo: customTypeInfo2,
-          } as unknown as SDFObjectNode,
-        ),
+        new GraphNode('name1', {
+          serviceid: scriptId1,
+          changeType: 'addition',
+          customizationInfo: customTypeInfo1,
+        } as unknown as SDFObjectNode),
+        new GraphNode('name2', {
+          serviceid: scriptId2,
+          changeType: 'addition',
+          customizationInfo: customTypeInfo2,
+        } as unknown as SDFObjectNode),
       ])
       await client.deploy(...DEFAULT_DEPLOY_PARAMS)
       expect(writeFileMock).toHaveBeenCalledTimes(4)
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
-        '<typeName><key>val</key></typeName>')
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
-        '<typeName><key>val</key></typeName>')
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+      expect(writeFileMock).toHaveBeenCalledWith(
+        expect.stringContaining(`${scriptId1}.xml`),
+        '<typeName><key>val</key></typeName>',
+      )
+      expect(writeFileMock).toHaveBeenCalledWith(
+        expect.stringContaining(`${scriptId2}.xml`),
+        '<typeName><key>val</key></typeName>',
+      )
+      expect(writeFileMock).toHaveBeenCalledWith(
+        expect.stringContaining('manifest.xml'),
+        MOCK_MANIFEST_VALID_DEPENDENCIES,
+      )
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2058,22 +2156,16 @@ File: ~/AccountConfiguration/features.xml` }],
     describe('validate only', () => {
       const failObject = 'fail_object'
       testGraph.addNodes([
-        new GraphNode(
-          'name2',
-          {
-            serviceid: failObject,
-            changeType: 'addition',
-            customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
-          } as unknown as SDFObjectNode,
-        ),
-        new GraphNode(
-          'name2',
-          {
-            serviceid: 'successObject',
-            changeType: 'addition',
-            customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
-          } as unknown as SDFObjectNode,
-        ),
+        new GraphNode('name2', {
+          serviceid: failObject,
+          changeType: 'addition',
+          customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
+        } as unknown as SDFObjectNode),
+        new GraphNode('name2', {
+          serviceid: 'successObject',
+          changeType: 'addition',
+          customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
+        } as unknown as SDFObjectNode),
       ])
       const deployParams: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
         undefined,
@@ -2175,18 +2267,11 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
       it('should throw error when sdf result contain error in other language', async () => {
-        const sdfResult = [
-          'Starting validation',
-          '*** ERREUR ***',
-          'some error',
-        ]
+        const sdfResult = ['Starting validation', '*** ERREUR ***', 'some error']
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
-        await expect(client.deploy(...deployParams)).rejects
-          .toThrow(new Error(
-            'Starting validation\n'
-            + '*** ERREUR ***\n'
-            + 'some error'
-          ))
+        await expect(client.deploy(...deployParams)).rejects.toThrow(
+          new Error('Starting validation\n*** ERREUR ***\nsome error'),
+        )
       })
     })
   })

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Workspace } from '@salto-io/workspace'
 import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/core'
 import * as mocks from '../mocks'
@@ -23,23 +23,19 @@ import { CommandArgs } from '../../src/command_builder'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
-  initLocalWorkspace: jest.fn().mockImplementation(
-    (_baseDir: string, workspaceName: string): Workspace => {
-      if (workspaceName === 'error') throw new Error('failed')
-      return {
-        name: workspaceName,
-        uid: '',
-        currentEnv: () => 'default',
-        envs: () => ['default'],
-      } as unknown as Workspace
-    }
-  ),
+  initLocalWorkspace: jest.fn().mockImplementation((_baseDir: string, workspaceName: string): Workspace => {
+    if (workspaceName === 'error') throw new Error('failed')
+    return {
+      name: workspaceName,
+      uid: '',
+      currentEnv: () => 'default',
+      envs: () => ['default'],
+    } as unknown as Workspace
+  }),
   locateWorkspaceRoot: jest.fn(),
 }))
 
-const mockLocateWorkspaceRoot = (
-  locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
-)
+const mockLocateWorkspaceRoot = locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
 const mockInitLocalWorkspace = initLocalWorkspace as jest.MockedFunction<typeof initLocalWorkspace>
 
 jest.mock('../../src/callbacks', () => {
@@ -75,12 +71,11 @@ describe('init command', () => {
     output = cliArgs.output
   })
   describe('with interactive env input ', () => {
-    it('should invoke api\'s init', async () => {
+    it("should invoke api's init", async () => {
       await action({
         ...cliCommandArgs,
         input: {
           workspaceName: 'test',
-
         },
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
@@ -104,7 +99,7 @@ describe('init command', () => {
     })
   })
   describe('without interactive env input ', () => {
-    it('should invoke api\'s init', async () => {
+    it("should invoke api's init", async () => {
       await action({
         ...cliCommandArgs,
         input: {

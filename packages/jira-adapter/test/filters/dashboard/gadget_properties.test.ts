@@ -1,25 +1,38 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType, ReferenceExpression, Values, getChangeData, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  InstanceElement,
+  ListType,
+  ObjectType,
+  ReferenceExpression,
+  Values,
+  getChangeData,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
 import gadgetPropertiesFilter from '../../../src/filters/dashboard/gadget_properties'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, FILTER_TYPE_NAME, JIRA } from '../../../src/constants'
 
-const getConvertedGadgetType = ():ObjectType => {
+const getConvertedGadgetType = (): ObjectType => {
   const gadgetType = new ObjectType({
     elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),
   })
@@ -36,19 +49,15 @@ const getConvertedGadgetType = ():ObjectType => {
       },
     },
   })
-  gadgetPropertyType.fields.values = new Field(
-    gadgetPropertyType,
-    'values',
-    new ListType(gadgetPropertyType),
-    { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
-  )
+  gadgetPropertyType.fields.values = new Field(gadgetPropertyType, 'values', new ListType(gadgetPropertyType), {
+    [CORE_ANNOTATIONS.CREATABLE]: true,
+    [CORE_ANNOTATIONS.UPDATABLE]: true,
+  })
 
-  gadgetType.fields.properties = new Field(
-    gadgetType,
-    'properties',
-    new ListType(gadgetPropertyType),
-    { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
-  )
+  gadgetType.fields.properties = new Field(gadgetType, 'properties', new ListType(gadgetPropertyType), {
+    [CORE_ANNOTATIONS.CREATABLE]: true,
+    [CORE_ANNOTATIONS.UPDATABLE]: true,
+  })
   return gadgetType
 }
 
@@ -108,19 +117,11 @@ describe('gadgetPropertiesFilter', () => {
       { key: 'key3', values: [{ key: 'innerKey', values: [{ key: 'inner2', value: 'value3' }] }] },
     ]
 
-    dashboard = new InstanceElement(
-      'dashboard',
-      dashboardType,
-      { id: '0' }
-    )
+    dashboard = new InstanceElement('dashboard', dashboardType, { id: '0' })
 
-    instance = new InstanceElement(
-      'instance',
-      dashboardGadgetType,
-      {
-        properties: originalProperties,
-      },
-    )
+    instance = new InstanceElement('instance', dashboardGadgetType, {
+      properties: originalProperties,
+    })
     filterInst = new InstanceElement('filter', filterType, { id: '1' })
   })
 
@@ -187,7 +188,7 @@ describe('gadgetPropertiesFilter', () => {
       const changes = [toChange({ after: instance })]
       await filter.preDeploy(changes)
       const relevantChange = changes.find(
-        change => getChangeData(change).elemID.getFullName() === instance.elemID.getFullName()
+        change => getChangeData(change).elemID.getFullName() === instance.elemID.getFullName(),
       ) as AdditionChange<InstanceElement>
       expect(relevantChange.data.after.value.properties).toEqual(originalProperties)
     })
@@ -205,7 +206,7 @@ describe('gadgetPropertiesFilter', () => {
       const changes = [toChange({ after: inst })]
       await filter.preDeploy(changes)
       const relevantChange = changes.find(
-        change => getChangeData(change).elemID.getFullName() === inst.elemID.getFullName()
+        change => getChangeData(change).elemID.getFullName() === inst.elemID.getFullName(),
       ) as AdditionChange<InstanceElement>
       expect(relevantChange?.data?.after.value.properties.key2.filterId).toEqual('1')
       expect(relevantChange?.data?.after.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual({ id: '0' })
@@ -220,7 +221,7 @@ describe('gadgetPropertiesFilter', () => {
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
       const relevantChange = changes.find(
-        change => getChangeData(change).elemID.getFullName() === instance.elemID.getFullName()
+        change => getChangeData(change).elemID.getFullName() === instance.elemID.getFullName(),
       ) as AdditionChange<InstanceElement>
       expect(relevantChange?.data?.after.value.properties).toEqual(convertedProperties)
     })
@@ -240,13 +241,13 @@ describe('gadgetPropertiesFilter', () => {
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
       const relevantChange = changes.find(
-        change => getChangeData(change).elemID.getFullName() === inst.elemID.getFullName()
+        change => getChangeData(change).elemID.getFullName() === inst.elemID.getFullName(),
       ) as AdditionChange<InstanceElement>
-      expect(getChangeData(relevantChange).annotations[CORE_ANNOTATIONS.PARENT]).toEqual(
-        [new ReferenceExpression(dashboard.elemID, dashboard)]
-      )
+      expect(getChangeData(relevantChange).annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
+        new ReferenceExpression(dashboard.elemID, dashboard),
+      ])
       expect(getChangeData(relevantChange).value.properties[0].values[0].value).toEqual(
-        new ReferenceExpression(filterInst.elemID, filterInst)
+        new ReferenceExpression(filterInst.elemID, filterInst),
       )
     })
   })

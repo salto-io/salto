@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, InstanceElement, SaltoElementError, SeverityLevel, Value, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  InstanceElement,
+  SaltoElementError,
+  SeverityLevel,
+  Value,
+  getChangeData,
+  isAdditionChange,
+  isInstanceChange,
+  isModificationChange,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
@@ -36,30 +47,36 @@ type ListenersResponse = {
 
 const LISTENERS_RESPONSE_SCHEME = Joi.object({
   values: Joi.array().required(),
-}).required().unknown(true)
+})
+  .required()
+  .unknown(true)
 
-const isListenersResponse = createSchemeGuard<ListenersResponse>(LISTENERS_RESPONSE_SCHEME, 'Received an invalid script runner listeners response')
+const isListenersResponse = createSchemeGuard<ListenersResponse>(
+  LISTENERS_RESPONSE_SCHEME,
+  'Received an invalid script runner listeners response',
+)
 
 // this function rebuilds the type inside the instance based on the instance's fields
 const fixType = (
   change: Change<InstanceElement>,
-  scriptRunnerApiDefinitions: JiraDuckTypeConfig
-): Change<InstanceElement> => ({
-  action: change.action,
-  data: _.mapValues(change.data, (instance: InstanceElement) =>
-    replaceInstanceTypeForDeploy({
-      instance,
-      config: scriptRunnerApiDefinitions,
-    })),
-} as Change<InstanceElement>)
-
+  scriptRunnerApiDefinitions: JiraDuckTypeConfig,
+): Change<InstanceElement> =>
+  ({
+    action: change.action,
+    data: _.mapValues(change.data, (instance: InstanceElement) =>
+      replaceInstanceTypeForDeploy({
+        instance,
+        config: scriptRunnerApiDefinitions,
+      }),
+    ),
+  }) as Change<InstanceElement>
 
 export const getValuesToDeploy = async ({
   changes,
   valuesFromService,
   identifier,
   scriptRunnerApiDefinitions,
-}:{
+}: {
   changes: Change[]
   valuesFromService: Value[]
   identifier: string
@@ -121,8 +138,7 @@ export const getValuesToDeploy = async ({
       const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues)
       const instance = getChangeData(resolvedChange)
       // using find Index as the indices change when we remove elements
-      const index = valuesToDeploy
-        .findIndex(value => value[identifier] === instance.value[identifier])
+      const index = valuesToDeploy.findIndex(value => value[identifier] === instance.value[identifier])
       if (index !== -1) {
         valuesToDeploy.splice(index, 1)
         appliedChanges.push(change)
@@ -151,8 +167,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
 
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE,
     )
     if (relevantChanges.length === 0) {
       return {
@@ -162,10 +177,9 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
     }
     let valuesFromService: Value[]
     try {
-      const response = await scriptRunnerClient
-        .get({
-          url: '/sr-dispatcher/jira/admin/token/scriptevents',
-        })
+      const response = await scriptRunnerClient.get({
+        url: '/sr-dispatcher/jira/admin/token/scriptevents',
+      })
       if (!isListenersResponse(response.data)) {
         throw new Error('Received an invalid script runner listeners response')
       }
@@ -174,13 +188,11 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
       return {
         leftoverChanges,
         deployResult: {
-          errors: relevantChanges
-            .map(getChangeData)
-            .map(instance => ({
-              severity: 'Error' as SeverityLevel,
-              message: 'Error getting other script-listeners information from the service',
-              elemID: instance.elemID,
-            })),
+          errors: relevantChanges.map(getChangeData).map(instance => ({
+            severity: 'Error' as SeverityLevel,
+            message: 'Error getting other script-listeners information from the service',
+            elemID: instance.elemID,
+          })),
           appliedChanges: [],
         },
       }
@@ -199,13 +211,13 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : e
       log.error(`Failed to put script runner listeners with the error: ${errorMessage}`)
-      errors.push(...appliedChanges
-        .map(getChangeData)
-        .map(instance => ({
+      errors.push(
+        ...appliedChanges.map(getChangeData).map(instance => ({
           severity: 'Error' as SeverityLevel,
           message: `${errorMessage}`,
           elemID: instance.elemID,
-        })))
+        })),
+      )
       return {
         deployResult: { appliedChanges: [], errors },
         leftoverChanges,

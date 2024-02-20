@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   DeployResult,
@@ -22,8 +22,11 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
-  isModificationChange, ModificationChange,
-  ReadOnlyElementsSource, ReferenceExpression, toChange,
+  isModificationChange,
+  ModificationChange,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -31,16 +34,11 @@ import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import {
-  ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME,
-  TICKET_FORM_TYPE_NAME,
-  ZENDESK,
-} from '../constants'
+import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
 
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
 const log = logger(module)
-
 
 type Child = {
   // eslint-disable-next-line camelcase
@@ -67,12 +65,7 @@ const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): 
   }
 
   const accountFeatures = await elementSource.get(
-    new ElemID(
-      ZENDESK,
-      ACCOUNT_FEATURES_TYPE_NAME,
-      'instance',
-      ElemID.CONFIG_NAME
-    )
+    new ElemID(ZENDESK, ACCOUNT_FEATURES_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
   )
 
   if (!isInstanceElement(accountFeatures)) {
@@ -92,38 +85,43 @@ const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): 
  */
 const isInvalidTicketForm = (
   instanceValue: Record<string, unknown>,
-  hasCustomStatusesEnabled: boolean
+  hasCustomStatusesEnabled: boolean,
 ): instanceValue is InvalidTicketForm =>
-  hasCustomStatusesEnabled
-  && _.isArray(instanceValue.agent_conditions)
-    && instanceValue.agent_conditions.some(condition =>
-      _.isArray(condition.child_fields)
-      && condition.child_fields.some((child: Child) =>
-        _.isObject(child.required_on_statuses)
-        && child.required_on_statuses.type === SOME_STATUSES
-        && (child.required_on_statuses.custom_statuses !== undefined
-          && !_.isEmpty(child.required_on_statuses.custom_statuses))))
-
+  hasCustomStatusesEnabled &&
+  _.isArray(instanceValue.agent_conditions) &&
+  instanceValue.agent_conditions.some(
+    condition =>
+      _.isArray(condition.child_fields) &&
+      condition.child_fields.some(
+        (child: Child) =>
+          _.isObject(child.required_on_statuses) &&
+          child.required_on_statuses.type === SOME_STATUSES &&
+          child.required_on_statuses.custom_statuses !== undefined &&
+          !_.isEmpty(child.required_on_statuses.custom_statuses),
+      ),
+  )
 
 const invalidTicketFormChange = (change: Change<InstanceElement>, hasCustomStatusesEnabled: boolean): boolean =>
-  isAdditionOrModificationChange(change)
-  && isInstanceChange(change)
-  && isInvalidTicketForm(getChangeData(change).value, hasCustomStatusesEnabled)
+  isAdditionOrModificationChange(change) &&
+  isInstanceChange(change) &&
+  isInvalidTicketForm(getChangeData(change).value, hasCustomStatusesEnabled)
 
 const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   const clonedInst = inst.clone()
   // it is true because if we get to returnValidInstance function its after we got true from isInvalidTicketForm so
   // custom_statuses is enabled
   if (isInvalidTicketForm(clonedInst.value, true)) {
-    clonedInst.value.agent_conditions
-      .forEach(condition => condition.child_fields
-        .forEach(child => {
-          if (child.required_on_statuses.type === SOME_STATUSES
-            && (child.required_on_statuses.custom_statuses !== undefined
-              && !_.isEmpty(child.required_on_statuses.custom_statuses))) {
-            delete child.required_on_statuses.statuses
-          }
-        }))
+    clonedInst.value.agent_conditions.forEach(condition =>
+      condition.child_fields.forEach(child => {
+        if (
+          child.required_on_statuses.type === SOME_STATUSES &&
+          child.required_on_statuses.custom_statuses !== undefined &&
+          !_.isEmpty(child.required_on_statuses.custom_statuses)
+        ) {
+          delete child.required_on_statuses.statuses
+        }
+      }),
+    )
   }
   return clonedInst
 }
@@ -143,7 +141,9 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
     field => _.isString(field) || _.isNumber(field),
   )
   if (!_.isEmpty(referenceFields)) {
-    log.debug(`there are fields which are not a string or a number in the before and not in the after of the change in form: ${before.elemID.getFullName()}`)
+    log.debug(
+      `there are fields which are not a string or a number in the before and not in the after of the change in form: ${before.elemID.getFullName()}`,
+    )
     log.trace(`the form ${before.elemID.getFullName()} before: ${inspectValue(before)}`)
   }
   if (_.isEmpty(finalRemovedFields)) {
@@ -176,9 +176,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     }
     const hasCustomStatusesEnabled = await isCustomStatusesEnabled(elementsSource)
 
-    const [invalidModificationAndAdditionChanges, otherTicketFormChanges] = _.partition(
-      ticketFormChanges,
-      change => invalidTicketFormChange(change, hasCustomStatusesEnabled),
+    const [invalidModificationAndAdditionChanges, otherTicketFormChanges] = _.partition(ticketFormChanges, change =>
+      invalidTicketFormChange(change, hasCustomStatusesEnabled),
     )
 
     const fixedTicketFormChanges = await awu(invalidModificationAndAdditionChanges)
@@ -187,28 +186,26 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
 
     const allChanges = fixedTicketFormChanges.concat(otherTicketFormChanges)
 
-    const tempDeployResult = await deployChanges(
-      allChanges,
-      async change => {
-        if (isModificationChange(change)) {
-          const newAfter = getChangeWithoutRemovedFields(change)
-          const intermediateChange = newAfter !== undefined
-            ? toChange({ before: change.data.before, after: newAfter })
-            : undefined
-          if (intermediateChange !== undefined) {
-            // first deploy is without the removed fields
-            await deployChange(intermediateChange, client, config.apiDefinitions)
-          }
+    const tempDeployResult = await deployChanges(allChanges, async change => {
+      if (isModificationChange(change)) {
+        const newAfter = getChangeWithoutRemovedFields(change)
+        const intermediateChange =
+          newAfter !== undefined ? toChange({ before: change.data.before, after: newAfter }) : undefined
+        if (intermediateChange !== undefined) {
+          // first deploy is without the removed fields
+          await deployChange(intermediateChange, client, config.apiDefinitions)
         }
-        await deployChange(change, client, config.apiDefinitions)
       }
+      await deployChange(change, client, config.apiDefinitions)
+    })
+    const deployedChangesElemId = new Set(
+      tempDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
     )
-    const deployedChangesElemId = new Set(tempDeployResult.appliedChanges
-      .map(change => getChangeData(change).elemID.getFullName()))
 
     const deployResult: DeployResult = {
-      appliedChanges: ticketFormChanges
-        .filter(change => deployedChangesElemId.has(getChangeData(change).elemID.getFullName())),
+      appliedChanges: ticketFormChanges.filter(change =>
+        deployedChangesElemId.has(getChangeData(change).elemID.getFullName()),
+      ),
       errors: tempDeployResult.errors,
     }
     return { deployResult, leftoverChanges }
@@ -240,17 +237,19 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       return
     }
 
-    const ticketFormsToFieldIds = Object.fromEntries(await awu(ticketFormChanges)
-      .map(change => getChangeData(change).elemID)
-      .map(async id => {
-        const form = await elementsSource.get(id)
-        if (!isInstanceElement(form)) {
-          return [id.getFullName(), undefined]
-        }
-        const ticketFieldIds = form.value.ticket_field_ids // the references are unresolved
-        return [id.getFullName(), ticketFieldIds]
-      })
-      .toArray())
+    const ticketFormsToFieldIds = Object.fromEntries(
+      await awu(ticketFormChanges)
+        .map(change => getChangeData(change).elemID)
+        .map(async id => {
+          const form = await elementsSource.get(id)
+          if (!isInstanceElement(form)) {
+            return [id.getFullName(), undefined]
+          }
+          const ticketFieldIds = form.value.ticket_field_ids // the references are unresolved
+          return [id.getFullName(), ticketFieldIds]
+        })
+        .toArray(),
+    )
 
     ticketFormChanges.forEach(change => {
       const form = getChangeData(change)

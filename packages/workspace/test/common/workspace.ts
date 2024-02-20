@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { Element, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -34,17 +34,29 @@ import { createMockNaclFileSource } from './nacl_file_source'
 import { mockDirStore } from './nacl_file_store'
 
 const services = ['salesforce']
-export const mockWorkspaceConfigSource = (conf?: Partial<WorkspaceConfig>,
-  secondaryEnv?: boolean): jest.Mocked<WorkspaceConfigSource> => ({
+export const mockWorkspaceConfigSource = (
+  conf?: Partial<WorkspaceConfig>,
+  secondaryEnv?: boolean,
+): jest.Mocked<WorkspaceConfigSource> => ({
   getWorkspaceConfig: jest.fn().mockImplementation(() => ({
     envs: [
-      { name: 'default',
+      {
+        name: 'default',
         accounts: services,
-        accountToServiceName: Object.fromEntries(services.map(service => [service, service])) },
-      ...(secondaryEnv ? [{ name: 'inactive',
-        accounts: [...services, 'netsuite'],
-        accountToServiceName: { netsuite: 'netsuite',
-          ...Object.fromEntries(services.map(service => [service, service])) } }] : []),
+        accountToServiceName: Object.fromEntries(services.map(service => [service, service])),
+      },
+      ...(secondaryEnv
+        ? [
+            {
+              name: 'inactive',
+              accounts: [...services, 'netsuite'],
+              accountToServiceName: {
+                netsuite: 'netsuite',
+                ...Object.fromEntries(services.map(service => [service, service])),
+              },
+            },
+          ]
+        : []),
     ],
     uid: '',
     name: 'test',
@@ -57,13 +69,11 @@ export const mockWorkspaceConfigSource = (conf?: Partial<WorkspaceConfig>,
 export const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => {
   const adapters: Record<string, InstanceElement> = {}
 
-  const getAdapter = async (adapterName: string): Promise<InstanceElement | undefined> => (
-    adapters[adapterName]
-  )
+  const getAdapter = async (adapterName: string): Promise<InstanceElement | undefined> => adapters[adapterName]
   const setAdapter = async (
     accountName: string,
     _adapterName: string,
-    config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+    config: Readonly<InstanceElement> | Readonly<InstanceElement>[],
   ): Promise<void> => {
     if (!_.isArray(config)) {
       adapters[accountName] = config as InstanceElement
@@ -74,11 +84,13 @@ export const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> 
     getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>().mockImplementation(getAdapter),
     setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>().mockImplementation(setAdapter),
     getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
-    getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(new Errors({
-      parse: [],
-      validation: [],
-      merge: [],
-    })),
+    getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(
+      new Errors({
+        parse: [],
+        validation: [],
+        merge: [],
+      }),
+    ),
     getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
     getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
     setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
@@ -98,20 +110,20 @@ export const mockCredentialsSource = (): ConfigSource => ({
   rename: jest.fn(),
 })
 
-
-export const createState = (
-  elements: Element[],
-  persistent = true
-): State => buildInMemState(async () => ({
-  elements: createInMemoryElementSource(elements),
-  pathIndex: new InMemoryRemoteMap<Path[]>(),
-  topLevelPathIndex: new InMemoryRemoteMap<Path[]>(),
-  referenceSources: new InMemoryRemoteMap(),
-  accountsUpdateDate: new InMemoryRemoteMap(),
-  changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
-  saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
-  staticFilesSource: mockStaticFilesSource(),
-}), persistent)
+export const createState = (elements: Element[], persistent = true): State =>
+  buildInMemState(
+    async () => ({
+      elements: createInMemoryElementSource(elements),
+      pathIndex: new InMemoryRemoteMap<Path[]>(),
+      topLevelPathIndex: new InMemoryRemoteMap<Path[]>(),
+      referenceSources: new InMemoryRemoteMap(),
+      accountsUpdateDate: new InMemoryRemoteMap(),
+      changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
+      saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
+      staticFilesSource: mockStaticFilesSource(),
+    }),
+    persistent,
+  )
 
 export const createWorkspace = async (
   dirStore?: DirectoryStore<string>,
@@ -122,7 +134,7 @@ export const createWorkspace = async (
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
   remoteMapCreator?: RemoteMapCreator,
-  persistent = true
+  persistent = true,
 ): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
@@ -139,7 +151,7 @@ export const createWorkspace = async (
             dirStore || mockDirStore(),
             actualStaticFilesSource,
             mapCreator,
-            persistent
+            persistent,
           ),
         },
         default: {

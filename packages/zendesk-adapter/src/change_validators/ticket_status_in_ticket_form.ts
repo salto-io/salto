@@ -1,31 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   ChangeError,
-  ChangeValidator, getChangeData,
-  InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange, isInstanceChange, isReferenceExpression,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
-import {
-  TICKET_FIELD_TYPE_NAME,
-  TICKET_FORM_TYPE_NAME,
-  TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME,
-} from '../constants'
-
+import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME } from '../constants'
 
 const includesTicketStatus = (instance: InstanceElement): boolean => {
   const ticketFieldIds = instance.value.ticket_field_ids
@@ -62,13 +61,12 @@ export const additionOfTicketStatusForTicketFormValidator: ChangeValidator = asy
     .map(getChangeData)
     .filter(includesTicketStatus)
 
-  const ticketFormWarnings: ChangeError[] = ticketFormWithTicketStatusInstances
-    .map(instance => ({
-      elemID: instance.elemID,
-      severity: 'Warning',
-      message: 'Ticket form will be deployed without \'Ticket status\' ticket field',
-      detailedMessage: `Ticket form ${instance.elemID.name} will be deployed without the parts referencing the 'Ticket status' ticket field, since that field does not exist in your zendesk account and cannot be created`,
-    }))
+  const ticketFormWarnings: ChangeError[] = ticketFormWithTicketStatusInstances.map(instance => ({
+    elemID: instance.elemID,
+    severity: 'Warning',
+    message: "Ticket form will be deployed without 'Ticket status' ticket field",
+    detailedMessage: `Ticket form ${instance.elemID.name} will be deployed without the parts referencing the 'Ticket status' ticket field, since that field does not exist in your zendesk account and cannot be created`,
+  }))
 
   const ticketFieldWarning: ChangeError = {
     elemID: ticketStatusInstance.elemID,

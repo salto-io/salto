@@ -1,24 +1,25 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   Change,
   ChangeDataType,
   CompareOptions,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   getChangeData,
@@ -34,6 +35,7 @@ import {
   isType,
   ObjectType,
   PrimitiveType,
+  toChange,
   Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -48,7 +50,12 @@ export type DetailedCompareOptions = CompareOptions & {
 }
 
 const compareListWithOrderMatching = ({
-  id, before, after, beforeId, afterId, options,
+  id,
+  before,
+  after,
+  beforeId,
+  afterId,
+  options,
 }: {
   id: ElemID
   before: Value
@@ -56,59 +63,61 @@ const compareListWithOrderMatching = ({
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
   options: DetailedCompareOptions | undefined
-}): DetailedChange[] => log.time(() => {
-  const indexMapping = getArrayIndexMapping(before, after)
+}): DetailedChange[] =>
+  log.time(() => {
+    const indexMapping = getArrayIndexMapping(before, after)
 
-  const itemsChanges = _.flatten(
-    indexMapping.map((item, changeIndex) => {
-      const itemChangeId = id.createNestedID(changeIndex.toString())
-      const itemBeforeId = item.beforeIndex !== undefined
-        ? beforeId?.createNestedID(item.beforeIndex.toString())
-        : undefined
-      const itemAfterId = item.afterIndex !== undefined
-        ? afterId?.createNestedID(item.afterIndex.toString())
-        : undefined
+    const itemsChanges = _.flatten(
+      indexMapping.map((item, changeIndex) => {
+        const itemChangeId = id.createNestedID(changeIndex.toString())
+        const itemBeforeId =
+          item.beforeIndex !== undefined ? beforeId?.createNestedID(item.beforeIndex.toString()) : undefined
+        const itemAfterId =
+          item.afterIndex !== undefined ? afterId?.createNestedID(item.afterIndex.toString()) : undefined
 
-      const itemBeforeValue = item.beforeIndex !== undefined ? before[item.beforeIndex] : undefined
-      const itemAfterValue = item.afterIndex !== undefined ? after[item.afterIndex] : undefined
-      // eslint-disable-next-line no-use-before-define
-      const innerChanges = getValuesChanges({
-        id: itemChangeId,
-        beforeId: itemBeforeId,
-        afterId: itemAfterId,
-        before: itemBeforeValue,
-        after: itemAfterValue,
-        options,
-      })
-      const hasChangeDirectlyOnItem = (
-        innerChanges.length === 1
-        && innerChanges.some(change => change.id.isEqual(itemChangeId))
-      )
-      if (item.beforeIndex !== item.afterIndex && !hasChangeDirectlyOnItem) {
-        // This item changed its index, so if we don't already have a change
-        // on this item, we need to add one
-        innerChanges.push({
-          action: 'modify',
-          data: {
-            before: itemBeforeValue,
-            after: itemAfterValue,
-          },
+        const itemBeforeValue = item.beforeIndex !== undefined ? before[item.beforeIndex] : undefined
+        const itemAfterValue = item.afterIndex !== undefined ? after[item.afterIndex] : undefined
+        // eslint-disable-next-line no-use-before-define
+        const innerChanges = getValuesChanges({
           id: itemChangeId,
-          elemIDs: { before: itemBeforeId, after: itemAfterId },
+          beforeId: itemBeforeId,
+          afterId: itemAfterId,
+          before: itemBeforeValue,
+          after: itemAfterValue,
+          options,
         })
-      }
-      return innerChanges
-    }),
-  )
+        const hasChangeDirectlyOnItem =
+          innerChanges.length === 1 && innerChanges.some(change => change.id.isEqual(itemChangeId))
+        if (item.beforeIndex !== item.afterIndex && !hasChangeDirectlyOnItem) {
+          // This item changed its index, so if we don't already have a change
+          // on this item, we need to add one
+          innerChanges.push({
+            action: 'modify',
+            data: {
+              before: itemBeforeValue,
+              after: itemAfterValue,
+            },
+            id: itemChangeId,
+            elemIDs: { before: itemBeforeId, after: itemAfterId },
+          })
+        }
+        return innerChanges
+      }),
+    )
 
-  return itemsChanges
-}, `compareListWithOrderMatching - ${id.getFullName()}`)
+    return itemsChanges
+  }, `compareListWithOrderMatching - ${id.getFullName()}`)
 
 /**
  * Create detailed changes from change data (before and after values)
  */
 export const getValuesChanges = ({
-  id, before, after, options, beforeId, afterId,
+  id,
+  before,
+  after,
+  options,
+  beforeId,
+  afterId,
 }: {
   id: ElemID
   before: Value
@@ -117,13 +126,11 @@ export const getValuesChanges = ({
   afterId: ElemID | undefined
   options?: DetailedCompareOptions
 }): DetailedChange[] => {
-  if (isElement(before) && isElement(after)
-    && isEqualElements(before, after, options)) {
+  if (isElement(before) && isElement(after) && isEqualElements(before, after, options)) {
     return []
   }
 
-  if (!isElement(before) && !isElement(after)
-    && isEqualValues(before, after, options)) {
+  if (!isElement(before) && !isElement(after) && isEqualValues(before, after, options)) {
     return []
   }
 
@@ -134,16 +141,19 @@ export const getValuesChanges = ({
     return [{ id, action: 'remove', data: { before }, elemIDs: { before: beforeId, after: afterId } }]
   }
   if (_.isPlainObject(before) && _.isPlainObject(after)) {
-    return _(before).keys()
+    return _(before)
+      .keys()
       .union(_.keys(after))
-      .map(key => getValuesChanges({
-        id: id.createNestedID(key),
-        beforeId: beforeId?.createNestedID(key),
-        afterId: afterId?.createNestedID(key),
-        before: before[key],
-        after: after[key],
-        options,
-      }))
+      .map(key =>
+        getValuesChanges({
+          id: id.createNestedID(key),
+          beforeId: beforeId?.createNestedID(key),
+          afterId: afterId?.createNestedID(key),
+          before: before[key],
+          after: after[key],
+          options,
+        }),
+      )
       .flatten()
       .value()
   }
@@ -155,25 +165,27 @@ export const getValuesChanges = ({
     // If compareListItems is false and there is an addition or deletion in the list we treat the whole list as changed
     if (before.length === after.length) {
       return _.flatten(
-        _.times(before.length).map(
-          i => getValuesChanges({
+        _.times(before.length).map(i =>
+          getValuesChanges({
             id: id.createNestedID(i.toString()),
             before: before[i],
             after: after[i],
             beforeId: beforeId?.createNestedID(i.toString()),
             afterId: afterId?.createNestedID(i.toString()),
             options,
-          })
-        )
+          }),
+        ),
       )
     }
   }
-  return [{
-    id,
-    action: 'modify',
-    data: { before, after },
-    elemIDs: { before: beforeId, after: afterId },
-  }]
+  return [
+    {
+      id,
+      action: 'modify',
+      data: { before, after },
+      elemIDs: { before: beforeId, after: afterId },
+    },
+  ]
 }
 
 /**
@@ -188,7 +200,11 @@ export const getValuesChanges = ({
  *
  */
 const getAnnotationTypeChanges = ({
-  id, before, after, beforeId, afterId,
+  id,
+  before,
+  after,
+  beforeId,
+  afterId,
 }: {
   id: ElemID
   before: Value
@@ -200,12 +216,12 @@ const getAnnotationTypeChanges = ({
     isObjectType(elem) || isPrimitiveType(elem)
 
   // Return only annotationTypes that exists in val and not exists in otherVal.
-  const returnOnlyAnnotationTypesDiff = (
-    val: Value,
-    otherVal: Value
-  ): Value => _.pickBy(val.annotationRefTypes,
-    (annotationRefType, annotationName) =>
-      !(otherVal.annotationRefTypes[annotationName]?.elemID.isEqual(annotationRefType.elemID)))
+  const returnOnlyAnnotationTypesDiff = (val: Value, otherVal: Value): Value =>
+    _.pickBy(
+      val.annotationRefTypes,
+      (annotationRefType, annotationName) =>
+        !otherVal.annotationRefTypes[annotationName]?.elemID.isEqual(annotationRefType.elemID),
+    )
 
   if (hasAnnotationTypes(before) && hasAnnotationTypes(after)) {
     const beforeUniqueAnnotationsTypes = returnOnlyAnnotationTypesDiff(before, after)
@@ -223,12 +239,23 @@ const getAnnotationTypeChanges = ({
   return []
 }
 
+export const toDetailedChangeFromBaseChange = (
+  baseChange: Change<Element>,
+  elemIDs?: DetailedChangeWithBaseChange['elemIDs'],
+): DetailedChangeWithBaseChange => ({
+  ...baseChange,
+  id: getChangeData(baseChange).elemID,
+  elemIDs,
+  baseChange,
+})
+
 export const detailedCompare = (
   // This function supports all types of Elements, but doesn't necessarily support Variable (SALTO-4363)
   before: Element,
   after: Element,
-  compareOptions?: DetailedCompareOptions
-): DetailedChange[] => {
+  compareOptions?: DetailedCompareOptions,
+): DetailedChangeWithBaseChange[] => {
+  const baseChange = toChange({ before, after })
   const createFieldChanges = compareOptions?.createFieldChanges ?? false
 
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
@@ -252,39 +279,27 @@ export const detailedCompare = (
 
     const modifyChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] !== undefined)
-      .map(fieldName => detailedCompare(
-        beforeObj.fields[fieldName],
-        afterObj.fields[fieldName],
-        compareOptions,
-      ))
+      .map(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName], compareOptions))
 
-    return [
-      ...removeChanges,
-      ...addChanges,
-      ..._.flatten(modifyChanges) as DetailedChange[],
-    ]
+    return [...removeChanges, ...addChanges, ...(_.flatten(modifyChanges) as DetailedChange[])]
   }
 
   // A special case to handle type changes in fields, we have to modify the whole field
   if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
-    return [{
-      action: 'modify',
-      id: after.elemID,
-      data: { before, after },
-      elemIDs: { before: before.elemID, after: after.elemID },
-    }]
+    return [toDetailedChangeFromBaseChange(baseChange, { before: before.elemID, after: after.elemID })]
   }
 
-  const valueChanges = isInstanceElement(before) && isInstanceElement(after)
-    ? getValuesChanges({
-      id: after.elemID,
-      beforeId: before.elemID,
-      afterId: after.elemID,
-      before: before.value,
-      after: after.value,
-      options: compareOptions,
-    })
-    : []
+  const valueChanges =
+    isInstanceElement(before) && isInstanceElement(after)
+      ? getValuesChanges({
+          id: after.elemID,
+          beforeId: before.elemID,
+          afterId: after.elemID,
+          before: before.value,
+          after: after.value,
+          options: compareOptions,
+        })
+      : []
 
   // A special case to handle changes in annotationType.
   const annotationTypeChanges = getAnnotationTypeChanges({
@@ -306,34 +321,31 @@ export const detailedCompare = (
     options: compareOptions,
   })
 
-  const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)
-    ? getFieldsChanges(before, after)
-    : []
-  return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges, ...valueChanges]
+  const fieldChanges =
+    createFieldChanges && isObjectType(before) && isObjectType(after) ? getFieldsChanges(before, after) : []
+
+  return annotationTypeChanges
+    .concat(annotationChanges)
+    .concat(fieldChanges)
+    .concat(valueChanges)
+    .map(detailedChange => ({ ...detailedChange, baseChange }))
 }
 
-export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChange[] => {
-  const elem = getChangeData(change)
+export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChangeWithBaseChange[] => {
   if (change.action !== 'modify') {
-    return [{ ...change, id: elem.elemID }]
+    return [toDetailedChangeFromBaseChange(change)]
   }
-  return detailedCompare(
-    change.data.before,
-    change.data.after,
-    compareOptions,
-  )
+  return detailedCompare(change.data.before, change.data.after, compareOptions)
 }
-
 
 /**
  * This function returns if a change contains a moving of a item in a list for one index to another
-*/
-const isOrderChange = (change: DetailedChange): boolean => (
-  isIndexPathPart(change.id.name)
-  && isIndexPathPart(change.elemIDs?.before?.name ?? '')
-  && isIndexPathPart(change.elemIDs?.after?.name ?? '')
-    && Number(change.elemIDs?.before?.name) !== Number(change.elemIDs?.after?.name)
-)
+ */
+const isOrderChange = (change: DetailedChange): boolean =>
+  isIndexPathPart(change.id.name) &&
+  isIndexPathPart(change.elemIDs?.before?.name ?? '') &&
+  isIndexPathPart(change.elemIDs?.after?.name ?? '') &&
+  Number(change.elemIDs?.before?.name) !== Number(change.elemIDs?.after?.name)
 
 /**
  * When comparing lists with compareListItem, we might get a change about an item
@@ -359,7 +371,6 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
   })
 }
 
-
 /**
  * Note: When working with list item changes, separating the changes between
  * multiple applyDetailedChanges calls might create different results.
@@ -368,31 +379,29 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
  * So in order to get the expected results, all the detailed changes should be passed to this
  * function in a single call
  */
-export const applyDetailedChanges = (
-  element: ChangeDataType,
-  detailedChanges: DetailedChange[],
-): void => {
+export const applyDetailedChanges = (element: ChangeDataType, detailedChanges: DetailedChange[]): void => {
   const changesToApply = filterChangesForApply(detailedChanges)
   const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
-    isIndexPathPart(change.id.name))
-
-  const potentialListItemGroups = _.groupBy(
-    potentialListItemChanges,
-    change => change.id.createParentID().getFullName()
+    isIndexPathPart(change.id.name),
   )
 
-  const [realListItemGroup, otherGroups] = _.partition(
-    Object.values(potentialListItemGroups),
-    group => Array.isArray(resolvePath(element, group[0].id.createParentID()))
+  const potentialListItemGroups = _.groupBy(potentialListItemChanges, change =>
+    change.id.createParentID().getFullName(),
   )
 
-  _(otherChanges).concat(otherGroups.flat()).forEach(detailedChange => {
-    const id = isRemovalChange(detailedChange)
-      ? detailedChange.elemIDs?.before ?? detailedChange.id
-      : detailedChange.elemIDs?.after ?? detailedChange.id
-    const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
-    setPath(element, id.replaceParentId(element.elemID), data)
-  })
+  const [realListItemGroup, otherGroups] = _.partition(Object.values(potentialListItemGroups), group =>
+    Array.isArray(resolvePath(element, group[0].id.createParentID())),
+  )
+
+  _(otherChanges)
+    .concat(otherGroups.flat())
+    .forEach(detailedChange => {
+      const id = isRemovalChange(detailedChange)
+        ? detailedChange.elemIDs?.before ?? detailedChange.id
+        : detailedChange.elemIDs?.after ?? detailedChange.id
+      const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
+      setPath(element, id.replaceParentId(element.elemID), data)
+    })
 
   realListItemGroup.forEach(changes => {
     applyListChanges(element, changes)
@@ -401,8 +410,6 @@ export const applyDetailedChanges = (
 
 export const getRelevantNamesFromChange = (change: Change<Element>): string[] => {
   const element = getChangeData(change)
-  const fieldsNames = isObjectType(element)
-    ? element.getFieldsElemIDsFullName()
-    : []
+  const fieldsNames = isObjectType(element) ? element.getFieldsElemIDsFullName() : []
   return [element.elemID.getFullName(), ...fieldsNames]
 }

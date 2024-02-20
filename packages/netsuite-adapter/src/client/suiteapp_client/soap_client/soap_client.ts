@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import crypto from 'crypto'
@@ -24,11 +24,52 @@ import { collections, decorators, promises, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
-import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
+import {
+  CONSUMER_KEY,
+  CONSUMER_SECRET,
+  ECONN_ERROR,
+  INSUFFICIENT_PERMISSION_ERROR,
+  REQUEST_ABORTED_ERROR,
+  TYPE_ID,
+  UNEXPECTED_ERROR,
+  VALIDATION_ERROR,
+} from '../constants'
 import { ReadFileError } from '../errors'
-import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
-import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, GetSelectValueResponse, isDeployListSuccess, isGetAllErrorResponse, isGetSelectValueSuccessResponse, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
-import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, GET_SELECT_VALUE_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
+import {
+  CallsLimiter,
+  ExistingFileCabinetInstanceDetails,
+  FileCabinetInstanceDetails,
+  FileDetails,
+  FolderDetails,
+  HasElemIDFunc,
+} from '../types'
+import {
+  CustomRecordResponse,
+  DeployListResults,
+  GetAllResponse,
+  GetResult,
+  GetSelectValueResponse,
+  isDeployListSuccess,
+  isGetAllErrorResponse,
+  isGetSelectValueSuccessResponse,
+  isGetSuccess,
+  isSearchErrorResponse,
+  isWriteResponseSuccess,
+  RecordResponse,
+  RecordValue,
+  SearchErrorResponse,
+  SearchPageResponse,
+  SearchResponse,
+  SoapSearchType,
+  WriteResponse,
+} from './types'
+import {
+  DEPLOY_LIST_SCHEMA,
+  GET_ALL_RESPONSE_SCHEMA,
+  GET_RESULTS_SCHEMA,
+  GET_SELECT_VALUE_SCHEMA,
+  SEARCH_RESPONSE_SCHEMA,
+} from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { isItemType, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
@@ -80,44 +121,39 @@ type AddAndUpdateDeployBody = {
 const retryOnBadResponseWithDelay = (
   retryableMessages: string[],
   retryableStatuses: string[] = [],
-  retryDelay?: number
-): decorators.InstanceMethodDecorator => (
-  decorators.wrapMethodWith(
-    async (
-      call: decorators.OriginalCall,
-    ): Promise<unknown> => {
-      const shouldRetry = (e: Value): boolean =>
-        retryableMessages.some(message => toError(e).message.toUpperCase().includes(message)
-          || e?.code?.toUpperCase?.()?.includes?.(message))
-        || retryableStatuses.some(status => String(e?.response?.status).startsWith(status))
+  retryDelay?: number,
+): decorators.InstanceMethodDecorator =>
+  decorators.wrapMethodWith(async (call: decorators.OriginalCall): Promise<unknown> => {
+    const shouldRetry = (e: Value): boolean =>
+      retryableMessages.some(
+        message => toError(e).message.toUpperCase().includes(message) || e?.code?.toUpperCase?.()?.includes?.(message),
+      ) || retryableStatuses.some(status => String(e?.response?.status).startsWith(status))
 
-      const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
-        try {
-          // eslint-disable-next-line @typescript-eslint/return-await
-          return await call.call()
-        } catch (e) {
-          const error = toError(e)
-          if (shouldRetry(e) && retriesLeft > 0) {
-            log.warn('Retrying soap request with error: %s. Retries left: %d', error.message, retriesLeft)
-            if (retryDelay) {
-              await new Promise(f => setTimeout(f, retryDelay))
-            }
-            return runWithRetry(retriesLeft - 1)
+    const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/return-await
+        return await call.call()
+      } catch (e) {
+        const error = toError(e)
+        if (shouldRetry(e) && retriesLeft > 0) {
+          log.warn('Retrying soap request with error: %s. Retries left: %d', error.message, retriesLeft)
+          if (retryDelay) {
+            await new Promise(f => setTimeout(f, retryDelay))
           }
-
-          if (retriesLeft === 0) {
-            log.error('Soap request exceed max retries with error: %s', error.message)
-          } else {
-            log.error('Soap request had error: %s', error.message)
-          }
-
-          throw e
+          return runWithRetry(retriesLeft - 1)
         }
+
+        if (retriesLeft === 0) {
+          log.error('Soap request exceed max retries with error: %s', error.message)
+        } else {
+          log.error('Soap request had error: %s', error.message)
+        }
+
+        throw e
       }
-      return runWithRetry(REQUEST_MAX_RETRIES)
     }
-  )
-)
+    return runWithRetry(REQUEST_MAX_RETRIES)
+  })
 
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
@@ -136,7 +172,7 @@ export default class SoapClient {
     credentials: SuiteAppSoapCredentials,
     callsLimiter: CallsLimiter,
     instanceLimiter: InstanceLimiterFunc,
-    timeout: number
+    timeout: number,
   ) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
@@ -150,7 +186,9 @@ export default class SoapClient {
     if (this.client === undefined) {
       this.client = await createClientAsync(
         `https://webservices.netsuite.com/wsdl/v${NETSUITE_VERSION}_0/netsuite.wsdl`,
-        { endpoint: `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${NETSUITE_VERSION}` }
+        {
+          endpoint: `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${NETSUITE_VERSION}`,
+        },
       )
       this.client.addSoapHeader(() => this.generateSoapHeader())
     }
@@ -169,14 +207,15 @@ export default class SoapClient {
         },
       },
     }
-    const response = (await this.sendSoapRequest('get', body))
+    const response = await this.sendSoapRequest('get', body)
 
-    if (!this.ajv.validate<GetResult>(
-      GET_RESULTS_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    if (!this.ajv.validate<GetResult>(GET_RESULTS_SCHEMA, response)) {
+      log.error(
+        `Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
 
     if (!isGetSuccess(response)) {
@@ -199,34 +238,35 @@ export default class SoapClient {
       },
       'q1:name': path.basename(file.path),
       'q1:attachFrom': '_computer',
-      ...file.folder ? {
-        'q1:folder': {
-          attributes: {
-            internalId: file.folder,
-          },
-        },
-      } : {},
+      ...(file.folder
+        ? {
+            'q1:folder': {
+              attributes: {
+                internalId: file.folder,
+              },
+            },
+          }
+        : {}),
       'q1:description': file.description,
       'q1:bundleable': file.bundleable,
       'q1:isInactive': file.isInactive,
       'q1:isOnline': file.isOnline,
       'q1:hideInBundle': file.hideInBundle,
-      ...'content' in file
-        ? { 'q1:content': file.content.toString('base64') }
-        : { 'q1:url': file.url },
+      ...('content' in file ? { 'q1:content': file.content.toString('base64') } : { 'q1:url': file.url }),
     }
   }
 
   private static convertToFolderRecord(folder: FolderDetails): object {
-    const parentEntry = folder.parent !== undefined
-      ? {
-        'q1:parent': {
-          attributes: {
-            internalId: folder.parent,
-          },
-        },
-      }
-      : {}
+    const parentEntry =
+      folder.parent !== undefined
+        ? {
+            'q1:parent': {
+              attributes: {
+                internalId: folder.parent,
+              },
+            },
+          }
+        : {}
 
     const internalIdEntry = folder.id !== undefined ? { internalId: folder.id.toString() } : {}
 
@@ -245,45 +285,54 @@ export default class SoapClient {
     }
   }
 
-  private static convertToFileCabinetRecord(fileCabinetInstance: FileCabinetInstanceDetails):
-    object {
+  private static convertToFileCabinetRecord(fileCabinetInstance: FileCabinetInstanceDetails): object {
     return fileCabinetInstance.type === 'file'
       ? SoapClient.convertToFileRecord(fileCabinetInstance)
       : SoapClient.convertToFolderRecord(fileCabinetInstance)
   }
 
   private static convertToDeletionRecord({
-    id, type, isCustomRecord,
-  }: { id: number; type: string; isCustomRecord?: boolean }): object {
+    id,
+    type,
+    isCustomRecord,
+  }: {
+    id: number
+    type: string
+    isCustomRecord?: boolean
+  }): object {
     return {
-      attributes: isCustomRecord ? {
-        typeId: type,
-        internalId: id,
-        [XSI_TYPE]: 'q1:CustomRecordRef',
-        'xmlns:q1': SOAP_CORE_URN,
-      } : {
-        type,
-        internalId: id,
-        [XSI_TYPE]: 'q1:RecordRef',
-        'xmlns:q1': SOAP_CORE_URN,
-      },
+      attributes: isCustomRecord
+        ? {
+            [TYPE_ID]: type,
+            internalId: id,
+            [XSI_TYPE]: 'q1:CustomRecordRef',
+            'xmlns:q1': SOAP_CORE_URN,
+          }
+        : {
+            type,
+            internalId: id,
+            [XSI_TYPE]: 'q1:RecordRef',
+            'xmlns:q1': SOAP_CORE_URN,
+          },
     }
   }
 
   @retryOnBadResponse
-  public async addFileCabinetInstances(fileCabinetInstances:
-    (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
+  public async addFileCabinetInstances(
+    fileCabinetInstances: FileCabinetInstanceDetails[],
+  ): Promise<(number | Error)[]> {
     const body = {
       record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
     }
 
     const response = await this.sendSoapRequest('addList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    if (!this.ajv.validate<DeployListResults>(DEPLOY_LIST_SCHEMA, response)) {
+      log.error(
+        `Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
 
     if (!isDeployListSuccess(response)) {
@@ -296,27 +345,33 @@ export default class SoapClient {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
 
-        log.error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
-        return new Error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
+        log.error(
+          `SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
+        )
+        return new Error(
+          `SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
+        )
       }
       return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
   }
 
   @retryOnBadResponse
-  public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
-    Promise<(number | Error)[]> {
+  public async deleteFileCabinetInstances(
+    instances: ExistingFileCabinetInstanceDetails[],
+  ): Promise<(number | Error)[]> {
     const body = {
       baseRef: instances.map(SoapClient.convertToDeletionRecord),
     }
 
     const response = await this.sendSoapRequest('deleteList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    if (!this.ajv.validate<DeployListResults>(DEPLOY_LIST_SCHEMA, response)) {
+      log.error(
+        `Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
 
     if (!isDeployListSuccess(response)) {
@@ -329,27 +384,33 @@ export default class SoapClient {
     return response.writeResponseList.writeResponse.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
-        log.error(`SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`)
+        log.error(
+          `SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`,
+        )
+        return Error(
+          `SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`,
+        )
       }
       return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
   }
 
   @retryOnBadResponse
-  public async updateFileCabinetInstances(fileCabinetInstances:
-    ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
+  public async updateFileCabinetInstances(
+    fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
+  ): Promise<(number | Error)[]> {
     const body = {
       record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
     }
 
     const response = await this.sendSoapRequest('updateList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    if (!this.ajv.validate<DeployListResults>(DEPLOY_LIST_SCHEMA, response)) {
+      log.error(
+        `Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
 
     if (!isDeployListSuccess(response)) {
@@ -362,8 +423,12 @@ export default class SoapClient {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
 
-        log.error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
+        log.error(
+          `SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
+        )
+        return Error(
+          `SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`,
+        )
       }
       return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
@@ -376,31 +441,33 @@ export default class SoapClient {
     return wsdl
   }
 
-  @retryOnBadResponseWithDelay(
-    SOAP_RETRYABLE_MESSAGES,
-    SOAP_RETRYABLE_STATUS_INITIALS,
-    REQUEST_RETRY_DELAY
-  )
+  @retryOnBadResponseWithDelay(SOAP_RETRYABLE_MESSAGES, SOAP_RETRYABLE_STATUS_INITIALS, REQUEST_RETRY_DELAY)
   private static async soapRequestWithRetries(
-    client: elementUtils.soap.Client, operation: string, body: object, timeout: number
+    client: elementUtils.soap.Client,
+    operation: string,
+    body: object,
+    timeout: number,
   ): Promise<unknown> {
-    const result = await promises.timeout.withTimeout<unknown[]>(
-      client[`${operation}Async`](body), timeout
-    )
+    const result = await promises.timeout.withTimeout<unknown[]>(client[`${operation}Async`](body), timeout)
     return result[0]
   }
 
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
     try {
-      return await this.callsLimiter(
-        async () => log.time(
+      return await this.callsLimiter(async () =>
+        log.time(
           () => SoapClient.soapRequestWithRetries(client, operation, body, this.timeout),
-          `${operation}-soap-request`
-        )
+          `${operation}-soap-request`,
+        ),
       )
     } catch (e) {
-      log.warn('Received error from NetSuite SuiteApp Soap request: operation - %s, body - %o, error - %o', operation, body, e)
+      log.warn(
+        'Received error from NetSuite SuiteApp Soap request: operation - %s, body - %o, error - %o',
+        operation,
+        body,
+        e,
+      )
       if (toError(e).message.includes('Invalid login attempt.')) {
         throw new InvalidSuiteAppCredentialsError()
       }
@@ -427,23 +494,25 @@ export default class SoapClient {
       })
     }
 
-    const responses = await Promise.all(typesToSearch.map(async params => {
-      const { type, subtypes, originalTypes } = params
-      const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
+    const responses = await Promise.all(
+      typesToSearch.map(async params => {
+        const { type, subtypes, originalTypes } = params
+        const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
-      if (namespace !== undefined) {
-        const response = await this.search(type, namespace, subtypes)
-        return response.excludedFromSearch
-          ? { largeTypesError: originalTypes ?? [type] }
-          : { records: response.records }
-      }
-      log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
-      // This type of query cannot be limited, so there are no cases of largeTypesError
-      const response = await this.sendGetAllRequest(type)
+        if (namespace !== undefined) {
+          const response = await this.search(type, namespace, subtypes)
+          return response.excludedFromSearch
+            ? { largeTypesError: originalTypes ?? [type] }
+            : { records: response.records }
+        }
+        log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
+        // This type of query cannot be limited, so there are no cases of largeTypesError
+        const response = await this.sendGetAllRequest(type)
 
-      log.debug(`Finished getting all records of ${type}`)
-      return { records: response }
-    }))
+        log.debug(`Finished getting all records of ${type}`)
+        return { records: response }
+      }),
+    )
 
     return {
       records: responses.flatMap(res => res.records ?? []),
@@ -453,7 +522,7 @@ export default class SoapClient {
 
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     const responses = await Promise.all(
-      customRecordTypes.map(async type => ({ type, ...await this.searchCustomRecords(type) }))
+      customRecordTypes.map(async type => ({ type, ...(await this.searchCustomRecords(type)) })),
     )
     const [errorResults, customRecords] = _.partition(responses, res => res.excludedFromSearch)
     return {
@@ -469,7 +538,7 @@ export default class SoapClient {
     if (isCustomRecordType(type)) {
       return SOAP_CUSTOM_RECORD_TYPE_NAME
     }
-    return (type.elemID.name[0].toUpperCase() + type.elemID.name.slice(1))
+    return type.elemID.name[0].toUpperCase() + type.elemID.name.slice(1)
   }
 
   private async convertToSoapRecord(
@@ -484,44 +553,45 @@ export default class SoapClient {
 
     return {
       attributes: {
-        ...values.attributes ?? {},
+        ...(values.attributes ?? {}),
         [`xmlns:${namespaceAlias}`]: await this.getTypeNamespace(typeName),
-        ...isTopLevel ? { [XSI_TYPE]: `${namespaceAlias}:${typeName}` } : {},
-
+        ...(isTopLevel ? { [XSI_TYPE]: `${namespaceAlias}:${typeName}` } : {}),
       },
-      ...Object.fromEntries(await awu(Object.entries(values))
-        .filter(([key]) => key !== 'attributes')
-        .map(async ([key, value]) => {
-          const updateKey = !key.includes(':') ? `${namespaceAlias}:${key}` : key
-          const fieldType = await type.fields[key]?.getType()
+      ...Object.fromEntries(
+        await awu(Object.entries(values))
+          .filter(([key]) => key !== 'attributes')
+          .map(async ([key, value]) => {
+            const updateKey = !key.includes(':') ? `${namespaceAlias}:${key}` : key
+            const fieldType = await type.fields[key]?.getType()
 
-          if (isObjectType(fieldType) && _.isPlainObject(value)) {
-            return [
-              updateKey,
-              await this.convertToSoapRecord(
-                value,
-                fieldType,
-                false,
-                Boolean(type.fields[key]?.annotations.isReference)
-              ),
-            ]
-          }
-
-          if (isListType(fieldType)) {
-            const innerType = await fieldType.getInnerType()
-            if (isObjectType(innerType)) {
-              return [updateKey, await awu(makeArray(value)).map(
-                async val => this.convertToSoapRecord(
-                  val,
-                  innerType,
-                  false
-                )
-              ).toArray()]
+            if (isObjectType(fieldType) && _.isPlainObject(value)) {
+              return [
+                updateKey,
+                await this.convertToSoapRecord(
+                  value,
+                  fieldType,
+                  false,
+                  Boolean(type.fields[key]?.annotations.isReference),
+                ),
+              ]
             }
-          }
 
-          return [updateKey, value]
-        }).toArray()),
+            if (isListType(fieldType)) {
+              const innerType = await fieldType.getInnerType()
+              if (isObjectType(innerType)) {
+                return [
+                  updateKey,
+                  await awu(makeArray(value))
+                    .map(async val => this.convertToSoapRecord(val, innerType, false))
+                    .toArray(),
+                ]
+              }
+            }
+
+            return [updateKey, value]
+          })
+          .toArray(),
+      ),
     }
   }
 
@@ -531,12 +601,13 @@ export default class SoapClient {
     action: 'updateList' | 'addList' | 'deleteList',
   ): Promise<WriteResponse[]> {
     const response = await this.sendSoapRequest(action, body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from ${action} request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    if (!this.ajv.validate<DeployListResults>(DEPLOY_LIST_SCHEMA, response)) {
+      log.error(
+        `Got invalid response from ${action} request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
 
     if (!isDeployListSuccess(response)) {
@@ -548,16 +619,14 @@ export default class SoapClient {
     return response.writeResponseList.writeResponse
   }
 
-  private async getAddAndUpdateDeployBody(
-    instances: InstanceElement[],
-  ): Promise<AddAndUpdateDeployBody> {
+  private async getAddAndUpdateDeployBody(instances: InstanceElement[]): Promise<AddAndUpdateDeployBody> {
     return {
       attributes: {
         'xmlns:platformCore': SOAP_CORE_URN,
       },
-      record: await awu(instances).map(
-        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
-      ).toArray(),
+      record: await awu(instances)
+        .map(async instance => this.convertToSoapRecord(instance.value, await instance.getType()))
+        .toArray(),
     }
   }
 
@@ -570,8 +639,12 @@ export default class SoapClient {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
 
-        log.error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+        log.error(
+          `SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`,
+        )
+        return Error(
+          `SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`,
+        )
       }
       return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
@@ -593,24 +666,28 @@ export default class SoapClient {
       await this.getAddAndUpdateDeployBody(instancesToDeploy),
       action,
     )
-    instancesToDeploy.forEach(
-      ({ elemID }, index) =>
-        fullNameToWriteResponse.set(elemID.getFullName(), writeResponseList[index])
+    instancesToDeploy.forEach(({ elemID }, index) =>
+      fullNameToWriteResponse.set(elemID.getFullName(), writeResponseList[index]),
     )
 
     const modifiedInstances = await awu(instancesToDeploy)
-      .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID)).toArray()
+      .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID))
+      .toArray()
 
     if (modifiedInstances.length > 0) {
-      log.debug('Deployment failed on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields.'
-      + ' Redeploying changes without the locked fields.', 'Retries left: %d', retriesLeft - 1)
+      log.debug(
+        "Deployment failed on 'INSUFFICIENT PERMISSION' error for uneditable locked fields." +
+          ' Redeploying changes without the locked fields.',
+        'Retries left: %d',
+        retriesLeft - 1,
+      )
 
       await this.redeployLockedFieldsWithRetry(
         retriesLeft - 1,
         modifiedInstances,
         fullNameToWriteResponse,
         action,
-        hasElemID
+        hasElemID,
       )
     }
   }
@@ -627,7 +704,7 @@ export default class SoapClient {
       instances,
       fullNameToWriteResponse,
       action,
-      hasElemID
+      hasElemID,
     )
 
     return SoapClient.parseWriteResponseList(
@@ -637,65 +714,51 @@ export default class SoapClient {
     )
   }
 
-  public async updateInstances(
-    instances: InstanceElement[],
-    hasElemID: HasElemIDFunc,
-  ): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
     return this.runFullDeploy(instances, 'updateList', hasElemID)
   }
 
-  public async addInstances(
-    instances: InstanceElement[],
-    hasElemID: HasElemIDFunc,
-  ): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
     return this.runFullDeploy(instances, 'addList', hasElemID)
   }
 
-  public async deleteInstances(instances: InstanceElement[]):
-    Promise<(number | Error)[]> {
+  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
-      baseRef: await awu(instances).map(async instance => {
-        const isCustomRecord = isCustomRecordType(await instance.getType())
-        return SoapClient.convertToDeletionRecord({
-          id: instance.value.attributes.internalId,
-          type: isCustomRecord
-            ? instance.value.recType.attributes.internalId
-            : instance.elemID.typeName[0].toLowerCase() + instance.elemID.typeName.slice(1),
-          isCustomRecord,
+      baseRef: await awu(instances)
+        .map(async instance => {
+          const isCustomRecord = isCustomRecordType(await instance.getType())
+          return SoapClient.convertToDeletionRecord({
+            id: instance.value.attributes.internalId,
+            type: isCustomRecord
+              ? instance.value.recType.attributes.internalId
+              : instance.elemID.typeName[0].toLowerCase() + instance.elemID.typeName.slice(1),
+            isCustomRecord,
+          })
         })
-      }).toArray(),
+        .toArray(),
     }
-    return SoapClient.parseWriteResponseList(
-      await this.runDeployAction(body, 'deleteList'),
-      instances,
-      'deleteList',
-    )
+    return SoapClient.parseWriteResponseList(await this.runDeployAction(body, 'deleteList'), instances, 'deleteList')
   }
 
-  public async deleteSdfInstances(instances: InstanceElement[]):
-    Promise<(number | Error)[]> {
+  public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
-      baseRef: await awu(instances).map(async instance => {
-        const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID)
-          .find(key => key.toLowerCase() === instance.elemID.typeName.toLowerCase())
-        return SoapClient.convertToDeletionRecord({
-          id: instance.value.internalId,
-          type: instanceTypeFromMap ?? instance.elemID.typeName,
-          isCustomRecord: false,
+      baseRef: await awu(instances)
+        .map(async instance => {
+          const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID).find(
+            key => key.toLowerCase() === instance.elemID.typeName.toLowerCase(),
+          )
+          return SoapClient.convertToDeletionRecord({
+            id: instance.value.internalId,
+            type: instanceTypeFromMap ?? instance.elemID.typeName,
+            isCustomRecord: false,
+          })
         })
-      }).toArray(),
+        .toArray(),
     }
-    return SoapClient.parseWriteResponseList(
-      await this.runDeployAction(body, 'deleteList'),
-      instances,
-      'deleteList',
-    )
+    return SoapClient.parseWriteResponseList(await this.runDeployAction(body, 'deleteList'), instances, 'deleteList')
   }
 
-  private async getAllSearchPages(
-    initialSearchResponse: SearchResponse,
-    type: string
-  ): Promise<SearchPageResponse> {
+  private async getAllSearchPages(initialSearchResponse: SearchResponse, type: string): Promise<SearchPageResponse> {
     const { totalPages, searchId } = initialSearchResponse.searchResult
     if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
       log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
@@ -709,7 +772,7 @@ export default class SoapClient {
         const res = await this.sendSearchWithIdRequest({ searchId, pageIndex: i })
         log.debug(`Finished sending search request for page ${i}/${totalPages} of type ${type}`)
         return res
-      })
+      }),
     )
     return {
       records: [initialSearchResponse].concat(responses).flatMap(recordFromSearchResponse),
@@ -717,24 +780,12 @@ export default class SoapClient {
     }
   }
 
-  private async search(
-    type: string,
-    namespace: string,
-    subtypes?: string[]
-  ): Promise<SearchPageResponse> {
-    return this.getAllSearchPages(
-      await this.sendSearchRequest(type, namespace, subtypes),
-      type
-    )
+  private async search(type: string, namespace: string, subtypes?: string[]): Promise<SearchPageResponse> {
+    return this.getAllSearchPages(await this.sendSearchRequest(type, namespace, subtypes), type)
   }
 
-  private async searchCustomRecords(
-    customRecordType: string
-  ): Promise<SearchPageResponse> {
-    return this.getAllSearchPages(
-      await this.sendCustomRecordsSearchRequest(customRecordType),
-      customRecordType
-    )
+  private async searchCustomRecords(customRecordType: string): Promise<SearchPageResponse> {
+    return this.getAllSearchPages(await this.sendCustomRecordsSearchRequest(customRecordType), customRecordType)
   }
 
   @retryOnBadResponse
@@ -749,12 +800,13 @@ export default class SoapClient {
 
     const response = await this.sendSoapRequest('getAll', body)
 
-    if (!this.ajv.validate<GetAllResponse>(
-      GET_ALL_RESPONSE_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from get all request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    if (!this.ajv.validate<GetAllResponse>(GET_ALL_RESPONSE_SCHEMA, response)) {
+      log.error(
+        `Got invalid response from get all request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
 
     if (isGetAllErrorResponse(response)) {
@@ -766,18 +818,18 @@ export default class SoapClient {
     return response.getAllResult.recordList.record
   }
 
-  private assertSearchResponse(
-    value: unknown
-  ): asserts value is SearchResponse | SearchErrorResponse {
+  private assertSearchResponse(value: unknown): asserts value is SearchResponse | SearchErrorResponse {
     if (!this.ajv.validate(SEARCH_RESPONSE_SCHEMA, value)) {
-      log.error(`Got invalid response from search request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
+      log.error(
+        `Got invalid response from search request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`,
+      )
     }
   }
 
-  private static toSearchResponse(
-    response: SearchResponse | SearchErrorResponse
-  ): SearchResponse {
+  private static toSearchResponse(response: SearchResponse | SearchErrorResponse): SearchResponse {
     if ('totalPages' in response.searchResult) {
       return { searchResult: response.searchResult }
     }
@@ -785,11 +837,7 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  private async sendSearchRequest(
-    type: string,
-    namespace: string,
-    subtypes?: string[],
-  ): Promise<SearchResponse> {
+  private async sendSearchRequest(type: string, namespace: string, subtypes?: string[]): Promise<SearchResponse> {
     const searchTypeName = SoapClient.getSearchType(type)
     const body = {
       searchRecord: {
@@ -824,9 +872,7 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  private async sendCustomRecordsSearchRequest(
-    customRecordType: string
-  ): Promise<SearchResponse> {
+  private async sendCustomRecordsSearchRequest(customRecordType: string): Promise<SearchResponse> {
     const body = {
       searchRecord: {
         attributes: {
@@ -853,7 +899,7 @@ export default class SoapClient {
     type: string,
     field: string,
     filterBy: { field: string; internalId: string }[],
-    pageIndex: number
+    pageIndex: number,
   ): Promise<GetSelectValueResponse> {
     // https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3504236.html#getSelectValue
     const body = {
@@ -867,19 +913,26 @@ export default class SoapClient {
           attributes: { xmlns: SOAP_CORE_URN },
           $value: field,
         },
-        filterByValueList: filterBy.length > 0 ? {
-          attributes: { xmlns: SOAP_CORE_URN },
-          filterBy: filterBy.map(row => ({
-            field: row.field,
-            internalId: row.internalId,
-          })),
-        } : undefined,
+        filterByValueList:
+          filterBy.length > 0
+            ? {
+                attributes: { xmlns: SOAP_CORE_URN },
+                filterBy: filterBy.map(row => ({
+                  field: row.field,
+                  internalId: row.internalId,
+                })),
+              }
+            : undefined,
       },
     }
     const response = await this.sendSoapRequest('getSelectValue', body)
     if (!this.ajv.validate<GetSelectValueResponse>(GET_SELECT_VALUE_SCHEMA, response)) {
-      log.error(`Got invalid response from getSelectValue request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from getSelectValue request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      log.error(
+        `Got invalid response from getSelectValue request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
+      throw new Error(
+        `VALIDATION_ERROR - Got invalid response from getSelectValue request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`,
+      )
     }
     return response
   }
@@ -894,8 +947,9 @@ export default class SoapClient {
       return {}
     }
     const restOfResponses = await Promise.all(
-      _.range(2, firstResponse.getSelectValueResult.totalPages + 1, 1)
-        .map(pageIndex => this.sendGetSelectValueRequest(type, field, filterBy, pageIndex))
+      _.range(2, firstResponse.getSelectValueResult.totalPages + 1, 1).map(pageIndex =>
+        this.sendGetSelectValueRequest(type, field, filterBy, pageIndex),
+      ),
     ).then(results => results.filter(isGetSelectValueSuccessResponse))
     const responses = [firstResponse].concat(restOfResponses)
 
@@ -909,12 +963,7 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  private async sendSearchWithIdRequest(
-    args: {
-      searchId: string
-      pageIndex: number
-    }
-  ): Promise<SearchResponse> {
+  private async sendSearchWithIdRequest(args: { searchId: string; pageIndex: number }): Promise<SearchResponse> {
     const response = await this.sendSoapRequest('searchMoreWithId', args)
     this.assertSearchResponse(response)
     if (isSearchErrorResponse(response)) {
@@ -928,8 +977,7 @@ export default class SoapClient {
   private async getTypeNamespace(type: string): Promise<string | undefined> {
     const wsdl = await this.getNetsuiteWsdl()
     return Object.entries(wsdl.definitions.schemas).find(
-      ([_namespace, schema]) =>
-        schema.complexTypes[strings.capitalizeFirstLetter(type)] !== undefined
+      ([_namespace, schema]) => schema.complexTypes[strings.capitalizeFirstLetter(type)] !== undefined,
     )?.[0]
   }
 

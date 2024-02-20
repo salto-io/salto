@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _, { isString } from 'lodash'
 import {
   AdapterOperations,
@@ -29,11 +29,19 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
-  isReferenceExpression, isSaltoError,
+  isReferenceExpression,
+  isSaltoError,
   ReadOnlyElementsSource,
   SaltoError,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, combineElementFixers, config as configUtils, definitions, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  combineElementFixers,
+  config as configUtils,
+  definitions,
+  elements as elementUtils,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
   inspectValue,
@@ -58,6 +66,7 @@ import {
   isGuideEnabled,
   isGuideThemesEnabled,
   ZendeskConfig,
+  migrateOmitInactiveConfig,
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -283,10 +292,8 @@ const SKIP_RESOLVE_TYPE_NAMES = [
 
 /**
  * Fetch Guide (help_center) elements of brand.
-*/
-const zendeskGuideEntriesFunc = (
-  brandInstance: InstanceElement,
-): elementUtils.ducktype.EntriesRequester => {
+ */
+const zendeskGuideEntriesFunc = (brandInstance: InstanceElement): elementUtils.ducktype.EntriesRequester => {
   const getZendeskGuideEntriesResponseValues = async ({
     paginator,
     args,
@@ -302,21 +309,21 @@ const zendeskGuideEntriesFunc = (
       return []
     }
     log.debug(`Fetching type ${typeName} entries for brand ${brandInstance.elemID.name}`)
-    const brandPaginatorResponseValues = (await getEntriesResponseValues({
-      paginator,
-      args,
-      typeName,
-      typesConfig,
-    })).flat()
+    const brandPaginatorResponseValues = (
+      await getEntriesResponseValues({
+        paginator,
+        args,
+        typeName,
+        typesConfig,
+      })
+    ).flat()
     const responseEntryName = typesConfig[typeName].transformation?.dataField
     return brandPaginatorResponseValues.flatMap(response => {
       if (responseEntryName === undefined) {
         return makeArray(response)
       }
       const responseEntries = makeArray(
-        (responseEntryName !== definitions.DATA_FIELD_ENTIRE_OBJECT)
-          ? response[responseEntryName]
-          : response
+        responseEntryName !== definitions.DATA_FIELD_ENTIRE_OBJECT ? response[responseEntryName] : response,
       ) as clientUtils.ResponseValue[]
       // Defining Zendesk Guide element to its corresponding brand (= subdomain)
       responseEntries.forEach(entry => {
@@ -342,20 +349,17 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
-const getBrandsFromElementsSourceNoCache = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<InstanceElement[]> => (
+const getBrandsFromElementsSourceNoCache = async (elementsSource: ReadOnlyElementsSource): Promise<InstanceElement[]> =>
   awu(await elementsSource.list())
     .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
     .map(id => elementsSource.get(id))
     .filter(isInstanceElement)
     .toArray()
-)
 
 /**
  * Fetch Guide (help_center) elements for the given brands.
  * Each help_center requires a different paginator.
-*/
+ */
 const getGuideElements = async ({
   brandsList,
   brandToPaginator,
@@ -373,28 +377,32 @@ const getGuideElements = async ({
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 
   // Omit standaloneFields from config to avoid creating types from references
-  const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config => _.omit(config, ['transformation.standaloneFields']))
-  const fetchResultWithDuplicateTypes = await Promise.all(brandsList.map(async brandInstance => {
-    const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
-    log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
-    return getAllElements({
-      adapterName: ZENDESK,
-      types: typesConfigWithNoStandaloneFields,
-      shouldAddRemainingTypes: false,
-      supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
-      fetchQuery,
-      paginator: brandsPaginator,
-      nestedFieldFinder: findDataField,
-      computeGetArgs,
-      typeDefaults: apiDefinitions.typeDefaults,
-      getElemIdFunc,
-      getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
-    })
-  }))
+  const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
+    _.omit(config, ['transformation.standaloneFields']),
+  )
+  const fetchResultWithDuplicateTypes = await Promise.all(
+    brandsList.map(async brandInstance => {
+      const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
+      log.debug(`Fetching elements for brand ${brandInstance.elemID.name}`)
+      return getAllElements({
+        adapterName: ZENDESK,
+        types: typesConfigWithNoStandaloneFields,
+        shouldAddRemainingTypes: false,
+        supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
+        fetchQuery,
+        paginator: brandsPaginator,
+        nestedFieldFinder: findDataField,
+        computeGetArgs,
+        typeDefaults: apiDefinitions.typeDefaults,
+        getElemIdFunc,
+        getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandInstance),
+      })
+    }),
+  )
 
   const typeNameToGuideInstances = _.groupBy(
     fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
-    instance => instance.elemID.typeName
+    instance => instance.elemID.typeName,
   )
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
@@ -418,8 +426,9 @@ const getGuideElements = async ({
     getElemIdFunc,
   })
 
-  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes
-    .flatMap(fetchResult => fetchResult.configChanges ?? [])
+  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(
+    fetchResult => fetchResult.configChanges ?? [],
+  )
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
@@ -505,11 +514,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       return clientsBySubdomain[subdomain]
     }
 
-
-    this.fetchQuery = elementUtils.query.createElementQuery(
-      this.userConfig[FETCH_CONFIG],
-      fetchCriteria,
-    )
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
 
     this.createFiltersRunner = async ({
       filterRunnerClient,
@@ -519,7 +524,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
-    }) => (
+    }) =>
       filtersRunner(
         {
           client: filterRunnerClient ?? this.client,
@@ -533,20 +538,22 @@ export default class ZendeskAdapter implements AdapterOperations {
         filterCreators,
         concatObjects,
       )
-    )
 
-    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({
-      client,
-      config,
-      elementsSource,
-    }))
+    this.fixElementsFunc = combineElementFixers(
+      createFixElementFunctions({
+        client,
+        config,
+        elementsSource,
+      }),
+    )
   }
 
   private filterSupportedTypes(): Record<string, string[]> {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
     const keysToOmit = isGuideEnabledInConfig
-      ? Object.keys(GUIDE_BRAND_SPECIFIC_TYPES) : Object.keys(GUIDE_SUPPORTED_TYPES)
+      ? Object.keys(GUIDE_BRAND_SPECIFIC_TYPES)
+      : Object.keys(GUIDE_SUPPORTED_TYPES)
     if (!isGuideThemesEnabledInConfig) {
       keysToOmit.push(GUIDE_THEME_TYPE_NAME)
     }
@@ -580,34 +587,36 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
 
     const combinedRes = {
-      configChanges: (defaultSubdomainResult.configChanges ?? []),
+      configChanges: defaultSubdomainResult.configChanges ?? [],
       elements: defaultSubdomainResult.elements,
-      errors: (defaultSubdomainResult.errors ?? []),
+      errors: defaultSubdomainResult.errors ?? [],
     }
 
     const brandsList = getBrandsForGuide(
       defaultSubdomainResult.elements.filter(isInstanceElement),
-      this.userConfig[FETCH_CONFIG]
+      this.userConfig[FETCH_CONFIG],
     )
 
     if (_.isEmpty(brandsList)) {
       const brandPatterns = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
       const message = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
       log.warn(message)
-      combinedRes.errors = (combinedRes.errors).concat([{
-        message,
-        severity: 'Warning',
-      }])
+      combinedRes.errors = combinedRes.errors.concat([
+        {
+          message,
+          severity: 'Warning',
+        },
+      ])
     } else {
-      const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
-        [
+      const brandToPaginator = Object.fromEntries(
+        brandsList.map(brandInstance => [
           brandInstance.elemID.name,
           createPaginator({
             client: this.createClientBySubdomain(brandInstance.value.subdomain),
             paginationFuncCreator: paginate,
           }),
-        ]
-      )))
+        ]),
+      )
 
       const zendeskGuideElements = await getGuideElements({
         brandsList,
@@ -637,19 +646,22 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   private async isLocaleEnUs(): Promise<SaltoError | undefined> {
     try {
-      const res = (await this.client.get({
-        url: '/api/v2/users/me',
-      })).data
+      const res = (
+        await this.client.get({
+          url: '/api/v2/users/me',
+        })
+      ).data
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
           return {
-            message: 'You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto\'s behavior in some cases. Therefore, it is highly recommended to set the user\'s language to "English (United States)" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user\'s language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support',
+            message:
+              "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support",
             severity: 'Warning',
           }
         }
         return undefined
       }
-      log.error('could not verify fetching user\'s locale is set to en-US. received invalid response')
+      log.error("could not verify fetching user's locale is set to en-US. received invalid response")
     } catch (e) {
       log.error(`could not verify fetching user's locale is set to en-US'. error: ${e}`)
     }
@@ -692,27 +704,32 @@ export default class ZendeskAdapter implements AdapterOperations {
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
       .filter(brandInstance => brandInstance.value.has_help_center)
-    const brandIdToClient = Object.fromEntries(brandsWithHelpCenter.map(
-      brandInstance => [
+    const brandIdToClient = Object.fromEntries(
+      brandsWithHelpCenter.map(brandInstance => [
         brandInstance.value.id,
         this.createClientBySubdomain(brandInstance.value.subdomain),
-      ]
-    ))
+      ]),
+    )
     // This exposes different subdomain clients for Guide related types filters
-    const result = await (await this.createFiltersRunner({ brandIdToClient }))
-      .onFetch(elements) as FilterResult
-    const updatedConfig = this.configInstance && configChanges
-      ? configUtils.getUpdatedCofigFromConfigChanges({
-        configChanges,
-        currentConfig: this.configInstance,
-        configType,
-      }) : undefined
+    const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
+    const updatedConfig =
+      this.configInstance && configChanges
+        ? configUtils.getUpdatedCofigFromConfigChanges({
+            configChanges,
+            currentConfig: this.configInstance,
+            configType,
+          })
+        : undefined
 
+    // TODO SALTO-5420 remove the omitInactive migration
+    const configWithOmitInactive = this.configInstance
+      ? migrateOmitInactiveConfig(this.configInstance, updatedConfig)
+      : undefined
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     if (this.logIdsFunc !== undefined) {
       this.logIdsFunc()
     }
-    return { elements, errors: fetchErrors, updatedConfig }
+    return { elements, errors: fetchErrors, updatedConfig: configWithOmitInactive }
   }
 
   private getBrandsFromElementsSource(): Promise<InstanceElement[]> {
@@ -728,23 +745,20 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
     const brandsList = await this.getBrandsFromElementsSource()
     log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
-    const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
-      brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
-    ))
-    const subdomainToGuideChanges = _.groupBy(
-      guideResolvedChanges,
-      change => {
-        const { brand } = getChangeData(change).value
-        // If the change was in SKIP_RESOLVE_TYPE_NAMES, brand is a reference expression
-        return resolvedBrandIdToSubdomain[isReferenceExpression(brand) ? brand.value.value.id : brand]
-      }
+    const resolvedBrandIdToSubdomain = Object.fromEntries(
+      brandsList.map(brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]),
     )
-    const subdomainsList = brandsList
-      .map(brandInstance => brandInstance.value.subdomain)
-      .filter(isString)
-    const subdomainToClient = Object.fromEntries(subdomainsList
-      .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
+    const subdomainToGuideChanges = _.groupBy(guideResolvedChanges, change => {
+      const { brand } = getChangeData(change).value
+      // If the change was in SKIP_RESOLVE_TYPE_NAMES, brand is a reference expression
+      return resolvedBrandIdToSubdomain[isReferenceExpression(brand) ? brand.value.value.id : brand]
+    })
+    const subdomainsList = brandsList.map(brandInstance => brandInstance.value.subdomain).filter(isString)
+    const subdomainToClient = Object.fromEntries(
+      subdomainsList
+        .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
+        .map(subdomain => [subdomain, this.getClientBySubdomain(subdomain, true)]),
+    )
     try {
       return await awu(Object.entries(subdomainToClient))
         .map(async ([subdomain, client]) => {
@@ -756,9 +770,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             }),
           })
           await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-          const { deployResult: brandDeployResults } = await brandRunner.deploy(
-            subdomainToGuideChanges[subdomain]
-          )
+          const { deployResult: brandDeployResults } = await brandRunner.deploy(subdomainToGuideChanges[subdomain])
           const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
           try {
             await brandRunner.onDeploy(guideChangesBeforeRestore)
@@ -778,10 +790,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       if (!isSaltoError(e)) {
         throw e
       }
-      return [{
-        appliedChanges: [],
-        errors: [e],
-      }]
+      return [
+        {
+          appliedChanges: [],
+          errors: [e],
+        },
+      ]
     }
   }
 
@@ -792,36 +806,32 @@ export default class ZendeskAdapter implements AdapterOperations {
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
     if (nonInstanceChanges.length > 0) {
-      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
+      log.warn(
+        `We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`,
+      )
     }
-    const changesToDeploy = instanceChanges
-      .map(change => ({
-        action: change.action,
-        data: _.mapValues(change.data, (instance: InstanceElement) =>
-          replaceInstanceTypeForDeploy({
-            instance,
-            config: this.userConfig[API_DEFINITIONS_CONFIG],
-          })),
-      })) as Change<InstanceElement>[]
-    const sourceChanges = _.keyBy(
-      changesToDeploy,
-      change => getChangeData(change).elemID.getFullName(),
-    )
+    const changesToDeploy = instanceChanges.map(change => ({
+      action: change.action,
+      data: _.mapValues(change.data, (instance: InstanceElement) =>
+        replaceInstanceTypeForDeploy({
+          instance,
+          config: this.userConfig[API_DEFINITIONS_CONFIG],
+        }),
+      ),
+    })) as Change<InstanceElement>[]
+    const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
-        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+        SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(
-            change,
-            lookupFunc,
-            async (element, getLookUpName, elementsSource) =>
+          : resolveChangeElement(change, lookupFunc, async (element, getLookUpName, elementsSource) =>
               resolveValues(element, getLookUpName, elementsSource, true),
-          )))
+            ),
+      )
       .toArray()
-    const [guideResolvedChanges, supportResolvedChanges] = _.partition(
-      resolvedChanges,
-      change => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName)
+    const [guideResolvedChanges, supportResolvedChanges] = _.partition(resolvedChanges, change =>
+      GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName),
     )
     const saltoErrors: SaltoError[] = []
     try {
@@ -846,17 +856,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       saltoErrors.push(e)
     }
 
-
     const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
-      guideDeployResults.flatMap(result => result.appliedChanges)
+      guideDeployResults.flatMap(result => result.appliedChanges),
     )
     const appliedChanges = await awu(allChangesBeforeRestore)
-      .map(change => restoreChangeElement(
-        change,
-        sourceChanges,
-        lookupFunc,
-      ))
+      .map(change => restoreChangeElement(change, sourceChanges, lookupFunc))
       .toArray()
     const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
       appliedChanges,
@@ -877,9 +882,22 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
-        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME],
+        typesDeployedViaParent: [
+          'organization_field__custom_field_options',
+          'macro_attachment',
+          BRAND_LOGO_TYPE_NAME,
+          CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+        ],
         // article_attachment and guide themes additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
+        typesWithNoDeploy: [
+          'tag',
+          ARTICLE_ATTACHMENT_TYPE_NAME,
+          GUIDE_THEME_TYPE_NAME,
+          THEME_SETTINGS_TYPE_NAME,
+          ...GUIDE_ORDER_TYPES,
+          DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+          CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
+        ],
       }),
       dependencyChanger,
       getChangeGroupIds,

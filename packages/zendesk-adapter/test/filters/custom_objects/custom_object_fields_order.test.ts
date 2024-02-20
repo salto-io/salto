@@ -1,21 +1,22 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   CORE_ANNOTATIONS,
-  ElemID, getChangeData,
+  ElemID,
+  getChangeData,
   InstanceElement,
   ObjectType,
   ReferenceExpression,
@@ -29,35 +30,41 @@ import {
   ORDER_FIELD,
   ZENDESK,
 } from '../../../src/constants'
-import filterCreator, { customObjectFieldsOrderType } from '../../../src/filters/custom_objects/custom_object_fields_order'
+import filterCreator, {
+  customObjectFieldsOrderType,
+} from '../../../src/filters/custom_objects/custom_object_fields_order'
 import { createFilterCreatorParams } from '../../utils'
 import ZendeskClient from '../../../src/client/client'
 
 const { RECORDS_PATH } = elementsUtils
 type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
 
-const createCustomObjectField = (id: number, parent: InstanceElement): InstanceElement => new InstanceElement(
-  `customObjectField${id}`,
-  new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME) }),
-  { id },
-  undefined,
-  { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
-)
+const createCustomObjectField = (id: number, parent: InstanceElement): InstanceElement =>
+  new InstanceElement(
+    `customObjectField${id}`,
+    new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME) }),
+    { id },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] },
+  )
 
-const createCustomObject = (id: number): InstanceElement => new InstanceElement(
-  `customObject${id}`,
-  new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_TYPE_NAME) }),
-  { key: 'key' }
-)
+const createCustomObject = (id: number): InstanceElement =>
+  new InstanceElement(`customObject${id}`, new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_TYPE_NAME) }), {
+    key: 'key',
+  })
 
-const createCustomObjectFieldsOrder = (name: string, fields: InstanceElement[], parent: InstanceElement)
-  : InstanceElement => new InstanceElement(
-  name,
-  customObjectFieldsOrderType,
-  { [ORDER_FIELD]: fields.map(field => new ReferenceExpression(field.elemID, field)) },
-  [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, name],
-  { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
-)
+const createCustomObjectFieldsOrder = (
+  name: string,
+  fields: InstanceElement[],
+  parent: InstanceElement,
+): InstanceElement =>
+  new InstanceElement(
+    name,
+    customObjectFieldsOrderType,
+    { [ORDER_FIELD]: fields.map(field => new ReferenceExpression(field.elemID, field)) },
+    [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, name],
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] },
+  )
 
 describe('customObjectFieldsOrderFilter', () => {
   let customObjectFieldsOrderFilter: FilterType
@@ -88,26 +95,24 @@ describe('customObjectFieldsOrderFilter', () => {
       // 1 type and 2 instances
       expect(elements).toHaveLength(initialLength + 1 + 2)
       expect(elements[initialLength]).toEqual(customObjectFieldsOrderType)
-      expect(elements[initialLength + 1]).toEqual(createCustomObjectFieldsOrder(
-        `${customObject1.elemID.name}_fields_order`,
-        [customObjectField1, customObjectField2],
-        customObject1
-      ))
-      expect(elements[initialLength + 2]).toEqual(createCustomObjectFieldsOrder(
-        `${customObject2.elemID.name}_fields_order`,
-        [customObjectField3],
-        customObject2
-      ))
+      expect(elements[initialLength + 1]).toEqual(
+        createCustomObjectFieldsOrder(
+          `${customObject1.elemID.name}_fields_order`,
+          [customObjectField1, customObjectField2],
+          customObject1,
+        ),
+      )
+      expect(elements[initialLength + 2]).toEqual(
+        createCustomObjectFieldsOrder(`${customObject2.elemID.name}_fields_order`, [customObjectField3], customObject2),
+      )
     })
     it('should not crash with field instance without a parent', async () => {
       const elements = [customObject1, customObjectField1, customObjectField2]
       customObjectField1.annotations[CORE_ANNOTATIONS.PARENT] = undefined
       await customObjectFieldsOrderFilter.onFetch(elements)
-      expect(elements[elements.length - 1]).toEqual(createCustomObjectFieldsOrder(
-        `${customObject1.elemID.name}_fields_order`,
-        [customObjectField2],
-        customObject1
-      ))
+      expect(elements[elements.length - 1]).toEqual(
+        createCustomObjectFieldsOrder(`${customObject1.elemID.name}_fields_order`, [customObjectField2], customObject1),
+      )
     })
   })
   describe('deploy', () => {
@@ -116,7 +121,7 @@ describe('customObjectFieldsOrderFilter', () => {
       const customObjectFieldsOrder = createCustomObjectFieldsOrder(
         `${customObject1.elemID.name}_fields_order`,
         [customObjectField1, customObjectField2, customObjectField3, customObjectField4],
-        customObject1
+        customObject1,
       )
       // Check support for both resolved and unresolved values
       customObjectFieldsOrder.value[ORDER_FIELD][0] = customObjectFieldsOrder.value[ORDER_FIELD][0].value.value
@@ -145,13 +150,13 @@ describe('customObjectFieldsOrderFilter', () => {
       const customObjectFieldsOrder = createCustomObjectFieldsOrder(
         `${customObject1.elemID.name}_fields_order`,
         [customObjectField1, customObjectField2, customObjectField3],
-        customObject1
+        customObject1,
       )
       delete customObject2.value.key
       const orderWithoutParentKey = createCustomObjectFieldsOrder(
         `${customObject2.elemID.name}_fields_order`,
         [customObjectField1, customObjectField2, customObjectField3],
-        customObject2
+        customObject2,
       )
       const orderWithoutParent = orderWithoutParentKey.clone()
       orderWithoutParent.annotations[CORE_ANNOTATIONS.PARENT] = undefined
@@ -168,7 +173,7 @@ describe('customObjectFieldsOrderFilter', () => {
       expect(deployResults.deployResult.errors[0]).toMatchObject({
         elemID: getChangeData(changes[0]).elemID,
         severity: 'Error',
-        message: 'fields reorder request failed, { status: 400, data: { error: \'test\' } }',
+        message: "fields reorder request failed, { status: 400, data: { error: 'test' } }",
       })
       expect(deployResults.deployResult.errors[1]).toMatchObject({
         elemID: getChangeData(changes[1]).elemID,
@@ -187,12 +192,10 @@ describe('customObjectFieldsOrderFilter', () => {
       const customObjectFieldsOrder = createCustomObjectFieldsOrder(
         `${customObject1.elemID.name}_fields_order`,
         [customObjectField1, customObjectField2, customObjectField3],
-        customObject1
+        customObject1,
       )
 
-      const changes = [
-        toChange({ after: customObjectFieldsOrder }),
-      ]
+      const changes = [toChange({ after: customObjectFieldsOrder })]
       const deployResults = await customObjectFieldsOrderFilter.deploy(changes)
       expect(deployResults.deployResult.errors).toHaveLength(0)
       expect(deployResults.deployResult.appliedChanges).toMatchObject(changes)
@@ -200,10 +203,7 @@ describe('customObjectFieldsOrderFilter', () => {
       expect(putSpy).toHaveBeenCalledWith({
         url: `/api/v2/custom_objects/${customObject1.value.key}/fields/reorder`,
         data: {
-          custom_object_field_ids: [
-            customObjectField2.value.id.toString(),
-            customObjectField3.value.id.toString(),
-          ],
+          custom_object_field_ids: [customObjectField2.value.id.toString(), customObjectField3.value.id.toString()],
         },
       })
     })

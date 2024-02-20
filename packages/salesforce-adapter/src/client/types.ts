@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { MetadataInfo, SaveResult } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
@@ -25,22 +25,29 @@ const RELATIONSHIP_FIELD_NAMES: string[] = [
   FIELD_TYPE_NAMES.HIERARCHY,
 ]
 
-const isRelationshipFieldName = (fieldName: string): boolean => (
+const isRelationshipFieldName = (fieldName: string): boolean =>
   RELATIONSHIP_FIELD_NAMES.includes(fieldName)
-)
 
 export type JSONBool = boolean | 'true' | 'false'
 
-export type ObjectPermissionsOptionsFields = 'allowCreate' | 'allowDelete' | 'allowEdit'
- | 'allowRead' | 'modifyAllRecords' | 'viewAllRecords'
-export type ObjectPermissionsOptions = {[option in ObjectPermissionsOptionsFields]: JSONBool}
+export type ObjectPermissionsOptionsFields =
+  | 'allowCreate'
+  | 'allowDelete'
+  | 'allowEdit'
+  | 'allowRead'
+  | 'modifyAllRecords'
+  | 'viewAllRecords'
+export type ObjectPermissionsOptions = {
+  [option in ObjectPermissionsOptionsFields]: JSONBool
+}
 
 export type FieldPermissionsOptionsFields = 'editable' | 'readable'
-export type FieldPermissionsOptions = {[option in FieldPermissionsOptionsFields]: JSONBool}
+export type FieldPermissionsOptions = {
+  [option in FieldPermissionsOptionsFields]: JSONBool
+}
 
 export type FieldPermissions = { field: string } & FieldPermissionsOptions
 export type ObjectPermissions = { object: string } & ObjectPermissionsOptions
-
 
 export interface ProfileInfo extends MetadataInfo {
   fullName: string
@@ -58,15 +65,20 @@ export class TopicsForObjectsInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
     public entityApiName: string,
-    public enableTopics: JSONBool
+    public enableTopics: JSONBool,
   ) {}
 }
 
 export class CustomPicklistValue implements MetadataInfo {
   readonly default: boolean
   color?: string
-  constructor(public readonly fullName: string, isDefault: boolean, readonly isActive: boolean,
-    readonly label?: string, color?: string) {
+  constructor(
+    public readonly fullName: string,
+    isDefault: boolean,
+    readonly isActive: boolean,
+    readonly label?: string,
+    color?: string,
+  ) {
     if (!this.label) {
       this.label = fullName
     }
@@ -189,7 +201,8 @@ export class CustomField implements MetadataInfo {
   ) {
     this.type = type
     if (metadataRelationshipControllingField !== undefined) {
-      this.metadataRelationshipControllingField = metadataRelationshipControllingField
+      this.metadataRelationshipControllingField =
+        metadataRelationshipControllingField
     }
     if (formula) {
       this.formula = formula
@@ -215,17 +228,26 @@ export class CustomField implements MetadataInfo {
     }
 
     // For Picklist we save the default value in defaultVal but Metadata requires it at Value level
-    if (type === FIELD_TYPE_NAMES.PICKLIST || type === FIELD_TYPE_NAMES.MULTIPICKLIST) {
-      if ((values && !_.isEmpty(values)) || (valueSetName)) {
+    if (
+      type === FIELD_TYPE_NAMES.PICKLIST ||
+      type === FIELD_TYPE_NAMES.MULTIPICKLIST
+    ) {
+      if ((values && !_.isEmpty(values)) || valueSetName) {
         if (values && !_.isEmpty(values)) {
           this.valueSet = {
-            ...picklistRestricted ? { restricted: true } : {},
+            ...(picklistRestricted ? { restricted: true } : {}),
             valueSetDefinition: {
-              ...picklistSorted ? { sorted: true } : {},
-              value: values.map(val =>
-                new CustomPicklistValue(
-                  val.fullName, val.default, val.isActive ?? true, val.label, val.color,
-                )),
+              ...(picklistSorted ? { sorted: true } : {}),
+              value: values.map(
+                (val) =>
+                  new CustomPicklistValue(
+                    val.fullName,
+                    val.default,
+                    val.isActive ?? true,
+                    val.label,
+                    val.color,
+                  ),
+              ),
             },
           }
         } else {
@@ -258,19 +280,32 @@ export class CustomField implements MetadataInfo {
 
     // Checkbox, Formula, AutoNumber, LongTextArea and RichTextArea
     //  fields should not have required field
-    if (!([FIELD_TYPE_NAMES.CHECKBOX,
-      FIELD_TYPE_NAMES.AUTONUMBER,
-      FIELD_TYPE_NAMES.LONGTEXTAREA,
-      FIELD_TYPE_NAMES.RICHTEXTAREA] as string[]).includes(this.type)
-      && !formula) {
+    if (
+      !(
+        [
+          FIELD_TYPE_NAMES.CHECKBOX,
+          FIELD_TYPE_NAMES.AUTONUMBER,
+          FIELD_TYPE_NAMES.LONGTEXTAREA,
+          FIELD_TYPE_NAMES.RICHTEXTAREA,
+        ] as string[]
+      ).includes(this.type) &&
+      !formula
+    ) {
       this.required = required
     }
   }
 }
 
-type SharingModelEnum = 'Private' | 'Read' | 'ReadSelect'
-  | 'ReadWrite' | 'ReadWriteTransfer' | 'FullAccess' | 'ControlledByParent'
-  | 'ControlledByLeadOrContact' | 'ControlledByCampaign'
+type SharingModelEnum =
+  | 'Private'
+  | 'Read'
+  | 'ReadSelect'
+  | 'ReadWrite'
+  | 'ReadWriteTransfer'
+  | 'FullAccess'
+  | 'ControlledByParent'
+  | 'ControlledByLeadOrContact'
+  | 'ControlledByCampaign'
 
 export type CustomObject = MetadataInfo & {
   label: string

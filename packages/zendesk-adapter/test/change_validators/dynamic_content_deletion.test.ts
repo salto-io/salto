@@ -1,23 +1,25 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   InstanceElement,
   ObjectType,
   ElemID,
-  toChange, ReferenceExpression, TemplateExpression,
+  toChange,
+  ReferenceExpression,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
 import {
@@ -30,11 +32,7 @@ import {
 import { dynamicContentDeletionValidator } from '../../src/change_validators'
 
 const createDynamicContentInstance = (name: string): InstanceElement =>
-  new InstanceElement(
-    name,
-    new ObjectType({ elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME) }),
-    {},
-  )
+  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME) }), {})
 
 const createDynamicContentUserInstance = (
   name: string,
@@ -42,17 +40,13 @@ const createDynamicContentUserInstance = (
   dynamicContent: InstanceElement,
   shouldTemplateExpression = false,
 ): InstanceElement =>
-  new InstanceElement(
-    name,
-    new ObjectType({ elemID: new ElemID(ZENDESK, type) }),
-    {
-      inner: {
-        value: shouldTemplateExpression
-          ? new TemplateExpression({ parts: ['a', new ReferenceExpression(dynamicContent.elemID), 'c'] })
-          : new ReferenceExpression(dynamicContent.elemID),
-      },
-    }
-  )
+  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, type) }), {
+    inner: {
+      value: shouldTemplateExpression
+        ? new TemplateExpression({ parts: ['a', new ReferenceExpression(dynamicContent.elemID), 'c'] })
+        : new ReferenceExpression(dynamicContent.elemID),
+    },
+  })
 
 describe('dynamicContentDeletionValidator', () => {
   let dynamicContent: InstanceElement
@@ -74,7 +68,8 @@ describe('dynamicContentDeletionValidator', () => {
         elemID: dynamicContent.elemID,
         severity: 'Error',
         message: 'Dynamic content is being used',
-        detailedMessage: 'This dynamic content cannot be deleted because it is being used by zendesk.automation.instance.automation, zendesk.macro.instance.macro, zendesk.trigger.instance.trigger',
+        detailedMessage:
+          'This dynamic content cannot be deleted because it is being used by zendesk.automation.instance.automation, zendesk.macro.instance.macro, zendesk.trigger.instance.trigger',
       },
     ])
   })
@@ -90,19 +85,16 @@ describe('dynamicContentDeletionValidator', () => {
         elemID: dynamicContent.elemID,
         severity: 'Error',
         message: 'Dynamic content is being used',
-        detailedMessage: 'This dynamic content cannot be deleted because it is being used by zendesk.automation.instance.automation, zendesk.macro.instance.macro',
+        detailedMessage:
+          'This dynamic content cannot be deleted because it is being used by zendesk.automation.instance.automation, zendesk.macro.instance.macro',
       },
     ])
   })
   it('should not error on other type the use the dynamic content', async () => {
     const changes = [toChange({ before: dynamicContent })]
-    const otherType = new InstanceElement(
-      'other',
-      new ObjectType({ elemID: new ElemID(ZENDESK, 'other') }),
-      {
-        value: new ReferenceExpression(dynamicContent.elemID),
-      }
-    )
+    const otherType = new InstanceElement('other', new ObjectType({ elemID: new ElemID(ZENDESK, 'other') }), {
+      value: new ReferenceExpression(dynamicContent.elemID),
+    })
     const elementsSource = elementSource.createInMemoryElementSource([dynamicContent, otherType])
     const errors = await dynamicContentDeletionValidator(changes, elementsSource)
     expect(errors).toMatchObject([])

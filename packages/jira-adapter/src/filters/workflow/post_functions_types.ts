@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
@@ -51,7 +51,7 @@ const webhookConfigType = new ObjectType({
   path: [JIRA, elements.TYPES_PATH, 'WebhookConfig'],
 })
 
-const scriptRunnerObjectType = new ObjectType({
+export const scriptRunnerObjectType = new ObjectType({
   elemID: new ElemID(JIRA, SCRIPT_RUNNER_TYPE),
   fields: {
     issueTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
@@ -104,8 +104,10 @@ const postFunctionConfigurationType = new ObjectType({
     FIELD_TARGET_PROJECT: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_SECURITY_LEVEL_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_BOARD_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
-    FIELD_SELECTED_FIELDS: { refType: new ListType(BuiltinTypes.STRING),
-      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_SELECTED_FIELDS: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+    },
   },
   path: [JIRA, elements.TYPES_PATH, POST_FUNCTION_CONFIGURATION],
 })

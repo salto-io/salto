@@ -1,25 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { InstanceElement, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { walkAST, JastBuilder, Operand, ValueOperand, TerminalClause, Field as JqlField, Position } from '@atlassianlabs/jql-ast'
+import {
+  walkAST,
+  JastBuilder,
+  Operand,
+  ValueOperand,
+  TerminalClause,
+  Field as JqlField,
+  Position,
+} from '@atlassianlabs/jql-ast'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
-import { ISSUE_TYPE_NAME, PRIORITY_TYPE_NAME, PROJECT_TYPE, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME, STATUS_CATEGORY_TYPE_NAME } from '../../constants'
+import {
+  ISSUE_TYPE_NAME,
+  PRIORITY_TYPE_NAME,
+  PROJECT_TYPE,
+  RESOLUTION_TYPE_NAME,
+  STATUS_TYPE_NAME,
+  STATUS_CATEGORY_TYPE_NAME,
+} from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 
 // e.g., cf[1234]
@@ -64,33 +79,27 @@ const CONTEXT_TYPE_TO_FIELD: Record<string, string> = {
   [STATUS_CATEGORY_TYPE_NAME]: 'name',
 }
 
-export const removeCustomFieldPrefix = (id: string): string => (
+export const removeCustomFieldPrefix = (id: string): string =>
   id.startsWith(CUSTOM_FIELD_PREFIX) ? id.slice(CUSTOM_FIELD_PREFIX.length) : id
-)
 
-export const generateJqlContext = (
-  instances: InstanceElement[],
-): JqlContext => ({
+export const generateJqlContext = (instances: InstanceElement[]): JqlContext => ({
   typeToInstancesByField: _(instances)
     .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)
-    .mapValues(
-      (instanceGroup, typeName) => {
-        const fieldName = CONTEXT_TYPE_TO_FIELD[typeName]
-        return _.groupBy(instanceGroup, instance => instance.value[fieldName].toLowerCase())
-      }
-    )
+    .mapValues((instanceGroup, typeName) => {
+      const fieldName = CONTEXT_TYPE_TO_FIELD[typeName]
+      return _.groupBy(instanceGroup, instance => instance.value[fieldName].toLowerCase())
+    })
     .value(),
 
   typeToInstanceById: _(instances)
     .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)
-    .mapValues(
-      instanceGroup =>
-        _.keyBy(
-          instanceGroup.filter(instance => instance.value.id !== undefined),
-          instance => removeCustomFieldPrefix(instance.value.id.toString())
-        )
+    .mapValues(instanceGroup =>
+      _.keyBy(
+        instanceGroup.filter(instance => instance.value.id !== undefined),
+        instance => removeCustomFieldPrefix(instance.value.id.toString()),
+      ),
     )
     .value(),
 })
@@ -125,8 +134,7 @@ type JqlNode = {
   value: string
 }
 
-const getValuePosition = (node: JqlNode)
-  : TokenPosition | undefined => {
+const getValuePosition = (node: JqlNode): TokenPosition | undefined => {
   const valueIndex = node.text.indexOf(node.value)
   // This might happen if node.text contains escaping characters.
   // We don't currently support that case but it is pretty rare to put characters
@@ -147,7 +155,7 @@ const getFieldInfo = (
 ): {
   fieldInfo?: FieldInfo
   error?: 'ambiguous'
- } => {
+} => {
   let fieldIdentifier = field.value.toLowerCase()
 
   const position = getValuePosition(field)
@@ -183,10 +191,7 @@ const getFieldInfo = (
     }
   }
 
-  if (!Object.prototype.hasOwnProperty.call(
-    jqlContext.typeToInstancesByField[FIELD_TYPE_NAME],
-    fieldIdentifier
-  )) {
+  if (!Object.prototype.hasOwnProperty.call(jqlContext.typeToInstancesByField[FIELD_TYPE_NAME], fieldIdentifier)) {
     return { fieldInfo: undefined }
   }
 
@@ -207,11 +212,13 @@ const getValueInfo = (
   fieldToInstances: Record<string, InstanceElement[]>,
   idToInstance: Record<string, InstanceElement>,
   typeName: string,
-  operand: ValueOperand
-): undefined | {
-  identifier: string
-  instances: InstanceElement[]
-} => {
+  operand: ValueOperand,
+):
+  | undefined
+  | {
+      identifier: string
+      instances: InstanceElement[]
+    } => {
   const valueIdentifier = operand.value.toLowerCase()
 
   if (Object.prototype.hasOwnProperty.call(idToInstance, valueIdentifier)) {
@@ -234,11 +241,11 @@ const getValueInfo = (
 const getValueTokens = (
   clause: TerminalClause,
   jqlContext: JqlContext,
-  fieldInstance: InstanceElement
+  fieldInstance: InstanceElement,
 ): {
   tokens: JqlToken[]
   ambiguousTokens: Set<string>
- } => {
+} => {
   const ambiguousTokens = new Set<string>()
   if (clause.operand === undefined) {
     return { tokens: [], ambiguousTokens }
@@ -247,14 +254,12 @@ const getValueTokens = (
   // A heuristic that works for the types in CONTEXT_TYPE_TO_FIELD
   // to convert a field name to its values' type
   const typeName = fieldInstance.value.name.replace(/\s+/g, '')
-  const fieldToInstances = Object.prototype.hasOwnProperty.call(
-    jqlContext.typeToInstancesByField, typeName
-  ) ? jqlContext.typeToInstancesByField[typeName]
+  const fieldToInstances = Object.prototype.hasOwnProperty.call(jqlContext.typeToInstancesByField, typeName)
+    ? jqlContext.typeToInstancesByField[typeName]
     : {}
 
-  const idToInstance = Object.prototype.hasOwnProperty.call(
-    jqlContext.typeToInstanceById, typeName
-  ) ? jqlContext.typeToInstanceById[typeName]
+  const idToInstance = Object.prototype.hasOwnProperty.call(jqlContext.typeToInstanceById, typeName)
+    ? jqlContext.typeToInstanceById[typeName]
     : {}
 
   const tokens = getValueOperands(clause.operand)
@@ -272,15 +277,13 @@ const getValueTokens = (
       }
 
       return {
-        reference: valueInfo.identifier !== 'id'
-          ? new ReferenceExpression(
-            valueInfo.instances[0].elemID.createNestedID(valueInfo.identifier),
-            valueInfo.instances[0].value[valueInfo.identifier]
-          )
-          : new ReferenceExpression(
-            valueInfo.instances[0].elemID,
-            valueInfo.instances[0]
-          ),
+        reference:
+          valueInfo.identifier !== 'id'
+            ? new ReferenceExpression(
+                valueInfo.instances[0].elemID.createNestedID(valueInfo.identifier),
+                valueInfo.instances[0].value[valueInfo.identifier],
+              )
+            : new ReferenceExpression(valueInfo.instances[0].elemID, valueInfo.instances[0]),
         position,
       }
     })
@@ -293,15 +296,13 @@ const getValueTokens = (
 }
 
 const fieldInfoToJqlToken = (fieldInfo: FieldInfo): JqlToken => ({
-  reference: fieldInfo.identifier === 'id'
-    ? new ReferenceExpression(
-      fieldInfo.instance.elemID,
-      fieldInfo.instance,
-    )
-    : new ReferenceExpression(
-      fieldInfo.instance.elemID.createNestedID(fieldInfo.identifier),
-      fieldInfo.instance.value[fieldInfo.identifier],
-    ),
+  reference:
+    fieldInfo.identifier === 'id'
+      ? new ReferenceExpression(fieldInfo.instance.elemID, fieldInfo.instance)
+      : new ReferenceExpression(
+          fieldInfo.instance.elemID.createNestedID(fieldInfo.identifier),
+          fieldInfo.instance.value[fieldInfo.identifier],
+        ),
   position: fieldInfo.position,
 })
 
@@ -330,7 +331,7 @@ const createJqlTemplate = (jql: string, tokens: JqlToken[]): TemplateExpression 
 
 export const generateTemplateExpression = (
   jql: string,
-  jqlContext: JqlContext
+  jqlContext: JqlContext,
 ): {
   template: TemplateExpression | undefined
   ambiguousTokens: Set<string>
@@ -361,7 +362,7 @@ export const generateTemplateExpression = (
           const { tokens, ambiguousTokens: valueAmbiguousTokens } = getValueTokens(
             clause,
             jqlContext,
-            fieldInfo.instance
+            fieldInfo.instance,
           )
 
           tokens.forEach(token => jqlTokens.push(token))
@@ -382,7 +383,7 @@ export const generateTemplateExpression = (
           jqlTokens.push(fieldInfoToJqlToken(fieldInfo))
         },
       },
-      parsedJql
+      parsedJql,
     )
 
     if (_.isEmpty(jqlTokens)) {

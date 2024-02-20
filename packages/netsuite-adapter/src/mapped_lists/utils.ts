@@ -1,25 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  Values, InstanceElement, isMapType, ObjectType, isField, isListType, Field,
-  MapType, isObjectType, isContainerType, ElemID, Value,
-  BuiltinTypes, Element, ChangeDataType, isInstanceElement, TypeElement,
-  FieldDefinition, ListType, TypeReference,
+  Values,
+  InstanceElement,
+  isMapType,
+  ObjectType,
+  isField,
+  isListType,
+  Field,
+  MapType,
+  isObjectType,
+  isContainerType,
+  ElemID,
+  Value,
+  BuiltinTypes,
+  Element,
+  ChangeDataType,
+  isInstanceElement,
+  TypeElement,
+  FieldDefinition,
+  ListType,
+  TypeReference,
 } from '@salto-io/adapter-api'
-import { invertNaclCase, naclCase, transformElement, transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import {
+  invertNaclCase,
+  naclCase,
+  transformElement,
+  transformElementAnnotations,
+  TransformFunc,
+  transformValues,
+} from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -54,19 +77,18 @@ export const validateTypesFieldMapping = (elements: ObjectType[]): void => {
     validateType(typeName)
     makeArray(fieldNameList).forEach(fieldName => {
       if (typesMap[typeName].fields[fieldName] === undefined) {
-        throw new Error(`type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`)
+        throw new Error(
+          `type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`,
+        )
       }
     })
   })
   mapsWithoutIndex.forEach(validateType)
 }
 
-const shouldAddIndex = (type: TypeElement | TypeReference): boolean =>
-  !mapsWithoutIndex.has(type.elemID.name)
+const shouldAddIndex = (type: TypeElement | TypeReference): boolean => !mapsWithoutIndex.has(type.elemID.name)
 
-export const convertFieldsTypesFromListToMap = async (
-  element: ObjectType,
-): Promise<void> => {
+export const convertFieldsTypesFromListToMap = async (element: ObjectType): Promise<void> => {
   await awu(Object.entries(element.fields)).forEach(async ([fieldName, field]) => {
     const fieldType = await field.getType()
     if (!isListType(fieldType)) {
@@ -78,27 +100,19 @@ export const convertFieldsTypesFromListToMap = async (
       return
     }
 
-    const listMappedByField = listMappedByFieldMapping[innerType.elemID.name]
-      ?? (isField(innerType.fields.scriptid)
-        ? SCRIPT_ID
-        : undefined)
+    const listMappedByField =
+      listMappedByFieldMapping[innerType.elemID.name] ?? (isField(innerType.fields.scriptid) ? SCRIPT_ID : undefined)
     if (listMappedByField === undefined) {
       return
     }
 
-    const newField = new Field(
-      field.parent,
-      field.name,
-      new MapType(innerType),
-      { ...field.annotations, [LIST_MAPPED_BY_FIELD]: listMappedByField }
-    )
+    const newField = new Field(field.parent, field.name, new MapType(innerType), {
+      ...field.annotations,
+      [LIST_MAPPED_BY_FIELD]: listMappedByField,
+    })
     element.fields[fieldName] = newField
     if (shouldAddIndex(innerType)) {
-      innerType.fields[INDEX] = new Field(
-        innerType,
-        INDEX,
-        BuiltinTypes.NUMBER
-      )
+      innerType.fields[INDEX] = new Field(innerType, INDEX, BuiltinTypes.NUMBER)
     }
   })
 }
@@ -114,12 +128,7 @@ const getItemKey = (mapFieldValue: string): string => {
     : naclCase(serviceIdInfoList.map(serviceIdInfo => serviceIdInfo.serviceId).join('_'))
 }
 
-const addSuffixUntilUnique = (
-  keyName: string,
-  keySet: Set<string>,
-  path?: ElemID,
-  suffixIndex = 2,
-): string => {
+const addSuffixUntilUnique = (keyName: string, keySet: Set<string>, path?: ElemID, suffixIndex = 2): string => {
   const keyNameWithSuffix = naclCase(`${invertNaclCase(keyName)}_${suffixIndex}`)
   if (keySet.has(keyNameWithSuffix)) {
     return addSuffixUntilUnique(keyName, keySet, path, suffixIndex + 1)
@@ -128,12 +137,7 @@ const addSuffixUntilUnique = (
   return keyNameWithSuffix
 }
 
-const getUniqueItemKey = (
-  item: Value,
-  mapFieldNameList: string[],
-  keySet: Set<string>,
-  path?: ElemID,
-): string => {
+const getUniqueItemKey = (item: Value, mapFieldNameList: string[], keySet: Set<string>, path?: ElemID): string => {
   // types may have more than one optional mapping field (see 'centercategory_links_link' in
   // mapping.ts) so we're taking the first to be defined
   const mapFieldName = mapFieldNameList.find(fieldName => item[fieldName] !== undefined)
@@ -162,14 +166,12 @@ const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
   const withIndex = shouldAddIndex(fieldType.refInnerType)
   const keySet: Set<string> = new Set()
   return _(value)
-    .map((item, index) => ({ ...item, ...withIndex ? { [INDEX]: index } : {} }))
+    .map((item, index) => ({ ...item, ...(withIndex ? { [INDEX]: index } : {}) }))
     .keyBy(item => getUniqueItemKey(item, mapFieldNameList, keySet, path))
     .value()
 }
 
-export const convertInstanceListsToMaps = async (
-  instance: InstanceElement
-): Promise<Values | undefined> =>
+export const convertInstanceListsToMaps = async (instance: InstanceElement): Promise<Values | undefined> =>
   transformValues({
     values: instance.value,
     type: await instance.getType(),
@@ -178,29 +180,22 @@ export const convertInstanceListsToMaps = async (
     strict: false,
   })
 
-export const convertAnnotationListsToMaps = async (
-  element: Element
-): Promise<Values> =>
+export const convertAnnotationListsToMaps = async (element: Element): Promise<Values> =>
   transformElementAnnotations({
     element,
     transformFunc: transformMappedLists,
     strict: false,
   })
 
-export const isMappedList = async (
-  value: Value,
-  field: Field,
-): Promise<boolean> =>
-  _.isPlainObject(value)
-  && isContainerType(await field.getType())
-  && (field.annotations[LIST_MAPPED_BY_FIELD] || value[LIST_MAPPED_BY_FIELD])
+export const isMappedList = async (value: Value, field: Field): Promise<boolean> =>
+  _.isPlainObject(value) &&
+  isContainerType(await field.getType()) &&
+  (field.annotations[LIST_MAPPED_BY_FIELD] || value[LIST_MAPPED_BY_FIELD])
 
-export const getMappedLists = async (
-  instance: InstanceElement
-): Promise<MappedList[]> => {
+export const getMappedLists = async (instance: InstanceElement): Promise<MappedList[]> => {
   const mappedLists: MappedList[] = []
   const lookForMappedLists: TransformFunc = async ({ value, field, path }) => {
-    if (path && field && await isMappedList(value, field)) {
+    if (path && field && (await isMappedList(value, field))) {
       mappedLists.push({ field, path, value })
     }
     return value
@@ -228,26 +223,34 @@ export const convertDataInstanceMapsToLists = async (instance: InstanceElement):
     })
 
   const convertDataTypeFieldsToLists = async (type: ObjectType): Promise<ObjectType> =>
-    typeWithFields(type, await mapValuesAsync(type.fields, async field => {
-      const fieldType = await field.getType()
-      return {
-        annotations: field.annotations,
-        refType: isMapType(fieldType) && field.annotations[LIST_MAPPED_BY_FIELD]
-          ? new ListType(fieldType.refInnerType)
-          : fieldType,
-      }
-    }))
+    typeWithFields(
+      type,
+      await mapValuesAsync(type.fields, async field => {
+        const fieldType = await field.getType()
+        return {
+          annotations: field.annotations,
+          refType:
+            isMapType(fieldType) && field.annotations[LIST_MAPPED_BY_FIELD]
+              ? new ListType(fieldType.refInnerType)
+              : fieldType,
+        }
+      }),
+    )
 
   const convertDataType = async (type: ObjectType): Promise<ObjectType> =>
-    typeWithFields(type, await mapValuesAsync(type.fields, async field => {
-      const fieldType = await field.getType()
-      return {
-        annotations: field.annotations,
-        refType: isObjectType(fieldType) && dataTypesToConvert.has(fieldType.elemID.name)
-          ? await convertDataTypeFieldsToLists(fieldType)
-          : field.refType,
-      }
-    }))
+    typeWithFields(
+      type,
+      await mapValuesAsync(type.fields, async field => {
+        const fieldType = await field.getType()
+        return {
+          annotations: field.annotations,
+          refType:
+            isObjectType(fieldType) && dataTypesToConvert.has(fieldType.elemID.name)
+              ? await convertDataTypeFieldsToLists(fieldType)
+              : field.refType,
+        }
+      }),
+    )
 
   return transformElement({
     element: new InstanceElement(
@@ -257,11 +260,8 @@ export const convertDataInstanceMapsToLists = async (instance: InstanceElement):
       undefined,
       instance.annotations,
     ),
-    transformFunc: async ({ value, field }) => (
-      field !== undefined && await isMappedList(value, field)
-        ? Object.values(value)
-        : value
-    ),
+    transformFunc: async ({ value, field }) =>
+      field !== undefined && (await isMappedList(value, field)) ? Object.values(value) : value,
     strict: false,
   })
 }
@@ -272,51 +272,53 @@ export const convertDataInstanceMapsToLists = async (instance: InstanceElement):
 const setListMappedByFieldToValue = <T extends ChangeDataType>(element: T): Promise<T> =>
   transformElement({
     element,
-    transformFunc: async ({ value, field }) => (
-      field !== undefined && await isMappedList(value, field)
+    transformFunc: async ({ value, field }) =>
+      field !== undefined && (await isMappedList(value, field))
         ? { ...value, [LIST_MAPPED_BY_FIELD]: field.annotations[LIST_MAPPED_BY_FIELD] }
-        : value
-    ),
+        : value,
     strict: false,
   })
 
 const transformMapsToLists = (element: ChangeDataType): Promise<ChangeDataType> =>
   transformElement({
     element,
-    transformFunc: async ({ value, field }) => (
-      field !== undefined && await isMappedList(value, field)
+    transformFunc: async ({ value, field }) =>
+      field !== undefined && (await isMappedList(value, field))
         ? _.sortBy(
-          // Removing the `map_key_field` annotation that was used to identify the mapped list.
-          Object.values(_.omit(value, [LIST_MAPPED_BY_FIELD])),
-          [INDEX, value[LIST_MAPPED_BY_FIELD]].flat()
-        ).map(item => (_.isObject(item) ? _.omit(item, INDEX) : item))
-        : value
-    ),
+            // Removing the `map_key_field` annotation that was used to identify the mapped list.
+            Object.values(_.omit(value, [LIST_MAPPED_BY_FIELD])),
+            [INDEX, value[LIST_MAPPED_BY_FIELD]].flat(),
+          ).map(item => (_.isObject(item) ? _.omit(item, INDEX) : item))
+        : value,
     strict: false,
   })
 
-export const createConvertStandardElementMapsToLists = async (): Promise<(
-  element: ChangeDataType
-) => Promise<ChangeDataType>> => {
+export const createConvertStandardElementMapsToLists = async (): Promise<
+  (element: ChangeDataType) => Promise<ChangeDataType>
+> => {
   // Using hardcoded types so the transformed elements will have fields with List<> ref types.
   const standardTypes = getStandardTypes()
   const customRecordTypeAnnotationRefTypes = toAnnotationRefTypes(standardTypes.customrecordtype.type)
 
   return async element => {
     if (isInstanceElement(element) && isStandardTypeName(element.elemID.typeName)) {
-      return transformMapsToLists(new InstanceElement(
-        element.elemID.name,
-        standardTypes[element.elemID.typeName].type,
-        (await setListMappedByFieldToValue(element)).value,
-      ))
+      return transformMapsToLists(
+        new InstanceElement(
+          element.elemID.name,
+          standardTypes[element.elemID.typeName].type,
+          (await setListMappedByFieldToValue(element)).value,
+        ),
+      )
     }
     if (isObjectType(element) && isCustomRecordType(element)) {
-      return transformMapsToLists(new ObjectType({
-        elemID: element.elemID,
-        fields: element.fields,
-        annotationRefsOrTypes: customRecordTypeAnnotationRefTypes,
-        annotations: (await setListMappedByFieldToValue(element)).annotations,
-      }))
+      return transformMapsToLists(
+        new ObjectType({
+          elemID: element.elemID,
+          fields: element.fields,
+          annotationRefsOrTypes: customRecordTypeAnnotationRefTypes,
+          annotations: (await setListMappedByFieldToValue(element)).annotations,
+        }),
+      )
     }
     return Promise.resolve(element)
   }

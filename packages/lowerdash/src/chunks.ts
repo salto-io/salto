@@ -1,34 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 export const weightedChunks = <T>(
   values: T[],
   size: number,
   weightFunc: (val: T) => number,
-  maxItemsPerChunk = Infinity
+  maxItemsPerChunk = Infinity,
 ): T[][] => {
   const chunks: T[][] = []
 
   values.reduce((chunkWeight, val) => {
     const valWeight = weightFunc(val)
 
-    if (
-      valWeight + chunkWeight > size
-      || chunks.length === 0
-      || chunks[chunks.length - 1].length >= maxItemsPerChunk
-    ) {
+    if (valWeight + chunkWeight > size || chunks.length === 0 || chunks[chunks.length - 1].length >= maxItemsPerChunk) {
       chunks.push([val])
       return valWeight
     }
@@ -39,14 +35,10 @@ export const weightedChunks = <T>(
   return chunks
 }
 
-export const chunkByEvenly = <T>(
-  values: T[],
-  size: number,
-  weightFunc: (val: T) => number,
-): T[][] => {
+export const chunkByEvenly = <T>(values: T[], size: number, weightFunc: (val: T) => number): T[][] => {
   const totalSize = values.reduce((sum, change) => sum + weightFunc(change), 0)
   const avgChunkSize = totalSize / Math.ceil(totalSize / size)
   const avgItemSize = totalSize / values.length
-  const desiredChunkSize = Math.min(size, avgChunkSize + (avgItemSize / 2))
+  const desiredChunkSize = Math.min(size, avgChunkSize + avgItemSize / 2)
   return weightedChunks(values, desiredChunkSize, weightFunc)
 }

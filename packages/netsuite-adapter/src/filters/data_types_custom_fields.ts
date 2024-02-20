@@ -1,19 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Field, isInstanceElement, isObjectType, ListType, ObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Field,
+  isInstanceElement,
+  isObjectType,
+  ListType,
+  ObjectType,
+  ReferenceExpression,
+  TypeElement,
+} from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -43,16 +52,14 @@ type ReferenceCustomField = {
 }
 type CustomField = PrimitiveCustomField | ReferenceCustomField
 
-const isReferenceCustomField = (
-  customField: CustomField
-): customField is ReferenceCustomField =>
+const isReferenceCustomField = (customField: CustomField): customField is ReferenceCustomField =>
   customField.fieldtype === 'SELECT' || customField.fieldtype === 'MULTISELECT'
 
 const getFieldType = (
   fieldName: string,
   customField: CustomField,
   nameToType: Record<string, ObjectType>,
-  customRecordTypes: Record<string, ObjectType>
+  customRecordTypes: Record<string, ObjectType>,
 ): {
   fieldType: TypeElement
   selectTypeIdAnnotation?: string
@@ -81,14 +88,14 @@ const getFieldType = (
   }
 
   if (isReferenceCustomField(customField)) {
-    const customRecordType = customField.selectrecordtype in customRecordTypes
-      ? customRecordTypes[customField.selectrecordtype]
-      : undefined
-    const types = customField.selectrecordtype in INTERNAL_ID_TO_TYPES
-      ? INTERNAL_ID_TO_TYPES[customField.selectrecordtype]
-        .filter(name => name in nameToType)
-        .map(name => nameToType[name])
-      : []
+    const customRecordType =
+      customField.selectrecordtype in customRecordTypes ? customRecordTypes[customField.selectrecordtype] : undefined
+    const types =
+      customField.selectrecordtype in INTERNAL_ID_TO_TYPES
+        ? INTERNAL_ID_TO_TYPES[customField.selectrecordtype]
+            .filter(name => name in nameToType)
+            .map(name => nameToType[name])
+        : []
 
     // This can be unknown in two cases:
     // the selectrecordtype points to a type we do not support,
@@ -114,7 +121,10 @@ const getFieldType = (
 }
 
 export const getCustomField = ({
-  type, customField, nameToType, customRecordTypes = {},
+  type,
+  customField,
+  nameToType,
+  customRecordTypes = {},
 }: {
   type: ObjectType
   customField: CustomField
@@ -122,10 +132,7 @@ export const getCustomField = ({
   customRecordTypes?: Record<string, ObjectType>
 }): Field => {
   const fieldName = toCustomFieldName(customField.scriptid)
-  const {
-    fieldType,
-    selectTypeIdAnnotation,
-  } = getFieldType(fieldName, customField, nameToType, customRecordTypes)
+  const { fieldType, selectTypeIdAnnotation } = getFieldType(fieldName, customField, nameToType, customRecordTypes)
 
   return new Field(type, fieldName, fieldType, {
     // eslint-disable-next-line camelcase
@@ -139,9 +146,7 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
     const nameToType = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
 
     if (isPartial) {
-      const fetchedIds = new Set(elements
-        .filter(isInstanceElement)
-        .map(instance => instance.elemID.getFullName()))
+      const fetchedIds = new Set(elements.filter(isInstanceElement).map(instance => instance.elemID.getFullName()))
 
       Object.entries((await elementsSourceIndex.getIndexes()).customFieldsIndex)
         .filter(([type]) => type in nameToType)
@@ -161,9 +166,7 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
               })
               field.annotate({
                 // eslint-disable-next-line camelcase
-                field_instance: new ReferenceExpression(
-                  fieldInstance.elemID.createNestedID(SCRIPT_ID)
-                ),
+                field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),
               })
               type.fields[field.elemID.name] = field
             })
@@ -171,26 +174,23 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
     }
 
     const instances = elements.filter(isInstanceElement)
-    instances
-      .forEach(fieldInstance => {
-        getFieldInstanceTypes(fieldInstance)
-          .map(typeName => nameToType[typeName])
-          .filter(values.isDefined)
-          .forEach(type => {
-            const field = getCustomField({
-              type,
-              customField: fieldInstance.value as CustomField,
-              nameToType,
-            })
-            field.annotate({
-              // eslint-disable-next-line camelcase
-              field_instance: new ReferenceExpression(
-                fieldInstance.elemID.createNestedID(SCRIPT_ID)
-              ),
-            })
-            type.fields[field.elemID.name] = field
+    instances.forEach(fieldInstance => {
+      getFieldInstanceTypes(fieldInstance)
+        .map(typeName => nameToType[typeName])
+        .filter(values.isDefined)
+        .forEach(type => {
+          const field = getCustomField({
+            type,
+            customField: fieldInstance.value as CustomField,
+            nameToType,
           })
-      })
+          field.annotate({
+            // eslint-disable-next-line camelcase
+            field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),
+          })
+          type.fields[field.elemID.name] = field
+        })
+    })
   },
 })
 

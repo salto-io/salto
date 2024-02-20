@@ -1,28 +1,49 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, AdditionChange, getChangeData, PrimitiveType,
-  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
+  Element,
+  ObjectType,
+  ElemID,
+  Field,
+  DetailedChange,
+  BuiltinTypes,
+  InstanceElement,
+  ListType,
+  CORE_ANNOTATIONS,
+  isInstanceElement,
+  isType,
+  isField,
+  PrimitiveTypes,
+  isObjectType,
+  ContainerType,
+  Change,
+  AdditionChange,
+  getChangeData,
+  PrimitiveType,
+  Value,
+  TypeReference,
+  INSTANCE_ANNOTATIONS,
+  ReferenceExpression,
+  createRefToElmWithValue,
   SaltoError,
   StaticFile,
-  isStaticFile, TemplateExpression,
+  isStaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
@@ -46,8 +67,16 @@ import {
   serializeReferenceTree,
   deserializeReferenceTree,
 } from '../../src/workspace/workspace'
-import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  AccountDuplicationError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
+import {
+  DeleteCurrentEnvError,
+  UnknownEnvError,
+  EnvDuplicationError,
+  AccountDuplicationError,
+  InvalidEnvNameError,
+  MAX_ENV_NAME_LEN,
+  UnknownAccountError,
+  InvalidAccountNameError,
+} from '../../src/workspace/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
 import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
@@ -59,7 +88,13 @@ import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { createElementSelector } from '../../src/workspace/element_selector'
 import * as expressionsModule from '../../src/expressions'
-import { createWorkspace, createState, mockWorkspaceConfigSource, mockAdaptersConfigSource, mockCredentialsSource } from '../common/workspace'
+import {
+  createWorkspace,
+  createState,
+  mockWorkspaceConfigSource,
+  mockAdaptersConfigSource,
+  mockCredentialsSource,
+} from '../common/workspace'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 
 const { awu } = collections.asynciterable
@@ -89,14 +124,12 @@ const newNaclFile = {
 }
 const services = ['salesforce']
 
-
-const getElemMap = async (
-  elements: ElementsSource
-): Promise<Record<string, Element>> => Object.fromEntries(
-  await awu(await elements.getAll())
-    .map(e => [e.elemID.getFullName(), e])
-    .toArray()
-)
+const getElemMap = async (elements: ElementsSource): Promise<Record<string, Element>> =>
+  Object.fromEntries(
+    await awu(await elements.getAll())
+      .map(e => [e.elemID.getFullName(), e])
+      .toArray(),
+  )
 
 describe('workspace', () => {
   describe('loadWorkspace', () => {
@@ -107,8 +140,9 @@ describe('workspace', () => {
         getAdapter: jest.fn(),
         setAdapter: jest.fn(),
       }
-      await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
-        .toThrow(new Error('Workspace with no environments is illegal'))
+      await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects.toThrow(
+        new Error('Workspace with no environments is illegal'),
+      )
     })
   })
   describe('elements', () => {
@@ -187,7 +221,9 @@ describe('workspace', () => {
       })
 
       it('should return annotation value', async () => {
-        expect(await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings', 'attr', 'hiddenStrAnno'))).toBe('some value')
+        expect(
+          await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings', 'attr', 'hiddenStrAnno')),
+        ).toBe('some value')
       })
 
       it('element field should return the element', async () => {
@@ -221,25 +257,29 @@ describe('workspace', () => {
             },
           },
         )
-        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll())
-          .toArray()
+        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll()).toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
-        const inactiveEnvElements = await awu(await (await newWorkspace.elements(undefined, 'inactive'))
-          .getAll()).toArray()
+        const inactiveEnvElements = await awu(
+          await (await newWorkspace.elements(undefined, 'inactive')).getAll(),
+        ).toArray()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
       })
 
-      it('should show elements that were added to the nacl file in the current'
-        + ' load on the sec env', async () => {
+      it('should show elements that were added to the nacl file in the current load on the sec env', async () => {
         const primaryEnvElemID = new ElemID('salesforce', 'primaryObj')
         const secondaryEnvElemID = new ElemID('salesforce', 'secondaryObj')
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
         const newWorkspace = await createWorkspace(
-          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
-          undefined, {
+          undefined,
+          undefined,
+          mockWorkspaceConfigSource(undefined, true),
+          undefined,
+          undefined,
+          undefined,
+          {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -251,7 +291,7 @@ describe('workspace', () => {
                 }),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -263,18 +303,16 @@ describe('workspace', () => {
                 }),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
           },
         )
-        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll())
-          .toArray()
+        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll()).toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
-        const inactiveEnvElements = await awu(await (await newWorkspace.elements(false, 'inactive'))
-          .getAll()).toArray()
+        const inactiveEnvElements = await awu(await (await newWorkspace.elements(false, 'inactive')).getAll()).toArray()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
       })
@@ -290,38 +328,34 @@ describe('workspace', () => {
 
     beforeEach(async () => {
       adaptersConfig = mockAdaptersConfigSource()
-      adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([
-        new ObjectType({ elemID: configElemId }),
-      ]))
-      mockNaclFilesSource = createMockNaclFileSource([new ObjectType({ elemID: envsElemId })])
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        undefined,
-        adaptersConfig,
-        undefined,
-        undefined,
-        {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-          },
-          default: {
-            naclFiles: mockNaclFilesSource,
-            state: createState([]),
-          },
-        },
+      adaptersConfig.getElements.mockReturnValue(
+        createInMemoryElementSource([new ObjectType({ elemID: configElemId })]),
       )
+      mockNaclFilesSource = createMockNaclFileSource([new ObjectType({ elemID: envsElemId })])
+      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig, undefined, undefined, {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+        },
+        default: {
+          naclFiles: mockNaclFilesSource,
+          state: createState([]),
+        },
+      })
     })
 
     it('when is config file should return the adapters config elements', async () => {
       adaptersConfig.isConfigFile.mockReturnValue(true)
-      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
+      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list())
+        .map(id => id.getFullName())
+        .toArray()
       expect(ids).toEqual([configElemId.getFullName()])
     })
 
     it('when is not a config file should return the envs elements', async () => {
       adaptersConfig.isConfigFile.mockReturnValue(false)
-      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
+      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list())
+        .map(id => id.getFullName())
+        .toArray()
       expect(ids).toEqual([envsElemId.getFullName()])
     })
   })
@@ -350,14 +384,18 @@ describe('workspace', () => {
 
     it('should remove object and fields from list if removed', async () => {
       workspace = await createWorkspace()
-      const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
+      const accountIntSett = (await workspace.getValue(
+        new ElemID('salesforce', 'AccountIntelligenceSettings'),
+      )) as ObjectType
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.includes(accountIntSett.elemID.getFullName())).toBeTruthy()
-      const updateNaclFileResults = await workspace.updateNaclFiles([{
-        id: accountIntSett.elemID,
-        action: 'remove',
-        data: { before: accountIntSett },
-      }])
+      const updateNaclFileResults = await workspace.updateNaclFiles([
+        {
+          id: accountIntSett.elemID,
+          action: 'remove',
+          data: { before: accountIntSett },
+        },
+      ])
       const numOfFields = Object.values(accountIntSett.fields).length
       const searchableNamesAfter = await workspace.getSearchableNames()
       // One change in workspace, one in state.
@@ -379,11 +417,13 @@ describe('workspace', () => {
         elemID: newElemID,
         fields: { aaa: { refType: BuiltinTypes.NUMBER } },
       })
-      const updateNaclFilesREsult = await workspace.updateNaclFiles([{
-        id: newElemID,
-        action: 'add',
-        data: { after: newObject },
-      }])
+      const updateNaclFilesREsult = await workspace.updateNaclFiles([
+        {
+          id: newElemID,
+          action: 'add',
+          data: { after: newObject },
+        },
+      ])
       expect(updateNaclFilesREsult).toEqual({
         naclFilesChangesCount: 1,
         stateOnlyChangesCount: 0,
@@ -397,38 +437,28 @@ describe('workspace', () => {
     let workspace: Workspace
 
     it('should return names of top level elements and fields of desired sources', async () => {
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        {
-          [COMMON_ENV_PREFIX]: {
-            naclFiles: createMockNaclFileSource([
-              new ObjectType({ elemID: new ElemID('salto', 'com') }),
-            ]),
-          },
-          default: {
-            naclFiles: createMockNaclFileSource([
-              new ObjectType({
-                elemID: new ElemID('salto', 'obj'),
-                fields: {
-                  field: {
-                    refType: BuiltinTypes.NUMBER,
-                  },
-                },
-              }),
-            ]),
-            state: createState([]),
-          },
-          inactive: {
-            naclFiles: createMockNaclFileSource([]),
-            state: createState([]),
-          },
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+        [COMMON_ENV_PREFIX]: {
+          naclFiles: createMockNaclFileSource([new ObjectType({ elemID: new ElemID('salto', 'com') })]),
         },
-      )
+        default: {
+          naclFiles: createMockNaclFileSource([
+            new ObjectType({
+              elemID: new ElemID('salto', 'obj'),
+              fields: {
+                field: {
+                  refType: BuiltinTypes.NUMBER,
+                },
+              },
+            }),
+          ]),
+          state: createState([]),
+        },
+        inactive: {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+      })
       const searchableNamesOfCommon = await workspace.getSearchableNamesOfEnv(COMMON_ENV_PREFIX)
       expect(searchableNamesOfCommon).toEqual(['salto.com'])
       const searchableNamesOfEnv = await workspace.getSearchableNamesOfEnv('default')
@@ -452,9 +482,7 @@ describe('workspace', () => {
       expect(errors.parse[0].message).toMatch(err)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
-      const workspaceErrors = await Promise.all(
-        wu(errors.all()).map(error => erroredWorkspace.transformError(error))
-      )
+      const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))
       expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
       expect(workspaceErrors[0].sourceLocations).toHaveLength(1)
     })
@@ -464,12 +492,12 @@ describe('workspace', () => {
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
       expect(errors.strings()).toEqual(['unresolved reference some.type.instance.notExists'])
-      expect(errors.validation[0].message).toBe('Error validating "some.type.instance.instance.a": unresolved reference some.type.instance.notExists')
+      expect(errors.validation[0].message).toBe(
+        'Error validating "some.type.instance.instance.a": unresolved reference some.type.instance.notExists',
+      )
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
-      const workspaceErrors = await Promise.all(
-        wu(errors.all()).map(error => erroredWorkspace.transformError(error))
-      )
+      const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))
       expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
       expect(workspaceErrors[0].sourceLocations).toHaveLength(1)
     })
@@ -483,9 +511,7 @@ describe('workspace', () => {
       expect(errors.merge[0].error).toMatch(mergeError)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
-      const workspaceErrors = await Promise.all(
-        wu(errors.all()).map(error => erroredWorkspace.transformError(error))
-      )
+      const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))
       expect(workspaceErrors).toHaveLength(1)
       const wsErros = workspaceErrors[0]
       expect(wsErros.sourceLocations).toHaveLength(2)
@@ -508,13 +534,9 @@ describe('workspace', () => {
           },
         },
       })
-      const inst = new InstanceElement(
-        'inst',
-        obj,
-        {
-          field: 1,
-        }
-      )
+      const inst = new InstanceElement('inst', obj, {
+        field: 1,
+      })
       const state = createState([obj, inst])
       const workspace = await createWorkspace(
         mockDirStore([], false, {
@@ -546,8 +568,13 @@ describe('workspace', () => {
     it('should use adapters config source for errors in the configuration', async () => {
       const mockAdaptersConfig = mockAdaptersConfigSource()
       const ws = await createWorkspace(undefined, undefined, undefined, mockAdaptersConfig)
-      const error = new InvalidValueValidationError({ elemID: new ElemID('someID'), value: 'val', fieldName: 'field', expectedValue: 'expVal' });
-      (error as SaltoError).type = 'config'
+      const error = new InvalidValueValidationError({
+        elemID: new ElemID('someID'),
+        value: 'val',
+        fieldName: 'field',
+        expectedValue: 'expVal',
+      })
+      ;(error as SaltoError).type = 'config'
       await ws.transformError(error)
       expect(mockAdaptersConfig.getSourceRanges).toHaveBeenCalled()
     })
@@ -567,8 +594,9 @@ describe('workspace', () => {
     it('should update elements to not include fields from removed Nacl files', async () => {
       await workspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await workspace.elements())
-      expect(Object.keys(elemMap).sort())
-        .toEqual(['salesforce.RenamedType1', 'salesforce.inconsistent_case', 'salesforce.lead', 'multi.loc'].sort())
+      expect(Object.keys(elemMap).sort()).toEqual(
+        ['salesforce.RenamedType1', 'salesforce.inconsistent_case', 'salesforce.lead', 'multi.loc'].sort(),
+      )
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).toContain('ext_field')
     })
@@ -578,8 +606,12 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes.default.changes.map(getChangeData).map(c => c.elemID.getFullName()).sort())
-        .toEqual(['salesforce.lead', 'multi.loc'].sort())
+      expect(
+        changes.default.changes
+          .map(getChangeData)
+          .map(c => c.elemID.getFullName())
+          .sort(),
+      ).toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
     it('should remove from store', async () => {
@@ -592,8 +624,9 @@ describe('workspace', () => {
       const newWorkspace = await createWorkspace(mockDirStore())
       await newWorkspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await newWorkspace.elements())
-      expect(Object.keys(elemMap).sort())
-        .toEqual(['salesforce.RenamedType1', 'salesforce.inconsistent_case', 'salesforce.lead', 'multi.loc'].sort())
+      expect(Object.keys(elemMap).sort()).toEqual(
+        ['salesforce.RenamedType1', 'salesforce.inconsistent_case', 'salesforce.lead', 'multi.loc'].sort(),
+      )
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).toContain('ext_field')
     })
@@ -618,7 +651,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
             },
             [primarySourceName]: {
@@ -627,7 +660,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -637,7 +670,7 @@ describe('workspace', () => {
                 mockDirStore(),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -645,8 +678,7 @@ describe('workspace', () => {
         )
       })
       it('should return the changes of secondary envs as well', async () => {
-        const envChanges = await wsWithMultipleEnvs
-          .removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
+        const envChanges = await wsWithMultipleEnvs.removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
         const change = {
           action: 'remove',
           data: { before: new ObjectType({ elemID: removedElemID }) },
@@ -654,14 +686,13 @@ describe('workspace', () => {
         expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should not include remove element in the secondary env', async () => {
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
-          .list()).toArray())
-          .toContainEqual(removedElemID)
-        await wsWithMultipleEnvs
-          .removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
-          .list()).toArray())
-          .not.toContainEqual(removedElemID)
+        expect(
+          await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
+        ).toContainEqual(removedElemID)
+        await wsWithMultipleEnvs.removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
+        expect(
+          await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
+        ).not.toContainEqual(removedElemID)
       })
     })
   })
@@ -689,17 +720,10 @@ describe('workspace', () => {
 
     beforeAll(async () => {
       mockAdaptersConfig = mockAdaptersConfigSource()
-      mockAdaptersConfig.isConfigFile.mockImplementation(
-        filePath => filePath === changedConfFile.filename
-      )
+      mockAdaptersConfig.isConfigFile.mockImplementation(filePath => filePath === changedConfFile.filename)
       workspace = await createWorkspace(naclFileStore, undefined, undefined, mockAdaptersConfig)
       await workspace.elements()
-      changes = await workspace.setNaclFiles([
-        changedNaclFile,
-        newNaclFile,
-        emptyNaclFile,
-        changedConfFile,
-      ])
+      changes = await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile, changedConfFile])
       elemMap = await getElemMap(await workspace.elements())
     })
 
@@ -711,9 +735,7 @@ describe('workspace', () => {
         'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       }
       expect(elemMap.nonempty).not.toBeDefined()
-      Object.keys(refMap).forEach(
-        key => expect(elemMap[key].isEqual(refMap[key])).toBeTruthy()
-      )
+      Object.keys(refMap).forEach(key => expect(elemMap[key].isEqual(refMap[key])).toBeTruthy())
     })
 
     it('should create Nacl files that were added', async () => {
@@ -734,10 +756,10 @@ describe('workspace', () => {
     it('should return the correct changes', async () => {
       const primaryEnvChanges = changes.default.changes
       expect(primaryEnvChanges).toHaveLength(26)
-      expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
-        .toEqual(newAddedObject)
-      const multiLocChange = primaryEnvChanges
-        .find(c => getChangeData(c).elemID.isEqual(multiLocElemID))
+      expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after).toEqual(
+        newAddedObject,
+      )
+      const multiLocChange = primaryEnvChanges.find(c => getChangeData(c).elemID.isEqual(multiLocElemID))
       expect(multiLocChange).toEqual({
         action: 'modify',
         data: {
@@ -776,7 +798,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
             },
             [primarySourceName]: {
@@ -785,7 +807,7 @@ describe('workspace', () => {
                 mockDirStore(),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -795,7 +817,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -808,13 +830,13 @@ describe('workspace', () => {
         expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should include the new elements in the secondary env', async () => {
-        expect(await awu(await (
-          await wsWithMultipleEnvs.elements(true, secondarySourceName)
-        ).list()).toArray()).toEqual([])
+        expect(
+          await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
+        ).toEqual([])
         await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
-        expect(await awu(await (
-          await wsWithMultipleEnvs.elements(true, secondarySourceName)
-        ).list()).toArray()).toEqual([afterObj.elemID])
+        expect(
+          await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
+        ).toEqual([afterObj.elemID])
       })
     })
 
@@ -861,30 +883,15 @@ describe('workspace', () => {
       path: ['test', 'new'],
     })
     const fieldsParent = new ObjectType({ elemID: new ElemID('salesforce', 'lead') })
-    const oldField = new Field(
-      fieldsParent,
-      'not_a_list_yet_field',
-      BuiltinTypes.NUMBER,
-      {},
-    )
+    const oldField = new Field(fieldsParent, 'not_a_list_yet_field', BuiltinTypes.NUMBER, {})
     const newField = oldField.clone()
     beforeAll(async () => {
       newField.refType = createRefToElmWithValue(new ListType(await newField.getType()))
     })
-    const anotherNewField = new Field(
-      fieldsParent,
-      'lala',
-      new ListType(BuiltinTypes.BOOLEAN),
-      {},
-    )
-    const newMultiLineField = new Field(
-      fieldsParent,
-      'myFormula',
-      BuiltinTypes.STRING,
-      {
-        myFormula: 'This\nis\nmultiline',
-      },
-    )
+    const anotherNewField = new Field(fieldsParent, 'lala', new ListType(BuiltinTypes.BOOLEAN), {})
+    const newMultiLineField = new Field(fieldsParent, 'myFormula', BuiltinTypes.STRING, {
+      myFormula: 'This\nis\nmultiline',
+    })
 
     const queueSobjectHiddenSubType = new ObjectType({
       elemID: new ElemID('salesforce', 'QueueSobject'),
@@ -908,12 +915,7 @@ describe('workspace', () => {
       path: ['salesforce', 'Types', 'Subtypes', 'SomeObj'],
     })
 
-    queueSobjectHiddenSubType.fields.str = new Field(
-      queueSobjectHiddenSubType,
-      'str',
-      BuiltinTypes.STRING,
-    )
-
+    queueSobjectHiddenSubType.fields.str = new Field(queueSobjectHiddenSubType, 'str', BuiltinTypes.STRING)
 
     const accountInsightsSettingsType = new ObjectType({
       elemID: new ElemID('salesforce', 'AccountInsightsSettings'),
@@ -934,41 +936,22 @@ describe('workspace', () => {
         [METADATA_TYPE]: 'Queue',
       },
       fields: {
-        queueSobjectHidden: new Field(
-          queueSobjectHiddenSubType,
-          'queueSobjectHidden',
-          queueSobjectHiddenSubType,
-          {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
-          },
-        ),
+        queueSobjectHidden: new Field(queueSobjectHiddenSubType, 'queueSobjectHidden', queueSobjectHiddenSubType, {
+          [CORE_ANNOTATIONS.HIDDEN]: true,
+        }),
         queueSobjectWithHiddenType: new Field(
           queueSobjectHiddenSubType,
           'queueSobjectWithHiddenType',
           queueSobjectHiddenSubType,
           {},
         ),
-        numHidden: new Field(
-          queueSobjectHiddenSubType,
-          'numHidden',
-          BuiltinTypes.NUMBER,
-          {
-            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-          },
-        ),
-        boolNotHidden: new Field(
-          queueSobjectHiddenSubType,
-          'boolNotHidden',
-          BuiltinTypes.BOOLEAN,
-        ),
-        objWithHiddenAnno: new Field(
-          queueSobjectHiddenSubType,
-          'objWithHiddenAnno',
-          objFieldWithHiddenAnnotationType,
-          {
-            hiddenStrAnno: 'bbb',
-          }
-        ),
+        numHidden: new Field(queueSobjectHiddenSubType, 'numHidden', BuiltinTypes.NUMBER, {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        }),
+        boolNotHidden: new Field(queueSobjectHiddenSubType, 'boolNotHidden', BuiltinTypes.BOOLEAN),
+        objWithHiddenAnno: new Field(queueSobjectHiddenSubType, 'objWithHiddenAnno', objFieldWithHiddenAnnotationType, {
+          hiddenStrAnno: 'bbb',
+        }),
       },
       path: ['salesforce', 'Types', 'Queue'],
       isSettings: false,
@@ -1008,15 +991,14 @@ describe('workspace', () => {
       ['Records', 'Queue', 'queueInstance'],
       {
         [CORE_ANNOTATIONS.HIDDEN]: true,
-      }
+      },
     )
 
-    const differentCaseQueue = new InstanceElement(
+    const differentCaseQueue = new InstanceElement('QueueInstance', queueHiddenType, queueInstance.value, [
+      'Records',
+      'Queue',
       'QueueInstance',
-      queueHiddenType,
-      queueInstance.value,
-      ['Records', 'Queue', 'QueueInstance'],
-    )
+    ])
 
     const objectWithNestedHidden = new ObjectType({
       elemID: new ElemID('salesforce', 'ObjWithNestedHidden'),
@@ -1039,7 +1021,7 @@ describe('workspace', () => {
       ['Records', 'Queue', 'queueInstanceToRemove'],
       {
         [CORE_ANNOTATIONS.HIDDEN]: true,
-      }
+      },
     )
 
     const objWithFieldTypeWithHidden = new ObjectType({
@@ -1103,77 +1085,86 @@ describe('workspace', () => {
           after: newMultiLineField,
         },
       },
-      { // modify value
+      {
+        // modify value
         id: new ElemID('salesforce', 'lead', 'field', 'base_field', CORE_ANNOTATIONS.DEFAULT),
         action: 'modify',
         data: { before: 'asd', after: 'foo' },
       },
-      { // add element (top level)
+      {
+        // add element (top level)
         id: newElemID,
         action: 'add',
         data: { after: newElem },
       },
-      { // add field
+      {
+        // add field
         id: new ElemID('salesforce', 'lead', 'field', 'new_field'),
         action: 'add',
-        data: { after: new Field(
-          fieldsParent,
-          'new_field',
-          BuiltinTypes.NUMBER,
-        ) },
+        data: { after: new Field(fieldsParent, 'new_field', BuiltinTypes.NUMBER) },
       },
-      { // add hidden field
+      {
+        // add hidden field
         id: new ElemID('salesforce', 'ObjWithNestedHidden', 'field', 'new_field'),
         action: 'add',
-        data: { after: new Field(
-          objectWithNestedHidden,
-          'new_field',
-          BuiltinTypes.NUMBER,
-          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-        ) },
+        data: {
+          after: new Field(objectWithNestedHidden, 'new_field', BuiltinTypes.NUMBER, {
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+          }),
+        },
       },
-      { // add complex value (nested in parent scope)
+      {
+        // add complex value (nested in parent scope)
         id: new ElemID('salesforce', 'lead', 'field', 'base_field', 'complex'),
         action: 'add',
         data: { after: { key: 'value' } },
       },
-      { // remove value
+      {
+        // remove value
         id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
         action: 'remove',
         data: { before: 'foo' },
       },
-      { // Add value to empty scope
+      {
+        // Add value to empty scope
         id: new ElemID('salesforce', 'lead', 'field', 'empty', 'test'),
         action: 'add',
         data: { after: 'some value' },
       },
-      { // Add value to one liner scope
+      {
+        // Add value to one liner scope
         id: new ElemID('one', 'liner', 'attr', 'label'),
         action: 'add',
         data: { after: 'label' },
       },
-      { // Remove element from multiple locations
+      {
+        // Remove element from multiple locations
         id: new ElemID('multi', 'loc'),
         action: 'remove',
-        data: { before: new ObjectType({
-          elemID: new ElemID('multi', 'loc'),
-          annotations: {
-            a: 1,
-            b: 1,
-          },
-        }) },
+        data: {
+          before: new ObjectType({
+            elemID: new ElemID('multi', 'loc'),
+            annotations: {
+              a: 1,
+              b: 1,
+            },
+          }),
+        },
       },
-      { // Modify value in list
+      {
+        // Modify value in list
         id: new ElemID('salesforce', 'lead', 'field', 'list_field', CORE_ANNOTATIONS.DEFAULT, '3'),
         action: 'modify',
         data: { before: 4, after: 5 },
       },
-      { // Change from primitive to object in a list
+      {
+        // Change from primitive to object in a list
         id: new ElemID('salesforce', 'lead', 'field', 'list_field', CORE_ANNOTATIONS.DEFAULT, '4'),
         action: 'modify',
         data: { before: 5, after: { foo: 'bla' } },
       },
-      { // Modify field isListValue
+      {
+        // Modify field isListValue
         id: newField.elemID,
         action: 'modify',
         data: { before: oldField, after: newField },
@@ -1202,197 +1193,255 @@ describe('workspace', () => {
         action: 'add',
         data: { after: 'momo' },
       },
-      { // Add to an exiting path
+      {
+        // Add to an exiting path
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'attr', 'dodo'),
         action: 'add',
         data: { after: 'dodo' },
       },
-      { // new annotation type to a type with no annotation types block
+      {
+        // new annotation type to a type with no annotation types block
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType1'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
-      { // new annotation type to a type with no annotation types block
+      {
+        // new annotation type to a type with no annotation types block
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType2'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
-      { // new hidden annotation type
+      {
+        // new hidden annotation type
         path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newHiddenAnno'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
       },
-      { // new annotation type to a type with annotation types block
+      {
+        // new annotation type to a type with annotation types block
         path: ['file'],
         id: new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
-      { // new annotation type to a type with no annotation types block without path
+      {
+        // new annotation type to a type with no annotation types block without path
         id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType1'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
-      { // new annotation type to a type with no annotation types block without path
+      {
+        // new annotation type to a type with no annotation types block without path
         id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType2'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
-      { // new annotation value with new hidden annotation type
+      {
+        // new annotation value with new hidden annotation type
         id: new ElemID('salesforce', 'lead', 'attr', 'newHiddenAnno'),
         action: 'add',
         data: { after: 'foo' },
       },
-      { // new annotation value to existing non-hidden annotation type
+      {
+        // new annotation value to existing non-hidden annotation type
         id: new ElemID('salesforce', 'lead', 'attr', 'visibleAnno'),
         action: 'add',
         data: { after: 'foo' },
       },
-      { // new Hidden type (should be removed)
+      {
+        // new Hidden type (should be removed)
         id: new ElemID('salesforce', 'Queue'),
         action: 'add',
         data: {
           after: queueHiddenType,
         },
       },
-      { // new Hidden instance
+      {
+        // new Hidden instance
         id: new ElemID('salesforce', 'Queue', 'instance', 'queueHiddenInstance'),
         action: 'add',
         data: {
           after: queueHiddenInstance,
         },
       },
-      { // new Hidden (sub) type (should be removed)
+      {
+        // new Hidden (sub) type (should be removed)
         id: new ElemID('salesforce', 'QueueSobject'),
         action: 'add',
         data: {
           after: queueSobjectHiddenSubType,
         },
       },
-      { // when Hidden type change to be not hidden
+      {
+        // when Hidden type change to be not hidden
         id: new ElemID('salesforce', 'AccountInsightsSettings', 'attr', '_hidden'),
         action: 'remove',
         data: {
           before: true,
         },
       },
-      { // when type change to be hidden
+      {
+        // when type change to be hidden
         id: new ElemID('salesforce', 'AccountIntelligenceSettings', 'attr', '_hidden'),
         action: 'add',
         data: { after: true },
       },
-      { // Change inside a hidden type
-        id: new ElemID(
-          'salesforce', 'AccountIntelligenceSettings', 'field', 'enableAccountLogos', '_required',
-        ),
+      {
+        // Change inside a hidden type
+        id: new ElemID('salesforce', 'AccountIntelligenceSettings', 'field', 'enableAccountLogos', '_required'),
         action: 'add',
         data: { after: true },
       },
-      { // change in a hidden annotation
+      {
+        // change in a hidden annotation
         id: new ElemID('salesforce', 'ObjWithHidden', 'attr', 'internalId'),
         action: 'add',
         data: { after: 'internal ID' },
       },
-      { // new instance
+      {
+        // new instance
         id: new ElemID('salesforce', 'Queue', 'instance', 'queueInstance'),
         action: 'add',
         data: {
           after: queueInstance,
         },
       },
-      { // new instance with a similar name
+      {
+        // new instance with a similar name
         id: differentCaseQueue.elemID,
         action: 'add',
         data: {
           after: differentCaseQueue,
         },
       },
-      { // Hidden field change to visible
+      {
+        // Hidden field change to visible
         id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'hide', CORE_ANNOTATIONS.HIDDEN),
         action: 'modify',
         data: { before: true, after: false },
       },
-      { // Hidden value field change to visible
+      {
+        // Hidden value field change to visible
         id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'hide_val', CORE_ANNOTATIONS.HIDDEN_VALUE),
         action: 'modify',
         data: { before: true, after: false },
       },
-      { // Hidden value annotation change to visible
+      {
+        // Hidden value annotation change to visible
         id: new ElemID('salesforce', 'HiddenToVisibleVal', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
         action: 'modify',
         data: { before: true, after: false },
       },
-      { // Visible field change to hidden
+      {
+        // Visible field change to hidden
         id: new ElemID('salesforce', 'ObjWithHidden', 'field', 'visible', CORE_ANNOTATIONS.HIDDEN_VALUE),
         action: 'add',
         data: { after: true },
       },
-      { // Change to field value as it becomes visible
+      {
+        // Change to field value as it becomes visible
         id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'hide'),
         action: 'add',
         data: { after: 'changed' },
       },
-      { // Change to field value as it becomes visible
+      {
+        // Change to field value as it becomes visible
         id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'hide_val'),
         action: 'add',
         data: { after: 'changed2' },
       },
-      { // Change to nested field value as it becomes visible
-        id: new ElemID('salesforce', 'ObjWithDoublyNestedHidden', 'instance', 'instWithDoublyNestedHidden', 'doubleNest', 'nested', 'hide'),
+      {
+        // Change to nested field value as it becomes visible
+        id: new ElemID(
+          'salesforce',
+          'ObjWithDoublyNestedHidden',
+          'instance',
+          'instWithDoublyNestedHidden',
+          'doubleNest',
+          'nested',
+          'hide',
+        ),
         action: 'add',
         data: { after: 'changed d' },
       },
-      { // Change to field value as it becomes hidden
+      {
+        // Change to field value as it becomes hidden
         id: new ElemID('salesforce', 'ObjWithHidden', 'instance', 'instWithHidden', 'visible'),
         action: 'modify',
         data: { before: 142, after: 150 },
       },
-      { // Change where only part of the value is visible
+      {
+        // Change where only part of the value is visible
         id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'nested'),
         action: 'add',
         data: { after: { visible: 1, hide: 'a', other: 2 } },
       },
-      { // Change where only part of the value is visible
+      {
+        // Change where only part of the value is visible
         id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'new_field'),
         action: 'add',
         data: { after: 424 },
       },
-      { // Change inside a hidden complex field
+      {
+        // Change inside a hidden complex field
         id: new ElemID('salesforce', 'ObjWithComplexHidden', 'instance', 'instWithComplexHidden', 'nested', 'other'),
         action: 'modify',
         data: { before: 3, after: 4 },
       },
-      { // Change inside a complex field (visible)
-        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'nested_visible', 'visible'),
+      {
+        // Change inside a complex field (visible)
+        id: new ElemID(
+          'salesforce',
+          'ObjWithNestedHidden',
+          'instance',
+          'instWithNestedHidden',
+          'nested_visible',
+          'visible',
+        ),
         action: 'modify',
         data: { before: 111, after: 43 },
       },
-      { // Change inside a complex field (hidden)
-        id: new ElemID('salesforce', 'ObjWithNestedHidden', 'instance', 'instWithNestedHidden', 'nested_visible', 'hide'),
+      {
+        // Change inside a complex field (hidden)
+        id: new ElemID(
+          'salesforce',
+          'ObjWithNestedHidden',
+          'instance',
+          'instWithNestedHidden',
+          'nested_visible',
+          'hide',
+        ),
         action: 'add',
         data: { after: 'abc' },
       },
-      { // Change inside an annotation with hidden value
+      {
+        // Change inside an annotation with hidden value
         id: new ElemID('salesforce', 'NestedHiddenVal', 'attr', 'hidden_val_anno'),
         action: 'add',
-        data: { after: {
-          something: 's',
-          somethingElse: 34,
-        } },
+        data: {
+          after: {
+            something: 's',
+            somethingElse: 34,
+          },
+        },
       },
-      { // Change inside an annotation that became visible
+      {
+        // Change inside an annotation that became visible
         id: new ElemID('salesforce', 'NestedHiddenVal', 'attr', 'hidden_to_visible_anno'),
         action: 'add',
-        data: { after: {
-          something: 't',
-          somethingElse: 35,
-        } },
+        data: {
+          after: {
+            something: 't',
+            somethingElse: 35,
+          },
+        },
       },
-      { // Add and remove a top level element in the same file
+      {
+        // Add and remove a top level element in the same file
         id: renamedTypes.before.elemID,
         action: 'remove',
         data: { before: renamedTypes.before },
@@ -1423,7 +1472,8 @@ describe('workspace', () => {
           before: objWithFieldTypeWithHidden.fields.fieldWithHidden,
         },
       },
-      { // Change visible annotation type to hidden type for field annotation
+      {
+        // Change visible annotation type to hidden type for field annotation
         id: new ElemID('salesforce', 'FieldTypeWithChangingHidden', 'annotation', 'visibleSwitchType'),
         action: 'modify',
         data: {
@@ -1431,7 +1481,8 @@ describe('workspace', () => {
           after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
         },
       },
-      { // Change hidden annotation type to visible type for field annotation
+      {
+        // Change hidden annotation type to visible type for field annotation
         id: new ElemID('salesforce', 'FieldTypeWithChangingHidden', 'annotation', 'hiddenSwitchType'),
         action: 'modify',
         data: {
@@ -1439,7 +1490,8 @@ describe('workspace', () => {
           after: createRefToElmWithValue(BuiltinTypes.STRING),
         },
       },
-      { // Switch hidden annotation type to visible type for type annotation
+      {
+        // Switch hidden annotation type to visible type for type annotation
         id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleSwitchType'),
         action: 'modify',
         data: {
@@ -1447,7 +1499,8 @@ describe('workspace', () => {
           after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
         },
       },
-      { // Switch hidden annotation type to visible type for type annotation
+      {
+        // Switch hidden annotation type to visible type for type annotation
         id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'hiddenSwitchType'),
         action: 'modify',
         data: {
@@ -1455,7 +1508,8 @@ describe('workspace', () => {
           after: createRefToElmWithValue(BuiltinTypes.STRING),
         },
       },
-      { // Switch visible annotation type to hidden when the same type changes to hidden as well
+      {
+        // Switch visible annotation type to hidden when the same type changes to hidden as well
         id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleChangeAndSwitchType'),
         action: 'modify',
         data: {
@@ -1463,12 +1517,14 @@ describe('workspace', () => {
           after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
         },
       },
-      { // Change type with annotation value from visible to hidden
+      {
+        // Change type with annotation value from visible to hidden
         id: new ElemID('salesforce', 'VisibleToHiddenType', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
         action: 'add',
         data: { after: true },
       },
-      { // Change type with annotation value from hidden to visible
+      {
+        // Change type with annotation value from hidden to visible
         id: new ElemID('salesforce', 'HiddenToVisibleType', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
         action: 'remove',
         data: { before: true },
@@ -1537,14 +1593,11 @@ describe('workspace', () => {
       const stateElements = await awu(
         await resolve(
           await awu(await (await helperWorkspace.elements()).getAll()).toArray(),
-          await helperWorkspace.elements()
-        )
+          await helperWorkspace.elements(),
+        ),
       ).toArray()
       const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
-      const changesByElem = _.groupBy(
-        changes,
-        change => change.id.createTopLevelParentID().parent.getFullName()
-      )
+      const changesByElem = _.groupBy(changes, change => change.id.createTopLevelParentID().parent.getFullName())
       Object.entries(changesByElem).forEach(([elemId, elemChanges]) => {
         const elem = stateElementsById[elemId]
         if (isType(elem) || isInstanceElement(elem)) {
@@ -1581,15 +1634,11 @@ describe('workspace', () => {
       typeBecameHidden = elemMap['salesforce.AccountIntelligenceSettings'] as ObjectType
 
       newInstance = elemMap['salesforce.Queue.instance.queueInstance'] as InstanceElement
-      instWithHidden = elemMap[
-        'salesforce.ObjWithHidden.instance.instWithHidden'
-      ] as InstanceElement
+      instWithHidden = elemMap['salesforce.ObjWithHidden.instance.instWithHidden'] as InstanceElement
       instWithComplexHidden = elemMap[
         'salesforce.ObjWithComplexHidden.instance.instWithComplexHidden'
       ] as InstanceElement
-      instWithNestedHidden = elemMap[
-        'salesforce.ObjWithNestedHidden.instance.instWithNestedHidden'
-      ] as InstanceElement
+      instWithNestedHidden = elemMap['salesforce.ObjWithNestedHidden.instance.instWithNestedHidden'] as InstanceElement
       instWithDoublyNestedHidden = elemMap[
         'salesforce.ObjWithDoublyNestedHidden.instance.instWithDoublyNestedHidden'
       ] as InstanceElement
@@ -1635,8 +1684,7 @@ describe('workspace', () => {
       expect(lead.annotationRefTypes).toHaveProperty('newAnnoType2')
       expect(lead.annotationRefTypes.newAnnoType2.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
       expect(lead.annotationRefTypes).toHaveProperty('newHiddenAnno')
-      expect(lead.annotationRefTypes.newHiddenAnno.elemID)
-        .toEqual(BuiltinTypes.HIDDEN_STRING.elemID)
+      expect(lead.annotationRefTypes.newHiddenAnno.elemID).toEqual(BuiltinTypes.HIDDEN_STRING.elemID)
     })
     it('should add visible values', () => {
       expect(lead.annotations).toHaveProperty('visibleAnno')
@@ -1665,34 +1713,34 @@ describe('workspace', () => {
 
     it('should change instance type if type was modified', () => {
       const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
-      const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlock.instance.instWithoutAnnotationsBlock'] as InstanceElement
+      const changedInstance = elemMapWithHidden[
+        'salesforce.WithoutAnnotationsBlock.instance.instWithoutAnnotationsBlock'
+      ] as InstanceElement
       expect(changedInstance.refType.elemID.isEqual(changedType.elemID)).toBeTruthy()
     })
 
     it('should change inner type inside containers types if type was changed', async () => {
       const changedType = elemMapWithHidden['salesforce.WithoutAnnotationsBlock'] as ObjectType
       const changedInstance = elemMapWithHidden['salesforce.WithoutAnnotationsBlockListNested'] as ObjectType
-      expect((await changedInstance.fields.noAnno
-        .getType(await workspace.elements()) as ContainerType)
-        .refInnerType.elemID.isEqual(changedType.elemID)).toBeTruthy()
+      expect(
+        (
+          (await changedInstance.fields.noAnno.getType(await workspace.elements())) as ContainerType
+        ).refInnerType.elemID.isEqual(changedType.elemID),
+      ).toBeTruthy()
     })
     it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('firstAnnotation')
-      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation.elemID)
-        .toEqual(BuiltinTypes.STRING.elemID)
+      expect(objWithAnnotationsBlock.annotationRefTypes.firstAnnotation.elemID).toEqual(BuiltinTypes.STRING.elemID)
       expect(objWithAnnotationsBlock.annotationRefTypes).toHaveProperty('secondAnnotation')
-      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation.elemID)
-        .toEqual(BuiltinTypes.NUMBER.elemID)
+      expect(objWithAnnotationsBlock.annotationRefTypes.secondAnnotation.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
     it('should add annotation type to the existing annotations block without path hint', () => {
       const objWithoutAnnoBlock = elemMap['salesforce.WithoutAnnotationsBlock'] as ObjectType
       expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType1')
-      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType1.elemID)
-        .toEqual(BuiltinTypes.STRING.elemID)
+      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType1.elemID).toEqual(BuiltinTypes.STRING.elemID)
       expect(objWithoutAnnoBlock.annotationRefTypes).toHaveProperty('newAnnoType2')
-      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType2.elemID)
-        .toEqual(BuiltinTypes.NUMBER.elemID)
+      expect(objWithoutAnnoBlock.annotationRefTypes.newAnnoType2.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi.loc')
@@ -1704,8 +1752,7 @@ describe('workspace', () => {
       expect(oneLiner.annotations.label).toEqual('label')
     })
     it('should update value in list', () => {
-      expect(lead.fields.list_field
-        .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, { foo: 'bla' }])
+      expect(lead.fields.list_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, { foo: 'bla' }])
     })
     it('should change isList value in fields', () => {
       expect(lead.fields.not_a_list_yet_field.refType.elemID.getFullName()).toContain('List<')
@@ -1732,9 +1779,7 @@ describe('workspace', () => {
 
     it('should add the type that change from hidden to not hidden, excluding hidden annotations', () => {
       expect(typeBecameNotHidden).toBeDefined()
-      expect(typeBecameNotHidden.annotations).toEqual(_.omit(
-        accountInsightsSettingsType.annotations, 'internalId',
-      ))
+      expect(typeBecameNotHidden.annotations).toEqual(_.omit(accountInsightsSettingsType.annotations, 'internalId'))
     })
 
     it('should remove the type that became to be hidden', () => {
@@ -1760,19 +1805,23 @@ describe('workspace', () => {
     })
 
     it('should add different cased elements to the same file', () => {
-      expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
-        filename: 'Records/Queue/QueueInstance.nacl',
-        buffer: expect.stringMatching(/.*salesforce.Queue queueInstance.*salesforce.Queue QueueInstance.*/s),
-      }))
+      expect(dirStore.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: 'Records/Queue/QueueInstance.nacl',
+          buffer: expect.stringMatching(/.*salesforce.Queue queueInstance.*salesforce.Queue QueueInstance.*/s),
+        }),
+      )
     })
 
     it('should use existing files when different cased elements are added separately', () => {
       // In this scenario, the addition change came with a path hint of "Inconsistent_Case"
       // but we expect the change to go to "inconsistent_case.nacl" because that file already exists
-      expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
-        filename: 'inconsistent_case.nacl',
-        buffer: expect.stringMatching(/.*type salesforce.Inconsistent_Case.*someValue =.*/s),
-      }))
+      expect(dirStore.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: 'inconsistent_case.nacl',
+          buffer: expect.stringMatching(/.*type salesforce.Inconsistent_Case.*someValue =.*/s),
+        }),
+      )
     })
 
     it('should route delete changes to the existing file even when there are different cased elements in the same update', async () => {
@@ -1804,25 +1853,29 @@ describe('workspace', () => {
       expect(elemMap).not.toHaveProperty(renamedTypes.before.elemID.getFullName())
       const addedElement = elemMap[renamedTypes.after.elemID.getFullName()]
       expect(addedElement).toMatchObject(_.omit(renamedTypes.after, 'path'))
-      expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
-        filename: 'renamed_type.nacl',
-        buffer: expect.stringMatching(/^\s*type salesforce.RenamedType2 {\s*}\s*$/),
-      }))
+      expect(dirStore.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: 'renamed_type.nacl',
+          buffer: expect.stringMatching(/^\s*type salesforce.RenamedType2 {\s*}\s*$/),
+        }),
+      )
     })
 
     it('should get a single hidden element correctly', async () => {
-      const leadWithHidden = await workspace.getValue(new ElemID('salesforce', 'lead')) as ObjectType
+      const leadWithHidden = (await workspace.getValue(new ElemID('salesforce', 'lead'))) as ObjectType
       expect(leadWithHidden).toBeDefined()
       expect(leadWithHidden.annotations).toHaveProperty('newHiddenAnno')
     })
 
     it('should return undefined if element does not exist', async () => {
-      const leadWithHidden = await workspace.getValue(new ElemID('dummy', 'notExist')) as ObjectType
+      const leadWithHidden = (await workspace.getValue(new ElemID('dummy', 'notExist'))) as ObjectType
       expect(leadWithHidden).not.toBeDefined()
     })
 
     it('should not fail in case one of the changes fails', async () => {
-      jest.spyOn(parser, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
+      jest.spyOn(parser, 'dumpValues').mockImplementationOnce(() => {
+        throw new Error('failed')
+      })
       const change1: DetailedChange = {
         id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
         action: 'add',
@@ -1837,7 +1890,7 @@ describe('workspace', () => {
       const updateNaclFilesResult = await workspace.updateNaclFiles([change1, change2])
       lead = findElement(
         await awu(await (await workspace.elements()).getAll()).toArray(),
-        new ElemID('salesforce', 'lead')
+        new ElemID('salesforce', 'lead'),
       ) as ObjectType
       expect(updateNaclFilesResult).toEqual({
         naclFilesChangesCount: 2,
@@ -1858,7 +1911,7 @@ describe('workspace', () => {
 
     it('should remove fields that were removed from the nacls even if they have hidden annotations', async () => {
       expect(elemMap[objWithFieldTypeWithHidden.elemID.getFullName()]).toBeDefined()
-      const elem = await workspace.getValue(objWithFieldTypeWithHidden.elemID) as ObjectType
+      const elem = (await workspace.getValue(objWithFieldTypeWithHidden.elemID)) as ObjectType
       expect(elem).toBeDefined()
       expect(elem.fields.fieldWithHidden).toBeUndefined()
     })
@@ -1923,7 +1976,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
             },
             [primarySourceName]: {
@@ -1932,7 +1985,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -1942,7 +1995,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
-                true
+                true,
               ),
               state: createState([]),
             },
@@ -1950,16 +2003,16 @@ describe('workspace', () => {
         )
       })
       it('should include added element in the secondary env', async () => {
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
-          .list()).toArray())
-          .not.toContainEqual(change.id)
+        expect(
+          await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
+        ).not.toContainEqual(change.id)
         expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual({
           naclFilesChangesCount: 2,
           stateOnlyChangesCount: 0,
         })
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
-          .list()).toArray())
-          .toContainEqual(change.id)
+        expect(
+          await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName)).list()).toArray(),
+        ).toContainEqual(change.id)
       })
     })
 
@@ -2017,24 +2070,18 @@ describe('workspace', () => {
               naclFiles: createMockNaclFileSource([]),
             },
             default: {
-              naclFiles: createMockNaclFileSource(
-                [workspaceType],
-                undefined,
-                undefined,
-                undefined,
-                {
-                  changes: [
-                    {
-                      action: 'modify',
-                      data: {
-                        before: workspaceType,
-                        after: modifiedWorkspaceType,
-                      },
+              naclFiles: createMockNaclFileSource([workspaceType], undefined, undefined, undefined, {
+                changes: [
+                  {
+                    action: 'modify',
+                    data: {
+                      before: workspaceType,
+                      after: modifiedWorkspaceType,
                     },
-                  ],
-                  cacheValid: true,
-                },
-              ),
+                  },
+                ],
+                cacheValid: true,
+              }),
               state: createState([stateType]),
             },
           },
@@ -2080,9 +2127,12 @@ describe('workspace', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
         async () => [],
       )
-      expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
-        { name: 'ws-name', uid: 'uid', envs: [{ name: 'default', accountToServiceName: {} }], currentEnv: 'default' }
-      )
+      expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual({
+        name: 'ws-name',
+        uid: 'uid',
+        envs: [{ name: 'default', accountToServiceName: {} }],
+        currentEnv: 'default',
+      })
       expect(workspace.name).toEqual('ws-name')
     })
   })
@@ -2103,23 +2153,27 @@ describe('workspace', () => {
       mockDateNow.mockRestore()
     })
     it('should return valid when the state is valid', async () => {
-      const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
-        { staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }
-      ))
-      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(
-        () => Promise.resolve({ salesforce: modificationDate })
+      const ws = await createWorkspace(
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }),
       )
+      ws.state().getAccountsUpdateDates = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
       const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Valid')
       expect(recency.date).toBe(modificationDate)
     })
     it('should return old when the state is old', async () => {
-      const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
-        { staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }
-      ))
-      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(
-        () => Promise.resolve({ salesforce: modificationDate })
+      const ws = await createWorkspace(
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }),
       )
+      ws.state().getAccountsUpdateDates = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
       const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Old')
       expect(recency.date).toBe(modificationDate)
@@ -2148,15 +2202,7 @@ describe('workspace', () => {
         .filter(values.isDefined)
         .map(state => jest.spyOn(state, 'updateConfig'))
       workspaceConfigSrc = mockWorkspaceConfigSource({ uid: 'wsId' }, true)
-      ws = await createWorkspace(
-        undefined,
-        undefined,
-        workspaceConfigSrc,
-        undefined,
-        undefined,
-        undefined,
-        elemSources
-      )
+      ws = await createWorkspace(undefined, undefined, workspaceConfigSrc, undefined, undefined, undefined, elemSources)
     })
 
     describe('when configuration changed', () => {
@@ -2169,11 +2215,13 @@ describe('workspace', () => {
       })
       it('should set the new configuration in the workspace config', () => {
         expect(workspaceConfigSrc.setWorkspaceConfig).toHaveBeenCalledWith(
-          expect.objectContaining({ state: newStateConfig })
+          expect.objectContaining({ state: newStateConfig }),
         )
       })
       it('should update the state config in all env sources', () => {
-        stateUpdateConfigFuncs.forEach(updateFunc => expect(updateFunc).toHaveBeenCalledWith({ workspaceId: 'wsId', stateConfig: newStateConfig }))
+        stateUpdateConfigFuncs.forEach(updateFunc =>
+          expect(updateFunc).toHaveBeenCalledWith({ workspaceId: 'wsId', stateConfig: newStateConfig }),
+        )
       })
     })
     describe('when configuration is the same', () => {
@@ -2188,9 +2236,7 @@ describe('workspace', () => {
   describe('flush', () => {
     const mapFlushCounter: Record<string, number> = {}
     const mapCreator = persistentMockCreateRemoteMap()
-    const mapCreatorWrapper = async (
-      params: CreateRemoteMapParams<Value>
-    ): Promise<RemoteMap<Value>> => {
+    const mapCreatorWrapper = async (params: CreateRemoteMapParams<Value>): Promise<RemoteMap<Value>> => {
       const m = await mapCreator(params)
       return {
         ...m,
@@ -2208,9 +2254,16 @@ describe('workspace', () => {
         getAll: jest.fn().mockResolvedValue([]),
         getHash: jest.fn().mockResolvedValue(undefined),
       }
-      const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
-        flushable as unknown as State, undefined, undefined, undefined, undefined,
-        undefined, mapCreatorWrapper as RemoteMapCreator)
+      const workspace = await createWorkspace(
+        flushable as unknown as DirectoryStore<string>,
+        flushable as unknown as State,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mapCreatorWrapper as RemoteMapCreator,
+      )
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)
       expect(mapFlushCounter['workspace-default-merged']).toEqual(1)
@@ -2261,16 +2314,12 @@ describe('workspace', () => {
       credSource = mockCredentialsSource()
       state = createState([])
       defNaclFiles = createMockNaclFileSource([])
-      inactiveNaclFiles = createMockNaclFileSource([
-        new ObjectType({ elemID: new ElemID('salto', 'inactive') }),
-      ])
-      workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource,
-        undefined,
-        {
-          '': { naclFiles: createMockNaclFileSource([]) },
-          default: { naclFiles: defNaclFiles, state },
-          inactive: { naclFiles: inactiveNaclFiles, state },
-        })
+      inactiveNaclFiles = createMockNaclFileSource([new ObjectType({ elemID: new ElemID('salto', 'inactive') })])
+      workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
+        '': { naclFiles: createMockNaclFileSource([]) },
+        default: { naclFiles: defNaclFiles, state },
+        inactive: { naclFiles: inactiveNaclFiles, state },
+      })
     })
 
     it('should change workspace state', async () => {
@@ -2294,11 +2343,13 @@ describe('workspace', () => {
 
     it('should return the elements of the new current envs after set', async () => {
       const defaultElemIDs = await awu(await (await workspace.elements()).getAll())
-        .map(e => e.elemID.getFullName()).toArray()
+        .map(e => e.elemID.getFullName())
+        .toArray()
       expect(defaultElemIDs).toHaveLength(0)
       await workspace.setCurrentEnv('inactive')
       const inactiveElemIDs = await awu(await (await workspace.elements()).getAll())
-        .map(e => e.elemID.getFullName()).toArray()
+        .map(e => e.elemID.getFullName())
+        .toArray()
       expect(inactiveElemIDs).toHaveLength(1)
       expect(inactiveElemIDs).toEqual(['salto.inactive'])
     })
@@ -2308,7 +2359,7 @@ describe('workspace', () => {
     let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
     const mockRmcToSource = async (_rmc: RemoteMapCreator): Promise<EnvironmentSource> =>
-      ({} as unknown as EnvironmentSource)
+      ({}) as unknown as EnvironmentSource
     const envName = 'new'
 
     beforeEach(async () => {
@@ -2323,10 +2374,10 @@ describe('workspace', () => {
             mockDirStore([], false, { 'common.nacl': 'type salesforce.hearing { }' }),
             mockStaticFilesSource(),
             rmc,
-            false
+            false,
           ),
           state,
-        })
+        }),
       )
     })
 
@@ -2335,31 +2386,29 @@ describe('workspace', () => {
     })
     it('should persist', () => {
       expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-      const envs = (
-        workspaceConf.setWorkspaceConfig as jest.Mock
-      ).mock.calls[0][0].envs as EnvConfig[]
-      const envsNames = envs.map((e: {name: string}) => e.name)
+      const envs = (workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0].envs as EnvConfig[]
+      const envsNames = envs.map((e: { name: string }) => e.name)
       expect(envsNames.includes(envName)).toBeTruthy()
     })
     it('should include elements of the new source', async () => {
-      expect(await awu(await (await workspace.elements(false, envName)).getAll()).toArray())
-        .toEqual([new ObjectType({ elemID: new ElemID('salesforce', 'hearing') })])
+      expect(await awu(await (await workspace.elements(false, envName)).getAll()).toArray()).toEqual([
+        new ObjectType({ elemID: new ElemID('salesforce', 'hearing') }),
+      ])
     })
     it('should throw EnvDuplicationError', async () => {
-      await expect(workspace.addEnvironment(envName, mockRmcToSource))
-        .rejects.toEqual(new EnvDuplicationError(envName))
+      await expect(workspace.addEnvironment(envName, mockRmcToSource)).rejects.toEqual(new EnvDuplicationError(envName))
     })
 
     describe('invalid new environment name', () => {
       test('throws InvalidEnvNameError for name with illegal characters', async () => {
         const nameWithIllegalChars = 'invalid:env'
-        await expect(workspace.addEnvironment(nameWithIllegalChars, mockRmcToSource))
-          .rejects.toThrow(InvalidEnvNameError)
+        await expect(workspace.addEnvironment(nameWithIllegalChars, mockRmcToSource)).rejects.toThrow(
+          InvalidEnvNameError,
+        )
       })
       test('throws InvalidEnvNameError when name is too long', async () => {
         const longName = 'a'.repeat(MAX_ENV_NAME_LEN * 2)
-        await expect(workspace.addEnvironment(longName, mockRmcToSource))
-          .rejects.toThrow(InvalidEnvNameError)
+        await expect(workspace.addEnvironment(longName, mockRmcToSource)).rejects.toThrow(InvalidEnvNameError)
       })
     })
   })
@@ -2387,29 +2436,21 @@ describe('workspace', () => {
     const emptyFileStore = mockDirStore(undefined, undefined, {})
     describe('empty index', () => {
       beforeEach(async () => {
-        workspace = await createWorkspace(
-          emptyFileStore,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          {
-            '': {
-              naclFiles: createMockNaclFileSource([]),
-            },
-            default: {
-              naclFiles: await naclFilesSource(
-                'default',
-                emptyFileStore,
-                mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
-                true
-              ),
-              state: createState([]),
-            },
+        workspace = await createWorkspace(emptyFileStore, undefined, undefined, undefined, undefined, undefined, {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
           },
-        )
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              emptyFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+            state: createState([]),
+          },
+        })
       })
       describe('isChangedAtIndexEmpty', () => {
         it('should return true', async () => {
@@ -2420,29 +2461,21 @@ describe('workspace', () => {
     })
     describe('populated index', () => {
       beforeEach(async () => {
-        workspace = await createWorkspace(
-          naclFileStore,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          {
-            '': {
-              naclFiles: createMockNaclFileSource([]),
-            },
-            default: {
-              naclFiles: await naclFilesSource(
-                'default',
-                naclFileStore,
-                mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
-                true
-              ),
-              state: createState([]),
-            },
+        workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
           },
-        )
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+            state: createState([]),
+          },
+        })
       })
       describe('getChangedElementsBetween', () => {
         it('get correct element ids without full date range', async () => {
@@ -2513,33 +2546,27 @@ describe('workspace', () => {
         filepath: 'static2.nacl',
         hash: 'FFFF',
       })
-      workspace = await createWorkspace(
-        naclFileStore,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-          },
-          default: {
-            naclFiles: await naclFilesSource(
-              'default',
-              naclFileStore,
-              mockStaticFilesSource([firstStaticFile, secondStaticFile]),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-            state: createState([]),
-          },
+      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
         },
-      )
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource([firstStaticFile, secondStaticFile]),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+          state: createState([]),
+        },
+      })
     })
     describe('getStaticFilePathsByElemIds', () => {
       it('get correct paths when providing a correct element id', async () => {
-        const result = await workspace.getStaticFilePathsByElemIds([ElemID.fromFullName('salesforce.lead.instance.someName1')])
+        const result = await workspace.getStaticFilePathsByElemIds([
+          ElemID.fromFullName('salesforce.lead.instance.someName1'),
+        ])
         expect(result).toEqual(['static1.nacl'])
       })
       it('get multiple static files with multiple element ids', async () => {
@@ -2558,23 +2585,19 @@ describe('workspace', () => {
       describe('with missing filepaths param', () => {
         it('should return full map', async () => {
           const result = await workspace.getElemIdsByStaticFilePaths()
-          expect(result).toEqual(
-            {
-              'static1.nacl': 'salesforce.lead.instance.someName1',
-              'static2.nacl': 'salesforce.lead.instance.someName2',
-            }
-          )
+          expect(result).toEqual({
+            'static1.nacl': 'salesforce.lead.instance.someName1',
+            'static2.nacl': 'salesforce.lead.instance.someName2',
+          })
         })
       })
       describe('with supplied filepaths', () => {
         describe('when specific paths are given', () => {
           it('should return a mapping that only contains the given paths', async () => {
             const result = await workspace.getElemIdsByStaticFilePaths(new Set(['static1.nacl']))
-            expect(result).toEqual(
-              {
-                'static1.nacl': 'salesforce.lead.instance.someName1',
-              }
-            )
+            expect(result).toEqual({
+              'static1.nacl': 'salesforce.lead.instance.someName1',
+            })
           })
         })
         describe('when given paths do no exist', () => {
@@ -2625,43 +2648,35 @@ describe('workspace', () => {
       'someName2.nacl': secondInstance,
     })
     beforeEach(async () => {
-      workspace = await createWorkspace(
-        naclFileStore,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-          },
-          default: {
-            naclFiles: await naclFilesSource(
-              'default',
-              naclFileStore,
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-            state: createState([]),
-          },
+      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
         },
-      )
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+          state: createState([]),
+        },
+      })
     })
     describe('getAliases', () => {
       it('should return full map', async () => {
         const index = await workspace.getAliases()
-        const result = Object.fromEntries(await awu(index.entries())
-          .map(({ key: id, value: alias }) => ([id, alias]))
-          .toArray())
-        expect(result).toEqual(
-          {
-            'salesforce.lead.field.singleDef': 'single Def alias',
-            'salesforce.lead': 'lead alias',
-            'salesforce.lead.instance.someName1': 'some name alias',
-          }
+        const result = Object.fromEntries(
+          await awu(index.entries())
+            .map(({ key: id, value: alias }) => [id, alias])
+            .toArray(),
         )
+        expect(result).toEqual({
+          'salesforce.lead.field.singleDef': 'single Def alias',
+          'salesforce.lead': 'lead alias',
+          'salesforce.lead.instance.someName1': 'some name alias',
+        })
       })
     })
   })
@@ -2687,29 +2702,21 @@ describe('workspace', () => {
       'firstFile.nacl': firstFile,
     })
     beforeEach(async () => {
-      workspace = await createWorkspace(
-        naclFileStore,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-          },
-          default: {
-            naclFiles: await naclFilesSource(
-              'default',
-              naclFileStore,
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-            state: createState([]),
-          },
+      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
         },
-      )
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+          state: createState([]),
+        },
+      })
     })
     describe('getAllChangedByAuthors', () => {
       it('get correct authors', async () => {
@@ -2726,7 +2733,10 @@ describe('workspace', () => {
         expect(unknownUser[2].getFullName()).toEqual('salesforce.text')
         const testUser = await workspace.getChangedElementsByAuthors([{ user: 'test user', account: 'salesforce' }])
         expect(testUser[0].getFullName()).toEqual('salesforce.lead')
-        const multipleUsers = await workspace.getChangedElementsByAuthors([{ user: 'test user', account: 'salesforce' }, { user: 'Unknown', account: '' }])
+        const multipleUsers = await workspace.getChangedElementsByAuthors([
+          { user: 'test user', account: 'salesforce' },
+          { user: 'Unknown', account: '' },
+        ])
         expect(multipleUsers).toEqual(expect.arrayContaining(unknownUser))
         expect(multipleUsers).toEqual(expect.arrayContaining(testUser))
       })
@@ -2735,22 +2745,27 @@ describe('workspace', () => {
   describe('referenceTargetsTree index', () => {
     it('should return same result after serialize and deserialize', async () => {
       const referenceTargetsTree = new collections.treeMap.TreeMap([
-        ['someAnnotation', [{ id: ElemID.fromFullName('test.target2.field.someField.value'), type: 'strong' as const }]],
-        ['someValue', [{ id: ElemID.fromFullName('test.target2.instance.someInstance'), type: 'strong' as const }]],
-        ['inner.templateValue', [
-          { id: ElemID.fromFullName('test.target2.field.someTemplateField.value'), type: 'strong' as const },
-          { id: ElemID.fromFullName('test.target2.field.anotherTemplateField.value'), type: 'strong' as const },
+        [
+          'someAnnotation',
+          [{ id: ElemID.fromFullName('test.target2.field.someField.value'), type: 'strong' as const }],
         ],
+        ['someValue', [{ id: ElemID.fromFullName('test.target2.instance.someInstance'), type: 'strong' as const }]],
+        [
+          'inner.templateValue',
+          [
+            { id: ElemID.fromFullName('test.target2.field.someTemplateField.value'), type: 'strong' as const },
+            { id: ElemID.fromFullName('test.target2.field.anotherTemplateField.value'), type: 'strong' as const },
+          ],
         ],
         ['', [{ id: ElemID.fromFullName('test.target2.instance.someInstance2'), type: 'strong' as const }]],
-
       ])
       const serializedTree = await serializeReferenceTree(referenceTargetsTree)
       const deserializedTree = await deserializeReferenceTree(serializedTree)
       expect(deserializedTree).toEqual(referenceTargetsTree)
     })
     it('should return same result after deserialize and serialize', async () => {
-      const serializedTree = '[["someAnnotation",[{"id":"test.target2.field.someField.value","type":"strong"}]],["someValue",[{"id":"test.target2.instance.someInstance","type":"strong"}]],["inner.templateValue",[{"id":"test.target2.field.someTemplateField.value","type":"strong"},{"id":"test.target2.field.anotherTemplateField.value","type":"strong"}]],["",[{"id":"test.target2.instance.someInstance2","type":"strong"}]]]'
+      const serializedTree =
+        '[["someAnnotation",[{"id":"test.target2.field.someField.value","type":"strong"}]],["someValue",[{"id":"test.target2.instance.someInstance","type":"strong"}]],["inner.templateValue",[{"id":"test.target2.field.someTemplateField.value","type":"strong"},{"id":"test.target2.field.anotherTemplateField.value","type":"strong"}]],["",[{"id":"test.target2.instance.someInstance2","type":"strong"}]]]'
       const deserializedTree = await deserializeReferenceTree(serializedTree)
       const reSerializedTree = await serializeReferenceTree(deserializedTree)
       expect(reSerializedTree).toEqual(serializedTree)
@@ -2759,7 +2774,9 @@ describe('workspace', () => {
     it('should deserialize references with types', async () => {
       const serializedTree = '[["someAnnotation",[{"id":"test.target2.field.someField.value","type":"strong"}]]]'
       const deserializedTree = await deserializeReferenceTree(serializedTree)
-      expect(deserializedTree.get('someAnnotation')).toEqual([{ id: ElemID.fromFullName('test.target2.field.someField.value'), type: 'strong' }])
+      expect(deserializedTree.get('someAnnotation')).toEqual([
+        { id: ElemID.fromFullName('test.target2.field.someField.value'), type: 'strong' },
+      ])
     })
   })
   describe('deleteEnvironment', () => {
@@ -2777,19 +2794,11 @@ describe('workspace', () => {
         const state = createState([])
         stateClear = jest.spyOn(state, 'clear')
         naclFiles = createMockNaclFileSource([])
-        workspace = await createWorkspace(
-          undefined,
-          undefined,
-          workspaceConf,
-          undefined,
-          credSource,
-          undefined,
-          {
-            inactive: { naclFiles, state },
-            '': { naclFiles: createMockNaclFileSource([]) },
-            default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
-          }
-        )
+        workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
+          inactive: { naclFiles, state },
+          '': { naclFiles: createMockNaclFileSource([]) },
+          default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+        })
       })
       describe('should delete nacl and state files if keepNacls is false', () => {
         beforeEach(async () => {
@@ -2800,10 +2809,8 @@ describe('workspace', () => {
         })
         it('should persist', () => {
           expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-          const envs = (
-            workspaceConf.setWorkspaceConfig as jest.Mock
-          ).mock.calls[0][0].envs as EnvConfig[]
-          const envsNames = envs.map((e: {name: string}) => e.name)
+          const envs = (workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0].envs as EnvConfig[]
+          const envsNames = envs.map((e: { name: string }) => e.name)
           expect(envsNames.includes(envName)).toBeFalsy()
         })
         it('should delete files', () => {
@@ -2821,10 +2828,8 @@ describe('workspace', () => {
         })
         it('should persist', () => {
           expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-          const envs = (
-            workspaceConf.setWorkspaceConfig as jest.Mock
-          ).mock.calls[0][0].envs as EnvConfig[]
-          const envsNames = envs.map((e: {name: string}) => e.name)
+          const envs = (workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0].envs as EnvConfig[]
+          const envsNames = envs.map((e: { name: string }) => e.name)
           expect(envsNames.includes(envName)).toBeFalsy()
         })
         it('should not delete files', () => {
@@ -2873,8 +2878,15 @@ describe('workspace', () => {
           state: createState([]),
         },
       }
-      workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource,
-        undefined, elementSources)
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        workspaceConf,
+        undefined,
+        credSource,
+        undefined,
+        elementSources,
+      )
     })
     it('should clear specified workspace components, but not the environments', async () => {
       const origEnvs = _.clone(workspace.envs())
@@ -2920,13 +2932,15 @@ describe('workspace', () => {
     })
 
     it('should fail if trying to clear static resources without all dependent components', async () => {
-      await expect(workspace.clear({
-        nacl: false,
-        state: true,
-        cache: true,
-        staticResources: true,
-        credentials: true,
-      })).rejects.toThrow('Cannot clear static resources without clearing the state, cache and nacls')
+      await expect(
+        workspace.clear({
+          nacl: false,
+          state: true,
+          cache: true,
+          staticResources: true,
+          credentials: true,
+        }),
+      ).rejects.toThrow('Cannot clear static resources without clearing the state, cache and nacls')
     })
   })
 
@@ -2955,10 +2969,8 @@ describe('workspace', () => {
       }
 
       const verifyPersistWorkspaceConfig = (envName: string): void => {
-        const envs = (
-          workspaceConf.setWorkspaceConfig as jest.Mock
-        ).mock.calls[0][0].envs as EnvConfig[]
-        const envsNames = envs.map((e: {name: string}) => e.name)
+        const envs = (workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0].envs as EnvConfig[]
+        const envsNames = envs.map((e: { name: string }) => e.name)
         expect(envsNames.includes(envName)).toBeTruthy()
       }
 
@@ -2966,8 +2978,10 @@ describe('workspace', () => {
         const envName = 'default'
         const newEnvName = 'new-default'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined,
-            credSource, undefined, { [envName]: { naclFiles, state }, '': { naclFiles: createMockNaclFileSource([]) } })
+          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
+            [envName]: { naclFiles, state },
+            '': { naclFiles: createMockNaclFileSource([]) },
+          })
           await workspace.renameEnvironment(envName, newEnvName)
         })
         it('should change workspace state', async () => {
@@ -2977,8 +2991,7 @@ describe('workspace', () => {
         it('should persist both workspace config and workspace user config', async () => {
           expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
           verifyPersistWorkspaceConfig(newEnvName)
-          const workspaceUserConfig = (workspaceConf.setWorkspaceConfig as jest.Mock)
-            .mock.calls[0][0].currentEnv
+          const workspaceUserConfig = (workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0].currentEnv
           expect(workspaceUserConfig).toEqual(newEnvName)
         })
 
@@ -2991,13 +3004,11 @@ describe('workspace', () => {
         const envName = 'inactive'
         const newEnvName = 'new-inactive'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined,
-            credSource,
-            undefined, {
-              [envName]: { naclFiles, state },
-              '': { naclFiles: createMockNaclFileSource([]) },
-              default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
-            })
+          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
+            [envName]: { naclFiles, state },
+            '': { naclFiles: createMockNaclFileSource([]) },
+            default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+          })
           await workspace.renameEnvironment(envName, newEnvName)
         })
         it('should change workspace state', async () => {
@@ -3016,13 +3027,15 @@ describe('workspace', () => {
       describe('invalid new environment name', () => {
         test('throws InvalidEnvNameError for name with illegal characters', async () => {
           const nameWithIllegalChars = 'invalid:env'
-          await expect(workspace.renameEnvironment(workspace.currentEnv(), nameWithIllegalChars))
-            .rejects.toThrow(InvalidEnvNameError)
+          await expect(workspace.renameEnvironment(workspace.currentEnv(), nameWithIllegalChars)).rejects.toThrow(
+            InvalidEnvNameError,
+          )
         })
         test('throws InvalidEnvNameError when name is too long', async () => {
           const longName = 'a'.repeat(MAX_ENV_NAME_LEN * 2)
-          await expect(workspace.renameEnvironment(workspace.currentEnv(), longName))
-            .rejects.toThrow(InvalidEnvNameError)
+          await expect(workspace.renameEnvironment(workspace.currentEnv(), longName)).rejects.toThrow(
+            InvalidEnvNameError,
+          )
         })
       })
     })
@@ -3034,13 +3047,11 @@ describe('workspace', () => {
       })
 
       it('should not be able to delete unknown environment', async () => {
-        await expect(workspace.renameEnvironment('unknown', 'new-unknown'))
-          .rejects.toThrow(UnknownEnvError)
+        await expect(workspace.renameEnvironment('unknown', 'new-unknown')).rejects.toThrow(UnknownEnvError)
       })
 
       it('should not be able to rename to existing environment name', async () => {
-        await expect(workspace.renameEnvironment('default', 'default'))
-          .rejects.toThrow(EnvDuplicationError)
+        await expect(workspace.renameEnvironment('default', 'default')).rejects.toThrow(EnvDuplicationError)
       })
     })
   })
@@ -3072,11 +3083,8 @@ describe('workspace', () => {
 
       it('should persist', () => {
         expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-        const envs = (
-          workspaceConf.setWorkspaceConfig as jest.Mock
-        ).mock.calls[0][0].envs as EnvConfig[]
-        expect((envs as {name: string}[]).find(e => e.name === 'default'))
-          .toBeDefined()
+        const envs = (workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0].envs as EnvConfig[]
+        expect((envs as { name: string }[]).find(e => e.name === 'default')).toBeDefined()
       })
     })
 
@@ -3095,7 +3103,7 @@ describe('workspace', () => {
 
       it('should not change the persisted current environment', () => {
         expect(workspaceConf.setWorkspaceConfig as jest.Mock).toHaveBeenLastCalledWith(
-          expect.objectContaining({ currentEnv: 'default' })
+          expect.objectContaining({ currentEnv: 'default' }),
         )
       })
     })
@@ -3114,9 +3122,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       resolveMock.mockClear()
       adaptersConfig = mockAdaptersConfigSource()
-      adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([
-        configObjectType,
-      ]))
+      adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([configObjectType]))
       workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig)
     })
     afterAll(() => {
@@ -3159,11 +3165,10 @@ describe('workspace', () => {
   describe('updateAccountCredentials', () => {
     let credsSource: ConfigSource
     let workspace: Workspace
-    const newCreds = new InstanceElement(
-      services[0],
-      new ObjectType({ elemID: new ElemID(services[0]) }),
-      { user: 'username', password: 'pass' },
-    )
+    const newCreds = new InstanceElement(services[0], new ObjectType({ elemID: new ElemID(services[0]) }), {
+      user: 'username',
+      password: 'pass',
+    })
 
     beforeEach(async () => {
       credsSource = mockCredentialsSource()
@@ -3183,8 +3188,9 @@ describe('workspace', () => {
   describe('updateAccountConfig', () => {
     let adaptersConf: AdaptersConfigSource
     let workspace: Workspace
-    const newConf = new InstanceElement(services[0],
-      new ObjectType({ elemID: new ElemID(services[0]) }), { conf1: 'val1' })
+    const newConf = new InstanceElement(services[0], new ObjectType({ elemID: new ElemID(services[0]) }), {
+      conf1: 'val1',
+    })
 
     beforeEach(async () => {
       adaptersConf = mockAdaptersConfigSource()
@@ -3194,9 +3200,7 @@ describe('workspace', () => {
 
     it('should persist', () => {
       expect(adaptersConf.setAdapter).toHaveBeenCalledTimes(1)
-      const setAdapterParams = (
-        adaptersConf.setAdapter as jest.Mock
-      ).mock.calls[0]
+      const setAdapterParams = (adaptersConf.setAdapter as jest.Mock).mock.calls[0]
       expect(setAdapterParams[0]).toEqual('salesforce')
       expect(setAdapterParams[1]).toEqual('salesforce')
       expect(setAdapterParams[2]).toEqual(newConf)
@@ -3210,8 +3214,11 @@ describe('workspace', () => {
     beforeEach(async () => {
       credsSource = {
         get: jest.fn().mockResolvedValue(
-          new InstanceElement(services[0], new ObjectType({ elemID: new ElemID(services[0]) }),
-            { usename: 'default', password: 'default', currentEnv: 'default' })
+          new InstanceElement(services[0], new ObjectType({ elemID: new ElemID(services[0]) }), {
+            usename: 'default',
+            password: 'default',
+            currentEnv: 'default',
+          }),
         ),
         set: jest.fn(),
         delete: jest.fn(),
@@ -3305,8 +3312,7 @@ describe('workspace', () => {
 
       beforeAll(async () => {
         workspace = await createWorkspace(naclFileStore)
-        referencedFiles = await workspace
-          .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
+        referencedFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
       })
 
       it('should find files in which the id is used as an instance type', () => {
@@ -3330,14 +3336,12 @@ describe('workspace', () => {
       })
 
       it('should find nested attr referenced', async () => {
-        const attrRefFiles = await workspace
-          .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        const attrRefFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
         expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
       })
 
       it('should find referenced in values of with no matching field in the type', async () => {
-        const attrRefFiles = await workspace
-          .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        const attrRefFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
         expect(attrRefFiles).toContain('unmerged.nacl')
       })
     })
@@ -3351,23 +3355,19 @@ describe('workspace', () => {
     const templateRef2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template2'))
 
     beforeAll(async () => {
-      const instanceElement = new InstanceElement(
-        'test',
-        new ObjectType({ elemID: new ElemID('adapter', 'test') }),
-        {
-          ref: ref1,
-          ref2,
-          inner: {
-            ref: ref2,
-            inner2: {
-              refs: new TemplateExpression({
-                parts: [templateRef1, templateRef2],
-              }),
-            },
+      const instanceElement = new InstanceElement('test', new ObjectType({ elemID: new ElemID('adapter', 'test') }), {
+        ref: ref1,
+        ref2,
+        inner: {
+          ref: ref2,
+          inner2: {
+            refs: new TemplateExpression({
+              parts: [templateRef1, templateRef2],
+            }),
           },
-          none: 'none',
-        }
-      )
+        },
+        none: 'none',
+      })
       const objectType = new ObjectType({
         elemID: new ElemID('adapter', 'object'),
         annotations: {
@@ -3390,32 +3390,53 @@ describe('workspace', () => {
           state: createState([]),
         },
       }
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined,
-        elementSources)
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        elementSources,
+      )
     })
 
     it('top level instance should return all references under it without duplicates', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test'))
-      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })))
+      const instanceRefs = await workspace.getElementOutgoingReferences(
+        new ElemID('adapter', 'test', 'instance', 'test'),
+      )
+      expect(instanceRefs).toMatchObject(
+        [ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })),
+      )
     })
 
     it('instance field should return all references nested under it', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner'))
-      expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })))
+      const instanceRefs = await workspace.getElementOutgoingReferences(
+        new ElemID('adapter', 'test', 'instance', 'test', 'inner'),
+      )
+      expect(instanceRefs).toMatchObject(
+        [ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })),
+      )
     })
 
     it('specific nested instance field path should return references under it', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner', 'inner2', 'refs'))
+      const instanceRefs = await workspace.getElementOutgoingReferences(
+        new ElemID('adapter', 'test', 'instance', 'test', 'inner', 'inner2', 'refs'),
+      )
       expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })))
     })
 
     it('nested instance field without references should return an empty array', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'none'))
+      const instanceRefs = await workspace.getElementOutgoingReferences(
+        new ElemID('adapter', 'test', 'instance', 'test', 'none'),
+      )
       expect(instanceRefs).toMatchObject([])
     })
 
     it('non-existent field should return an empty array', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'nonexistent'))
+      const instanceRefs = await workspace.getElementOutgoingReferences(
+        new ElemID('adapter', 'test', 'instance', 'test', 'nonexistent'),
+      )
       expect(instanceRefs).toMatchObject([])
     })
 
@@ -3437,7 +3458,9 @@ describe('workspace', () => {
     })
 
     it('None-base type should throw', async () => {
-      await expect(workspace.getElementIncomingReferences(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+      await expect(
+        workspace.getElementIncomingReferences(new ElemID('adapter', 'type', 'attr', 'aaa')),
+      ).rejects.toThrow()
     })
 
     it('None-exist type should return empty array', async () => {
@@ -3453,7 +3476,9 @@ describe('workspace', () => {
     })
 
     it('None-base type should throw', async () => {
-      await expect(workspace.getElementAuthorInformation(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+      await expect(
+        workspace.getElementAuthorInformation(new ElemID('adapter', 'type', 'attr', 'aaa')),
+      ).rejects.toThrow()
     })
 
     it('None-exist type should return empty object', async () => {
@@ -3486,13 +3511,7 @@ describe('workspace', () => {
         undefined,
         {
           '': {
-            naclFiles: await naclFilesSource(
-              '',
-              mockDirStore(),
-              staticFilesSource,
-              remoteMapCreator,
-              true
-            ),
+            naclFiles: await naclFilesSource('', mockDirStore(), staticFilesSource, remoteMapCreator, true),
           },
           empty: {
             naclFiles: createMockNaclFileSource([]),
@@ -3502,7 +3521,7 @@ describe('workspace', () => {
             naclFiles: createMockNaclFileSource([new ObjectType({ elemID: new ElemID('test', 'type') })]),
             state: createState([]),
           },
-        }
+        },
       )
     })
     it('should return false for empty env', async () => {
@@ -3522,17 +3541,15 @@ describe('workspace', () => {
       const staticFilesSource = mockStaticFilesSource()
       const remoteMapCreator = persistentMockCreateRemoteMap()
       workspace = await createWorkspace(
-        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource(undefined, true),
+        undefined,
+        undefined,
         undefined,
         {
           '': {
-            naclFiles: await naclFilesSource(
-              '',
-              mockDirStore(),
-              staticFilesSource,
-              remoteMapCreator,
-              true
-            ),
+            naclFiles: await naclFilesSource('', mockDirStore(), staticFilesSource, remoteMapCreator, true),
           },
           default: {
             naclFiles: createMockNaclFileSource([]),
@@ -3542,7 +3559,7 @@ describe('workspace', () => {
             naclFiles: createMockNaclFileSource([]),
             state: createState([]),
           },
-        }
+        },
       )
     })
     it('should return the correct env if the file belongs to the current env', () => {
@@ -3638,7 +3655,6 @@ describe('workspace', () => {
       willRemainErr,
     }
 
-
     let workspace: Workspace
     const naclFileStore = mockDirStore(undefined, undefined, files)
     const primElemID = new ElemID('salto', 'prim')
@@ -3661,7 +3677,6 @@ describe('workspace', () => {
           after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
         },
       },
-
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
@@ -3682,7 +3697,7 @@ describe('workspace', () => {
 
     it('create validation errors in the updated elements', () => {
       const objInstToupdateErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToupdate.baseField.str'
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToupdate.baseField.str',
       )
 
       expect(objInstToupdateErr).toBeDefined()
@@ -3690,7 +3705,7 @@ describe('workspace', () => {
     })
     it('create validation errors where the updated elements are used as value type', () => {
       const usedAsTypeErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num'
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
       )
 
       expect(usedAsTypeErr).toBeDefined()
@@ -3698,7 +3713,7 @@ describe('workspace', () => {
     })
     it('create validation errors where the updated elements are used as references', () => {
       const usedAsReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str'
+        err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
       )
 
       expect(usedAsReference).toBeDefined()
@@ -3706,7 +3721,7 @@ describe('workspace', () => {
     })
     it('create validation errors in chained references', () => {
       const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str'
+        err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
       )
 
       expect(usedAsChainedReference).toBeDefined()
@@ -3715,7 +3730,7 @@ describe('workspace', () => {
 
     it('should not modify errors which were not effected by this update', () => {
       const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num'
+        err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
       )
 
       expect(usedAsChainedReference).toBeDefined()
@@ -3723,7 +3738,7 @@ describe('workspace', () => {
 
     it('should remove errors that were resolved in the update', () => {
       const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num'
+        err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
       )
 
       expect(usedAsChainedReference).not.toBeDefined()
@@ -3749,7 +3764,7 @@ describe('workspace', () => {
               mockDirStore([], false, { 'common.nacl': 'type salesforce.hearing { }' }),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
           },
           [primarySourceName]: {
@@ -3758,7 +3773,7 @@ describe('workspace', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
             state: createState([]),
           },
@@ -3768,7 +3783,7 @@ describe('workspace', () => {
               mockDirStore([], true),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
             state: createState([]),
           },
@@ -3779,30 +3794,30 @@ describe('workspace', () => {
       it('should update the elements correctly', async () => {
         const elemIDToMove = new ElemID('salesforce', 'lead')
         expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray(),
         ).not.toContainEqual(elemIDToMove)
         await ws.promote([elemIDToMove])
-        expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
-        ).toContainEqual(elemIDToMove)
-        expect(
-          await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
-        ).toContainEqual(elemIDToMove)
+        expect(await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()).toContainEqual(
+          elemIDToMove,
+        )
+        expect(await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()).toContainEqual(
+          elemIDToMove,
+        )
       })
     })
     describe('copyTo', () => {
       it('should update the elements correctly', async () => {
         const elemIDToMove = new ElemID('salesforce', 'lead')
         expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray(),
         ).not.toContainEqual(elemIDToMove)
         await ws.copyTo([elemIDToMove], [secondarySourceName])
-        expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
-        ).toContainEqual(elemIDToMove)
-        expect(
-          await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
-        ).toContainEqual(elemIDToMove)
+        expect(await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()).toContainEqual(
+          elemIDToMove,
+        )
+        expect(await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()).toContainEqual(
+          elemIDToMove,
+        )
       })
     })
 
@@ -3810,14 +3825,8 @@ describe('workspace', () => {
       it('should update the elements correctly', async () => {
         const elemIDToRemove = new ElemID('salesforce', 'someType', 'instance', 'inst1')
         const elemIDToAdd = new ElemID('salesforce', 'lead')
-        await ws.sync(
-          [elemIDToAdd],
-          { [secondarySourceName]: [elemIDToRemove] },
-          [secondarySourceName]
-        )
-        const elements = await awu(
-          await (await ws.elements(undefined, secondarySourceName)).list()
-        ).toArray()
+        await ws.sync([elemIDToAdd], { [secondarySourceName]: [elemIDToRemove] }, [secondarySourceName])
+        const elements = await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
         expect(elements).not.toContainEqual(elemIDToRemove)
         expect(elements).toContainEqual(elemIDToAdd)
       })
@@ -3844,7 +3853,6 @@ describe('workspace', () => {
       expect(mockAdaptersConfig.getNaclFile).not.toHaveBeenCalled()
     })
   })
-
 
   describe('static files', () => {
     let workspace: Workspace
@@ -3906,29 +3914,39 @@ describe('workspace', () => {
           },
           default: {
             naclFiles: createMockNaclFileSource(
-              [defaultElem], undefined, undefined, undefined, undefined, defaultStaticFileSource
+              [defaultElem],
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              defaultStaticFileSource,
             ),
             state: createState([]),
           },
           inactive: {
             naclFiles: createMockNaclFileSource(
-              [inactiveElem], undefined, undefined, undefined, undefined, inactiveStaticFileSource
+              [inactiveElem],
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              inactiveStaticFileSource,
             ),
             state: createState([]),
           },
-        }
+        },
       )
     })
     describe('deserialization', () => {
       it('should deserialize static files from the active env', async () => {
-        const elem = await (await workspace.elements()).get(elemID) as Element
+        const elem = (await (await workspace.elements()).get(elemID)) as Element
         expect(isStaticFile(elem.annotations.static)).toBeTruthy()
         const elemStaticFile = elem.annotations.static as StaticFile
         expect(await elemStaticFile.getContent()).toEqual(await defaultStaticFile.getContent())
       })
 
       it('should deserialize static files from the non-active env', async () => {
-        const elem = await (await workspace.elements(true, 'inactive')).get(elemID) as Element
+        const elem = (await (await workspace.elements(true, 'inactive')).get(elemID)) as Element
         expect(isStaticFile(elem.annotations.static)).toBeTruthy()
         const elemStaticFile = elem.annotations.static as StaticFile
         expect(await elemStaticFile.getContent()).toEqual(await inactiveStaticFile.getContent())
@@ -3937,18 +3955,22 @@ describe('workspace', () => {
 
     describe('getStaticFile', () => {
       it('should get staticFile by env', async () => {
-        const defaultStaticFileRes = (await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8' }))
+        const defaultStaticFileRes = await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8' })
         expect(defaultStaticFileRes).toBeDefined()
         expect(defaultStaticFileRes?.isEqual(defaultStaticFile)).toBeTruthy()
-        const inactiveStaticFileRes = (await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8', env: 'inactive' }))
+        const inactiveStaticFileRes = await workspace.getStaticFile({
+          filepath: 'salto/static.txt',
+          encoding: 'utf-8',
+          env: 'inactive',
+        })
         expect(inactiveStaticFileRes).toBeDefined()
         expect(inactiveStaticFileRes?.isEqual(inactiveStaticFile)).toBeTruthy()
       })
 
       it('should return missing staticFile if it does not exist', async () => {
-        const defaultMissing = (await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8' }))
+        const defaultMissing = await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8' })
         expect(defaultMissing).toBeInstanceOf(MissingStaticFile)
-        const inactiveMissing = (await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8', env: 'inactive' }))
+        const inactiveMissing = await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8', env: 'inactive' })
         expect(inactiveMissing).toBeInstanceOf(MissingStaticFile)
       })
     })
@@ -3956,10 +3978,7 @@ describe('workspace', () => {
 
   describe('isEmpty', () => {
     it('should return true if the workspace is empty', async () => {
-      const ws = await createWorkspace(
-        mockDirStore(undefined, undefined, {}),
-        mockState([])
-      )
+      const ws = await createWorkspace(mockDirStore(undefined, undefined, {}), mockState([]))
       expect(await ws.isEmpty()).toBeTruthy()
     })
 
@@ -3971,7 +3990,7 @@ describe('workspace', () => {
     it('should return true if state is not empty but the withNaclFilesOnly flag is provided', async () => {
       const ws = await createWorkspace(
         mockDirStore(undefined, undefined, {}),
-        mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })])
+        mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })]),
       )
       expect(await ws.isEmpty(true)).toBeTruthy()
     })
@@ -4011,36 +4030,28 @@ describe('workspace', () => {
             naclFiles: createMockNaclFileSource([]),
           },
           default: {
-            naclFiles: createMockNaclFileSource(
-              [defaultElem]
-            ),
+            naclFiles: createMockNaclFileSource([defaultElem]),
             state: createState([]),
           },
           inactive: {
-            naclFiles: createMockNaclFileSource(
-              [inactiveElem]
-            ),
+            naclFiles: createMockNaclFileSource([inactiveElem]),
             state: createState([]),
           },
-        }
+        },
       )
     })
 
     it('When envName is passed should use the env', async () => {
       const selector = createElementSelector('adapter.*')
-      const ids = await awu(await ws.getElementIdsBySelectors(
-        [selector],
-        { source: 'env', envName: 'inactive' }
-      )).toArray()
+      const ids = await awu(
+        await ws.getElementIdsBySelectors([selector], { source: 'env', envName: 'inactive' }),
+      ).toArray()
       expect(ids.map(id => id.getFullName())).toEqual(['adapter.inactive'])
     })
 
     it('When envName is not passed should use the current env', async () => {
       const selector = createElementSelector('adapter.*')
-      const ids = await awu(await ws.getElementIdsBySelectors(
-        [selector],
-        { source: 'env' }
-      )).toArray()
+      const ids = await awu(await ws.getElementIdsBySelectors([selector], { source: 'env' })).toArray()
       expect(ids.map(id => id.getFullName())).toEqual(['adapter.default'])
     })
   })
@@ -4052,9 +4063,7 @@ describe('workspace', () => {
         undefined,
         {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
-            envs: [
-              { name: 'default', accountToServiceName: { salto2: 'salto', salto1: 'salto' } },
-            ],
+            envs: [{ name: 'default', accountToServiceName: { salto2: 'salto', salto1: 'salto' } }],
             uid: '',
             name: 'test',
             currentEnv: 'default',
@@ -4069,12 +4078,10 @@ describe('workspace', () => {
             naclFiles: createMockNaclFileSource([]),
           },
           default: {
-            naclFiles: createMockNaclFileSource(
-              []
-            ),
+            naclFiles: createMockNaclFileSource([]),
             state: createState([]),
           },
-        }
+        },
       )
     })
 
@@ -4084,8 +4091,7 @@ describe('workspace', () => {
     })
 
     it('throws exception on non-existant account name', () => {
-      expect(() => ws.getServiceFromAccountName('salto'))
-        .toThrow(new UnknownAccountError('salto'))
+      expect(() => ws.getServiceFromAccountName('salto')).toThrow(new UnknownAccountError('salto'))
     })
   })
 })
@@ -4187,39 +4193,31 @@ describe('getElementFileNames', () => {
   })
 
   beforeAll(async () => {
-    workspace = await createWorkspace(
-      naclFileStore,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      {
-        '': {
-          naclFiles: createMockNaclFileSource([]),
-        },
-        default: {
-          naclFiles: await naclFilesSource(
-            'default',
-            naclFileStore,
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true
-          ),
-          state: createState([]),
-        },
-        inactive: {
-          naclFiles: await naclFilesSource(
-            'inactive',
-            naclFileStoreOfInactive,
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true
-          ),
-          state: createState([]),
-        },
+    workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
+      '': {
+        naclFiles: createMockNaclFileSource([]),
       },
-    )
+      default: {
+        naclFiles: await naclFilesSource(
+          'default',
+          naclFileStore,
+          mockStaticFilesSource(),
+          persistentMockCreateRemoteMap(),
+          true,
+        ),
+        state: createState([]),
+      },
+      inactive: {
+        naclFiles: await naclFilesSource(
+          'inactive',
+          naclFileStoreOfInactive,
+          mockStaticFilesSource(),
+          persistentMockCreateRemoteMap(),
+          true,
+        ),
+        state: createState([]),
+      },
+    })
   })
   it('should return the correct elements to file names mapping', async () => {
     const res = await workspace.getElementFileNames()
@@ -4232,16 +4230,23 @@ describe('getElementFileNames', () => {
 
   it('should return the correct elements to file names mapping of inactive env', async () => {
     const res = await workspace.getElementFileNames('inactive')
-    expect(Array.from(res.entries())).toEqual([
-      ['salesforce.test', ['envs/inactive/thirdFile.nacl']],
-    ])
+    expect(Array.from(res.entries())).toEqual([['salesforce.test', ['envs/inactive/thirdFile.nacl']]])
   })
 })
 
 describe('non persistent workspace', () => {
   it('should not allow flush when the ws is non-persistent', async () => {
-    const nonPWorkspace = await createWorkspace(undefined, undefined, undefined, undefined,
-      undefined, undefined, undefined, undefined, false)
+    const nonPWorkspace = await createWorkspace(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+    )
     await expect(() => nonPWorkspace.flush()).rejects.toThrow()
   })
 })
@@ -4260,11 +4265,17 @@ describe('stateOnly update', () => {
       visible: 'visible',
     },
   })
-  const hiddenInstToAdd = new InstanceElement('hiddenToAdd', objectWithHiddenToAdd, {
-    key: 'value',
-  }, [], {
-    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
-  })
+  const hiddenInstToAdd = new InstanceElement(
+    'hiddenToAdd',
+    objectWithHiddenToAdd,
+    {
+      key: 'value',
+    },
+    [],
+    {
+      [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+    },
+  )
 
   const objectWithHiddenToModify = new ObjectType({
     elemID: ElemID.fromFullName('salto.withhiddenToModify'),
@@ -4278,11 +4289,17 @@ describe('stateOnly update', () => {
     },
   })
 
-  const hiddenInstToModify = new InstanceElement('hiddenToModify', objectWithHiddenToModify, {
-    key: 'value',
-  }, [], {
-    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
-  })
+  const hiddenInstToModify = new InstanceElement(
+    'hiddenToModify',
+    objectWithHiddenToModify,
+    {
+      key: 'value',
+    },
+    [],
+    {
+      [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+    },
+  )
 
   const objectWithHiddenToRemove = new ObjectType({
     elemID: ElemID.fromFullName('salto.withhiddenToRemove'),
@@ -4296,19 +4313,22 @@ describe('stateOnly update', () => {
     },
   })
 
-  const hiddenInstToRemove = new InstanceElement('hiddenToRemove', objectWithHiddenToRemove, {
-    key: 'value',
-  }, [], {
-    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
-  })
+  const hiddenInstToRemove = new InstanceElement(
+    'hiddenToRemove',
+    objectWithHiddenToRemove,
+    {
+      key: 'value',
+    },
+    [],
+    {
+      [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+    },
+  )
 
   beforeAll(async () => {
-    const state = mockState([
-      objectWithHiddenToModify,
-      objectWithHiddenToRemove,
-      hiddenInstToModify,
-      hiddenInstToRemove,
-    ].map(e => e.clone()))
+    const state = mockState(
+      [objectWithHiddenToModify, objectWithHiddenToRemove, hiddenInstToModify, hiddenInstToRemove].map(e => e.clone()),
+    )
     const dirStore = mockDirStore([], false, {
       'salto/objwithhidden.nacl': `
         type salto.withhiddenToModify {
@@ -4415,7 +4435,6 @@ describe('stateOnly update', () => {
     expect(resElement.annotations.visible).not.toEqual('changed')
   })
 
-
   it('should update hidden elements modifications in the workspace cache', async () => {
     const resElement = await ws.getValue(hiddenInstToModify.elemID)
     expect(resElement).toBeDefined()
@@ -4457,27 +4476,19 @@ describe('listUnresolvedReferences', () => {
         f3: { refType: type1 },
       },
     })
-    const inst1 = new InstanceElement(
-      'inst1',
-      new TypeReference(type1.elemID),
-      {
+    const inst1 = new InstanceElement('inst1', new TypeReference(type1.elemID), {
+      f1: 'aaa',
+      f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
+      f3: 'ccc',
+    })
+    const inst2 = new InstanceElement('inst2', new TypeReference(type2.elemID), {
+      f1: {
         f1: 'aaa',
-        f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
-        f3: 'ccc',
+        f2: 'bbb',
+        f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
       },
-    )
-    const inst2 = new InstanceElement(
-      'inst2',
-      new TypeReference(type2.elemID),
-      {
-        f1: {
-          f1: 'aaa',
-          f2: 'bbb',
-          f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
-        },
-        f3: new TypeReference(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
-      },
-    )
+      f3: new TypeReference(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
+    })
     return [type1, type2, inst1, inst2]
   }
 
@@ -4488,55 +4499,44 @@ describe('listUnresolvedReferences', () => {
         scriptid: { refType: BuiltinTypes.STRING },
       },
     })
-    const nsInstance1 = new InstanceElement(
-      'custtmpl1',
-      nsType,
-      {
-        scriptid: new ReferenceExpression(new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl2', 'scriptid')),
-      }
-    )
-    const nsInstance2 = new InstanceElement(
-      'custtmpl2',
-      nsType,
-      {
-        scriptid: new ReferenceExpression(new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl3', 'scriptid')),
-      }
-    )
-    const nsInstance3 = new InstanceElement(
-      'custtmpl3',
-      nsType,
-      {
-        scriptid: 'This is a scriptid',
-      }
-    )
+    const nsInstance1 = new InstanceElement('custtmpl1', nsType, {
+      scriptid: new ReferenceExpression(
+        new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl2', 'scriptid'),
+      ),
+    })
+    const nsInstance2 = new InstanceElement('custtmpl2', nsType, {
+      scriptid: new ReferenceExpression(
+        new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl3', 'scriptid'),
+      ),
+    })
+    const nsInstance3 = new InstanceElement('custtmpl3', nsType, {
+      scriptid: 'This is a scriptid',
+    })
     return [nsType, nsInstance1, nsInstance2, nsInstance3]
   }
 
   describe('workspace with no references', () => {
     beforeAll(async () => {
       const elements = createEnvElements().slice(0, 1)
-      workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined, undefined,
-        {
-          '': {
-            naclFiles: await naclFilesSource(
-              COMMON_ENV_PREFIX,
-              mockDirStore(),
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-          },
-          default: {
-            naclFiles: createMockNaclFileSource(elements),
-            state: createState(elements),
-          },
-          other: {
-            naclFiles: createMockNaclFileSource(elements),
-            state: createState(elements),
-          },
-        }
-      )
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: await naclFilesSource(
+            COMMON_ENV_PREFIX,
+            mockDirStore(),
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource(elements),
+          state: createState(elements),
+        },
+        other: {
+          naclFiles: createMockNaclFileSource(elements),
+          state: createState(elements),
+        },
+      })
       res = await workspace.listUnresolvedReferences()
     })
 
@@ -4550,28 +4550,25 @@ describe('listUnresolvedReferences', () => {
     beforeAll(async () => {
       jest.resetAllMocks()
       const elements = createEnvElements()
-      workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined, undefined,
-        {
-          '': {
-            naclFiles: await naclFilesSource(
-              COMMON_ENV_PREFIX,
-              mockDirStore(),
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-          },
-          default: {
-            naclFiles: createMockNaclFileSource(elements),
-            state: createState(elements),
-          },
-          other: {
-            naclFiles: createMockNaclFileSource(elements),
-            state: createState(elements),
-          },
-        }
-      )
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: await naclFilesSource(
+            COMMON_ENV_PREFIX,
+            mockDirStore(),
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource(elements),
+          state: createState(elements),
+        },
+        other: {
+          naclFiles: createMockNaclFileSource(elements),
+          state: createState(elements),
+        },
+      })
       res = await workspace.listUnresolvedReferences('other')
     })
 
@@ -4586,36 +4583,31 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const defaultElements = createEnvElements().slice(3)
       const otherElements = createEnvElements()
-      workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined, undefined,
-        {
-          '': {
-            naclFiles: await naclFilesSource(
-              COMMON_ENV_PREFIX,
-              mockDirStore(),
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-          },
-          default: {
-            naclFiles: createMockNaclFileSource(defaultElements),
-            state: createState(defaultElements),
-          },
-          other: {
-            naclFiles: createMockNaclFileSource(otherElements),
-            state: createState(otherElements),
-          },
-        }
-      )
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: await naclFilesSource(
+            COMMON_ENV_PREFIX,
+            mockDirStore(),
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource(defaultElements),
+          state: createState(defaultElements),
+        },
+        other: {
+          naclFiles: createMockNaclFileSource(otherElements),
+          state: createState(otherElements),
+        },
+      })
       res = await workspace.listUnresolvedReferences()
     })
 
     it('should not resolve any references', () => {
       expect(res.found).toHaveLength(0)
-      expect(res.missing).toEqual([
-        new ElemID('salesforce', 'someType', 'instance', 'inst1'),
-      ])
+      expect(res.missing).toEqual([new ElemID('salesforce', 'someType', 'instance', 'inst1')])
     })
   })
 
@@ -4625,7 +4617,11 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createEnvElements().slice(3)
       const otherElements = createEnvElements()
       workspace = await createWorkspace(
-        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource(undefined, true),
+        undefined,
+        undefined,
         undefined,
         {
           '': {
@@ -4634,7 +4630,7 @@ describe('listUnresolvedReferences', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
           },
           default: {
@@ -4645,7 +4641,7 @@ describe('listUnresolvedReferences', () => {
             naclFiles: createMockNaclFileSource(otherElements),
             state: createState(otherElements),
           },
-        }
+        },
       )
       res = await workspace.listUnresolvedReferences('inactive')
     })
@@ -4666,32 +4662,24 @@ describe('listUnresolvedReferences', () => {
         elemID: new ElemID('salesforce', 'someType'),
       })
 
-      const instance1 = new InstanceElement(
-        'instance1',
-        type,
-        {
-          val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
-        }
-      )
+      const instance1 = new InstanceElement('instance1', type, {
+        val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
+      })
 
-      const instance2 = new InstanceElement(
-        'instance2',
-        type,
-        {
-          val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance3')),
-        }
-      )
+      const instance2 = new InstanceElement('instance2', type, {
+        val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance3')),
+      })
 
-      const instance3 = new InstanceElement(
-        'instance3',
-        type,
-        {
-          val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
-        }
-      )
+      const instance3 = new InstanceElement('instance3', type, {
+        val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
+      })
 
       workspace = await createWorkspace(
-        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource(undefined, true),
+        undefined,
+        undefined,
         undefined,
         {
           '': {
@@ -4700,7 +4688,7 @@ describe('listUnresolvedReferences', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
           },
           default: {
@@ -4711,7 +4699,7 @@ describe('listUnresolvedReferences', () => {
             naclFiles: createMockNaclFileSource([instance1, instance2, instance3]),
             state: createState([instance1, instance2, instance3]),
           },
-        }
+        },
       )
       res = await workspace.listUnresolvedReferences('inactive')
     })
@@ -4735,7 +4723,11 @@ describe('listUnresolvedReferences', () => {
       }
       const otherElements = createEnvElements().slice(1)
       workspace = await createWorkspace(
-        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource(undefined, true),
+        undefined,
+        undefined,
         undefined,
         {
           '': {
@@ -4744,7 +4736,7 @@ describe('listUnresolvedReferences', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
           },
           default: {
@@ -4755,16 +4747,14 @@ describe('listUnresolvedReferences', () => {
             naclFiles: createMockNaclFileSource(otherElements),
             state: createState(otherElements),
           },
-        }
+        },
       )
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
     it('should resolve some of the references', () => {
       expect(res.found).toHaveLength(0)
-      expect(res.missing).toEqual([
-        new ElemID('salesforce', 'unresolved'),
-      ])
+      expect(res.missing).toEqual([new ElemID('salesforce', 'unresolved')])
     })
   })
 
@@ -4774,7 +4764,11 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createEnvElements().slice(3) as InstanceElement[]
       const otherElements = createEnvElements().slice(1)
       workspace = await createWorkspace(
-        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource(undefined, true),
+        undefined,
+        undefined,
         undefined,
         {
           '': {
@@ -4783,7 +4777,7 @@ describe('listUnresolvedReferences', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
           },
           default: {
@@ -4794,20 +4788,16 @@ describe('listUnresolvedReferences', () => {
             naclFiles: createMockNaclFileSource(otherElements),
             state: createState(otherElements),
           },
-        }
+        },
       )
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
     it('should return the instance of the unresolved reference, although the reference is a value', () => {
-      expect(res.found).toEqual([
-        new ElemID('salesforce', 'someType', 'instance', 'inst1'),
-      ])
+      expect(res.found).toEqual([new ElemID('salesforce', 'someType', 'instance', 'inst1')])
     })
     it('should mark the missing unresolved reference in the redirected env', () => {
-      expect(res.missing).toEqual([
-        new ElemID('salesforce', 'someType', 'field', 'f3'),
-      ])
+      expect(res.missing).toEqual([new ElemID('salesforce', 'someType', 'field', 'f3')])
     })
   })
 
@@ -4817,7 +4807,11 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createNetsuiteEnvElements().slice(0, 2)
       const otherElements = createNetsuiteEnvElements()
       workspace = await createWorkspace(
-        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource(undefined, true),
+        undefined,
+        undefined,
         undefined,
         {
           '': {
@@ -4826,7 +4820,7 @@ describe('listUnresolvedReferences', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
-              true
+              true,
             ),
           },
           default: {
@@ -4837,7 +4831,7 @@ describe('listUnresolvedReferences', () => {
             naclFiles: createMockNaclFileSource(otherElements),
             state: createState(otherElements),
           },
-        }
+        },
       )
       res = await workspace.listUnresolvedReferences('inactive')
     })
@@ -4892,8 +4886,7 @@ describe('update nacl files with invalid state cache', () => {
   })
 
   it('should not have the hidden parts of the removed element', async () => {
-    expect(await workspace.getValue(ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden')))
-      .not.toBeDefined()
+    expect(await workspace.getValue(ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'))).not.toBeDefined()
   })
 })
 
@@ -4920,8 +4913,15 @@ describe('nacl sources reuse', () => {
         state: createState([], true),
       },
     }
-    ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(undefined, true),
-      undefined, undefined, undefined, elementSources)
+    ws = await createWorkspace(
+      undefined,
+      undefined,
+      mockWorkspaceConfigSource(undefined, true),
+      undefined,
+      undefined,
+      undefined,
+      elementSources,
+    )
   })
   afterAll(() => {
     mockMuiltiEnv.mockReset()

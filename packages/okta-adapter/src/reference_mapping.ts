@@ -1,30 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME, BRAND_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME } from './constants'
+import {
+  APPLICATION_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  IDENTITY_PROVIDER_TYPE_NAME,
+  USERTYPE_TYPE_NAME,
+  NETWORK_ZONE_TYPE_NAME,
+  ROLE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  INLINE_HOOK_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME,
+  BEHAVIOR_RULE_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
+  ROLE_ASSIGNMENT_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  GROUP_PUSH_TYPE_NAME,
+  GROUP_PUSH_RULE_TYPE_NAME,
+} from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
 export const OktaMissingReferenceStrategyLookup: Record<
-referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+  referenceUtils.MissingReferenceStrategyName,
+  referenceUtils.MissingReferenceStrategy
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
@@ -64,15 +82,22 @@ const getProfileMappingRefByType: referenceUtils.ContextValueMapperFunc = val =>
   return undefined
 }
 
-const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val => (
+const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val =>
   val.endsWith('_idp') ? IDENTITY_PROVIDER_TYPE_NAME : undefined
-)
 
 export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
-  profileMappingType: referenceUtils.neighborContextGetter({ contextFieldName: 'type', getLookUpName: async ({ ref }) => ref.elemID.name, contextValueMapper: getProfileMappingRefByType }),
-  profileMappingName: referenceUtils.neighborContextGetter({ contextFieldName: 'name', getLookUpName: async ({ ref }) => ref.elemID.name, contextValueMapper: getProfileMappingRefByName }),
+  profileMappingType: referenceUtils.neighborContextGetter({
+    contextFieldName: 'type',
+    getLookUpName: async ({ ref }) => ref.elemID.name,
+    contextValueMapper: getProfileMappingRefByType,
+  }),
+  profileMappingName: referenceUtils.neighborContextGetter({
+    contextFieldName: 'name',
+    getLookUpName: async ({ ref }) => ref.elemID.name,
+    contextValueMapper: getProfileMappingRefByName,
+  }),
 }
 
 type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<ReferenceContextStrategyName> & {
@@ -83,9 +108,10 @@ type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<Refe
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<ReferenceContextStrategyName> {
   constructor(def: OktaFieldReferenceDefinition) {
     super({ ...def, sourceTransformation: def.sourceTransformation ?? 'asString' })
-    this.serializationStrategy = OktaReferenceSerializationStrategyLookup[
-      def.oktaSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-    ]
+    this.serializationStrategy =
+      OktaReferenceSerializationStrategyLookup[
+        def.oktaSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+      ]
     this.missingRefStrategy = def.oktaMissingRefStrategy
       ? OktaMissingReferenceStrategyLookup[def.oktaMissingRefStrategy]
       : undefined
@@ -229,10 +255,12 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     oktaMissingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
-  { src: { field: 'include', parentTypes: ['DeviceCondition'] },
+  {
+    src: { field: 'include', parentTypes: ['DeviceCondition'] },
     serializationStrategy: 'id',
     oktaMissingRefStrategy: 'typeAndValue',
-    target: { type: 'DeviceAssurance' } },
+    target: { type: 'DeviceAssurance' },
+  },
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
     serializationStrategy: 'id',
@@ -280,8 +308,7 @@ const lookupNameFuncs: GetLookupNameFunc[] = [
   referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
 ]
 
-export const getLookUpName: GetLookupNameFunc = async args => (
+export const getLookUpName: GetLookupNameFunc = async args =>
   awu(lookupNameFuncs)
     .map(lookupFunc => lookupFunc(args))
     .find(res => !isReferenceExpression(res))
-)

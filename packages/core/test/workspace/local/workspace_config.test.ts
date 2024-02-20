@@ -1,28 +1,34 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import path from 'path'
 import { exists, rename } from '@salto-io/file'
 import { Values } from '@salto-io/adapter-api'
 import { dirStore } from '@salto-io/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import {
-  workspaceConfigSource, WorkspaceConfigSource, getLocalStorage,
+  workspaceConfigSource,
+  WorkspaceConfigSource,
+  getLocalStorage,
 } from '../../../src/local-workspace/workspace_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
-import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, USER_CONFIG_NAME } from '../../../src/local-workspace/workspace_config_types'
+import {
+  WORKSPACE_CONFIG_NAME,
+  ENVS_CONFIG_NAME,
+  USER_CONFIG_NAME,
+} from '../../../src/local-workspace/workspace_config_types'
 import { NoEnvsConfig, NoWorkspaceConfig } from '../../../src/local-workspace/errors'
 
 jest.mock('@salto-io/file', () => ({
@@ -33,25 +39,24 @@ jest.mock('@salto-io/file', () => ({
 
 jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
-  const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore<string> => ({
-    get: jest.fn().mockImplementation(
-      (name: string) => {
+  const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore<string> =>
+    ({
+      get: jest.fn().mockImplementation((name: string) => {
         if (!Object.keys(obj).includes(name)) return undefined
-        return ({
+        return {
           buffer: obj[Object.keys(obj).filter(key => name.startsWith(key))[0]],
           filename: '',
-        })
-      }
-    ),
-    set: jest.fn(),
-    flush: jest.fn(),
-    list: jest.fn(),
-    delete: jest.fn(),
-    renameFile: jest.fn(),
-    mtimestamp: jest.fn(),
-    getFiles: jest.fn(),
-    clone: jest.fn(),
-  } as unknown as dirStore.DirectoryStore<string>)
+        }
+      }),
+      set: jest.fn(),
+      flush: jest.fn(),
+      list: jest.fn(),
+      delete: jest.fn(),
+      renameFile: jest.fn(),
+      mtimestamp: jest.fn(),
+      getFiles: jest.fn(),
+      clone: jest.fn(),
+    }) as unknown as dirStore.DirectoryStore<string>
 
   const repoDirStore = mockDirStoreInstance({
     [`${WORKSPACE_CONFIG_NAME}.nacl`]: `
@@ -92,7 +97,7 @@ describe('workspace local config', () => {
       mockExists.mockResolvedValue(true)
       expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
     })
-    it('should return SALTO_HOME/<uid> if it doesn\'t exists', async () => {
+    it("should return SALTO_HOME/<uid> if it doesn't exists", async () => {
       mockExists.mockResolvedValue(false)
       expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
     })
@@ -108,15 +113,15 @@ describe('workspace local config', () => {
       jest.clearAllMocks()
       const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
       mockCreateDirStore.mockImplementation(params =>
-        (params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
+        params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore,
+      )
 
       configSource = await workspaceConfigSource('bla', undefined)
     })
 
-
     it('localStorage', async () => {
       expect(configSource.localStorage).toBe(
-        path.resolve(path.join(getSaltoHome(), '98bb902f-a144-42da-9672-f36e312e8e09'))
+        path.resolve(path.join(getSaltoHome(), '98bb902f-a144-42da-9672-f36e312e8e09')),
       )
     })
 
@@ -129,7 +134,13 @@ describe('workspace local config', () => {
     })
 
     it('set in repo dir store', async () => {
-      await configSource.setWorkspaceConfig({ uid: '1', name: 'foo', currentEnv: 'bar', envs: [], staleStateThresholdMinutes: 60 })
+      await configSource.setWorkspaceConfig({
+        uid: '1',
+        name: 'foo',
+        currentEnv: 'bar',
+        envs: [],
+        staleStateThresholdMinutes: 60,
+      })
       expect((repoDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
       expect((repoDirStore.set as jest.Mock).mock.calls[1][0].filename).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
       expect((prefDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${USER_CONFIG_NAME}.nacl`)
@@ -208,7 +219,7 @@ describe('workspace local config', () => {
       configSource = await workspaceConfigSource('bla', undefined)
     })
     it('transforms into new config', async () => {
-      (await configSource.getWorkspaceConfig()).envs.forEach(env => {
+      ;(await configSource.getWorkspaceConfig()).envs.forEach(env => {
         expect(env.name).toBeDefined()
         if (env.name === 'othersEnv') {
           expect(env.accountToServiceName).toEqual({

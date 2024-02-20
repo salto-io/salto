@@ -53,6 +53,7 @@ export type FetchByQueryFailures = {
   failedFilePaths: FailedFiles
   failedTypes: FailedTypes
   failedCustomRecords: string[]
+  largeSuiteQLTables: string[]
 }
 
 export type FetchByQueryReturnType = {

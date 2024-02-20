@@ -61,7 +61,7 @@ describe('SuiteQL table elements', () => {
   let suiteQLTableInstance: InstanceElement
   let oldSuiteQLTableInstance: InstanceElement
   let emptySuiteQLTableInstance: InstanceElement
-  let elements: TopLevelElement[]
+  let result: { elements: TopLevelElement[]; largeSuiteQLTables: string[] }
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -150,17 +150,17 @@ describe('SuiteQL table elements', () => {
         ]
       })
       const elementsSource = buildElementsSourceFromElements([])
-      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
+      result = await getSuiteQLTableElements(config, client, elementsSource, false)
     })
 
     it('should return all elements', () => {
       // minus 2 for the skipped table (TYPE_TO_SKIP) and the table with too many records (TYPE_WITH_MAX_RESULTS)
-      expect(elements).toHaveLength(NUM_OF_SUITEQL_ELEMENTS - 2)
-      expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
+      expect(result.elements).toHaveLength(NUM_OF_SUITEQL_ELEMENTS - 2)
+      expect(result.elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
 
     it('should set instance values correctly', () => {
-      const instanceWithInternalIdsRecords = elements
+      const instanceWithInternalIdsRecords = result.elements
         .filter(isInstanceElement)
         .find(element => QUERIES_BY_TABLE_NAME[element.elemID.name as SuiteQLTableName]?.nameField === 'name')
       expect(instanceWithInternalIdsRecords?.value).toEqual({
@@ -174,7 +174,7 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should set tax schedule instance values correctly', () => {
-      const taxScheduleInstance = elements
+      const taxScheduleInstance = result.elements
         .filter(isInstanceElement)
         .find(element => element.elemID.name === TAX_SCHEDULE)
       expect(taxScheduleInstance?.value).toEqual({
@@ -188,7 +188,7 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should set allocation type instance values correctly', () => {
-      const allocationTypeInstance = elements
+      const allocationTypeInstance = result.elements
         .filter(isInstanceElement)
         .find(element => element.elemID.name === ALLOCATION_TYPE)
       expect(allocationTypeInstance?.value).toEqual({
@@ -231,7 +231,7 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should not set values when name field do not match', () => {
-      const instanceWithoutInternalIdsRecords = elements
+      const instanceWithoutInternalIdsRecords = result.elements
         .filter(isInstanceElement)
         .find(element => QUERIES_BY_TABLE_NAME[element.elemID.name as SuiteQLTableName]?.nameField === 'title')
       expect(instanceWithoutInternalIdsRecords?.value).toEqual({
@@ -241,13 +241,14 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should skip tables from skipResolvingAccountSpecificValuesToTypes', () => {
-      expect(elements.find(elem => elem.elemID.name === TYPE_TO_SKIP)).toBeUndefined()
+      expect(result.elements.find(elem => elem.elemID.name === TYPE_TO_SKIP)).toBeUndefined()
       expect(runSuiteQLMock).not.toHaveBeenCalledWith(expect.stringContaining(`FROM ${TYPE_TO_SKIP} `))
     })
 
     it('should skip tables that reach the records limitation', () => {
       const query = QUERIES_BY_TABLE_NAME[TYPE_WITH_MAX_RESULTS]
-      expect(elements.find(elem => elem.elemID.name === TYPE_WITH_MAX_RESULTS)).toBeUndefined()
+      expect(result.largeSuiteQLTables).toEqual([TYPE_WITH_MAX_RESULTS])
+      expect(result.elements.find(elem => elem.elemID.name === TYPE_WITH_MAX_RESULTS)).toBeUndefined()
       expect(runSuiteQLMock).not.toHaveBeenCalledWith(
         expect.stringContaining(`SELECT ${query?.internalIdField}, ${query?.nameField} FROM ${TYPE_WITH_MAX_RESULTS} `),
       )
@@ -255,7 +256,7 @@ describe('SuiteQL table elements', () => {
 
     it('should not skip tables with configured records limitation', () => {
       const query = QUERIES_BY_TABLE_NAME[TYPE_WITH_ALLOWED_MAX_RESULTS]
-      expect(elements.find(elem => elem.elemID.name === TYPE_WITH_ALLOWED_MAX_RESULTS)).toBeDefined()
+      expect(result.elements.find(elem => elem.elemID.name === TYPE_WITH_ALLOWED_MAX_RESULTS)).toBeDefined()
       expect(runSuiteQLMock).toHaveBeenCalledWith(
         expect.stringContaining(
           `SELECT ${query?.internalIdField}, ${query?.nameField} FROM ${TYPE_WITH_ALLOWED_MAX_RESULTS} `,
@@ -283,11 +284,13 @@ describe('SuiteQL table elements', () => {
         oldSuiteQLTableInstance,
         emptySuiteQLTableInstance,
       ])
-      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
+      result = await getSuiteQLTableElements(config, client, elementsSource, false)
     })
 
     it('should update existing instance values', () => {
-      const updatedInstance = elements.filter(isInstanceElement).find(element => element.elemID.name === 'currency')
+      const updatedInstance = result.elements
+        .filter(isInstanceElement)
+        .find(element => element.elemID.name === 'currency')
       expect(updatedInstance?.value).toEqual({
         [INTERNAL_IDS_MAP]: {
           1: { name: 'Updated name' },
@@ -301,7 +304,9 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should override existing values when instance version is not latest version', () => {
-      const updatedInstance = elements.filter(isInstanceElement).find(element => element.elemID.name === 'department')
+      const updatedInstance = result.elements
+        .filter(isInstanceElement)
+        .find(element => element.elemID.name === 'department')
       expect(updatedInstance?.value).toEqual({
         [INTERNAL_IDS_MAP]: {
           1: { name: 'Updated name' },
@@ -313,7 +318,9 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should add values to empty instance', () => {
-      const updatedInstance = elements.filter(isInstanceElement).find(element => element.elemID.name === 'subsidiary')
+      const updatedInstance = result.elements
+        .filter(isInstanceElement)
+        .find(element => element.elemID.name === 'subsidiary')
       expect(updatedInstance?.value).toEqual({
         [INTERNAL_IDS_MAP]: {
           1: { name: 'Updated name' },
@@ -355,12 +362,14 @@ describe('SuiteQL table elements', () => {
         oldSuiteQLTableInstance,
         emptySuiteQLTableInstance,
       ])
-      elements = await getSuiteQLTableElements(config, client, elementsSource, true)
+      result = await getSuiteQLTableElements(config, client, elementsSource, true)
     })
 
     it('should return only existing instances and employee instance', () => {
-      expect(elements).toHaveLength(5)
-      const existingInstance = elements.filter(isInstanceElement).find(element => element.elemID.name === 'currency')
+      expect(result.elements).toHaveLength(5)
+      const existingInstance = result.elements
+        .filter(isInstanceElement)
+        .find(element => element.elemID.name === 'currency')
       expect(existingInstance?.value).toEqual({
         [INTERNAL_IDS_MAP]: {
           1: { name: 'Some name' },
@@ -369,7 +378,7 @@ describe('SuiteQL table elements', () => {
         },
         version: 1,
       })
-      const oldExistingInstance = elements
+      const oldExistingInstance = result.elements
         .filter(isInstanceElement)
         .find(element => element.elemID.name === 'department')
       expect(oldExistingInstance?.value).toEqual({
@@ -380,14 +389,16 @@ describe('SuiteQL table elements', () => {
         },
         version: 'old',
       })
-      const emptyExistingInstance = elements
+      const emptyExistingInstance = result.elements
         .filter(isInstanceElement)
         .find(element => element.elemID.name === 'subsidiary')
       expect(emptyExistingInstance?.value).toEqual({
         [INTERNAL_IDS_MAP]: {},
         version: 1,
       })
-      const employeeInstance = elements.filter(isInstanceElement).find(element => element.elemID.name === 'employee')
+      const employeeInstance = result.elements
+        .filter(isInstanceElement)
+        .find(element => element.elemID.name === 'employee')
       expect(employeeInstance?.value).toEqual({
         [INTERNAL_IDS_MAP]: {
           1: { name: 'Some name' },
@@ -408,10 +419,10 @@ describe('SuiteQL table elements', () => {
     beforeEach(async () => {
       config.fetch.resolveAccountSpecificValues = false
       const elementsSource = buildElementsSourceFromElements([])
-      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
+      result = await getSuiteQLTableElements(config, client, elementsSource, false)
     })
     it('should not return elements', () => {
-      expect(elements).toHaveLength(0)
+      expect(result.elements).toHaveLength(0)
     })
     it('should not run queries', () => {
       expect(runSuiteQLMock).not.toHaveBeenCalled()
@@ -423,11 +434,11 @@ describe('SuiteQL table elements', () => {
     beforeEach(async () => {
       config.fetch.skipResolvingAccountSpecificValuesToTypes = ['.*']
       const elementsSource = buildElementsSourceFromElements([])
-      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
+      result = await getSuiteQLTableElements(config, client, elementsSource, false)
     })
     it('should not return elements', () => {
-      expect(elements).toHaveLength(1)
-      expect(elements[0].elemID).toEqual(suiteQLTableType.elemID)
+      expect(result.elements).toHaveLength(1)
+      expect(result.elements[0].elemID).toEqual(suiteQLTableType.elemID)
     })
     it('should not run queries', () => {
       expect(runSuiteQLMock).not.toHaveBeenCalled()

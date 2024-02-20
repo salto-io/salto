@@ -357,7 +357,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordTypes: ObjectType[]
       customRecords: InstanceElement[]
       instancesIds: ObjectID[]
-      failures: FetchByQueryFailures
+      failures: Omit<FetchByQueryFailures, 'largeSuiteQLTables'>
     }> => {
       const [
         { elements: fileCabinetContent, failedPaths: failedFilePaths },
@@ -403,7 +403,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const [
       { standardInstances, standardTypes, customRecordTypes, customRecords, instancesIds, failures },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
-      suiteQLTableElements,
+      { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
@@ -454,7 +454,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).onFetch(elements)
 
     return {
-      failures,
+      failures: { ...failures, largeSuiteQLTables },
       elements,
       deletedElements,
       deletedElementErrors,

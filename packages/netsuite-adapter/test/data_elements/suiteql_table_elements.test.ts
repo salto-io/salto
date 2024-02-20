@@ -43,6 +43,7 @@ export const NUM_OF_SUITEQL_ELEMENTS =
 
 const TYPE_TO_SKIP = 'vendor'
 const TYPE_WITH_MAX_RESULTS = 'unitsType'
+const TYPE_WITH_ALLOWED_MAX_RESULTS = 'term'
 
 const runSuiteQLMock = jest.fn()
 const runSavedSearchQueryMock = jest.fn()
@@ -69,6 +70,9 @@ describe('SuiteQL table elements', () => {
         ...fullFetchConfig(),
         resolveAccountSpecificValues: true,
         skipResolvingAccountSpecificValuesToTypes: [TYPE_TO_SKIP],
+      },
+      suiteAppClient: {
+        maxRecordsPerSuiteQLTable: [{ name: TYPE_WITH_ALLOWED_MAX_RESULTS, limit: 300_000 }],
       },
     }
     serverTimeType = new ObjectType({ elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME) })
@@ -101,7 +105,15 @@ describe('SuiteQL table elements', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockImplementation(query =>
         query.includes('count(*)')
-          ? [{ count: query.includes(`FROM ${TYPE_WITH_MAX_RESULTS} `) ? '200000' : '3' }]
+          ? [
+              {
+                count:
+                  query.includes(`FROM ${TYPE_WITH_MAX_RESULTS} `) ||
+                  query.includes(`FROM ${TYPE_WITH_ALLOWED_MAX_RESULTS} `)
+                    ? '200000'
+                    : '3',
+              },
+            ]
           : [
               { id: '1', name: 'Some name' },
               { id: '2', name: 'Some name 2' },
@@ -238,6 +250,16 @@ describe('SuiteQL table elements', () => {
       expect(elements.find(elem => elem.elemID.name === TYPE_WITH_MAX_RESULTS)).toBeUndefined()
       expect(runSuiteQLMock).not.toHaveBeenCalledWith(
         expect.stringContaining(`SELECT ${query?.internalIdField}, ${query?.nameField} FROM ${TYPE_WITH_MAX_RESULTS} `),
+      )
+    })
+
+    it('should not skip tables with configured records limitation', () => {
+      const query = QUERIES_BY_TABLE_NAME[TYPE_WITH_ALLOWED_MAX_RESULTS]
+      expect(elements.find(elem => elem.elemID.name === TYPE_WITH_ALLOWED_MAX_RESULTS)).toBeDefined()
+      expect(runSuiteQLMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `SELECT ${query?.internalIdField}, ${query?.nameField} FROM ${TYPE_WITH_ALLOWED_MAX_RESULTS} `,
+        ),
       )
     })
   })

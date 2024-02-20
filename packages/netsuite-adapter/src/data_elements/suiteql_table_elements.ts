@@ -45,7 +45,7 @@ const LATEST_VERSION = 1
 
 const ALLOCATION_TYPE_QUERY_LIMIT = 50
 
-const QUERY_RECORDS_LIMITATION = 100_000
+const MAX_ALLOWED_RECORDS = 100_000
 
 type InternalIdsMap = Record<string, { name: string }>
 
@@ -506,6 +506,7 @@ const shouldSkipQuery = async (
   tableName: string,
   queryParams: QueryParams,
   lastFetchTime: Date | undefined,
+  maxAllowedRecords: number,
 ): Promise<boolean> => {
   const whereParam = getWhereParam(queryParams, lastFetchTime)
   const queryString = `SELECT count(*) as count FROM ${tableName} ${whereParam}`
@@ -520,9 +521,9 @@ const shouldSkipQuery = async (
     return true
   }
   const count = Number(result.count)
-  if (count > QUERY_RECORDS_LIMITATION) {
+  if (count > maxAllowedRecords) {
     log.warn(
-      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results`,
+      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results (max allowed: ${maxAllowedRecords})`,
     )
     return true
   }
@@ -582,6 +583,7 @@ const getSuiteQLTableInstance = async (
   elementsSource: ReadOnlyElementsSource,
   lastFetchTime: Date | undefined,
   isPartial: boolean,
+  maxAllowedRecords: number,
 ): Promise<InstanceElement | undefined> => {
   const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
   const existingInstance = await elementsSource.get(instanceElemId)
@@ -592,7 +594,7 @@ const getSuiteQLTableInstance = async (
     if (isPartial) {
       return existingInstance
     }
-    if (await shouldSkipQuery(client, tableName, queryParams, lastFetchTime)) {
+    if (await shouldSkipQuery(client, tableName, queryParams, lastFetchTime, maxAllowedRecords)) {
       return undefined
     }
   }
@@ -709,6 +711,16 @@ const getAdditionalInstances = (
     : getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
 ]
 
+const getMaxAllowedRecordsForTable = (config: NetsuiteConfig, tableName: string): number => {
+  const maxAllowedRecords = (config.suiteAppClient?.maxRecordsPerSuiteQLTable ?? [])
+    .filter(maxType => regex.isFullRegexMatch(tableName, maxType.name))
+    .map(maxType => maxType.limit)
+  if (maxAllowedRecords.length === 0) {
+    return MAX_ALLOWED_RECORDS
+  }
+  return Math.max(...maxAllowedRecords)
+}
+
 export const getSuiteQLTableElements = async (
   config: NetsuiteConfig,
   client: NetsuiteClient,
@@ -748,6 +760,7 @@ export const getSuiteQLTableElements = async (
           elementsSource,
           lastFetchTime,
           isPartial,
+          getMaxAllowedRecordsForTable(config, tableName),
         )
       })
       .concat(getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)),

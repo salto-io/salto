@@ -251,28 +251,31 @@ const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
 
 function validateMaxInstancesPerType(
   maxInstancesPerType: unknown,
+  { validateInvalidTypes }: { validateInvalidTypes: boolean },
 ): asserts maxInstancesPerType is MaxInstancesPerType[] {
   if (
-    Array.isArray(maxInstancesPerType) &&
-    maxInstancesPerType.every(
+    !Array.isArray(maxInstancesPerType) ||
+    !maxInstancesPerType.every(
       val => 'name' in val && 'limit' in val && typeof val.name === 'string' && typeof val.limit === 'number',
     )
   ) {
-    const invalidTypes = maxInstancesPerType.filter(
-      maxType =>
-        !regex.isValidRegex(maxType.name) ||
-        (noSupportedTypeMatch(maxType.name) && !isCustomRecordTypeName(maxType.name)),
-    )
-    if (invalidTypes.length > 0) {
-      throw new Error(
-        `The following types or regular expressions in ${CLIENT_CONFIG.maxInstancesPerType}` +
-          ` do not match any supported type: ${safeJsonStringify(invalidTypes)}`,
-      )
-    }
-  } else {
     throw new Error(
       `Expected ${CLIENT_CONFIG.maxInstancesPerType} to be a list of { name: string, limit: number },` +
         ` but found:\n${safeJsonStringify(maxInstancesPerType, undefined, 4)}.`,
+    )
+  }
+  if (!validateInvalidTypes) {
+    return
+  }
+  const invalidTypes = maxInstancesPerType.filter(
+    maxType =>
+      !regex.isValidRegex(maxType.name) ||
+      (noSupportedTypeMatch(maxType.name) && !isCustomRecordTypeName(maxType.name)),
+  )
+  if (invalidTypes.length > 0) {
+    throw new Error(
+      `The following types or regular expressions in ${CLIENT_CONFIG.maxInstancesPerType}` +
+        ` do not match any supported type: ${safeJsonStringify(invalidTypes)}`,
     )
   }
 }
@@ -294,7 +297,7 @@ function validateClientConfig(
     validateInstalledSuiteApps(installedSuiteApps)
   }
   if (maxInstancesPerType !== undefined) {
-    validateMaxInstancesPerType(maxInstancesPerType)
+    validateMaxInstancesPerType(maxInstancesPerType, { validateInvalidTypes: true })
   }
 }
 
@@ -420,12 +423,16 @@ const validateDeployParams = ({
 const validateSuiteAppClientParams = ({
   suiteAppConcurrencyLimit,
   httpTimeoutLimitInMinutes,
+  maxRecordsPerSuiteQLTable,
 }: Record<keyof SuiteAppClientConfig, unknown>): void => {
   if (suiteAppConcurrencyLimit !== undefined) {
     validateNumber(suiteAppConcurrencyLimit, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.suiteAppConcurrencyLimit])
   }
   if (httpTimeoutLimitInMinutes !== undefined) {
     validateNumber(httpTimeoutLimitInMinutes, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.httpTimeoutLimitInMinutes])
+  }
+  if (maxRecordsPerSuiteQLTable !== undefined) {
+    validateMaxInstancesPerType(maxRecordsPerSuiteQLTable, { validateInvalidTypes: false })
   }
 }
 

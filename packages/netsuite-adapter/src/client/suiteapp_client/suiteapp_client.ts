@@ -192,7 +192,7 @@ export default class SuiteAppClient {
     throwOnErrors: Record<string, string> = {},
   ): Promise<Record<string, unknown>[] | undefined> {
     log.debug('Running SuiteQL query: %s', query)
-    if (!/ORDER BY .* (ASC|DESC)/.test(query)) {
+    if (!/ORDER BY .* (ASC|DESC)/.test(query) && !/count\(\*\)/i.test(query)) {
       log.warn(
         `SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC/DESC, which can cause the response to not contain all the results`,
       )

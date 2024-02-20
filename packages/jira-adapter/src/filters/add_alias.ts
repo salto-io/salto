@@ -216,6 +216,14 @@ const aliasMap: Record<string, AliasData> = {
     ],
     separator: ':',
   },
+  Status: {
+    aliasComponents: [
+      {
+        fieldName: 'name',
+      },
+    ],
+    separator: ':',
+  },
 }
 
 const filterCreator: FilterCreator = ({ config }) => ({

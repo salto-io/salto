@@ -41,6 +41,9 @@ export const NUM_OF_SUITEQL_ELEMENTS =
   // additional elements are the type, and instances from getAdditionalInstances
   4
 
+const TYPE_TO_SKIP = 'vendor'
+const TYPE_WITH_MAX_RESULTS = 'unitsType'
+
 const runSuiteQLMock = jest.fn()
 const runSavedSearchQueryMock = jest.fn()
 const client = {
@@ -65,7 +68,7 @@ describe('SuiteQL table elements', () => {
       fetch: {
         ...fullFetchConfig(),
         resolveAccountSpecificValues: true,
-        skipResolvingAccountSpecificValuesToTypes: ['vendor'],
+        skipResolvingAccountSpecificValuesToTypes: [TYPE_TO_SKIP],
       },
     }
     serverTimeType = new ObjectType({ elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME) })
@@ -96,11 +99,15 @@ describe('SuiteQL table elements', () => {
 
   describe('when there are no existing instances', () => {
     beforeEach(async () => {
-      runSuiteQLMock.mockResolvedValue([
-        { id: '1', name: 'Some name' },
-        { id: '2', name: 'Some name 2' },
-        { id: '3', name: 'Some name 3' },
-      ])
+      runSuiteQLMock.mockImplementation(query =>
+        query.includes('count(*)')
+          ? [{ count: query.includes(`FROM ${TYPE_WITH_MAX_RESULTS} `) ? '200000' : '3' }]
+          : [
+              { id: '1', name: 'Some name' },
+              { id: '2', name: 'Some name 2' },
+              { id: '3', name: 'Some name 3' },
+            ],
+      )
       runSavedSearchQueryMock.mockImplementation(({ type, filters }) => {
         if (type !== 'resourceAllocation') {
           return [
@@ -135,8 +142,8 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should return all elements', () => {
-      // minus 1 for the skipped vendor table
-      expect(elements).toHaveLength(NUM_OF_SUITEQL_ELEMENTS - 1)
+      // minus 2 for the skipped table (TYPE_TO_SKIP) and the table with too many records (TYPE_WITH_MAX_RESULTS)
+      expect(elements).toHaveLength(NUM_OF_SUITEQL_ELEMENTS - 2)
       expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
 
@@ -222,18 +229,30 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should skip tables from skipResolvingAccountSpecificValuesToTypes', () => {
-      expect(elements.find(elem => elem.elemID.name === 'vendor')).toBeUndefined()
-      expect(runSuiteQLMock).not.toHaveBeenCalledWith(expect.stringContaining('FROM vendor '))
+      expect(elements.find(elem => elem.elemID.name === TYPE_TO_SKIP)).toBeUndefined()
+      expect(runSuiteQLMock).not.toHaveBeenCalledWith(expect.stringContaining(`FROM ${TYPE_TO_SKIP} `))
+    })
+
+    it('should skip tables that reach the records limitation', () => {
+      const query = QUERIES_BY_TABLE_NAME[TYPE_WITH_MAX_RESULTS]
+      expect(elements.find(elem => elem.elemID.name === TYPE_WITH_MAX_RESULTS)).toBeUndefined()
+      expect(runSuiteQLMock).not.toHaveBeenCalledWith(
+        expect.stringContaining(`SELECT ${query?.internalIdField}, ${query?.nameField} FROM ${TYPE_WITH_MAX_RESULTS} `),
+      )
     })
   })
 
   describe('when there are existing instances', () => {
     beforeEach(async () => {
-      runSuiteQLMock.mockResolvedValue([
-        { id: '1', name: 'Updated name' },
-        { id: '4', name: 'New name 4' },
-        { id: '5', name: 'New name 5' },
-      ])
+      runSuiteQLMock.mockImplementation(query =>
+        query.includes('count(*)')
+          ? [{ count: '3' }]
+          : [
+              { id: '1', name: 'Updated name' },
+              { id: '4', name: 'New name 4' },
+              { id: '5', name: 'New name 5' },
+            ],
+      )
       const elementsSource = buildElementsSourceFromElements([
         serverTimeType,
         serverTimeInstance,
@@ -299,11 +318,15 @@ describe('SuiteQL table elements', () => {
 
   describe('when isPartial=true', () => {
     beforeEach(async () => {
-      runSuiteQLMock.mockResolvedValue([
-        { id: '1', entityid: 'Some name' },
-        { id: '2', entityid: 'Some name 2' },
-        { id: '3', entityid: 'Some name 3' },
-      ])
+      runSuiteQLMock.mockImplementation(query =>
+        query.includes('count(*)')
+          ? [{ count: '3' }]
+          : [
+              { id: '1', entityid: 'Some name' },
+              { id: '2', entityid: 'Some name 2' },
+              { id: '3', entityid: 'Some name 3' },
+            ],
+      )
       const elementsSource = buildElementsSourceFromElements([
         suiteQLTableType,
         suiteQLTableInstance,

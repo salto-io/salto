@@ -76,12 +76,26 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
+
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
       // The service does not allow us to have an item with no variant - therefore, we need to do
-      //  the removal changes last
-      const [removalChanges, nonRemovalChanges] = _.partition(relevantChanges, isRemovalChange)
+      // the removal changes last. Variant additions need to be first in order to prevent race
+      // conditions with item modifications
+      const [variantAdditionChanges, variantNonAdditionChanges] = _.partition(variantChanges, isAdditionChange)
+      const [variantRemovalChanges, variantModificationChanges] = _.partition(
+        variantNonAdditionChanges,
+        isRemovalChange,
+      )
+      const [itemRemovalChanges, itemNonRemovalChanges] = _.partition(itemChanges, isRemovalChange)
+
       const deployResult = await deployChangesByGroups(
-        [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
+        [
+          variantAdditionChanges,
+          itemNonRemovalChanges,
+          variantModificationChanges,
+          itemRemovalChanges,
+          variantRemovalChanges,
+        ] as Change<InstanceElement>[][],
         async change => {
           await deployChange(change, client, config.apiDefinitions)
         },

@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { Change, getChangeData, InstanceElement, isRemovalChange, Values } from '@salto-io/adapter-api'
+import {
+  Change,
+  createSaltoElementError,
+  getChangeData,
+  InstanceElement,
+  isRemovalChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -51,7 +58,22 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(workspaceChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, ['selected_macros'])
+      const response = await deployChange(change, client, config.apiDefinitions, ['selected_macros'])
+      // It's possible for the deployment to return with status 200 and still have errors.
+      if (
+        response !== undefined &&
+        !_.isArray(response) &&
+        response.errors !== undefined &&
+        Array.isArray(response.errors) &&
+        response.errors.length > 0
+      ) {
+        throw createSaltoElementError({
+          // caught by deployChanges
+          message: response.errors[0],
+          severity: 'Error',
+          elemID: getChangeData(change).elemID,
+        })
+      }
     })
     return { deployResult, leftoverChanges }
   },

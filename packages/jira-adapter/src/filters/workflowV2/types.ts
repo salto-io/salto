@@ -60,7 +60,7 @@ export type WorkflowStatus = {
 }
 
 export type WorkflowTransitionV2 = {
-  id: string
+  id?: string
   actions?: Values[]
   conditions?: Values
   validators?: Values[]
@@ -85,9 +85,9 @@ type WorkflowScope = {
 
 export type Workflow = {
   name: string
-  version: WorkflowVersion
+  version?: WorkflowVersion
   scope: WorkflowScope
-  id: string
+  id?: string
   transitions: Values[]
   statuses: Values[]
 }
@@ -103,20 +103,19 @@ const WORKFLOW_SCHEMA = Joi.object({
     versionNumber: Joi.number().required(),
     id: Joi.string().required(),
   })
-    .unknown(true)
-    .required(),
+    .unknown(true),
   scope: Joi.object({
     project: Joi.string(),
     type: Joi.string().required(),
   })
     .unknown(true)
     .required(),
-  id: Joi.string().required(),
+  id: Joi.string(),
   transitions: Joi.object()
     .pattern(
       Joi.string(),
       Joi.object({
-        id: Joi.string().required(),
+        id: Joi.string(),
         actions: Joi.array().items(Joi.object()),
         conditions: Joi.object(),
         validators: Joi.array().items(Joi.object()),

@@ -226,17 +226,19 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<{ user
 }
 
 /*
-* Fetch all users with admin and agent roles.
-* Results are cached after the initial call to improve performance.
-*
-*/
-const getUsersFunc = ():
-  (paginator: clientUtils.Paginator, runQuery: boolean | undefined)
-=> Promise<GetUsersResponse> => {
+ * Fetch all users with admin and agent roles.
+ * Results are cached after the initial call to improve performance.
+ *
+ */
+const getUsersFunc = (): ((
+  paginator: clientUtils.Paginator,
+  runQuery: boolean | undefined,
+) => Promise<GetUsersResponse>) => {
   let calculatedUsersPromise: Promise<GetUsersResponse>
 
   const getUsers = async (
-    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+    paginator: clientUtils.Paginator,
+    runQuery: boolean | undefined,
   ): Promise<GetUsersResponse> => {
     if (calculatedUsersPromise === undefined) {
       if (runQuery === false) {

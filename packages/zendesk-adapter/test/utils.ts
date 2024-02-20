@@ -24,57 +24,43 @@ import { BrandIdToClient } from '../src/filter'
 import { GetUsersResponse } from '../src/users/types'
 
 type FilterCreatorParams = {
-<<<<<<< HEAD
   client: ZendeskClient
   paginator: clientUtils.Paginator
   config: ZendeskConfig
   fetchQuery: elementUtils.query.ElementQuery
   elementsSource: ReadOnlyElementsSource
   brandIdToClient: BrandIdToClient
-||||||| parent of 4b62d6efb (fix build errors)
-    client: ZendeskClient
-    paginator: clientUtils.Paginator
-    config: ZendeskConfig
-    fetchQuery: elementUtils.query.ElementQuery
-    elementsSource: ReadOnlyElementsSource
-    brandIdToClient: BrandIdToClient
-=======
-    client: ZendeskClient
-    paginator: clientUtils.Paginator
-    config: ZendeskConfig
-    fetchQuery: elementUtils.query.ElementQuery
-    elementsSource: ReadOnlyElementsSource
-    brandIdToClient: BrandIdToClient
-    usersPromise: Promise<GetUsersResponse>
->>>>>>> 4b62d6efb (fix build errors)
+  usersPromise: Promise<GetUsersResponse>
 }
 
-export const createFilterCreatorParams = ({
-  client = new ZendeskClient({
-    credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-  }),
-  paginator = clientUtils.createPaginator({
+export const createFilterCreatorParams =
+  ({
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    }),
+    paginator = clientUtils.createPaginator({
+      client,
+      paginationFuncCreator: paginate,
+    }),
+    config = DEFAULT_CONFIG,
+    fetchQuery = elementUtils.query.createMockQuery(),
+    elementsSource = buildElementsSourceFromElements([]),
+    brandIdToClient = {},
+  }: Partial<FilterCreatorParams>): FilterCreatorParams =>
+  ({
     client,
-    paginationFuncCreator: paginate,
-  }),
-  config = DEFAULT_CONFIG,
-  fetchQuery = elementUtils.query.createMockQuery(),
-  elementsSource = buildElementsSourceFromElements([]),
-  brandIdToClient = {},
-<<<<<<< HEAD
-}: Partial<FilterCreatorParams>): FilterCreatorParams => ({
-  client,
-  paginator,
-  config,
-  fetchQuery,
-  elementsSource,
-  brandIdToClient,
-||||||| parent of 4b62d6efb (fix build errors)
-} : Partial<FilterCreatorParams>) : FilterCreatorParams => ({
-  client, paginator, config, fetchQuery, elementsSource, brandIdToClient,
-=======
-  usersPromise = Promise.resolve({ users: [], errors: [] }),
-} : Partial<FilterCreatorParams>) : FilterCreatorParams => ({
-  client, paginator, config, fetchQuery, elementsSource, brandIdToClient, usersPromise,
->>>>>>> 4b62d6efb (fix build errors)
-})
+    paginator,
+    config,
+    fetchQuery,
+    elementsSource,
+    brandIdToClient,
+    usersPromise = Promise.resolve({ users: [], errors: [] }),
+  }: Partial<FilterCreatorParams>): FilterCreatorParams => ({
+    client,
+    paginator,
+    config,
+    fetchQuery,
+    elementsSource,
+    brandIdToClient,
+    usersPromise,
+  })

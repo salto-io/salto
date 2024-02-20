@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-import {
-  ChangeError,
-  ElemID,
-  InstanceElement,
-  isInstanceElement,
-} from '@salto-io/adapter-api'
+import { ChangeError, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../config'
-import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../users/user_utils'
+import {
+  MISSING_USERS_DOC_LINK,
+  MISSING_USERS_ERROR_MSG,
+  TYPE_NAME_TO_REPLACER,
+  VALID_USER_VALUES,
+  getUserFallbackValue,
+} from '../users/user_utils'
 import { FixElementsHandler } from './types'
 import { CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 import { FieldsParams, ValueReplacer, replaceConditionsAndActionsCreator } from '../replacers_utils'
@@ -135,19 +136,21 @@ const isRelevantElement = (element: unknown): element is InstanceElement =>
  * 1. If provided fallback user is valid, return warning severity errors
  * 2. If provided fallback user is not valid, return error severity errors
  */
-export const fallbackUsersHandler: FixElementsHandler = (
-  { client, config, usersPromise }
-) => async elements => {
-  const { users } = await usersPromise
+export const fallbackUsersHandler: FixElementsHandler =
+  ({ client, config, usersPromise }) =>
+  async elements => {
+    const { users } = await usersPromise
 
-  // eslint-disable-next-line no-console
-  console.log(`(5/5) in fallback_users fix elements, ${users.length} users`)
+    // eslint-disable-next-line no-console
+    console.log(`(5/5) in fallback_users fix elements, ${users.length} users`)
 
-  const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
-  if (defaultMissingUserFallback === undefined
-    || noRelevantUsers(users, defaultMissingUserFallback, config[FETCH_CONFIG].resolveUserIDs)) {
-    return { fixedElements: [], errors: [] }
-  }
+    const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
+    if (
+      defaultMissingUserFallback === undefined ||
+      noRelevantUsers(users, defaultMissingUserFallback, config[FETCH_CONFIG].resolveUserIDs)
+    ) {
+      return { fixedElements: [], errors: [] }
+    }
 
     const userEmails = new Set(users.map(user => user.email))
     const fallbackValue = await getUserFallbackValue(defaultMissingUserFallback, userEmails, client)

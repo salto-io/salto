@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeError, InstanceElement, toChange, TypeReference } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  InstanceElement,
+  toChange,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/instance_with_unknown_type'
 import { mockTypes } from '../mock_elements'
 
@@ -23,7 +28,9 @@ describe('instanceWithUnknownType', () => {
     beforeEach(async () => {
       validationResult = await changeValidator([
         toChange({ after: mockTypes.Account }),
-        toChange({ after: new InstanceElement('SomeAccount', mockTypes.Account) }),
+        toChange({
+          after: new InstanceElement('SomeAccount', mockTypes.Account),
+        }),
       ])
     })
     it('Should not raise an error', () => {
@@ -45,7 +52,9 @@ describe('instanceWithUnknownType', () => {
     beforeEach(async () => {
       validationResult = await changeValidator([
         toChange({ before: mockTypes.Account, after: mockTypes.Account }),
-        toChange({ after: new InstanceElement('SomeAccount', mockTypes.Account) }),
+        toChange({
+          after: new InstanceElement('SomeAccount', mockTypes.Account),
+        }),
       ])
     })
     it('Should not raise an error', () => {
@@ -53,19 +62,25 @@ describe('instanceWithUnknownType', () => {
     })
   })
   describe('When an instance is added without its type', () => {
-    const instance = new InstanceElement('SomeAccount', new TypeReference(mockTypes.Account.elemID))
+    const instance = new InstanceElement(
+      'SomeAccount',
+      new TypeReference(mockTypes.Account.elemID),
+    )
     beforeEach(async () => {
-      validationResult = await changeValidator([
-        toChange({ after: instance }),
-      ])
+      validationResult = await changeValidator([toChange({ after: instance })])
     })
     it('Should raise an error', () => {
       expect(validationResult).toHaveLength(1)
-      expect(validationResult).toSatisfyAll(error => error.elemID.isEqual(instance.elemID))
+      expect(validationResult).toSatisfyAll((error) =>
+        error.elemID.isEqual(instance.elemID),
+      )
     })
   })
   describe('When an instance is added and its type is deleted', () => {
-    const instance = new InstanceElement('SomeAccount', new TypeReference(mockTypes.Account.elemID))
+    const instance = new InstanceElement(
+      'SomeAccount',
+      new TypeReference(mockTypes.Account.elemID),
+    )
     beforeEach(async () => {
       validationResult = await changeValidator([
         toChange({ after: instance }),
@@ -74,11 +89,16 @@ describe('instanceWithUnknownType', () => {
     })
     it('Should raise an error', () => {
       expect(validationResult).toHaveLength(1)
-      expect(validationResult).toSatisfyAll(error => error.elemID.isEqual(instance.elemID))
+      expect(validationResult).toSatisfyAll((error) =>
+        error.elemID.isEqual(instance.elemID),
+      )
     })
   })
   describe('When an instance is modified and its type is deleted', () => {
-    const instance = new InstanceElement('SomeAccount', new TypeReference(mockTypes.Account.elemID))
+    const instance = new InstanceElement(
+      'SomeAccount',
+      new TypeReference(mockTypes.Account.elemID),
+    )
     beforeEach(async () => {
       validationResult = await changeValidator([
         toChange({ before: instance, after: instance }),
@@ -87,7 +107,9 @@ describe('instanceWithUnknownType', () => {
     })
     it('Should raise an error', () => {
       expect(validationResult).toHaveLength(1)
-      expect(validationResult).toSatisfyAll(error => error.elemID.isEqual(instance.elemID))
+      expect(validationResult).toSatisfyAll((error) =>
+        error.elemID.isEqual(instance.elemID),
+      )
     })
   })
 })

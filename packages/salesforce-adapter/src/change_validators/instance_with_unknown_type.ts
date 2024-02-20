@@ -15,26 +15,29 @@
  */
 import {
   ChangeError,
-  ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
   isPlaceholderObjectType,
 } from '@salto-io/adapter-api'
 
-const createInstanceWithoutTypeError = (instance: InstanceElement): ChangeError => (
-  {
-    elemID: instance.elemID,
-    message: 'Instance added without its type',
-    detailedMessage: `The record ${instance.elemID.getFullName()} is being added, but its type (${instance.getTypeSync().elemID.getFullName()}) is not.`,
-    severity: 'Error',
-  }
-)
+const createInstanceWithoutTypeError = (
+  instance: InstanceElement,
+): ChangeError => ({
+  elemID: instance.elemID,
+  message: 'Instance added without its type',
+  detailedMessage: `The record ${instance.elemID.getFullName()} is being added, but its type (${instance.getTypeSync().elemID.getFullName()}) is not.`,
+  severity: 'Error',
+})
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: ChangeValidator = async (changes) =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => isPlaceholderObjectType(instance.getTypeSync()))
+    .filter((instance) => isPlaceholderObjectType(instance.getTypeSync()))
     .map(createInstanceWithoutTypeError)
-)
 
 export default changeValidator

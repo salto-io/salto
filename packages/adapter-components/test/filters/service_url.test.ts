@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData, ReferenceExpression } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  CORE_ANNOTATIONS,
+  toChange,
+  getChangeData,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { serviceUrlFilterCreator } from '../../src/filters/service_url'
@@ -33,7 +41,7 @@ describe('service url filter', () => {
     objectType,
     { id: 'ab', name: 'instWithParent' },
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(roleInst.elemID, roleInst)] }
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(roleInst.elemID, roleInst)] },
   )
 
   beforeEach(async () => {
@@ -67,8 +75,10 @@ describe('service url filter', () => {
     it('should add service url annotation if it is exist in the config', async () => {
       const elements = [roleInst, instWithParent].map(e => e.clone())
       await filter.onFetch(elements)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual(['adapter.foo.instance.instWithParent', 'adapter.role.instance.role'])
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'adapter.foo.instance.instWithParent',
+        'adapter.role.instance.role',
+      ])
       const [role, withParent] = elements
       expect(role.annotations).toEqual({
         [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.example.com/roles/11',
@@ -89,8 +99,12 @@ describe('service url filter', () => {
       instWithResolvedParent.annotations[CORE_ANNOTATIONS.PARENT] = [roleInst.clone().value]
       const changes = [roleInst, instWithResolvedParent].map(e => e.clone()).map(inst => toChange({ after: inst }))
       await filter.onDeploy(changes)
-      expect(changes.map(getChangeData).map(e => e.elemID.getFullName()).sort())
-        .toEqual(['adapter.foo.instance.instWithParent', 'adapter.role.instance.role'])
+      expect(
+        changes
+          .map(getChangeData)
+          .map(e => e.elemID.getFullName())
+          .sort(),
+      ).toEqual(['adapter.foo.instance.instWithParent', 'adapter.role.instance.role'])
       const [role, withParent] = changes.map(getChangeData)
       expect(role.annotations).toEqual({
         [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.example.com/roles/11',

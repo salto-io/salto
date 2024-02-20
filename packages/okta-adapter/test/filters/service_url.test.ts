@@ -44,25 +44,12 @@ describe('serviceUrlFilter', () => {
 
   const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
   const userTypeType = new ObjectType({ elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME) })
-  const userTypeInstance = new InstanceElement(
-    'user1',
-    userTypeType,
-    { id: 11, name: 'user1' }
-  )
-  const userSchemaInstance = new InstanceElement(
-    'schema',
-    userSchemaType,
-    { id: 12 },
-    undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [
-      new ReferenceExpression(userTypeInstance.elemID, userTypeInstance)] },
-  )
+  const userTypeInstance = new InstanceElement('user1', userTypeType, { id: 11, name: 'user1' })
+  const userSchemaInstance = new InstanceElement('schema', userSchemaType, { id: 12 }, undefined, {
+    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(userTypeInstance.elemID, userTypeInstance)],
+  })
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-  const appInstance = new InstanceElement(
-    'app1',
-    appType,
-    { id: 11, name: 'app1' },
-  )
+  const appInstance = new InstanceElement('app1', appType, { id: 11, name: 'app1' })
 
   describe('onFetch', () => {
     it('should add service url annotation for application if it is exist in the config', async () => {

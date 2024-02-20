@@ -178,10 +178,10 @@ export const validateCustomizationsTypes = (
   customization: Record<string, boolean>,
   supportedTypesNames: string[],
 ): void => {
-  const invalidCustomizations = Object.keys(customization).filter(
-    typeName => !supportedTypesNames.includes(typeName)
-  )
+  const invalidCustomizations = Object.keys(customization).filter(typeName => !supportedTypesNames.includes(typeName))
   if (invalidCustomizations.length > 0) {
-    throw Error(`Invalid type names in ${customizationName}: ${invalidCustomizations} does not match any of the supported types.`)
+    throw Error(
+      `Invalid type names in ${customizationName}: ${invalidCustomizations} does not match any of the supported types.`,
+    )
   }
 }

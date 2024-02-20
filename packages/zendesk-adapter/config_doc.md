@@ -88,19 +88,18 @@ zendesk {
 
 ## Fetch configuration options
 
-| Name                               | Default when undefined             | Description                                                                                                                              |
-| ---------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| [include](#fetch-entry-options)    | [{ type = ".*" }]                  | List of entries to determine what instances to include in the fetch                                                                      |
-| [exclude](#fetch-entry-options)    | []                                 | List of entries to determine what instances to exclude in the fetch                                                                      |
-| [guide]                            | undefined (Guide will be disabled) | Configuration for defining which brands will be included in Zendesk Guide fetch                                                          |
-| [resolveOrganizationIDs]           | false                              | When enabled, organization IDs will be replaced with organization names                                                                  |
-| [resolveUserIDs]                   | true                               | When enabled, user IDs will be replaced with user emails                                                                                 |
-| includeAuditDetails                | false                              | When enabled, changed_by information will be added to instances                                                                          |
-| handleIdenticalAttachmentConflicts | false                              | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article |
-| extractReferencesFromFreeText      | false                              | When enabled, convert ids in zendesk links in string values to salto references                                                          |
-| convertJsonIdsToReferences         | false                              | When enabled, If a field is a json with an 'id' field, convert its value to a reference                                                  |
+| Name                               | Default when undefined             | Description                                                                                                                                                            |
+| ---------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [include](#fetch-entry-options)    | [{ type = ".*" }]                  | List of entries to determine what instances to include in the fetch                                                                                                    |
+| [exclude](#fetch-entry-options)    | []                                 | List of entries to determine what instances to exclude in the fetch                                                                                                    |
+| [guide]                            | undefined (Guide will be disabled) | Configuration for defining which brands will be included in Zendesk Guide fetch                                                                                        |
+| [resolveOrganizationIDs]           | false                              | When enabled, organization IDs will be replaced with organization names                                                                                                |
+| [resolveUserIDs]                   | true                               | When enabled, user IDs will be replaced with user emails                                                                                                               |
+| includeAuditDetails                | false                              | When enabled, changed_by information will be added to instances                                                                                                        |
+| handleIdenticalAttachmentConflicts | false                              | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article                               |
+| extractReferencesFromFreeText      | false                              | When enabled, convert ids in zendesk links in string values to salto references                                                                                        |
+| convertJsonIdsToReferences         | false                              | When enabled, If a field is a json with an 'id' field, convert its value to a reference                                                                                |
 | omitInactive                       | true                               | When enabled, Inactive instances will be omitted from the fetch. This option support default value and specific types can be overridden using the customizations field |
-
 
 ## Fetch entry options
 

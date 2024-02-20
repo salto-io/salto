@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { isResolvedReferenceExpression, resolveValues, restoreValues } from '@salto-io/adapter-utils'
+import { isResolvedReferenceExpression, resolvePath, resolveValues, restoreValues } from '@salto-io/adapter-utils'
 import {
   isAdditionOrModificationChange,
   getChangeData,
@@ -120,8 +120,10 @@ const filter: FilterCreator = ({ config, client }) => {
       workflows.filter(isWorkflowV2Instance).forEach(workflow => {
         Object.values(workflow.value.transitions).forEach(transition => {
           walkOverTransitionIdsV2(transition, scriptRunner => {
-            scriptRunner.transitionId = isResolvedReferenceExpression(scriptRunner.transitionId)
-              ? scriptRunner.transitionId.value.id
+              const { transitionId } = scriptRunner
+            scriptRunner.transitionId = isResolvedReferenceExpression(transitionId)
+              // because the reference value has been changed in transition_ids filter
+              ? resolvePath(workflow, transitionId.elemID.createNestedID('id'))
               : scriptRunner.transitionId
           })
         })

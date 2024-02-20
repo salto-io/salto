@@ -181,7 +181,11 @@ const createWorkflowInstances = async ({
         response.data.workflows.map(async workflow => {
           convertTransitionParametersFields(workflow.transitions, convertParametersFieldsToList)
           convertPropertiesToList([...(workflow.statuses ?? []), ...(workflow.transitions ?? [])])
-          // convert transition list to map
+          if (workflow.id === undefined) {
+        // should never happen
+        errors.push(workflowFetchError('Workflow id is missing'))
+        return undefined // add ut
+      }
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)
@@ -448,6 +452,7 @@ const replaceStatusIdWithUuid =
     return WALK_NEXT_STEP.SKIP
   }
 
+
 const getWorkflowForDeploy = async (
   workflowInstance: InstanceElement,
   statusIdToUuid: Record<string, string>,
@@ -524,6 +529,8 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
         .filter(isAdditionOrModificationWorkflowChange)
         .forEach(async change => {
           const workflowInstance = getChangeData(change)
+          // transitionIds are not multi-env friendly, but it is required field in the API
+          // addTransitionIds(workflowInstance)
           originalInstances[workflowInstance.elemID.getFullName()] = workflowInstance.clone()
           const statusInstances = getStatusInstances(change)
           const statusIdToUuid = getUuidMap(statusInstances)

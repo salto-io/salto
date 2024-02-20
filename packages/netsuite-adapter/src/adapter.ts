@@ -130,7 +130,7 @@ import {
 } from './config/query'
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
-import { BundleInfo, buildNetsuiteBundlesQuery } from './config/bundle_query'
+import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 import { SuiteAppBundleType } from './types/bundle_type'
 import { BUNDLE_ID_TO_COMPONENTS } from './autogen/bundle_components/bundle_components'
 
@@ -330,16 +330,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
-  private getBundlesToExclude = (installedBundles: SuiteAppBundleType[]): BundleInfo[] => {
+  private getBundlesToExclude = (installedBundles: SuiteAppBundleType[]): [SuiteAppBundleType[], SuiteAppBundleType[]] => {
     const bundleIdsToExclude = this.userConfig.excludeBundles
     if (bundleIdsToExclude === undefined) {
-      return []
+      return [[], installedBundles]
     }
     const bundleMatchers = bundleIdsToExclude.map(matcher => new RegExp(matcher === INCLUDE_ALL ? ALL_TYPES_REGEX : matcher))
-    const installedBundlesInfo = installedBundles.map(bundle => ({ id: bundle.id.toString(), version: bundle.version }))
-    return installedBundlesInfo
-      .filter(bundle => bundle.id in BUNDLE_ID_TO_COMPONENTS)
-      .filter(bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString())))
+    return _.partition(
+        installedBundles,
+        bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString()))
+    )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -350,8 +350,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
   ): Promise<FetchByQueryReturnType> => {
     const configRecords = await this.client.getConfigRecords()
     const installedBundles = await this.client.getInstalledBundles()
-    const filteredBundlesToExclude = this.getBundlesToExclude(installedBundles)
-    const netsuiteBundlesQuery = buildNetsuiteBundlesQuery(filteredBundlesToExclude)
+    const [bundlesToExclude, bundlesToInclude] = this.getBundlesToExclude(installedBundles)
+    const bundlesToExcludeInfo = bundlesToExclude.map(bundle => ({ id: bundle.id.toString(), version: bundle.version }))
+    const supportedBundles = bundlesToInclude.filter(bundle => bundle.id in BUNDLE_ID_TO_COMPONENTS)
+    const netsuiteBundlesQuery = buildNetsuiteBundlesQuery(bundlesToExcludeInfo)
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
@@ -425,7 +427,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
       { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
-      getStandardAndCustomElements(installedBundles),
+      getStandardAndCustomElements(supportedBundles),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
       getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
     ])

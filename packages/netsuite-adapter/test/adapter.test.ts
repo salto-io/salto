@@ -673,7 +673,7 @@ describe('Adapter', () => {
         expect(bundlesQueryModule.buildNetsuiteBundlesQuery).toHaveBeenCalledWith([])
       })
       it('should call buildNetsuiteBundlesQuery with all bundles if "ALL" is passed', async () => {
-        const adapter = createNSAdapter(['ALL'])
+        const adapter = createNSAdapter(['All'])
         await adapter.fetch(mockFetchOpts)
         expect(bundlesQueryModule.buildNetsuiteBundlesQuery)
           .toHaveBeenCalledWith([{ id: '123', version: '1.0.0' }, { id: '789', version: '2.0.0' }, { id: '135', version: 'v3.0.0' }])

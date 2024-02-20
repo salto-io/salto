@@ -20,6 +20,7 @@ import {
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_STATUS_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
+  TAG_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
 } from '../../constants'
@@ -48,7 +49,12 @@ export const ZendeskMissingReferenceStrategyLookup: Record<
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value || VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)) {
+      if (
+        !_.isString(typeName) ||
+        !value ||
+        VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value) ||
+        typeName === TAG_TYPE_NAME
+      ) {
         return undefined
       }
       return referenceUtils.createMissingInstance(adapter, typeName, value)

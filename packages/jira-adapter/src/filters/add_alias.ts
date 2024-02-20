@@ -30,6 +30,7 @@ import {
   QUEUE_TYPE,
   REQUEST_TYPE_NAME,
   SLA_TYPE_NAME,
+  STATUS_TYPE_NAME,
 } from '../constants'
 
 const log = logger(module)
@@ -216,7 +217,7 @@ const aliasMap: Record<string, AliasData> = {
     ],
     separator: ':',
   },
-  Status: {
+  [STATUS_TYPE_NAME]: {
     aliasComponents: [
       {
         fieldName: 'name',

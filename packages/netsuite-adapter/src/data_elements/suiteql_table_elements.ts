@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { collections, regex } from '@salto-io/lowerdash'
+import { collections, regex, strings } from '@salto-io/lowerdash'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -44,6 +44,8 @@ const VERSION_FIELD = 'version'
 const LATEST_VERSION = 1
 
 const ALLOCATION_TYPE_QUERY_LIMIT = 50
+
+const QUERY_RECORDS_LIMITATION = 100_000
 
 type InternalIdsMap = Record<string, { name: string }>
 
@@ -491,16 +493,49 @@ export const getSuiteQLNameToInternalIdsMap = async (
     .value()
 }
 
+const getWhereParam = (
+  { lastModifiedDateField }: Pick<QueryParams, 'lastModifiedDateField'>,
+  lastFetchTime: Date | undefined,
+): string =>
+  lastModifiedDateField !== undefined && lastFetchTime !== undefined
+    ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}`
+    : ''
+
+const shouldSkipQuery = async (
+  client: NetsuiteClient,
+  tableName: string,
+  queryParams: QueryParams,
+  lastFetchTime: Date | undefined,
+): Promise<boolean> => {
+  const whereParam = getWhereParam(queryParams, lastFetchTime)
+  const queryString = `SELECT count(*) as count FROM ${tableName} ${whereParam}`
+  const results = await client.runSuiteQL(queryString)
+  if (results?.length !== 1) {
+    log.warn('query received unexpected number of results: %o', { queryString, numOfResults: results?.length })
+    return true
+  }
+  const [result] = results
+  if (!_.isString(result.count) || !strings.isNumberStr(result.count)) {
+    log.warn('query received unexpected result (expected "count" to be a number string): %o', { queryString, result })
+    return true
+  }
+  const count = Number(result.count)
+  if (count > QUERY_RECORDS_LIMITATION) {
+    log.warn(
+      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results`,
+    )
+    return true
+  }
+  return false
+}
+
 const getInternalIdsMap = async (
   client: NetsuiteClient,
   tableName: string,
   { internalIdField, nameField, lastModifiedDateField }: QueryParams,
   lastFetchTime: Date | undefined,
 ): Promise<InternalIdsMap> => {
-  const whereLastModified =
-    lastModifiedDateField !== undefined && lastFetchTime !== undefined
-      ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}`
-      : ''
+  const whereLastModified = getWhereParam({ lastModifiedDateField }, lastFetchTime)
   const queryString = `SELECT ${internalIdField}, ${nameField} FROM ${tableName} ${whereLastModified} ORDER BY ${internalIdField} ASC`
   const results = await client.runSuiteQL(queryString)
   if (results === undefined) {
@@ -551,10 +586,17 @@ const getSuiteQLTableInstance = async (
   const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
   const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
-  // we want to query employees in partial fetch too, for _changed_by
-  if (isPartial && tableName !== EMPLOYEE) {
-    return existingInstance
+
+  // we always want to query employees, for _changed_by
+  if (tableName !== EMPLOYEE) {
+    if (isPartial) {
+      return existingInstance
+    }
+    if (await shouldSkipQuery(client, tableName, queryParams, lastFetchTime)) {
+      return undefined
+    }
   }
+
   const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
   Object.assign(
     instance.value[INTERNAL_IDS_MAP],

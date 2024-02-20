@@ -182,10 +182,10 @@ const createWorkflowInstances = async ({
           convertTransitionParametersFields(workflow.transitions, convertParametersFieldsToList)
           convertPropertiesToList([...(workflow.statuses ?? []), ...(workflow.transitions ?? [])])
           if (workflow.id === undefined) {
-        // should never happen
-        errors.push(workflowFetchError('Workflow id is missing'))
-        return undefined
-      }
+            // should never happen
+            errors.push(workflowFetchError('Workflow id is missing'))
+            return undefined
+          }
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)
@@ -451,7 +451,6 @@ const replaceStatusIdWithUuid =
     }
     return WALK_NEXT_STEP.SKIP
   }
-
 
 const getWorkflowForDeploy = async (
   workflowInstance: InstanceElement,

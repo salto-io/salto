@@ -102,8 +102,7 @@ const WORKFLOW_SCHEMA = Joi.object({
   version: Joi.object({
     versionNumber: Joi.number().required(),
     id: Joi.string().required(),
-  })
-    .unknown(true),
+  }).unknown(true),
   scope: Joi.object({
     project: Joi.string(),
     type: Joi.string().required(),

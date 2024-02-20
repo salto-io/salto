@@ -120,10 +120,10 @@ const filter: FilterCreator = ({ config, client }) => {
       workflows.filter(isWorkflowV2Instance).forEach(workflow => {
         Object.values(workflow.value.transitions).forEach(transition => {
           walkOverTransitionIdsV2(transition, scriptRunner => {
-              const { transitionId } = scriptRunner
+            const { transitionId } = scriptRunner
             scriptRunner.transitionId = isResolvedReferenceExpression(transitionId)
-              // because the reference value has been changed in transition_ids filter
-              ? resolvePath(workflow, transitionId.elemID.createNestedID('id'))
+              ? // because the reference value has been changed in transition_ids filter
+                resolvePath(workflow, transitionId.elemID.createNestedID('id'))
               : scriptRunner.transitionId
           })
         })

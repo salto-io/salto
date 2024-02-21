@@ -4952,76 +4952,53 @@ describe('listElementsDependenciesInWorkspace', () => {
       b: { refType: BuiltinTypes.NUMBER },
     },
   })
-  const instWithRef = new InstanceElement(
-    'inst1',
-    new TypeReference(type1.elemID),
-    {
-      a: 'aaa',
-      b: new ReferenceExpression(type1.elemID.createNestedID('field', 'c')),
-      c: 'ccc',
-    },
-  )
-  const instNoRefs = new InstanceElement(
-    'inst11',
-    new TypeReference(type1.elemID),
-    {
+  const instWithRef = new InstanceElement('inst1', new TypeReference(type1.elemID), {
+    a: 'aaa',
+    b: new ReferenceExpression(type1.elemID.createNestedID('field', 'c')),
+    c: 'ccc',
+  })
+  const instNoRefs = new InstanceElement('inst11', new TypeReference(type1.elemID), {
+    a: 'aaa',
+    b: 'bbb',
+    c: 'ccc',
+  })
+  const instWithNestedPathRef = new InstanceElement('inst2', new TypeReference(type2.elemID), {
+    a: {
       a: 'aaa',
       b: 'bbb',
-      c: 'ccc',
+      c: new ReferenceExpression(instWithRef.elemID.createNestedID('a')),
     },
-  )
-  const instWithNestedPathRef = new InstanceElement(
-    'inst2',
-    new TypeReference(type2.elemID),
-    {
-      a: {
-        a: 'aaa',
-        b: 'bbb',
-        c: new ReferenceExpression(instWithRef.elemID.createNestedID('a')),
-      },
-      b: new ReferenceExpression(instNoRefs.elemID),
-    },
-  )
+    b: new ReferenceExpression(instNoRefs.elemID),
+  })
   instWithRef.value.a = new ReferenceExpression(instWithNestedPathRef.elemID) // create circular reference
-  const instWithMissingRef = new InstanceElement(
-    'inst3',
-    new TypeReference(type2.elemID),
-    {
-      a: 'aaa',
-      b: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'nissingInst')),
-    },
-  )
-  const initialInst = new InstanceElement(
-    'start',
-    new TypeReference(type1.elemID),
-    {
-      a: new ReferenceExpression(instWithNestedPathRef.elemID),
-      b: 'bbb',
-      c: 'ccc',
-    }
-  )
+  const instWithMissingRef = new InstanceElement('inst3', new TypeReference(type2.elemID), {
+    a: 'aaa',
+    b: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'nissingInst')),
+  })
+  const initialInst = new InstanceElement('start', new TypeReference(type1.elemID), {
+    a: new ReferenceExpression(instWithNestedPathRef.elemID),
+    b: 'bbb',
+    c: 'ccc',
+  })
 
   beforeEach(async () => {
     jest.clearAllMocks()
     const elements = [type1, type2, instWithRef, instNoRefs, instWithNestedPathRef, instWithMissingRef, initialInst]
-    workspace = await createWorkspace(
-      undefined, undefined, undefined, undefined, undefined, undefined,
-      {
-        '': {
-          naclFiles: await naclFilesSource(
-            COMMON_ENV_PREFIX,
-            mockDirStore(),
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-        },
-        default: {
-          naclFiles: createMockNaclFileSource(elements),
-          state: createState(elements),
-        },
-      }
-    )
+    workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+      '': {
+        naclFiles: await naclFilesSource(
+          COMMON_ENV_PREFIX,
+          mockDirStore(),
+          mockStaticFilesSource(),
+          persistentMockCreateRemoteMap(),
+          true,
+        ),
+      },
+      default: {
+        naclFiles: createMockNaclFileSource(elements),
+        state: createState(elements),
+      },
+    })
   })
 
   it('should return the correct dependencies', async () => {
@@ -5075,9 +5052,6 @@ describe('listElementsDependenciesInWorkspace', () => {
       elemIDsToSkip: [instWithRef.elemID, instNoRefs.elemID],
       envToListFrom: 'default',
     })
-    expect(res.missing).toEqual([
-      topLevelMissing,
-      nestedMissingElemId,
-    ])
+    expect(res.missing).toEqual([topLevelMissing, nestedMissingElemId])
   })
 })

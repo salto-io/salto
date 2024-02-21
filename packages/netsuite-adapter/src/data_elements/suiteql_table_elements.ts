@@ -590,12 +590,15 @@ const getSuiteQLTableInstance = async (
   const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
 
+  const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
+  const lastFetchTimeForQuery = instance.value[VERSION_FIELD] === LATEST_VERSION ? lastFetchTime : undefined
+
   // we always want to query employees, for _changed_by
   if (tableName !== EMPLOYEE) {
     if (isPartial) {
       return existingInstance
     }
-    const shouldSkip = await shouldSkipQuery(client, tableName, queryParams, lastFetchTime, maxAllowedRecords)
+    const shouldSkip = await shouldSkipQuery(client, tableName, queryParams, lastFetchTimeForQuery, maxAllowedRecords)
     if (shouldSkip.skip) {
       if (shouldSkip.exclude) {
         largeSuiteQLTables.push(tableName)
@@ -604,15 +607,9 @@ const getSuiteQLTableInstance = async (
     }
   }
 
-  const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
   Object.assign(
     instance.value[INTERNAL_IDS_MAP],
-    await getInternalIdsMap(
-      client,
-      tableName,
-      queryParams,
-      instance.value[VERSION_FIELD] === LATEST_VERSION ? lastFetchTime : undefined,
-    ),
+    await getInternalIdsMap(client, tableName, queryParams, lastFetchTimeForQuery),
   )
   instance.value[VERSION_FIELD] = LATEST_VERSION
   return instance

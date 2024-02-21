@@ -344,10 +344,7 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   keyBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T>>
   groupBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T[]>>
   uniquify(toSetType: (t: T) => unknown): AwuIterable<T>
-  reduce<U>(
-    reduceFunc: (total: U, currentValue: T, index: number) => Thenable<U>,
-    initialValue: U
-  ): Promise<U>
+  reduce<U>(reduceFunc: (total: U, currentValue: T, index: number) => Thenable<U>, initialValue: U): Promise<U>
 }
 
 export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {

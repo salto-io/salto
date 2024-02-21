@@ -440,9 +440,13 @@ export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedA
   const { completeFrom, force } = input
   await validateAndSetEnv(workspace, input, output)
 
-  const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force: force ?? false, ignoreUnresolvedRefs: true }
-  )
+  const validWorkspace = await isValidWorkspaceForCommand({
+    workspace,
+    cliOutput: output,
+    spinnerCreator,
+    force: force ?? false,
+    ignoreUnresolvedRefs: true,
+  })
   if (!validWorkspace) {
     return CliExitCode.AppError
   }

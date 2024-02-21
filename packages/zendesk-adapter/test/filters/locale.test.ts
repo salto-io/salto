@@ -15,12 +15,12 @@
  */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import {buildElementsSourceFromElements} from '@salto-io/adapter-utils';
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/locale'
 import { LOCALE_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 import { FilterResult } from '../../src/filter'
-import ZendeskClient from '../../src/client/client';
+import ZendeskClient from '../../src/client/client'
 
 describe('locale filter', () => {
   let client: ZendeskClient
@@ -38,10 +38,12 @@ describe('locale filter', () => {
   })
   describe('onFetch', () => {
     beforeEach(async () => {
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        elementsSource: buildElementsSourceFromElements([])
-      })) as FilterType
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
+      ) as FilterType
     })
     it('should add warning when default locale is not english', async () => {
       const enUsLocaleInstance = new InstanceElement('en US', localeType, {
@@ -78,7 +80,7 @@ describe('locale filter', () => {
   describe('Deploy', () => {
     const enUsLocaleInstance = new InstanceElement('en US', localeType, {
       locale: 'en-US',
-      id: 1
+      id: 1,
     })
     const heLocaleInstance = new InstanceElement('he', localeType, {
       locale: 'he',
@@ -90,10 +92,12 @@ describe('locale filter', () => {
     })
     beforeEach(async () => {
       jest.clearAllMocks()
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        elementsSource: buildElementsSourceFromElements([enUsLocaleInstance, frLocaleInstance])
-      })) as FilterType
+      filter = filterCreator(
+        createFilterCreatorParams({
+          client,
+          elementsSource: buildElementsSourceFromElements([enUsLocaleInstance, frLocaleInstance]),
+        }),
+      ) as FilterType
       mockPut = jest.spyOn(client, 'put')
     })
     it('should add and remove locales correctly', async () => {
@@ -135,7 +139,7 @@ describe('locale filter', () => {
           message: `Failed to update ${frLocaleInstance.elemID.getFullName()} since modification of locale is not supported`,
           severity: 'Error',
           elemID: frLocaleInstance.elemID,
-        }
+        },
       ])
     })
     it('should return error if request throws error', async () => {
@@ -170,7 +174,7 @@ describe('locale filter', () => {
           message: 'err',
           severity: 'Error',
           elemID: heLocaleInstance.elemID,
-        }
+        },
       ])
     })
   })

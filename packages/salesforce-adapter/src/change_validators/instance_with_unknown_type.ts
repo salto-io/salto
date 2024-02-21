@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  Change,
   ChangeError,
   ChangeValidator,
   getChangeData,
@@ -24,20 +25,24 @@ import {
 } from '@salto-io/adapter-api'
 
 const createInstanceWithoutTypeError = (
-  instance: InstanceElement,
-): ChangeError => ({
-  elemID: instance.elemID,
-  message: 'Instance added without its type',
-  detailedMessage: `The record ${instance.elemID.getFullName()} is being added, but its type (${instance.getTypeSync().elemID.getFullName()}) is not.`,
-  severity: 'Error',
-})
+  change: Change<InstanceElement>,
+): ChangeError => {
+  const instance = getChangeData(change)
+  return {
+    elemID: instance.elemID,
+    message: 'Instance of unknown type',
+    detailedMessage: `Cannot ${change.action} instance ${instance.elemID.getFullName()} because its type is unknown.`,
+    severity: 'Error',
+  }
+}
 
 const changeValidator: ChangeValidator = async (changes) =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .map(getChangeData)
-    .filter((instance) => isPlaceholderObjectType(instance.getTypeSync()))
+    .filter((change) =>
+      isPlaceholderObjectType(getChangeData(change).getTypeSync()),
+    )
     .map(createInstanceWithoutTypeError)
 
 export default changeValidator

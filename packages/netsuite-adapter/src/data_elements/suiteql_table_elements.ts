@@ -555,12 +555,16 @@ const getInternalIdsMap = async (
   return Object.fromEntries(validResults.map(({ internalId, name }) => [internalId, { name }]))
 }
 
+const isUpdatedExistingInstance = (
+  existingInstance: InstanceElement | undefined,
+): existingInstance is InstanceElement => existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
+
 const createOrGetExistingInstance = (
   suiteQLTableType: ObjectType,
   tableName: string,
   existingInstance: InstanceElement | undefined,
 ): InstanceElement =>
-  existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
+  isUpdatedExistingInstance(existingInstance)
     ? existingInstance
     : new InstanceElement(tableName, suiteQLTableType, { [INTERNAL_IDS_MAP]: {} }, undefined, {
         [CORE_ANNOTATIONS.HIDDEN]: true,
@@ -590,8 +594,7 @@ const getSuiteQLTableInstance = async (
   const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
 
-  const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
-  const lastFetchTimeForQuery = instance.value[VERSION_FIELD] === LATEST_VERSION ? lastFetchTime : undefined
+  const lastFetchTimeForQuery = isUpdatedExistingInstance(existingInstance) ? lastFetchTime : undefined
 
   // we always want to query employees, for _changed_by
   if (tableName !== EMPLOYEE) {
@@ -607,6 +610,7 @@ const getSuiteQLTableInstance = async (
     }
   }
 
+  const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
   Object.assign(
     instance.value[INTERNAL_IDS_MAP],
     await getInternalIdsMap(client, tableName, queryParams, lastFetchTimeForQuery),

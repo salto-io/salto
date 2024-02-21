@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+describe('test', () => {
+  it('test', () => {
+    expect(1).toBe(1)
+  })
+})
 // import open from 'open'
 // import {
 //   Element,

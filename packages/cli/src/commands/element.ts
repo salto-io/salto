@@ -494,6 +494,7 @@ const listUnresolvedDef = createWorkspaceCommand({
         description: 'Do not ask for approval before listing unresolved references',
         type: 'boolean',
         required: false,
+        default: false,
       },
       ENVIRONMENT_OPTION,
     ],

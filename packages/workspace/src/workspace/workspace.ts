@@ -233,7 +233,7 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<{ id: ElemID; type: ReferenceType }[]>
+  getElementOutgoingReferences: (id: ElemID, envName?: string, includeWeakReferences?: boolean) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
@@ -372,42 +372,41 @@ export const deserializeReferenceTree = async (data: string): Promise<ReferenceT
 }
 
 /*
-* Get reference dependecies for a given list of elemIDs within a workspace
-* filters out weak references and any elemIDs from elemIDsToSkip
+* List dependecies for a given list of elemIDs within a workspace in envToListFrom.
+* Filters out weak references and any elemIDs from elemIDsToSkip.
 */
-export const getReferenceTargetDependencies = async ({
-  ws,
-  elemIDs,
+export const listElementsDependenciesInWorkspace = async ({
+  workspace,
+  elemIDsToFind,
   elemIDsToSkip = [],
-  envName,
+  envToListFrom,
 }:{
-  ws: Workspace
-  elemIDs: ElemID[]
+  workspace: Workspace
+  elemIDsToFind: ElemID[]
   elemIDsToSkip?: ElemID[]
-  envName?: string
-}): Promise<{ completed: Record<string, ElemID[]>; missing: ElemID[] }> => {
-  const wsSearchableNames = new Set(await ws.getSearchableNamesOfEnv(envName))
+  envToListFrom?: string
+}): Promise<{ dependencies: Record<string, ElemID[]>; missing: ElemID[] }> => log.time(async () => {
+  const workspaceBaseLevelIds = new Set(await workspace.getSearchableNamesOfEnv(envToListFrom))
   const elemIdsToSkipSet = new Set(elemIDsToSkip.map(id => id.getFullName()))
-  const baseLevelIds = elemIDs.map(id => id.createBaseID().parent)
-  const [resolvedIds, missingIds] = _.partition(baseLevelIds, elemID => wsSearchableNames.has(elemID.getFullName()))
+  const baseLevelIds = elemIDsToFind.map(id => id.createBaseID().parent)
+  const [foundIds, missingIds] = _.partition(baseLevelIds, elemID => workspaceBaseLevelIds.has(elemID.getFullName()))
 
   const result: Record<string, ElemID[]> = {}
-  const stack = [...resolvedIds]
+  const stack = [...foundIds]
   const visited: Set<string> = new Set()
   while (stack.length > 0) {
     const currentId = stack.pop() as ElemID
     if (!visited.has(currentId.getFullName())) {
       visited.add(currentId.getFullName())
       // eslint-disable-next-line no-await-in-loop
-      const references = await ws.getElementOutgoingReferences(currentId, envName ?? ws.currentEnv())
+      const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
       const relevantElemIds = references
-        .filter(ref => ref.type !== 'weak')
         .map(ref => ref.id.createBaseID().parent)
         .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName()))
 
       const [resolvedRelevantIds, missingElemIds] = _.partition(
         relevantElemIds,
-        elemID => wsSearchableNames.has(elemID.getFullName())
+        elemID => workspaceBaseLevelIds.has(elemID.getFullName())
       )
       missingElemIds.forEach(id => missingIds.push(id))
       result[currentId.getFullName()] = resolvedRelevantIds
@@ -415,8 +414,8 @@ export const getReferenceTargetDependencies = async ({
     }
   }
 
-  return { completed: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
-}
+  return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
+}, 'List dependencies in workspace')
 
 type GetCustomReferencesFunc = (
   elements: Element[],
@@ -1171,25 +1170,6 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  const getElementOutgoingReferences = async (
-    id: ElemID, envName: string = currentEnv()
-  ): Promise<{ id: ElemID; type: ReferenceType }[]> => {
-    const baseId = id.createBaseID().parent.getFullName()
-    const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
-
-    if (referencesTree === undefined) {
-      return []
-    }
-
-    const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-    const references = idPath === ''
-    // Empty idPath means we are requesting the base level element, which includes all references
-      ? referencesTree.values()
-      : referencesTree.valuesWithPrefix(idPath)
-
-    return _.uniqBy(Array.from(references).flat(), ref => ref.id.getFullName())
-  }
-
   const ws: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1266,7 +1246,23 @@ export const loadWorkspace = async (
     ),
     getReferenceSourcesIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceSources,
-    getElementOutgoingReferences,
+    getElementOutgoingReferences: async (id, envName = currentEnv(), includeWeakReferences = true) => {
+      const baseId = id.createBaseID().parent.getFullName()
+      const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
+
+      if (referencesTree === undefined) {
+        return []
+      }
+
+      const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
+      const references = Array.from(idPath === ''
+      // Empty idPath means we are requesting the base level element, which includes all references
+        ? referencesTree.values()
+        : referencesTree.valuesWithPrefix(idPath)).flat()
+
+      const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
+      return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
+    },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
@@ -1533,14 +1529,14 @@ export const loadWorkspace = async (
         }
       }
 
-      const { completed, missing } = await getReferenceTargetDependencies({
-        ws,
-        elemIDs: unresolvedElemIDs,
+      const { dependencies, missing } = await listElementsDependenciesInWorkspace({
+        workspace: ws,
+        elemIDsToFind: unresolvedElemIDs,
         elemIDsToSkip: (await ws.getSearchableNames()).map(ElemID.fromFullName),
-        envName: completeFromEnv,
+        envToListFrom: completeFromEnv,
       })
-      const completedElemIds = _.uniq(Object.values(completed).flat().map(elemId => elemId.getFullName())
-        .concat(Object.keys(completed)))
+      const completedElemIds = _.uniq(Object.values(dependencies).flat().map(elemId => elemId.getFullName())
+        .concat(Object.keys(dependencies)))
       return {
         found: compact(completedElemIds.sort().map(ElemID.fromFullName)),
         missing: compact(_.sortBy(missing, id => id.getFullName())),

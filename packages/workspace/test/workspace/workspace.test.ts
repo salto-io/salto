@@ -66,7 +66,7 @@ import {
   isValidEnvName,
   serializeReferenceTree,
   deserializeReferenceTree,
-  getReferenceTargetDependencies,
+  listElementsDependenciesInWorkspace,
 } from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,
@@ -4934,7 +4934,7 @@ describe('nacl sources reuse', () => {
   })
 })
 
-describe('getReferenceTargetDependencies', () => {
+describe('listElementsDependenciesInWorkspace', () => {
   let workspace: Workspace
   const type1 = new ObjectType({
     elemID: new ElemID('salesforce', 'someType'),
@@ -5025,14 +5025,14 @@ describe('getReferenceTargetDependencies', () => {
   })
 
   it('should return the correct dependencies', async () => {
-    const res = await getReferenceTargetDependencies({
-      ws: workspace,
-      elemIDs: [initialInst.elemID],
+    const res = await listElementsDependenciesInWorkspace({
+      workspace,
+      elemIDsToFind: [initialInst.elemID],
       elemIDsToSkip: [instNoRefs.elemID],
-      envName: 'default',
+      envToListFrom: 'default',
     })
 
-    expect(res.completed).toEqual({
+    expect(res.dependencies).toEqual({
       [initialInst.elemID.getFullName()]: [instWithNestedPathRef.elemID],
       [instWithNestedPathRef.elemID.getFullName()]: [instWithRef.elemID],
       [instWithRef.elemID.getFullName()]: [instWithNestedPathRef.elemID, type1.elemID.createNestedID('field', 'c')],
@@ -5041,24 +5041,24 @@ describe('getReferenceTargetDependencies', () => {
     expect(res.missing).toEqual([])
   })
   it('should not include elemIDs from the list of elemIDs to ignore', async () => {
-    const res = await getReferenceTargetDependencies({
-      ws: workspace,
-      elemIDs: [initialInst.elemID],
+    const res = await listElementsDependenciesInWorkspace({
+      workspace,
+      elemIDsToFind: [initialInst.elemID],
       elemIDsToSkip: [instNoRefs.elemID, instWithRef.elemID],
-      envName: 'default',
+      envToListFrom: 'default',
     })
-    expect(res.completed).toEqual({
+    expect(res.dependencies).toEqual({
       [initialInst.elemID.getFullName()]: [instWithNestedPathRef.elemID],
       [instWithNestedPathRef.elemID.getFullName()]: [],
     })
   })
   it('should treat references to relative path as references to the baseID', async () => {
-    const res = await getReferenceTargetDependencies({
-      ws: workspace,
-      elemIDs: [instWithNestedPathRef.elemID.createNestedID('a', 'a')],
-      envName: 'default',
+    const res = await listElementsDependenciesInWorkspace({
+      workspace,
+      elemIDsToFind: [instWithNestedPathRef.elemID.createNestedID('a', 'a')],
+      envToListFrom: 'default',
     })
-    expect(res.completed).toEqual({
+    expect(res.dependencies).toEqual({
       [instWithNestedPathRef.elemID.getFullName()]: [instWithRef.elemID, instNoRefs.elemID],
       [instWithRef.elemID.getFullName()]: [instWithNestedPathRef.elemID, type1.elemID.createNestedID('field', 'c')],
       [instNoRefs.elemID.getFullName()]: [],
@@ -5069,11 +5069,11 @@ describe('getReferenceTargetDependencies', () => {
     const topLevelMissing = new ElemID('salesforce', 'someType', 'instance', 'missing')
     const nestedMissingElemId = new ElemID('salesforce', 'missingType', 'instance', 'misisng2')
     instWithNestedPathRef.value.a.a = new ReferenceExpression(nestedMissingElemId)
-    const res = await getReferenceTargetDependencies({
-      ws: workspace,
-      elemIDs: [initialInst.elemID, topLevelMissing],
+    const res = await listElementsDependenciesInWorkspace({
+      workspace,
+      elemIDsToFind: [initialInst.elemID, topLevelMissing],
       elemIDsToSkip: [instWithRef.elemID, instNoRefs.elemID],
-      envName: 'default',
+      envToListFrom: 'default',
     })
     expect(res.missing).toEqual([
       topLevelMissing,

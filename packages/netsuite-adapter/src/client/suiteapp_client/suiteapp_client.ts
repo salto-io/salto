@@ -181,6 +181,67 @@ export default class SuiteAppClient {
     this.setVersionFeaturesLock = new AsyncLock()
   }
 
+  private async runSuiteQLWithForLoop(query: string, initialOffset: number): Promise<Record<string, unknown>[]> {
+    log.debug('Running SuiteQL query using for loop: %s', query)
+    let hasMore = true
+    let items: Record<string, unknown>[] = []
+    for (let offset = initialOffset; hasMore; offset += PAGE_SIZE) {
+      // eslint-disable-next-line no-await-in-loop
+      const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
+      items = items.concat(results.items)
+      log.debug('SuiteQL query received %d/%d results: %s', offset + results.items.length, results.totalResults, query)
+      hasMore = results.hasMore
+    }
+    return items
+  }
+
+  private async runSuiteQLWithPromiseAll(
+    query: string,
+    initialOffset: number,
+    lastOffset: number,
+  ): Promise<Record<string, unknown>[]> {
+    log.debug('Running SuiteQL query using promise all: %s', query)
+    return Promise.all(
+      _.range(initialOffset, lastOffset + 1, PAGE_SIZE).map(async offset => {
+        const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
+        log.debug(
+          'SuiteQL query received %d/%d results: %s',
+          offset + results.items.length,
+          results.totalResults,
+          query,
+        )
+        if (offset === lastOffset && results.hasMore) {
+          log.warn('SuiteQL query reached the last page (offset: %d), but hasMore is true: %s', offset, query)
+        }
+        return results.items
+      }),
+    ).then(res => res.flat())
+  }
+
+  private async runFirstSuiteQLQuery(query: string): Promise<{
+    items: Record<string, unknown>[]
+    nextOffset?: number
+    lastOffset?: number
+  }> {
+    const results = await this.sendSuiteQLRequest(query, 0, PAGE_SIZE)
+    const nextOffset = results.hasMore ? PAGE_SIZE : undefined
+    const lastPageHref = results.links?.find(link => link.rel === 'last')?.href
+    const lastOffsetStr = lastPageHref !== undefined ? new URL(lastPageHref).searchParams.get('offset') : null
+    const lastOffset = lastOffsetStr !== null ? Number(lastOffsetStr) : undefined
+    log.debug('First SuiteQL query result: %o', {
+      query,
+      numOfItems: results.items.length,
+      totalResults: results.totalResults,
+      nextOffset,
+      lastOffset,
+    })
+    return {
+      items: results.items,
+      nextOffset,
+      lastOffset,
+    }
+  }
+
   /**
    * WARNING:
    * Due to a bug in NetSuite SuiteQL, make sure to use
@@ -197,34 +258,37 @@ export default class SuiteAppClient {
         `SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC/DESC, which can cause the response to not contain all the results`,
       )
     }
-    let hasMore = true
-    const items: Record<string, unknown>[] = []
-    for (let offset = 0; hasMore; offset += PAGE_SIZE) {
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
-        // For some reason, a "links" field with empty array is returned regardless
-        // to the SELECT values in the query.
-        items.push(...results.items.map(item => _.omit(item, ['links'])))
-        log.debug('SuiteQL query received %d/%d results', items.length, results.totalResults)
-        hasMore = results.hasMore
-      } catch (error) {
-        log.warn('SuiteQL query error - %s', query, { error })
-        if (error instanceof InvalidSuiteAppCredentialsError) {
-          throw error
-        }
-        if (axios.isAxiosError(error)) {
-          const errorDetailedMessage = getAxiosErrorDetailedMessage(error)
-          const matchingErrorKey = Object.keys(throwOnErrors).find(e => errorDetailedMessage?.includes(e))
-          if (matchingErrorKey !== undefined) {
-            throw new Error(throwOnErrors[matchingErrorKey])
-          }
-        }
-        return undefined
+    try {
+      const { items: firstPageItems, nextOffset, lastOffset } = await this.runFirstSuiteQLQuery(query)
+
+      if (nextOffset === undefined) {
+        log.debug('Finished running SuiteQL query with %d results: %s', firstPageItems.length, query)
+        return firstPageItems
       }
+
+      const restOfItems =
+        lastOffset !== undefined
+          ? await this.runSuiteQLWithPromiseAll(query, nextOffset, lastOffset)
+          : await this.runSuiteQLWithForLoop(query, nextOffset)
+
+      const items = firstPageItems.concat(restOfItems)
+      log.debug('Finished running SuiteQL query with %d results: %s', items.length, query)
+
+      return items
+    } catch (error) {
+      log.warn('SuiteQL query error - %s', query, { error })
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
+      if (axios.isAxiosError(error)) {
+        const errorDetailedMessage = getAxiosErrorDetailedMessage(error)
+        const matchingErrorKey = Object.keys(throwOnErrors).find(e => errorDetailedMessage?.includes(e))
+        if (matchingErrorKey !== undefined) {
+          throw new Error(throwOnErrors[matchingErrorKey])
+        }
+      }
+      return undefined
     }
-    log.debug('Finished running SuiteQL query with %d results: %s', items.length, query)
-    return items
   }
 
   public async runSavedSearchQuery(
@@ -495,7 +559,11 @@ export default class SuiteAppClient {
       throw new RetryableError(new Error('Invalid SuiteQL query result'))
     }
 
-    return response.data
+    return {
+      ...response.data,
+      // For some reason, a "links" field with empty array is returned regardless to the SELECT values in the query.
+      items: response.data.items.map(item => _.omit(item, ['links'])),
+    }
   }
 
   async isFeatureSupported(featureName: keyof VersionFeatures): Promise<boolean> {

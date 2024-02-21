@@ -93,7 +93,8 @@ describe('SuiteAppClient', () => {
         })
       })
 
-      it('should return all pages', async () => {
+      it('should return all pages using for loop', async () => {
+        const forLoopFunctionSpyOn = jest.spyOn(client, 'runSuiteQLWithForLoop' as keyof SuiteAppClient)
         const range = _.range(1500)
         const items = range.map(i => ({ i }))
         const chunks = range.filter(i => i % PAGE_SIZE === 0)
@@ -116,6 +117,48 @@ describe('SuiteAppClient', () => {
         expect(requests[1].url).toEqual(
           'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=1000',
         )
+        expect(forLoopFunctionSpyOn).toHaveBeenCalled()
+      })
+
+      it('should return all pages using promise all', async () => {
+        const promiseAllFunctionSpyOn = jest.spyOn(client, 'runSuiteQLWithPromiseAll' as keyof SuiteAppClient)
+        const range = _.range(1500)
+        const items = range.map(i => ({ i }))
+        const chunks = range.filter(i => i % PAGE_SIZE === 0)
+
+        chunks.forEach(offset => {
+          mockAxiosAdapter.onPost(new RegExp(`.*limit=${PAGE_SIZE}.*offset=${offset}`)).reply(200, {
+            hasMore: offset + PAGE_SIZE < items.length,
+            items: items.slice(offset, offset + PAGE_SIZE).map(item => ({ ...item, links: [] })),
+            links: [
+              {
+                rel: 'next',
+                href: `https://ACCOUNT_ID.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=${PAGE_SIZE}&offset=${offset + PAGE_SIZE}`,
+              },
+              {
+                rel: 'last',
+                href: `https://ACCOUNT_ID.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=${PAGE_SIZE}&offset=${(chunks.length - 1) * PAGE_SIZE}`,
+              },
+              {
+                rel: 'self',
+                href: `https://ACCOUNT_ID.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=${PAGE_SIZE}&offset=${offset}`,
+              },
+            ],
+          })
+        })
+
+        const results = await client.runSuiteQL('query')
+
+        expect(results).toEqual(items)
+        expect(mockAxiosAdapter.history.post.length).toBe(2)
+        const requests = mockAxiosAdapter.history.post
+        expect(requests[0].url).toEqual(
+          'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
+        )
+        expect(requests[1].url).toEqual(
+          'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=1000',
+        )
+        expect(promiseAllFunctionSpyOn).toHaveBeenCalled()
       })
 
       it('should throw InvalidSuiteAppCredentialsError', async () => {

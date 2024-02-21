@@ -1089,7 +1089,6 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('when one component fails and others succeed', () => {
-      let deployResultParams: Parameters<typeof mockDeployResult>[0]
       let successElement: InstanceElement
       let failureElement: InstanceElement
       let deployChangeGroup: ChangeGroup
@@ -1107,23 +1106,6 @@ describe('SalesforceAdapter CRUD', () => {
           mockTypes.ApexClass,
         )
 
-        deployResultParams = {
-          success: false,
-          componentSuccess: [
-            {
-              fullName: apiNameSync(successElement),
-              componentType: metadataTypeSync(successElement),
-            },
-          ],
-          componentFailure: [
-            {
-              fullName: apiNameSync(failureElement),
-              componentType: metadataTypeSync(failureElement),
-              problem: 'Failed to deploy',
-            },
-          ],
-        }
-
         deployChangeGroup = {
           groupID: 'ChangeGroup',
           changes: [
@@ -1135,6 +1117,22 @@ describe('SalesforceAdapter CRUD', () => {
       describe('with rollback on error', () => {
         let result: DeployResult
         beforeEach(async () => {
+          const deployResultParams = {
+            success: false,
+            componentSuccess: [
+              {
+                fullName: apiNameSync(successElement),
+                componentType: metadataTypeSync(successElement),
+              },
+            ],
+            componentFailure: [
+              {
+                fullName: apiNameSync(failureElement),
+                componentType: metadataTypeSync(failureElement),
+                problem: 'Failed to deploy',
+              },
+            ],
+          }
           connection.metadata.deploy.mockReturnValue(
             mockDeployResult({
               ...deployResultParams,
@@ -1162,6 +1160,47 @@ describe('SalesforceAdapter CRUD', () => {
         })
         it('should have no applied changes', () => {
           expect(result.appliedChanges).toBeEmpty()
+        })
+      })
+      describe('when the successful element has warnings', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          const deployResultParams = {
+            success: false,
+            componentSuccess: [
+              {
+                fullName: apiNameSync(successElement),
+                componentType: metadataTypeSync(successElement),
+                problem: 'Something happened',
+                problemType: 'Info',
+              },
+            ],
+            componentFailure: [
+              {
+                fullName: apiNameSync(failureElement),
+                componentType: metadataTypeSync(failureElement),
+                problem: 'Failed to deploy',
+              },
+            ],
+          }
+          connection.metadata.deploy.mockReturnValue(
+            mockDeployResult({
+              ...deployResultParams,
+              rollbackOnError: true,
+            }),
+          )
+          result = await adapter.deploy({
+            changeGroup: deployChangeGroup,
+            progressReporter: nullProgressReporter,
+          })
+        })
+        it('Should return the warnings from successful components', () => {
+          expect(result.errors).toSatisfyAny(
+            (error) =>
+              error.elemID.isEqual(successElement.elemID) &&
+              error.severity === 'Info' &&
+              error.message === 'Something happened',
+          )
         })
       })
     })

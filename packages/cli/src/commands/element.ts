@@ -29,6 +29,7 @@ import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -729,6 +730,20 @@ export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = asyn
     const outputStr = input.onlyValue ? dumpedValue : `${id.getFullName()}: ${dumpedValue}`
     outputLine(outputStr, output)
   })
+
+  const entries: { id: string; changedBy?: string; changedAt?: string }[] = []
+  await awu(await workspace.getSearchableNamesOfEnv())
+    .map(ElemID.fromFullName)
+    .filter(id => id.isBaseID())
+    .forEach(async id => {
+      const { changedBy, changedAt } = await workspace.getElementAuthorInformation(id)
+      if (changedBy || changedAt) {
+        entries.push({ id: id.getFullName(), changedBy, changedAt })
+      }
+    })
+
+  outputLine(safeJsonStringify(entries), output)
+
   return CliExitCode.Success
 }
 

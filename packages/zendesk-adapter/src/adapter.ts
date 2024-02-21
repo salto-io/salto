@@ -75,7 +75,7 @@ import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
-  GUIDE_THEME_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME, LOCALE_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -888,7 +888,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           BRAND_LOGO_TYPE_NAME,
           CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
         ],
-        // article_attachment and guide themes additions supported in a filter
+        // article_attachment, guide themes additions, and locales are supported in a filter
         typesWithNoDeploy: [
           'tag',
           ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -897,6 +897,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           ...GUIDE_ORDER_TYPES,
           DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
           CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
+          LOCALE_TYPE_NAME,
         ],
       }),
       dependencyChanger,

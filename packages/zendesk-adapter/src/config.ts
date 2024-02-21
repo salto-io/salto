@@ -595,7 +595,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'locales__locales',
       idFields: ['locale'],
       fileNameFields: ['locale'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE, // no need to hide id as consistent across envs
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -1277,6 +1277,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         method: 'put',
         deployAsField: 'settings',
       },
+    },
+  },
+  account_setting__localization: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'locale_ids' }),
     },
   },
   resource_collection: {

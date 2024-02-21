@@ -23,9 +23,9 @@ import { CURRENCY_CODE_TYPE_NAME } from '../constants'
 
 const createCurrencyIsoCodeError = (element: Element): ChangeError => ({
   elemID: element.elemID,
-  message: "The list of supported currency codes can't be changed via Salto.",
+  message: "The list of currency codes can't be changed via Salto.",
   detailedMessage:
-    'To add or remove supported currency codes, follow the instructions at https://help.salesforce.com/s/articleView?id=sf.admin_currency.htm',
+    'To add or remove currency codes, follow the instructions at https://help.salesforce.com/s/articleView?id=sf.admin_currency.htm',
   severity: 'Error',
 })
 

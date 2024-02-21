@@ -18,8 +18,11 @@ import { FixElementsFunc } from '@salto-io/adapter-api'
 import { customReferenceHandlers } from '../custom_references'
 import { fallbackUsersHandler } from './fallback_user'
 import { FixElementsArgs } from './types'
+import { removeDupUsersFromUserSegmentHandler } from './remove_dup_users_from_user_segment'
 
 export const createFixElementFunctions = (args: FixElementsArgs): FixElementsFunc[] => [
   ...Object.values(customReferenceHandlers).map(handler => handler.removeWeakReferences(args)),
   fallbackUsersHandler(args),
+  // removingDupes needs to be after fallbackUsers
+  removeDupUsersFromUserSegmentHandler(args)
 ]

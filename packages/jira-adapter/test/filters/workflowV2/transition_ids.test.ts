@@ -48,9 +48,10 @@ describe('transition ids filter', () => {
 
     it('should remain existing transition ids and add new ids correctly', async () => {
       instance.value.transitions.transition1.id = '18'
+      instance.value.transitions.transition3.id = '20'
       await filter.preDeploy([toChange({ after: instance })])
       expect(instance.value.transitions.transition1.id).toBe('18')
-      expect(instance.value.transitions.transition2.id).toBe('19')
+      expect(instance.value.transitions.transition2.id).toBe('21')
       expect(instance.value.transitions.transition3.id).toBe('20')
     })
 

@@ -186,6 +186,7 @@ const createWorkflowInstances = async ({
             errors.push(workflowFetchError('Workflow id is missing'))
             return undefined
           }
+          // convert transition list to map
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)

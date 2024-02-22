@@ -24,8 +24,7 @@ const getMaxTransitionId = (workflowInstance: WorkflowV2Instance): number =>
   )
 
 const addTransitionIds = (workflowInstance: WorkflowV2Instance): void => {
-  let maxTransitionId = 0
-  maxTransitionId = getMaxTransitionId(workflowInstance)
+  let maxTransitionId = getMaxTransitionId(workflowInstance)
   Object.values(workflowInstance.value.transitions).forEach(transition => {
     if (transition.id === undefined) {
       transition.id = _.toString(maxTransitionId + 1)

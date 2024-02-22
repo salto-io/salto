@@ -36,6 +36,8 @@ import {
   WALK_NEXT_STEP,
   resolvePath,
   createTemplateExpression,
+  getParent,
+  hasValidParent,
 } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -52,6 +54,7 @@ import {
 } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 import { NameMappingOptions } from '../definitions'
+import { toNestedTypeName } from '../fetch/element'
 
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable
@@ -126,6 +129,36 @@ const getInstanceNameDependencies = (
   return referencedInstances
 }
 
+const isStandalone = (instance: InstanceElement, configByType: Record<string, TransformationConfig>): boolean => {
+  const parentElemID = getFirstParentElemId(instance)
+  if (parentElemID === undefined) {
+    return false
+  }
+  const { standaloneFields, nestStandaloneInstances } = configByType[parentElemID.typeName]
+  return (
+    (nestStandaloneInstances &&
+      standaloneFields?.some(
+        field =>
+          toNestedTypeName(parentElemID.name, field.fieldName) === instance.elemID.typeName ||
+          field.fieldName === instance.elemID.typeName,
+      )) ??
+    false
+  )
+}
+
+const nestedPath = (
+  instance: InstanceElement,
+  configByType: Record<string, TransformationConfig>,
+): string[] | undefined => {
+  if (!isStandalone(instance, configByType || !hasValidParent(instance))) {
+    return undefined
+  }
+  const parent = getParent(instance)
+  const fieldName = instance.elemID.typeName.split('__').pop() ?? instance.elemID.typeName
+  // Remove adapter, Records and the parent instance type name
+  return [...(parent.path?.slice(2, parent.path.length - 1) ?? []), fieldName]
+}
+
 /* Calculates the new instance name and file path */
 const createInstanceNameAndFilePath = (
   instance: InstanceElement,
@@ -138,7 +171,7 @@ const createInstanceNameAndFilePath = (
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
   const parentName = idConfig.extendsParentId ? getFirstParentElemId(instance)?.name : undefined
   const { typeName, adapter } = instance.elemID
-  const { fileNameFields, serviceIdField } = configByType[typeName]
+  const { fileNameFields, serviceIdField, nestStandaloneInstances, standaloneFields } = configByType[typeName]
 
   const newNaclName = getInstanceNaclName({
     entry: instance.value,
@@ -158,6 +191,8 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
+    nestedPaths: nestedPath(instance, configByType),
+    hasNestStandAloneFields: nestStandaloneInstances && standaloneFields !== undefined,
   })
   return { newNaclName, filePath }
 }

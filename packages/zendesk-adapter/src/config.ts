@@ -2589,6 +2589,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['key'],
       extendsParentId: true,
+      standaloneFields: [{ fieldName: 'custom_field_options' }],
       sourceTypeName: 'custom_object__custom_object_fields',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat(

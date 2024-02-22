@@ -32,11 +32,11 @@ import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 const { isDefined } = values
 const { awu } = collections.asynciterable
 const log = logger(module)
-const SHARING_RULES_API_NAMES = [
+export const SHARING_RULES_API_NAMES = [
   'SharingCriteriaRule',
   'SharingGuestRule',
   'SharingOwnerRule',
-]
+] as const
 
 const isSharingRulesInstance = isInstanceOfType(SHARING_RULES_TYPE)
 const getRuleObjectName = (fileProperties: FileProperties): string =>

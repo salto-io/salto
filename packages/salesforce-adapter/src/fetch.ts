@@ -141,22 +141,13 @@ export const notInSkipList = (
   file: FileProperties,
   isFolderType: boolean,
 ): boolean =>
-  isFolderType
-    ? // We should always list folders, even if they were not modified.
-      metadataQuery.isInstanceIncluded({
-        namespace: getNamespace(file),
-        metadataType: file.type,
-        name: file.fullName,
-        isFolderType,
-        changedAt: file.lastModifiedDate,
-      })
-    : metadataQuery.isInstanceMatch({
-        namespace: getNamespace(file),
-        metadataType: file.type,
-        name: file.fullName,
-        isFolderType,
-        changedAt: file.lastModifiedDate,
-      })
+  metadataQuery.isInstanceMatch({
+    namespace: getNamespace(file),
+    metadataType: file.type,
+    name: file.fullName,
+    isFolderType,
+    changedAt: file.lastModifiedDate,
+  })
 
 const listMetadataObjectsWithinFolders = async (
   client: SalesforceClient,
@@ -551,7 +542,6 @@ export const retrieveMetadataInstances = async ({
     ),
   )
   const filesToRetrieve = getFilesToRetrieve(allProps)
-
   const [profileFiles, nonProfileFiles] = _.partition(
     filesToRetrieve,
     (file) => file.type === PROFILE_METADATA_TYPE,

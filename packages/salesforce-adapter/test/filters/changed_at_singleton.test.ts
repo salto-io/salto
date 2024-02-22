@@ -22,6 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { LastChangeDateOfTypesWithNestedInstances } from '../../src/types'
 import { mockInstances, mockTypes } from '../mock_elements'
 import filterCreator from '../../src/filters/changed_at_singleton'
 import {
@@ -31,10 +32,24 @@ import {
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
-import { defaultFilterContext } from '../utils'
+import {
+  defaultFilterContext,
+  emptyLastChangeDateOfTypesWithNestedInstances,
+} from '../utils'
 import { FilterWith } from './mocks'
 
 describe('createChangedAtSingletonInstanceFilter', () => {
+  let lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
+  beforeEach(() => {
+    lastChangeDateOfTypesWithNestedInstances = {
+      ...emptyLastChangeDateOfTypesWithNestedInstances(),
+      // Make sure we filter out CustomLabels when none exist in the workspace
+      CustomLabels: undefined,
+      [CUSTOM_OBJECT]: {
+        SBQQ__Template__c: '2023-03-01T00:00:00.000Z',
+      },
+    }
+  })
   describe('onFetch', () => {
     const CHANGED_AT = '2023-03-28T00:00:00.000Z'
     describe('when ChangedAtSingleton instance exists in the elementsSource', () => {
@@ -72,6 +87,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
             elementsSource: buildElementsSourceFromElements([
               changedAtSingleton,
             ]),
+            lastChangeDateOfTypesWithNestedInstances,
           },
         }) as FilterWith<'onFetch'>
         fetchedElements = [updatedInstance]
@@ -93,7 +109,10 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           [updatedInstanceTypeName, updatedInstanceName],
           CHANGED_AT,
         )
-        expect(changedAtSingleton.value).toEqual(expectedValues)
+        expect(changedAtSingleton.value).toEqual({
+          ...lastChangeDateOfTypesWithNestedInstances,
+          ...expectedValues,
+        })
       })
     })
     describe('when ChangedAtSingleton instance does not exist in the elementsSource', () => {
@@ -128,7 +147,10 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         )
 
         const filter = filterCreator({
-          config: defaultFilterContext,
+          config: {
+            ...defaultFilterContext,
+            lastChangeDateOfTypesWithNestedInstances,
+          },
         }) as FilterWith<'onFetch'>
         fetchedElements = [metadataInstance, customObject, dataInstance]
         await filter.onFetch(fetchedElements)
@@ -139,11 +161,9 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           .find((e) => e.elemID.typeName === CHANGED_AT_SINGLETON)
         expect(changedAtSingleton).toBeDefined()
         expect(changedAtSingleton?.value).toEqual({
+          ..._.omit(lastChangeDateOfTypesWithNestedInstances, 'CustomLabels'),
           [updatedInstanceTypeName]: {
             [updatedInstanceName]: CHANGED_AT,
-          },
-          [CUSTOM_OBJECT]: {
-            SBQQ__Template__c: CHANGED_AT,
           },
           [DATA_INSTANCES_CHANGED_AT_MAGIC]: {
             SBQQ__Template__c: CHANGED_AT,

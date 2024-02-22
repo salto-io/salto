@@ -18,12 +18,11 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
+import { UNIX_TIME_ZERO_STRING } from '../constants'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-
-const UNIX_TIME_ZERO_STRING = '1970-01-01T00:00:00.000Z'
 
 const removeUnixTimeZero = async (elements: Element[]): Promise<void> => {
   await awu(elements)

@@ -31,7 +31,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   addDefaults,
   toListType,
-  getChangedAtSingleton,
+  getChangedAtSingletonInstance,
   getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
@@ -54,6 +54,7 @@ import {
   isInstanceOfCustomObjectSync,
   isInstanceOfCustomObjectChangeSync,
   aliasOrElemID,
+  getMostRecentFileProperties,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -65,6 +66,7 @@ import {
   METADATA_TYPE,
   SALESFORCE,
   STATUS,
+  UNIX_TIME_ZERO_STRING,
 } from '../../src/constants'
 import {
   createInstanceElement,
@@ -456,7 +458,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([changedAtSingleton])
       })
       it('should return the singleton', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toEqual(
+        expect(await getChangedAtSingletonInstance(elementsSource)).toEqual(
           changedAtSingleton,
         )
       })
@@ -467,7 +469,9 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([])
       })
       it('should return undefined', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toBeUndefined()
+        expect(
+          await getChangedAtSingletonInstance(elementsSource),
+        ).toBeUndefined()
       })
     })
   })
@@ -1018,6 +1022,53 @@ describe('filter utils', () => {
       expect(aliasOrElemID(instanceWithoutAlias)).toEqual(
         instanceWithoutAlias.elemID.getFullName(),
       )
+    })
+  })
+  describe('getMostRecentFileProperties', () => {
+    it('should return the most recent file properties', () => {
+      const mostRecentProps = mockFileProperties({
+        type: CUSTOM_OBJECT,
+        fullName: 'Test3__c',
+        lastModifiedDate: '2023-11-03T16:28:30.000Z',
+      })
+      const fileProperties = [
+        mockFileProperties({
+          type: CUSTOM_OBJECT,
+          fullName: 'Test__c',
+          lastModifiedDate: '2023-11-01T16:28:30.000Z',
+        }),
+        mockFileProperties({
+          type: CUSTOM_OBJECT,
+          fullName: 'Test2__c',
+          lastModifiedDate: '2023-11-02T16:28:30.000Z',
+        }),
+      ].concat(mostRecentProps)
+      expect(getMostRecentFileProperties(fileProperties)).toEqual(
+        mostRecentProps,
+      )
+    })
+    it('should return undefined for empty array', () => {
+      expect(getMostRecentFileProperties([])).toBeUndefined()
+    })
+    it('should return undefined if all fileProps are with undefined empty, or unix time zero lastModifiedDate', () => {
+      const fileProperties = [
+        mockFileProperties({
+          type: CUSTOM_OBJECT,
+          fullName: 'Test__c',
+          lastModifiedDate: undefined,
+        }),
+        mockFileProperties({
+          type: CUSTOM_OBJECT,
+          fullName: 'Test2__c',
+          lastModifiedDate: '',
+        }),
+        mockFileProperties({
+          type: CUSTOM_OBJECT,
+          fullName: 'Test2__c',
+          lastModifiedDate: UNIX_TIME_ZERO_STRING,
+        }),
+      ]
+      expect(getMostRecentFileProperties(fileProperties)).toBeUndefined()
     })
   })
 })

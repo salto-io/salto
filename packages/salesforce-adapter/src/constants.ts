@@ -25,6 +25,8 @@ import {
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
+export const UNIX_TIME_ZERO_STRING = '1970-01-01T00:00:00.000Z'
+
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
@@ -411,6 +413,12 @@ export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
 export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE =
   'GlobalValueSetTranslation'
+export const ASSIGNMENT_RULE_METADATA_TYPE = 'AssignmentRule'
+export const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
+export const AUTO_RESPONSE_RULE_METADATA_TYPE = 'AutoResponseRule'
+export const SHARING_RULE_METADATA_TYPE = 'SharingRuleMetadataType'
+export const ESCALATION_RULES_TYPE = 'EscalationRules'
+export const ESCALATION_RULE_TYPE = 'EscalationRule'
 
 // Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
@@ -630,3 +638,24 @@ export const SalesforceArtifacts = {
   DeployPackageXml: 'package.xml',
   PostDeployRetrieveZip: 'post-deploy-retrieve.zip',
 } as const
+
+// Since the adapter relies on lists in some scenarios (e.g. deletions in partial fetch)
+// Elements that are not listed should be ignored from such flows.
+export const NON_LISTED_ELEMENT_IDS = [
+  // This RecordType is not presented when listing RecordTypes,
+  // but returns as sub-instance of the CustomObject Idea.
+  'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
+]
+
+export const TYPES_WITH_NESTED_INSTANCES = [
+  CUSTOM_LABELS_METADATA_TYPE,
+] as const
+
+export const TYPES_WITH_NESTED_INSTANCES_PER_PARENT = [
+  CUSTOM_OBJECT,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  AUTO_RESPONSE_RULES_METADATA_TYPE,
+  SHARING_RULES_TYPE,
+  ESCALATION_RULES_TYPE,
+  WORKFLOW_METADATA_TYPE,
+] as const

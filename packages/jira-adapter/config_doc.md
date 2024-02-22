@@ -86,17 +86,17 @@ jira {
 
 ## Fetch configuration options
 
-| Name                           | Default when undefined | Description                                                                                                                                                                 |
+| Name                           | Default when undefined | Description                                                                                                            |
 | ------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| fallbackToInternalId           | false                  | In case of duplicate IDs, instead of omitting the elements, create them with IDs that contain their internal IDs. This ensures elements are recognized across environments. |
+| fallbackToInternalId           | false                  | If enabled, elements with duplicate IDs will be created using their internal IDs, resulting in these elements not being recognized across environments.environments. |
 | addTypeToFieldName             | false                  | When enabled, the Field ID will include its type alongside its name, enhancing the specificity of field identifications.                                                    |
 | parseTemplateExpressions       | true                   | If disabled, JQLs will not be parsed for references. This exists for performance optimization, though significant delays have not been reported.                            |
 | addAlias                       | false                  | Adds aliases to the instances, facilitating easier reference and management of instances.                                                                                   |
 | splitFieldConfiguration        | false                  | Splits the FieldConfiguration elements into the field configuration and the various fields, with each getting its own item.                                                 |
 | enableMissingReferences        | false                  | Allows deployment of elements with missing references, supporting more flexible deployment scenarios.                                                                       |
-| enableIssueLayouts             | true                   | Fetches the type `issueLayouts`. Note: This feature is deprecated and is scheduled for removal.                                                                             |
-| enableScriptRunnerAddon        | false                  | Configure enabling the addition of metadata elements for the scriptrunneraddon                                                                                              |
-| enableJSM                      | false                  | Configure enabling the addition of metadata elements for JIRA service managment                                                                                             |
+| enableIssueLayouts             | true                   | Fetches the type `issueLayouts`. Note: This flag is deprecated and is scheduled for removal.                                                                             |
+| enableScriptRunnerAddon        | false                  | Enabling the addition of metadata elements for the scriptrunneraddon                                                                                              |
+| enableJSM                      | false                  | Enabling the addition of metadata elements for JSM|
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [include](#fetch-entry-options) | [{ type = ".*" }]      | List of entries to determine what instances to include in the fetch                                               |

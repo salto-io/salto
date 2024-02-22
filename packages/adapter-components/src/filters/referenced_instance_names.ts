@@ -152,6 +152,7 @@ const nestedPath = (
   if (!isStandalone(instance, configByType)) {
     return undefined
   }
+  // When the instance is a standalone instance, we already checked for the parent's existence
   const parent = getParent(instance)
   const fieldName = instance.elemID.typeName.split('__').pop() ?? instance.elemID.typeName
   // Remove adapter, Records and the parent instance type name
@@ -427,17 +428,17 @@ export const referencedInstanceNamesFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void,
->(
+  >(
   customApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> =
   customApiDefinitions =>
-  ({ config, getElemIdFunc }) => ({
-    name: 'referencedInstanceNames',
-    onFetch: async (elements: Element[]) => {
-      const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
-      const transformationDefault = apiDefinitions.typeDefaults.transformation
-      const configByType = apiDefinitions.types
-      const transformationByType = getTransformationConfigByType(configByType)
-      await addReferencesToInstanceNames(elements, transformationByType, transformationDefault, getElemIdFunc)
-    },
-  })
+    ({ config, getElemIdFunc }) => ({
+      name: 'referencedInstanceNames',
+      onFetch: async (elements: Element[]) => {
+        const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
+        const transformationDefault = apiDefinitions.typeDefaults.transformation
+        const configByType = apiDefinitions.types
+        const transformationByType = getTransformationConfigByType(configByType)
+        await addReferencesToInstanceNames(elements, transformationByType, transformationDefault, getElemIdFunc)
+      },
+    })

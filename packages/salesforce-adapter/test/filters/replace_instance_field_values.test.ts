@@ -1,25 +1,40 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, Change, ChangeDataType, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  ElemID,
+  ObjectType,
+  InstanceElement,
+  isInstanceElement,
+  Change,
+  ChangeDataType,
+  BuiltinTypes,
+  ListType,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator from '../../src/filters/replace_instance_field_values'
 import {
-  SALESFORCE, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
-  CUSTOM_OBJECT, INTERNAL_ID_FIELD, CUSTOM_FIELD, API_NAME,
+  SALESFORCE,
+  METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  CUSTOM_OBJECT,
+  INTERNAL_ID_FIELD,
+  CUSTOM_FIELD,
+  API_NAME,
 } from '../../src/constants'
 import { metadataType } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
@@ -86,21 +101,23 @@ const opportunityListFieldsLabelMappingType = new ObjectType({
   },
 })
 
-const forecastingTypeSettingsType = new ListType(new ObjectType({
-  annotations: { [METADATA_TYPE]: 'ForecastingTypeSettings' },
-  elemID: new ElemID(SALESFORCE, 'ForecastingTypeSettings'),
-  fields: {
-    opportunityListFieldsSelectedSettings: {
-      refType: opportunityListFieldsSelectedSettingsType,
+const forecastingTypeSettingsType = new ListType(
+  new ObjectType({
+    annotations: { [METADATA_TYPE]: 'ForecastingTypeSettings' },
+    elemID: new ElemID(SALESFORCE, 'ForecastingTypeSettings'),
+    fields: {
+      opportunityListFieldsSelectedSettings: {
+        refType: opportunityListFieldsSelectedSettingsType,
+      },
+      opportunityListFieldsUnselectedSettings: {
+        refType: opportunityListFieldsUnselectedSettingsType,
+      },
+      opportunityListFieldsLabelMappings: {
+        refType: new ListType(opportunityListFieldsLabelMappingType),
+      },
     },
-    opportunityListFieldsUnselectedSettings: {
-      refType: opportunityListFieldsUnselectedSettingsType,
-    },
-    opportunityListFieldsLabelMappings: {
-      refType: new ListType(opportunityListFieldsLabelMappingType),
-    },
-  },
-}))
+  }),
+)
 
 const types: Record<string, ObjectType> = {
   [FORECASTING_METADATA_TYPE]: new ObjectType({
@@ -115,14 +132,12 @@ const types: Record<string, ObjectType> = {
   [CUSTOM_OBJECT]: new ObjectType({
     annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
     elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
-    fields: {
-    },
+    fields: {},
   }),
   [CUSTOM_FIELD]: new ObjectType({
     annotations: { [METADATA_TYPE]: CUSTOM_FIELD },
     elemID: new ElemID(SALESFORCE, CUSTOM_FIELD),
-    fields: {
-    },
+    fields: {},
   }),
 }
 
@@ -133,76 +148,64 @@ describe('replace instance field values filter', () => {
   let forecastingElementWithIDs: InstanceElement
   let forecastingElementWithNames: InstanceElement
 
-
-  const createForecastingElement = (withIDs: boolean): InstanceElement => (
-    new InstanceElement(
-      'Forecasting',
-      types[FORECASTING_METADATA_TYPE],
-      {
-        [INSTANCE_FULL_NAME_FIELD]: 'Forecasting',
-        forecastingTypeSettings: [
-          {
-            opportunityListFieldsSelectedSettings: {
-              field: [
-                NON_ID_NAME_1,
-              ],
-            },
-            opportunityListFieldsUnselectedSettings: {
-              field: [
-                NON_ID_NAME_2,
-              ],
-            },
-            opportunityListFieldsLabelMappings: [
-              {
-                field: NON_ID_NAME_1,
-                label: '',
-              },
-              {
-                field: NON_ID_NAME_2,
-                label: '',
-              },
-            ],
+  const createForecastingElement = (withIDs: boolean): InstanceElement =>
+    new InstanceElement('Forecasting', types[FORECASTING_METADATA_TYPE], {
+      [INSTANCE_FULL_NAME_FIELD]: 'Forecasting',
+      forecastingTypeSettings: [
+        {
+          opportunityListFieldsSelectedSettings: {
+            field: [NON_ID_NAME_1],
           },
-          {
-            opportunityListFieldsSelectedSettings: {
-              field: [
-                withIDs ? BEFORE_ID_1 : AFTER_ID_1,
-              ],
-            },
-            opportunityListFieldsUnselectedSettings: {
-              field: [
-                withIDs ? BEFORE_ID_2 : AFTER_ID_2,
-              ],
-            },
-            opportunityListFieldsLabelMappings: [
-              {
-                field: withIDs ? BEFORE_ID_1 : AFTER_ID_1,
-                label: '',
-              },
-              {
-                field: withIDs ? BEFORE_ID_2 : AFTER_ID_2,
-                label: '',
-              },
-            ],
+          opportunityListFieldsUnselectedSettings: {
+            field: [NON_ID_NAME_2],
           },
-        ],
-      },
-    )
-  )
+          opportunityListFieldsLabelMappings: [
+            {
+              field: NON_ID_NAME_1,
+              label: '',
+            },
+            {
+              field: NON_ID_NAME_2,
+              label: '',
+            },
+          ],
+        },
+        {
+          opportunityListFieldsSelectedSettings: {
+            field: [withIDs ? BEFORE_ID_1 : AFTER_ID_1],
+          },
+          opportunityListFieldsUnselectedSettings: {
+            field: [withIDs ? BEFORE_ID_2 : AFTER_ID_2],
+          },
+          opportunityListFieldsLabelMappings: [
+            {
+              field: withIDs ? BEFORE_ID_1 : AFTER_ID_1,
+              label: '',
+            },
+            {
+              field: withIDs ? BEFORE_ID_2 : AFTER_ID_2,
+              label: '',
+            },
+          ],
+        },
+      ],
+    })
 
-
-  const getAllNamesFromForecastingValue = (forecastValue: ForecastingSettingsValue): string[] => {
+  const getAllNamesFromForecastingValue = (
+    forecastValue: ForecastingSettingsValue,
+  ): string[] => {
     const res: string[] = []
-    forecastValue.forecastingTypeSettings
-      .forEach(t => {
-        const additionalNames = [...t.opportunityListFieldsSelectedSettings.field,
-          // opportunityListFieldsUnselectedSettings might be undefined due to value modification
-          ...(t.opportunityListFieldsUnselectedSettings?.field ?? [])]
-        additionalNames.forEach(name => res.push(name))
-        t.opportunityListFieldsLabelMappings.forEach(map => {
-          res.push(map.field)
-        })
+    forecastValue.forecastingTypeSettings.forEach((t) => {
+      const additionalNames = [
+        ...t.opportunityListFieldsSelectedSettings.field,
+        // opportunityListFieldsUnselectedSettings might be undefined due to value modification
+        ...(t.opportunityListFieldsUnselectedSettings?.field ?? []),
+      ]
+      additionalNames.forEach((name) => res.push(name))
+      t.opportunityListFieldsLabelMappings.forEach((map) => {
+        res.push(map.field)
       })
+    })
     return res
   }
 
@@ -225,26 +228,26 @@ describe('replace instance field values filter', () => {
           },
         },
       },
-      annotations: { [METADATA_TYPE]: CUSTOM_OBJECT, [API_NAME]: 'Opportunity' },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [API_NAME]: 'Opportunity',
+      },
     })
 
     const instances = [
       forecastingElementWithIDs,
-      new InstanceElement(
-        'notForecasting',
-        types[CUSTOM_OBJECT],
-        {
-          standard: 'aaa',
-          custom: 'bbb',
-          [INSTANCE_FULL_NAME_FIELD]: 'unknownInst',
-        },
-      ),
+      new InstanceElement('notForecasting', types[CUSTOM_OBJECT], {
+        standard: 'aaa',
+        custom: 'bbb',
+        [INSTANCE_FULL_NAME_FIELD]: 'unknownInst',
+      }),
       opportunityType,
     ]
     return [
       types[FORECASTING_METADATA_TYPE],
       types[CUSTOM_OBJECT],
-      ...instances]
+      ...instances,
+    ]
   }
 
   beforeAll(() => {
@@ -268,11 +271,15 @@ describe('replace instance field values filter', () => {
       namesAfterFilter = []
       await awu(elements)
         .filter(isInstanceElement)
-        .filter(async e => await metadataType(e) === FORECASTING_METADATA_TYPE)
-        .map(e => e.value)
-        .forEach(val => {
-          const names = getAllNamesFromForecastingValue(val as ForecastingSettingsValue)
-          names.forEach(name => namesAfterFilter.push(name))
+        .filter(
+          async (e) => (await metadataType(e)) === FORECASTING_METADATA_TYPE,
+        )
+        .map((e) => e.value)
+        .forEach((val) => {
+          const names = getAllNamesFromForecastingValue(
+            val as ForecastingSettingsValue,
+          )
+          names.forEach((name) => namesAfterFilter.push(name))
         })
     })
 
@@ -323,23 +330,15 @@ describe('replace instance field values filter', () => {
       describe('the change is in selected/unselected fields', () => {
         beforeEach(async () => {
           // modify afterElem:
-          afterElem.value
-            .forecastingTypeSettings[0]
-            .opportunityListFieldsSelectedSettings
-            .field = [
-              ...afterElem.value
-                .forecastingTypeSettings[0]
-                .opportunityListFieldsSelectedSettings
-                .field,
-              ...afterElem.value
-                .forecastingTypeSettings[0]
-                .opportunityListFieldsUnselectedSettings
-                .field,
+          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field =
+            [
+              ...afterElem.value.forecastingTypeSettings[0]
+                .opportunityListFieldsSelectedSettings.field,
+              ...afterElem.value.forecastingTypeSettings[0]
+                .opportunityListFieldsUnselectedSettings.field,
             ]
-          afterElem.value
-            .forecastingTypeSettings[0]
-            .opportunityListFieldsUnselectedSettings
-            .field = []
+          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field =
+            []
 
           change = {
             action: 'modify',
@@ -351,7 +350,7 @@ describe('replace instance field values filter', () => {
 
           await filter.preDeploy([change])
           namesAfterFilter = getAllNamesFromForecastingValue(
-            afterElem.value as ForecastingSettingsValue
+            afterElem.value as ForecastingSettingsValue,
           )
         })
         it('should replace names to ids', () => {
@@ -378,7 +377,7 @@ describe('replace instance field values filter', () => {
           }
           await filter.preDeploy([change])
           namesAfterFilter = getAllNamesFromForecastingValue(
-            afterElem.value as ForecastingSettingsValue
+            afterElem.value as ForecastingSettingsValue,
           )
         })
 
@@ -396,51 +395,50 @@ describe('replace instance field values filter', () => {
     })
   })
 
-
   describe('onDeploy', () => {
-      type FilterType = FilterWith<'onDeploy'>
-      let filter: FilterType
+    type FilterType = FilterWith<'onDeploy'>
+    let filter: FilterType
 
-      beforeAll(() => {
-        filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            elementsSource: buildElementsSourceFromElements(elements),
+    beforeAll(() => {
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          elementsSource: buildElementsSourceFromElements(elements),
+        },
+      }) as FilterType
+    })
+
+    describe('replace ids of forecasting settings to names', () => {
+      let beforeElem: InstanceElement
+      let afterElem: InstanceElement
+      let change: Change<ChangeDataType>
+      let namesAfterFilter: string[]
+      beforeAll(async () => {
+        beforeElem = forecastingElementWithIDs
+        afterElem = beforeElem.clone()
+        afterElem.annotate({ newAnnotation: 'newAnnotationValue' })
+        change = {
+          action: 'modify',
+          data: {
+            before: beforeElem,
+            after: afterElem,
           },
-        }) as FilterType
+        }
+        await filter.onDeploy([change])
+        namesAfterFilter = getAllNamesFromForecastingValue(
+          afterElem.value as ForecastingSettingsValue,
+        )
       })
-
-      describe('replace ids of forecasting settings to names', () => {
-        let beforeElem: InstanceElement
-        let afterElem: InstanceElement
-        let change: Change<ChangeDataType>
-        let namesAfterFilter: string[]
-        beforeAll(async () => {
-          beforeElem = forecastingElementWithIDs
-          afterElem = beforeElem.clone()
-          afterElem.annotate({ newAnnotation: 'newAnnotationValue' })
-          change = {
-            action: 'modify',
-            data: {
-              before: beforeElem,
-              after: afterElem,
-            },
-          }
-          await filter.onDeploy([change])
-          namesAfterFilter = getAllNamesFromForecastingValue(
-            afterElem.value as ForecastingSettingsValue
-          )
-        })
-        it('should replace ids to names', () => {
-          expect(namesAfterFilter).not.toContain(BEFORE_ID_1)
-          expect(namesAfterFilter).not.toContain(BEFORE_ID_2)
-          expect(namesAfterFilter).toContain(AFTER_ID_1)
-          expect(namesAfterFilter).toContain(AFTER_ID_2)
-        })
-        it('should not replace names', () => {
-          expect(namesAfterFilter).toContain(NON_ID_NAME_2)
-          expect(namesAfterFilter).toContain(NON_ID_NAME_1)
-        })
+      it('should replace ids to names', () => {
+        expect(namesAfterFilter).not.toContain(BEFORE_ID_1)
+        expect(namesAfterFilter).not.toContain(BEFORE_ID_2)
+        expect(namesAfterFilter).toContain(AFTER_ID_1)
+        expect(namesAfterFilter).toContain(AFTER_ID_2)
       })
+      it('should not replace names', () => {
+        expect(namesAfterFilter).toContain(NON_ID_NAME_2)
+        expect(namesAfterFilter).toContain(NON_ID_NAME_1)
+      })
+    })
   })
 })

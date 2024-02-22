@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import _ from 'lodash'
 
@@ -601,7 +601,6 @@ export const EXCLUDED_METADATA_TYPES = [
   ...FOLDER_METADATA_TYPES,
 ] as const
 
-
 export const SUPPORTED_METADATA_TYPES = [
   ...METADATA_TYPES_WITHOUT_DEPENDENCIES,
   ...METADATA_TYPES_WITH_DEPENDENCIES,
@@ -612,16 +611,21 @@ export const SALESFORCE_METADATA_TYPES = [
   ...EXCLUDED_METADATA_TYPES,
 ] as const
 
-export type MetadataTypeWithoutDependencies = typeof METADATA_TYPES_WITHOUT_DEPENDENCIES[number]
-export type MetadataTypeWithDependencies = typeof METADATA_TYPES_WITH_DEPENDENCIES[number]
-export type ExcludedMetadataType = typeof EXCLUDED_METADATA_TYPES[number]
-export type SupportedMetadataType = typeof SUPPORTED_METADATA_TYPES[number]
-export type SalesforceMetadataType = typeof SALESFORCE_METADATA_TYPES[number]
+export type MetadataTypeWithoutDependencies =
+  (typeof METADATA_TYPES_WITHOUT_DEPENDENCIES)[number]
+export type MetadataTypeWithDependencies =
+  (typeof METADATA_TYPES_WITH_DEPENDENCIES)[number]
+export type ExcludedMetadataType = (typeof EXCLUDED_METADATA_TYPES)[number]
+export type SupportedMetadataType = (typeof SUPPORTED_METADATA_TYPES)[number]
+export type SalesforceMetadataType = (typeof SALESFORCE_METADATA_TYPES)[number]
 
-export type CustomObjectField = typeof CUSTOM_OBJECT_FIELDS[number]
-export type WorkflowField = typeof WORKFLOW_FIELDS[number]
+export type CustomObjectField = (typeof CUSTOM_OBJECT_FIELDS)[number]
+export type WorkflowField = (typeof WORKFLOW_FIELDS)[number]
 
-export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SalesforceMetadataType[]> = {
+export const METADATA_TYPE_TO_DEPENDENCIES: Record<
+  MetadataTypeWithDependencies,
+  SalesforceMetadataType[]
+> = {
   CustomMetadata: ['CustomMetadata', 'CustomObject'],
   BusinessProcess: ['CustomObject'],
   CompactLayout: ['CustomObject'],
@@ -642,19 +646,25 @@ export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies,
 }
 
 export const isMetadataTypeWithoutDependencies = (
-  metadataType: SalesforceMetadataType
-): metadataType is MetadataTypeWithoutDependencies => (
-  (METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
-)
+  metadataType: SalesforceMetadataType,
+): metadataType is MetadataTypeWithoutDependencies =>
+  (METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>).includes(
+    metadataType,
+  )
 
 export const isMetadataTypeWithDependency = (
-  metadataType: SalesforceMetadataType
-): metadataType is MetadataTypeWithDependencies => (
-  (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
-)
+  metadataType: SalesforceMetadataType,
+): metadataType is MetadataTypeWithDependencies =>
+  (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(
+    metadataType,
+  )
 
-export const getFetchTargets = (target: SupportedMetadataType[]): SalesforceMetadataType[] => {
-  const allTypes: SalesforceMetadataType[] = [...target.filter(isMetadataTypeWithoutDependencies)]
+export const getFetchTargets = (
+  target: SupportedMetadataType[],
+): SalesforceMetadataType[] => {
+  const allTypes: SalesforceMetadataType[] = [
+    ...target.filter(isMetadataTypeWithoutDependencies),
+  ]
   const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
   let typesWithDependencies = target.filter(isMetadataTypeWithDependency)
   while (!_.isEmpty(typesWithDependencies)) {
@@ -662,13 +672,16 @@ export const getFetchTargets = (target: SupportedMetadataType[]): SalesforceMeta
       .pick(typesWithDependencies)
       .values()
       .flatten()
-      .forEach(metadataType => allTypes.push(metadataType))
-    typesWithDependencies.forEach(metadataType => handledTypesWithDependencies.push(metadataType))
+      .forEach((metadataType) => allTypes.push(metadataType))
+    typesWithDependencies.forEach((metadataType) =>
+      handledTypesWithDependencies.push(metadataType),
+    )
     typesWithDependencies = allTypes
       .filter(isMetadataTypeWithDependency)
-      .filter(typeWithDependency => !handledTypesWithDependencies.includes(typeWithDependency))
+      .filter(
+        (typeWithDependency) =>
+          !handledTypesWithDependencies.includes(typeWithDependency),
+      )
   }
-  return _(allTypes)
-    .uniq()
-    .value()
+  return _(allTypes).uniq().value()
 }

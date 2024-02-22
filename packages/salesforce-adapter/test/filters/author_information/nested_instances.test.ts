@@ -1,23 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../../../src/client/jsforce'
 import { mockTypes } from '../../mock_elements'
-import { CUSTOM_LABEL_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../../../src/constants'
+import {
+  CUSTOM_LABEL_METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+} from '../../../src/constants'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import filterCreator from '../../../src/filters/author_information/nested_instances'
@@ -63,7 +66,10 @@ describe('nestedInstancesAuthorInformationFilter', () => {
       const { client } = mockClientAndConnection
       connection = mockClientAndConnection.connection
       connection.metadata.list.mockResolvedValue([fileProperties])
-      filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+      filter = filterCreator({
+        client,
+        config: defaultFilterContext,
+      }) as FilterWith<'onFetch'>
     })
     it('should add author information to nested instances', async () => {
       await filter.onFetch([customLabelInstance, nonNestedInstance])
@@ -74,7 +80,9 @@ describe('nestedInstancesAuthorInformationFilter', () => {
         [CORE_ANNOTATIONS.CHANGED_AT]: LAST_MODIFIED_DATE,
       })
       expect(connection.metadata.list).toHaveBeenCalledOnce()
-      expect(connection.metadata.list).toHaveBeenCalledWith([{ type: CUSTOM_LABEL_METADATA_TYPE }])
+      expect(connection.metadata.list).toHaveBeenCalledWith([
+        { type: CUSTOM_LABEL_METADATA_TYPE },
+      ])
     })
   })
 })

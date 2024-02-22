@@ -1,24 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   ChangeError,
   ChangeValidator,
   getChangeData,
   InstanceElement,
-  isInstanceChange, isInstanceElement, isObjectTypeChange,
+  isInstanceChange,
+  isInstanceElement,
+  isObjectTypeChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -29,9 +31,9 @@ import { isInstanceOfType, isInstanceOfTypeChange } from '../filters/utils'
 
 const { awu, keyByAsync, groupByAsync } = collections.asynciterable
 
-const getObjectName = async (layoutInstance: InstanceElement): Promise<string> => (
-  (await apiName(layoutInstance)).split('-')[0]
-)
+const getObjectName = async (
+  layoutInstance: InstanceElement,
+): Promise<string> => (await apiName(layoutInstance)).split('-')[0]
 
 const createLastLayoutDeletionError = (
   { elemID }: InstanceElement,
@@ -64,17 +66,16 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
         .filter(isObjectTypeChange)
         .filter(isRemovalChange)
         .toArray(),
-      change => apiName(getChangeData(change))
-    )
+      (change) => apiName(getChangeData(change)),
+    ),
   )
 
   const relevantChangesByObjectName = _.pickBy(
-    await groupByAsync(
-      relevantChanges,
-      change => getObjectName(getChangeData(change))
+    await groupByAsync(relevantChanges, (change) =>
+      getObjectName(getChangeData(change)),
     ),
     // If the Object is fully removed, it's a valid change.
-    (_value, objectName) => !removedObjectNames.includes(objectName)
+    (_value, objectName) => !removedObjectNames.includes(objectName),
   )
 
   const objectsWithRemainingLayouts = Object.keys(
@@ -84,7 +85,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
         .filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
         .toArray(),
       getObjectName,
-    )
+    ),
   )
 
   return Object.entries(relevantChangesByObjectName)
@@ -92,7 +93,8 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     .flatMap(([objectName, deletedLayoutChanges]) =>
       deletedLayoutChanges
         .map(getChangeData)
-        .map(instance => createLastLayoutDeletionError(instance, objectName)))
+        .map((instance) => createLastLayoutDeletionError(instance, objectName)),
+    )
 }
 
 export default changeValidator

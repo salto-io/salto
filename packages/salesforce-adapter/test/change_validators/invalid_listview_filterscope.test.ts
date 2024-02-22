@@ -1,29 +1,36 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, CORE_ANNOTATIONS, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  CORE_ANNOTATIONS,
+  getAllChangeData,
+  InstanceElement,
+  toChange,
+} from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/invalid_listview_filterscope'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
-const createListView = (filterScopeValue: string): InstanceElement => createInstanceElement(
-  { fullName: 'Some.FullName', filterScope: filterScopeValue },
-  mockTypes.ListView,
-  undefined,
-  { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
-)
+const createListView = (filterScopeValue: string): InstanceElement =>
+  createInstanceElement(
+    { fullName: 'Some.FullName', filterScope: filterScopeValue },
+    mockTypes.ListView,
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
+  )
 
 describe('ListView filterScope validator', () => {
   describe('when filterScope changes to invalid value', () => {
@@ -32,11 +39,16 @@ describe('ListView filterScope validator', () => {
       const beforeRecord = createListView('Everything')
       const afterRecord = beforeRecord.clone()
       afterRecord.value.filterScope = 'MyTeamTerritory'
-      filterScopeModificationChange = toChange({ before: beforeRecord, after: afterRecord })
+      filterScopeModificationChange = toChange({
+        before: beforeRecord,
+        after: afterRecord,
+      })
     })
 
     it('should fail validation', async () => {
-      const changeErrors = await changeValidator([filterScopeModificationChange])
+      const changeErrors = await changeValidator([
+        filterScopeModificationChange,
+      ])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       const [beforeData] = getAllChangeData(filterScopeModificationChange)

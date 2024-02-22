@@ -1,21 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Element, isObjectType, InstanceElement, ObjectType,
+  Element,
+  isObjectType,
+  InstanceElement,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { collections } from '@salto-io/lowerdash'
@@ -25,10 +28,21 @@ import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import {
-  runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes,
-  getMetadataInstance, removeElement, removeElementIfAlreadyExists, nullProgressReporter,
+  runFiltersOnFetch,
+  createElement,
+  removeElementAndVerify,
+  createInstance,
+  getRecordOfInstance,
+  fetchTypes,
+  getMetadataInstance,
+  removeElement,
+  removeElementIfAlreadyExists,
+  nullProgressReporter,
 } from './utils'
-import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
+import {
+  apiName,
+  isInstanceOfCustomObject,
+} from '../src/transformers/transformer'
 import customObjectsFromDescribeFilter from '../src/filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter from '../src/filters/custom_objects_to_object_type'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
@@ -99,29 +113,31 @@ describe('custom object instances e2e', () => {
   }
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
-    const adapterParams = realAdapter({
-      credentials: new UsernamePasswordCredentials(credLease.value),
-    }, config)
+    const adapterParams = realAdapter(
+      {
+        credentials: new UsernamePasswordCredentials(credLease.value),
+      },
+      config,
+    )
     adapter = adapterParams.adapter
     client = adapterParams.client
 
     const types = await fetchTypes(client, [CUSTOM_OBJECT])
-    const instance = await getMetadataInstance(client, types[0], productTwoMetadataName)
+    const instance = await getMetadataInstance(
+      client,
+      types[0],
+      productTwoMetadataName,
+    )
     if (instance === undefined) {
       throw new Error(`Failed getting ${productTwoMetadataName} instance`)
     }
     elements = [instance]
 
-    await runFiltersOnFetch(
-      client,
-      filtersContext,
-      elements,
-      [
-        customObjectsFromDescribeFilter,
-        customObjectsToObjectTypeFilter,
-        customObjectsInstancesFilter,
-      ],
-    )
+    await runFiltersOnFetch(client, filtersContext, elements, [
+      customObjectsFromDescribeFilter,
+      customObjectsToObjectTypeFilter,
+      customObjectsInstancesFilter,
+    ])
   })
 
   it('should fetch custom object instances', async () => {
@@ -137,20 +153,35 @@ describe('custom object instances e2e', () => {
 
     describe('should create new instances', () => {
       it('should create new instances', async () => {
-        const settingsType = createCustomSettingsObject('customsetting__c', LIST_CUSTOM_SETTINGS_TYPE)
+        const settingsType = createCustomSettingsObject(
+          'customsetting__c',
+          LIST_CUSTOM_SETTINGS_TYPE,
+        )
         createdElement = await createElement(adapter, settingsType)
-        createdInstance = await createElement(adapter, createInstance({
-          value: {
-            Name: 'TestName1',
-            fullName: 'customsetting TestName1',
-            TestField__c: 'somevalue',
-          },
-          type: createdElement,
-        }))
-        const result = await getRecordOfInstance(client, createdInstance, ['TestField__c'], 'Name')
+        createdInstance = await createElement(
+          adapter,
+          createInstance({
+            value: {
+              Name: 'TestName1',
+              fullName: 'customsetting TestName1',
+              TestField__c: 'somevalue',
+            },
+            type: createdElement,
+          }),
+        )
+        const result = await getRecordOfInstance(
+          client,
+          createdInstance,
+          ['TestField__c'],
+          'Name',
+        )
         expect(result).toBeDefined()
-        expect((result as SalesforceRecord).TestField).toEqual(createdInstance.value.TestField)
-        expect((result as SalesforceRecord).Name).toEqual(createdInstance.value.Name)
+        expect((result as SalesforceRecord).TestField).toEqual(
+          createdInstance.value.TestField,
+        )
+        expect((result as SalesforceRecord).Name).toEqual(
+          createdInstance.value.Name,
+        )
       })
     })
     describe('should delete custom object setting', () => {
@@ -166,21 +197,23 @@ describe('custom object instances e2e', () => {
 
     describe('should create the new instance', () => {
       it('should create the new instance', async () => {
-        const productTwoObjectType = await awu(elements)
-          .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
+        const productTwoObjectType = await awu(elements).find(
+          async (e) =>
+            isObjectType(e) &&
+            (await apiName(e, true)) === productTwoMetadataName,
+        )
         expect(productTwoObjectType).toBeDefined()
         expect(isObjectType(productTwoObjectType)).toBeTruthy()
         const instance = createInstance({
           value: productTwoInstanceValue,
           type: productTwoObjectType as ObjectType,
         })
-        createdInstance = await createElement(
-          adapter,
-          instance,
-        )
+        createdInstance = await createElement(adapter, instance)
         const result = await getRecordOfInstance(client, createdInstance)
         expect(result).toBeDefined()
-        expect((result as SalesforceRecord).Id).toEqual(createdInstance.value.Id)
+        expect((result as SalesforceRecord).Id).toEqual(
+          createdInstance.value.Id,
+        )
       })
     })
 
@@ -192,12 +225,21 @@ describe('custom object instances e2e', () => {
         await adapter.deploy({
           changeGroup: {
             groupID: updatedInstance.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
+            changes: [
+              {
+                action: 'modify',
+                data: { before: createdInstance, after: updatedInstance },
+              },
+            ],
           },
           progressReporter: nullProgressReporter,
         })
         const fields = ['IsActive', 'ProductCode', 'IsArchived']
-        const result = await getRecordOfInstance(client, createdInstance, fields)
+        const result = await getRecordOfInstance(
+          client,
+          createdInstance,
+          fields,
+        )
         expect(result).toBeDefined()
         expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
       })
@@ -208,12 +250,18 @@ describe('custom object instances e2e', () => {
       })
 
       it('should not fail for a non-existing instance', async () => {
-        const productTwoObjectType = await awu(elements)
-          .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
-        const element = await createElement(adapter, createInstance({
-          value: productTwoInstanceValue,
-          type: productTwoObjectType as ObjectType,
-        }))
+        const productTwoObjectType = await awu(elements).find(
+          async (e) =>
+            isObjectType(e) &&
+            (await apiName(e, true)) === productTwoMetadataName,
+        )
+        const element = await createElement(
+          adapter,
+          createInstance({
+            value: productTwoInstanceValue,
+            type: productTwoObjectType as ObjectType,
+          }),
+        )
         await removeElementIfAlreadyExists(client, element)
 
         const result = await removeElement(adapter, element)

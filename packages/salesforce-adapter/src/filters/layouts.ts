@@ -1,35 +1,51 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import {
-  Element, InstanceElement, ObjectType, ElemID, isInstanceElement,
+  Element,
+  InstanceElement,
+  ObjectType,
+  ElemID,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch, layoutObjAndName } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
+import {
+  addElementParentReference,
+  isInstanceOfType,
+  buildElementsSourceForFetch,
+  layoutObjAndName,
+} from './utils'
+import {
+  SALESFORCE,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  WEBLINK_METADATA_TYPE,
+} from '../constants'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
+export const LAYOUT_TYPE_ID = new ElemID(
+  SALESFORCE,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
 
 const fixLayoutPath = async (
@@ -38,16 +54,16 @@ const fixLayoutPath = async (
   layoutName: string,
 ): Promise<void> => {
   layout.path = [
-    ...await getObjectDirectoryPath(customObject),
+    ...(await getObjectDirectoryPath(customObject)),
     layout.elemID.typeName,
     pathNaclCase(naclCase(layoutName)),
   ]
 }
 
 /**
-* Declare the layout filter, this filter adds reference from the sobject to it's layouts.
-* Fixes references in layout items.
-*/
+ * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
+ * Fixes references in layout items.
+ */
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'layoutFilter',
   /**
@@ -69,18 +85,25 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
       filter: isCustomObject,
-      key: async obj => [await apiName(obj)],
-      map: obj => obj.elemID,
+      key: async (obj) => [await apiName(obj)],
+      map: (obj) => obj.elemID,
     })
 
-    await awu(layouts).forEach(async layout => {
-      const [layoutObjName, layoutName] = layoutObjAndName(await apiName(layout))
+    await awu(layouts).forEach(async (layout) => {
+      const [layoutObjName, layoutName] = layoutObjAndName(
+        await apiName(layout),
+      )
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
-      const layoutObj = layoutObjId !== undefined
-        ? await referenceElements.get(layoutObjId)
-        : undefined
+      const layoutObj =
+        layoutObjId !== undefined
+          ? await referenceElements.get(layoutObjId)
+          : undefined
       if (layoutObj === undefined || !(await isCustomObject(layoutObj))) {
-        log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
+        log.debug(
+          'Could not find object %s for layout %s',
+          layoutObjName,
+          layoutName,
+        )
         return
       }
 

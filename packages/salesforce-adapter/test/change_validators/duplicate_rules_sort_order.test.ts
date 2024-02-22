@@ -1,19 +1,25 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ChangeError, getChangeData, InstanceElement, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ChangeError,
+  getChangeData,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  toChange,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import changeValidator from '../../src/change_validators/duplicate_rules_sort_order'
 import { mockTypes } from '../mock_elements'
@@ -41,18 +47,15 @@ describe('duplicateRulesSortOrder', () => {
     instanceName,
     objectName,
     sortOrder,
-  }: CreateDuplicateRuleInstanceParams): InstanceElement => (
-    new InstanceElement(
-      instanceName,
-      mockTypes.DuplicateRule,
-      {
-        [INSTANCE_FULL_NAME_FIELD]: `${objectName}.${instanceName}`,
-        sortOrder,
-      }
-    )
-  )
+  }: CreateDuplicateRuleInstanceParams): InstanceElement =>
+    new InstanceElement(instanceName, mockTypes.DuplicateRule, {
+      [INSTANCE_FULL_NAME_FIELD]: `${objectName}.${instanceName}`,
+      sortOrder,
+    })
 
-  const createMockElementsSource = (instances: InstanceElement[]): ReadOnlyElementsSource => ({
+  const createMockElementsSource = (
+    instances: InstanceElement[],
+  ): ReadOnlyElementsSource => ({
     getAll: async () => awu(instances),
     list: async () => awu([]),
     has: async () => true,
@@ -102,8 +105,9 @@ describe('duplicateRulesSortOrder', () => {
       changeErrors = await changeValidator(changes, elementsSource)
     })
     it('should create errors', () => {
-      expect(changeErrors.map(error => error.elemID))
-        .toEqual(changedInstances.map(instance => instance.elemID))
+      expect(changeErrors.map((error) => error.elemID)).toEqual(
+        changedInstances.map((instance) => instance.elemID),
+      )
     })
   })
 

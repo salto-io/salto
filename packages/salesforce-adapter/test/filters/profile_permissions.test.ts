@@ -1,28 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeData, FieldDefinition, Values, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  CORE_ANNOTATIONS,
+  toChange,
+  InstanceElement,
+  Change,
+  getChangeData,
+  FieldDefinition,
+  Values,
+  TypeReference,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { isDefined } from '@salto-io/lowerdash/src/values'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { ProfileInfo } from '../../src/client/types'
-import { Types, createInstanceElement, metadataType, apiName } from '../../src/transformers/transformer'
+import {
+  Types,
+  createInstanceElement,
+  metadataType,
+  apiName,
+} from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
-import { apiNameSync, isInstanceOfTypeChangeSync } from '../../src/filters/utils'
+import {
+  apiNameSync,
+  isInstanceOfTypeChangeSync,
+} from '../../src/filters/utils'
 
 describe('Profile Permissions filter', () => {
   const TEST_PROFILE = 'Test Profile'
@@ -31,41 +51,55 @@ describe('Profile Permissions filter', () => {
     parent: string,
     name: string,
     annotations: Values = {},
-    refType: TypeReference = createRefToElmWithValue(Types.primitiveDataTypes.Text),
+    refType: TypeReference = createRefToElmWithValue(
+      Types.primitiveDataTypes.Text,
+    ),
   ): Record<string, FieldDefinition> => ({
-    [name]: { refType, annotations: { [constants.API_NAME]: `${parent}.${name}`, ...annotations } },
+    [name]: {
+      refType,
+      annotations: {
+        [constants.API_NAME]: `${parent}.${name}`,
+        ...annotations,
+      },
+    },
   })
 
-  const mockObject = (name: string): ObjectType => new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, name),
-    annotations: {
-      label: 'test label',
-      [constants.API_NAME]: name,
-      [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-    },
-    fields: {
-      ...createField(name, 'desc__c'),
-      ...createField(name, 'req__c', { [CORE_ANNOTATIONS.REQUIRED]: true }),
-      ...createField(name, 'master__c', {}, createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)),
-      ...createField(name, 'standard'),
-    },
-  })
+  const mockObject = (name: string): ObjectType =>
+    new ObjectType({
+      elemID: new ElemID(constants.SALESFORCE, name),
+      annotations: {
+        label: 'test label',
+        [constants.API_NAME]: name,
+        [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+      },
+      fields: {
+        ...createField(name, 'desc__c'),
+        ...createField(name, 'req__c', { [CORE_ANNOTATIONS.REQUIRED]: true }),
+        ...createField(
+          name,
+          'master__c',
+          {},
+          createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+        ),
+        ...createField(name, 'standard'),
+      },
+    })
   const mockFLSProfile = (
     objectPermissions: ProfileInfo['objectPermissions'],
     fieldPermissions: ProfileInfo['fieldPermissions'],
     fullName = 'Admin',
-  ): InstanceElement => createInstanceElement(
-    { fullName, objectPermissions, fieldPermissions },
-    mockTypes.Profile,
-  )
+  ): InstanceElement =>
+    createInstanceElement(
+      { fullName, objectPermissions, fieldPermissions },
+      mockTypes.Profile,
+    )
 
-  const getChangeProfilesNames = (changes: Change[]): string[] => (
+  const getChangeProfilesNames = (changes: Change[]): string[] =>
     changes
       .filter(isInstanceOfTypeChangeSync(constants.PROFILE_METADATA_TYPE))
       .map(getChangeData)
-      .map(instance => apiNameSync(instance))
+      .map((instance) => apiNameSync(instance))
       .filter(isDefined)
-  )
 
   let filter: FilterWith<'preDeploy' | 'onDeploy'>
 
@@ -93,7 +127,9 @@ describe('Profile Permissions filter', () => {
         })
         it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)
-          expect(await metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
+          expect(await metadataType(adminProfile)).toEqual(
+            constants.PROFILE_METADATA_TYPE,
+          )
           expect(await apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
         })
         it('should have object permission for new object', () => {
@@ -123,17 +159,17 @@ describe('Profile Permissions filter', () => {
         })
         it('should not add permissions for required fields', () => {
           expect(adminProfile.value.fieldPermissions).not.toContainEqual(
-            expect.objectContaining({ field: 'Test__c.req__c' })
+            expect.objectContaining({ field: 'Test__c.req__c' }),
           )
         })
         it('should not add permissions for master-detail fields', () => {
           expect(adminProfile.value.fieldPermissions).not.toContainEqual(
-            expect.objectContaining({ field: 'Test__c.master__c' })
+            expect.objectContaining({ field: 'Test__c.master__c' }),
           )
         })
         it('should not add permissions for non-custom fields', () => {
           expect(adminProfile.value.fieldPermissions).not.toContainEqual(
-            expect.objectContaining({ field: 'Test__c.standard' })
+            expect.objectContaining({ field: 'Test__c.standard' }),
           )
         })
       })
@@ -160,18 +196,24 @@ describe('Profile Permissions filter', () => {
       viewAllRecords: true,
     }
     const presetFieldPermission: ProfileInfo['fieldPermissions'][0] = {
-      field: 'Test2__c.desc__c', readable: true, editable: false,
+      field: 'Test2__c.desc__c',
+      readable: true,
+      editable: false,
     }
     beforeAll(() => {
       filter = filterCreator({
-        config: { ...defaultFilterContext, flsProfiles: [constants.ADMIN_PROFILE, TEST_PROFILE] },
+        config: {
+          ...defaultFilterContext,
+          flsProfiles: [constants.ADMIN_PROFILE, TEST_PROFILE],
+        },
       }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {
         const objWithNewField = mockObject('Test2__c')
         const updatedProfile = mockFLSProfile(
-          [presetObjectPermission], [presetFieldPermission],
+          [presetObjectPermission],
+          [presetFieldPermission],
         )
         changes = [
           toChange({ after: mockObject('Test__c') }),
@@ -182,7 +224,10 @@ describe('Profile Permissions filter', () => {
       })
       it('should use the existing change for the admin profile and add new change for Test Profile', () => {
         expect(changes).toHaveLength(4)
-        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([constants.ADMIN_PROFILE, TEST_PROFILE])
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
+          constants.ADMIN_PROFILE,
+          TEST_PROFILE,
+        ])
       })
       describe('admin profile change', () => {
         let adminProfile: InstanceElement
@@ -191,12 +236,18 @@ describe('Profile Permissions filter', () => {
         })
         it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)
-          expect(await metadataType(adminProfile)).toEqual(constants.PROFILE_METADATA_TYPE)
+          expect(await metadataType(adminProfile)).toEqual(
+            constants.PROFILE_METADATA_TYPE,
+          )
           expect(await apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
         })
         it('should not change permissions that already exist in the updated profile', () => {
-          expect(adminProfile.value.objectPermissions).toContainEqual(presetObjectPermission)
-          expect(adminProfile.value.fieldPermissions).toContainEqual(presetFieldPermission)
+          expect(adminProfile.value.objectPermissions).toContainEqual(
+            presetObjectPermission,
+          )
+          expect(adminProfile.value.fieldPermissions).toContainEqual(
+            presetFieldPermission,
+          )
         })
         it('should add field permissions for new fields that are missing in the profile', () => {
           expect(adminProfile.value.fieldPermissions).toContainEqual({
@@ -213,7 +264,9 @@ describe('Profile Permissions filter', () => {
       })
       it('should not remove the admin profile change and remove the Test Profile change', () => {
         expect(changes).toHaveLength(3)
-        expect(getChangeProfilesNames(changes)).toEqual([constants.ADMIN_PROFILE])
+        expect(getChangeProfilesNames(changes)).toEqual([
+          constants.ADMIN_PROFILE,
+        ])
       })
     })
   })

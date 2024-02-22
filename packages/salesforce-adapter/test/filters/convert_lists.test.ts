@@ -1,20 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isListType, isObjectType, ListType, MapType, isMapType, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  BuiltinTypes,
+  Value,
+  isListType,
+  isObjectType,
+  ListType,
+  MapType,
+  isMapType,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { defaultFilterContext } from '../utils'
@@ -96,7 +109,10 @@ describe('convert lists filter', () => {
     },
   })
 
-  const nestedMockObjToSortId = new ElemID(constants.SALESFORCE, 'nestedObjToSort')
+  const nestedMockObjToSortId = new ElemID(
+    constants.SALESFORCE,
+    'nestedObjToSort',
+  )
   const nestedMockTypeToSort = new ObjectType({
     elemID: nestedMockObjToSortId,
     fields: {
@@ -106,7 +122,10 @@ describe('convert lists filter', () => {
     },
   })
 
-  const mockObjWithAnnotationsId = new ElemID(constants.SALESFORCE, 'objWithAnnotations')
+  const mockObjWithAnnotationsId = new ElemID(
+    constants.SALESFORCE,
+    'objWithAnnotations',
+  )
   const mockFieldTypeWithAnnotations = new ObjectType({
     elemID: mockObjWithAnnotationsId,
     annotationRefsOrTypes: {
@@ -158,10 +177,19 @@ describe('convert lists filter', () => {
       fieldWithAnnotations: {
         refType: mockFieldTypeWithAnnotations,
         annotations: {
-          annotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
-          otherAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+          annotationToSort: [
+            { sortByMe: 'B', other: 'A' },
+            { sortByMe: 'A', other: 'B' },
+          ],
+          otherAnnotation: [
+            { sortByMe: 'B', other: 'A' },
+            { sortByMe: 'A', other: 'B' },
+          ],
           nestedAnnoToSort: {
-            nested: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+            nested: [
+              { sortByMe: 'B', other: 'A' },
+              { sortByMe: 'A', other: 'B' },
+            ],
           },
         },
       },
@@ -172,37 +200,64 @@ describe('convert lists filter', () => {
       nestedObjAnnoToSort: nestedMockTypeToSort,
     },
     annotations: {
-      objAnnotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
-      otherObjAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+      objAnnotationToSort: [
+        { sortByMe: 'B', other: 'A' },
+        { sortByMe: 'A', other: 'B' },
+      ],
+      otherObjAnnotation: [
+        { sortByMe: 'B', other: 'A' },
+        { sortByMe: 'A', other: 'B' },
+      ],
       nestedObjAnnoToSort: {
-        nested: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+        nested: [
+          { sortByMe: 'B', other: 'A' },
+          { sortByMe: 'A', other: 'B' },
+        ],
       },
     },
   })
 
-  const mockInstanceLst = new InstanceElement(
-    'test_inst_with_list',
-    mockType,
-    {
-      lst: ['val1', 'val2'],
-      mockFieldMap: {
-        something: { key: 'b', value: '1', list: ['val1', 'val2'], strMap: { a: 'b', c: 'd' } },
-        else: { key: 'a', value: '2', list: ['val1', 'val2'] },
+  const mockInstanceLst = new InstanceElement('test_inst_with_list', mockType, {
+    lst: ['val1', 'val2'],
+    mockFieldMap: {
+      something: {
+        key: 'b',
+        value: '1',
+        list: ['val1', 'val2'],
+        strMap: { a: 'b', c: 'd' },
       },
-      single: 'val',
-      ordered: [
-        { key: 'b', value: '1', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }], strMap: { a: 'b', c: 'd' } },
-        { key: 'a', value: '2', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }] },
-      ],
-      unordered: [
-        { key: 'b', value: '1', list: ['val1', 'val2'] },
-        { key: 'a', value: '2', list: ['val1', 'val2'] },
-      ],
-      singleHardcoded: 'val',
-      singleObjHardcoded: { key: 'b', value: '1', list: ['val1', 'val2'] },
-      emptyHardcoded: '',
-    }
-  )
+      else: { key: 'a', value: '2', list: ['val1', 'val2'] },
+    },
+    single: 'val',
+    ordered: [
+      {
+        key: 'b',
+        value: '1',
+        list: ['val1', 'val2'],
+        listOfObj: [
+          { key: 'b', list: ['val1', 'val2'] },
+          { key: 'a', list: ['val1', 'val2'] },
+        ],
+        strMap: { a: 'b', c: 'd' },
+      },
+      {
+        key: 'a',
+        value: '2',
+        list: ['val1', 'val2'],
+        listOfObj: [
+          { key: 'b', list: ['val1', 'val2'] },
+          { key: 'a', list: ['val1', 'val2'] },
+        ],
+      },
+    ],
+    unordered: [
+      { key: 'b', value: '1', list: ['val1', 'val2'] },
+      { key: 'a', value: '2', list: ['val1', 'val2'] },
+    ],
+    singleHardcoded: 'val',
+    singleObjHardcoded: { key: 'b', value: '1', list: ['val1', 'val2'] },
+    emptyHardcoded: '',
+  })
 
   const mockInstanceNonLst = new InstanceElement(
     'test_inst_no_list',
@@ -230,31 +285,54 @@ describe('convert lists filter', () => {
 
   const unorderedListAnnotations: ReadonlyArray<UnorderedList> = [
     {
-      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
-        'field', 'fieldWithAnnotations', 'annotationToSort'),
+      elemID: new ElemID(
+        constants.SALESFORCE,
+        mockType.elemID.typeName,
+        'field',
+        'fieldWithAnnotations',
+        'annotationToSort',
+      ),
       orderBy: 'sortByMe',
     },
     {
-      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
-        'attr', 'objAnnotationToSort'),
+      elemID: new ElemID(
+        constants.SALESFORCE,
+        mockType.elemID.typeName,
+        'attr',
+        'objAnnotationToSort',
+      ),
       orderBy: 'sortByMe',
     },
     {
-      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
-        'field', 'fieldWithAnnotations', 'nestedAnnoToSort', 'nested'),
+      elemID: new ElemID(
+        constants.SALESFORCE,
+        mockType.elemID.typeName,
+        'field',
+        'fieldWithAnnotations',
+        'nestedAnnoToSort',
+        'nested',
+      ),
       orderBy: 'sortByMe',
     },
     {
-      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
-        'attr', 'nestedObjAnnoToSort', 'nested'),
+      elemID: new ElemID(
+        constants.SALESFORCE,
+        mockType.elemID.typeName,
+        'attr',
+        'nestedObjAnnoToSort',
+        'nested',
+      ),
       orderBy: 'sortByMe',
     },
   ]
 
   let testElements: Element[]
 
-  const filter = makeFilter(unorderedListFields, unorderedListAnnotations,
-    hardcodedLists)({ config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = makeFilter(
+    unorderedListFields,
+    unorderedListAnnotations,
+    hardcodedLists,
+  )({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()
@@ -262,8 +340,12 @@ describe('convert lists filter', () => {
     testElements = [
       typeClone,
       typeNoInstancesClone,
-      _.assign(_.clone(mockInstanceLst), { refType: createRefToElmWithValue(typeClone) }),
-      _.assign(_.clone(mockInstanceNonLst), { refType: createRefToElmWithValue(typeClone) }),
+      _.assign(_.clone(mockInstanceLst), {
+        refType: createRefToElmWithValue(typeClone),
+      }),
+      _.assign(_.clone(mockInstanceNonLst), {
+        refType: createRefToElmWithValue(typeClone),
+      }),
       mockProfileType,
     ]
   })
@@ -306,35 +388,51 @@ describe('convert lists filter', () => {
     it('should sort unordered lists', async () => {
       expect(isListType(await type.fields.unordered.getType())).toBeTruthy()
       expect(lstInst.value.unordered).toHaveLength(2)
-      expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual(['a', 'b'])
+      expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual([
+        'a',
+        'b',
+      ])
     })
 
     it('should not reorder regular lists', async () => {
-      expect(isListType((await type.fields.ordered.getType()))).toBeTruthy()
+      expect(isListType(await type.fields.ordered.getType())).toBeTruthy()
       expect(lstInst.value.ordered).toHaveLength(2)
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
 
     it('should convert list inside objs in lists', async () => {
-      expect(isListType((await type.fields.ordered.getType()))).toBeTruthy()
-      const innerType = await ((await type.fields.ordered.getType()) as ListType).getInnerType()
+      expect(isListType(await type.fields.ordered.getType())).toBeTruthy()
+      const innerType = await (
+        (await type.fields.ordered.getType()) as ListType
+      ).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
-      expect(isListType(await (innerType as ObjectType).fields.list.getType())).toBeTruthy()
+      expect(
+        isListType(await (innerType as ObjectType).fields.list.getType()),
+      ).toBeTruthy()
     })
 
     it('should convert list inside objs in list inside list of obj', async () => {
-      expect(isListType((await type.fields.ordered.getType()))).toBeTruthy()
-      const innerType = await ((await type.fields.ordered.getType()) as ListType).getInnerType()
+      expect(isListType(await type.fields.ordered.getType())).toBeTruthy()
+      const innerType = await (
+        (await type.fields.ordered.getType()) as ListType
+      ).getInnerType()
       expect(isObjectType(innerType)).toBeTruthy()
-      expect(isListType(await (innerType as ObjectType).fields.listOfObj.getType())).toBeTruthy()
-      const innerInnerType = await (await (innerType as ObjectType).fields.listOfObj
-        .getType() as ListType).getInnerType()
+      expect(
+        isListType(await (innerType as ObjectType).fields.listOfObj.getType()),
+      ).toBeTruthy()
+      const innerInnerType = await (
+        (await (innerType as ObjectType).fields.listOfObj.getType()) as ListType
+      ).getInnerType()
       expect(isObjectType(innerInnerType)).toBeTruthy()
-      expect(isListType(await (innerInnerType as ObjectType).fields.list.getType())).toBeTruthy()
+      expect(
+        isListType(await (innerInnerType as ObjectType).fields.list.getType()),
+      ).toBeTruthy()
     })
 
     it('should convert hardcoded fields to lists', async () => {
-      expect(isListType(await type.fields.singleHardcoded.getType())).toBeTruthy()
+      expect(
+        isListType(await type.fields.singleHardcoded.getType()),
+      ).toBeTruthy()
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
     })
 
@@ -343,62 +441,85 @@ describe('convert lists filter', () => {
       expect(isListType(hardcodedObjType)).toBeTruthy()
       const innerObj = await (hardcodedObjType as ListType).getInnerType()
       expect(isObjectType(innerObj)).toBeTruthy()
-      expect(isListType(await (innerObj as ObjectType).fields.list.getType())).toBeTruthy()
+      expect(
+        isListType(await (innerObj as ObjectType).fields.list.getType()),
+      ).toBeTruthy()
     })
 
     it('should convert val of a list inside an hardcoded field to list', () => {
-      expect(lstInst.value.singleObjHardcoded).toEqual([{ key: 'b', value: '1', list: ['val1', 'val2'] }])
+      expect(lstInst.value.singleObjHardcoded).toEqual([
+        { key: 'b', value: '1', list: ['val1', 'val2'] },
+      ])
     })
 
     it('should convert empty hardcoded fields to empty lists', async () => {
-      expect(isListType(await type.fields.emptyHardcoded.getType())).toBeTruthy()
+      expect(
+        isListType(await type.fields.emptyHardcoded.getType()),
+      ).toBeTruthy()
       expect(lstInst.value.emptyHardcoded).toEqual([])
     })
 
     it('should convert hardcoded fields to lists even when there are no instances', async () => {
-      expect(isListType(await typeNoInstances.fields.single.getType())).toBeTruthy()
+      expect(
+        isListType(await typeNoInstances.fields.single.getType()),
+      ).toBeTruthy()
     })
 
     it('should sort unordered annotations of fields', () => {
-      expect(type.fields.fieldWithAnnotations.annotations.annotationToSort).toHaveLength(2)
-      expect(type.fields.fieldWithAnnotations.annotations.annotationToSort).toEqual([
-        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+      expect(
+        type.fields.fieldWithAnnotations.annotations.annotationToSort,
+      ).toHaveLength(2)
+      expect(
+        type.fields.fieldWithAnnotations.annotations.annotationToSort,
+      ).toEqual([
+        { sortByMe: 'A', other: 'B' },
+        { sortByMe: 'B', other: 'A' },
       ])
     })
 
     it('should not reorder regular annotations of fields', () => {
-      expect(type.fields.fieldWithAnnotations.annotations.otherAnnotation).toHaveLength(2)
-      expect(type.fields.fieldWithAnnotations.annotations.otherAnnotation).toEqual(
-        mockType.fields.fieldWithAnnotations.annotations.otherAnnotation
+      expect(
+        type.fields.fieldWithAnnotations.annotations.otherAnnotation,
+      ).toHaveLength(2)
+      expect(
+        type.fields.fieldWithAnnotations.annotations.otherAnnotation,
+      ).toEqual(
+        mockType.fields.fieldWithAnnotations.annotations.otherAnnotation,
       )
     })
 
     it('should sort nested unordered annotations of fields', () => {
-      expect(type.fields.fieldWithAnnotations.annotations.nestedAnnoToSort
-        .nested).toHaveLength(2)
-      expect(type.fields.fieldWithAnnotations.annotations.nestedAnnoToSort.nested).toEqual([
-        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+      expect(
+        type.fields.fieldWithAnnotations.annotations.nestedAnnoToSort.nested,
+      ).toHaveLength(2)
+      expect(
+        type.fields.fieldWithAnnotations.annotations.nestedAnnoToSort.nested,
+      ).toEqual([
+        { sortByMe: 'A', other: 'B' },
+        { sortByMe: 'B', other: 'A' },
       ])
     })
 
     it('should sort unordered annotations of types', () => {
       expect(type.annotations.objAnnotationToSort).toHaveLength(2)
       expect(type.annotations.objAnnotationToSort).toEqual([
-        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+        { sortByMe: 'A', other: 'B' },
+        { sortByMe: 'B', other: 'A' },
       ])
     })
 
     it('should not reorder regular annotations of types', () => {
       expect(type.annotations.otherObjAnnotation).toHaveLength(2)
       expect(type.annotations.otherObjAnnotation).toEqual(
-        mockType.annotations.otherObjAnnotation
+        mockType.annotations.otherObjAnnotation,
       )
     })
 
     it('should sort nested unordered annotations of types', () => {
       expect(type.annotations.nestedObjAnnoToSort.nested).toHaveLength(2)
       expect(type.annotations.nestedObjAnnoToSort.nested).toEqual([
-        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+        { sortByMe: 'A', other: 'B' },
+        { sortByMe: 'B', other: 'A' },
       ])
     })
   })

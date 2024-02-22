@@ -26,6 +26,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
+import { API_NAME } from '../constants'
 
 const { isDefined } = values
 
@@ -49,6 +50,10 @@ const getAffectedType = (change: Change): ObjectType | undefined => {
   return undefined
 }
 
+const isMetadataType = (objectType: ObjectType): boolean =>
+  !isCustomObjectSync(objectType) ||
+  objectType.annotations[API_NAME] === undefined // the original "CustomObject" type from salesforce will not have an API_NAME
+
 const changeValidator: ChangeValidator = async (changes) =>
   changes
     .filter((change) => {
@@ -57,7 +62,7 @@ const changeValidator: ChangeValidator = async (changes) =>
     })
     .map((change) => getAffectedType(change))
     .filter(isDefined)
-    .filter((objectType) => !isCustomObjectSync(objectType))
+    .filter(isMetadataType)
     .filter((objectType) => {
       log.info('Invalid change! %s', safeJsonStringify(objectType))
       return true

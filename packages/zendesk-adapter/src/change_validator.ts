@@ -84,6 +84,7 @@ import {
   dynamicContentPlaceholderModificationValidator,
   inactiveTicketFormInViewValidator,
   immutableTypeAndKeyForUserFieldsValidator,
+  localeModificationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -183,6 +184,7 @@ export default ({
     dynamicContentDeletion: dynamicContentDeletionValidator,
     inactiveTicketFormInView: inactiveTicketFormInViewValidator,
     immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
+    localeModification: localeModificationValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

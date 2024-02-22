@@ -595,7 +595,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'locales__locales',
       idFields: ['locale'],
       fileNameFields: ['locale'],
-      fieldsToHide: FIELDS_TO_HIDE, // no need to hide id as consistent across envs
+      // no need to hide id as consistent across envs
+      fieldsToHide: FIELDS_TO_HIDE.concat([{ fieldName: 'default', fieldType: 'boolean' }]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },

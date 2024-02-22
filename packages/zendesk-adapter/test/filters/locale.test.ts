@@ -136,7 +136,7 @@ describe('locale filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.deployResult.errors).toEqual([
         {
-          message: `Failed to update ${frLocaleInstance.elemID.getFullName()} since modification of locale is not supported`,
+          message: `Failed to update ${frLocaleInstance.elemID.getFullName()} since modification of locale is not supported by Zendesk`,
           severity: 'Error',
           elemID: frLocaleInstance.elemID,
         },

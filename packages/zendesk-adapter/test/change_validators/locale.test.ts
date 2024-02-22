@@ -32,7 +32,7 @@ describe('locale', () => {
         elemID: enUsLocaleInstance.elemID,
         severity: 'Error',
         message: 'Modification of locale is not supported',
-        detailedMessage: `Failed to update ${enUsLocaleInstance.elemID.getFullName()} since modification of locale is not supported`,
+        detailedMessage: `Failed to update ${enUsLocaleInstance.elemID.getFullName()} since modification of locale is not supported by Zendesk`,
       },
     ])
   })

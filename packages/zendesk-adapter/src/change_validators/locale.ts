@@ -26,5 +26,5 @@ export const localeModificationValidator: ChangeValidator = async changes =>
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Modification of locale is not supported',
-      detailedMessage: `Failed to update ${instance.elemID.getFullName()} since modification of locale is not supported`,
+      detailedMessage: `Failed to update ${instance.elemID.getFullName()} since modification of locale is not supported by Zendesk`,
     }))

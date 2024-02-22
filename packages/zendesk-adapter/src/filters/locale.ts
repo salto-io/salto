@@ -79,9 +79,9 @@ const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
       }
     }
 
-    const [removalAndAdditionsChanges, modificationChanges] = _.partition(changes, isAdditionOrRemovalChange)
+    const [removalAndAdditionsChanges, modificationChanges] = _.partition(localeChanges, isAdditionOrRemovalChange)
     const modificationErrors = modificationChanges.map(change => ({
-      message: `Failed to update ${getChangeData(change).elemID.getFullName()} since modification of locale is not supported`,
+      message: `Failed to update ${getChangeData(change).elemID.getFullName()} since modification of locale is not supported by Zendesk`,
       severity: 'Error' as SeverityLevel,
       elemID: getChangeData(change).elemID,
     }))

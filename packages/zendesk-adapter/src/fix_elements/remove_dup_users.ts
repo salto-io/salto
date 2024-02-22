@@ -48,7 +48,7 @@ const removeDupUsers = (
 ): undefined | { fixedInstance: InstanceElement; dupUsers: string[] } => {
   const userPaths = TYPE_NAME_TO_REPLACER_FOR_DUPS[instance.elemID.typeName]?.(instance)
   const users: string[] = userPaths.map(path => resolvePath(instance, path)).filter(values.isDefined)
-  const dupUsers = users.filter((item: string, index) => users.indexOf(item) !== index)
+  const dupUsers = _.uniq(users.filter((item: string, index) => users.indexOf(item) !== index))
   if (_.isEmpty(dupUsers)) {
     return undefined
   }

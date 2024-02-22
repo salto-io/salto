@@ -14,87 +14,96 @@
  * limitations under the License.
  */
 
+import _ from 'lodash'
 import { TypesQuery, FileCabinetQuery, NetsuiteQuery, CustomRecordsQuery } from './query'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
-import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
-import { addCustomRecordTypePrefix } from '../types'
+import { SuiteAppBundleType } from '../types/bundle_type'
+import { ALL_TYPES_REGEX, INCLUDE_ALL } from './constants'
+import { bundleIdRegex } from '../filters/bundle_ids'
+import { getGroupItemFromRegex } from '../client/utils'
+import { BUNDLE } from '../constants'
 
-export type BundleInfo = {
-  id: string
-  version: string | undefined
+export type BundlesQueryAndSupportedBundles = {
+  query: NetsuiteQuery
+  bundlesToInclude: SuiteAppBundleType[]
 }
 
-const isBundleComponent = (instanceIdOrType: string, bundleId: string, bundleVersion: string | undefined): boolean => {
+const getBundleComponents = (bundleId: string, bundleVersion: string | undefined): Set<string> => {
   if (bundleVersion) {
-    return BUNDLE_ID_TO_COMPONENTS[bundleId][bundleVersion].has(instanceIdOrType)
+    return BUNDLE_ID_TO_COMPONENTS[bundleId][bundleVersion]
   }
   // version is unsupported, check all supported versions of this bundle
   const versionComponentsUnion = new Set(
-    Object.values(BUNDLE_ID_TO_COMPONENTS[bundleId]).flatMap(versionComponents => Array.from(versionComponents))
+    Object.values(BUNDLE_ID_TO_COMPONENTS[bundleId]).flatMap(versionComponents => Array.from(versionComponents)),
   )
-  return versionComponentsUnion.has(instanceIdOrType)
+  return versionComponentsUnion
 }
 
-const isContainedInSomeBundle = (instanceIdOrType: string, bundlesInfo: BundleInfo[]): boolean =>
-  bundlesInfo.some(({ id, version }) =>
-    isBundleComponent(instanceIdOrType, id, version))
-
-const buildTypesQuery = (bundlesInfo: BundleInfo[]): TypesQuery => ({
+const buildTypesQuery = (components: Set<string>): TypesQuery => ({
   isTypeMatch: () => true,
   areAllObjectsMatch: () => false,
-  isObjectMatch: ({ instanceId }) => !isContainedInSomeBundle(instanceId, bundlesInfo),
+  isObjectMatch: ({ instanceId }) => !components.has(instanceId),
 })
 
-const buildFileCabinetQuery = (bundlesInfo: BundleInfo[]): FileCabinetQuery => {
-  const regexPatterns = bundlesInfo.map(bundleInfo => new RegExp(`Bundle ${bundleInfo.id}`))
-
+const buildFileCabinetQuery = (bundlesInfo: SuiteAppBundleType[]): FileCabinetQuery => {
+  const bundleIdSet = new Set(bundlesInfo.map(bundleInfo => bundleInfo.id))
   return {
-    isFileMatch: filePath => !regexPatterns.some(regex => regex.test(filePath)),
+    isFileMatch: filePath => {
+      const bundleId = getGroupItemFromRegex(filePath, bundleIdRegex, BUNDLE)
+      return !(bundleId.length > 0 && bundleIdSet.has(bundleId[0]))
+    },
     isParentFolderMatch: () => true,
     areSomeFilesMatch: () => true,
   }
 }
 
-const buildCustomRecordQuery = (bundlesInfo: BundleInfo[]): CustomRecordsQuery => ({
-  isCustomRecordTypeMatch: typeName => !isContainedInSomeBundle(typeName, bundlesInfo),
+const buildCustomRecordQuery = (components: Set<string>): CustomRecordsQuery => ({
+  isCustomRecordTypeMatch: () => true,
   areAllCustomRecordsMatch: () => false,
-  isCustomRecordMatch: ({ type, instanceId }) => !bundlesInfo.some(({ id, version }) =>
-    isBundleComponent(type, id, version) || isBundleComponent(instanceId, id, version)),
+  isCustomRecordMatch: ({ instanceId }) => !components.has(instanceId),
 })
 
-export const buildNetsuiteBundlesQuery = (
-  bundlesInfo: BundleInfo[] = [],
-): NetsuiteQuery => {
-  const {
-    isTypeMatch,
-    areAllObjectsMatch,
-    isObjectMatch,
-  } = buildTypesQuery(bundlesInfo)
-  const {
-    isFileMatch,
-    isParentFolderMatch,
-    areSomeFilesMatch,
-  } = buildFileCabinetQuery(bundlesInfo)
+const getBundlesToExclude = (
+  installedBundles: SuiteAppBundleType[],
+  bundlesToExclude: string[],
+): [SuiteAppBundleType[], SuiteAppBundleType[]] => {
+  if (bundlesToExclude.length === 0) {
+    return [[], installedBundles]
+  }
+  if (bundlesToExclude.includes(INCLUDE_ALL)) {
+    return [installedBundles, []]
+  }
+  const bundleMatchers = bundlesToExclude.map(
+    matcher => new RegExp(matcher === INCLUDE_ALL ? ALL_TYPES_REGEX : matcher),
+  )
+  return _.partition(installedBundles, bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString())))
+}
 
-  const {
-    isCustomRecordTypeMatch,
-    areAllCustomRecordsMatch,
-    isCustomRecordMatch,
-  } = buildCustomRecordQuery(bundlesInfo)
+export const buildNetsuiteBundlesQuery = (
+  installedBundles: SuiteAppBundleType[],
+  bundlesToExclude: string[],
+): BundlesQueryAndSupportedBundles => {
+  const [bundlesToExcludeFromQuery, bundlesToInclude] = getBundlesToExclude(installedBundles, bundlesToExclude)
+  const bundlesToExcludeComponentsSet = new Set(
+    bundlesToExcludeFromQuery.flatMap(bundle => Array.from(getBundleComponents(bundle.id, bundle.version))),
+  )
+  const { isTypeMatch, areAllObjectsMatch, isObjectMatch } = buildTypesQuery(bundlesToExcludeComponentsSet)
+  const { isFileMatch, isParentFolderMatch, areSomeFilesMatch } = buildFileCabinetQuery(bundlesToExcludeFromQuery)
+  const { isCustomRecordTypeMatch, areAllCustomRecordsMatch, isCustomRecordMatch } =
+    buildCustomRecordQuery(bundlesToExcludeComponentsSet)
 
   return {
-    isTypeMatch,
-    areAllObjectsMatch,
-    isObjectMatch: object => isObjectMatch(object)
-    || (object.type === CUSTOM_SEGMENT && isObjectMatch({
-      type: CUSTOM_RECORD_TYPE,
-      instanceId: addCustomRecordTypePrefix(object.instanceId),
-    })),
-    isFileMatch,
-    isParentFolderMatch,
-    areSomeFilesMatch,
-    isCustomRecordTypeMatch,
-    areAllCustomRecordsMatch,
-    isCustomRecordMatch,
+    query: {
+      isTypeMatch,
+      areAllObjectsMatch,
+      isObjectMatch,
+      isFileMatch,
+      isParentFolderMatch,
+      areSomeFilesMatch,
+      isCustomRecordTypeMatch,
+      areAllCustomRecordsMatch,
+      isCustomRecordMatch,
+    },
+    bundlesToInclude,
   }
 }

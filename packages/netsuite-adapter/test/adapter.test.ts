@@ -84,7 +84,6 @@ import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 import { fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
 import { FetchByQueryFunc } from '../src/config/query'
-import * as bundlesQueryModule from '../src/config/bundle_query'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -626,58 +625,6 @@ describe('Adapter', () => {
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
-    })
-
-    describe('buildNetsuiteBundlesQuery', () => {
-      let suiteAppClient: SuiteAppClient
-
-      const createNSAdapter = (excludeBundles: string[]): NetsuiteAdapter => (new NetsuiteAdapter({
-        client: new NetsuiteClient(client, suiteAppClient),
-        elementsSource: buildElementsSourceFromElements([]),
-        filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
-        config: { ...config, excludeBundles },
-        getElemIdFunc: mockGetElemIdFunc,
-      }))
-
-      beforeEach(() => {
-        jest.spyOn(bundlesQueryModule, 'buildNetsuiteBundlesQuery')
-        suiteAppClient = {
-          getSystemInformation: getSystemInformationMock,
-          getNetsuiteWsdl: () => undefined,
-          getConfigRecords: getConfigRecordsMock.mockReturnValue([
-            { configType: 'USER_PREFERENCES',
-              fieldsDef: [],
-              data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } } }]),
-          runSavedSearchQuery: () => [],
-          getInstalledBundles: () => [{ id: 123, version: '1.0.0' }, { id: 789, version: '2.0.0' }, { id: 135, version: 'v3.0.0' }],
-          getCustomRecords: getCustomRecordsMock.mockReturnValue(
-            {
-              customRecords: [],
-              largeTypesError: [],
-            }
-          ),
-          runSuiteQL: () => [],
-        } as unknown as SuiteAppClient
-      })
-      it('should call buildNetsuiteBundlesQuery only with installed bundles', async () => {
-        const adapter = createNSAdapter(['123', '789', '456'])
-        await adapter.fetch(mockFetchOpts)
-        expect(bundlesQueryModule.buildNetsuiteBundlesQuery).toHaveBeenCalledWith([
-          { id: '123', version: '1.0.0' },
-          { id: '789', version: '2.0.0' },
-        ])
-      })
-      it('should call buildNetsuiteBundlesQuery with empty array when excludeBundles is not defined', async () => {
-        const adapter = createNSAdapter([])
-        await adapter.fetch(mockFetchOpts)
-        expect(bundlesQueryModule.buildNetsuiteBundlesQuery).toHaveBeenCalledWith([])
-      })
-      it('should call buildNetsuiteBundlesQuery with all bundles if "ALL" is passed', async () => {
-        const adapter = createNSAdapter(['All'])
-        await adapter.fetch(mockFetchOpts)
-        expect(bundlesQueryModule.buildNetsuiteBundlesQuery)
-          .toHaveBeenCalledWith([{ id: '123', version: '1.0.0' }, { id: '789', version: '2.0.0' }, { id: '135', version: 'v3.0.0' }])
-      })
     })
   })
 

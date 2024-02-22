@@ -14,36 +14,60 @@
  * limitations under the License.
  */
 
-import { buildNetsuiteBundlesQuery } from '../src/config/bundle_query'
+import { BundlesQueryAndSupportedBundles, buildNetsuiteBundlesQuery } from '../src/config/bundle_query'
 
-describe(('bundle_query'), () => {
+describe('bundle_query', () => {
+  const installedBundles = [
+    {
+      id: '58416',
+    },
+    {
+      id: '53195',
+      version: '1.11.5',
+    },
+    {
+      id: '39609',
+      version: 'v4.0.0',
+    },
+    {
+      id: '369637',
+      version: '3.05',
+    },
+  ]
+  const bundlesToExclude = ['58416', '39609', '53195']
+
+  it('should return no supported bundles if all are excluded', () => {
+    const { bundlesToInclude } = buildNetsuiteBundlesQuery(installedBundles, ['All'])
+    expect(bundlesToInclude).toHaveLength(0)
+    expect(bundlesToInclude).toEqual([])
+  })
+
+  it('should return all supported bundles if none are excluded', () => {
+    const { bundlesToInclude } = buildNetsuiteBundlesQuery(installedBundles, [])
+    expect(bundlesToInclude).toHaveLength(4)
+    expect(bundlesToInclude).toEqual(installedBundles)
+  })
   describe('buildNetsuiteBundlesQuery', () => {
-    const query = buildNetsuiteBundlesQuery([
-      {
-        id: '58416',
-        version: '2.00.0',
-      },
-      {
-        id: '53195',
-        version: '1.11.5',
-      },
-      {
-        id: '39609',
-        version: 'v4.0.0',
-      },
-    ])
+    let queryAndBundles: BundlesQueryAndSupportedBundles
+    beforeEach(() => {
+      queryAndBundles = buildNetsuiteBundlesQuery(installedBundles, bundlesToExclude)
+    })
+
     describe('isTypeMatch', () => {
       it('should be true for all types', () => {
+        const { query } = queryAndBundles
         expect(query.isTypeMatch('someType')).toBeTruthy()
       })
     })
 
     describe('isFileMatch', () => {
       it('should match files paths that contain bundle name', () => {
+        const { query } = queryAndBundles
         expect(query.isFileMatch('./SuiteBundles/Bundle 58416/SomeFile.js')).toBeFalsy()
       })
 
       it('should not match files paths that do not contain bundle name', () => {
+        const { query } = queryAndBundles
         expect(query.isFileMatch('./SuiteScripts/ScriptFolder/someScript.js')).toBeTruthy()
       })
     })
@@ -58,28 +82,21 @@ describe(('bundle_query'), () => {
         type: 'customlist',
       }
       it('should match objects that are not in any bundle', () => {
+        const { query } = queryAndBundles
         expect(query.isObjectMatch(notInBundleObjectId)).toBeTruthy()
       })
 
       it('should not match objects that are in any bundle', () => {
+        const { query } = queryAndBundles
         expect(query.isObjectMatch(inBundleObjectId)).toBeFalsy()
       })
     })
 
-    describe('isCustomeRecordTypeMatch', () => {
-      it('should match custom record types that are not in any bundle', () => {
-        expect(query.isCustomRecordTypeMatch('someCustomRecordType')).toBeTruthy()
-      })
-
-      it('should not match custom record types that are in a bundle', () => {
-        expect(query.isCustomRecordTypeMatch('customrecord_lsa')).toBeFalsy()
-      })
-    })
-
     describe('isCustomRecordMatch', () => {
-      it('should not match custom record instance if it or its type are in a bundle', () => {
-        expect(query.isCustomRecordMatch({ instanceId: 'recrod1', type: 'customrecord_lsa' })).toBeFalsy()
-        expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'someRecordType' })).toBeTruthy()
+      it('should not match custom record instance if its in a bundle', () => {
+        const { query } = queryAndBundles
+        expect(query.isCustomRecordMatch({ instanceId: 'customrecord_lsa', type: 'customrecordtype' })).toBeFalsy()
+        expect(query.isCustomRecordMatch({ instanceId: 'record2', type: 'someRecordType' })).toBeTruthy()
       })
     })
   })

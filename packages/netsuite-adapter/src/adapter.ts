@@ -116,7 +116,6 @@ import {
   ALL_TYPES_REGEX,
   DEFAULT_WARN_STALE_DATA,
   DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-  INCLUDE_ALL,
 } from './config/constants'
 import {
   FetchByQueryFunc,
@@ -131,8 +130,6 @@ import {
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
-import { SuiteAppBundleType } from './types/bundle_type'
-import { BUNDLE_ID_TO_COMPONENTS } from './autogen/bundle_components/bundle_components'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -330,30 +327,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
-  private getBundlesToExclude = (installedBundles: SuiteAppBundleType[]): [SuiteAppBundleType[], SuiteAppBundleType[]] => {
-    const bundleIdsToExclude = this.userConfig.excludeBundles
-    if (bundleIdsToExclude === undefined) {
-      return [[], installedBundles]
-    }
-    const bundleMatchers = bundleIdsToExclude.map(matcher => new RegExp(matcher === INCLUDE_ALL ? ALL_TYPES_REGEX : matcher))
-    return _.partition(
-        installedBundles,
-        bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString()))
-    )
-  }
-
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
     progressReporter: ProgressReporter,
     useChangesDetection: boolean,
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
-    const configRecords = await this.client.getConfigRecords()
-    const installedBundles = await this.client.getInstalledBundles()
-    const [bundlesToExclude, bundlesToInclude] = this.getBundlesToExclude(installedBundles)
-    const bundlesToExcludeInfo = bundlesToExclude.map(bundle => ({ id: bundle.id.toString(), version: bundle.version }))
-    const supportedBundles = bundlesToInclude.filter(bundle => bundle.id in BUNDLE_ID_TO_COMPONENTS)
-    const netsuiteBundlesQuery = buildNetsuiteBundlesQuery(bundlesToExcludeInfo)
+    const [configRecords, installedBundles] = await Promise.all([
+      this.client.getConfigRecords(),
+      this.client.getInstalledBundles(),
+    ])
+    const { query: netsuiteBundlesQuery, bundlesToInclude } = buildNetsuiteBundlesQuery(
+      installedBundles,
+      this.userConfig.excludeBundles ?? [],
+    )
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
@@ -361,9 +348,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       useChangesDetection,
       timeZoneAndFormat,
     )
-    const updatedFetchQuery = changedObjectsQuery !== undefined
-      ? andQuery(changedObjectsQuery, fetchQueryWithBundles)
-      : fetchQueryWithBundles
+    const updatedFetchQuery =
+      changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQueryWithBundles) : fetchQueryWithBundles
 
     const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
       progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
@@ -375,7 +361,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return result
     }
 
-    const getStandardAndCustomElements = async (bundlesList: SuiteAppBundleType[]): Promise<{
+    const getStandardAndCustomElements = async (): Promise<{
       standardInstances: InstanceElement[]
       standardTypes: TypeElement[]
       customRecordTypes: ObjectType[]
@@ -393,7 +379,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
           originFetchQuery: fetchQuery,
         }),
       ])
-      const bundlesCustomInfo = bundlesList.map(bundle => ({
+      const bundlesCustomInfo = bundlesToInclude.map(bundle => ({
         typeName: BUNDLE,
         values: { ...bundle, id: bundle.id.toString() },
       }))
@@ -427,7 +413,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
       { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
-      getStandardAndCustomElements(supportedBundles),
+      getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
       getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
     ])
@@ -440,20 +426,22 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = isPartial && this.withPartialDeletion !== false
-      ? await getDeletedElements({
-        client: this.client,
-        elementsSource: this.elementsSource,
-        fetchQuery,
-        serviceInstanceIds: instancesIds,
-        requestedCustomRecordTypes: customRecordTypes,
-        serviceCustomRecords: customRecords,
-        requestedDataTypes,
-        serviceDataElements: dataElements.filter(isInstanceElement),
-      })
-      : {}
+    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult =
+      isPartial && this.withPartialDeletion !== false
+        ? await getDeletedElements({
+            client: this.client,
+            elementsSource: this.elementsSource,
+            fetchQuery,
+            serviceInstanceIds: instancesIds,
+            requestedCustomRecordTypes: customRecordTypes,
+            serviceCustomRecords: customRecords,
+            requestedDataTypes,
+            serviceDataElements: dataElements.filter(isInstanceElement),
+          })
+        : {}
 
-    const serverTimeElements = serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
+    const serverTimeElements =
+      serverTime !== undefined ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial) : []
 
     const elements = ([] as ChangeDataType[])
       .concat(standardInstances)
@@ -487,11 +475,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isFirstFetch: boolean
   }): boolean {
     return (
-      !shouldFetchWithChangesDetectionParams.isFirstFetch
-      && (this.useChangesDetection === true
-        || shouldFetchWithChangesDetectionParams.withChangesDetection
+      !shouldFetchWithChangesDetectionParams.isFirstFetch &&
+      (this.useChangesDetection === true ||
+        shouldFetchWithChangesDetectionParams.withChangesDetection ||
         // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
-        || (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
+        (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
     )
   }
 
@@ -596,7 +584,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const [saltoElementErrors, saltoErrors] = _.partition(deployResult.errors, isSaltoElementError)
     const [originalChangesErrors, additionalChangesErrors] = _.partition(saltoElementErrors, error =>
-      originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName()),)
+      originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName()),
+    )
 
     const errorsOnCustomFieldsByParents = _(originalChangesErrors)
       .filter(error => error.elemID.idType === 'field')
@@ -621,7 +610,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(changesToDeploy, groupID, this.additionalDependencies, elemID =>
-      this.elementsSource.has(elemID),)
+      this.elementsSource.has(elemID),
+    )
 
     const ids = new Set(deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()))
 

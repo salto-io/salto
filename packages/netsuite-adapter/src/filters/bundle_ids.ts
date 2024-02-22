@@ -34,7 +34,7 @@ const log = logger(module)
 const { isDefined } = values
 const { awu } = collections.asynciterable
 const BUNDLE = 'bundle'
-const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
+export const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 
 const getServiceIdsOfVersion = (bundleVersions: Record<string, Set<string>>, bundle: InstanceElement): Set<string> => {
   const serviceIdsInBundle = bundleVersions[bundle.value.version]

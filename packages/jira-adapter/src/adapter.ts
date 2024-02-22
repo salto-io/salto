@@ -197,7 +197,7 @@ import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
-const { getAllElements } = elementUtils.ducktype
+const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
 const { computeGetArgs } = fetchUtils.resource
 const { generateTypes, getAllInstances, loadSwagger, addDeploymentAnnotations } = elementUtils.swagger
@@ -720,6 +720,22 @@ export default class JiraAdapter implements AdapterOperations {
       ...jsmElements.elements,
       ...jsmAssetsElements.elements,
     ]
+    const typesConfig = {
+      ...this.userConfig.apiDefinitions.types,
+      ...this.userConfig.jsmApiDefinitions?.types,
+      ...this.userConfig.scriptRunnerApiDefinitions?.types,
+    }
+    
+    // Remaining types should be added once to avoid overlaps between the generated elements,
+    // so we add them once after all elements are generated
+    addRemainingTypes({
+      adapterName: JIRA,
+      elements,
+      typesConfig,
+      supportedTypes: _.merge(supportedTypes, this.userConfig.jsmApiDefinitions?.supportedTypes, this.userConfig.scriptRunnerApiDefinitions?.supportedTypes),
+      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+    })
+
     return {
       elements,
       errors: (swaggerResponse.errors ?? [])

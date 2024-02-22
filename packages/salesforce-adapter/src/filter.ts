@@ -30,6 +30,7 @@ export type FilterContext = {
   fetchProfile: FetchProfile
   elementsSource: ReadOnlyElementsSource
   separateFieldToFiles?: string[]
+  flsProfiles: string[]
   lastChangeDateOfTypesWithNestedInstances?: LastChangeDateOfTypesWithNestedInstances
 }
 

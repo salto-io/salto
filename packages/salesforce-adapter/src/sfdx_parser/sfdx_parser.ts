@@ -201,6 +201,7 @@ const getElementsFromDXFolder = async (
           },
         }),
         elementsSource: workspaceElements,
+        flsProfiles: [],
       },
       files: {
         baseDirName: packageDir,

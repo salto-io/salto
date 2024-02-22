@@ -405,6 +405,7 @@ export type ClientDeployConfig = Partial<{
   deleteBeforeUpdate: boolean
   quickDeployParams: QuickDeployParams
   performRetrieve: boolean
+  flsProfiles: string[]
 }>
 
 export enum RetryStrategyName {
@@ -699,6 +700,7 @@ const clientDeployConfigType = new ObjectType({
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
     quickDeployParams: { refType: QuickDeployParamsType },
     performRetrieve: { refType: BuiltinTypes.BOOLEAN },
+    flsProfiles: { refType: new ListType(BuiltinTypes.STRING) },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

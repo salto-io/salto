@@ -41,7 +41,7 @@ import { createCredentialsInstance, createConfigInstance, mockClient, createEmpt
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
 
-const { getAllElements, getEntriesResponseValues } = elements.ducktype
+const { getAllElements, getEntriesResponseValues, addRemainingTypes } = elements.ducktype
 const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -76,6 +76,9 @@ jest.mock('@salto-io/adapter-components', () => {
         }),
         getEntriesResponseValues: jest.fn().mockImplementation(() => {
           throw new Error('getEntriesResponseValues called without a mock')
+        }),
+        addRemainingTypes: jest.fn().mockImplementation(() => {
+          throw new Error('addRemainingTypes called without a mock')
         }),
       },
     },
@@ -273,6 +276,9 @@ describe('adapter', () => {
         })
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValue({ elements: [testInstance2] })
       ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({ elements: [testInstance] })
+      ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>)
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        .mockImplementation(() => {})
       ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
         document: {},
         parser: {},
@@ -285,6 +291,7 @@ describe('adapter', () => {
     afterEach(() => {
       mockAxiosAdapter.restore()
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+      ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
     })
     it('should generate types for the platform and the jira apis', () => {
       expect(loadSwagger).toHaveBeenCalledTimes(2)
@@ -465,6 +472,8 @@ describe('adapter', () => {
           elements: [testInstance2],
           errors: [{ message: 'jsmError', severity: 'Error' }],
         })
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
           errors: [{ message: 'some error', severity: 'Error' }],
@@ -511,6 +520,7 @@ describe('adapter', () => {
       afterEach(() => {
         mockAxiosAdapter.restore()
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
       })
       it('should return all types and instances returned from the infrastructure', () => {
         expect(result.elements).toContain(platformTestType)
@@ -519,6 +529,9 @@ describe('adapter', () => {
       })
       it('should call getAllElements', () => {
         expect(getAllElements).toHaveBeenCalledTimes(2)
+      })
+      it('should call addRemainingTypes', () => {
+        expect(addRemainingTypes).toHaveBeenCalledTimes(1)
       })
       it('should return error', async () => {
         expect(result.errors).toEqual([

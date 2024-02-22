@@ -73,9 +73,7 @@ export const buildNetsuiteBundlesQuery = (
   const [bundlesToExcludeFromQuery, bundlesToInclude] = getBundlesToExclude(installedBundles, bundlesToExclude)
   const bundlesToExcludeComponentsSet = new Set(
     bundlesToExcludeFromQuery.flatMap(bundle =>
-      bundle.id in BUNDLE_ID_TO_COMPONENTS
-        ? Array.from(getServiceIdsOfVersion(BUNDLE_ID_TO_COMPONENTS[bundle.id], bundle.id, bundle.version))
-        : [],
+      bundle.id in BUNDLE_ID_TO_COMPONENTS ? Array.from(getServiceIdsOfVersion(bundle.id, bundle.version)) : [],
     ),
   )
   const { isTypeMatch, areAllObjectsMatch, isObjectMatch } = buildTypesQuery(bundlesToExcludeComponentsSet)

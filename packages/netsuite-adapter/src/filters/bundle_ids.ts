@@ -36,14 +36,11 @@ const { awu } = collections.asynciterable
 const BUNDLE = 'bundle'
 export const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 
-export const getServiceIdsOfVersion = (
-  bundleVersions: Record<string, Set<string>>,
-  bundleId: string,
-  bundleVersion: string | undefined,
-): Set<string> => {
+export const getServiceIdsOfVersion = (bundleId: string, bundleVersion: string | undefined): Set<string> => {
+  const bundleVersions = BUNDLE_ID_TO_COMPONENTS[bundleId]
   if (bundleVersion === undefined || !(bundleVersion in bundleVersions)) {
     log.debug(
-      `Version ${`${bundleVersion} ` ?? ''} of bundle %s is missing or not supported in the record, use a union of all existing versions`,
+      `Version ${`${bundleVersion ?? ''} `} of bundle %s is missing or not supported in the record, use a union of all existing versions`,
       bundleId,
     )
     return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
@@ -72,12 +69,7 @@ const isStandardInstanceOrCustomRecord = async (element: Element): Promise<boole
   (isInstanceElement(element) && isCustomRecordType(await element.getType()))
 
 const addBundleToRecords = (scriptIdToElem: Record<string, Element>, bundleInstance: InstanceElement): void => {
-  const bundleVersions = BUNDLE_ID_TO_COMPONENTS[bundleInstance.value.id]
-  const bundleElementsServiceIds = getServiceIdsOfVersion(
-    bundleVersions,
-    bundleInstance.value.id,
-    bundleInstance.value.version,
-  )
+  const bundleElementsServiceIds = getServiceIdsOfVersion(bundleInstance.value.id, bundleInstance.value.version)
   bundleElementsServiceIds.forEach(serviceId => {
     const currentElement = scriptIdToElem[serviceId]
     if (currentElement) {

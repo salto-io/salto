@@ -1,24 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import {
-  Change, Element, getChangeData,
-  InstanceElement,
-  isInstanceElement,
-} from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME } from '../../constants'
 import { createOrderInstance, deployOrderChanges, createOrderType } from './guide_order_utils'
@@ -36,10 +32,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    const articles = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
-    const sections = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
+    const articles = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
+    const sections = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
 
     const orderType = createOrderType(ARTICLE_TYPE_NAME)
     _.remove(elements, e => e.elemID.getFullName() === orderType.elemID.getFullName())
@@ -56,7 +50,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
       // Promoted articles are first
       articleOrderElements.value[ARTICLES_FIELD] = _.sortBy(
-        articleOrderElements.value[ARTICLES_FIELD], a => !a.value.value.promoted
+        articleOrderElements.value[ARTICLES_FIELD],
+        a => !a.value.value.promoted,
       )
 
       elements.push(articleOrderElements)

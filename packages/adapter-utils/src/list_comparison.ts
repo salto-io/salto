@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import objectHash from 'object-hash'
 import {
@@ -59,10 +59,7 @@ const getListItemExactKey: KeyFunction = value =>
 type TopLevelType = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
 
 const isValidTopLevelType = (value: unknown): value is TopLevelType =>
-  isPrimitiveValue(value)
-    || isReferenceExpression(value)
-    || isTemplateExpression(value)
-    || isStaticFile(value)
+  isPrimitiveValue(value) || isReferenceExpression(value) || isTemplateExpression(value) || isStaticFile(value)
 
 /**
  * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
@@ -107,11 +104,8 @@ const getListItemTopLevelKey: KeyFunction = value => {
 const buildKeyToIndicesMap = (list: Value[], keyFunc: KeyFunction): Record<string, number[]> => {
   const keyToIndex = list.map((value, index) => ({ key: keyFunc(value), index }))
   return _.mapValues(
-    _.groupBy(
-      keyToIndex,
-      ({ key }) => key,
-    ),
-    indices => indices.map(({ index }) => index)
+    _.groupBy(keyToIndex, ({ key }) => key),
+    indices => indices.map(({ index }) => index),
   )
 }
 
@@ -181,54 +175,49 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
   maxAfterIndexMatched = -1
   // We now try to match the before and after matches based
   // on the fallback key function that looks only at the top level values
-  const matchesAfterKeyMatch = matchesAfterExactKeyMatch.map(({
-    beforeIndex,
-    afterIndex,
-    minAfterIndex,
-    beforeValue,
-  }) => {
-    if (afterIndex !== undefined) {
-      maxAfterIndexMatched = Math.max(maxAfterIndexMatched, minAfterIndex)
-      return { beforeIndex, afterIndex, minAfterIndex }
-    }
+  const matchesAfterKeyMatch = matchesAfterExactKeyMatch.map(
+    ({ beforeIndex, afterIndex, minAfterIndex, beforeValue }) => {
+      if (afterIndex !== undefined) {
+        maxAfterIndexMatched = Math.max(maxAfterIndexMatched, minAfterIndex)
+        return { beforeIndex, afterIndex, minAfterIndex }
+      }
 
-    const key = getListItemTopLevelKey(beforeValue)
-    const matchedAfterIndex = (afterIndexTopLevelMap[key] ?? []).shift()
+      const key = getListItemTopLevelKey(beforeValue)
+      const matchedAfterIndex = (afterIndexTopLevelMap[key] ?? []).shift()
 
-    // this is a re-order
-    if (matchedAfterIndex !== undefined && !matchedAfterIndexes.has(matchedAfterIndex)) {
-      maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchedAfterIndex, minAfterIndex)
-      matchedAfterIndexes.add(matchedAfterIndex)
+      // this is a re-order
+      if (matchedAfterIndex !== undefined && !matchedAfterIndexes.has(matchedAfterIndex)) {
+        maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchedAfterIndex, minAfterIndex)
+        matchedAfterIndexes.add(matchedAfterIndex)
+        return {
+          beforeIndex,
+          afterIndex: matchedAfterIndex,
+          // The min after index is the max after index we matched to so far
+          minAfterIndex: maxAfterIndexMatched,
+        }
+      }
+
       return {
         beforeIndex,
-        afterIndex: matchedAfterIndex,
-        // The min after index is the max after index we matched to so far
+        afterIndex: undefined,
+        // The min after index is the max  after index we matched to so far
         minAfterIndex: maxAfterIndexMatched,
       }
-    }
-
-    return {
-      beforeIndex,
-      afterIndex: undefined,
-      // The min after index is the max  after index we matched to so far
-      minAfterIndex: maxAfterIndexMatched,
-    }
-  })
+    },
+  )
 
   maxAfterIndexMatched = -1
   // After finding matches by key, we prefer matching equal indices because they provide
   // the clearest difference (only value difference with no index difference)
-  const matchesAfterIndexMatch = matchesAfterKeyMatch
-    .map(({ beforeIndex, afterIndex, minAfterIndex }) => {
-      if (!matchedAfterIndexes.has(beforeIndex) && afterIndex === undefined && beforeIndex < after.length) {
-        matchedAfterIndexes.add(beforeIndex)
-        maxAfterIndexMatched = beforeIndex
-        return { beforeIndex, afterIndex: beforeIndex, minAfterIndex }
-      }
+  const matchesAfterIndexMatch = matchesAfterKeyMatch.map(({ beforeIndex, afterIndex, minAfterIndex }) => {
+    if (!matchedAfterIndexes.has(beforeIndex) && afterIndex === undefined && beforeIndex < after.length) {
+      matchedAfterIndexes.add(beforeIndex)
+      maxAfterIndexMatched = beforeIndex
+      return { beforeIndex, afterIndex: beforeIndex, minAfterIndex }
+    }
 
-      return { beforeIndex, afterIndex, minAfterIndex: Math.max(maxAfterIndexMatched, minAfterIndex) }
-    })
-
+    return { beforeIndex, afterIndex, minAfterIndex: Math.max(maxAfterIndexMatched, minAfterIndex) }
+  })
 
   const afterIndexes = _.times(after.length).reverse()
 
@@ -244,11 +233,12 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
       const reversedMaxPossibleAfterIndex = after.length - maxPossibleAfterIndex
       const reversedMinAfterIndex = after.length - minAfterIndex
 
-      const selectedAfterIndex = reversedMinAfterIndex - reversedMaxPossibleAfterIndex > 0
-        ? wu(afterIndexes)
-          .slice(reversedMaxPossibleAfterIndex, reversedMinAfterIndex)
-          .find(index => !matchedAfterIndexes.has(index))
-        : undefined
+      const selectedAfterIndex =
+        reversedMinAfterIndex - reversedMaxPossibleAfterIndex > 0
+          ? wu(afterIndexes)
+              .slice(reversedMaxPossibleAfterIndex, reversedMinAfterIndex)
+              .find(index => !matchedAfterIndexes.has(index))
+          : undefined
 
       if (selectedAfterIndex === undefined) {
         return { beforeIndex, afterIndex }
@@ -275,8 +265,7 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
   // Insert remove changes in their original location in the array, this seems to give
   // to most intuitive result
   _(matches)
-    .filter((item): item is { beforeIndex: number } => item.beforeIndex !== undefined
-      && item.afterIndex === undefined)
+    .filter((item): item is { beforeIndex: number } => item.beforeIndex !== undefined && item.afterIndex === undefined)
     .sortBy(item => item.beforeIndex)
     .forEach(removal => {
       orderedItems.splice(removal.beforeIndex, 0, removal)
@@ -308,28 +297,33 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
  *   In such scenario it is not clear whether the results should be ['b', 'a'] or ['a', 'b'].
  *   Here we chose the results for such case to be ['a', 'b'].
  */
-export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void => log.time(() => {
-  const ids = changes.map(change => change.id)
-  if (ids.some(id => !isIndexPathPart(id.name)) || new Set(ids.map(id => id.createParentID().getFullName())).size > 1) {
-    throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
-  }
+export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void =>
+  log.time(() => {
+    const ids = changes.map(change => change.id)
+    if (
+      ids.some(id => !isIndexPathPart(id.name)) ||
+      new Set(ids.map(id => id.createParentID().getFullName())).size > 1
+    ) {
+      throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
+    }
 
-  const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
-  const list = resolvePath(element, parentId)
-  changes.filter(isRemovalOrModificationChange)
-    .forEach(change => { list[Number(change.elemIDs?.before?.name)] = undefined })
-
-  _(changes)
-    .filter(isAdditionOrModificationChange)
-    .sortBy(change => Number(change.elemIDs?.after?.name))
-    .forEach(change => {
-      const index = Number(change.elemIDs?.after?.name)
-      if (list[index] === undefined) {
-        list[index] = change.data.after
-      } else {
-        list.splice(index, 0, change.data.after)
-      }
+    const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
+    const list = resolvePath(element, parentId)
+    changes.filter(isRemovalOrModificationChange).forEach(change => {
+      list[Number(change.elemIDs?.before?.name)] = undefined
     })
 
-  setPath(element, parentId, list.filter(values.isDefined))
-}, `applyListChanges - ${element.elemID.getFullName()}`)
+    _(changes)
+      .filter(isAdditionOrModificationChange)
+      .sortBy(change => Number(change.elemIDs?.after?.name))
+      .forEach(change => {
+        const index = Number(change.elemIDs?.after?.name)
+        if (list[index] === undefined) {
+          list[index] = change.data.after
+        } else {
+          list.splice(index, 0, change.data.after)
+        }
+      })
+
+    setPath(element, parentId, list.filter(values.isDefined))
+  }, `applyListChanges - ${element.elemID.getFullName()}`)

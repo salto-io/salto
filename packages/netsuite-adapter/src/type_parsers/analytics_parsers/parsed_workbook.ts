@@ -1,29 +1,64 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType, createRefToElmWithValue, createRestriction } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ListType,
+  ObjectType,
+  createRefToElmWithValue,
+  createRestriction,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
 import { fieldTypes } from '../../types/field_types'
-import { AnalyticOriginalFields, ApplicationId, Audience, BaseRecord, Condition, ConditionOrFilter, DEFAULT_VALUE, DEFAULT_XML_TYPE, DO_NOT_ADD, DefinitionId, Dependencies, Expression, ExpressionValue, FieldOrFormula, FieldReference, Filter, Formula, FormulaFormula, IGNORE_T_VALUE, Join, JoinTrail, Meta, Operator, TranslationType, XML_TYPE } from './analytics_constants'
+import {
+  AnalyticOriginalFields,
+  ApplicationId,
+  Audience,
+  BaseRecord,
+  Condition,
+  ConditionOrFilter,
+  DEFAULT_VALUE,
+  DEFAULT_XML_TYPE,
+  DO_NOT_ADD,
+  DefinitionId,
+  Dependencies,
+  Expression,
+  ExpressionValue,
+  FieldOrFormula,
+  FieldReference,
+  Filter,
+  Formula,
+  FormulaFormula,
+  IGNORE_T_VALUE,
+  Join,
+  JoinTrail,
+  Meta,
+  Operator,
+  TranslationType,
+  XML_TYPE,
+} from './analytics_constants'
 
 const sortDirectionList = ['ASCENDING', 'DESCENDING'] as const
 
-type sortDirection = typeof sortDirectionList[number]
+type sortDirection = (typeof sortDirectionList)[number]
 
 type TargetFieldContext = {
   name?: string
@@ -168,8 +203,15 @@ type WorkbookDefinitionType = {
   Workbook?: InnerWorkbook
 }
 
-export type Workbook = AnalyticOriginalFields & WorkbookDefinitionType
+export const workbookDefinitionFields: types.TypeKeysEnum<WorkbookDefinitionType> = {
+  charts: 'charts',
+  datasetLinks: 'datasetLinks',
+  dataViews: 'dataViews',
+  pivots: 'pivots',
+  Workbook: 'Workbook',
+}
 
+export type Workbook = AnalyticOriginalFields & WorkbookDefinitionType
 
 export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
@@ -177,8 +219,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookTargetFieldContextElemID = new ElemID(constants.NETSUITE, 'workbook_target_field_context')
   const workbookTargetFieldContext = createMatchingObjectType<TargetFieldContext>({
     elemID: workbookTargetFieldContextElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       name: {
         refType: BuiltinTypes.STRING,
@@ -194,8 +235,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookSortingElemID = new ElemID(constants.NETSUITE, 'workbook_sorting')
   const workbookSorting = createMatchingObjectType<Sorting>({
     elemID: workbookSortingElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       caseSensitive: { refType: BuiltinTypes.BOOLEAN },
       direction: {
@@ -215,8 +255,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookExpressionValueElemID = new ElemID(constants.NETSUITE, 'workbook_expression_value')
   const workbookExpressionValue = createMatchingObjectType<ExpressionValue>({
     elemID: workbookExpressionValueElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.UNKNOWN },
@@ -228,8 +267,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookExpressionElemID = new ElemID(constants.NETSUITE, 'workbook_expression')
   const workbookExpression = createMatchingObjectType<Expression>({
     elemID: workbookExpressionElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       label: { refType: BuiltinTypes.STRING },
       subType: { refType: BuiltinTypes.UNKNOWN },
@@ -243,8 +281,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookOperatorElemID = new ElemID(constants.NETSUITE, 'workbook_operator')
   const workbookOperator = createMatchingObjectType<Operator>({
     elemID: workbookOperatorElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       code: {
         refType: BuiltinTypes.STRING,
@@ -260,8 +297,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookConditionalFormatFilterElemID = new ElemID(constants.NETSUITE, 'workbook_conditional_format_filter')
   const workbookConditionalFormatFilter = createMatchingObjectType<ConditionalFormatFilter>({
     elemID: workbookConditionalFormatFilterElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       expressions: { refType: workbookExpressionValue },
       operator: { refType: workbookOperator },
@@ -291,8 +327,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookRgbColorElemID = new ElemID(constants.NETSUITE, 'workbook_rgb_color')
   const workbookRgbColor = createMatchingObjectType<RgbColor>({
     elemID: workbookRgbColorElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       blue: { refType: BuiltinTypes.NUMBER },
       green: { refType: BuiltinTypes.NUMBER },
@@ -323,8 +358,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookIconElemID = new ElemID(constants.NETSUITE, 'workbook_icon')
   const workbookIcon = createMatchingObjectType<Icon>({
     elemID: workbookIconElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       color: { refType: workbookColor },
       image: { refType: BuiltinTypes.STRING },
@@ -336,8 +370,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookStyleElemID = new ElemID(constants.NETSUITE, 'workbook_style')
   const workbookStyle = createMatchingObjectType<Style>({
     elemID: workbookStyleElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       backgroundColor: { refType: workbookColor },
       icon: { refType: workbookIcon },
@@ -349,8 +382,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookConditionalFormatRuleElemID = new ElemID(constants.NETSUITE, 'workbook_conditional_format_rule')
   const workbookConditionalFormatRule = createMatchingObjectType<ConditionalFormatRule>({
     elemID: workbookConditionalFormatRuleElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       filter: { refType: workbookFormatRuleFilter },
       id: { refType: BuiltinTypes.STRING },
@@ -381,8 +413,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookCellConditionalFormatElemID = new ElemID(constants.NETSUITE, 'workbook_cell_conditional_format')
   const workbookCellConditionalFormat = createMatchingObjectType<CellConditionalFormat>({
     elemID: workbookCellConditionalFormatElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       formatRules: { refType: new ListType(workbookFormatRule) },
       id: { refType: BuiltinTypes.STRING },
@@ -412,8 +443,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookTranslationElemID = new ElemID(constants.NETSUITE, 'workbook_translation')
   const workbookTranslation = createMatchingObjectType<TranslationType>({
     elemID: workbookTranslationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       translationScriptId: { refType: BuiltinTypes.STRING },
     },
@@ -424,8 +454,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookBaseRecordElemID = new ElemID(constants.NETSUITE, 'workbook_base_record')
   const workbookBaseRecord = createMatchingObjectType<BaseRecord>({
     elemID: workbookBaseRecordElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.STRING },
       label: { refType: BuiltinTypes.STRING },
@@ -437,8 +466,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookJoinElemID = new ElemID(constants.NETSUITE, 'workbook_join')
   const workbookJoin = createMatchingObjectType<Join>({
     elemID: workbookJoinElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.STRING },
       targetRecordType: { refType: BuiltinTypes.STRING },
@@ -450,8 +478,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookJoinTrailElemID = new ElemID(constants.NETSUITE, 'workbook_join_trail')
   const workbookJoinTrail = createMatchingObjectType<JoinTrail>({
     elemID: workbookJoinTrailElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       baseRecord: { refType: workbookBaseRecord },
       joins: { refType: new ListType(workbookJoin) },
@@ -463,8 +490,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookFieldReferenceElemID = new ElemID(constants.NETSUITE, 'workbook_field_reference')
   const workbookFieldReference = createMatchingObjectType<FieldReference>({
     elemID: workbookFieldReferenceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.STRING },
       joinTrail: { refType: workbookJoinTrail },
@@ -503,8 +529,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookFormulaElemID = new ElemID(constants.NETSUITE, 'workbook_formula')
   const workbookFormula = createMatchingObjectType<Formula>({
     elemID: workbookFormulaElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       fields: { refType: BuiltinTypes.UNKNOWN },
       formula: { refType: workbookFormulaFormula },
@@ -541,8 +566,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookMetaElemID = new ElemID(constants.NETSUITE, 'workbook_meta')
   const workbookMeta = createMatchingObjectType<Meta>({
     elemID: workbookMetaElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       selectorType: { refType: BuiltinTypes.STRING },
       subType: { refType: BuiltinTypes.STRING },
@@ -554,8 +578,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookFilterElemID = new ElemID(constants.NETSUITE, 'workbook_filter')
   const workbookFilter = createMatchingObjectType<Filter>({
     elemID: workbookFilterElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       caseSensitive: { refType: BuiltinTypes.BOOLEAN },
       expressions: { refType: new ListType(workbookExpression) },
@@ -574,8 +597,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookConditionElemID = new ElemID(constants.NETSUITE, 'workbook_condition')
   const workbookCondition = createMatchingObjectType<Condition>({
     elemID: workbookConditionElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       children: { refType: BuiltinTypes.UNKNOWN },
       operator: { refType: workbookOperator },
@@ -617,8 +639,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookColumnElemID = new ElemID(constants.NETSUITE, 'workbook_column')
   const workbookColumn = createMatchingObjectType<Column>({
     elemID: workbookColumnElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       conditionalFormat: { refType: new ListType(workbookConditionalFormat) },
       criterion: { refType: workbookCriterion },
@@ -637,8 +658,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookChartOrPivotElemID = new ElemID(constants.NETSUITE, 'workbook_chart_or_pivot')
   const workbookChartOrPivot = createMatchingObjectType<ChartOrPivot>({
     elemID: workbookChartOrPivotElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.UNKNOWN },
       scriptId: { refType: BuiltinTypes.STRING },
@@ -702,8 +722,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookDsLinkElemID = new ElemID(constants.NETSUITE, 'workbook_dsLink')
   const workbookDsLink = createMatchingObjectType<DsLink>({
     elemID: workbookDsLinkElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.UNKNOWN },
       scriptId: { refType: BuiltinTypes.STRING },
@@ -740,8 +759,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookDataViewElemID = new ElemID(constants.NETSUITE, 'workbook_data_view')
   const workbookDataView = createMatchingObjectType<DataView>({
     elemID: workbookDataViewElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.UNKNOWN },
       scriptId: { refType: BuiltinTypes.STRING },
@@ -779,8 +797,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookAudienceElemID = new ElemID(constants.NETSUITE, 'workbook_audience')
   const workbookAudience = createMatchingObjectType<Audience>({
     elemID: workbookAudienceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       AudienceItems: { refType: new ListType(BuiltinTypes.UNKNOWN) },
       isPublic: { refType: BuiltinTypes.BOOLEAN },
@@ -817,8 +834,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookDependenciesElemID = new ElemID(constants.NETSUITE, 'workbook_dependencies')
   const workbookDependencies = createMatchingObjectType<Dependencies>({
     elemID: workbookDependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: new ListType(BuiltinTypes.STRING),
@@ -834,8 +850,7 @@ export const parsedWorkbookType = (): TypeAndInnerTypes => {
   const workbookElemID = new ElemID(constants.NETSUITE, 'workbook')
   const workbook = createMatchingObjectType<Workbook>({
     elemID: workbookElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),

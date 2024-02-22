@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { simpleGetArgs, computeGetArgs } from '../../../src/fetch/resource/request_parameters'
@@ -29,20 +29,28 @@ jest.mock('@salto-io/logging', () => {
 describe('request_parameters', () => {
   describe('simpleGetArgs', () => {
     it('should pass standard args as provided', () => {
-      expect(simpleGetArgs({ url: '/a/b/c' })).toEqual([{
-        url: '/a/b/c',
-        paginationField: undefined,
-        queryParams: undefined,
-        recursiveQueryParams: undefined,
-      }])
-      expect(simpleGetArgs({
-        url: '/ep', paginationField: 'page', queryParams: { arg1: 'val1' },
-      })).toEqual([{
-        url: '/ep',
-        paginationField: 'page',
-        queryParams: { arg1: 'val1' },
-        recursiveQueryParams: undefined,
-      }])
+      expect(simpleGetArgs({ url: '/a/b/c' })).toEqual([
+        {
+          url: '/a/b/c',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+      ])
+      expect(
+        simpleGetArgs({
+          url: '/ep',
+          paginationField: 'page',
+          queryParams: { arg1: 'val1' },
+        }),
+      ).toEqual([
+        {
+          url: '/ep',
+          paginationField: 'page',
+          queryParams: { arg1: 'val1' },
+          recursiveQueryParams: undefined,
+        },
+      ])
     })
 
     it('should convert recursiveQueryParams to functions', () => {
@@ -53,15 +61,17 @@ describe('request_parameters', () => {
           parentId: 'id',
         },
       })
-      expect(res).toEqual([{
-        url: '/a/b/c',
-        recursiveQueryParams: {
-          ref: expect.anything(),
-          parentId: expect.anything(),
+      expect(res).toEqual([
+        {
+          url: '/a/b/c',
+          recursiveQueryParams: {
+            ref: expect.anything(),
+            parentId: expect.anything(),
+          },
+          paginationField: undefined,
+          queryParams: undefined,
         },
-        paginationField: undefined,
-        queryParams: undefined,
-      }])
+      ])
       expect(res[0].recursiveQueryParams?.ref({ a: 'a', b: 'b', referenced: 'val' })).toEqual('val')
       expect(res[0].recursiveQueryParams?.parentId({ a: 'a', b: 'b', referenced: 'val' })).toBeUndefined()
       expect(res[0].recursiveQueryParams?.parentId({ id: 'id' })).toEqual('id')
@@ -70,20 +80,28 @@ describe('request_parameters', () => {
 
   describe('computeGetArgs', () => {
     it('should pass standard args as provided', () => {
-      expect(computeGetArgs({ url: '/a/b/c' })).toEqual([{
-        url: '/a/b/c',
-        paginationField: undefined,
-        queryParams: undefined,
-        recursiveQueryParams: undefined,
-      }])
-      expect(computeGetArgs({
-        url: '/ep', paginationField: 'page', queryParams: { arg1: 'val1' },
-      })).toEqual([{
-        url: '/ep',
-        paginationField: 'page',
-        queryParams: { arg1: 'val1' },
-        recursiveQueryParams: undefined,
-      }])
+      expect(computeGetArgs({ url: '/a/b/c' })).toEqual([
+        {
+          url: '/a/b/c',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+      ])
+      expect(
+        computeGetArgs({
+          url: '/ep',
+          paginationField: 'page',
+          queryParams: { arg1: 'val1' },
+        }),
+      ).toEqual([
+        {
+          url: '/ep',
+          paginationField: 'page',
+          queryParams: { arg1: 'val1' },
+          recursiveQueryParams: undefined,
+        },
+      ])
     })
 
     it('should convert recursiveQueryParams to functions', () => {
@@ -94,15 +112,17 @@ describe('request_parameters', () => {
           parentId: 'id',
         },
       })
-      expect(res).toEqual([{
-        url: '/a/b/c',
-        recursiveQueryParams: {
-          ref: expect.anything(),
-          parentId: expect.anything(),
+      expect(res).toEqual([
+        {
+          url: '/a/b/c',
+          recursiveQueryParams: {
+            ref: expect.anything(),
+            parentId: expect.anything(),
+          },
+          paginationField: undefined,
+          queryParams: undefined,
         },
-        paginationField: undefined,
-        queryParams: undefined,
-      }])
+      ])
       expect(res[0].recursiveQueryParams?.ref({ a: 'a', b: 'b', referenced: 'val' })).toEqual('val')
       expect(res[0].recursiveQueryParams?.parentId({ a: 'a', b: 'b', referenced: 'val' })).toBeUndefined()
       expect(res[0].recursiveQueryParams?.parentId({ id: 'id' })).toEqual('id')
@@ -114,33 +134,29 @@ describe('request_parameters', () => {
     })
 
     it('should fail if the provided context is not a primitive', () => {
-      expect(
-        () => computeGetArgs({ url: '/a/{p}' }, undefined, { p: { complex: true } })
-      ).toThrow()
+      expect(() => computeGetArgs({ url: '/a/{p}' }, undefined, { p: { complex: true } })).toThrow()
     })
 
     it('should compute dependsOn urls without duplicates', () => {
       const Pet = new ObjectType({ elemID: new ElemID('bla', 'Pet') })
       const Owner = new ObjectType({ elemID: new ElemID('bla', 'Owner') })
-      expect(computeGetArgs(
-        {
-          url: '/a/b/{pet_id}',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-          ],
-        },
-        {
-          Pet: [
-            new InstanceElement('dog', Pet, { id: 'dogID' }),
-            new InstanceElement('cat', Pet, { id: 'catID' }),
-            new InstanceElement('cat', Pet, { id: 'catID' }),
-            new InstanceElement('dog', Pet, { id: 'dogID' }),
-          ],
-          Owner: [
-            new InstanceElement('o1', Owner, { id: 'ghi' }),
-          ],
-        },
-      )).toEqual([
+      expect(
+        computeGetArgs(
+          {
+            url: '/a/b/{pet_id}',
+            dependsOn: [{ pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } }],
+          },
+          {
+            Pet: [
+              new InstanceElement('dog', Pet, { id: 'dogID' }),
+              new InstanceElement('cat', Pet, { id: 'catID' }),
+              new InstanceElement('cat', Pet, { id: 'catID' }),
+              new InstanceElement('dog', Pet, { id: 'dogID' }),
+            ],
+            Owner: [new InstanceElement('o1', Owner, { id: 'ghi' })],
+          },
+        ),
+      ).toEqual([
         {
           url: '/a/b/dogID',
           paginationField: undefined,
@@ -159,33 +175,35 @@ describe('request_parameters', () => {
       const Pet = new ObjectType({ elemID: new ElemID('bla', 'Pet') })
       const Owner = new ObjectType({ elemID: new ElemID('bla', 'Owner') })
       const Food = new ObjectType({ elemID: new ElemID('bla', 'Food') })
-      expect(computeGetArgs(
-        {
-          url: '/a/b/{owner_id}/{pet_id}/{food_id}',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-            { pathParam: 'food_id', from: { type: 'Food', field: 'id' } },
-            { pathParam: 'owner_id', from: { type: 'Owner', field: 'id' } },
-          ],
-        },
-        {
-          Pet: [
-            new InstanceElement('dog', Pet, { id: 'dogID' }),
-            new InstanceElement('cat', Pet, { id: 'catID' }),
-            new InstanceElement('cat', Pet, { id: 'catID' }),
-            new InstanceElement('dog', Pet, { id: 'dogID' }),
-          ],
-          Owner: [
-            new InstanceElement('o1', Owner, { id: 'o1' }),
-            new InstanceElement('o2', Owner, { id: 'o2' }),
-            new InstanceElement('o3', Owner, { id: 'o3' }),
-          ],
-          Food: [
-            new InstanceElement('bamba', Food, { id: 'bamba' }),
-            new InstanceElement('bissli', Food, { id: 'bissli' }),
-          ],
-        },
-      )).toEqual([
+      expect(
+        computeGetArgs(
+          {
+            url: '/a/b/{owner_id}/{pet_id}/{food_id}',
+            dependsOn: [
+              { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
+              { pathParam: 'food_id', from: { type: 'Food', field: 'id' } },
+              { pathParam: 'owner_id', from: { type: 'Owner', field: 'id' } },
+            ],
+          },
+          {
+            Pet: [
+              new InstanceElement('dog', Pet, { id: 'dogID' }),
+              new InstanceElement('cat', Pet, { id: 'catID' }),
+              new InstanceElement('cat', Pet, { id: 'catID' }),
+              new InstanceElement('dog', Pet, { id: 'dogID' }),
+            ],
+            Owner: [
+              new InstanceElement('o1', Owner, { id: 'o1' }),
+              new InstanceElement('o2', Owner, { id: 'o2' }),
+              new InstanceElement('o3', Owner, { id: 'o3' }),
+            ],
+            Food: [
+              new InstanceElement('bamba', Food, { id: 'bamba' }),
+              new InstanceElement('bissli', Food, { id: 'bissli' }),
+            ],
+          },
+        ),
+      ).toEqual([
         {
           url: '/a/b/o1/dogID/bamba',
           paginationField: undefined,
@@ -261,57 +279,46 @@ describe('request_parameters', () => {
       ])
     })
     it('should fail if no context is provided', () => {
-      expect(() => computeGetArgs(
-        {
+      expect(() =>
+        computeGetArgs(
+          {
+            url: '/a/b/{pet_id}',
+          },
+          {},
+        ),
+      ).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
+      expect(() =>
+        computeGetArgs(
+          {
+            url: '/a/b/{pet_id}',
+            dependsOn: [],
+          },
+          {},
+        ),
+      ).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
+      expect(() =>
+        computeGetArgs({
           url: '/a/b/{pet_id}',
-        },
-        {},
-      )).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
-      expect(() => computeGetArgs(
-        {
-          url: '/a/b/{pet_id}',
-          dependsOn: [],
-        },
-        {},
-      )).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
-      expect(() => computeGetArgs(
-        {
-          url: '/a/b/{pet_id}',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-          ],
-        },
-      )).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
-    })
-    it('should fail if url is not valid', () => {
-      expect(() => computeGetArgs(
-        {
-          url: '/a/b/{pet_id',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-          ],
-        },
-        {},
-      )).toThrow(new Error('invalid endpoint definition /a/b/{pet_id'))
+          dependsOn: [{ pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } }],
+        }),
+      ).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
     })
     it('should fail if argument definition is not found in dependsOn', () => {
-      expect(() => computeGetArgs(
-        {
-          url: '/a/b/{some_uncovered_id}',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-          ],
-        },
-        {},
-      )).toThrow(new Error('could not resolve path param some_uncovered_id in url /a/b/{some_uncovered_id}'))
+      expect(() =>
+        computeGetArgs(
+          {
+            url: '/a/b/{some_uncovered_id}',
+            dependsOn: [{ pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } }],
+          },
+          {},
+        ),
+      ).toThrow(new Error('could not resolve path param some_uncovered_id in url /a/b/{some_uncovered_id}'))
     })
     it('should not fail if referenced type has no instances', () => {
       computeGetArgs(
         {
           url: '/a/b/{pet_id}',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-          ],
+          dependsOn: [{ pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } }],
         },
         { Pet: [] },
       )

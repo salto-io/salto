@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as path from 'path'
 import { validator } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -29,8 +29,7 @@ describe('workspace', () => {
   const splitted1FileName = path.join(workspaceBaseDir, 'splitted1.nacl')
   const splitted2FileName = path.join(workspaceBaseDir, 'splitted2.nacl')
   const inactiveFileName = path.join(workspaceBaseDir, 'inactive', 'test.nacl')
-  const validate = async (workspace: EditorWorkspace, elements: number):
-  Promise<void> => {
+  const validate = async (workspace: EditorWorkspace, elements: number): Promise<void> => {
     const wsElements = await workspace.elements
     expect(wsElements && (await awu(await wsElements.getAll()).toArray()).length).toBe(elements)
   }

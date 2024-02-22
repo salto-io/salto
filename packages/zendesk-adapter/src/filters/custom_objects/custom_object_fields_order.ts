@@ -1,25 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
   Element,
-  ElemID, getChangeData,
-  InstanceElement, isAdditionOrModificationChange, isInstanceChange,
-  isInstanceElement, ListType,
-  ObjectType, ReferenceExpression, SaltoElementError, Value,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  ListType,
+  ObjectType,
+  ReferenceExpression,
+  SaltoElementError,
+  Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParent, getParents, inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
@@ -60,12 +68,12 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
       .filter(instance => instance.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
     const customObjectsByFullName = _.keyBy(
       elements.filter(isInstanceElement).filter(instance => instance.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME),
-      element => element.elemID.getFullName()
+      element => element.elemID.getFullName(),
     )
 
     const customObjectFieldsByParentName = _.groupBy(
       customObjectFields.filter(field => getParents(field).length === 1),
-      field => getParent(field).elemID.getFullName()
+      field => getParent(field).elemID.getFullName(),
     )
 
     if (!_.isEmpty(customObjectFieldsByParentName)) {
@@ -88,7 +96,7 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
         [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, instanceName],
         {
           [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
-        }
+        },
       )
       elements.push(orderInstance)
     })
@@ -97,14 +105,13 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
     const [customObjectFieldOrderChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME
+        isInstanceChange(change) && getChangeData(change).elemID.typeName === CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
     )
 
     // Removal of order means nothing, so we mark it as applied
     const [additionOrModificationChanges, removalChanges] = _.partition(
       customObjectFieldOrderChanges,
-      isAdditionOrModificationChange
+      isAdditionOrModificationChange,
     )
 
     const deployResultsPromises = additionOrModificationChanges
@@ -118,28 +125,26 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
             error: 'parent custom_object is undefined',
           }
         }
-        const parentKey = isResolvedReferenceExpression(parent)
-          ? parent.value.value.key
-          : parent.key
+        const parentKey = isResolvedReferenceExpression(parent) ? parent.value.value.key : parent.key
         if (parentKey === undefined) {
           return {
             change,
             error: 'parent custom_object key is undefined',
           }
         }
-        const fieldsIds = customObjectFieldOrder.value[ORDER_FIELD]
-          .map((field: Value) => {
-            if (isResolvedReferenceExpression(field) && field.value.value.id !== undefined) {
-              return field.value.value.id.toString()
-            }
-            if (_.isPlainObject(field) && _.isNumber(field.id)) {
-              return field.id.toString()
-            }
-            log.error(`customObjectFieldOrder - field is not a resolved reference expression or a plain object - ${field}`)
-            // It is ok to filter ids out, because the api supports reordering without all ids
-            return undefined
-          })
-          .filter(isDefined)
+        const fieldsIds = customObjectFieldOrder.value[ORDER_FIELD].map((field: Value) => {
+          if (isResolvedReferenceExpression(field) && field.value.value.id !== undefined) {
+            return field.value.value.id.toString()
+          }
+          if (_.isPlainObject(field) && _.isNumber(field.id)) {
+            return field.id.toString()
+          }
+          log.error(
+            `customObjectFieldOrder - field is not a resolved reference expression or a plain object - ${field}`,
+          )
+          // It is ok to filter ids out, because the api supports reordering without all ids
+          return undefined
+        }).filter(isDefined)
         try {
           await client.put({
             url: `/api/v2/custom_objects/${parentKey}/fields/reorder`,
@@ -162,11 +167,13 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
     return {
       deployResult: {
         appliedChanges: [...successes.map(success => success.change), ...removalChanges],
-        errors: errors.map(({ change, error }): SaltoElementError => ({
-          elemID: getChangeData(change).elemID,
-          severity: 'Error',
-          message: error ?? '', // We checked that error is defined in the errors partition
-        })),
+        errors: errors.map(
+          ({ change, error }): SaltoElementError => ({
+            elemID: getChangeData(change).elemID,
+            severity: 'Error',
+            message: error ?? '', // We checked that error is defined in the errors partition
+          }),
+        ),
       },
       leftoverChanges,
     }

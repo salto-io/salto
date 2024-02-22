@@ -1,27 +1,41 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { AdditionChange, Change, InstanceElement, ModificationChange, Values, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  Change,
+  InstanceElement,
+  ModificationChange,
+  Values,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+} from '@salto-io/adapter-api'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
+import { WorkflowV1Instance, isWorkflowV1Instance } from '../workflow/types'
 
 export const CHUNK_SIZE = 25
 export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
 export const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
-export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set(['statuses', 'transitions', 'statusMappings', 'statusMigrations'])
+export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set([
+  'statuses',
+  'transitions',
+  'statusMappings',
+  'statusMigrations',
+])
 export const CONDITION_GROUPS_PATH_NAME_TO_RECURSE = new Set(['transitions', 'conditions', 'conditionGroups'])
 
 export enum TASK_STATUS {
@@ -45,6 +59,13 @@ export type WorkflowStatus = {
   name: string
 }
 
+export type WorkflowTransitionV2 = {
+  id?: string
+  actions?: Values[]
+  conditions?: Values
+  validators?: Values[]
+}
+
 type WorkflowDataResponse = {
   id: {
     entityId: string
@@ -64,12 +85,59 @@ type WorkflowScope = {
 
 export type Workflow = {
   name: string
-  version: WorkflowVersion
+  version?: WorkflowVersion
   scope: WorkflowScope
-  id: string
+  id?: string
   transitions: Values[]
   statuses: Values[]
 }
+
+export type WorkflowV2Instance = InstanceElement & {
+  value: InstanceElement['value'] &
+    Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowTransitionV2> }
+}
+
+const WORKFLOW_SCHEMA = Joi.object({
+  name: Joi.string().required(),
+  version: Joi.object({
+    versionNumber: Joi.number().required(),
+    id: Joi.string().required(),
+  }).unknown(true),
+  scope: Joi.object({
+    project: Joi.string(),
+    type: Joi.string().required(),
+  })
+    .unknown(true)
+    .required(),
+  id: Joi.string(),
+  transitions: Joi.object()
+    .pattern(
+      Joi.string(),
+      Joi.object({
+        id: Joi.string(),
+        actions: Joi.array().items(Joi.object()),
+        conditions: Joi.object(),
+        validators: Joi.array().items(Joi.object()),
+      })
+        .unknown(true)
+        .required(),
+    )
+    .required(),
+  statuses: Joi.array().items(Joi.object()).required(),
+})
+  .unknown(true)
+  .required()
+
+const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowTransitionV2> }>(
+  WORKFLOW_SCHEMA,
+  'Received an invalid workflow values',
+)
+
+export const isWorkflowV2Instance = (instance: InstanceElement): instance is WorkflowV2Instance =>
+  instance.elemID.typeName === JIRA_WORKFLOW_TYPE && isWorkflowValues(instance.value)
+
+export const isWorkflowInstance = (instance: InstanceElement): instance is WorkflowV1Instance | WorkflowV2Instance =>
+  isWorkflowV1Instance(instance) || isWorkflowV2Instance(instance)
 
 export type WorkflowPayload = {
   statuses: Values[]
@@ -88,50 +156,79 @@ type TaskResponse = {
 }
 
 export const isAdditionOrModificationWorkflowChange = (
-  change: Change
+  change: Change,
 ): change is AdditionChange<InstanceElement> | ModificationChange<InstanceElement> =>
-  isInstanceChange(change)
-  && isAdditionOrModificationChange(change)
-  && change.data.after.elemID.typeName === JIRA_WORKFLOW_TYPE
+  isInstanceChange(change) &&
+  isAdditionOrModificationChange(change) &&
+  change.data.after.elemID.typeName === JIRA_WORKFLOW_TYPE
 
 const TASK_RESPONSE_SCHEMA = Joi.object({
   status: Joi.string().required(),
   progress: Joi.number().required(),
-}).unknown(true).required()
+})
+  .unknown(true)
+  .required()
 
-const WORKFLOW_DATA_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
-  id: Joi.object({
-    entityId: Joi.string().required(),
-  }).unknown(true).required(),
-  statuses: Joi.array().items(Joi.object({
-    id: Joi.string().required(),
-    name: Joi.string().required(),
-  }).unknown(true).required()).required(),
-}).unknown(true).required()).required()
-
+const WORKFLOW_DATA_RESPONSE_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      id: Joi.object({
+        entityId: Joi.string().required(),
+      })
+        .unknown(true)
+        .required(),
+      statuses: Joi.array()
+        .items(
+          Joi.object({
+            id: Joi.string().required(),
+            name: Joi.string().required(),
+          })
+            .unknown(true)
+            .required(),
+        )
+        .required(),
+    })
+      .unknown(true)
+      .required(),
+  )
+  .required()
 
 const WORKFLOW_RESPONSE_SCHEME = Joi.object({
-  workflows: Joi.array().items(Joi.object({
-    name: Joi.string().required(),
-    id: Joi.string().required(),
-    version: Joi.object({
-      versionNumber: Joi.number().required(),
-      id: Joi.string().required(),
-    }).unknown(true).required(),
-    scope: Joi.object({
-      project: Joi.string(),
-      type: Joi.string().required(),
-    }).unknown(true).required(),
-    statuses: Joi.array().items(Joi.object()
-      .unknown(true)).required(),
-    transitions: Joi.array().items(Joi.object()
-      .unknown(true)).required(),
-  }).unknown(true)).required(),
+  workflows: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        id: Joi.string().required(),
+        version: Joi.object({
+          versionNumber: Joi.number().required(),
+          id: Joi.string().required(),
+        })
+          .unknown(true)
+          .required(),
+        scope: Joi.object({
+          project: Joi.string(),
+          type: Joi.string().required(),
+        })
+          .unknown(true)
+          .required(),
+        statuses: Joi.array().items(Joi.object().unknown(true)).required(),
+        transitions: Joi.array().items(Joi.object().unknown(true)).required(),
+      }).unknown(true),
+    )
+    .required(),
   taskId: Joi.string(),
-}).unknown(true).required()
+})
+  .unknown(true)
+  .required()
 
-export const isWorkflowDataResponse = createSchemeGuard<WorkflowDataResponse[]>(WORKFLOW_DATA_RESPONSE_SCHEMA, 'Received an invalid workflow ids response')
+export const isWorkflowDataResponse = createSchemeGuard<WorkflowDataResponse[]>(
+  WORKFLOW_DATA_RESPONSE_SCHEMA,
+  'Received an invalid workflow ids response',
+)
 
-export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEME, 'Received an invalid workflow response')
+export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(
+  WORKFLOW_RESPONSE_SCHEME,
+  'Received an invalid workflow response',
+)
 
 export const isTaskResponse = createSchemeGuard<TaskResponse>(TASK_RESPONSE_SCHEMA, 'Received an invalid task response')

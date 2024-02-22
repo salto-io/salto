@@ -1,30 +1,48 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, CORE_ANNOTATIONS, ActionName,
-  SeverityLevel } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  FieldDefinition,
+  ListType,
+  MapType,
+  CORE_ANNOTATIONS,
+  ActionName,
+  SeverityLevel,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
-import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
+import {
+  createRequestConfigs,
+  DeploymentRequestsByAction,
+  FetchRequestConfig,
+  FetchRequestDefaultConfig,
+  getConfigTypeName,
+} from './request'
 import { UserFetchConfig } from '../definitions/user'
 
 export class InvalidSingletonType extends Error {}
 
 export class AdapterFetchError extends Error {
-  constructor(message: string, readonly severity: SeverityLevel) {
+  constructor(
+    message: string,
+    readonly severity: SeverityLevel,
+  ) {
     super(message)
   }
 }
@@ -35,9 +53,7 @@ export type TypeConfig<T extends TransformationConfig = TransformationConfig, A 
   transformation?: T
 }
 
-export type TypeDefaultsConfig<
-  TD extends TransformationDefaultConfig = TransformationDefaultConfig
-> = {
+export type TypeDefaultsConfig<TD extends TransformationDefaultConfig = TransformationDefaultConfig> = {
   request?: FetchRequestDefaultConfig
   transformation: TD
 }
@@ -105,7 +121,6 @@ export const createAdapterApiConfigType = ({
     },
   })
 
-
   const adapterApiConfigType = createMatchingObjectType<Partial<AdapterApiConfig>>({
     elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'adapterApiConfig')),
     fields: {
@@ -133,18 +148,12 @@ export const createAdapterApiConfigType = ({
 export const defaultMissingUserFallbackField = { defaultMissingUserFallback: { refType: BuiltinTypes.STRING } }
 
 export const getConfigWithDefault = <
-  T extends TransformationConfig | FetchRequestConfig | undefined,
-  S extends TransformationDefaultConfig | FetchRequestDefaultConfig
+  T extends TransformationConfig | FetchRequestConfig | TypeConfig | undefined,
+  S extends TransformationDefaultConfig | FetchRequestDefaultConfig | TypeDefaultsConfig,
 >(
-    typeSpecificConfig: T,
-    defaultConfig: S,
-  ): T & S => (
-    _.defaults(
-      {},
-      typeSpecificConfig,
-      defaultConfig,
-    )
-  )
+  typeSpecificConfig: T,
+  defaultConfig: S,
+): T & S => _.defaults({}, typeSpecificConfig, defaultConfig)
 
 /**
  * Verify that all fetch types are supported.
@@ -154,10 +163,25 @@ export const validateSupportedTypes = (
   userFetchConfig: UserFetchConfig,
   supportedTypesNames: string[],
 ): void => {
-  const invalidIncludedTypes = [...userFetchConfig.include, ...userFetchConfig.exclude].filter(
-    ({ type: typeRegex }) => supportedTypesNames.every(type => !new RegExp(`^${typeRegex}$`).test(type)),
-  ).map(({ type }) => type)
+  const invalidIncludedTypes = [...userFetchConfig.include, ...userFetchConfig.exclude]
+    .filter(({ type: typeRegex }) => supportedTypesNames.every(type => !new RegExp(`^${typeRegex}$`).test(type)))
+    .map(({ type }) => type)
   if (invalidIncludedTypes.length > 0) {
-    throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludedTypes} does not match any of the supported types.`)
+    throw Error(
+      `Invalid type names in ${fetchConfigPath}: ${invalidIncludedTypes} does not match any of the supported types.`,
+    )
+  }
+}
+
+export const validateCustomizationsTypes = (
+  customizationName: string,
+  customization: Record<string, boolean>,
+  supportedTypesNames: string[],
+): void => {
+  const invalidCustomizations = Object.keys(customization).filter(typeName => !supportedTypesNames.includes(typeName))
+  if (invalidCustomizations.length > 0) {
+    throw Error(
+      `Invalid type names in ${customizationName}: ${invalidCustomizations} does not match any of the supported types.`,
+    )
   }
 }

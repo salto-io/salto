@@ -1,80 +1,143 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  Field,
+  BuiltinTypes,
+  TypeElement,
+  Field as TypeField,
+  Values,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  InstanceElement,
+  getRestriction,
+  ListType,
+  createRestriction,
+  isServiceId,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from '@salto-io/jsforce'
 import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 
 import {
-  getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
-  getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
-  METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
-  isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
-  getAuthorAnnotations, isCustom,
+  getSObjectFieldElement,
+  Types,
+  toCustomField,
+  toCustomProperties,
+  instancesToUpdateRecords,
+  getValueTypeFieldElement,
+  createMetadataTypeElements,
+  MetadataObjectType,
+  METADATA_TYPES_TO_RENAME,
+  instancesToDeleteRecords,
+  instancesToCreateRecords,
+  isMetadataObjectType,
+  isMetadataInstanceElement,
+  toDeployableInstance,
+  transformPrimitive,
+  getAuthorAnnotations,
+  isCustom,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
-  FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
-  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
-  CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
-  SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_SETTINGS_TYPE,
-  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
-  WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
-  CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION, BUSINESS_HOURS_METADATA_TYPE,
+  FIELD_ANNOTATIONS,
+  FIELD_TYPE_NAMES,
+  LABEL,
+  API_NAME,
+  COMPOUND_FIELD_TYPE_NAMES,
+  FIELD_DEPENDENCY_FIELDS,
+  VALUE_SETTINGS_FIELDS,
+  FILTER_ITEM_FIELDS,
+  METADATA_TYPE,
+  CUSTOM_OBJECT,
+  VALUE_SET_FIELDS,
+  SUBTYPES_PATH,
+  INSTANCE_FULL_NAME_FIELD,
+  DESCRIPTION,
+  SALESFORCE,
+  WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  CUSTOM_SETTINGS_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE,
+  WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+  INTERNAL_ID_FIELD,
+  WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  CPQ_PRODUCT_RULE,
+  CPQ_LOOKUP_PRODUCT_FIELD,
+  INTERNAL_ID_ANNOTATION,
+  BUSINESS_HOURS_METADATA_TYPE,
   SALESFORCE_DATE_PLACEHOLDER,
   FORMULA,
 } from '../../src/constants'
-import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
-  SalesforceRecord } from '../../src/client/types'
+import {
+  CustomField,
+  FilterItem,
+  CustomObject,
+  CustomPicklistValue,
+  SalesforceRecord,
+} from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
 import { createValueSetEntry, defaultFilterContext } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
-import { mockValueTypeField, mockDescribeValueResult, mockFileProperties, mockSObjectField } from '../connection'
+import {
+  mockValueTypeField,
+  mockDescribeValueResult,
+  mockFileProperties,
+  mockSObjectField,
+} from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
 import { mockTypes } from '../mock_elements'
 
 const { awu } = collections.asynciterable
 
-
 const { makeArray } = collections.array
 
 describe('transformer', () => {
   describe('getAuthorAnnotations', () => {
-    const newChangeDateFileProperties = mockFileProperties({ lastModifiedDate: 'date that is new',
+    const newChangeDateFileProperties = mockFileProperties({
+      lastModifiedDate: 'date that is new',
       type: 'test',
       fullName: 'test',
-      lastModifiedByName: 'changed_name' })
-    const oldChangeDateFileProperties = mockFileProperties(
-      { lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER,
-        type: 'test',
-        fullName: 'test' }
-    )
+      lastModifiedByName: 'changed_name',
+    })
+    const oldChangeDateFileProperties = mockFileProperties({
+      lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER,
+      type: 'test',
+      fullName: 'test',
+    })
     it('get annotations with up to date change time will return full annotations', () => {
-      expect(getAuthorAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
-        .toEqual('changed_name')
+      expect(
+        getAuthorAnnotations(newChangeDateFileProperties)[
+          CORE_ANNOTATIONS.CHANGED_BY
+        ],
+      ).toEqual('changed_name')
     })
     it('file properties with old change will return no user name in changedBy', () => {
-      expect(getAuthorAnnotations(oldChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
-        .not
-        .toBeDefined()
+      expect(
+        getAuthorAnnotations(oldChangeDateFileProperties)[
+          CORE_ANNOTATIONS.CHANGED_BY
+        ],
+      ).not.toBeDefined()
     })
   })
   describe('getValueTypeFieldElement', () => {
@@ -91,7 +154,11 @@ describe('transformer', () => {
     describe('enum field', () => {
       let enumField: TypeField
       beforeEach(() => {
-        enumField = getValueTypeFieldElement(dummyElem, salesforceEnumField, new Map())
+        enumField = getValueTypeFieldElement(
+          dummyElem,
+          salesforceEnumField,
+          new Map(),
+        )
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
@@ -136,10 +203,7 @@ describe('transformer', () => {
         polymorphicForeignKey: true,
         precision: 0,
         queryByDistance: false,
-        referenceTo: [
-          'Group',
-          'User',
-        ],
+        referenceTo: ['Group', 'User'],
         relationshipName: 'Owner',
         restrictedPicklist: false,
         scale: 0,
@@ -163,55 +227,119 @@ describe('transformer', () => {
       ): Promise<void> => {
         expect(await fieldElement.getType()).toEqual(expectedType)
         expect(fieldElement.name).toEqual('OwnerId')
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
-          .toHaveLength(expectedRelatedTo.length)
-        expectedRelatedTo.forEach(expectedRelatedToValue =>
-          expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
-            .toContain(expectedRelatedToValue))
+        expect(
+          fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
+        ).toHaveLength(expectedRelatedTo.length)
+        expectedRelatedTo.forEach((expectedRelatedToValue) =>
+          expect(
+            fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
+          ).toContain(expectedRelatedToValue),
+        )
       }
 
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceReferenceField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        await assertReferenceFieldTransformation(
+          fieldElement,
+          ['Group', 'User'],
+          Types.primitiveDataTypes.Lookup,
+        )
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceReferenceField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        await assertReferenceFieldTransformation(
+          fieldElement,
+          ['Group', 'User'],
+          Types.primitiveDataTypes.Lookup,
+        )
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceReferenceField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        await assertReferenceFieldTransformation(
+          fieldElement,
+          ['Group', 'User'],
+          Types.primitiveDataTypes.Lookup,
+        )
       })
 
       it('should fetch masterdetail relationships', async () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceReferenceField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        await assertReferenceFieldTransformation(
+          fieldElement,
+          ['Group', 'User'],
+          Types.primitiveDataTypes.MasterDetail,
+        )
+        expect(
+          fieldElement.annotations[
+            FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL
+          ],
+        ).toBe(true)
+        expect(
+          fieldElement.annotations[
+            FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ
+          ],
+        ).toBe(true)
       })
 
       it('should fetch masterdetail relationships which are not reparentable and requires read/write access', async () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          {}, {}, defaultFilterContext.fetchProfile)
-        await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceReferenceField,
+          {},
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        await assertReferenceFieldTransformation(
+          fieldElement,
+          ['Group', 'User'],
+          Types.primitiveDataTypes.MasterDetail,
+        )
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
+        expect(
+          fieldElement.annotations[
+            FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL
+          ],
+        ).toBe(false)
+        expect(
+          fieldElement.annotations[
+            FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ
+          ],
+        ).toBe(false)
       })
     })
 
@@ -261,16 +389,30 @@ describe('transformer', () => {
       })
 
       it('should fetch rollup summary field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Summary)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceRollupSummaryField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        expect(await fieldElement.getType()).toEqual(
+          Types.primitiveDataTypes.Summary,
+        )
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        expect(await fieldElement.getType()).not.toEqual(Types.primitiveDataTypes.Summary)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceRollupSummaryField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        expect(await fieldElement.getType()).not.toEqual(
+          Types.primitiveDataTypes.Summary,
+        )
       })
     })
 
@@ -323,21 +465,39 @@ describe('transformer', () => {
         const scale = 6
         salesforceNumberField.precision = precision
         salesforceNumberField.scale = scale
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds,
-          {}, defaultFilterContext.fetchProfile)
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceNumberField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(
+          precision,
+        )
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(scale)
-        expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
+        expect(await fieldElement.getType()).toEqual(
+          Types.primitiveDataTypes.Number,
+        )
       })
 
       it('should fetch int field and init its annotations', async () => {
         const precision = 8
         salesforceNumberField.type = 'int'
         salesforceNumberField.digits = precision
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds,
-          {}, defaultFilterContext.fetchProfile)
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
-        expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceNumberField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(
+          precision,
+        )
+        expect(await fieldElement.getType()).toEqual(
+          Types.primitiveDataTypes.Number,
+        )
       })
     })
 
@@ -358,7 +518,13 @@ describe('transformer', () => {
           restrictedPicklist: true,
           precision: 3,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          {},
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should add value set annotation', () => {
         expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.VALUE_SET, [
@@ -367,10 +533,16 @@ describe('transformer', () => {
         ])
       })
       it('should set restricted annotation', () => {
-        expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.RESTRICTED, true)
+        expect(field.annotations).toHaveProperty(
+          FIELD_ANNOTATIONS.RESTRICTED,
+          true,
+        )
       })
       it('should set visible lines according to precision', () => {
-        expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.VISIBLE_LINES, 3)
+        expect(field.annotations).toHaveProperty(
+          FIELD_ANNOTATIONS.VISIBLE_LINES,
+          3,
+        )
       })
     })
 
@@ -384,7 +556,13 @@ describe('transformer', () => {
           extraTypeInfo: 'plaintextarea',
           length: 5000,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          {},
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should get long text area field type', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.LongTextArea)
@@ -400,7 +578,13 @@ describe('transformer', () => {
           extraTypeInfo: 'richtextarea',
           length: 5000,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          {},
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should get html field type', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.Html)
@@ -414,13 +598,18 @@ describe('transformer', () => {
           soapType: 'xsd:string',
           type: 'encryptedstring',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          {},
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should get html field type', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.EncryptedText)
       })
     })
-
 
     describe('address (compound) field transformation', () => {
       const origSalesforceAddressField: SalesforceField = {
@@ -474,7 +663,9 @@ describe('transformer', () => {
           { OtherAddress: 'OtherAddress' },
           defaultFilterContext.fetchProfile,
         )
-        expect(await fieldElement.getType()).toEqual(Types.compoundDataTypes.Address)
+        expect(await fieldElement.getType()).toEqual(
+          Types.compoundDataTypes.Address,
+        )
       })
     })
 
@@ -520,10 +711,14 @@ describe('transformer', () => {
       let salesforceIdField: SalesforceField
       it('should fetch idLookup & typed id fields as serviceId', async () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
-          serviceIds, {}, defaultFilterContext.fetchProfile)
-        expect(isServiceId((await fieldElement.getType())))
-          .toEqual(true)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceIdField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        expect(isServiceId(await fieldElement.getType())).toEqual(true)
       })
     })
 
@@ -579,9 +774,15 @@ describe('transformer', () => {
             {},
             defaultFilterContext.fetchProfile,
           )
-          expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.AutoNumber)
-          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
-          expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
+          expect(await fieldElement.getType()).toEqual(
+            Types.primitiveDataTypes.AutoNumber,
+          )
+          expect(
+            fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE],
+          ).toBeTruthy()
+          expect(
+            fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED],
+          ).toBeFalsy()
         })
       })
 
@@ -595,9 +796,15 @@ describe('transformer', () => {
             {},
             defaultFilterContext.fetchProfile,
           )
-          expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.AutoNumber)
-          expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
-          expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
+          expect(await fieldElement.getType()).toEqual(
+            Types.primitiveDataTypes.AutoNumber,
+          )
+          expect(
+            fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE],
+          ).toBeTruthy()
+          expect(
+            fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED],
+          ).toBeFalsy()
         })
       })
     })
@@ -653,15 +860,24 @@ describe('transformer', () => {
           salesforceNameField,
           serviceIds,
           { Name: 'Name' },
-          defaultFilterContext.fetchProfile
+          defaultFilterContext.fetchProfile,
         )
-        expect(await fieldElement.getType()).toEqual(Types.compoundDataTypes.Name)
+        expect(await fieldElement.getType()).toEqual(
+          Types.compoundDataTypes.Name,
+        )
       })
 
       it('should fetch name field as text type when no name compound field in object', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds,
-          {}, defaultFilterContext.fetchProfile)
-        expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Text)
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceNameField,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
+        expect(await fieldElement.getType()).toEqual(
+          Types.primitiveDataTypes.Text,
+        )
       })
     })
     describe('when field has invalid characters in its name', () => {
@@ -704,7 +920,13 @@ describe('transformer', () => {
           unique: false,
           updateable: true,
         }
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should create a field with a valid name', () => {
         expect(field.name).not.toInclude('%')
@@ -723,7 +945,13 @@ describe('transformer', () => {
           soapType: 'xsd:string',
           type: 'string',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should have a type of formula', () => {
         expect(field.refType.type?.elemID.name).toEqual('FormulaText')
@@ -750,7 +978,13 @@ describe('transformer', () => {
           soapType: 'xsd:boolean',
           type: 'boolean',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should set the _default annotation on the field', () => {
         expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(true)
@@ -771,10 +1005,18 @@ describe('transformer', () => {
           type: 'boolean',
           updateable: true,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+        )
       })
       it('should set the _default annotation on the field', () => {
-        expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(false)
+        expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(
+          false,
+        )
       })
     })
 
@@ -785,7 +1027,14 @@ describe('transformer', () => {
           name: 'LastModifiedDate',
           type: 'datetime',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile, ['LastModifiedDate'])
+        field = getSObjectFieldElement(
+          dummyElem,
+          fieldDefinition,
+          serviceIds,
+          {},
+          defaultFilterContext.fetchProfile,
+          ['LastModifiedDate'],
+        )
       })
       it('should create a field that is hidden and not required, creatable and updatable', () => {
         expect(field.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
@@ -812,10 +1061,12 @@ describe('transformer', () => {
             {},
             {
               ...defaultFilterContext.fetchProfile,
-              isFeatureEnabled: _feature => true,
-            }
+              isFeatureEnabled: (_feature) => true,
+            },
           )
-          expect(field.annotations[FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE]).toEqual(true)
+          expect(
+            field.annotations[FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE],
+          ).toEqual(true)
         })
       })
       describe('when feature is disabled', () => {
@@ -827,10 +1078,12 @@ describe('transformer', () => {
             {},
             {
               ...defaultFilterContext.fetchProfile,
-              isFeatureEnabled: _feature => false,
-            }
+              isFeatureEnabled: (_feature) => false,
+            },
           )
-          expect(field.annotations[FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE]).toBeUndefined()
+          expect(
+            field.annotations[FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE],
+          ).toBeUndefined()
         })
       })
     })
@@ -839,7 +1092,10 @@ describe('transformer', () => {
   describe('toCustomField', () => {
     const elemID = new ElemID('salesforce', 'test')
     const field = new Field(
-      new ObjectType({ elemID }), 'name', Types.primitiveDataTypes.Text, { [LABEL]: 'Labelo' },
+      new ObjectType({ elemID }),
+      'name',
+      Types.primitiveDataTypes.Text,
+      { [LABEL]: 'Labelo' },
     )
 
     it('should have label for custom field', async () => {
@@ -860,7 +1116,9 @@ describe('transformer', () => {
     })
     describe('Hierarchy CustomField', () => {
       it('should have relationshipName value but no relatesTo value', async () => {
-        const customField = await toCustomField(mockTypes.User.fields.Manager__c)
+        const customField = await toCustomField(
+          mockTypes.User.fields.Manager__c,
+        )
         expect(customField.relationshipName).toEqual('Manager')
         expect(customField.referenceTo).toBeUndefined()
       })
@@ -874,12 +1132,16 @@ describe('transformer', () => {
           Types.primitiveDataTypes.MetadataRelationship,
           {
             [LABEL]: 'Labelo',
-            [FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]: CONTROLLING_FIELD,
+            [FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]:
+              CONTROLLING_FIELD,
           },
         )
         const customField = await toCustomField(metadataRelationshipField)
-        expect(customField[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD])
-          .toEqual(CONTROLLING_FIELD)
+        expect(
+          customField[
+            FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD
+          ],
+        ).toEqual(CONTROLLING_FIELD)
       })
     })
   })
@@ -947,22 +1209,24 @@ describe('transformer', () => {
       describe('with fields', () => {
         let customObj: CustomObject
         beforeEach(async () => {
-          customObj = await toCustomProperties(
-            objType, true, [objType.fields[ignoredField].annotations[API_NAME]],
-          )
+          customObj = await toCustomProperties(objType, true, [
+            objType.fields[ignoredField].annotations[API_NAME],
+          ])
         })
         it('should have correct name', () => {
           expect(customObj.fullName).toEqual(objType.annotations[API_NAME])
         })
         it('should have fields', () => {
           expect(customObj.fields).toBeDefined()
-          expect(makeArray(customObj.fields).map(f => f.fullName)).toContainEqual(
-            objType.fields[existingField].annotations[API_NAME]
-          )
+          expect(
+            makeArray(customObj.fields).map((f) => f.fullName),
+          ).toContainEqual(objType.fields[existingField].annotations[API_NAME])
         })
         it('should not have ignored fields', () => {
-          expect(makeArray(customObj.fields).map(f => f.fullName)).not.toContainEqual(
-            objType.fields[ignoredField].annotations[API_NAME]
+          expect(
+            makeArray(customObj.fields).map((f) => f.fullName),
+          ).not.toContainEqual(
+            objType.fields[ignoredField].annotations[API_NAME],
           )
         })
       })
@@ -1029,10 +1293,13 @@ describe('transformer', () => {
         objectType = origObjectType.clone()
       })
 
-      const assertCustomFieldTransformation = (customField: CustomField, expectedType: string,
-        expectedRelationshipName: string, expectedDeleteConstraint: string | undefined,
-        expectedReferenceTo: string[]):
-        void => {
+      const assertCustomFieldTransformation = (
+        customField: CustomField,
+        expectedType: string,
+        expectedRelationshipName: string,
+        expectedDeleteConstraint: string | undefined,
+        expectedReferenceTo: string[],
+      ): void => {
         expect(customField.type).toEqual(expectedType)
         expect(customField.relationshipName).toEqual(expectedRelationshipName)
         expect(customField.deleteConstraint).toEqual(expectedDeleteConstraint)
@@ -1041,12 +1308,23 @@ describe('transformer', () => {
 
       it('should transform masterdetail field', async () => {
         const masterDetailField = objectType.fields[fieldName]
-        masterDetailField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
-        masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
-        masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
+        masterDetailField.refType = createRefToElmWithValue(
+          Types.primitiveDataTypes.MasterDetail,
+        )
+        masterDetailField.annotations[
+          FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ
+        ] = true
+        masterDetailField.annotations[
+          FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL
+        ] = true
         const customMasterDetailField = await toCustomField(masterDetailField)
-        assertCustomFieldTransformation(customMasterDetailField,
-          FIELD_TYPE_NAMES.MASTER_DETAIL, relationshipName, undefined, relatedTo)
+        assertCustomFieldTransformation(
+          customMasterDetailField,
+          FIELD_TYPE_NAMES.MASTER_DETAIL,
+          relationshipName,
+          undefined,
+          relatedTo,
+        )
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
         expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
       })
@@ -1063,14 +1341,21 @@ describe('transformer', () => {
         ],
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
           [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
-          [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [{
-            [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['ControllingVal1'],
-            [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
-          },
-          {
-            [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['ControllingVal1', 'ControllingVal2'],
-            [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
-          }],
+          [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+            {
+              [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                'ControllingVal1',
+              ],
+              [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
+            },
+            {
+              [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: [
+                'ControllingVal1',
+                'ControllingVal2',
+              ],
+              [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
+            },
+          ],
         },
       }
       const fieldName = 'field_name'
@@ -1090,8 +1375,7 @@ describe('transformer', () => {
 
       it('should transform value set for picklist field', async () => {
         const picklistField = await toCustomField(obj.fields[fieldName])
-        expect(picklistField.type)
-          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
+        expect(picklistField.type).toEqual(FIELD_TYPE_NAMES.PICKLIST)
         expect(picklistField?.valueSet?.valueSetDefinition?.value).toEqual([
           new CustomPicklistValue('Val1', false, true),
           new CustomPicklistValue('Val2', false, true, 'Val2', '#FFFF00'),
@@ -1099,45 +1383,72 @@ describe('transformer', () => {
       })
 
       it('should transform field dependency for picklist field', async () => {
-        const customFieldWithFieldDependency = await toCustomField(obj.fields[fieldName])
-        expect(customFieldWithFieldDependency.type)
-          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
-        expect(customFieldWithFieldDependency?.valueSet?.controllingField)
-          .toEqual('ControllingFieldName')
-        const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
+        const customFieldWithFieldDependency = await toCustomField(
+          obj.fields[fieldName],
+        )
+        expect(customFieldWithFieldDependency.type).toEqual(
+          FIELD_TYPE_NAMES.PICKLIST,
+        )
+        expect(
+          customFieldWithFieldDependency?.valueSet?.controllingField,
+        ).toEqual('ControllingFieldName')
+        const valueSettings =
+          customFieldWithFieldDependency?.valueSet?.valueSettings
         expect(valueSettings).toHaveLength(2)
         expect(valueSettings?.[0].valueName).toEqual('Val1')
-        expect(valueSettings?.[0].controllingFieldValue).toEqual(['ControllingVal1'])
+        expect(valueSettings?.[0].controllingFieldValue).toEqual([
+          'ControllingVal1',
+        ])
         expect(valueSettings?.[1].valueName).toEqual('Val2')
-        expect(valueSettings?.[1].controllingFieldValue)
-          .toEqual(['ControllingVal1', 'ControllingVal2'])
+        expect(valueSettings?.[1].controllingFieldValue).toEqual([
+          'ControllingVal1',
+          'ControllingVal2',
+        ])
       })
 
       it('should transform field dependency for multi picklist field', async () => {
         obj.fields[fieldName].refType = createRefToElmWithValue(
-          Types.primitiveDataTypes.MultiselectPicklist
+          Types.primitiveDataTypes.MultiselectPicklist,
         )
-        const customFieldWithFieldDependency = await toCustomField(obj.fields[fieldName])
-        expect(customFieldWithFieldDependency.type)
-          .toEqual(FIELD_TYPE_NAMES.MULTIPICKLIST)
-        expect(customFieldWithFieldDependency?.valueSet?.controllingField)
-          .toEqual('ControllingFieldName')
-        const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
+        const customFieldWithFieldDependency = await toCustomField(
+          obj.fields[fieldName],
+        )
+        expect(customFieldWithFieldDependency.type).toEqual(
+          FIELD_TYPE_NAMES.MULTIPICKLIST,
+        )
+        expect(
+          customFieldWithFieldDependency?.valueSet?.controllingField,
+        ).toEqual('ControllingFieldName')
+        const valueSettings =
+          customFieldWithFieldDependency?.valueSet?.valueSettings
         expect(valueSettings).toHaveLength(2)
         expect(valueSettings?.[0].valueName).toEqual('Val1')
-        expect(valueSettings?.[0].controllingFieldValue).toEqual(['ControllingVal1'])
+        expect(valueSettings?.[0].controllingFieldValue).toEqual([
+          'ControllingVal1',
+        ])
         expect(valueSettings?.[1].valueName).toEqual('Val2')
-        expect(valueSettings?.[1].controllingFieldValue)
-          .toEqual(['ControllingVal1', 'ControllingVal2'])
+        expect(valueSettings?.[1].controllingFieldValue).toEqual([
+          'ControllingVal1',
+          'ControllingVal2',
+        ])
       })
 
       it('should ignore field dependency when not defined', async () => {
-        delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-        const customFieldWithFieldDependency = await toCustomField(obj.fields[fieldName])
-        expect(customFieldWithFieldDependency.type)
-          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
-        expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
-        expect(customFieldWithFieldDependency?.valueSet?.valueSettings).toBeUndefined()
+        delete obj.fields[fieldName].annotations[
+          FIELD_ANNOTATIONS.FIELD_DEPENDENCY
+        ]
+        const customFieldWithFieldDependency = await toCustomField(
+          obj.fields[fieldName],
+        )
+        expect(customFieldWithFieldDependency.type).toEqual(
+          FIELD_TYPE_NAMES.PICKLIST,
+        )
+        expect(
+          customFieldWithFieldDependency?.valueSet?.controllingField,
+        ).toBeUndefined()
+        expect(
+          customFieldWithFieldDependency?.valueSet?.valueSettings,
+        ).toBeUndefined()
       })
     })
 
@@ -1164,10 +1475,15 @@ describe('transformer', () => {
       })
 
       it('should transform global picklist field', async () => {
-        const customFieldWithGlobalPicklist = await toCustomField(obj.fields[fieldName])
-        expect(customFieldWithGlobalPicklist.type)
-          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
-        expect(customFieldWithGlobalPicklist?.valueSet?.valueSetName).toEqual('gvs')
+        const customFieldWithGlobalPicklist = await toCustomField(
+          obj.fields[fieldName],
+        )
+        expect(customFieldWithGlobalPicklist.type).toEqual(
+          FIELD_TYPE_NAMES.PICKLIST,
+        )
+        expect(customFieldWithGlobalPicklist?.valueSet?.valueSetName).toEqual(
+          'gvs',
+        )
         expect(customFieldWithGlobalPicklist?.valueSet?.restricted).toBe(true)
       })
     })
@@ -1180,16 +1496,18 @@ describe('transformer', () => {
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'count',
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
         [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',
-        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [{
-          [FILTER_ITEM_FIELDS.FIELD]: 'FieldName1',
-          [FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-          [FILTER_ITEM_FIELDS.VALUE]: 'val1',
-        },
-        {
-          [FILTER_ITEM_FIELDS.FIELD]: 'FieldName2',
-          [FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-          [FILTER_ITEM_FIELDS.VALUE]: 'val2',
-        }],
+        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
+          {
+            [FILTER_ITEM_FIELDS.FIELD]: 'FieldName1',
+            [FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+            [FILTER_ITEM_FIELDS.VALUE]: 'val1',
+          },
+          {
+            [FILTER_ITEM_FIELDS.FIELD]: 'FieldName2',
+            [FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+            [FILTER_ITEM_FIELDS.VALUE]: 'val2',
+          },
+        ],
       }
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
@@ -1208,14 +1526,14 @@ describe('transformer', () => {
 
       it('should transform rollup summary field', async () => {
         const rollupSummaryInfo = await toCustomField(obj.fields[fieldName])
-        expect(rollupSummaryInfo.type)
-          .toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
-        expect(_.get(rollupSummaryInfo, 'summarizedField'))
-          .toEqual('Opportunity.Amount')
-        expect(_.get(rollupSummaryInfo, 'summaryForeignKey'))
-          .toEqual('Opportunity.AccountId')
-        expect(_.get(rollupSummaryInfo, 'summaryOperation'))
-          .toEqual('count')
+        expect(rollupSummaryInfo.type).toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
+        expect(_.get(rollupSummaryInfo, 'summarizedField')).toEqual(
+          'Opportunity.Amount',
+        )
+        expect(_.get(rollupSummaryInfo, 'summaryForeignKey')).toEqual(
+          'Opportunity.AccountId',
+        )
+        expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeDefined()
         const filterItems = rollupSummaryInfo.summaryFilterItems as FilterItem[]
         expect(filterItems).toHaveLength(2)
@@ -1228,16 +1546,18 @@ describe('transformer', () => {
       })
 
       it('should ignore field dependency when not defined', async () => {
-        delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+        delete obj.fields[fieldName].annotations[
+          FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS
+        ]
         const rollupSummaryInfo = await toCustomField(obj.fields[fieldName])
-        expect(rollupSummaryInfo.type)
-          .toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
-        expect(_.get(rollupSummaryInfo, 'summarizedField'))
-          .toEqual('Opportunity.Amount')
-        expect(_.get(rollupSummaryInfo, 'summaryForeignKey'))
-          .toEqual('Opportunity.AccountId')
-        expect(_.get(rollupSummaryInfo, 'summaryOperation'))
-          .toEqual('count')
+        expect(rollupSummaryInfo.type).toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
+        expect(_.get(rollupSummaryInfo, 'summarizedField')).toEqual(
+          'Opportunity.Amount',
+        )
+        expect(_.get(rollupSummaryInfo, 'summaryForeignKey')).toEqual(
+          'Opportunity.AccountId',
+        )
+        expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })
     })
@@ -1264,7 +1584,6 @@ describe('transformer', () => {
       NotCreatable: 'DontSendMeOnCreate',
       Updateable: 'Update',
       NotUpdateable: 'NotUpdateable',
-
     }
     const instance = new InstanceElement(
       mockInstanceName,
@@ -1355,7 +1674,9 @@ describe('transformer', () => {
         expect(recordResult[0].NotCreatable).toBeUndefined()
         expect(recordResult[0].Updateable).toBeUndefined()
         expect(recordResult[0].NotUpdateable).toBeUndefined()
-        expect(recordResult[0].NotCreatableNotUpdateableCompound).toBeUndefined()
+        expect(
+          recordResult[0].NotCreatableNotUpdateableCompound,
+        ).toBeUndefined()
       })
     })
 
@@ -1380,7 +1701,9 @@ describe('transformer', () => {
 
       it('should remove non-creatable values', () => {
         expect(recordResult[0].NotCreatable).toBeUndefined()
-        expect(recordResult[0].NotCreatableNotUpdateableCompound).toBeUndefined()
+        expect(
+          recordResult[0].NotCreatableNotUpdateableCompound,
+        ).toBeUndefined()
       })
 
       it('should transform compound fields', () => {
@@ -1393,9 +1716,13 @@ describe('transformer', () => {
         expect(recordResult[0].LocalState).toBeDefined()
         expect(recordResult[0].LocalState).toEqual(values.LocalAddress.State)
         expect(recordResult[0].LocalLongitude).toBeDefined()
-        expect(recordResult[0].LocalLongitude).toEqual(values.LocalLocation.Longitude)
+        expect(recordResult[0].LocalLongitude).toEqual(
+          values.LocalLocation.Longitude,
+        )
         expect(recordResult[0].LocalLatitude).toBeDefined()
-        expect(recordResult[0].LocalLatitude).toEqual(values.LocalLocation.Latitude)
+        expect(recordResult[0].LocalLatitude).toEqual(
+          values.LocalLocation.Latitude,
+        )
       })
     })
 
@@ -1420,7 +1747,9 @@ describe('transformer', () => {
 
       it('should remove non-updateable values', () => {
         expect(recordResult[0].NotUpdateable).toBeUndefined()
-        expect(recordResult[0].NotCreatableNotUpdateableCompound).toBeUndefined()
+        expect(
+          recordResult[0].NotCreatableNotUpdateableCompound,
+        ).toBeUndefined()
       })
 
       it('should transform compound fields', () => {
@@ -1433,19 +1762,26 @@ describe('transformer', () => {
         expect(recordResult[0].LocalState).toBeDefined()
         expect(recordResult[0].LocalState).toEqual(values.LocalAddress.State)
         expect(recordResult[0].LocalLongitude).toBeDefined()
-        expect(recordResult[0].LocalLongitude).toEqual(values.LocalLocation.Longitude)
+        expect(recordResult[0].LocalLongitude).toEqual(
+          values.LocalLocation.Longitude,
+        )
         expect(recordResult[0].LocalLatitude).toBeDefined()
-        expect(recordResult[0].LocalLatitude).toEqual(values.LocalLocation.Latitude)
+        expect(recordResult[0].LocalLatitude).toEqual(
+          values.LocalLocation.Latitude,
+        )
       })
     })
   })
 
   describe('type definitions', () => {
     it('should include apiName annotation with service_id type', async () => {
-      await awu(Object.values(Types.getAllFieldTypes())).forEach(async type => {
-        expect(isServiceId((await type.getAnnotationTypes())[API_NAME]))
-          .toEqual(true)
-      })
+      await awu(Object.values(Types.getAllFieldTypes())).forEach(
+        async (type) => {
+          expect(
+            isServiceId((await type.getAnnotationTypes())[API_NAME]),
+          ).toEqual(true)
+        },
+      )
     })
   })
 
@@ -1544,9 +1880,11 @@ describe('transformer', () => {
     })
 
     it('should create a field and nested field which are not a base element as subtype', async () => {
-      connection.metadata.describeValueType.mockResolvedValue(mockDescribeValueResult({
-        valueTypeFields: [{ name: 'inner', soapType: 'string' }],
-      }))
+      connection.metadata.describeValueType.mockResolvedValue(
+        mockDescribeValueResult({
+          valueTypeFields: [{ name: 'inner', soapType: 'string' }],
+        }),
+      )
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
         fields: [field],
@@ -1560,13 +1898,17 @@ describe('transformer', () => {
       expect(fieldType.path).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
       expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
-      expect(await nestedFieldType.fields.inner.getType()).toEqual(BuiltinTypes.STRING)
+      expect(await nestedFieldType.fields.inner.getType()).toEqual(
+        BuiltinTypes.STRING,
+      )
     })
 
     it('should create nested field as subtype when nested field has fields', async () => {
-      connection.metadata.describeValueType.mockResolvedValue(mockDescribeValueResult({
-        valueTypeFields: [{ name: 'inner', soapType: 'string' }],
-      }))
+      connection.metadata.describeValueType.mockResolvedValue(
+        mockDescribeValueResult({
+          valueTypeFields: [{ name: 'inner', soapType: 'string' }],
+        }),
+      )
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
         fields: [field],
@@ -1600,14 +1942,16 @@ describe('transformer', () => {
     it('should not create nested field when nested field has no fields and is a picklist', async () => {
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
-        fields: [mockValueTypeField({
-          name: 'picklistField',
-          picklistValues: [
-            { active: true, value: 'yes', defaultValue: true },
-            { active: true, value: 'no', defaultValue: false },
-          ],
-          soapType: 'MyPicklist',
-        })],
+        fields: [
+          mockValueTypeField({
+            name: 'picklistField',
+            picklistValues: [
+              { active: true, value: 'yes', defaultValue: true },
+              { active: true, value: 'no', defaultValue: false },
+            ],
+            soapType: 'MyPicklist',
+          }),
+        ],
         baseTypeNames: new Set(['BaseType']),
         childTypeNames: new Set(),
         client,
@@ -1620,10 +1964,12 @@ describe('transformer', () => {
     it('should not create nested field when nested field has no fields and its name is not capitalized', async () => {
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
-        fields: [mockValueTypeField({
-          name: 'noUpperCaseTypeName',
-          soapType: 'base64Binary',
-        })],
+        fields: [
+          mockValueTypeField({
+            name: 'noUpperCaseTypeName',
+            soapType: 'base64Binary',
+          }),
+        ],
         baseTypeNames: new Set(['BaseType']),
         childTypeNames: new Set(),
         client,
@@ -1654,7 +2000,10 @@ describe('transformer', () => {
       })
       expect(elements).toHaveLength(2)
       const fieldWithNestedRef = elements[1]
-      expect(fieldWithNestedRef.fields[referenceField.name].annotations?.foreignKeyDomain).toEqual(['ReferencedTypeName'])
+      expect(
+        fieldWithNestedRef.fields[referenceField.name].annotations
+          ?.foreignKeyDomain,
+      ).toEqual(['ReferencedTypeName'])
     })
 
     it('should add a reference if the field is a foreign key with a few options', async () => {
@@ -1666,7 +2015,10 @@ describe('transformer', () => {
         soapType: 'FKRefFieldType',
         isForeignKey: true,
       })
-      referenceField.foreignKeyDomain = ['ReferencedTypeName', 'OtherReferencedTypeName']
+      referenceField.foreignKeyDomain = [
+        'ReferencedTypeName',
+        'OtherReferencedTypeName',
+      ]
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
         fields: [referenceField],
@@ -1676,9 +2028,9 @@ describe('transformer', () => {
       })
       expect(elements).toHaveLength(1)
       const baseField = elements[0]
-      expect(baseField.fields[referenceField.name].annotations?.foreignKeyDomain).toEqual(
-        ['ReferencedTypeName', 'OtherReferencedTypeName']
-      )
+      expect(
+        baseField.fields[referenceField.name].annotations?.foreignKeyDomain,
+      ).toEqual(['ReferencedTypeName', 'OtherReferencedTypeName'])
     })
   })
 
@@ -1690,11 +2042,16 @@ describe('transformer', () => {
     beforeEach(async () => {
       const clientAndConn = mockClient()
       connection = clientAndConn.connection
-      connection.metadata.describeValueType.mockImplementation(async typeName => (
-        typeName.endsWith('ComplexType')
-          ? mockDescribeValueResult({ valueTypeFields: [mockValueTypeField({ name: 'compField', soapType: 'string' })] })
-          : mockDescribeValueResult({ valueTypeFields: [] })
-      ))
+      connection.metadata.describeValueType.mockImplementation(
+        async (typeName) =>
+          typeName.endsWith('ComplexType')
+            ? mockDescribeValueResult({
+                valueTypeFields: [
+                  mockValueTypeField({ name: 'compField', soapType: 'string' }),
+                ],
+              })
+            : mockDescribeValueResult({ valueTypeFields: [] }),
+      )
       const missingFields = convertRawMissingFields([
         {
           id: 'BaseType',
@@ -1724,7 +2081,10 @@ describe('transformer', () => {
         client: clientAndConn.client,
         missingFields,
       })
-      const elementsByTypeName = _.keyBy(elements, elem => elem.elemID.typeName)
+      const elementsByTypeName = _.keyBy(
+        elements,
+        (elem) => elem.elemID.typeName,
+      )
       baseType = elementsByTypeName.BaseType
       complexType = elementsByTypeName.ComplexType
       emptyComplexType = elementsByTypeName.ComplexTypeEmpty
@@ -1735,26 +2095,44 @@ describe('transformer', () => {
     })
     it('should keep existing fields', () => {
       expect(baseType.fields).toHaveProperty(
-        'normal', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
+        'normal',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        }),
       )
       expect(complexType.fields).toHaveProperty(
-        'compField', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
+        'compField',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        }),
       )
     })
     it('should add missing fields with builtin types', () => {
       expect(baseType.fields).toHaveProperty(
-        'str', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
+        'str',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        }),
       )
       expect(baseType.fields).toHaveProperty(
-        'num', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.NUMBER) })
+        'num',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        }),
       )
     })
     it('should add missing boolean fields', () => {
       expect(baseType.fields).toHaveProperty(
-        'bool1', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) })
+        'bool1',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        }),
       )
       expect(baseType.fields).toHaveProperty(
-        'bool2', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) })
+        'bool2',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        }),
       )
     })
     it('should add missing enum fields', () => {
@@ -1767,23 +2145,29 @@ describe('transformer', () => {
               createRestriction({ values: ['v1', 'v2'] }),
             ),
           }),
-        })
+        }),
       )
     })
     it('should add complex fields with recursive describe calls', () => {
       expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
-        expect.stringMatching(/.*ComplexType$/)
+        expect.stringMatching(/.*ComplexType$/),
       )
       expect(complexType.fields).toHaveProperty(
-        'str', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
+        'str',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        }),
       )
     })
     it('should add complex fields even when describe on them is empty', () => {
       expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
-        expect.stringMatching(/.*ComplexTypeEmpty$/)
+        expect.stringMatching(/.*ComplexTypeEmpty$/),
       )
       expect(emptyComplexType.fields).toHaveProperty(
-        'str', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
+        'str',
+        expect.objectContaining({
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        }),
       )
     })
   })
@@ -1796,9 +2180,10 @@ describe('transformer', () => {
 
     const elementID = new ElemID('salesforce', 'elememt')
 
-    const typeRef = new ReferenceExpression(elementID.createNestedID(
-      'annotation', API_NAME
-    ), objectApiName)
+    const typeRef = new ReferenceExpression(
+      elementID.createNestedID('annotation', API_NAME),
+      objectApiName,
+    )
 
     const element = new ObjectType({
       elemID: elementID,
@@ -1817,8 +2202,16 @@ describe('transformer', () => {
     const instance = new InstanceElement('instance', element, {
       [INSTANCE_FULL_NAME_FIELD]: instanceFullName,
     })
-    const valueRef = new ReferenceExpression(instance.elemID.createNestedID('ref'), regValue, instance)
-    const instanceRef = new ReferenceExpression(instance.elemID, instance, instance)
+    const valueRef = new ReferenceExpression(
+      instance.elemID.createNestedID('ref'),
+      regValue,
+      instance,
+    )
+    const instanceRef = new ReferenceExpression(
+      instance.elemID,
+      instance,
+      instance,
+    )
     const elementRef = new ReferenceExpression(element.elemID, element, element)
     const elemID = new ElemID('salesforce', 'base')
     const orig = new ObjectType({
@@ -1865,7 +2258,9 @@ describe('transformer', () => {
       expect(modified.annotations.valueRef).toEqual(regValue)
       expect(modified.annotations.changeToRef).toEqual(regValue)
 
-      expect(modified.fields.field.annotations.instanceRef).toEqual(instanceFullName)
+      expect(modified.fields.field.annotations.instanceRef).toEqual(
+        instanceFullName,
+      )
       expect(modified.fields.field.annotations.objectRef).toEqual(objectApiName)
       expect(modified.fields.field.annotations.valueRef).toEqual(regValue)
       expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
@@ -1878,7 +2273,9 @@ describe('transformer', () => {
       expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
 
       // Should not resolve field type annotations
-      expect((await modified.fields.field.getType()).annotations.typeRef).toEqual(typeRef)
+      expect(
+        (await modified.fields.field.getType()).annotations.typeRef,
+      ).toEqual(typeRef)
     })
 
     it('should transform back to orig value', async () => {
@@ -1905,22 +2302,28 @@ describe('transformer', () => {
   describe('getLookUpName', () => {
     const refObject = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'Lead'),
-      fields: { test: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [API_NAME]: 'Lead.Test__c',
+      fields: {
+        test: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [API_NAME]: 'Lead.Test__c',
+          },
         },
-      } },
+      },
     })
     describe('with references to map values', () => {
-      const mockResolvedValue = { name: 'Default', fridayEndTime: '00:00:00.000Z' }
+      const mockResolvedValue = {
+        name: 'Default',
+        fridayEndTime: '00:00:00.000Z',
+      }
       const mockBusinessHoursSettingsType = new ObjectType({
         elemID: new ElemID(SALESFORCE, BUSINESS_HOURS_METADATA_TYPE),
         annotations: {
           [METADATA_TYPE]: BUSINESS_HOURS_METADATA_TYPE,
         },
       })
-      const mockEntitlementProcessType = new ObjectType({ elemID: new ElemID(SALESFORCE, 'EntitlementProcess'),
+      const mockEntitlementProcessType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'EntitlementProcess'),
         fields: {
           businessHours: {
             refType: allMissingSubTypes[0],
@@ -1928,21 +2331,43 @@ describe('transformer', () => {
         },
         annotations: {
           [METADATA_TYPE]: 'EntitlementProcess',
-        } })
-      const mockBusinessHoursInstance = new InstanceElement('BusinessHours', mockBusinessHoursSettingsType)
-      const testField = new Field(mockEntitlementProcessType, 'businessHours', BuiltinTypes.STRING)
-      const mockDefaultElemId = new ElemID(SALESFORCE, BUSINESS_HOURS_METADATA_TYPE, 'instance', 'Default')
+        },
+      })
+      const mockBusinessHoursInstance = new InstanceElement(
+        'BusinessHours',
+        mockBusinessHoursSettingsType,
+      )
+      const testField = new Field(
+        mockEntitlementProcessType,
+        'businessHours',
+        BuiltinTypes.STRING,
+      )
+      const mockDefaultElemId = new ElemID(
+        SALESFORCE,
+        BUSINESS_HOURS_METADATA_TYPE,
+        'instance',
+        'Default',
+      )
       it('should resolve with mapKey strategy', async () => {
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(
-            mockDefaultElemId,
-            mockResolvedValue,
-            mockBusinessHoursInstance
-          ),
-          field: testField,
-          path: new ElemID(SALESFORCE, 'EntitlementProcess', 'field', 'something'),
-          element: new ObjectType({ elemID: new ElemID(SALESFORCE, 'EntitlementProcess') }),
-        })).toEqual('Default')
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(
+              mockDefaultElemId,
+              mockResolvedValue,
+              mockBusinessHoursInstance,
+            ),
+            field: testField,
+            path: new ElemID(
+              SALESFORCE,
+              'EntitlementProcess',
+              'field',
+              'something',
+            ),
+            element: new ObjectType({
+              elemID: new ElemID(SALESFORCE, 'EntitlementProcess'),
+            }),
+          }),
+        ).toEqual('Default')
       })
     })
 
@@ -1974,39 +2399,58 @@ describe('transformer', () => {
       const mockLayoutInstance = new InstanceElement('test', mockLayoutType, {})
       it('should resolve to relative api name', async () => {
         const testField = refObject.fields.test
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(testField.elemID, testField, refObject),
-          field: mockLayoutItem.fields.field,
-          path: mockLayoutInstance.elemID.createNestedID(
-            'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
-          ),
-          element: mockLayoutInstance,
-        })).toEqual('Test__c')
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(
+              testField.elemID,
+              testField,
+              refObject,
+            ),
+            field: mockLayoutItem.fields.field,
+            path: mockLayoutInstance.elemID.createNestedID(
+              'layoutSections',
+              '0',
+              'layoutColumns',
+              '0',
+              'layoutItems',
+              '0',
+              'field',
+            ),
+            element: mockLayoutInstance,
+          }),
+        ).toEqual('Test__c')
       })
       it('should resolve to current value if referenced value is not an element', async () => {
         const testField = refObject.fields.test
         const refValue = { obj: { with: { some: 'details' } } }
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(testField.elemID, refValue),
-          field: mockLayoutItem.fields.field,
-          path: mockLayoutInstance.elemID.createNestedID(
-            'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
-          ),
-          element: mockLayoutInstance,
-        })).toEqual(refValue)
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(testField.elemID, refValue),
-          field: mockLayoutItem.fields.field,
-          element: mockLayoutInstance,
-        })).toEqual(refValue)
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(testField.elemID, refValue),
+            field: mockLayoutItem.fields.field,
+            path: mockLayoutInstance.elemID.createNestedID(
+              'layoutSections',
+              '0',
+              'layoutColumns',
+              '0',
+              'layoutItems',
+              '0',
+              'field',
+            ),
+            element: mockLayoutInstance,
+          }),
+        ).toEqual(refValue)
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(testField.elemID, refValue),
+            field: mockLayoutItem.fields.field,
+            element: mockLayoutInstance,
+          }),
+        ).toEqual(refValue)
       })
     })
     describe('with fields in workflow field update instance', () => {
       const workflowFieldUpdate = new ObjectType({
-        elemID: new ElemID(
-          SALESFORCE,
-          WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-        ),
+        elemID: new ElemID(SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE),
         fields: { field: { refType: BuiltinTypes.STRING } },
         annotations: { [METADATA_TYPE]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
       })
@@ -2020,12 +2464,20 @@ describe('transformer', () => {
       )
       it('should resolve to relative api name', async () => {
         const testField = refObject.fields.test
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(testField.elemID, testField, refObject),
-          field: workflowFieldUpdate.fields.field,
-          path: mockWorkflowFieldUpdateInstance.elemID.createNestedID('field'),
-          element: mockWorkflowFieldUpdateInstance,
-        })).toEqual('Test__c')
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(
+              testField.elemID,
+              testField,
+              refObject,
+            ),
+            field: workflowFieldUpdate.fields.field,
+            path: mockWorkflowFieldUpdateInstance.elemID.createNestedID(
+              'field',
+            ),
+            element: mockWorkflowFieldUpdateInstance,
+          }),
+        ).toEqual('Test__c')
       })
     })
     describe('with field in under FilterItem fields and element as context', () => {
@@ -2058,12 +2510,18 @@ describe('transformer', () => {
         )
         it('should resolve to relative api name', async () => {
           const testField = refObject.fields.test
-          expect(await getLookUpName({
-            ref: new ReferenceExpression(testField.elemID, testField, refObject),
-            field: filterItemType.fields.field,
-            path: instance.elemID.createNestedID('someFilterField', 'field'),
-            element: instance,
-          })).toEqual('Test__c')
+          expect(
+            await getLookUpName({
+              ref: new ReferenceExpression(
+                testField.elemID,
+                testField,
+                refObject,
+              ),
+              field: filterItemType.fields.field,
+              path: instance.elemID.createNestedID('someFilterField', 'field'),
+              element: instance,
+            }),
+          ).toEqual('Test__c')
         })
       })
       describe('with field in non-SharingRules instance and element as context', () => {
@@ -2087,28 +2545,32 @@ describe('transformer', () => {
         )
         it('should resolve to absolute api name', async () => {
           const testField = refObject.fields.test
-          expect(await getLookUpName({
-            ref: new ReferenceExpression(testField.elemID, testField, refObject),
-            field: filterItemType.fields.field,
-            path: instance.elemID.createNestedID('someFilterField', 'field'),
-            element: instance,
-          })).toEqual('Lead.Test__c')
+          expect(
+            await getLookUpName({
+              ref: new ReferenceExpression(
+                testField.elemID,
+                testField,
+                refObject,
+              ),
+              field: filterItemType.fields.field,
+              path: instance.elemID.createNestedID('someFilterField', 'field'),
+              element: instance,
+            }),
+          ).toEqual('Lead.Test__c')
         })
       })
     })
     describe('with fields in product_rule (custom object) lookup_product_field update instance', () => {
-      const mockProductRuleType = new ObjectType(
-        {
-          elemID: new ElemID(SALESFORCE, CPQ_PRODUCT_RULE),
-          fields: {
-            [CPQ_LOOKUP_PRODUCT_FIELD]: { refType: BuiltinTypes.STRING },
-          },
-          annotations: {
-            [METADATA_TYPE]: CUSTOM_OBJECT,
-            [API_NAME]: CPQ_PRODUCT_RULE,
-          },
+      const mockProductRuleType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, CPQ_PRODUCT_RULE),
+        fields: {
+          [CPQ_LOOKUP_PRODUCT_FIELD]: { refType: BuiltinTypes.STRING },
         },
-      )
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+          [API_NAME]: CPQ_PRODUCT_RULE,
+        },
+      })
       const testField = refObject.fields.test
       const mockProductRuleInst = new InstanceElement(
         'mockProductRule',
@@ -2117,17 +2579,21 @@ describe('transformer', () => {
           [CPQ_LOOKUP_PRODUCT_FIELD]: new ReferenceExpression(
             testField.elemID,
             testField,
-            refObject
+            refObject,
           ),
         },
       )
       it('should resolve to relative api name', async () => {
-        expect(await getLookUpName({
-          ref: mockProductRuleInst.value[CPQ_LOOKUP_PRODUCT_FIELD],
-          field: mockProductRuleType.fields[CPQ_LOOKUP_PRODUCT_FIELD],
-          path: mockProductRuleInst.elemID.createNestedID(CPQ_LOOKUP_PRODUCT_FIELD),
-          element: mockProductRuleInst,
-        })).toEqual('Test__c')
+        expect(
+          await getLookUpName({
+            ref: mockProductRuleInst.value[CPQ_LOOKUP_PRODUCT_FIELD],
+            field: mockProductRuleType.fields[CPQ_LOOKUP_PRODUCT_FIELD],
+            path: mockProductRuleInst.elemID.createNestedID(
+              CPQ_LOOKUP_PRODUCT_FIELD,
+            ),
+            element: mockProductRuleInst,
+          }),
+        ).toEqual('Test__c')
       })
     })
     describe('with fields in workflow rule instance', () => {
@@ -2137,7 +2603,9 @@ describe('transformer', () => {
           name: { refType: BuiltinTypes.STRING },
           type: { refType: BuiltinTypes.STRING },
         },
-        annotations: { [METADATA_TYPE]: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE },
+        annotations: {
+          [METADATA_TYPE]: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+        },
       })
       const workflowRule = new ObjectType({
         elemID: new ElemID(SALESFORCE, WORKFLOW_RULE_METADATA_TYPE),
@@ -2149,10 +2617,12 @@ describe('transformer', () => {
         workflowRule,
         {
           [INSTANCE_FULL_NAME_FIELD]: 'User.rule1',
-          actions: [{
-            name: 'alert1',
-            type: 'Alert',
-          }],
+          actions: [
+            {
+              name: 'alert1',
+              type: 'Alert',
+            },
+          ],
         },
       )
       const workflowAlert = new ObjectType({
@@ -2165,12 +2635,21 @@ describe('transformer', () => {
         { [INSTANCE_FULL_NAME_FIELD]: 'Opportunity.alert1' },
       )
       it('should resolve to relative api name', async () => {
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(mockAlertInstance.elemID, mockAlertInstance),
-          field: workflowActionReference.fields.name,
-          path: mockWorkflowRuleInstance.elemID.createNestedID('actions', '0', 'name'),
-          element: mockWorkflowRuleInstance,
-        })).toEqual('alert1')
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(
+              mockAlertInstance.elemID,
+              mockAlertInstance,
+            ),
+            field: workflowActionReference.fields.name,
+            path: mockWorkflowRuleInstance.elemID.createNestedID(
+              'actions',
+              '0',
+              'name',
+            ),
+            element: mockWorkflowRuleInstance,
+          }),
+        ).toEqual('alert1')
       })
     })
     describe('when field is not specified', () => {
@@ -2182,11 +2661,17 @@ describe('transformer', () => {
       const srcInst = new InstanceElement('test', srcObject, {})
       it('should resolve to full api name', async () => {
         const testField = refObject.fields.test
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(testField.elemID, testField, refObject),
-          path: srcInst.elemID.createNestedID('test'),
-          element: srcInst,
-        })).toEqual('Lead.Test__c')
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(
+              testField.elemID,
+              testField,
+              refObject,
+            ),
+            path: srcInst.elemID.createNestedID('test'),
+            element: srcInst,
+          }),
+        ).toEqual('Lead.Test__c')
       })
     })
     describe('with all other cases', () => {
@@ -2198,12 +2683,18 @@ describe('transformer', () => {
       const srcInst = new InstanceElement('test', srcObject, {})
       it('should resolve to full api name', async () => {
         const testField = refObject.fields.test
-        expect(await getLookUpName({
-          ref: new ReferenceExpression(testField.elemID, testField, refObject),
-          field: srcObject.fields.test,
-          path: srcInst.elemID.createNestedID('test'),
-          element: srcInst,
-        })).toEqual('Lead.Test__c')
+        expect(
+          await getLookUpName({
+            ref: new ReferenceExpression(
+              testField.elemID,
+              testField,
+              refObject,
+            ),
+            field: srcObject.fields.test,
+            path: srcInst.elemID.createNestedID('test'),
+            element: srcInst,
+          }),
+        ).toEqual('Lead.Test__c')
       })
     })
   })
@@ -2220,7 +2711,9 @@ describe('transformer', () => {
       elemID: new ElemID(SALESFORCE, 'test'),
       annotations: { [METADATA_TYPE]: 'test' },
     })
-    const nonMdType = new ObjectType({ elemID: new ElemID(SALESFORCE, 'test2') })
+    const nonMdType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'test2'),
+    })
     describe('isMetadataObjectType', () => {
       it('should return true for metadata object types', () => {
         expect(isMetadataObjectType(mdType)).toBeTruthy()
@@ -2231,25 +2724,29 @@ describe('transformer', () => {
     })
     describe('await isMetadataInstanceElement', () => {
       it('should return true for metadata instances', async () => {
-        expect(await isMetadataInstanceElement(new InstanceElement(
-          'test',
-          mdType,
-          { [INSTANCE_FULL_NAME_FIELD]: 'test' },
-        ))).toBeTruthy()
+        expect(
+          await isMetadataInstanceElement(
+            new InstanceElement('test', mdType, {
+              [INSTANCE_FULL_NAME_FIELD]: 'test',
+            }),
+          ),
+        ).toBeTruthy()
       })
       it('should return false for instance of non metadata types', async () => {
-        expect(await isMetadataInstanceElement(new InstanceElement(
-          'test',
-          nonMdType,
-          { [INSTANCE_FULL_NAME_FIELD]: 'test' },
-        ))).toBeFalsy()
+        expect(
+          await isMetadataInstanceElement(
+            new InstanceElement('test', nonMdType, {
+              [INSTANCE_FULL_NAME_FIELD]: 'test',
+            }),
+          ),
+        ).toBeFalsy()
       })
       it('should return false for instances without a fullName', async () => {
-        expect(await isMetadataInstanceElement(new InstanceElement(
-          'test',
-          mdType,
-          {},
-        ))).toBeFalsy()
+        expect(
+          await isMetadataInstanceElement(
+            new InstanceElement('test', mdType, {}),
+          ),
+        ).toBeFalsy()
       })
     })
   })
@@ -2273,7 +2770,6 @@ describe('transformer', () => {
       NotUpdateable: 'NotUpdateable',
       // Used to validate we don't parse Elements if for some reason we reach this flow.
       ElementField: mockTypes.User,
-
     }
     let instance: InstanceElement
     let res: InstanceElement
@@ -2330,7 +2826,9 @@ describe('transformer', () => {
           str: { refType: BuiltinTypes.STRING },
           num: { refType: BuiltinTypes.NUMBER },
           bool: { refType: BuiltinTypes.BOOLEAN },
-          obj: { refType: new ObjectType({ elemID: new ElemID('test', 'nested') }) },
+          obj: {
+            refType: new ObjectType({ elemID: new ElemID('test', 'nested') }),
+          },
           unknown: { refType: BuiltinTypes.UNKNOWN },
         },
       })
@@ -2338,25 +2836,25 @@ describe('transformer', () => {
     describe('with primitive field', () => {
       it('should convert number type', () => {
         expect(
-          transformPrimitive({ value: '1', field: mockObjType.fields.num })
+          transformPrimitive({ value: '1', field: mockObjType.fields.num }),
         ).toEqual(1)
       })
       it('should convert string type', () => {
         expect(
-          transformPrimitive({ value: '1', field: mockObjType.fields.str })
+          transformPrimitive({ value: '1', field: mockObjType.fields.str }),
         ).toEqual('1')
       })
       it('should convert boolean type', () => {
         expect(
-          transformPrimitive({ value: 'true', field: mockObjType.fields.bool })
+          transformPrimitive({ value: 'true', field: mockObjType.fields.bool }),
         ).toEqual(true)
       })
       it('should leave unknown type as-is', () => {
         expect(
-          transformPrimitive({ value: '1', field: mockObjType.fields.unknown })
+          transformPrimitive({ value: '1', field: mockObjType.fields.unknown }),
         ).toEqual('1')
         expect(
-          transformPrimitive({ value: 1, field: mockObjType.fields.unknown })
+          transformPrimitive({ value: 1, field: mockObjType.fields.unknown }),
         ).toEqual(1)
       })
       it('should convert values with xsi:type attribute', () => {
@@ -2364,13 +2862,13 @@ describe('transformer', () => {
           transformPrimitive({
             value: { _: 'true', $: { 'xsi:type': 'xsd:boolean' } },
             field: mockObjType.fields.bool,
-          })
+          }),
         ).toEqual(true)
         expect(
           transformPrimitive({
             value: { _: '12.3', $: { 'xsi:type': 'xsd:double' } },
             field: mockObjType.fields.num,
-          })
+          }),
         ).toEqual(12.3)
       })
       it('should convert value by field type if xsi:type is unrecognized', () => {
@@ -2378,29 +2876,38 @@ describe('transformer', () => {
           transformPrimitive({
             value: { _: 'true', $: { 'xsi:type': 'xsd:unknown' } },
             field: mockObjType.fields.bool,
-          })
+          }),
         ).toEqual(true)
         expect(
           transformPrimitive({
             value: { _: 'true', $: { 'xsi:type': 'xsd:unknown' } },
             field: mockObjType.fields.str,
-          })
+          }),
         ).toEqual('true')
       })
       it('should omit null values', () => {
-        expect(transformPrimitive({
-          value: { $: { 'xsi:nil': 'true' } }, field: mockObjType.fields.bool,
-        })).toBeUndefined()
+        expect(
+          transformPrimitive({
+            value: { $: { 'xsi:nil': 'true' } },
+            field: mockObjType.fields.bool,
+          }),
+        ).toBeUndefined()
       })
       it('should not transform object types', () => {
-        expect(transformPrimitive({
-          value: { bla: 'foo' }, field: mockObjType.fields.obj,
-        })).toEqual({ bla: 'foo' })
+        expect(
+          transformPrimitive({
+            value: { bla: 'foo' },
+            field: mockObjType.fields.obj,
+          }),
+        ).toEqual({ bla: 'foo' })
       })
       it('should not transform object values', () => {
-        expect(transformPrimitive({
-          value: { bla: 'foo' }, field: mockObjType.fields.string,
-        })).toEqual({ bla: 'foo' })
+        expect(
+          transformPrimitive({
+            value: { bla: 'foo' },
+            field: mockObjType.fields.string,
+          }),
+        ).toEqual({ bla: 'foo' })
       })
     })
   })

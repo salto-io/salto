@@ -1,23 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   ChangeValidator,
   getChangeData,
   isInstanceChange,
-  isModificationChange, isReferenceExpression,
+  isModificationChange,
+  isReferenceExpression,
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -51,22 +52,24 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
       detailedMessage: `Updating the theme fields ${MANIFEST_FIELDS.join(', ')} has no effect. To update them, please edit the manifest.json file`,
     }))
 
-  const unsupportedChanges = updatedThemes.filter(theme => {
-    const { before, after } = theme.data
-    if (isReferenceExpression(before.value.brand_id) && isReferenceExpression(after.value.brand_id)) {
-      return !before.value.brand_id.elemID.isEqual(after.value.brand_id.elemID)
-    }
-    if (_.isNumber(before.value.brand_id) && _.isNumber(after.value.brand_id)) {
-      return before.value.brand_id !== after.value.brand_id
-    }
-    log.warn('brand_id does not have the same type in the before and the after')
-    return true
-  }).map(theme => ({
-    elemID: getChangeData(theme).elemID,
-    message: 'Moving a theme to a different brand is not supported',
-    severity: 'Error' as SeverityLevel,
-    detailedMessage: 'Moving a theme to a different brand is not supported',
-  }))
+  const unsupportedChanges = updatedThemes
+    .filter(theme => {
+      const { before, after } = theme.data
+      if (isReferenceExpression(before.value.brand_id) && isReferenceExpression(after.value.brand_id)) {
+        return !before.value.brand_id.elemID.isEqual(after.value.brand_id.elemID)
+      }
+      if (_.isNumber(before.value.brand_id) && _.isNumber(after.value.brand_id)) {
+        return before.value.brand_id !== after.value.brand_id
+      }
+      log.warn('brand_id does not have the same type in the before and the after')
+      return true
+    })
+    .map(theme => ({
+      elemID: getChangeData(theme).elemID,
+      message: 'Moving a theme to a different brand is not supported',
+      severity: 'Error' as SeverityLevel,
+      detailedMessage: 'Moving a theme to a different brand is not supported',
+    }))
 
   return [...manifestChanges, ...unsupportedChanges]
 }

@@ -1,19 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
 import { JIRA, PROJECT_TYPE } from '../../src/constants'
@@ -36,9 +43,7 @@ describe('projectComponentFilter', () => {
   let instance: InstanceElement
   let client: JiraClient
   let type: ObjectType
-  const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-    typeof deployment.deployChange
-  >
+  const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
   const projectInstance = new InstanceElement(
     'project',
     createEmptyType(PROJECT_TYPE),
@@ -54,10 +59,12 @@ describe('projectComponentFilter', () => {
     const { client: cli, paginator } = mockClient()
     client = cli
 
-    filter = projectComponentFilter(getFilterParams({
-      client,
-      paginator,
-    })) as typeof filter
+    filter = projectComponentFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    ) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'ProjectComponent'),
@@ -70,7 +77,7 @@ describe('projectComponentFilter', () => {
       [JIRA, elementUtils.RECORDS_PATH, 'Project', 'proj1', 'components', 'instance'],
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
-      }
+      },
     )
   })
 
@@ -98,7 +105,15 @@ describe('projectComponentFilter', () => {
     })
     it('should add parent path', async () => {
       await filter.onFetch([type, instance])
-      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'proj1', 'components', 'instance'])
+      expect(instance.path).toEqual([
+        JIRA,
+        elementUtils.RECORDS_PATH,
+        'Project',
+        'Software',
+        'proj1',
+        'components',
+        'instance',
+      ])
     })
     it('should not change path if there is no parent', async () => {
       delete instance.annotations[CORE_ANNOTATIONS.PARENT]
@@ -144,14 +159,11 @@ describe('projectComponentFilter', () => {
   describe('preDeploy', () => {
     it('should add project value', async () => {
       instance.annotations[CORE_ANNOTATIONS.PARENT] = [
-        new ReferenceExpression(
-          new ElemID(JIRA, 'Project', 'instance', 'parent'),
-          {
-            value: {
-              key: 'projectKey',
-            },
-          }
-        ),
+        new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'parent'), {
+          value: {
+            key: 'projectKey',
+          },
+        }),
       ]
       await filter.preDeploy([toChange({ after: instance })])
       expect(instance.value.project).toEqual('projectKey')
@@ -179,10 +191,12 @@ describe('projectComponentFilter', () => {
 
       deployChangeMock.mockClear()
 
-      filter = projectComponentFilter(getFilterParams({
-        client,
-        paginator,
-      })) as typeof filter
+      filter = projectComponentFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as typeof filter
     })
     it('should set lead account id on fetch', async () => {
       instance.value = {

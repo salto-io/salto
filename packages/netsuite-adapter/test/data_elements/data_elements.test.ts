@@ -1,19 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, ElemID, ElemIdGetter, Field, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  ElemID,
+  ElemIdGetter,
+  Field,
+  InstanceElement,
+  ObjectType,
+  OBJECT_NAME,
+  OBJECT_SERVICE_ID,
+  toServiceIdsString,
+} from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -72,14 +82,18 @@ describe('data_elements', () => {
     jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(true)
     jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(wsdl as elementUtils.soap.WSDL)
     createClientMock.mockResolvedValue({
-      wsdl, addSoapHeader: jest.fn(),
+      wsdl,
+      addSoapHeader: jest.fn(),
     } as unknown as elementUtils.soap.Client)
   })
 
   describe('getDataTypes', () => {
     it('should return all the types', async () => {
       const typeA = new ObjectType({ elemID: new ElemID(NETSUITE, 'A') })
-      const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary'), fields: { A: { refType: typeA }, name: { refType: BuiltinTypes.STRING } } })
+      const typeB = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'subsidiary'),
+        fields: { A: { refType: typeA }, name: { refType: BuiltinTypes.STRING } },
+      })
       const typeC = new ObjectType({ elemID: new ElemID(NETSUITE, 'accountingPeriod') })
 
       extractTypesMock.mockResolvedValue([typeA, typeB, typeC])
@@ -125,14 +139,18 @@ describe('data_elements', () => {
     it('should return the instances of the types', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -162,17 +180,21 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'accountingPeriod') {
-          return { records: [{
-            periodName: 'name',
-            attributes: {
-              'xsi:type': 'listAcct:AccountingPeriod',
-              internalId: '1',
-            },
-            fiscalCalendar: {
-              name: 'fiscal',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                periodName: 'name',
+                attributes: {
+                  'xsi:type': 'listAcct:AccountingPeriod',
+                  internalId: '1',
+                },
+                fiscalCalendar: {
+                  name: 'fiscal',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -194,27 +216,33 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'child',
-            attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '2' },
-            parent: {
-              attributes: {
-                internalId: '1',
+          return {
+            records: [
+              {
+                name: 'child',
+                attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '2' },
+                parent: {
+                  attributes: {
+                    internalId: '1',
+                  },
+                },
               },
-            },
-          }, {
-            name: 'parent',
-            attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '1' },
-          }, {
-            name: 'child_without_parent',
-            attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '3' },
-            parent: {
-              attributes: {
-                internalId: '4',
+              {
+                name: 'parent',
+                attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '1' },
               },
-            },
-          }],
-          largeTypesError: [] }
+              {
+                name: 'child_without_parent',
+                attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '3' },
+                parent: {
+                  attributes: {
+                    internalId: '4',
+                  },
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -228,20 +256,25 @@ describe('data_elements', () => {
     it('should return only requested instances', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name1',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }, {
-            name: 'name2',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '2',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name1',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+              {
+                name: 'name2',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '2',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -251,10 +284,7 @@ describe('data_elements', () => {
         isObjectMatch: ({ instanceId }: { instanceId: string }) => instanceId === 'name1',
       } as unknown as NetsuiteQuery
 
-      const { elements } = await getDataElements(
-        client,
-        netsuiteQuery,
-      )
+      const { elements } = await getDataElements(client, netsuiteQuery)
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
       expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary', 'instance', 'name1'])
       expect(elements).toHaveLength(2)
@@ -264,20 +294,25 @@ describe('data_elements', () => {
     it('should return only types when no instances match', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name1',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }, {
-            name: 'name2',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '2',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name1',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+              {
+                name: 'name2',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '2',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -287,42 +322,41 @@ describe('data_elements', () => {
         isObjectMatch: () => false,
       } as unknown as NetsuiteQuery
 
-      const { elements } = await getDataElements(
-        client,
-        netsuiteQuery,
-      )
+      const { elements } = await getDataElements(client, netsuiteQuery)
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
       expect(elements).toHaveLength(1)
     })
 
     it('should return empty array if failed to get the types', async () => {
       jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(false)
-      await expect(getDataElements(
-        client,
-        query,
-      )).resolves.toEqual({ elements: [], requestedTypes: [], largeTypesError: [] })
+      await expect(getDataElements(client, query)).resolves.toEqual({
+        elements: [],
+        requestedTypes: [],
+        largeTypesError: [],
+      })
     })
 
     it('should throw an error if failed to getAllRecords', async () => {
       getAllRecordsMock.mockRejectedValue(new Error())
-      await expect(getDataElements(
-        client,
-        query,
-      )).rejects.toThrow()
+      await expect(getDataElements(client, query)).rejects.toThrow()
     })
 
     it('should convert date to string', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name',
-            date: new Date(2020, 1, 1),
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name',
+                date: new Date(2020, 1, 1),
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -333,22 +367,27 @@ describe('data_elements', () => {
     it('should convert booleans', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name1',
-            booleanField: 'true',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }, {
-            name: 'name2',
-            booleanField: 'false',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '2',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name1',
+                booleanField: 'true',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+              {
+                name: 'name2',
+                booleanField: 'false',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '2',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -360,15 +399,19 @@ describe('data_elements', () => {
     it('should convert numbers', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name',
-            numberField: '1234',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name',
+                numberField: '1234',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })
@@ -378,14 +421,16 @@ describe('data_elements', () => {
 
     it('should use elemIdGetter', async () => {
       const elemIDGetter: ElemIdGetter = (adapterName, serviceIds, name) => {
-        if (adapterName === NETSUITE
-          && name === 'name'
-          && _.isEqual(serviceIds, {
+        if (
+          adapterName === NETSUITE &&
+          name === 'name' &&
+          _.isEqual(serviceIds, {
             name: 'name',
             [OBJECT_SERVICE_ID]: toServiceIdsString({
               [OBJECT_NAME]: 'netsuite.subsidiary',
             }),
-          })) {
+          })
+        ) {
           return new ElemID(NETSUITE, 'subsidiary', 'instance', 'customName')
         }
 
@@ -394,22 +439,27 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return { records: [{
-            name: 'name',
-            numberField: '1234',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '1',
-            },
-          }, {
-            name: 'name2',
-            numberField: '1234',
-            attributes: {
-              'xsi:type': 'listAcct:Subsidiary',
-              internalId: '2',
-            },
-          }],
-          largeTypesError: [] }
+          return {
+            records: [
+              {
+                name: 'name',
+                numberField: '1234',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '1',
+                },
+              },
+              {
+                name: 'name2',
+                numberField: '1234',
+                attributes: {
+                  'xsi:type': 'listAcct:Subsidiary',
+                  internalId: '2',
+                },
+              },
+            ],
+            largeTypesError: [],
+          }
         }
         return { records: [], largeTypesError: [] }
       })

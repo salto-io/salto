@@ -1,22 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  ObjectType, ElemID, InstanceElement, Element, isObjectType,
-  isInstanceElement, ReferenceExpression, ModificationChange,
-  toChange, getChangeData,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Element,
+  isObjectType,
+  isInstanceElement,
+  ReferenceExpression,
+  ModificationChange,
+  toChange,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../../utils'
@@ -55,32 +62,23 @@ describe('ticket form reorder filter', () => {
     it('should create correct order element', async () => {
       const elements = [objType, inst1, inst2, inst3]
       await filter.onFetch(elements)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk.ticket_form',
-          'zendesk.ticket_form.instance.inst1',
-          'zendesk.ticket_form.instance.inst2',
-          'zendesk.ticket_form.instance.inst3',
-          'zendesk.ticket_form_order',
-          'zendesk.ticket_form_order.instance',
-        ])
-      const ticketFormOrderType = elements
-        .find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.ticket_form',
+        'zendesk.ticket_form.instance.inst1',
+        'zendesk.ticket_form.instance.inst2',
+        'zendesk.ticket_form.instance.inst3',
+        'zendesk.ticket_form_order',
+        'zendesk.ticket_form_order.instance',
+      ])
+      const ticketFormOrderType = elements.find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
       expect(ticketFormOrderType).toBeDefined()
-      const ticketFormOrderInstance = elements
-        .find(e => isInstanceElement(e) && e.elemID.typeName === orderTypeName)
+      const ticketFormOrderInstance = elements.find(e => isInstanceElement(e) && e.elemID.typeName === orderTypeName)
       expect(ticketFormOrderInstance).toBeDefined()
       expect(ticketFormOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
-      expect((ticketFormOrderInstance as InstanceElement)?.value)
-        .toEqual({
-          active: [
-            new ReferenceExpression(inst1.elemID, inst1),
-            new ReferenceExpression(inst2.elemID, inst2),
-          ],
-          inactive: [
-            new ReferenceExpression(inst3.elemID, inst3),
-          ],
-        })
+      expect((ticketFormOrderInstance as InstanceElement)?.value).toEqual({
+        active: [new ReferenceExpression(inst1.elemID, inst1), new ReferenceExpression(inst2.elemID, inst2)],
+        inactive: [new ReferenceExpression(inst3.elemID, inst3)],
+      })
     })
     it('should not create new elements if there are no ticket form', async () => {
       const elements: Element[] = []
@@ -90,12 +88,8 @@ describe('ticket form reorder filter', () => {
   })
   describe('deploy', () => {
     const orderType = new ObjectType({ elemID: new ElemID(ZENDESK, orderTypeName) })
-    const before = new InstanceElement(
-      ElemID.CONFIG_NAME, orderType, { ticket_form_ids: [11, 22] },
-    )
-    const after = new InstanceElement(
-      ElemID.CONFIG_NAME, orderType, { ticket_form_ids: [22, 11] },
-    )
+    const before = new InstanceElement(ElemID.CONFIG_NAME, orderType, { ticket_form_ids: [11, 22] })
+    const after = new InstanceElement(ElemID.CONFIG_NAME, orderType, { ticket_form_ids: [22, 11] })
     const change: ModificationChange<InstanceElement> = {
       action: 'modify',
       data: { before, after },

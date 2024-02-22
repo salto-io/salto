@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -43,31 +43,23 @@ describe('utils', () => {
       expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
     })
     it('should return true if there is no jira software license', async () => {
-      accountInfo = new InstanceElement(
-        '_config',
-        accountInfoType,
-        {
-          license: {
-            applications: [
-              {
-                id: 'jira-serviceDesk',
-                plan: 'PAID',
-              },
-            ],
-          },
-        }
-      )
+      accountInfo = new InstanceElement('_config', accountInfoType, {
+        license: {
+          applications: [
+            {
+              id: 'jira-serviceDesk',
+              plan: 'PAID',
+            },
+          ],
+        },
+      })
       elementsSource = buildElementsSourceFromElements([accountInfo])
       expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
     })
     it('should return true if account info does not have applications', async () => {
-      accountInfo = new InstanceElement(
-        '_config',
-        accountInfoType,
-        {
-          license: {},
-        }
-      )
+      accountInfo = new InstanceElement('_config', accountInfoType, {
+        license: {},
+      })
       elementsSource = buildElementsSourceFromElements([accountInfo])
       expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
     })
@@ -92,7 +84,7 @@ describe('utils', () => {
               },
             ],
           },
-        }
+        },
       )
       elementsSource = buildElementsSourceFromElements([accountInfo])
       expect(await isAllFreeLicense(elementsSource)).toBeTruthy()
@@ -116,19 +108,15 @@ describe('utils', () => {
               },
             ],
           },
-        }
+        },
       )
       elementsSource = buildElementsSourceFromElements([accountInfo])
       expect(await isAllFreeLicense(elementsSource)).toBeFalsy()
     })
     it('should return true if account info does not have applications', async () => {
-      accountInfo = new InstanceElement(
-        '_config',
-        accountInfoType,
-        {
-          license: {},
-        }
-      )
+      accountInfo = new InstanceElement('_config', accountInfoType, {
+        license: {},
+      })
       elementsSource = buildElementsSourceFromElements([accountInfo])
       expect(await isAllFreeLicense(elementsSource)).toBeFalsy()
     })

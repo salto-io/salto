@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { StaticFile } from '@salto-io/adapter-api'
 import { hash } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -46,14 +46,13 @@ describe('buildOverrideStateStaticFilesSource', () => {
     staticFilesSource = buildOverrideStateStaticFilesSource(directoryStore)
   })
 
-
   describe('get', () => {
     it('get should return a static file with content if md5 matches', async () => {
       directoryStore.get.mockResolvedValue({
         filename: 'path',
         buffer: Buffer.from('content'),
       })
-      const file = await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content')) as StaticFile
+      const file = (await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content'))) as StaticFile
       expect(directoryStore.get).not.toHaveBeenCalled()
 
       expect(await file.getContent()).toEqual(Buffer.from('content'))
@@ -68,7 +67,7 @@ describe('buildOverrideStateStaticFilesSource', () => {
         filename: 'path',
         buffer: Buffer.from('content'),
       })
-      const file = await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content2')) as StaticFile
+      const file = (await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content2'))) as StaticFile
       expect(directoryStore.get).not.toHaveBeenCalled()
 
       expect(await file.getContent()).toBeUndefined()
@@ -77,7 +76,7 @@ describe('buildOverrideStateStaticFilesSource', () => {
 
     it('get should return a static file without content if not found in dir store', async () => {
       directoryStore.get.mockResolvedValue(undefined)
-      const file = await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content')) as StaticFile
+      const file = (await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content'))) as StaticFile
       expect(directoryStore.get).not.toHaveBeenCalled()
 
       expect(await file.getContent()).toBeUndefined()
@@ -95,15 +94,13 @@ describe('buildOverrideStateStaticFilesSource', () => {
 
   describe('set', () => {
     it('set should call the dir store set', async () => {
-      await staticFilesSource.persistStaticFile(
-        new StaticFile({ filepath: 'path', content: Buffer.from('content') })
-      )
+      await staticFilesSource.persistStaticFile(new StaticFile({ filepath: 'path', content: Buffer.from('content') }))
       expect(directoryStore.set).toHaveBeenCalledWith({ filename: 'path', buffer: Buffer.from('content') })
     })
 
     it('set should not call the dir store set if there is no content', async () => {
       await staticFilesSource.persistStaticFile(
-        new StaticFile({ filepath: 'path', hash: hash.toMD5(Buffer.from('content')) })
+        new StaticFile({ filepath: 'path', hash: hash.toMD5(Buffer.from('content')) }),
       )
       expect(directoryStore.set).not.toHaveBeenCalled()
     })
@@ -125,10 +122,12 @@ describe('buildOverrideStateStaticFilesSource', () => {
   })
 
   it('delete should call dir store delete', async () => {
-    await staticFilesSource.delete(new StaticFile({
-      filepath: 'name',
-      content: Buffer.from('buf'),
-    }))
+    await staticFilesSource.delete(
+      new StaticFile({
+        filepath: 'name',
+        content: Buffer.from('buf'),
+      }),
+    )
     expect(directoryStore.delete).toHaveBeenCalledWith('name')
   })
 })

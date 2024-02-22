@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
@@ -201,7 +199,6 @@ export type ReportDefinitionType = {
 
 type FullReportType = ReportDefinitionType & ParsedReportDefinition
 
-
 export const reportdefinitionType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
 
@@ -222,8 +219,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionAudience = createMatchingObjectType<ReportDefinitionAccessAudience>({
     elemID: reportDefinitionAudienceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       allcustomers: { refType: BuiltinTypes.BOOLEAN },
       allemployees: { refType: BuiltinTypes.BOOLEAN },
@@ -237,8 +233,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionAccessAudience = createMatchingObjectType<ReportDefinitionAccessAudience>({
     elemID: reportdefinitionAccessAudienceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       allcustomers: { refType: BuiltinTypes.BOOLEAN },
       allemployees: { refType: BuiltinTypes.BOOLEAN },
@@ -252,8 +247,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionComponents = createMatchingObjectType<ReportComponent>({
     elemID: reportDefinitionComponentsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_COMPONENT: { refType: BuiltinTypes.NUMBER },
       FLAG_SECONDERY_DIM: { refType: BuiltinTypes.BOOLEAN },
@@ -264,8 +258,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportCriteriaDescriptor = createMatchingObjectType<ReportCriteriaDescriptor>({
     elemID: reportCriteriaDescriptorElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_ALIAS: { refType: BuiltinTypes.STRING },
       FIELD_OP_CLASS: { refType: BuiltinTypes.STRING },
@@ -283,8 +276,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportCriteriaValues = createMatchingObjectType<ReportCriteriaValuesType>({
     elemID: reportCriteriaValuesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_DATE_FILTER_INDEX: { refType: BuiltinTypes.NUMBER },
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
@@ -295,8 +287,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionCriteria = createMatchingObjectType<ReportCriteriaType>({
     elemID: reportDefinitionCriteriaElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       descriptor: { refType: reportCriteriaDescriptor },
       values: { refType: new ListType(reportCriteriaValues) },
@@ -306,8 +297,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionDependencies = createMatchingObjectType<ReportDependencies>({
     elemID: reportDefinitionDependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: BuiltinTypes.STRING,
@@ -321,8 +311,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionSorts = createMatchingObjectType<ReportSortType>({
     elemID: reportDefinitionSortsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_COMPONENT: { refType: BuiltinTypes.STRING },
       FIELD_TABLE: { refType: BuiltinTypes.STRING },
@@ -338,8 +327,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionFields = createMatchingObjectType<ReportFieldsType>({
     elemID: reportDefinitionFieldsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_COMPONENT: { refType: BuiltinTypes.NUMBER },
       FIELD_TABLE: { refType: BuiltinTypes.STRING },
@@ -387,8 +375,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionUiPref = createMatchingObjectType<ReportUiPrefType>({
     elemID: reportDefinitionUiPrefElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       PARAMETER_CASH_BASIS: { refType: BuiltinTypes.BOOLEAN },
       PARAMETER_TAXCASH_BASIS: { refType: BuiltinTypes.STRING },
@@ -409,8 +396,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionLayouts = createMatchingObjectType<ReportLayout>({
     elemID: reportDefinitionLayoutsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_STANDARD_LAYOUT: { refType: BuiltinTypes.BOOLEAN },
       KEY_SCRIPT_ID: { refType: BuiltinTypes.STRING },
@@ -420,8 +406,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionParameters = createMatchingObjectType<ReportParameters>({
     elemID: reportDefinitionParamsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       ACCOUNTING_BOOK_CURRENT_ID: { refType: BuiltinTypes.STRING },
       ACCOUNTING_BOOK_ID: { refType: BuiltinTypes.STRING },
@@ -431,8 +416,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
 
   const reportDefinitionFlags = createMatchingObjectType<ReportDefinitionInnerFields>({
     elemID: reportDefinitionFlagsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_REPORT_ID: { refType: BuiltinTypes.NUMBER },
       KEY_SCRIPT_ID: { refType: BuiltinTypes.STRING },
@@ -484,7 +468,6 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   innerTypes.reportDefinitionUiPref = reportDefinitionUiPref
   innerTypes.reportdefinition_audience = reportDefinitionAudience
   innerTypes.reportdefinition_accessaudience = reportDefinitionAccessAudience
-
 
   const reportdefinition = createMatchingObjectType<FullReportType>({
     elemID: reportDefinitionElemID,
@@ -543,8 +526,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         refType: reportDefinitionFlags,
       },
     },
-    annotations: {
-    },
+    annotations: {},
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 

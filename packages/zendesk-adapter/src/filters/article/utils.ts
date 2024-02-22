@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
@@ -22,7 +22,8 @@ import {
   normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
-  inspectValue, isResolvedReferenceExpression,
+  inspectValue,
+  isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -74,32 +75,42 @@ type AttachmentResponse = {
   inline: boolean
 }
 
-const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
-  value: Joi.object({
-    id: Joi.number().required(),
-    file_name: Joi.string().required(),
-    content_type: Joi.string().required(),
-    content_url: Joi.string().required(),
-    inline: Joi.boolean().required(),
-  }).unknown(true).required(),
-}).unknown(true)).required()
+const EXPECTED_ATTACHMENT_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      value: Joi.object({
+        id: Joi.number().required(),
+        file_name: Joi.string().required(),
+        content_type: Joi.string().required(),
+        content_url: Joi.string().required(),
+        inline: Joi.boolean().required(),
+      })
+        .unknown(true)
+        .required(),
+    }).unknown(true),
+  )
+  .required()
 
 export const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue((value))}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue(value)}`)
     return false
   }
   return true
 }
 
-const EXPECTED_ATTACHMENT_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
-  id: Joi.number().required(),
-  file_name: Joi.string().required(),
-  content_type: Joi.string().required(),
-  content_url: Joi.string().required(),
-  inline: Joi.boolean().required(),
-}).unknown(true)).required()
+const EXPECTED_ATTACHMENT_RESPONSE_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      id: Joi.number().required(),
+      file_name: Joi.string().required(),
+      content_type: Joi.string().required(),
+      content_url: Joi.string().required(),
+      inline: Joi.boolean().required(),
+    }).unknown(true),
+  )
+  .required()
 
 export const isAttachmentsResponse = (value: unknown): value is AttachmentResponse[] => {
   const { error } = EXPECTED_ATTACHMENT_RESPONSE_SCHEMA.validate(value)
@@ -111,7 +122,10 @@ export const isAttachmentsResponse = (value: unknown): value is AttachmentRespon
 }
 
 const getAttachmentContent = async ({
-  brandIdToClient, attachment, article, attachmentType,
+  brandIdToClient,
+  attachment,
+  article,
+  attachmentType,
 }: {
   brandIdToClient: Record<string, ZendeskClient>
   attachment: Attachment
@@ -150,7 +164,9 @@ const getAttachmentContent = async ({
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
   if (!Buffer.isBuffer(content)) {
     const error = `Received invalid content response from Zendesk API for attachment ${attachment.elemID.getFullName()}`
-    const buffer = Buffer.from(safeJsonStringify(res.data, undefined, 2)).toString('base64').slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)
+    const buffer = Buffer.from(safeJsonStringify(res.data, undefined, 2))
+      .toString('base64')
+      .slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)
     log.error(`${error}, ${buffer}. Not adding article attachment`)
     return contentWarning(error)
   }
@@ -164,7 +180,13 @@ const getAttachmentContent = async ({
   return undefined
 }
 
-export const getArticleAttachments = async ({ brandIdToClient, articleById, attachmentType, attachments, config }: {
+export const getArticleAttachments = async ({
+  brandIdToClient,
+  articleById,
+  attachmentType,
+  attachments,
+  config,
+}: {
   brandIdToClient: Record<string, ZendeskClient>
   articleById: Record<string, InstanceElement>
   attachmentType: ObjectType
@@ -175,15 +197,20 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
   const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 100
   log.debug(`there are ${attachments.length} attachments, going to get their content in chunks of ${rateLimit}`)
   const attachChunk = _.chunk(attachments, rateLimit)
-  return awu(attachChunk).flatMap(async (attach: Attachment[], index: number) => {
-    log.debug(`starting article attachment chunk ${index + 1}/${attachChunk.length}`)
-    const errors = await Promise.all(attach.map(async attachment => {
-      const article = articleById[getParent(attachment).value.id]
-      return getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
-    }))
-    await sleep(1000)
-    return errors
-  }).filter(isDefined).toArray()
+  return awu(attachChunk)
+    .flatMap(async (attach: Attachment[], index: number) => {
+      log.debug(`starting article attachment chunk ${index + 1}/${attachChunk.length}`)
+      const errors = await Promise.all(
+        attach.map(async attachment => {
+          const article = articleById[getParent(attachment).value.id]
+          return getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
+        }),
+      )
+      await sleep(1000)
+      return errors
+    })
+    .filter(isDefined)
+    .toArray()
 }
 
 export const createUnassociatedAttachment = async (
@@ -208,7 +235,9 @@ export const createUnassociatedAttachment = async (
       return
     }
     if (Array.isArray(res.data)) {
-      log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
+      log.error(
+        `Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`,
+      )
       return
     }
     const createdAttachment = [res.data.article_attachment]
@@ -245,7 +274,9 @@ export const updateArticleTranslationBody = async ({
   const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
   const articleTranslations = articleValues?.translations
   if (!Array.isArray(articleTranslations)) {
-    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${inspectValue(articleTranslations)}`)
+    log.error(
+      `Received an invalid translations value for attachment ${articleValues.name} - ${inspectValue(articleTranslations)}`,
+    )
     return
   }
   await awu(articleTranslations)
@@ -264,11 +295,14 @@ export const updateArticleTranslationBody = async ({
               return attachmentInstances[attachmentIndex].value.id.toString()
             }
             return prepRef(part)
-          }
+          },
         )
       } catch (e) {
-        log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
-        throw createSaltoElementError({ // caught in adapter.ts
+        log.error(
+          `Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
+        )
+        throw createSaltoElementError({
+          // caught in adapter.ts
           message: `Error serializing article translation body in Deployment: ${e}, stack: ${e.stack}`,
           severity: 'Error',
           elemID: translationInstance.elemID,

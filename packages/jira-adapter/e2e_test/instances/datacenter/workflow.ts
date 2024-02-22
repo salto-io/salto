@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, Values, Element } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { createReference } from '../../utils'
@@ -45,10 +45,12 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'initial',
-      from: [{
-        sourceAngle: 33.45,
-        targetAngle: 99.89,
-      }],
+      from: [
+        {
+          sourceAngle: 33.45,
+          targetAngle: 99.89,
+        },
+      ],
       rules: {
         validators: [
           {
@@ -104,11 +106,13 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     [naclCase('TransitionToShared::From: Done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
-      from: [{
-        id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-        sourceAngle: 12.45,
-        targetAngle: 67.89,
-      }],
+      from: [
+        {
+          id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+          sourceAngle: 12.45,
+          targetAngle: 67.89,
+        },
+      ],
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'common',
       rules: {
@@ -140,10 +144,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           {
             type: 'com.onresolve.jira.groovy.GroovyFunctionPlugin',
             configuration: {
-              FIELD_SECURITY_LEVEL_ID: createReference(new ElemID(JIRA, 'SecurityLevel', 'instance', 'test__test'), allElements),
+              FIELD_SECURITY_LEVEL_ID: createReference(
+                new ElemID(JIRA, 'SecurityLevel', 'instance', 'test__test'),
+                allElements,
+              ),
               FIELD_FUNCTION_ID: '8b6dfd6d-d46a-49ba-9dab-fe2ca70c2911',
               FIELD_NOTES: 'Post17',
-              'full.module.key': 'com.onresolve.jira.groovy.groovyrunnerscriptrunner-workflow-function-com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.SetIssueSecurity',
+              'full.module.key':
+                'com.onresolve.jira.groovy.groovyrunnerscriptrunner-workflow-function-com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.SetIssueSecurity',
               'canned-script': 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.SetIssueSecurity',
               FIELD_CONDITION: {
                 script: 'issue.projectObject.key == XYZ17',
@@ -202,10 +210,12 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       name: 'Backlog',
-      properties: [{
-        key: 'jira.issue.editable',
-        value: 'true',
-      }],
+      properties: [
+        {
+          key: 'jira.issue.editable',
+          value: 'true',
+        },
+      ],
       location: {
         x: 12.34,
         y: 56.78,
@@ -214,10 +224,12 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
       name: 'Done',
-      properties: [{
-        key: 'jira.issue.editable',
-        value: 'true',
-      }],
+      properties: [
+        {
+          key: 'jira.issue.editable',
+          value: 'true',
+        },
+      ],
       location: {
         x: 67.89,
         y: 20.78,

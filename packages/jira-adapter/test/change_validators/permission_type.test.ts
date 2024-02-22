@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, ElemID, ReadOnlyElementsSource, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { permissionTypeValidator } from '../../src/change_validators/permission_type'
@@ -29,8 +29,7 @@ describe('permissionType change validator', () => {
       },
     },
   })
-  const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA,
-    PERMISSION_SCHEME_TYPE_NAME) })
+  const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME) })
   const invalidPermissionScheme = new InstanceElement('instance1', permissionSchemeObject, {
     permissions: [
       {
@@ -48,8 +47,7 @@ describe('permissionType change validator', () => {
       },
     ],
   })
-  const noFieldPermissionScheme = new InstanceElement('instance2', permissionSchemeObject, {
-  })
+  const noFieldPermissionScheme = new InstanceElement('instance2', permissionSchemeObject, {})
 
   beforeEach(() => {
     elements = [invalidPermissionScheme, permissionsInstance, validPermissionScheme]
@@ -57,39 +55,32 @@ describe('permissionType change validator', () => {
   })
 
   it('should return an error for invalid permission scheme', async () => {
-    expect(await permissionTypeValidator(
-      [toChange({ after: invalidPermissionScheme }), toChange({ after: validPermissionScheme })],
-      elementsSource
-    ))
-      .toEqual([
-        {
-          elemID: invalidPermissionScheme.elemID,
-          severity: 'Warning',
-          message: 'Invalid permission type in permission scheme',
-          detailedMessage: 'The permissions inValidPermission in jira.PermissionScheme.instance.instance1 do not exist in the current environment and will be excluded during deployment',
-        },
-      ])
+    expect(
+      await permissionTypeValidator(
+        [toChange({ after: invalidPermissionScheme }), toChange({ after: validPermissionScheme })],
+        elementsSource,
+      ),
+    ).toEqual([
+      {
+        elemID: invalidPermissionScheme.elemID,
+        severity: 'Warning',
+        message: 'Invalid permission type in permission scheme',
+        detailedMessage:
+          'The permissions inValidPermission in jira.PermissionScheme.instance.instance1 do not exist in the current environment and will be excluded during deployment',
+      },
+    ])
   })
   it('should not return an error for valid permission scheme', async () => {
-    expect(await permissionTypeValidator(
-      [toChange({ after: validPermissionScheme })],
-      elementsSource
-    )).toBeEmpty()
+    expect(await permissionTypeValidator([toChange({ after: validPermissionScheme })], elementsSource)).toBeEmpty()
   })
 
   it('should return an empty list if no permission instance is found', async () => {
     elementsSource = buildElementsSourceFromElements([])
-    expect(await permissionTypeValidator(
-      [toChange({ after: invalidPermissionScheme })],
-      elementsSource
-    )).toBeEmpty()
+    expect(await permissionTypeValidator([toChange({ after: invalidPermissionScheme })], elementsSource)).toBeEmpty()
   })
   it('should not crash if there are no permissions field', async () => {
     elements = [noFieldPermissionScheme, permissionsInstance]
     elementsSource = buildElementsSourceFromElements(elements)
-    expect(await permissionTypeValidator(
-      [toChange({ after: noFieldPermissionScheme })],
-      elementsSource
-    )).toBeEmpty()
+    expect(await permissionTypeValidator([toChange({ after: noFieldPermissionScheme })], elementsSource)).toBeEmpty()
   })
 })

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   AdditionChange,
   Change,
@@ -27,17 +27,24 @@ import {
   SaltoError,
   StaticFile,
   Element,
-  isObjectType, Field, MapType, CORE_ANNOTATIONS,
+  isObjectType,
+  Field,
+  MapType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values, values as lowerdashValues } from '@salto-io/lowerdash'
+import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
-  GUIDE_THEME_TYPE_NAME, THEME_FILE_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
+  GUIDE_THEME_TYPE_NAME,
+  THEME_FILE_TYPE_NAME,
+  THEME_FOLDER_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
+  ZENDESK,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { create } from './guide_themes/create'
@@ -45,23 +52,47 @@ import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes } from './utils'
-
+import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
+const { awu } = collections.asynciterable
 
 type ThemeFile = { filename: string; content: StaticFile }
 type DeployThemeFile = { filename: string; content: Buffer }
-
 
 export type ThemeDirectory = {
   files: Record<string, ThemeFile | DeployThemeFile>
   folders: Record<string, ThemeDirectory>
 }
 
-export const unzipFolderToElements = async (
-  buffer: Buffer, brandName: string, name: string,
-): Promise<ThemeDirectory> => {
+const createTemplateParts = (filePath: string, content: string, idsToElements: Record<string, Element>): void => {
+  if (filePath.endsWith('.hbs')) {
+    try {
+      const potentialReferences = parseHandlebarPotentialReferences(content)
+      const templateParts = potentialReferences.map(ref =>
+        idsToElements[ref.value] !== undefined ? { value: idsToElements[ref.value], loc: ref.loc } : ref,
+      )
+      if (templateParts.length > 0) {
+        log.info('Found the following references in the theme: %o', templateParts)
+      }
+    } catch (e) {
+      log.warn('Error parsing references in file %s, %o', filePath, e)
+    }
+  }
+}
+
+export const unzipFolderToElements = async ({
+  buffer,
+  brandName,
+  name,
+  idsToElements,
+}: {
+  buffer: Buffer
+  brandName: string
+  name: string
+  idsToElements: Record<string, Element>
+}): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
 
@@ -83,6 +114,7 @@ export const unzipFolderToElements = async (
       // It's a file
       const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
+      createTemplateParts(fullPath, content.toString(), idsToElements) // Only logging for now
       currentDir.files[naclCase(firstPart)] = {
         filename: fullPath,
         content: new StaticFile({ filepath, content }),
@@ -100,12 +132,14 @@ export const unzipFolderToElements = async (
       currentDir: currentDir.folders[naclCase(firstPart)],
     })
   }
-  await Promise.all(Object.entries(unzippedContents.files).map(async ([fullPath, file]): Promise<void> => {
-    if (!file.dir) {
-      const pathParts = fullPath.split('/')
-      await addFile({ fullPath, pathParts, file, currentDir: elements })
-    }
-  }))
+  await Promise.all(
+    Object.entries(unzippedContents.files).map(async ([fullPath, file]): Promise<void> => {
+      if (!file.dir) {
+        const pathParts = fullPath.split('/')
+        await addFile({ fullPath, pathParts, file, currentDir: elements })
+      }
+    }),
+  )
   return elements
 }
 
@@ -146,23 +180,23 @@ const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployT
 
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
 
-const addDownloadErrors = (
-  theme: InstanceElement,
-  downloadErrors: string[]
-): SaltoError[] => ((downloadErrors.length > 0)
-  ? downloadErrors.map(e => ({
-    message: `Error fetching theme id ${theme.value.id}, ${e}`,
-    severity: 'Warning',
-  }))
-  : [{
-    message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
-    severity: 'Warning',
-  }])
+const addDownloadErrors = (theme: InstanceElement, downloadErrors: string[]): SaltoError[] =>
+  downloadErrors.length > 0
+    ? downloadErrors.map(e => ({
+        message: `Error fetching theme id ${theme.value.id}, ${e}`,
+        severity: 'Warning',
+      }))
+    : [
+        {
+          message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
+          severity: 'Warning',
+        },
+      ]
 
 const createTheme = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: ZendeskClient,
-  isLiveTheme: boolean
+  isLiveTheme: boolean,
 ): Promise<string[]> => {
   const live = isLiveTheme
   const { brand_id: brandId, root } = change.data.after.value
@@ -184,14 +218,18 @@ const createTheme = async (
 }
 
 const updateTheme = async (
-  change: ModificationChange<InstanceElement>, client: ZendeskClient, isLiveTheme: boolean
+  change: ModificationChange<InstanceElement>,
+  client: ZendeskClient,
+  isLiveTheme: boolean,
 ): Promise<string[]> => {
   const elementErrors = await createTheme(change, client, isLiveTheme)
   if (elementErrors.length > 0) {
     const lastError = elementErrors[elementErrors.length - 1]
     if (lastError.includes('Failed to publish')) {
       elementErrors.pop()
-      elementErrors.push(`${lastError}. The theme has been created but not published; you can manually publish it in the Zendesk UI.`)
+      elementErrors.push(
+        `${lastError}. The theme has been created but not published; you can manually publish it in the Zendesk UI.`,
+      )
     }
     return elementErrors
   }
@@ -202,8 +240,9 @@ const updateTheme = async (
 const fixThemeTypes = (elements: Element[]): void => {
   const relevantTypes = elements
     .filter(isObjectType)
-    .filter(type => [GUIDE_THEME_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_FILE_TYPE_NAME]
-      .includes(type.elemID.typeName))
+    .filter(type =>
+      [GUIDE_THEME_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_FILE_TYPE_NAME].includes(type.elemID.typeName),
+    )
   const themeType = relevantTypes.find(type => GUIDE_THEME_TYPE_NAME === type.elemID.typeName)
   const themeFolderType = relevantTypes.find(type => THEME_FOLDER_TYPE_NAME === type.elemID.typeName)
   const themeFileType = relevantTypes.find(type => THEME_FILE_TYPE_NAME === type.elemID.typeName)
@@ -246,9 +285,16 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       }
       return brandName
     }
+    const idsToElements = await awu(await elementsSource.getAll())
+      .filter(isInstanceElement)
+      .filter(element => element.value.id !== undefined)
+      .reduce<Record<string, Element>>((acc, elem) => {
+        acc[elem.value.id] = elem
+        return acc
+      }, {})
 
-    const processedThemes = await Promise.all(guideThemes
-      .map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
+    const processedThemes = await Promise.all(
+      guideThemes.map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
         const brandName = getBrandName(theme)
         if (brandName === undefined) {
           // a log is written in the getBrandName func
@@ -261,31 +307,35 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
           return { errors: addDownloadErrors(theme, downloadErrors) }
         }
         try {
-          const themeElements = await unzipFolderToElements(
-            themeZip, brandName, theme.value.name
-          )
+          const themeElements = await unzipFolderToElements({
+            buffer: themeZip,
+            brandName,
+            name: theme.value.name,
+            idsToElements,
+          })
           theme.value.root = themeElements
         } catch (e) {
           if (!(e instanceof Error)) {
             remove(elements, element => element.elemID.isEqual(theme.elemID))
             log.error('Error fetching theme id %s, %o', theme.value.id, e)
             return {
-              errors: [
-                { message: `Error fetching theme id ${theme.value.id}, ${e}`, severity: 'Warning' },
-              ],
+              errors: [{ message: `Error fetching theme id ${theme.value.id}, ${e}`, severity: 'Warning' }],
             }
           }
 
           remove(elements, element => element.elemID.isEqual(theme.elemID))
           return {
-            errors: [{
-              message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
-              severity: 'Warning',
-            }],
+            errors: [
+              {
+                message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
+                severity: 'Warning',
+              },
+            ],
           }
         }
         return { successfulTheme: theme, errors: [] }
-      }))
+      }),
+    )
     const errors = processedThemes.flatMap(theme => theme.errors)
     return { errors }
   },
@@ -294,8 +344,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       changes,
       change =>
         // Removal changes are handled in the default config.
-        isAdditionOrModificationChange(change)
-        && GUIDE_THEME_TYPE_NAME === getChangeData(change).elemID.typeName,
+        isAdditionOrModificationChange(change) && GUIDE_THEME_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
 
     if (_.isEmpty(themeChanges)) {
@@ -306,30 +355,33 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     // ensure there is just one live theme per brand.
     const liveThemesByBrand = Object.fromEntries(
       (await getInstancesFromElementSource(elementsSource, [THEME_SETTINGS_TYPE_NAME]))
-        .filter(instance => isReferenceExpression(instance.value.liveTheme)
-          && isReferenceExpression(instance.value.brand))
-        .map(instance => [instance.value.brand.elemID.getFullName(), instance.value.liveTheme.elemID.getFullName()])
+        .filter(
+          instance => isReferenceExpression(instance.value.liveTheme) && isReferenceExpression(instance.value.brand),
+        )
+        .map(instance => [instance.value.brand.elemID.getFullName(), instance.value.liveTheme.elemID.getFullName()]),
     )
     const liveThemesNames = new Set(Object.values(liveThemesByBrand))
 
-    const processedChanges = await Promise.all(themeChanges
-      .filter(isAdditionOrModificationChange)
-      .map(async (change): Promise<{ appliedChange?: Change<InstanceElement>; errors: SaltoElementError[] }> => {
-        const isLiveTheme = liveThemesNames.has(getChangeData(change).elemID.getFullName())
-        const elementErrors = isModificationChange(change)
-          ? await updateTheme(change, client, isLiveTheme)
-          : await createTheme(change, client, isLiveTheme)
-        if (elementErrors.length > 0) {
-          return {
-            errors: elementErrors.map(e => ({
-              elemID: change.data.after.elemID,
-              message: e,
-              severity: 'Error',
-            })),
+    const processedChanges = await Promise.all(
+      themeChanges
+        .filter(isAdditionOrModificationChange)
+        .map(async (change): Promise<{ appliedChange?: Change<InstanceElement>; errors: SaltoElementError[] }> => {
+          const isLiveTheme = liveThemesNames.has(getChangeData(change).elemID.getFullName())
+          const elementErrors = isModificationChange(change)
+            ? await updateTheme(change, client, isLiveTheme)
+            : await createTheme(change, client, isLiveTheme)
+          if (elementErrors.length > 0) {
+            return {
+              errors: elementErrors.map(e => ({
+                elemID: change.data.after.elemID,
+                message: e,
+                severity: 'Error',
+              })),
+            }
           }
-        }
-        return { appliedChange: change, errors: [] }
-      }))
+          return { appliedChange: change, errors: [] }
+        }),
+    )
     const errors = processedChanges.flatMap(change => change.errors)
     const appliedChanges = processedChanges.map(change => change.appliedChange).filter(values.isDefined)
     return { deployResult: { appliedChanges, errors }, leftoverChanges }

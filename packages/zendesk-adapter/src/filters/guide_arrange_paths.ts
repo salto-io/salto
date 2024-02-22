@@ -1,24 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Element,
   isInstanceElement,
   InstanceElement,
   isReferenceExpression,
-  ReferenceExpression, isStaticFile, StaticFile,
+  ReferenceExpression,
+  isStaticFile,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -38,7 +40,9 @@ import {
   USER_SEGMENT_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
-  ZENDESK, GUIDE, BRAND_TYPE_NAME,
+  ZENDESK,
+  GUIDE,
+  BRAND_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
@@ -53,7 +57,6 @@ const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-
 export const UNSORTED = 'unsorted'
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
 const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
@@ -67,15 +70,9 @@ const BRAND_SECOND_LEVEL = [
 ]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
 
-const ORDER_TYPES = [
-  SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ORDER_TYPE_NAME,
-]
+const ORDER_TYPES = [SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME]
 
-const OTHER_TYPES = [
-  ...TRANSLATION_TYPE_NAMES,
-  ARTICLE_ATTACHMENT_TYPE_NAME,
-]
+const OTHER_TYPES = [...TRANSLATION_TYPE_NAMES, ARTICLE_ATTACHMENT_TYPE_NAME]
 
 const NO_VALUE_DEFAULT = 'unknown'
 
@@ -98,10 +95,8 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [THEME_SETTINGS_TYPE_NAME]: 'settings',
 }
 
-const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
-  : string | undefined => (isReferenceExpression(localeRef)
-  ? localeRef.value.value?.locale
-  : localeRef)
+const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined): string | undefined =>
+  isReferenceExpression(localeRef) ? localeRef.value.value?.locale : localeRef
 
 const getTranslationLocale = (instance?: InstanceElement): string =>
   getReferencedLocale(instance?.value.locale) ?? NO_VALUE_DEFAULT
@@ -109,7 +104,6 @@ const getTranslationLocale = (instance?: InstanceElement): string =>
 const getNameFromName = (instance?: InstanceElement): string => instance?.value.name ?? NO_VALUE_DEFAULT
 
 const getNameFromTitle = (instance?: InstanceElement): string => instance?.value.title ?? NO_VALUE_DEFAULT
-
 
 const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
   [CATEGORY_ORDER_TYPE_NAME]: () => 'category_order',
@@ -127,22 +121,19 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.file_name ?? NO_VALUE_DEFAULT,
 }
 
-
 const getName = (instance: InstanceElement): string =>
-  (GUIDE_ELEMENT_NAME[instance.elemID.typeName] === undefined
-    ? pathNaclCase(naclCase((instance.elemID.name)))
-    : pathNaclCase(naclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance))))
+  GUIDE_ELEMENT_NAME[instance.elemID.typeName] === undefined
+    ? pathNaclCase(naclCase(instance.elemID.name))
+    : pathNaclCase(naclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance)))
 
 /**
  * calculates a path which is not related to a specific brand
  */
-const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | undefined =>
-  [
-    ...GUIDE_PATH,
-    GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    pathNaclCase(naclCase(instance.elemID.name)),
-  ]
-
+const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | undefined => [
+  ...GUIDE_PATH,
+  GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
+  pathNaclCase(naclCase(instance.elemID.name)),
+]
 
 /**
  * calculates a path which is related to a specific brand and does not have a parent
@@ -150,7 +141,7 @@ const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | unde
 const pathForBrandSpecificRootElements = (
   instance: InstanceElement,
   brandName: string | undefined,
-  needTypeDirectory: boolean
+  needTypeDirectory: boolean,
 ): readonly string[] => {
   if (brandName === undefined) {
     log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
@@ -161,17 +152,14 @@ const pathForBrandSpecificRootElements = (
       pathNaclCase(naclCase(instance.elemID.name)),
     ]
   }
-  const newPath = [
-    ...GUIDE_PATH,
-    'brands',
-    brandName,
-  ]
+  const newPath = [...GUIDE_PATH, 'brands', brandName]
   const name = getName(instance)
 
   if (needTypeDirectory) {
     newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
   }
-  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
+  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) {
+    // each category has a folder of its own
     newPath.push(name)
   }
   newPath.push(name)
@@ -198,7 +186,7 @@ const pathForOtherLevels = ({
       ...GUIDE_PATH,
       UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-      pathNaclCase(naclCase((instance.elemID.name))),
+      pathNaclCase(naclCase(instance.elemID.name)),
     ]
   }
   const name = getName(instance)
@@ -241,16 +229,14 @@ const filterCreator: FilterCreator = () => ({
     const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
 
     // user_segments and permission_groups
-    FIRST_LEVEL_TYPES
-      .flatMap(type => guideGrouped[type])
+    FIRST_LEVEL_TYPES.flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
       .forEach(instance => {
         instance.path = pathForGlobalTypes(instance)
       })
 
     // category, settings, language_settings, category_order, themes
-    BRAND_SECOND_LEVEL
-      .flatMap(type => guideGrouped[type])
+    BRAND_SECOND_LEVEL.flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
       .forEach(instance => {
         const brandElemId = (instance.value.brand || instance.value.brand_id)?.elemID.getFullName()
@@ -268,68 +254,64 @@ const filterCreator: FilterCreator = () => ({
     // sections under category
     const [sectionWithCategoryParent, sectionsWithSectionParent] = _.partition(
       guideGrouped[SECTION_TYPE_NAME] ?? [],
-      inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME
+      inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME,
     )
-    sectionWithCategoryParent
-      .forEach(instance => {
-        const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
-        const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
-        instance.path = pathForOtherLevels({
-          instance,
-          needTypeDirectory: true,
-          needOwnFolder: true,
-          parent,
-        })
+    sectionWithCategoryParent.forEach(instance => {
+      const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
+      const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
+      instance.path = pathForOtherLevels({
+        instance,
+        needTypeDirectory: true,
+        needOwnFolder: true,
+        parent,
       })
+    })
 
-    const sectionsWithSectionParentNames = new Set(sectionsWithSectionParent
-      .map(section => section.elemID.getFullName()))
+    const sectionsWithSectionParentNames = new Set(
+      sectionsWithSectionParent.map(section => section.elemID.getFullName()),
+    )
 
     // sort sections by dependencies
     const graph = new DAG<InstanceElement>()
-    sectionsWithSectionParent
-      .forEach(section => {
-        graph.addNode(
-          section.elemID.getFullName(),
-          (sectionsWithSectionParentNames.has(section.value.direct_parent_id?.elemID.getFullName()))
-            ? [section.value.direct_parent_id.elemID.getFullName()]
-            : [],
-          section,
-        )
-      })
+    sectionsWithSectionParent.forEach(section => {
+      graph.addNode(
+        section.elemID.getFullName(),
+        sectionsWithSectionParentNames.has(section.value.direct_parent_id?.elemID.getFullName())
+          ? [section.value.direct_parent_id.elemID.getFullName()]
+          : [],
+        section,
+      )
+    })
     const sortedSections = await awu(graph.evaluationOrder())
       .map(name => instanceByName[name])
       .toArray()
 
     // sections under section
-    sortedSections
-      .forEach(instance => {
-        const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
-        const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
-        instance.path = pathForOtherLevels({
-          instance,
-          needTypeDirectory: false,
-          needOwnFolder: true,
-          parent,
-        })
+    sortedSections.forEach(instance => {
+      const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
+      const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
+      instance.path = pathForOtherLevels({
+        instance,
+        needTypeDirectory: false,
+        needOwnFolder: true,
+        parent,
       })
+    })
 
     // articles
     const articles = guideGrouped[ARTICLE_TYPE_NAME] ?? []
-    articles
-      .forEach(instance => {
-        const parentId = nameByIdParents[instance.value.section_id?.elemID.getFullName()]
-        instance.path = pathForOtherLevels({
-          instance,
-          needTypeDirectory: true,
-          needOwnFolder: true,
-          parent: parentsById[parentId],
-        })
+    articles.forEach(instance => {
+      const parentId = nameByIdParents[instance.value.section_id?.elemID.getFullName()]
+      instance.path = pathForOtherLevels({
+        instance,
+        needTypeDirectory: true,
+        needOwnFolder: true,
+        parent: parentsById[parentId],
       })
+    })
 
     // others (translations, article attachments)
-    OTHER_TYPES
-      .flatMap(type => guideGrouped[type])
+    OTHER_TYPES.flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
       .forEach(instance => {
         const parentId = getParent(instance).value.id
@@ -341,8 +323,7 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    ORDER_TYPES
-      .flatMap(type => guideGrouped[type])
+    ORDER_TYPES.flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
       .forEach(instance => {
         const parentId = getParent(instance).value.id
@@ -354,31 +335,30 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    await awu(guideGrouped[ARTICLE_ATTACHMENT_TYPE_NAME] ?? [])
-      .forEach(async attachment => {
-        const staticFile = attachment.value.content
-        if (!isStaticFile(staticFile)) {
-          return
-        }
-        const content = await staticFile.getContent()
-        if (content === undefined) {
-          log.warn(`content is undefined for attachment ${attachment.elemID.getFullName()}`)
-          return
-        }
-        const path = attachment.path ?? []
-        // path = [zendesk, records, guide, brand, brandName ... ]
-        const staticFilePath = [
-          ZENDESK,
-          ARTICLE_ATTACHMENTS_FIELD,
-          ...path.slice(2, -1),
-          normalizeFilePathPart(attachment.value.file_name.split('.')[0]), // file name
-          normalizeFilePathPart(`${staticFile.hash.slice(0, 10)}_${attachment.value.file_name}`), // <hash>_file_name
-        ]
-        attachment.value.content = new StaticFile({
-          filepath: staticFilePath.join('/'),
-          content,
-        })
+    await awu(guideGrouped[ARTICLE_ATTACHMENT_TYPE_NAME] ?? []).forEach(async attachment => {
+      const staticFile = attachment.value.content
+      if (!isStaticFile(staticFile)) {
+        return
+      }
+      const content = await staticFile.getContent()
+      if (content === undefined) {
+        log.warn(`content is undefined for attachment ${attachment.elemID.getFullName()}`)
+        return
+      }
+      const path = attachment.path ?? []
+      // path = [zendesk, records, guide, brand, brandName ... ]
+      const staticFilePath = [
+        ZENDESK,
+        ARTICLE_ATTACHMENTS_FIELD,
+        ...path.slice(2, -1),
+        normalizeFilePathPart(attachment.value.file_name.split('.')[0]), // file name
+        normalizeFilePathPart(`${staticFile.hash.slice(0, 10)}_${attachment.value.file_name}`), // <hash>_file_name
+      ]
+      attachment.value.content = new StaticFile({
+        filepath: staticFilePath.join('/'),
+        content,
       })
+    })
   },
 })
 

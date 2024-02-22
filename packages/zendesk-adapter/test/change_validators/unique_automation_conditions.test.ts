@@ -1,26 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  InstanceElement,
-  ObjectType,
-  ElemID,
-  toChange,
-  Value,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { InstanceElement, ObjectType, ElemID, toChange, Value, ReferenceExpression } from '@salto-io/adapter-api'
 import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
 import { AUTOMATION_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -46,14 +39,10 @@ const conditions = {
 }
 
 const createAutomationInstance = (name: string, conds: Value): InstanceElement =>
-  new InstanceElement(
-    name,
-    new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_TYPE_NAME) }),
-    {
-      active: true,
-      conditions: _.cloneDeep(conds),
-    },
-  )
+  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_TYPE_NAME) }), {
+    active: true,
+    conditions: _.cloneDeep(conds),
+  })
 
 describe('duplicateAutomationConditionValidator', () => {
   let automationInstance: InstanceElement
@@ -81,11 +70,7 @@ describe('duplicateAutomationConditionValidator', () => {
     notUniqueAutomation1.value.active = false
     notUniqueAutomation2.value.active = false
 
-
-    const changes = [
-      toChange({ after: notUniqueAutomation1 }),
-      toChange({ after: notUniqueAutomation2 }),
-    ]
+    const changes = [toChange({ after: notUniqueAutomation1 }), toChange({ after: notUniqueAutomation2 })]
     const elementSource = createInMemoryElementSource([
       notUniqueAutomation1,
       notUniqueAutomation2,
@@ -112,13 +97,15 @@ describe('duplicateAutomationConditionValidator', () => {
         elemID: notUniqueAutomation1.elemID,
         severity: 'Error',
         message: 'Automation conditions are not unique',
-        detailedMessage: 'Automation has the same conditions as \'zendesk.automation.instance.notUnique2\', make sure the conditions are unique before deploying.',
+        detailedMessage:
+          "Automation has the same conditions as 'zendesk.automation.instance.notUnique2', make sure the conditions are unique before deploying.",
       },
       {
         elemID: notUniqueAutomation2.elemID,
         severity: 'Error',
         message: 'Automation conditions are not unique',
-        detailedMessage: 'Automation has the same conditions as \'zendesk.automation.instance.notUnique1\', make sure the conditions are unique before deploying.',
+        detailedMessage:
+          "Automation has the same conditions as 'zendesk.automation.instance.notUnique1', make sure the conditions are unique before deploying.",
       },
     ])
   })
@@ -141,7 +128,8 @@ describe('duplicateAutomationConditionValidator', () => {
         elemID: notUniqueAutomation.elemID,
         severity: 'Error',
         message: 'Automation conditions are not unique',
-        detailedMessage: 'Automation has the same conditions as \'zendesk.automation.instance.automation\', make sure the conditions are unique before deploying.',
+        detailedMessage:
+          "Automation has the same conditions as 'zendesk.automation.instance.automation', make sure the conditions are unique before deploying.",
       },
     ])
   })

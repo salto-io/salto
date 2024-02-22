@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -42,37 +42,35 @@ describe('sharePermissionFilter', () => {
 
     const filterType = createEmptyType(FILTER_TYPE_NAME)
 
-    instance = new InstanceElement(
-      'instance',
-      dashboardType,
-      {
-        sharePermissions: [{
+    instance = new InstanceElement('instance', dashboardType, {
+      sharePermissions: [
+        {
           type: 'loggedin',
-        }],
-      }
-    )
+        },
+      ],
+    })
 
-    const instance2 = new InstanceElement(
-      'instance2',
-      filterType,
-      {
-        sharePermissions: [{
-          type: 'loggedin',
-        },
-        {
-          type: 'loggedin',
-        }],
-        editPermissions: [{
-          type: 'loggedin',
-        },
+    const instance2 = new InstanceElement('instance2', filterType, {
+      sharePermissions: [
         {
           type: 'loggedin',
         },
         {
           type: 'loggedin',
-        }],
-      }
-    )
+        },
+      ],
+      editPermissions: [
+        {
+          type: 'loggedin',
+        },
+        {
+          type: 'loggedin',
+        },
+        {
+          type: 'loggedin',
+        },
+      ],
+    })
 
     instances = [instance, instance2]
 
@@ -84,7 +82,11 @@ describe('sharePermissionFilter', () => {
     await filter.onFetch(instances)
     expect(instance.value).toEqual({ sharePermissions: [{ type: 'authenticated' }] })
     expect(instances[1].value.sharePermissions).toEqual([{ type: 'authenticated' }, { type: 'authenticated' }])
-    expect(instances[1].value.editPermissions).toEqual([{ type: 'authenticated' }, { type: 'authenticated' }, { type: 'authenticated' }])
+    expect(instances[1].value.editPermissions).toEqual([
+      { type: 'authenticated' },
+      { type: 'authenticated' },
+      { type: 'authenticated' },
+    ])
   })
   it('should not replace when SharePermission.type is not "loggedin"', async () => {
     instance.value.sharePermissions[0].type = 'notLoggedIn'
@@ -96,10 +98,14 @@ describe('sharePermissionFilter', () => {
     instance.value.sharePermissions[0].type = 'notLoggedIn'
     instance.value.sharePermissions[0].other = 'loggedIn'
     await filter.onFetch([instance])
-    expect(instance.value).toEqual({ sharePermissions: [{
-      type: 'notLoggedIn',
-      other: 'loggedIn',
-    }] })
+    expect(instance.value).toEqual({
+      sharePermissions: [
+        {
+          type: 'notLoggedIn',
+          other: 'loggedIn',
+        },
+      ],
+    })
   })
 
   it('should remove everything but the id in project', async () => {
@@ -110,12 +116,14 @@ describe('sharePermissionFilter', () => {
     }
     await filter.onFetch([instance])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'project',
-        project: {
-          id: 1,
+      sharePermissions: [
+        {
+          type: 'project',
+          project: {
+            id: 1,
+          },
         },
-      }],
+      ],
     })
   })
 
@@ -127,12 +135,14 @@ describe('sharePermissionFilter', () => {
     }
     await filter.onFetch([instance])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'role',
-        role: {
-          id: 1,
+      sharePermissions: [
+        {
+          type: 'role',
+          role: {
+            id: 1,
+          },
         },
-      }],
+      ],
     })
   })
 
@@ -171,44 +181,50 @@ describe('sharePermissionFilter', () => {
     }
     await filter.preDeploy([toChange({ after: instance }), toChange({ before: instance, after: instances[1] })])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'projectRole',
-        role: {
-          id: 1,
+      sharePermissions: [
+        {
+          type: 'projectRole',
+          role: {
+            id: 1,
+          },
         },
-      }],
+      ],
     })
     expect(instances[1].value).toEqual({
-      sharePermissions: [{
-        type: 'projectRole',
-        role: {
-          id: 2,
+      sharePermissions: [
+        {
+          type: 'projectRole',
+          role: {
+            id: 2,
+          },
         },
-      },
-      {
-        type: 'projectRole',
-        role: {
-          id: 3,
+        {
+          type: 'projectRole',
+          role: {
+            id: 3,
+          },
         },
-      }],
-      editPermissions: [{
-        type: 'projectRole',
-        role: {
-          id: 4,
+      ],
+      editPermissions: [
+        {
+          type: 'projectRole',
+          role: {
+            id: 4,
+          },
         },
-      },
-      {
-        type: 'projectRole',
-        role: {
-          id: 5,
+        {
+          type: 'projectRole',
+          role: {
+            id: 5,
+          },
         },
-      },
-      {
-        type: 'projectRole',
-        role: {
-          id: 6,
+        {
+          type: 'projectRole',
+          role: {
+            id: 6,
+          },
         },
-      }],
+      ],
     })
   })
 
@@ -220,12 +236,14 @@ describe('sharePermissionFilter', () => {
     }
     await filter.preDeploy([toChange({ after: instance })])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'projectRole',
-        role: {
-          id: 1,
+      sharePermissions: [
+        {
+          type: 'projectRole',
+          role: {
+            id: 1,
+          },
         },
-      }],
+      ],
     })
   })
 
@@ -233,9 +251,11 @@ describe('sharePermissionFilter', () => {
     instance.value.sharePermissions[0].type = 'project'
     await filter.preDeploy([toChange({ after: instance })])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'project',
-      }],
+      sharePermissions: [
+        {
+          type: 'project',
+        },
+      ],
     })
   })
 
@@ -248,26 +268,32 @@ describe('sharePermissionFilter', () => {
     instances[1].value.editPermissions[2].type = 'projectRole'
     await filter.onDeploy([toChange({ after: instance }), toChange({ before: instance, after: instances[1] })])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'project',
-      }],
+      sharePermissions: [
+        {
+          type: 'project',
+        },
+      ],
     })
     expect(instances[1].value).toEqual({
-      sharePermissions: [{
-        type: 'project',
-      },
-      {
-        type: 'project',
-      }],
-      editPermissions: [{
-        type: 'project',
-      },
-      {
-        type: 'project',
-      },
-      {
-        type: 'project',
-      }],
+      sharePermissions: [
+        {
+          type: 'project',
+        },
+        {
+          type: 'project',
+        },
+      ],
+      editPermissions: [
+        {
+          type: 'project',
+        },
+        {
+          type: 'project',
+        },
+        {
+          type: 'project',
+        },
+      ],
     })
   })
 
@@ -275,9 +301,11 @@ describe('sharePermissionFilter', () => {
     instance.value.sharePermissions[0].type = 'user'
     await filter.onDeploy([toChange({ after: instance })])
     expect(instance.value).toEqual({
-      sharePermissions: [{
-        type: 'user',
-      }],
+      sharePermissions: [
+        {
+          type: 'user',
+        },
+      ],
     })
   })
 })

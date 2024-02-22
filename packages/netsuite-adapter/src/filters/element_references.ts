@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  isInstanceElement,
+  ElemID,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
+  isObjectType,
+  getChangeData,
+  InstanceElement,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -21,7 +32,14 @@ import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance, isCustomFieldName } from '../types'
+import {
+  isCustomRecordType,
+  isStandardType,
+  isFileCabinetType,
+  isFileInstance,
+  isFileCabinetInstance,
+  isCustomFieldName,
+} from '../types'
 import { ElemServiceID, LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, getServiceIdsToElemIds, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
@@ -41,16 +59,19 @@ const semanticReferenceRegex = new RegExp(`("|')(?<${OPTIONAL_REFS}>.*?)\\1`, 'g
 // matches lines which start with '*' than a string with '@N' prefix
 // followed by a space and another string , e.g: "* @NAmdConfig ./utils/ToastDalConfig.json"'
 const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s+(?<${OPTIONAL_REFS}>.*)`, 'gm')
-const pathPrefixRegex = new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`, 'm')
+const pathPrefixRegex = new RegExp(
+  `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
+  'm',
+)
 
 const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
-  serviceIdInfoRecord.appid !== undefined
-  || serviceIdInfoRecord.bundleid !== undefined
-  || !serviceIdInfoRecord.isFullMatch
+  serviceIdInfoRecord.appid !== undefined ||
+  serviceIdInfoRecord.bundleid !== undefined ||
+  !serviceIdInfoRecord.isFullMatch
 
 export const getElementServiceIdRecords = async (
   element: Element,
-  elementsSource?: ReadOnlyElementsSource
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<ServiceIdRecords> => {
   if (isInstanceElement(element)) {
     if (isStandardType(element.refType)) {
@@ -81,11 +102,10 @@ export const getElementServiceIdRecords = async (
   return {}
 }
 
-const generateServiceIdToElemID = async (
-  elements: Element[],
-): Promise<ServiceIdRecords> => awu(elements)
-  .map(elem => getElementServiceIdRecords(elem))
-  .reduce<ServiceIdRecords>((acc, records) => Object.assign(acc, records), {})
+const generateServiceIdToElemID = async (elements: Element[]): Promise<ServiceIdRecords> =>
+  awu(elements)
+    .map(elem => getElementServiceIdRecords(elem))
+    .reduce<ServiceIdRecords>((acc, records) => Object.assign(acc, records), {})
 
 const resolveRelativePath = (absolutePath: string, relativePath: string): string =>
   osPath.resolve(osPath.dirname(absolutePath), relativePath)
@@ -104,7 +124,7 @@ const getServiceElemIDsFromPaths = (
       return [ref, absolutePath].concat(
         osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
           ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
-          : []
+          : [],
       )
     })
     .map(ref => {
@@ -119,7 +139,6 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
-
 const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
@@ -132,12 +151,7 @@ const getSuiteScriptReferences = async (
     .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
     .concat(nsConfigReferences)
 
-  return getServiceElemIDsFromPaths(
-    semanticReferences,
-    serviceIdToElemID,
-    customRecordFieldsToServiceIds,
-    element,
-  )
+  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
 }
 
 const replaceReferenceValues = async (
@@ -190,14 +204,14 @@ const replaceReferenceValues = async (
     strict: false,
   })
 
-  const suiteScriptReferences = isFileCabinetInstance(element) && isFileInstance(element)
-    ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
-    : []
+  const suiteScriptReferences =
+    isFileCabinetInstance(element) && isFileInstance(element)
+      ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
+      : []
 
   extendGeneratedDependencies(
     newElement,
-    dependenciesToAdd.concat(suiteScriptReferences)
-      .map(elemID => ({ reference: new ReferenceExpression(elemID) }))
+    dependenciesToAdd.concat(suiteScriptReferences).map(elemID => ({ reference: new ReferenceExpression(elemID) })),
   )
 
   return newElement
@@ -207,9 +221,7 @@ const createElementsSourceServiceIdToElemID = async (
   elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean,
 ): Promise<ServiceIdRecords> => ({
-  ...isPartial
-    ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex
-    : {},
+  ...(isPartial ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex : {}),
 })
 
 const applyValuesAndAnnotationsToElement = (element: Element, newElement: Element): void => {
@@ -238,31 +250,16 @@ export const extractCustomRecordFields = (customRecordType: ObjectType): ElemSer
     })
     .map(field => ({ serviceID: field.annotations[SCRIPT_ID], elemID: field.elemID.createNestedID(SCRIPT_ID) }))
 
-const createCustomRecordFieldsToElemID = (
-  elements: Element[],
-): ServiceIdRecords =>
-  _.keyBy(
-    elements
-      .filter(isObjectType)
-      .filter(isCustomRecordType)
-      .flatMap(extractCustomRecordFields),
-    'serviceID'
-  )
+const createCustomRecordFieldsToElemID = (elements: Element[]): ServiceIdRecords =>
+  _.keyBy(elements.filter(isObjectType).filter(isCustomRecordType).flatMap(extractCustomRecordFields), 'serviceID')
 
 const createElementsSourceCustomRecordFieldsToElemID = async (
   elementsSourceIndex: LazyElementsSourceIndexes,
-  isPartial: boolean
-): Promise<ServiceIdRecords> => (
-  isPartial
-    ? (await elementsSourceIndex.getIndexes()).customRecordFieldsServiceIdRecordsIndex
-    : {}
-)
+  isPartial: boolean,
+): Promise<ServiceIdRecords> =>
+  isPartial ? (await elementsSourceIndex.getIndexes()).customRecordFieldsServiceIdRecordsIndex : {}
 
-const filterCreator: LocalFilterCreator = ({
-  elementsSourceIndex,
-  isPartial,
-  changesGroupId,
-}) => ({
+const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, changesGroupId }) => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
     const serviceIdToElemID = Object.assign(
@@ -271,27 +268,25 @@ const filterCreator: LocalFilterCreator = ({
     )
     const customRecordFieldsToServiceIds = Object.assign(
       createCustomRecordFieldsToElemID(elements),
-      await createElementsSourceCustomRecordFieldsToElemID(elementsSourceIndex, isPartial)
+      await createElementsSourceCustomRecordFieldsToElemID(elementsSourceIndex, isPartial),
     )
-    await awu(elements).filter(element => isInstanceElement(element) || (
-      isObjectType(element) && isCustomRecordType(element)
-    )).forEach(async element => {
-      const newElement = await replaceReferenceValues(
-        element,
-        serviceIdToElemID,
-        customRecordFieldsToServiceIds,
-      )
-      applyValuesAndAnnotationsToElement(element, newElement)
-    })
+    await awu(elements)
+      .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
+      .forEach(async element => {
+        const newElement = await replaceReferenceValues(element, serviceIdToElemID, customRecordFieldsToServiceIds)
+        applyValuesAndAnnotationsToElement(element, newElement)
+      })
   },
   preDeploy: async changes => {
     if (!changesGroupId || !isSdfCreateOrUpdateGroupId(changesGroupId)) {
       return
     }
-    await awu(changes).map(getChangeData).forEach(async element => {
-      const newElement = await resolveValues(element, getLookUpName)
-      applyValuesAndAnnotationsToElement(element, newElement)
-    })
+    await awu(changes)
+      .map(getChangeData)
+      .forEach(async element => {
+        const newElement = await resolveValues(element, getLookUpName)
+        applyValuesAndAnnotationsToElement(element, newElement)
+      })
   },
 })
 

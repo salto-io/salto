@@ -1,20 +1,39 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS, toChange, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  filterUtils,
+  client as clientUtils,
+  elements as elementUtils,
+  elements as adapterElements,
+} from '@salto-io/adapter-components'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  BuiltinTypes,
+  ListType,
+  ReferenceExpression,
+  Element,
+  isInstanceElement,
+  isObjectType,
+  getChangeData,
+  CORE_ANNOTATIONS,
+  toChange,
+  Values,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
@@ -62,38 +81,28 @@ describe('issue layout filter', () => {
     config.fetch.enableIssueLayouts = true
     layoutFilter = issueLayoutFilter(getFilterParams({ client, config, adapterContext })) as typeof layoutFilter
     asyncFilter = asyncApiCallsFilter(getFilterParams({ client, config })) as typeof asyncFilter
-    screenType = new ObjectType({ elemID: new ElemID(JIRA, 'Screen'),
+    screenType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Screen'),
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
-      } })
-    screenInstance = new InstanceElement(
-      'screen1',
-      screenType,
-      {
-        id: 11,
-      }
-    )
+      },
+    })
+    screenInstance = new InstanceElement('screen1', screenType, {
+      id: 11,
+    })
     fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
-    fieldInstance1 = new InstanceElement(
-      'testField1',
-      fieldType,
-      {
-        id: 'testField1',
-        name: 'TestField1',
-        type: 'testField1',
-      }
-    )
-    fieldInstance2 = new InstanceElement(
-      'testField2',
-      fieldType,
-      {
-        id: 'testField2',
-        name: 'TestField2',
-        schema: {
-          system: 'testField2',
-        },
-      }
-    )
+    fieldInstance1 = new InstanceElement('testField1', fieldType, {
+      id: 'testField1',
+      name: 'TestField1',
+      type: 'testField1',
+    })
+    fieldInstance2 = new InstanceElement('testField2', fieldType, {
+      id: 'testField2',
+      name: 'TestField2',
+      schema: {
+        system: 'testField2',
+      },
+    })
     screenSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE),
       fields: {
@@ -124,27 +133,19 @@ describe('issue layout filter', () => {
         key: { refType: BuiltinTypes.STRING },
       },
     })
-    screenSchemeInstance = new InstanceElement(
-      'screenScheme1',
-      screenSchemeType,
-      {
-        id: 111,
-        screens: { default: 11 },
-      }
-    )
-    issueTypeScreenSchemeInstance = new InstanceElement(
-      'issueTypeScreenScheme1',
-      issueTypeScreenSchemeType,
-      {
-        id: 1111,
-        issueTypeMappings: [
-          {
-            issueTypeId: 1,
-            screenSchemeId: 111,
-          },
-        ],
-      }
-    )
+    screenSchemeInstance = new InstanceElement('screenScheme1', screenSchemeType, {
+      id: 111,
+      screens: { default: 11 },
+    })
+    issueTypeScreenSchemeInstance = new InstanceElement('issueTypeScreenScheme1', issueTypeScreenSchemeType, {
+      id: 1111,
+      issueTypeMappings: [
+        {
+          issueTypeId: 1,
+          screenSchemeId: 111,
+        },
+      ],
+    })
     projectInstance = new InstanceElement(
       'project1',
       projectType,
@@ -156,7 +157,7 @@ describe('issue layout filter', () => {
         projectTypeKey: 'software',
         issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
       },
-      [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
+      [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
     )
     requestReply = {
       data: {
@@ -209,14 +210,10 @@ describe('issue layout filter', () => {
     beforeEach(() => {
       client = mockCli.client
       issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
-      issueTypeInstance = new InstanceElement(
-        'issueType1',
-        issueTypeType,
-        {
-          id: '100',
-          name: 'OwnerTest',
-        }
-      )
+      issueTypeInstance = new InstanceElement('issueType1', issueTypeType, {
+        id: '100',
+        name: 'OwnerTest',
+      })
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -262,8 +259,7 @@ describe('issue layout filter', () => {
     it('should be empty answer if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({
         status: 200,
-        data: {
-        },
+        data: {},
       }))
       const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(Object.entries(res)).toHaveLength(1)
@@ -290,11 +286,13 @@ describe('issue layout filter', () => {
     it('should not fetch issue layouts if it is a data center instance', async () => {
       const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
       configWithDataCenterTrue.fetch.enableIssueLayouts = true
-      layoutFilter = issueLayoutFilter(getFilterParams({
-        client: mockClient(true).client,
-        config: configWithDataCenterTrue,
-        adapterContext,
-      })) as FilterType
+      layoutFilter = issueLayoutFilter(
+        getFilterParams({
+          client: mockClient(true).client,
+          config: configWithDataCenterTrue,
+          adapterContext,
+        }),
+      ) as FilterType
       await getLayoutRequestsAsync(mockClient(true).client, configWithDataCenterTrue, fetchQuery, elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
@@ -311,14 +309,10 @@ describe('issue layout filter', () => {
     beforeEach(async () => {
       client = mockCli.client
       issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
-      issueTypeInstance = new InstanceElement(
-        'issueType1',
-        issueTypeType,
-        {
-          id: '100',
-          name: 'OwnerTest',
-        }
-      )
+      issueTypeInstance = new InstanceElement('issueType1', issueTypeType, {
+        id: '100',
+        name: 'OwnerTest',
+      })
       elements = [
         screenType,
         screenInstance,
@@ -343,46 +337,45 @@ describe('issue layout filter', () => {
       screenSchemeInstance.value.screens = { default: new ReferenceExpression(screenInstance.elemID, screenInstance) }
       issueTypeScreenSchemeInstance.value.issueTypeMappings[0].screenSchemeId = new ReferenceExpression(
         screenSchemeInstance.elemID,
-        screenSchemeInstance
+        screenSchemeInstance,
       )
       projectInstance.value.issueTypeScreenScheme = new ReferenceExpression(
         issueTypeScreenSchemeInstance.elemID,
-        issueTypeScreenSchemeInstance
+        issueTypeScreenSchemeInstance,
       )
     })
     it('should add all subTypes to the elements', async () => {
       await layoutFilter.onFetch(elements)
-      expect(elements.filter(isObjectType).map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'jira.Field',
-          'jira.IssueLayout',
-          'jira.IssueType',
-          'jira.IssueTypeScreenScheme',
-          'jira.IssueTypeScreenSchemeItem',
-          'jira.Project',
-          'jira.Screen',
-          'jira.ScreenScheme',
-          'jira.issueLayoutConfig',
-          'jira.issueLayoutItem',
-
-        ])
+      expect(
+        elements
+          .filter(isObjectType)
+          .map(e => e.elemID.getFullName())
+          .sort(),
+      ).toEqual([
+        'jira.Field',
+        'jira.IssueLayout',
+        'jira.IssueType',
+        'jira.IssueTypeScreenScheme',
+        'jira.IssueTypeScreenSchemeItem',
+        'jira.Project',
+        'jira.Screen',
+        'jira.ScreenScheme',
+        'jira.issueLayoutConfig',
+        'jira.issueLayoutItem',
+      ])
     })
     it('should add issue layout to the elements', async () => {
       await layoutFilter.onFetch(elements)
-      const issueLayout = elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayout)
-        .toBeDefined()
-      expect(issueLayout?.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11')
+      const issueLayout = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayout).toBeDefined()
+      expect(issueLayout?.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual(
+        'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11',
+      )
     })
     it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
-        .toBeUndefined()
+      expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
     })
     it('should not add issue layout if it data in promise is empty', async () => {
       adapterContext.layoutsPromise = {
@@ -391,22 +384,16 @@ describe('issue layout filter', () => {
         },
       }
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
-        .toBeUndefined()
+      expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
     })
     it('should not fail if data is undefined', async () => {
       adapterContext.layoutsPromise = {
         11111: {
-          11: { },
+          11: {},
         },
       }
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
-        .toBeUndefined()
+      expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
     })
     it('should not add missing reference if enableMissingRef is false', async () => {
       const missingReferenceReply = {
@@ -464,51 +451,56 @@ describe('issue layout filter', () => {
       configWithMissingRefs.fetch.enableMissingReferences = false
       configWithMissingRefs.fetch.enableIssueLayouts = true
       layoutFilter = issueLayoutFilter(
-        getFilterParams({ config: configWithMissingRefs, client, adapterContext })
+        getFilterParams({ config: configWithMissingRefs, client, adapterContext }),
       ) as FilterType
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.value.issueLayoutConfig.items[0].key)
-        .toEqual('testField4')
+      expect(
+        elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.value.issueLayoutConfig
+          .items[0].key,
+      ).toEqual('testField4')
     })
     it('should use elemIdGetter', async () => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableIssueLayouts = true
-      layoutFilter = issueLayoutFilter(getFilterParams({
-        client,
-        config,
-        getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-        adapterContext,
-      })) as FilterType
+      layoutFilter = issueLayoutFilter(
+        getFilterParams({
+          client,
+          config,
+          getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+          adapterContext,
+        }),
+      ) as FilterType
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.elemID.getFullName())
-        .toEqual('jira.IssueLayout.instance.someName')
+      expect(
+        elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+          ?.elemID.getFullName(),
+      ).toEqual('jira.IssueLayout.instance.someName')
     })
     it('should filter out issue layout if screen is not a resolved reference', async () => {
       screenSchemeInstance.value.screens.default = 'unresolved'
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
-        .toBeUndefined()
+      expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
     })
     it('should not return issue layouts if disabled', async () => {
       const configDisabled = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       configDisabled.fetch.enableIssueLayouts = false
-      layoutFilter = issueLayoutFilter(getFilterParams({
-        client,
-        config: configDisabled,
-        getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-        adapterContext,
-      })) as FilterType
+      layoutFilter = issueLayoutFilter(
+        getFilterParams({
+          client,
+          config: configDisabled,
+          getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+          adapterContext,
+        }),
+      ) as FilterType
       await layoutFilter.onFetch(elements)
-      expect(elements
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.elemID.getFullName())
-        .toBeUndefined()
+      expect(
+        elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+          ?.elemID.getFullName(),
+      ).toBeUndefined()
     })
   })
   describe('deploy', () => {
@@ -575,23 +567,16 @@ describe('issue layout filter', () => {
       ])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(projectInstance.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(projectInstance.value)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'add', data: { after: issueLayoutInstance } }
-      )
+      expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'add', data: { after: issueLayoutInstance } })
     })
     it('should modify issue layout', async () => {
-      const fieldInstance3 = new InstanceElement(
-        'testField3',
-        fieldType,
-        {
-          id: 'testField3',
-          name: 'TestField3',
-          type: 'testField3',
-        }
-      )
+      const fieldInstance3 = new InstanceElement('testField3', fieldType, {
+        id: 'testField3',
+        name: 'TestField3',
+        type: 'testField3',
+      })
       afterIssueLayoutInstance.value.issueLayoutConfig.items[2] = {
         type: 'FIELD',
         sectionType: 'PRIMARY',
@@ -604,41 +589,50 @@ describe('issue layout filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
 
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } }
-      )
+      expect(res.deployResult.appliedChanges[0]).toEqual({
+        action: 'modify',
+        data: { before: issueLayoutInstance, after: afterIssueLayoutInstance },
+      })
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/internal/1.0/issueLayouts/2',
-        { extraDefinerId: 11,
+        {
+          extraDefinerId: 11,
           projectId: '11111',
           owners: [],
           issueLayoutType: 'ISSUE_VIEW',
           issueLayoutConfig: {
             items: [
-              { key: 'testField1',
+              {
+                key: 'testField1',
                 sectionType: 'primary',
                 type: 'FIELD',
                 data: {
                   name: 'TestField1',
                   type: 'testField1',
-                } },
-              { key: 'testField2',
+                },
+              },
+              {
+                key: 'testField2',
                 sectionType: 'secondary',
                 type: 'FIELD',
                 data: {
                   name: 'TestField2',
                   type: 'testField2',
-                } },
-              { key: 'testField3',
+                },
+              },
+              {
+                key: 'testField3',
                 sectionType: 'primary',
                 type: 'FIELD',
                 data: {
                   name: 'TestField3',
                   type: 'testField3',
-                } },
+                },
+              },
             ],
-          } },
-        undefined
+          },
+        },
+        undefined,
       )
     })
     it('should not add item if its key is not a reference expression', async () => {
@@ -652,63 +646,65 @@ describe('issue layout filter', () => {
       ])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } }
-      )
+      expect(res.deployResult.appliedChanges[0]).toEqual({
+        action: 'modify',
+        data: { before: issueLayoutInstance, after: afterIssueLayoutInstance },
+      })
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/internal/1.0/issueLayouts/2',
-        { extraDefinerId: 11,
+        {
+          extraDefinerId: 11,
           projectId: '11111',
           owners: [],
           issueLayoutType: 'ISSUE_VIEW',
           issueLayoutConfig: {
             items: [
-              { key: 'testField1',
+              {
+                key: 'testField1',
                 sectionType: 'primary',
                 type: 'FIELD',
                 data: {
                   name: 'TestField1',
                   type: 'testField1',
-                } },
-              { key: 'testField2',
+                },
+              },
+              {
+                key: 'testField2',
                 sectionType: 'secondary',
                 type: 'FIELD',
                 data: {
                   name: 'TestField2',
                   type: 'testField2',
-                } }],
-          } },
-        undefined
-      )
-    })
-    it('should return error if parent was not found', async () => {
-      const issueLayoutInstanceWithoutProj = new InstanceElement(
-        'issueLayoutInstanceWithoutProj',
-        issueLayoutType,
-        {
-          extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          issueLayoutConfig: {
-            items: [
-              {
-                type: 'FIELD',
-                sectionType: 'PRIMARY',
-                key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
-              },
-              {
-                type: 'FIELD',
-                sectionType: 'SECONDARY',
-                key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+                },
               },
             ],
           },
-        }
+        },
+        undefined,
       )
-      const res = await layoutFilter.deploy([
-        { action: 'add', data: { after: issueLayoutInstanceWithoutProj } },
-      ])
+    })
+    it('should return error if parent was not found', async () => {
+      const issueLayoutInstanceWithoutProj = new InstanceElement('issueLayoutInstanceWithoutProj', issueLayoutType, {
+        extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
+        issueLayoutConfig: {
+          items: [
+            {
+              type: 'FIELD',
+              sectionType: 'PRIMARY',
+              key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+            },
+            {
+              type: 'FIELD',
+              sectionType: 'SECONDARY',
+              key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+            },
+          ],
+        },
+      })
+      const res = await layoutFilter.deploy([{ action: 'add', data: { after: issueLayoutInstanceWithoutProj } }])
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'Error: Expected jira.IssueLayout.instance.issueLayoutInstanceWithoutProj to have exactly one parent, found 0'
+        'Error: Expected jira.IssueLayout.instance.issueLayoutInstanceWithoutProj to have exactly one parent, found 0',
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(0)

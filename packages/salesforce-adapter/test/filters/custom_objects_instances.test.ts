@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   BuiltinTypes,
@@ -26,7 +26,8 @@ import {
   isInstanceElement,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes, ReadOnlyElementsSource,
+  PrimitiveTypes,
+  ReadOnlyElementsSource,
   ReferenceExpression,
   SaltoError,
   ServiceIds,
@@ -35,20 +36,28 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import {
   ConfigChangeSuggestion,
-  FetchParameters, FetchProfile,
+  FetchParameters,
+  FetchProfile,
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
-import { buildSelectQueries, getFieldNamesForQuery, QueryOperator, SoqlQuery } from '../../src/filters/utils'
+import {
+  buildSelectQueries,
+  getFieldNamesForQuery,
+  QueryOperator,
+  SoqlQuery,
+} from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
-  API_NAME, CHANGED_AT_SINGLETON,
+  API_NAME,
+  CHANGED_AT_SINGLETON,
   CUSTOM_OBJECT,
-  CUSTOM_OBJECT_ID_FIELD, DATA_INSTANCES_CHANGED_AT_MAGIC,
+  CUSTOM_OBJECT_ID_FIELD,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
   DETECTS_PARENTS_INDICATOR,
   FIELD_ANNOTATIONS,
   INSTALLED_PACKAGES_PATH,
@@ -56,20 +65,21 @@ import {
   METADATA_TYPE,
   OBJECTS_PATH,
   RECORDS_PATH,
-  SALESFORCE, SoqlQueryLimits,
+  SALESFORCE,
+  SoqlQueryLimits,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import {
-  buildFetchProfile,
-} from '../../src/fetch_profile/fetch_profile'
-import {
-  defaultFilterContext, emptyLastChangeDateOfTypesWithNestedInstances,
+  defaultFilterContext,
+  emptyLastChangeDateOfTypesWithNestedInstances,
 } from '../utils'
 import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { SalesforceRecord } from '../../src/client/types'
 import {
-  buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection,
+  buildMetadataQuery,
+  buildMetadataQueryForFetchWithChangesDetection,
 } from '../../src/fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
@@ -88,7 +98,7 @@ const MANAGED_BY_SALTO_FIELD_NAME = 'ManagedBySalto__c'
 
 const createCustomObject = (
   name: string,
-  additionalFields?: Record<string, FieldDefinition>
+  additionalFields?: Record<string, FieldDefinition>,
 ): ObjectType => {
   const basicFields = {
     Id: {
@@ -124,7 +134,9 @@ const createCustomObject = (
       [API_NAME]: name,
       [METADATA_TYPE]: CUSTOM_OBJECT,
     },
-    fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
+    fields: additionalFields
+      ? Object.assign(basicFields, additionalFields)
+      : basicFields,
   })
   obj.path = [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
   return obj
@@ -141,8 +153,11 @@ describe('Custom Object Instances filter', () => {
     `${namespace}__.*`
 
   const NAME_FROM_GET_ELEM_ID = 'getElemIDPrefix'
-  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
-    ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
+  const mockGetElemIdFunc = (
+    adapterName: string,
+    _serviceIds: ServiceIds,
+    name: string,
+  ): ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
   const TestCustomRecords: SalesforceRecord[] = [
     {
@@ -200,22 +215,30 @@ describe('Custom Object Instances filter', () => {
   const emptyRefToObjectName = 'EmptyRefTo'
   const notInNamespaceName = 'NotInNamespace__c'
 
-  const createMockQueryImplementation = (testRecords: SalesforceRecord[], strict: boolean) => (
+  const createMockQueryImplementation =
+    (testRecords: SalesforceRecord[], strict: boolean) =>
     async (soql: string): Promise<Record<string, unknown>> => {
       let records = testRecords
       if (strict) {
         if (soql.includes(`${MANAGED_BY_SALTO_FIELD_NAME}=TRUE`)) {
-          records = testRecords.filter(record => record[MANAGED_BY_SALTO_FIELD_NAME] === true)
+          records = testRecords.filter(
+            (record) => record[MANAGED_BY_SALTO_FIELD_NAME] === true,
+          )
         }
         const fromClause = soql.match(/FROM\s*(\w+,?\s*)+(?:WHERE|$)/)
         const idClause = soql.match(/Id IN\s*\(([^)]+)\)/)
         if (idClause) {
-          const idsToFind = idClause[1].replace(/'/g, '').replace(/\s+/g, '').split(',')
-          records = records.filter(record => idsToFind.includes(record.Id))
+          const idsToFind = idClause[1]
+            .replace(/'/g, '')
+            .replace(/\s+/g, '')
+            .split(',')
+          records = records.filter((record) => idsToFind.includes(record.Id))
         }
         if (fromClause) {
           const typesToFind = fromClause[1].replace(/\s+/g, '').split(',')
-          records = records.filter(record => typesToFind.includes(record.attributes.type))
+          records = records.filter((record) =>
+            typesToFind.includes(record.attributes.type),
+          )
         }
       }
       return {
@@ -224,15 +247,19 @@ describe('Custom Object Instances filter', () => {
         records,
       }
     }
-  )
 
-  const setMockQueryResults = (testRecords: SalesforceRecord[], strict = true): void => {
-    basicQueryImplementation = jest.fn().mockImplementation(createMockQueryImplementation(testRecords, strict))
+  const setMockQueryResults = (
+    testRecords: SalesforceRecord[],
+    strict = true,
+  ): void => {
+    basicQueryImplementation = jest
+      .fn()
+      .mockImplementation(createMockQueryImplementation(testRecords, strict))
     connection.query = basicQueryImplementation
   }
 
   beforeEach(async () => {
-    ({ connection, client } = mockAdapter({
+    ;({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
@@ -246,32 +273,28 @@ describe('Custom Object Instances filter', () => {
     excluded: boolean
     allowRef: boolean
   }
-  const buildTestFetchProfile = async (
-    {
-      types,
-      omittedFields = [],
-      elementsSourceForQuickFetch,
-    } : {
-      types: TestFetchProfileParams[]
-      omittedFields?: string[]
-      elementsSourceForQuickFetch?: ReadOnlyElementsSource
-    },
-  ): Promise<FetchProfile> => {
+  const buildTestFetchProfile = async ({
+    types,
+    omittedFields = [],
+    elementsSourceForQuickFetch,
+  }: {
+    types: TestFetchProfileParams[]
+    omittedFields?: string[]
+    elementsSourceForQuickFetch?: ReadOnlyElementsSource
+  }): Promise<FetchProfile> => {
     const fetchProfileParams: FetchParameters = {
       data: {
         includeObjects: types
-          .filter(typeParams => typeParams.included)
-          .map(typeParams => typeParams.typeName),
+          .filter((typeParams) => typeParams.included)
+          .map((typeParams) => typeParams.typeName),
         excludeObjects: types
-          .filter(typeParams => typeParams.excluded)
-          .map(typeParams => typeParams.typeName),
+          .filter((typeParams) => typeParams.excluded)
+          .map((typeParams) => typeParams.typeName),
         allowReferenceTo: types
-          .filter(typeParams => typeParams.allowRef)
-          .map(typeParams => typeParams.typeName),
+          .filter((typeParams) => typeParams.allowRef)
+          .map((typeParams) => typeParams.typeName),
         saltoIDSettings: {
-          defaultIdFields: [
-            'Id',
-          ],
+          defaultIdFields: ['Id'],
         },
         saltoManagementFieldSettings: {
           defaultFieldName: MANAGED_BY_SALTO_FIELD_NAME,
@@ -281,22 +304,27 @@ describe('Custom Object Instances filter', () => {
     }
     const metadataQuery = elementsSourceForQuickFetch
       ? await buildMetadataQueryForFetchWithChangesDetection({
-        fetchParams: fetchProfileParams,
-        elementsSource: elementsSourceForQuickFetch,
-        lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances(),
-      })
+          fetchParams: fetchProfileParams,
+          elementsSource: elementsSourceForQuickFetch,
+          lastChangeDateOfTypesWithNestedInstances:
+            emptyLastChangeDateOfTypesWithNestedInstances(),
+        })
       : buildMetadataQuery({
-        fetchParams: fetchProfileParams,
-      })
+          fetchParams: fetchProfileParams,
+        })
     return buildFetchProfile({
       fetchParams: fetchProfileParams,
       metadataQuery,
     })
   }
 
-  const getInstancesOfObjectType = (elementsToCheck: Element[], type: ObjectType): InstanceElement[] => (
-    elementsToCheck.filter(e => isInstanceElement(e) && e.getTypeSync().isEqual(type)) as InstanceElement[]
-  )
+  const getInstancesOfObjectType = (
+    elementsToCheck: Element[],
+    type: ObjectType,
+  ): InstanceElement[] =>
+    elementsToCheck.filter(
+      (e) => isInstanceElement(e) && e.getTypeSync().isEqual(type),
+    ) as InstanceElement[]
 
   describe('config interactions', () => {
     // ref: https://salto-io.atlassian.net/browse/SALTO-4579?focusedCommentId=97852
@@ -336,187 +364,235 @@ describe('Custom Object Instances filter', () => {
     let elements: Element[]
 
     describe.each([
-      { // ref table row 1
+      {
+        // ref table row 1
         included: false,
         excluded: false,
         allowRef: false,
         managedBySalto: false,
       },
-      { // ref table row 1 (alternative option)
+      {
+        // ref table row 1 (alternative option)
         included: false,
         excluded: true,
         allowRef: false,
         managedBySalto: false,
       },
-      { // ref table row 1 (alternative option)
+      {
+        // ref table row 1 (alternative option)
         included: false,
-        excluded: true,
-        allowRef: false,
-        managedBySalto: true,
-      },
-      { // ref table row 3
-        included: false,
-        excluded: false,
-        allowRef: true,
-        managedBySalto: false,
-      },
-      { // ref table row 6
-        included: false,
-        excluded: true,
-        allowRef: true,
-        managedBySalto: false,
-      },
-      { // ref table row 7
-        included: false,
-        excluded: true,
-        allowRef: true,
-        managedBySalto: true,
-      },
-      { // ref table row 9
-        included: true,
-        excluded: false,
-        allowRef: false,
-        managedBySalto: false,
-      },
-      { // ref table row 12
-        included: true,
-        excluded: false,
-        allowRef: true,
-        managedBySalto: false,
-      },
-      { // ref table row 14
-        included: true,
-        excluded: true,
-        allowRef: false,
-        managedBySalto: false,
-      },
-      { // ref table row 14 (alternative option)
-        included: true,
         excluded: true,
         allowRef: false,
         managedBySalto: true,
       },
-      { // ref table row 16
+      {
+        // ref table row 3
+        included: false,
+        excluded: false,
+        allowRef: true,
+        managedBySalto: false,
+      },
+      {
+        // ref table row 6
+        included: false,
+        excluded: true,
+        allowRef: true,
+        managedBySalto: false,
+      },
+      {
+        // ref table row 7
+        included: false,
+        excluded: true,
+        allowRef: true,
+        managedBySalto: true,
+      },
+      {
+        // ref table row 9
+        included: true,
+        excluded: false,
+        allowRef: false,
+        managedBySalto: false,
+      },
+      {
+        // ref table row 12
+        included: true,
+        excluded: false,
+        allowRef: true,
+        managedBySalto: false,
+      },
+      {
+        // ref table row 14
+        included: true,
+        excluded: true,
+        allowRef: false,
+        managedBySalto: false,
+      },
+      {
+        // ref table row 14 (alternative option)
+        included: true,
+        excluded: true,
+        allowRef: false,
+        managedBySalto: true,
+      },
+      {
+        // ref table row 16
         included: true,
         excluded: true,
         allowRef: true,
         managedBySalto: false,
       },
-    ])('When there are no refs to the instance and inc=$included exc=$excluded, ref=$allowRef', ({ included, excluded, allowRef, managedBySalto }) => {
-      beforeEach(async () => {
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: await buildTestFetchProfile({
-                types: [{ typeName: testTypeName, included, excluded, allowRef }],
-              }),
-            },
-          }
-        ) as FilterType
-
-        elements = [testType]
-
-        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = managedBySalto })
-        setMockQueryResults(testRecords)
-
-        await filter.onFetch(elements)
-      })
-      it('should not fetch the instance', () => {
-        expect(elements.filter(e => e.annotations[API_NAME] === testInstanceId)).toBeEmpty()
-      })
-    })
-
-    describe.each([
-      { // ref table row 4
-        included: false,
-        excluded: false,
-        allowRef: true,
-      },
-      { // ref table row 7
-        included: false,
-        excluded: true,
-        allowRef: true,
-      },
-      { // ref table row 10
-        included: true,
-        excluded: false,
-        allowRef: false,
-      },
-      { // ref table row 13
-        included: true,
-        excluded: false,
-        allowRef: true,
-      },
-      { // ref table row 17
-        included: true,
-        excluded: true,
-        allowRef: true,
-      },
-    ])('When there are no refs to an instance that is managed by Salto and inc=$included, exc=$excluded, ref=$allowRef', ({ included, excluded, allowRef }) => {
-      beforeEach(async () => {
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: await buildTestFetchProfile({
-                types: [{ typeName: testTypeName, included, excluded, allowRef }],
-              }),
-            },
-          }
-        ) as FilterType
-
-        elements = [testType]
-
-        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
-        setMockQueryResults(testRecords)
-
-        await filter.onFetch(elements)
-      })
-      it('should fetch the instance', () => {
-        const fetchedTestInstances = elements
-          .filter(e => isInstanceElement(e) && e.value[CUSTOM_OBJECT_ID_FIELD] === testInstanceId)
-        expect(fetchedTestInstances).toHaveLength(1)
-      })
-    })
-
-    describe.each([
-      { // ref table row 3
-        excluded: false,
-      },
-      { // ref table row 6
-        excluded: true,
-      },
-    ])('When there are refs to the instance and exc=$excluded', ({ excluded }) => {
-      beforeEach(async () => {
-        filter = filterCreator(
-          {
+    ])(
+      'When there are no refs to the instance and inc=$included exc=$excluded, ref=$allowRef',
+      ({ included, excluded, allowRef, managedBySalto }) => {
+        beforeEach(async () => {
+          filter = filterCreator({
             client,
             config: {
               ...defaultFilterContext,
               fetchProfile: await buildTestFetchProfile({
                 types: [
-                  { typeName: testTypeName, included: false, excluded, allowRef: true },
-                  { typeName: refererTypeName, included: true, excluded: false, allowRef: false },
+                  { typeName: testTypeName, included, excluded, allowRef },
                 ],
               }),
             },
-          }
-        ) as FilterType
+          }) as FilterType
 
-        elements = [testType, refererType]
+          elements = [testType]
 
-        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = false })
-        setMockQueryResults(testRecords)
+          testRecords.forEach((record) => {
+            record[MANAGED_BY_SALTO_FIELD_NAME] = managedBySalto
+          })
+          setMockQueryResults(testRecords)
 
-        await filter.onFetch(elements)
-      })
-      it('should fetch the referred instance', () => {
-        expect(elements.filter(e => e.annotations[API_NAME] === testInstanceId)).toBeEmpty()
-      })
-    })
+          await filter.onFetch(elements)
+        })
+        it('should not fetch the instance', () => {
+          expect(
+            elements.filter((e) => e.annotations[API_NAME] === testInstanceId),
+          ).toBeEmpty()
+        })
+      },
+    )
+
+    describe.each([
+      {
+        // ref table row 4
+        included: false,
+        excluded: false,
+        allowRef: true,
+      },
+      {
+        // ref table row 7
+        included: false,
+        excluded: true,
+        allowRef: true,
+      },
+      {
+        // ref table row 10
+        included: true,
+        excluded: false,
+        allowRef: false,
+      },
+      {
+        // ref table row 13
+        included: true,
+        excluded: false,
+        allowRef: true,
+      },
+      {
+        // ref table row 17
+        included: true,
+        excluded: true,
+        allowRef: true,
+      },
+    ])(
+      'When there are no refs to an instance that is managed by Salto and inc=$included, exc=$excluded, ref=$allowRef',
+      ({ included, excluded, allowRef }) => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  { typeName: testTypeName, included, excluded, allowRef },
+                ],
+              }),
+            },
+          }) as FilterType
+
+          elements = [testType]
+
+          testRecords.forEach((record) => {
+            record[MANAGED_BY_SALTO_FIELD_NAME] = true
+          })
+          setMockQueryResults(testRecords)
+
+          await filter.onFetch(elements)
+        })
+        it('should fetch the instance', () => {
+          const fetchedTestInstances = elements.filter(
+            (e) =>
+              isInstanceElement(e) &&
+              e.value[CUSTOM_OBJECT_ID_FIELD] === testInstanceId,
+          )
+          expect(fetchedTestInstances).toHaveLength(1)
+        })
+      },
+    )
+
+    describe.each([
+      {
+        // ref table row 3
+        excluded: false,
+      },
+      {
+        // ref table row 6
+        excluded: true,
+      },
+    ])(
+      'When there are refs to the instance and exc=$excluded',
+      ({ excluded }) => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: false,
+                    excluded,
+                    allowRef: true,
+                  },
+                  {
+                    typeName: refererTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
+            },
+          }) as FilterType
+
+          elements = [testType, refererType]
+
+          testRecords.forEach((record) => {
+            record[MANAGED_BY_SALTO_FIELD_NAME] = false
+          })
+          setMockQueryResults(testRecords)
+
+          await filter.onFetch(elements)
+        })
+        it('should fetch the referred instance', () => {
+          expect(
+            elements.filter((e) => e.annotations[API_NAME] === testInstanceId),
+          ).toBeEmpty()
+        })
+      },
+    )
   })
 
   describe('Without includeObjects', () => {
@@ -524,40 +600,36 @@ describe('Custom Object Instances filter', () => {
     const refToObject = createCustomObject(refToObjectName)
     let elements: Element[]
     beforeEach(async () => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                data: {
-                  includeObjects: [],
-                  excludeObjects: [
-                    '^TestNamespace__Exclude.*',
-                    excludeOverrideObjectName,
-                  ],
-                  allowReferenceTo: [
-                    '^RefFromNamespace__RefTo.*',
-                    refToObjectName,
-                    refFromAndToObjectName,
-                    emptyRefToObjectName,
-                  ],
-                  saltoIDSettings: {
-                    defaultIdFields: [],
-                  },
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              data: {
+                includeObjects: [],
+                excludeObjects: [
+                  '^TestNamespace__Exclude.*',
+                  excludeOverrideObjectName,
+                ],
+                allowReferenceTo: [
+                  '^RefFromNamespace__RefTo.*',
+                  refToObjectName,
+                  refFromAndToObjectName,
+                  emptyRefToObjectName,
+                ],
+                saltoIDSettings: {
+                  defaultIdFields: [],
                 },
               },
-            }),
-          },
-        }
-      ) as FilterType
+            },
+          }),
+        },
+      }) as FilterType
     })
 
     beforeEach(async () => {
-      elements = [
-        excludeObject, refToObject,
-      ]
+      elements = [excludeObject, refToObject]
       await filter.onFetch(elements)
     })
 
@@ -566,13 +638,15 @@ describe('Custom Object Instances filter', () => {
     })
 
     it('should not effect the types', async () => {
-      const excludedAfterFilter = elements
-        .filter(e => e.annotations[API_NAME] === excludeObjectName)[0]
+      const excludedAfterFilter = elements.filter(
+        (e) => e.annotations[API_NAME] === excludeObjectName,
+      )[0]
       expect(excludedAfterFilter).toBeDefined()
       expect(excludedAfterFilter).toEqual(excludeObject)
 
-      const refToAfterFilter = elements
-        .filter(e => e.annotations[API_NAME] === refToObjectName)[0]
+      const refToAfterFilter = elements.filter(
+        (e) => e.annotations[API_NAME] === refToObjectName,
+      )[0]
       expect(refToAfterFilter).toBeDefined()
       expect(refToAfterFilter).toEqual(refToObject)
     })
@@ -608,15 +682,13 @@ describe('Custom Object Instances filter', () => {
           },
         },
       })
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile,
-          },
-        }
-      ) as FilterType
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile,
+        },
+      }) as FilterType
     })
 
     describe('Config filtering logic', () => {
@@ -658,31 +730,45 @@ describe('Custom Object Instances filter', () => {
         },
       })
       const excludedObject = createCustomObject(excludeObjectName)
-      const excludeOverrideObject = createCustomObject(excludeOverrideObjectName)
+      const excludeOverrideObject = createCustomObject(
+        excludeOverrideObjectName,
+      )
       let fetchResult: FetchResult
       beforeEach(async () => {
         elements = [
-          notConfiguredObj, includedNameSpaceObj,
-          includedObject, excludedObject, excludeOverrideObject, refToObject,
+          notConfiguredObj,
+          includedNameSpaceObj,
+          includedObject,
+          excludedObject,
+          excludeOverrideObject,
+          refToObject,
         ]
       })
 
       describe('when an object has non-queryable fields', () => {
         describe('when warnings are enabled', () => {
           beforeEach(async () => {
-            fetchResult = await filter.onFetch(elements) as FetchResult
+            fetchResult = (await filter.onFetch(elements)) as FetchResult
           })
           it('should issue a message if there are instances of the object', () => {
-            expect(fetchResult.errors).toEqual([{
-              message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
-              severity: 'Info',
-            }])
-            expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+            expect(fetchResult.errors).toEqual([
+              {
+                message:
+                  expect.stringContaining(includeObjectName) &&
+                  expect.stringContaining('NonQueryable'),
+                severity: 'Info',
+              },
+            ])
+            expect(fetchResult.errors?.[0].message).not.toInclude(
+              'HiddenNonQueryable',
+            )
           })
           it('should not issue a message if there are no instances of the object', () => {
-            expect(fetchResult.errors).not.toIncludeAllPartialMembers([{
-              message: expect.stringContaining(refToObjectName),
-            }])
+            expect(fetchResult.errors).not.toIncludeAllPartialMembers([
+              {
+                message: expect.stringContaining(refToObjectName),
+              },
+            ])
           })
         })
         describe('when warnings are disabled', () => {
@@ -691,7 +777,7 @@ describe('Custom Object Instances filter', () => {
             originalWarningsEnabled = fetchProfile.isWarningEnabled
             fetchProfile.isWarningEnabled = () => false
 
-            fetchResult = await filter.onFetch(elements) as FetchResult
+            fetchResult = (await filter.onFetch(elements)) as FetchResult
           })
           afterEach(() => {
             fetchProfile.isWarningEnabled = originalWarningsEnabled
@@ -703,58 +789,78 @@ describe('Custom Object Instances filter', () => {
       })
       describe('should add instances per configured object', () => {
         beforeEach(async () => {
-          fetchResult = await filter.onFetch(elements) as FetchResult
+          fetchResult = (await filter.onFetch(elements)) as FetchResult
         })
 
         it('should not fetch for non-configured objects', async () => {
-          const notConfiguredObjInstances = getInstancesOfObjectType(elements, notConfiguredObj)
+          const notConfiguredObjInstances = getInstancesOfObjectType(
+            elements,
+            notConfiguredObj,
+          )
           expect(notConfiguredObjInstances.length).toEqual(0)
         })
 
         it('should fetch for regex configured objects', () => {
-          const includedNameSpaceObjInstances = getInstancesOfObjectType(elements, includedNameSpaceObj)
+          const includedNameSpaceObjInstances = getInstancesOfObjectType(
+            elements,
+            includedNameSpaceObj,
+          )
           expect(includedNameSpaceObjInstances.length).toEqual(2)
         })
 
         it('should fetch for object included specifically configured', async () => {
-          const includedObjectInstances = getInstancesOfObjectType(elements, includedObject)
+          const includedObjectInstances = getInstancesOfObjectType(
+            elements,
+            includedObject,
+          )
           expect(includedObjectInstances.length).toEqual(2)
         })
 
         it('should not fetch for object from a configured regex whose excluded specifically', async () => {
-          const excludedObjectInstances = getInstancesOfObjectType(elements, excludedObject)
+          const excludedObjectInstances = getInstancesOfObjectType(
+            elements,
+            excludedObject,
+          )
           expect(excludedObjectInstances.length).toEqual(0)
         })
 
         it('should not fetch for object from a configured as excluded even if it was included by object', async () => {
-          const excludeOverrideObjectInstances = getInstancesOfObjectType(elements, excludeOverrideObject)
+          const excludeOverrideObjectInstances = getInstancesOfObjectType(
+            elements,
+            excludeOverrideObject,
+          )
           expect(excludeOverrideObjectInstances.length).toEqual(0)
         })
       })
 
       it('should not change custom object elements', () => {
-        const notConfiguredAfterFilter = elements
-          .filter(e => e.annotations[API_NAME] === notConfiguredObjName)[0]
+        const notConfiguredAfterFilter = elements.filter(
+          (e) => e.annotations[API_NAME] === notConfiguredObjName,
+        )[0]
         expect(notConfiguredAfterFilter).toBeDefined()
         expect(notConfiguredAfterFilter).toEqual(notConfiguredObj)
 
-        const includedNameSpaceObjFilter = elements
-          .filter(e => e.annotations[API_NAME] === includedNamespaceObjName)[0]
+        const includedNameSpaceObjFilter = elements.filter(
+          (e) => e.annotations[API_NAME] === includedNamespaceObjName,
+        )[0]
         expect(includedNameSpaceObjFilter).toBeDefined()
         expect(includedNameSpaceObjFilter).toEqual(includedNameSpaceObj)
 
-        const includedObjectFilter = elements
-          .filter(e => e.annotations[API_NAME] === includeObjectName)[0]
+        const includedObjectFilter = elements.filter(
+          (e) => e.annotations[API_NAME] === includeObjectName,
+        )[0]
         expect(includedObjectFilter).toBeDefined()
         expect(includedObjectFilter).toEqual(includedObject)
 
-        const excludedObjectFilter = elements
-          .filter(e => e.annotations[API_NAME] === excludeObjectName)[0]
+        const excludedObjectFilter = elements.filter(
+          (e) => e.annotations[API_NAME] === excludeObjectName,
+        )[0]
         expect(excludedObjectFilter).toBeDefined()
         expect(excludedObjectFilter).toEqual(excludedObject)
 
-        const excludeOverrideObjectFilter = elements
-          .filter(e => e.annotations[API_NAME] === excludeOverrideObjectName)[0]
+        const excludeOverrideObjectFilter = elements.filter(
+          (e) => e.annotations[API_NAME] === excludeOverrideObjectName,
+        )[0]
         expect(excludeOverrideObjectFilter).toBeDefined()
         expect(excludeOverrideObjectFilter).toEqual(excludeOverrideObject)
       })
@@ -793,7 +899,9 @@ describe('Custom Object Instances filter', () => {
 
       const withNameName = `${testNamespace}__withCompoundName__c`
       const objWithNameField = createCustomObject(withNameName)
-      objWithNameField.fields.Name.refType = createRefToElmWithValue(Types.compoundDataTypes.Name)
+      objWithNameField.fields.Name.refType = createRefToElmWithValue(
+        Types.compoundDataTypes.Name,
+      )
 
       const withAddressName = `${testNamespace}__withAddress__c`
       const objWithAddressField = createCustomObject(withAddressName, {
@@ -812,7 +920,11 @@ describe('Custom Object Instances filter', () => {
 
       beforeEach(async () => {
         elements = [
-          simpleObject, objWithNoFields, objWithNameField, objWithAddressField, objNotInNamespace,
+          simpleObject,
+          objWithNoFields,
+          objWithNameField,
+          objWithAddressField,
+          objNotInNamespace,
         ]
         await filter.onFetch(elements)
       })
@@ -820,9 +932,14 @@ describe('Custom Object Instances filter', () => {
       it('should add instances per catched by regex object with fields', async () => {
         // 2 new instances per namespaced object because of TestCustomRecords's length
         expect(elements.length).toEqual(13)
-        expect((await awu(elements).filter(e => isInstanceElement(e)).toArray()).length).toEqual(8)
+        expect(
+          (
+            await awu(elements)
+              .filter((e) => isInstanceElement(e))
+              .toArray()
+          ).length,
+        ).toEqual(8)
       })
-
 
       describe('simple object', () => {
         let instances: InstanceElement[]
@@ -830,19 +947,24 @@ describe('Custom Object Instances filter', () => {
           instances = getInstancesOfObjectType(elements, simpleObject)
         })
 
-
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${simpleName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(
+            `SELECT Id,Name,TestField FROM ${simpleName}`,
+          )
         })
 
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
         it('should create the instances with record path according to object', () => {
-          expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
-              RECORDS_PATH, simpleName, expectedFirstInstanceName]
-          )
+          expect(instances[0].path).toEqual([
+            SALESFORCE,
+            INSTALLED_PACKAGES_PATH,
+            testNamespace,
+            RECORDS_PATH,
+            simpleName,
+            expectedFirstInstanceName,
+          ])
         })
 
         it('should create the instances with ElemID name according to the getElemID func', () => {
@@ -868,7 +990,9 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should not try to query for object', () => {
-          expect(basicQueryImplementation).not.toHaveBeenCalledWith(expect.stringMatching(/.*noQueryablefields.*/))
+          expect(basicQueryImplementation).not.toHaveBeenCalledWith(
+            expect.stringMatching(/.*noQueryablefields.*/),
+          )
         })
 
         it('should not create any instances', () => {
@@ -885,9 +1009,12 @@ describe('Custom Object Instances filter', () => {
           expect(instances.length).toEqual(2)
         })
         it('should create the instances with record path according to object', () => {
-          expect(instances[0].path).toEqual(
-            [SALESFORCE, RECORDS_PATH, notInNamespaceName, expectedFirstInstanceName]
-          )
+          expect(instances[0].path).toEqual([
+            SALESFORCE,
+            RECORDS_PATH,
+            notInNamespaceName,
+            expectedFirstInstanceName,
+          ])
         })
       })
 
@@ -898,17 +1025,23 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,FirstName,LastName,Salutation,MiddleName,Suffix,TestField FROM ${withNameName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(
+            `SELECT Id,FirstName,LastName,Salutation,MiddleName,Suffix,TestField FROM ${withNameName}`,
+          )
         })
 
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
         it('should create the instances with record path according to object', () => {
-          expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
-              RECORDS_PATH, withNameName, expectedFirstInstanceName]
-          )
+          expect(instances[0].path).toEqual([
+            SALESFORCE,
+            INSTALLED_PACKAGES_PATH,
+            testNamespace,
+            RECORDS_PATH,
+            withNameName,
+            expectedFirstInstanceName,
+          ])
         })
 
         it('should create the instances with ElemID name according to the getElemID func', () => {
@@ -940,17 +1073,23 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should call query with the object fields', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,OtherAddress FROM ${withAddressName}`)
+          expect(basicQueryImplementation).toHaveBeenCalledWith(
+            `SELECT Id,Name,TestField,OtherAddress FROM ${withAddressName}`,
+          )
         })
 
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
         it('should create the instances with record path according to object', () => {
-          expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
-              RECORDS_PATH, withAddressName, expectedFirstInstanceName]
-          )
+          expect(instances[0].path).toEqual([
+            SALESFORCE,
+            INSTALLED_PACKAGES_PATH,
+            testNamespace,
+            RECORDS_PATH,
+            withAddressName,
+            expectedFirstInstanceName,
+          ])
         })
 
         it('should create the instances with ElemID name according to the getElemID func', () => {
@@ -978,34 +1117,35 @@ describe('Custom Object Instances filter', () => {
       let elements: Element[]
 
       const refToObject = createCustomObject(refToObjectName)
-      const refToFromNamespaceObject = createCustomObject(refToFromNamespaceObjectName)
+      const refToFromNamespaceObject = createCustomObject(
+        refToFromNamespaceObjectName,
+      )
       const emptyRefToObject = createCustomObject(emptyRefToObjectName)
 
-      const refFromAndToObject = createCustomObject(
-        refFromAndToObjectName,
-        {
-          Parent: {
-            refType: Types.primitiveDataTypes.MasterDetail,
-            annotations: {
-              [LABEL]: 'parent field',
-              [API_NAME]: 'Parent',
-              // ReferenceExpression is here on purpose to make sure
-              // we handle a use-case of unresolved reference to the type. (e.g. in Partial Fetch)
-              [FIELD_ANNOTATIONS.REFERENCE_TO]: [new ReferenceExpression(refToObject.elemID)],
-              [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            },
+      const refFromAndToObject = createCustomObject(refFromAndToObjectName, {
+        Parent: {
+          refType: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'parent field',
+            [API_NAME]: 'Parent',
+            // ReferenceExpression is here on purpose to make sure
+            // we handle a use-case of unresolved reference to the type. (e.g. in Partial Fetch)
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [
+              new ReferenceExpression(refToObject.elemID),
+            ],
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
-          Pricebook2Id: {
-            refType: Types.primitiveDataTypes.Lookup,
-            annotations: {
-              [LABEL]: 'Pricebook2Id field',
-              [API_NAME]: 'Pricebook2Id',
-              [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToFromNamespaceObjectName],
-              [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            },
+        },
+        Pricebook2Id: {
+          refType: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [LABEL]: 'Pricebook2Id field',
+            [API_NAME]: 'Pricebook2Id',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToFromNamespaceObjectName],
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
-        }
-      )
+        },
+      })
 
       const namespacedRefFromName = `${refFromNamespace}___refFrom__c`
       const namespacedRefFromObject = createCustomObject(
@@ -1029,13 +1169,16 @@ describe('Custom Object Instances filter', () => {
               [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },
-        }
+        },
       )
 
       beforeEach(async () => {
         elements = [
-          refToObject, refToFromNamespaceObject, refFromAndToObject,
-          namespacedRefFromObject, emptyRefToObject,
+          refToObject,
+          refToFromNamespaceObject,
+          refFromAndToObject,
+          namespacedRefFromObject,
+          emptyRefToObject,
         ]
         await filter.onFetch(elements)
       })
@@ -1043,18 +1186,32 @@ describe('Custom Object Instances filter', () => {
       it('should add instances per configured object', async () => {
         // 5 object + 2 new instances per needed instances (all by empty ref)
         expect(elements.length).toEqual(13)
-        expect((await awu(elements).filter(e => isInstanceElement(e)).toArray()).length).toEqual(8)
+        expect(
+          (
+            await awu(elements)
+              .filter((e) => isInstanceElement(e))
+              .toArray()
+          ).length,
+        ).toEqual(8)
       })
 
       it('should query refTo by ids according to references values', () => {
         // The query should be split according to MAX_IDS_PER_INSTANCES_QUERY
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','abcdefg')`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(
+          `SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','abcdefg')`,
+        )
       })
 
       it('should query all namespaced/included objects not by id', () => {
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToFromNamespaceObjectName}`)
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${namespacedRefFromName}`)
-        expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${refFromAndToObjectName}`)
+        expect(basicQueryImplementation).toHaveBeenCalledWith(
+          `SELECT Id,Name,TestField FROM ${refToFromNamespaceObjectName}`,
+        )
+        expect(basicQueryImplementation).toHaveBeenCalledWith(
+          `SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${namespacedRefFromName}`,
+        )
+        expect(basicQueryImplementation).toHaveBeenCalledWith(
+          `SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${refFromAndToObjectName}`,
+        )
       })
     })
 
@@ -1068,132 +1225,111 @@ describe('Custom Object Instances filter', () => {
 
     const refToObject = createCustomObject(refToObjectName)
     const refFromObjectName = `${nameBasedNamespace}__refFrom__c`
-    const refFromObject = createCustomObject(
-      refFromObjectName,
-      {
-        Parent: {
-          refType: Types.primitiveDataTypes.MasterDetail,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'master field',
-            [API_NAME]: 'MasterField',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
-          },
+    const refFromObject = createCustomObject(refFromObjectName, {
+      Parent: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'master field',
+          [API_NAME]: 'MasterField',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
         },
-      }
-    )
+      },
+    })
 
     const grandparentObjectName = `${nameBasedNamespace}__grandparent__c`
     const grandparentObject = createCustomObject(grandparentObjectName)
 
     const parentObjectName = `${nameBasedNamespace}__parent__c`
-    const parentObject = createCustomObject(
-      parentObjectName,
-      {
-        Grandparent: {
-          refType: Types.primitiveDataTypes.MasterDetail,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'master field',
-            [API_NAME]: 'MasterField',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
-          },
+    const parentObject = createCustomObject(parentObjectName, {
+      Grandparent: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'master field',
+          [API_NAME]: 'MasterField',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
         },
-      }
-    )
+      },
+    })
 
     const pricebookEntryName = 'PricebookEntry'
-    const pricebookEntryObject = createCustomObject(
-      pricebookEntryName,
-      {
-        Pricebook2Id: {
-          refType: Types.primitiveDataTypes.Lookup,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'Pricebook2Id field',
-            [API_NAME]: 'Pricebook2Id',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
-          },
+    const pricebookEntryObject = createCustomObject(pricebookEntryName, {
+      Pricebook2Id: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'Pricebook2Id field',
+          [API_NAME]: 'Pricebook2Id',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
         },
-      }
-    )
+      },
+    })
 
     const productName = 'Product2'
-    const productObject = createCustomObject(
-      productName,
-      {
-        ProductCode: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'ProductCode field',
-            [API_NAME]: 'ProductCode',
-          },
+    const productObject = createCustomObject(productName, {
+      ProductCode: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'ProductCode field',
+          [API_NAME]: 'ProductCode',
         },
-      }
-    )
+      },
+    })
 
     const SBQQCustomActionName = 'SBQQ__CustomAction__c'
-    const SBQQCustomActionObject = createCustomObject(
-      SBQQCustomActionName,
-      {
-        SBQQ__Location__c: {
-          refType: Types.primitiveDataTypes.Checkbox,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'Location checkbox field',
-            [API_NAME]: 'SBQQ__Location__c',
-            [FIELD_ANNOTATIONS.VALUE_SET]: [
-              {
-                fullName: 'Quote',
-                default: true,
-                label: 'Quote',
-              },
-            ],
-          },
+    const SBQQCustomActionObject = createCustomObject(SBQQCustomActionName, {
+      SBQQ__Location__c: {
+        refType: Types.primitiveDataTypes.Checkbox,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'Location checkbox field',
+          [API_NAME]: 'SBQQ__Location__c',
+          [FIELD_ANNOTATIONS.VALUE_SET]: [
+            {
+              fullName: 'Quote',
+              default: true,
+              label: 'Quote',
+            },
+          ],
         },
-        SBQQ__DisplayOrder__c: {
-          refType: Types.primitiveDataTypes.Number,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'Display order',
-            [API_NAME]: 'SBQQ__DisplayOrder__c',
-          },
+      },
+      SBQQ__DisplayOrder__c: {
+        refType: Types.primitiveDataTypes.Number,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'Display order',
+          [API_NAME]: 'SBQQ__DisplayOrder__c',
         },
-      }
-    )
+      },
+    })
 
     const grandsonObjectName = `${nameBasedNamespace}__grandson__c`
-    const grandsonObject = createCustomObject(
-      grandsonObjectName,
-      {
-        Parent: {
-          refType: Types.primitiveDataTypes.MasterDetail,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'master field',
-            [API_NAME]: 'MasterField',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [parentObjectName],
-          },
+    const grandsonObject = createCustomObject(grandsonObjectName, {
+      Parent: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'master field',
+          [API_NAME]: 'MasterField',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [parentObjectName],
         },
-      }
-    )
+      },
+    })
 
     const orphanObjectName = `${nameBasedNamespace}__orphan__c`
-    const orphanObject = createCustomObject(
-      orphanObjectName,
-      {
-        Parent: {
-          refType: Types.primitiveDataTypes.MasterDetail,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [LABEL]: 'master field',
-            [API_NAME]: 'MasterField',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: ['noSuchObject'],
-          },
+    const orphanObject = createCustomObject(orphanObjectName, {
+      Parent: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [LABEL]: 'master field',
+          [API_NAME]: 'MasterField',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: ['noSuchObject'],
         },
-      }
-    )
+      },
+    })
 
     const badIdFieldsName = 'BadIdFields'
     const badIdFieldsObject = createCustomObject(badIdFieldsName)
@@ -1210,64 +1346,90 @@ describe('Custom Object Instances filter', () => {
             [FIELD_ANNOTATIONS.QUERYABLE]: false,
           },
         },
-      }
+      },
     )
 
     let changeSuggestions: ConfigChangeSuggestion[]
     beforeEach(async () => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                data: {
-                  includeObjects: [
-                    createNamespaceRegexFromString(nameBasedNamespace),
-                    pricebookEntryName,
-                    SBQQCustomActionName,
-                    productName,
-                    badIdFieldsName,
-                    notQueryableIdFieldsName,
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              data: {
+                includeObjects: [
+                  createNamespaceRegexFromString(nameBasedNamespace),
+                  pricebookEntryName,
+                  SBQQCustomActionName,
+                  productName,
+                  badIdFieldsName,
+                  notQueryableIdFieldsName,
+                ],
+                allowReferenceTo: [refToObjectName],
+                saltoIDSettings: {
+                  defaultIdFields: ['##allMasterDetailFields##', 'Name'],
+                  overrides: [
+                    {
+                      objectsRegex: pricebookEntryName,
+                      idFields: ['Pricebook2Id', 'Name'],
+                    },
+                    {
+                      objectsRegex: SBQQCustomActionName,
+                      idFields: [
+                        'SBQQ__Location__c',
+                        'SBQQ__DisplayOrder__c',
+                        'Name',
+                      ],
+                    },
+                    { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
+                    {
+                      objectsRegex: productName,
+                      idFields: ['ProductCode', 'Name'],
+                    },
+                    {
+                      objectsRegex: notQueryableIdFieldsName,
+                      idFields: ['NotQueryable'],
+                    },
                   ],
-                  allowReferenceTo: [
-                    refToObjectName,
-                  ],
-                  saltoIDSettings: {
-                    defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-                    overrides: [
-                      { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
-                      {
-                        objectsRegex: SBQQCustomActionName,
-                        idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'],
-                      },
-                      { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
-                      { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
-                      { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
-                    ],
-                  },
                 },
               },
-            }),
-          },
-        }
-      ) as FilterType
+            },
+          }),
+        },
+      }) as FilterType
       elements = [
-        grandparentObject, parentObject, grandsonObject, orphanObject, productObject,
-        pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
-        badIdFieldsObject, notQueryableIdFieldsObject,
+        grandparentObject,
+        parentObject,
+        grandsonObject,
+        orphanObject,
+        productObject,
+        pricebookEntryObject,
+        SBQQCustomActionObject,
+        refFromObject,
+        refToObject,
+        badIdFieldsObject,
+        notQueryableIdFieldsObject,
       ]
-      changeSuggestions = (((await filter.onFetch(elements))
-        ?? { configSuggestions: [], errors: [] }) as FilterResult).configSuggestions ?? []
+      changeSuggestions =
+        (
+          ((await filter.onFetch(elements)) ?? {
+            configSuggestions: [],
+            errors: [],
+          }) as FilterResult
+        ).configSuggestions ?? []
     })
 
     it('should add instances per configured object', async () => {
       // 2 new instances per configured object because of TestCustomRecords's length
       expect(elements.length).toEqual(27)
-      expect((await awu(elements).filter(
-        e => isInstanceElement(e)
-      ).toArray()).length).toEqual(16)
+      expect(
+        (
+          await awu(elements)
+            .filter((e) => isInstanceElement(e))
+            .toArray()
+        ).length,
+      ).toEqual(16)
     })
 
     describe('grandparent object (no master)', () => {
@@ -1277,7 +1439,9 @@ describe('Custom Object Instances filter', () => {
       })
 
       it('should base elemID on record name only', () => {
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`,
+        )
       })
     })
 
@@ -1290,7 +1454,9 @@ describe('Custom Object Instances filter', () => {
       it('should base elemID on grandparentName + parent', () => {
         const grandparentName = TestCustomRecords[1].Name
         const parentName = TestCustomRecords[0].Name
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}`,
+        )
       })
     })
 
@@ -1304,7 +1470,9 @@ describe('Custom Object Instances filter', () => {
         const grandparentName = TestCustomRecords[0].Name
         const parentName = TestCustomRecords[1].Name
         const grandsonName = TestCustomRecords[0].Name
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}___${grandsonName}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}___${grandsonName}`,
+        )
       })
     })
 
@@ -1317,10 +1485,14 @@ describe('Custom Object Instances filter', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithOrphanValue = changeSuggestions
           .filter(isDataManagementConfigSuggestions)
-          .filter(suggestion => suggestion.value.includes(orphanObjectName))
+          .filter((suggestion) => suggestion.value.includes(orphanObjectName))
         expect(changeSuggestionWithOrphanValue).toHaveLength(1)
-        expect(changeSuggestionWithOrphanValue[0].type).toEqual('dataObjectsExclude')
-        expect(changeSuggestionWithOrphanValue[0].reason).toEqual(`${orphanObjectName} has Parent (reference) configured as idField. Failed to resolve some of the references.`)
+        expect(changeSuggestionWithOrphanValue[0].type).toEqual(
+          'dataObjectsExclude',
+        )
+        expect(changeSuggestionWithOrphanValue[0].reason).toEqual(
+          `${orphanObjectName} has Parent (reference) configured as idField. Failed to resolve some of the references.`,
+        )
       })
     })
 
@@ -1334,27 +1506,40 @@ describe('Custom Object Instances filter', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
           .filter(isDataManagementConfigSuggestions)
-          .filter(suggestion => suggestion.value.includes(badIdFieldsName))
+          .filter((suggestion) => suggestion.value.includes(badIdFieldsName))
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
-        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataObjectsExclude')
-        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`Bad defined as idFields but are not queryable or do not exist on type ${badIdFieldsName}`)
+        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual(
+          'dataObjectsExclude',
+        )
+        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(
+          `Bad defined as idFields but are not queryable or do not exist on type ${badIdFieldsName}`,
+        )
       })
     })
 
     describe('notQueryableIdFields object', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = getInstancesOfObjectType(elements, notQueryableIdFieldsObject)
+        instances = getInstancesOfObjectType(
+          elements,
+          notQueryableIdFieldsObject,
+        )
       })
 
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
         const changeSuggestionWithBadFieldsValue = changeSuggestions
           .filter(isDataManagementConfigSuggestions)
-          .filter(suggestion => suggestion.value.includes(notQueryableIdFieldsName))
+          .filter((suggestion) =>
+            suggestion.value.includes(notQueryableIdFieldsName),
+          )
         expect(changeSuggestionWithBadFieldsValue).toHaveLength(1)
-        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual('dataObjectsExclude')
-        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(`NotQueryable defined as idFields but are not queryable or do not exist on type ${notQueryableIdFieldsName}`)
+        expect(changeSuggestionWithBadFieldsValue[0].type).toEqual(
+          'dataObjectsExclude',
+        )
+        expect(changeSuggestionWithBadFieldsValue[0].reason).toEqual(
+          `NotQueryable defined as idFields but are not queryable or do not exist on type ${notQueryableIdFieldsName}`,
+        )
       })
     })
 
@@ -1367,7 +1552,9 @@ describe('Custom Object Instances filter', () => {
       it('should base elemID on refTo name as "parent" and refFrom as "child"', () => {
         const refToName = TestCustomRecords[1].Name
         const refFromName = TestCustomRecords[0].Name
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${refToName}___${refFromName}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${refToName}___${refFromName}`,
+        )
       })
     })
 
@@ -1378,7 +1565,9 @@ describe('Custom Object Instances filter', () => {
       })
 
       it('should base elemID on record name', () => {
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`,
+        )
       })
     })
 
@@ -1391,7 +1580,9 @@ describe('Custom Object Instances filter', () => {
       it('should base elemID on Pricebook2Id lookup name + the entry', () => {
         const pricebookLookupName = TestCustomRecords[1].Name
         const pricebookEntry = TestCustomRecords[0].Name
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${pricebookLookupName}___${pricebookEntry}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${pricebookLookupName}___${pricebookEntry}`,
+        )
       })
     })
 
@@ -1404,13 +1595,17 @@ describe('Custom Object Instances filter', () => {
       it('should base elemID on name only because value of other field is null', () => {
         const recordName = TestCustomRecords[0].Name
         expect(instances[0].value.ProductCode).toBeNull()
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordName}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${recordName}`,
+        )
       })
 
       it('should base elemID on name only because value of other field is undefined', () => {
         const recordName = TestCustomRecords[1].Name
         expect(instances[1].value.ProductCode).toBeUndefined()
-        expect(instances[1].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordName}`)
+        expect(instances[1].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${recordName}`,
+        )
       })
     })
 
@@ -1424,7 +1619,9 @@ describe('Custom Object Instances filter', () => {
         const recordName = TestCustomRecords[0].Name
         const recordLocation = TestCustomRecords[0].SBQQ__Location__c
         const recordDisplayOrder = TestCustomRecords[0].SBQQ__DisplayOrder__c
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordLocation}___${recordDisplayOrder}___${recordName}`)
+        expect(instances[0].elemID.name).toEqual(
+          `${NAME_FROM_GET_ELEM_ID}${recordLocation}___${recordDisplayOrder}___${recordName}`,
+        )
       })
     })
   })
@@ -1433,29 +1630,25 @@ describe('Custom Object Instances filter', () => {
     const testElement = createCustomObject('testElement')
     beforeEach(() => {
       client.queryAll = jest.fn().mockResolvedValue([{ key: 'value' }])
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                data: {
-                  includeObjects: [
-                    '.*',
-                  ],
-                  allowReferenceTo: [],
-                  saltoIDSettings: {
-                    defaultIdFields: [],
-                    overrides: [],
-                  },
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              data: {
+                includeObjects: ['.*'],
+                allowReferenceTo: [],
+                saltoIDSettings: {
+                  defaultIdFields: [],
+                  overrides: [],
                 },
-                maxInstancesPerType: 2,
               },
-            },),
-          },
-        }
-      ) as FilterType
+              maxInstancesPerType: 2,
+            },
+          }),
+        },
+      }) as FilterType
     })
     it('Should not fetch CustomObjects with more instances than MaxInstancesPerType', async () => {
       const elements = [testElement]
@@ -1463,11 +1656,13 @@ describe('Custom Object Instances filter', () => {
       const result = await filter.onFetch(elements)
       expect(elements.length).toBe(1)
       expect(result).toMatchObject({
-        configSuggestions: [{
-          type: 'dataObjectsExclude',
-          value: 'testElement',
-          reason: expect.stringContaining('maxInstancesPerType'),
-        }],
+        configSuggestions: [
+          {
+            type: 'dataObjectsExclude',
+            value: 'testElement',
+            reason: expect.stringContaining('maxInstancesPerType'),
+          },
+        ],
       })
     })
     it('Should fetch CustomObjects with less instances than MaxInstancesPerType', async () => {
@@ -1479,15 +1674,20 @@ describe('Custom Object Instances filter', () => {
     })
     it('Mixed CustomObjects with more and less instances than MaxInstancesPerType', async () => {
       const elements = [testElement, testElement]
-      client.countInstances = jest.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(1)
+      client.countInstances = jest
+        .fn()
+        .mockResolvedValueOnce(3)
+        .mockResolvedValueOnce(1)
       const result = await filter.onFetch(elements)
       expect(elements.length).toBe(2)
       expect(result).toMatchObject({
-        configSuggestions: [{
-          type: 'dataObjectsExclude',
-          value: 'testElement',
-          reason: expect.stringContaining('maxInstancesPerType'),
-        }],
+        configSuggestions: [
+          {
+            type: 'dataObjectsExclude',
+            value: 'testElement',
+            reason: expect.stringContaining('maxInstancesPerType'),
+          },
+        ],
       })
     })
   })
@@ -1499,23 +1699,26 @@ describe('Custom Object Instances filter', () => {
     const MASTER_DETAIL_RECORD_ID = 'a0B8d000008r49lEAA'
     const INSTANCE_TYPE = 'SBQQ__LineColumn__c'
 
-    const createFilterForAliases = (saltoAliasSettings?: SaltoAliasSettings): FilterType => filterCreator({
-      client,
-      config: {
-        ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({
-          fetchParams: {
-            data: {
-              includeObjects: ['.*'],
-              saltoIDSettings: {
-                defaultIdFields: ['Id'],
+    const createFilterForAliases = (
+      saltoAliasSettings?: SaltoAliasSettings,
+    ): FilterType =>
+      filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              data: {
+                includeObjects: ['.*'],
+                saltoIDSettings: {
+                  defaultIdFields: ['Id'],
+                },
+                saltoAliasSettings,
               },
-              saltoAliasSettings,
             },
-          },
-        }),
-      },
-    }) as FilterType
+          }),
+        },
+      }) as FilterType
 
     describe('when calculated alias is not an empty string', () => {
       const MASTER_DETAIL_RECORD = {
@@ -1532,7 +1735,7 @@ describe('Custom Object Instances filter', () => {
 
       beforeEach(async () => {
         filter = createFilterForAliases()
-        connection.query = jest.fn().mockImplementation(((query: string) => {
+        connection.query = jest.fn().mockImplementation((query: string) => {
           if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
             return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
           }
@@ -1540,16 +1743,27 @@ describe('Custom Object Instances filter', () => {
             return Promise.resolve({ records: [INSTANCE_RECORD] })
           }
           return []
-        }))
-        const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+        })
+        const elements: Element[] = [
+          mockTypes[MASTER_DETAIL_TYPE],
+          mockTypes[INSTANCE_TYPE],
+        ]
         await filter.onFetch(elements)
         instances = elements.filter(isInstanceElement)
       })
 
       it('should create correct aliases', () => {
         expect(instances).toEqual([
-          expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
-          expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName TestField InstanceName' }) }),
+          expect.objectContaining({
+            annotations: expect.objectContaining({
+              [CORE_ANNOTATIONS.ALIAS]: 'ParentName',
+            }),
+          }),
+          expect.objectContaining({
+            annotations: expect.objectContaining({
+              [CORE_ANNOTATIONS.ALIAS]: 'ParentName TestField InstanceName',
+            }),
+          }),
         ])
       })
 
@@ -1557,12 +1771,20 @@ describe('Custom Object Instances filter', () => {
         let errors: SaltoError[]
         beforeEach(async () => {
           filter = createFilterForAliases({
-            overrides: [{
-              objectsRegex: INSTANCE_TYPE,
-              aliasFields: [DETECTS_PARENTS_INDICATOR, 'Name', 'InvalidField', 'SBQQ__FieldName__c', 'AnotherInvalidField'],
-            }],
+            overrides: [
+              {
+                objectsRegex: INSTANCE_TYPE,
+                aliasFields: [
+                  DETECTS_PARENTS_INDICATOR,
+                  'Name',
+                  'InvalidField',
+                  'SBQQ__FieldName__c',
+                  'AnotherInvalidField',
+                ],
+              },
+            ],
           })
-          connection.query = jest.fn().mockImplementation(((query: string) => {
+          connection.query = jest.fn().mockImplementation((query: string) => {
             if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
               return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
             }
@@ -1570,21 +1792,36 @@ describe('Custom Object Instances filter', () => {
               return Promise.resolve({ records: [INSTANCE_RECORD] })
             }
             return []
-          }))
-          const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
-          const result = await filter.onFetch(elements) as FilterResult
+          })
+          const elements: Element[] = [
+            mockTypes[MASTER_DETAIL_TYPE],
+            mockTypes[INSTANCE_TYPE],
+          ]
+          const result = (await filter.onFetch(elements)) as FilterResult
           errors = result.errors ?? []
           instances = elements.filter(isInstanceElement)
         })
         it('should create correct aliases and warn about invalid fields', async () => {
           expect(instances).toEqual([
-            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
-            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName InstanceName TestField' }) }),
+            expect.objectContaining({
+              annotations: expect.objectContaining({
+                [CORE_ANNOTATIONS.ALIAS]: 'ParentName',
+              }),
+            }),
+            expect.objectContaining({
+              annotations: expect.objectContaining({
+                [CORE_ANNOTATIONS.ALIAS]: 'ParentName InstanceName TestField',
+              }),
+            }),
           ])
-          expect(errors).toEqual([{
-            message: expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
-            severity: 'Warning',
-          }])
+          expect(errors).toEqual([
+            {
+              message:
+                expect.stringContaining('InvalidField') &&
+                expect.stringContaining('AnotherInvalidField'),
+              severity: 'Warning',
+            },
+          ])
         })
       })
     })
@@ -1603,7 +1840,7 @@ describe('Custom Object Instances filter', () => {
       }
 
       beforeEach(async () => {
-        connection.query = jest.fn().mockImplementation(((query: string) => {
+        connection.query = jest.fn().mockImplementation((query: string) => {
           if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
             return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
           }
@@ -1611,14 +1848,17 @@ describe('Custom Object Instances filter', () => {
             return Promise.resolve({ records: [INSTANCE_RECORD] })
           }
           return []
-        }))
-        const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+        })
+        const elements: Element[] = [
+          mockTypes[MASTER_DETAIL_TYPE],
+          mockTypes[INSTANCE_TYPE],
+        ]
         await createFilterForAliases().onFetch(elements)
         instances = elements.filter(isInstanceElement)
       })
       it('should not create aliases', () => {
         expect(instances).toHaveLength(2)
-        instances.forEach(instance => {
+        instances.forEach((instance) => {
           expect(instance.annotations).not.toContainKey(CORE_ANNOTATIONS.ALIAS)
         })
       })
@@ -1662,52 +1902,58 @@ describe('Custom Object Instances filter', () => {
         },
       ]
       beforeEach(async () => {
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: await buildTestFetchProfile({
-                types: [
-                  {
-                    typeName: testTypeName,
-                    included: true,
-                    excluded: false,
-                    allowRef: false,
-                  },
-                  {
-                    typeName: 'unmanagedType',
-                    included: true,
-                    excluded: false,
-                    allowRef: false,
-                  },
-                  {
-                    typeName: 'IrrelevantType',
-                    included: true,
-                    excluded: false,
-                    allowRef: false,
-                  },
-                ],
-              }),
-            },
-          }
-        ) as FilterType
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: await buildTestFetchProfile({
+              types: [
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: 'unmanagedType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: 'IrrelevantType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ],
+            }),
+          },
+        }) as FilterType
 
         elements = [testType, irrelevantType]
 
-        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        testRecords.forEach((record) => {
+          record[MANAGED_BY_SALTO_FIELD_NAME] = true
+        })
         setMockQueryResults(testRecords)
 
-        filterResult = await filter.onFetch(elements) as FilterResult
+        filterResult = (await filter.onFetch(elements)) as FilterResult
       })
 
       it('Should warn', () => {
-        expect(filterResult.errors).toEqual([{
-          message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
-          severity: 'Warning',
-        }])
+        expect(filterResult.errors).toEqual([
+          {
+            message:
+              expect.stringContaining('TestType') &&
+              expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+            severity: 'Warning',
+          },
+        ])
         expect(elements).toHaveLength(2)
-        expect(basicQueryImplementation).not.toHaveBeenCalledWith(expect.stringContaining('TestType'))
+        expect(basicQueryImplementation).not.toHaveBeenCalledWith(
+          expect.stringContaining('TestType'),
+        )
       })
     })
     describe('When all the types have inaccessible fields', () => {
@@ -1748,45 +1994,49 @@ describe('Custom Object Instances filter', () => {
         },
       ]
       beforeEach(async () => {
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: await buildTestFetchProfile({
-                types: [
-                  {
-                    typeName: testTypeName,
-                    included: true,
-                    excluded: false,
-                    allowRef: false,
-                  },
-                  {
-                    typeName: otherTestTypeName,
-                    included: true,
-                    excluded: false,
-                    allowRef: false,
-                  },
-                ],
-              }),
-            },
-          }
-        ) as FilterType
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: await buildTestFetchProfile({
+              types: [
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: otherTestTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ],
+            }),
+          },
+        }) as FilterType
 
         elements = [testType, otherTestType, unmanagedType]
 
-        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        testRecords.forEach((record) => {
+          record[MANAGED_BY_SALTO_FIELD_NAME] = true
+        })
         setMockQueryResults(testRecords)
 
-        filterResult = await filter.onFetch(elements) as FilterResult
+        filterResult = (await filter.onFetch(elements)) as FilterResult
       })
 
       it('Should warn', () => {
         expect(filterResult.errors ?? []).not.toBeEmpty()
-        expect(filterResult.errors).toEqual([{
-          message: expect.stringContaining('missing or is of the wrong type for all data records'),
-          severity: 'Warning',
-        }])
+        expect(filterResult.errors).toEqual([
+          {
+            message: expect.stringContaining(
+              'missing or is of the wrong type for all data records',
+            ),
+            severity: 'Warning',
+          },
+        ])
         expect(elements).toHaveLength(3)
       })
     })
@@ -1807,31 +2057,29 @@ describe('Custom Object Instances filter', () => {
       },
     ]
     beforeEach(async () => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: await buildTestFetchProfile({
-              types: [
-                {
-                  typeName: testTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ],
-              omittedFields: [
-                `${testTypeName}.TestField`,
-              ],
-            }),
-          },
-        }
-      ) as FilterType
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: await buildTestFetchProfile({
+            types: [
+              {
+                typeName: testTypeName,
+                included: true,
+                excluded: false,
+                allowRef: false,
+              },
+            ],
+            omittedFields: [`${testTypeName}.TestField`],
+          }),
+        },
+      }) as FilterType
 
       elements = [testType]
 
-      testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+      testRecords.forEach((record) => {
+        record[MANAGED_BY_SALTO_FIELD_NAME] = true
+      })
       setMockQueryResults(testRecords)
 
       await filter.onFetch(elements)
@@ -1839,7 +2087,7 @@ describe('Custom Object Instances filter', () => {
 
     it('should not fetch omitted fields', () => {
       const queryString = basicQueryImplementation.mock.calls
-        .find(([soql] : string[]) => !soql.includes('COUNT()'))
+        .find(([soql]: string[]) => !soql.includes('COUNT()'))
         .pop()
       expect(queryString).not.toContain('TestField')
       expect(queryString).toContain('Name')
@@ -1901,30 +2149,28 @@ describe('Custom Object Instances filter', () => {
         },
       ]
       beforeEach(async () => {
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: await buildTestFetchProfile({
-                types: [
-                  {
-                    typeName: testTypeName,
-                    included: false,
-                    excluded: false,
-                    allowRef: true,
-                  },
-                  {
-                    typeName: refFromTypeName,
-                    included: true,
-                    excluded: false,
-                    allowRef: false,
-                  },
-                ],
-              }),
-            },
-          }
-        ) as FilterType
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: await buildTestFetchProfile({
+              types: [
+                {
+                  typeName: testTypeName,
+                  included: false,
+                  excluded: false,
+                  allowRef: true,
+                },
+                {
+                  typeName: refFromTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ],
+            }),
+          },
+        }) as FilterType
 
         elements = [refFromType, typeWithHierarchy]
 
@@ -1935,9 +2181,30 @@ describe('Custom Object Instances filter', () => {
       it('should follow references from Hierarchy fields', () => {
         expect(elements).toHaveLength(2 + testRecords.length)
         expect(elements).toIncludeAllPartialMembers([
-          { elemID: new ElemID(SALESFORCE, refFromTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}refFromId`) },
-          { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId1}`) },
-          { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId2}`) },
+          {
+            elemID: new ElemID(
+              SALESFORCE,
+              refFromTypeName,
+              'instance',
+              `${NAME_FROM_GET_ELEM_ID}refFromId`,
+            ),
+          },
+          {
+            elemID: new ElemID(
+              SALESFORCE,
+              testTypeName,
+              'instance',
+              `${NAME_FROM_GET_ELEM_ID}${testInstanceId1}`,
+            ),
+          },
+          {
+            elemID: new ElemID(
+              SALESFORCE,
+              testTypeName,
+              'instance',
+              `${NAME_FROM_GET_ELEM_ID}${testInstanceId2}`,
+            ),
+          },
         ])
       })
     })
@@ -1950,7 +2217,11 @@ describe('Custom Object Instances filter', () => {
     describe('When enabled', () => {
       beforeEach(async () => {
         const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-        _.set(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName], changedAtCutoff)
+        _.set(
+          changedAtSingleton.value,
+          [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
+          changedAtCutoff,
+        )
 
         const elementsSource = buildElementsSourceFromElements([
           changedAtSingleton,
@@ -1966,19 +2237,22 @@ describe('Custom Object Instances filter', () => {
           ],
           elementsSourceForQuickFetch: elementsSource,
         })
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile,
-            },
-          }
-        ) as FilterType
-        await filter.onFetch([createCustomObject(testTypeName), changedAtSingleton])
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile,
+          },
+        }) as FilterType
+        await filter.onFetch([
+          createCustomObject(testTypeName),
+          changedAtSingleton,
+        ])
       })
       it('Should query using the changed-at value', () => {
-        expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
+        expect(basicQueryImplementation).toHaveBeenLastCalledWith(
+          expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`),
+        )
       })
     })
 
@@ -1994,19 +2268,19 @@ describe('Custom Object Instances filter', () => {
             },
           ],
         })
-        filter = filterCreator(
-          {
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile,
-            },
-          }
-        ) as FilterType
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile,
+          },
+        }) as FilterType
         await filter.onFetch([createCustomObject(testTypeName)])
       })
       it('Should not query using the changed-at value', () => {
-        expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.not.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
+        expect(basicQueryImplementation).toHaveBeenLastCalledWith(
+          expect.not.stringContaining(`LastModifiedDate > ${changedAtCutoff}`),
+        )
       })
     })
   })
@@ -2020,7 +2294,9 @@ describe('buildSelectQueries', () => {
   describe('without conditions', () => {
     let queries: string[]
     beforeEach(async () => {
-      const fieldNames = await awu(Object.values(customObject.fields)).flatMap(getFieldNamesForQuery).toArray()
+      const fieldNames = await awu(Object.values(customObject.fields))
+        .flatMap(getFieldNamesForQuery)
+        .toArray()
       queries = buildSelectQueries('Test', fieldNames)
     })
     it('should create a select query on the specified fields', () => {
@@ -2032,22 +2308,45 @@ describe('buildSelectQueries', () => {
     describe('with short query', () => {
       let queries: string[]
       beforeEach(async () => {
-        const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
+        const fieldNames = await awu([customObject.fields.Id])
+          .flatMap(getFieldNamesForQuery)
+          .toArray()
         queries = buildSelectQueries(
           'Test',
           fieldNames,
-          _.range(0, 2).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
+          _.range(0, 2)
+            .map((idx) => [
+              [
+                {
+                  fieldName: 'Id',
+                  operator: 'IN' as const,
+                  value: `'id${idx}'`,
+                },
+              ],
+              [
+                {
+                  fieldName: 'Name',
+                  operator: 'IN' as const,
+                  value: `'name${idx}'`,
+                },
+              ],
+            ])
+            .flat(),
         )
       })
       it('should create query with WHERE clause', () => {
         expect(queries).toHaveLength(1)
-        expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
+        expect(queries[0]).toEqual(
+          "SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')",
+        )
       })
     })
     describe('with query length limit', () => {
       let queries: string[]
       beforeEach(async () => {
-        const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
+        const fieldNames = await awu([customObject.fields.Id])
+          .flatMap(getFieldNamesForQuery)
+          .toArray()
         const queryLimits: SoqlQueryLimits = {
           maxQueryLength: 80,
           maxWhereClauseLength: 55,
@@ -2055,22 +2354,46 @@ describe('buildSelectQueries', () => {
         queries = buildSelectQueries(
           'Test',
           fieldNames,
-          _.range(0, 4).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
+          _.range(0, 4)
+            .map((idx) => [
+              [
+                {
+                  fieldName: 'Id',
+                  operator: 'IN' as const,
+                  value: `'id${idx}'`,
+                },
+              ],
+              [
+                {
+                  fieldName: 'Name',
+                  operator: 'IN' as const,
+                  value: `'name${idx}'`,
+                },
+              ],
+            ])
+            .flat(),
           queryLimits,
         )
       })
       it('should create queries that do not exceed query length', () => {
         expect(queries).toHaveLength(2)
-        const queryLengths = queries.map(query => query.length)
+        const queryLengths = queries.map((query) => query.length)
         expect(_.max(queryLengths)).toBeLessThanOrEqual(80)
-        expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
-        expect(queries[1]).toEqual("SELECT Id FROM Test WHERE Id IN ('id2','id3') AND Name IN ('name2','name3')")
+        expect(queries[0]).toEqual(
+          "SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')",
+        )
+        expect(queries[1]).toEqual(
+          "SELECT Id FROM Test WHERE Id IN ('id2','id3') AND Name IN ('name2','name3')",
+        )
       })
     })
   })
   describe('with limiting conditions', () => {
     let queries: string[]
-    const limitIdTo = (operator: QueryOperator, operand: string): SoqlQuery => ({
+    const limitIdTo = (
+      operator: QueryOperator,
+      operand: string,
+    ): SoqlQuery => ({
       fieldName: 'Id',
       operator,
       value: operand,
@@ -2078,18 +2401,21 @@ describe('buildSelectQueries', () => {
     describe('with no exact conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[limitIdTo('>', '7')]])
+        queries = buildSelectQueries('Test', fieldNames, [
+          [limitIdTo('>', '7')],
+        ])
       })
       it('should create a single valid query', () => {
-        expect(queries).toEqual([
-          'SELECT Id FROM Test WHERE Id > 7',
-        ])
+        expect(queries).toEqual(['SELECT Id FROM Test WHERE Id > 7'])
       })
     })
     describe('with exact conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [limitIdTo('>', '7')]])
+        queries = buildSelectQueries('Test', fieldNames, [
+          [{ fieldName: 'Id', operator: 'IN', value: "'8'" }],
+          [limitIdTo('>', '7')],
+        ])
       })
       it('should create a single valid query that ends with the complex query', () => {
         expect(queries).toEqual([
@@ -2107,7 +2433,11 @@ describe('buildSelectQueries', () => {
         queries = buildSelectQueries(
           'Test',
           fieldNames,
-          [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7')]],
+          [
+            [{ fieldName: 'Id', operator: 'IN', value: "'8'" }],
+            [{ fieldName: 'Id', operator: 'IN', value: "'9'" }],
+            [limitIdTo('>', '7')],
+          ],
           queryLimits,
         )
       })
@@ -2121,7 +2451,10 @@ describe('buildSelectQueries', () => {
     describe('with multiple complex conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]])
+        queries = buildSelectQueries('Test', fieldNames, [
+          [{ fieldName: 'Id', operator: 'IN', value: "'8'" }],
+          [limitIdTo('>', '7'), limitIdTo('<', '10')],
+        ])
       })
       it('should create a single valid query that ends with the complex query', () => {
         expect(queries).toEqual([
@@ -2139,7 +2472,11 @@ describe('buildSelectQueries', () => {
         queries = buildSelectQueries(
           'Test',
           fieldNames,
-          [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]],
+          [
+            [{ fieldName: 'Id', operator: 'IN', value: "'8'" }],
+            [{ fieldName: 'Id', operator: 'IN', value: "'9'" }],
+            [limitIdTo('>', '7'), limitIdTo('<', '10')],
+          ],
           queryLimits,
         )
       })

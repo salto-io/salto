@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { configSource, ConfigSource } from '../../src/workspace/config_source'
@@ -22,26 +22,22 @@ describe('configSource', () => {
   let source: ConfigSource
   let dirStore: DirectoryStore<string>
   beforeEach(() => {
-    dirStore = mockDirStore(
-      undefined,
-      undefined,
-      {
-        'valid.nacl': `valid {
+    dirStore = mockDirStore(undefined, undefined, {
+      'valid.nacl': `valid {
           val = 1
           other = 3
         }`,
-        'empty.nacl': '',
-        'noInst.nacl': `type bla {
+      'empty.nacl': '',
+      'noInst.nacl': `type bla {
         }`,
-        'multipleInst.nacl': `first {
+      'multipleInst.nacl': `first {
           val = 1
         }
         second {
           val = 2
         }`,
-        'error.nacl': 'asd',
-      },
-    )
+      'error.nacl': 'asd',
+    })
     source = configSource(dirStore)
   })
   describe('get', () => {
@@ -84,7 +80,7 @@ describe('configSource', () => {
       describe('with valid config', () => {
         let inst: InstanceElement
         beforeEach(async () => {
-          inst = await source.get('valid', defaultValue) as InstanceElement
+          inst = (await source.get('valid', defaultValue)) as InstanceElement
         })
         it('should return the valid config', async () => {
           expect(inst.value).toMatchObject({
@@ -95,7 +91,7 @@ describe('configSource', () => {
       describe('with empty file', () => {
         let inst: InstanceElement
         beforeEach(async () => {
-          inst = await source.get('noSuchFile', defaultValue) as InstanceElement
+          inst = (await source.get('noSuchFile', defaultValue)) as InstanceElement
         })
         it('should return default value', () => {
           expect(inst).toBeInstanceOf(InstanceElement)
@@ -106,13 +102,16 @@ describe('configSource', () => {
   })
   describe('set', () => {
     it('should set first configuration in repo without changes', async () => {
-      await source.set('newAdapter', new InstanceElement(
+      await source.set(
         'newAdapter',
-        new ObjectType({
-          elemID: new ElemID('newAdapter'),
-        }),
-        { a: 2 },
-      ))
+        new InstanceElement(
+          'newAdapter',
+          new ObjectType({
+            elemID: new ElemID('newAdapter'),
+          }),
+          { a: 2 },
+        ),
+      )
 
       expect(dirStore.set).toHaveBeenCalledWith({
         filename: expect.any(String),

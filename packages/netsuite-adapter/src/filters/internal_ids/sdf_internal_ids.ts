@@ -1,19 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  Element,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isObjectType,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
@@ -33,18 +47,21 @@ type RecordIdResult = {
 
 type QueryResponse = {
   scriptid: string
-} & ({
-  id: string
- } | {
-  internalid: string
- })
+} & (
+  | {
+      id: string
+    }
+  | {
+      internalid: string
+    }
+)
 
- type SavedSearchResult = {
+type SavedSearchResult = {
   id: string
   internalid: [
     {
       value: string
-    }
+    },
   ]
 }
 
@@ -78,8 +95,7 @@ const getTableName = (element: Element): string => {
   return element.elemID.typeName
 }
 
-const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):
-Promise<RecordIdResult[]> => {
+const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string): Promise<RecordIdResult[]> => {
   const recordIdResults = await client.runSuiteQL(query)
   if (recordIdResults === undefined) {
     return []
@@ -103,7 +119,7 @@ const addInternalIdAnnotationToCustomRecordTypes = (elements: Element[]): void =
       if (_.isUndefined(object.annotationRefTypes[INTERNAL_ID])) {
         object.annotationRefTypes[INTERNAL_ID] = new TypeReference(
           BuiltinTypes.HIDDEN_STRING.elemID,
-          BuiltinTypes.HIDDEN_STRING
+          BuiltinTypes.HIDDEN_STRING,
         )
       }
     })
@@ -117,12 +133,9 @@ const addInternalIdFieldToSupportedType = (elements: Element[]): void => {
     .filter(object => getTableName(object) in TABLE_NAME_TO_ID_PARAMETER_MAP || isSavedSearch(object))
     .forEach(object => {
       if (_.isUndefined(object.fields[INTERNAL_ID])) {
-        object.fields[INTERNAL_ID] = new Field(
-          object,
-          INTERNAL_ID,
-          BuiltinTypes.STRING,
-          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-        )
+        object.fields[INTERNAL_ID] = new Field(object, INTERNAL_ID, BuiltinTypes.STRING, {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        })
       }
     })
 }
@@ -143,35 +156,26 @@ const fetchRecordType = async (
 
 const fetchRecordIdsForRecordType = async (
   recordType: string,
-  client: NetsuiteClient
-): Promise<Record<string, string>> =>
-  fetchRecordType(TABLE_NAME_TO_ID_PARAMETER_MAP[recordType], client, recordType)
+  client: NetsuiteClient,
+): Promise<Record<string, string>> => fetchRecordType(TABLE_NAME_TO_ID_PARAMETER_MAP[recordType], client, recordType)
 
 const createRecordIdsMap = async (
   client: NetsuiteClient,
-  recordTypes: string[]
+  recordTypes: string[],
 ): Promise<Record<string, Record<string, string>>> =>
   Object.fromEntries(
-    await Promise.all(recordTypes
-      .map(async recordType =>
-        [recordType, await fetchRecordIdsForRecordType(recordType, client)]))
+    await Promise.all(
+      recordTypes.map(async recordType => [recordType, await fetchRecordIdsForRecordType(recordType, client)]),
+    ),
   )
-
 
 export const isSupportedInstance = (instance: InstanceElement): boolean =>
   getTableName(instance) in TABLE_NAME_TO_ID_PARAMETER_MAP
 
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
-  changes
-    .filter(isAdditionChange)
-    .filter(isInstanceChange)
-    .map(getChangeData)
-    .filter(isSupportedInstance)
+  changes.filter(isAdditionChange).filter(isInstanceChange).map(getChangeData).filter(isSupportedInstance)
 
-const addInternalIdToInstances = async (
-  client: NetsuiteClient,
-  instances: InstanceElement[]
-): Promise<void> => {
+const addInternalIdToInstances = async (client: NetsuiteClient, instances: InstanceElement[]): Promise<void> => {
   const recordIdMap = await createRecordIdsMap(client, _.uniq(instances.map(getTableName)))
   instances.filter(hasScriptId).forEach(instance => {
     const typeRecordIdMap = recordIdMap[getTableName(instance)]
@@ -182,10 +186,7 @@ const addInternalIdToInstances = async (
   })
 }
 
-const addInternalIdToCustomRecordTypes = async (
-  client: NetsuiteClient,
-  elements: Element[]
-): Promise<void> => {
+const addInternalIdToCustomRecordTypes = async (client: NetsuiteClient, elements: Element[]): Promise<void> => {
   const customRecordTypes = elements.filter(isObjectType).filter(isCustomRecordType)
   if (customRecordTypes.length > 0) {
     const recordIdMap = await fetchRecordIdsForRecordType(CUSTOM_RECORD_TYPE, client)
@@ -198,36 +199,44 @@ const addInternalIdToCustomRecordTypes = async (
   }
 }
 
-const addInternalIdToCustomListValues = async (
-  client: NetsuiteClient,
-  elements: Element[]
-): Promise<void> => {
+const addInternalIdToCustomListValues = async (client: NetsuiteClient, elements: Element[]): Promise<void> => {
   const customListInstancesWithMissingValuesInternalIds = elements
-    .filter(isInstanceElement).filter(isCustomListInstance)
+    .filter(isInstanceElement)
+    .filter(isCustomListInstance)
     .filter(instance => getCustomListValues(instance).some(([value]) => !value[INTERNAL_ID]))
   const recordIdMap = Object.fromEntries(
     await Promise.all(
       customListInstancesWithMissingValuesInternalIds
         .filter(hasScriptId)
         .map(instance => instance.value[SCRIPT_ID])
-        .map(async (customListScriptId: string): Promise<[string, Record<string, string>]> =>
-          [customListScriptId, await fetchRecordType('id', client, customListScriptId)])
-    )
+        .map(
+          async (customListScriptId: string): Promise<[string, Record<string, string>]> => [
+            customListScriptId,
+            await fetchRecordType('id', client, customListScriptId),
+          ],
+        ),
+    ),
   )
   customListInstancesWithMissingValuesInternalIds.filter(hasScriptId).forEach(instance => {
     const customListRecordIdMap = recordIdMap[instance.value[SCRIPT_ID]]
-    getCustomListValues(instance).filter(([value]) => !value[INTERNAL_ID] && value[SCRIPT_ID]).forEach(([value]) => {
-      const scriptId = value[SCRIPT_ID].toLowerCase()
-      if (scriptId in customListRecordIdMap) {
-        value[INTERNAL_ID] = customListRecordIdMap[scriptId]
-      }
-    })
+    getCustomListValues(instance)
+      .filter(([value]) => !value[INTERNAL_ID] && value[SCRIPT_ID])
+      .forEach(([value]) => {
+        const scriptId = value[SCRIPT_ID].toLowerCase()
+        if (scriptId in customListRecordIdMap) {
+          value[INTERNAL_ID] = customListRecordIdMap[scriptId]
+        }
+      })
   })
 }
 
 const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: Element[]): Promise<void> => {
   const queryScriptIdToInternalId = async (): Promise<Record<string, string>> => {
-    const results = await client.runSavedSearchQuery({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+    const results = await client.runSavedSearchQuery({
+      type: 'savedsearch',
+      filters: [],
+      columns: ['id', 'internalid'],
+    })
     if (results === undefined) {
       log.error('SavedSearch query failed')
       return {}
@@ -239,14 +248,10 @@ const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: El
       return {}
     }
 
-    return Object.fromEntries(
-      results.map(({ id, internalid }) => [id.toLowerCase(), internalid[0].value])
-    )
+    return Object.fromEntries(results.map(({ id, internalid }) => [id.toLowerCase(), internalid[0].value]))
   }
 
-  const savedSearchElements = elements
-    .filter(isInstanceElement)
-    .filter(isSavedSearch)
+  const savedSearchElements = elements.filter(isInstanceElement).filter(isSavedSearch)
 
   if (savedSearchElements.length === 0) {
     return
@@ -292,17 +297,26 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
     const changesData = changes.filter(isAdditionOrModificationChange).map(getChangeData)
-    changesData.filter(isInstanceElement).filter(e => isSupportedInstance(e) || isSavedSearch(e)).forEach(inst => {
-      delete inst.value[INTERNAL_ID]
-    })
-    changesData.filter(isObjectType).filter(isCustomRecordType).forEach(type => {
-      delete type.annotations[INTERNAL_ID]
-    })
-    changesData.filter(isInstanceElement).filter(isCustomListInstance).forEach(instance => {
-      getCustomListValues(instance).forEach(([value]) => {
-        delete value[INTERNAL_ID]
+    changesData
+      .filter(isInstanceElement)
+      .filter(e => isSupportedInstance(e) || isSavedSearch(e))
+      .forEach(inst => {
+        delete inst.value[INTERNAL_ID]
       })
-    })
+    changesData
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .forEach(type => {
+        delete type.annotations[INTERNAL_ID]
+      })
+    changesData
+      .filter(isInstanceElement)
+      .filter(isCustomListInstance)
+      .forEach(instance => {
+        getCustomListValues(instance).forEach(([value]) => {
+          delete value[INTERNAL_ID]
+        })
+      })
   },
   /**
    * This assigns the internal id for new instances created through Salto
@@ -315,18 +329,9 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
     if (additionInstances.length > 0) {
       await addInternalIdToInstances(client, additionInstances)
     }
-    await addInternalIdToCustomRecordTypes(
-      client,
-      changes.filter(isAdditionChange).map(getChangeData)
-    )
-    await addInternalIdToCustomListValues(
-      client,
-      changes.filter(isAdditionOrModificationChange).map(getChangeData)
-    )
-    await addInternalIdToSavedSearches(
-      client,
-      changes.filter(isAdditionChange).map(getChangeData)
-    )
+    await addInternalIdToCustomRecordTypes(client, changes.filter(isAdditionChange).map(getChangeData))
+    await addInternalIdToCustomListValues(client, changes.filter(isAdditionOrModificationChange).map(getChangeData))
+    await addInternalIdToSavedSearches(client, changes.filter(isAdditionChange).map(getChangeData))
   },
 })
 

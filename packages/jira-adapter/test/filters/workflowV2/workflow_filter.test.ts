@@ -1,20 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, ObjectType, BuiltinTypes, ElemID, ListType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  ObjectType,
+  BuiltinTypes,
+  ElemID,
+  ListType,
+  ReferenceExpression,
+  toChange,
+  MapType,
+} from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { naclCase } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -24,7 +34,14 @@ import JiraClient from '../../../src/client/client'
 import workflowFilter from '../../../src/filters/workflowV2/workflow_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import { JIRA_WORKFLOW_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, STATUS_CATEGORY_TYPE_NAME, STATUS_TYPE_NAME } from '../../../src/constants'
+import {
+  JIRA_WORKFLOW_TYPE,
+  ISSUE_TYPE_NAME,
+  JIRA,
+  PROJECT_TYPE,
+  STATUS_CATEGORY_TYPE_NAME,
+  STATUS_TYPE_NAME,
+} from '../../../src/constants'
 import { TASK_STATUS } from '../../../src/filters/workflowV2/types'
 
 const uuidMock = jest.fn()
@@ -53,23 +70,28 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('jiraWorkflowFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy', FilterResult>
   let workflowType: ObjectType
+  let workflowRuleConfigurationParametersType: ObjectType
+  let elements: ObjectType[]
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
-  const TRANSITION_NAME_TO_KEY:Record<string, string> = {
+  const TRANSITION_NAME_TO_KEY: Record<string, string> = {
     Create: naclCase('Create::From: none::Initial'),
     Done: naclCase('Done::From: any status::Global'),
+    ToStatus2: naclCase('ToStatus2::From: Create::Directed'),
   }
 
   beforeEach(async () => {
     jest.clearAllMocks()
     workflowType = createEmptyType(JIRA_WORKFLOW_TYPE)
+    workflowRuleConfigurationParametersType = createEmptyType('WorkflowRuleConfiguration_parameters')
+    elements = [workflowType, workflowRuleConfigurationParametersType]
   })
 
   describe('onFetch', () => {
     let mockPaginator: clientUtils.Paginator
     beforeEach(() => {
-      mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
+      mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
         yield [
           { id: { entityId: '1' }, statuses: [{ id: '11', name: 'Quack' }] },
           { id: { entityId: '2' }, statuses: [{ id: '22', name: 'Quack Quack' }] },
@@ -80,11 +102,13 @@ describe('jiraWorkflowFilter', () => {
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableNewWorkflowAPI = true
-      filter = workflowFilter(getFilterParams({
-        client,
-        paginator: mockPaginator,
-        config,
-      })) as typeof filter
+      filter = workflowFilter(
+        getFilterParams({
+          client,
+          paginator: mockPaginator,
+          config,
+        }),
+      ) as typeof filter
       connection.post.mockResolvedValue({
         status: 200,
         data: {
@@ -103,10 +127,9 @@ describe('jiraWorkflowFilter', () => {
                 {
                   type: 'INITIAL',
                   name: 'Create',
-                  properties:
-                    {
-                      'jira.issue.editable': 'true',
-                    },
+                  properties: {
+                    'jira.issue.editable': 'true',
+                  },
                   to: {
                     statusReference: '11',
                   },
@@ -154,11 +177,10 @@ describe('jiraWorkflowFilter', () => {
       })
     })
     it('should add workflow instances', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(3)
-      const firstWorkflow = elements[1] as unknown as InstanceElement
-      expect(elements[1].elemID.name).toEqual('firstWorkflow')
+      expect(elements).toHaveLength(4)
+      const firstWorkflow = elements[2] as unknown as InstanceElement
+      expect(firstWorkflow.elemID.name).toEqual('firstWorkflow')
       expect(firstWorkflow.value).toEqual({
         id: '1',
         name: 'firstWorkflow',
@@ -196,7 +218,7 @@ describe('jiraWorkflowFilter', () => {
           },
         ],
       })
-      const secondWorkflow = elements[2] as unknown as InstanceElement
+      const secondWorkflow = elements[3] as unknown as InstanceElement
       expect(secondWorkflow.elemID.name).toEqual('secondWorkflow')
       expect(secondWorkflow.value).toEqual({
         id: '2',
@@ -231,17 +253,23 @@ describe('jiraWorkflowFilter', () => {
       })
     })
     it('should add workflows deployment annotations to JiraWorkflow type', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(3)
+      expect(elements).toHaveLength(4)
       expect(elements[0].annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
         [CORE_ANNOTATIONS.DELETABLE]: true,
       })
     })
+    it('should add deployment annotations to scriptRunner type', async () => {
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(4)
+      expect(elements[1].fields.scriptRunner.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+    })
     it('should call paginator with the correct parameters', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
       expect(mockPaginator).toHaveBeenCalledWith(
         {
@@ -255,7 +283,6 @@ describe('jiraWorkflowFilter', () => {
       )
     })
     it('should call the client with the correct parameters', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/workflows',
@@ -267,22 +294,20 @@ describe('jiraWorkflowFilter', () => {
     })
     it('should not add workflow instances if new workflow api is disabled', async () => {
       config.fetch.enableNewWorkflowAPI = false
-      filter = workflowFilter(getFilterParams({
-        client,
-        paginator: mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
-          yield [
-            { id: { entityId: '1' } },
-            { id: { entityId: '2' } },
-          ]
+      filter = workflowFilter(
+        getFilterParams({
+          client,
+          paginator: mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
+            yield [{ id: { entityId: '1' } }, { id: { entityId: '2' } }]
+          }),
+          config,
         }),
-        config,
-      })) as typeof filter
-      const elements = [workflowType]
+      ) as typeof filter
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(1)
+      expect(elements).toHaveLength(2)
     })
     it('should fail when JiraWorkflow type is not found', async () => {
-      const filterResult = await filter.onFetch([]) as FilterResult
+      const filterResult = (await filter.onFetch([])) as FilterResult
       const errors = filterResult.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
@@ -290,19 +315,18 @@ describe('jiraWorkflowFilter', () => {
       expect(errors[0].severity).toEqual('Error')
     })
     it('should fail when id response data is not valid', async () => {
-      mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
-        yield [
-          { id: { notEntityId: '1' } },
-        ]
+      mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
+        yield [{ id: { notEntityId: '1' } }]
       })
-      filter = workflowFilter(getFilterParams({
-        client,
-        paginator: mockPaginator,
-        config,
-      })) as typeof filter
+      filter = workflowFilter(
+        getFilterParams({
+          client,
+          paginator: mockPaginator,
+          config,
+        }),
+      ) as typeof filter
 
-      const elements = [workflowType]
-      const filterResult = await filter.onFetch(elements) as FilterResult
+      const filterResult = (await filter.onFetch(elements)) as FilterResult
 
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
@@ -312,25 +336,29 @@ describe('jiraWorkflowFilter', () => {
     })
     it('should fail when bulk get post request is rejected', async () => {
       connection.post.mockRejectedValue(new Error('code 400'))
-      const elements = [workflowType]
-      const filterResult = await filter.onFetch(elements) as FilterResult
+      const filterResult = (await filter.onFetch(elements)) as FilterResult
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: Error: code 400.')
+      expect(errors[0].message).toEqual(
+        'Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: Error: code 400.',
+      )
       expect(errors[0].severity).toEqual('Error')
     })
     it('should throw when response data is not valid', async () => {
       connection.post.mockResolvedValue({
         status: 200,
-        data: { workflows: [{
-          version: {
-            invalidVersion: true,
-          },
-        }] },
+        data: {
+          workflows: [
+            {
+              version: {
+                invalidVersion: true,
+              },
+            },
+          ],
+        },
       })
-      const elements = [workflowType]
-      const filterResult = await filter.onFetch(elements) as FilterResult
+      const filterResult = (await filter.onFetch(elements)) as FilterResult
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
@@ -415,44 +443,46 @@ describe('jiraWorkflowFilter', () => {
         })
       })
       it('should convert transition parameters to list', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[0].parameters)
-          .toEqual({ groupIds: ['1', '2'] })
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[0].parameters)
-          .toEqual({ statusIds: ['1', '2'] })
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[0].parameters).toEqual({
+          groupIds: ['1', '2'],
+        })
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[0].parameters).toEqual({
+          statusIds: ['1', '2'],
+        })
       })
       it('should do nothing if parameters field not in the relevant list', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[1].parameters)
-          .toEqual({ fromStatusId: '1' })
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[1].parameters)
-          .toEqual({ fieldKey: 'fieldKey' })
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[1].parameters).toEqual({
+          fromStatusId: '1',
+        })
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[1].parameters).toEqual({
+          fieldKey: 'fieldKey',
+        })
       })
       it('should do nothing if parameters is undefined', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[2].parameters)
-          .toBeUndefined()
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters)
-          .toBeUndefined()
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[2].parameters,
+        ).toBeUndefined()
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters).toBeUndefined()
       })
       it('should not convert parameters if it is an empty string', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters)
-          .toEqual({ groupIds: '' })
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters)
-          .toEqual({ fieldsRequired: '' })
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters).toEqual({
+          groupIds: '',
+        })
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters).toEqual({
+          fieldsRequired: '',
+        })
       })
     })
   })
@@ -560,27 +590,25 @@ describe('jiraWorkflowFilter', () => {
       workflows: [
         {
           ...WORKFLOW_PAYLOAD.workflows[0],
-          statuses: [
-            WORKFLOW_PAYLOAD.workflows[0].statuses[0],
-          ],
-          transitions: [
-            WORKFLOW_PAYLOAD.workflows[0].transitions[0],
-          ],
+          statuses: [WORKFLOW_PAYLOAD.workflows[0].statuses[0]],
+          transitions: [WORKFLOW_PAYLOAD.workflows[0].transitions[0]],
           version: {
             id: '1',
             versionNumber: 1,
           },
           id: '1',
-          statusMappings: [{
-            issueTypeId: '11',
-            projectId: '22',
-            statusMigrations: [
-              {
-                newStatusReference: 'uuid1',
-                oldStatusReference: 'uuid2',
-              },
-            ],
-          }],
+          statusMappings: [
+            {
+              issueTypeId: '11',
+              projectId: '22',
+              statusMigrations: [
+                {
+                  newStatusReference: 'uuid1',
+                  oldStatusReference: 'uuid2',
+                },
+              ],
+            },
+          ],
         },
       ],
     }
@@ -606,17 +634,21 @@ describe('jiraWorkflowFilter', () => {
       workflowInstanceBefore = _.cloneDeep(workflowInstance)
       const issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME), { id: '11' })
       const projectInstance = new InstanceElement('project', createEmptyType(PROJECT_TYPE), { id: '22' })
-      const statusMapping = [{
-        issueTypeId: new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-        projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
-        statusMigrations: [{
-          newStatusReference: new ReferenceExpression(status1.elemID, status1),
-          oldStatusReference: new ReferenceExpression(status2.elemID, status2),
-        }],
-      }]
+      const statusMapping = [
+        {
+          issueTypeId: new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
+          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          statusMigrations: [
+            {
+              newStatusReference: new ReferenceExpression(status1.elemID, status1),
+              oldStatusReference: new ReferenceExpression(status2.elemID, status2),
+            },
+          ],
+        },
+      ]
       workflowInstance.value.statusMappings = statusMapping
       workflowInstance.value.statuses.pop()
-      workflowInstance.value.transitions.pop()
+      delete workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
     }
     beforeEach(() => {
       // types
@@ -686,14 +718,22 @@ describe('jiraWorkflowFilter', () => {
         elemID: new ElemID(JIRA, JIRA_WORKFLOW_TYPE),
         fields: {
           statuses: { refType: workflowReferenceStatusType },
-          transitions: { refType: new ListType(transitionType) },
+          transitions: { refType: new MapType(transitionType) },
           statusMappings: { refType: new ListType(statusMappingType) },
         },
       })
       // instances
       statusCategory1 = new InstanceElement('statusCategory', statusCategoryType, { id: '3', key: 'done' })
-      status1 = new InstanceElement('status1', statusType, { id: '1', name: 'status1', statusCategory: new ReferenceExpression(statusCategory1.elemID, statusCategory1) })
-      status2 = new InstanceElement('status2', statusType, { id: '2', name: 'status2', statusCategory: new ReferenceExpression(statusCategory1.elemID, statusCategory1) })
+      status1 = new InstanceElement('status1', statusType, {
+        id: '1',
+        name: 'status1',
+        statusCategory: new ReferenceExpression(statusCategory1.elemID, statusCategory1),
+      })
+      status2 = new InstanceElement('status2', statusType, {
+        id: '2',
+        name: 'status2',
+        statusCategory: new ReferenceExpression(statusCategory1.elemID, statusCategory1),
+      })
       workflowInstance = new InstanceElement('workflow', workflowType, {
         name: 'workflow',
         description: 'description',
@@ -731,8 +771,8 @@ describe('jiraWorkflowFilter', () => {
             },
           },
         ],
-        transitions: [
-          {
+        transitions: {
+          [TRANSITION_NAME_TO_KEY.Create]: {
             id: '1',
             type: 'INITIAL',
             name: 'Create',
@@ -749,7 +789,7 @@ describe('jiraWorkflowFilter', () => {
               },
             ],
           },
-          {
+          [TRANSITION_NAME_TO_KEY.ToStatus2]: {
             id: '2',
             type: 'DIRECTED',
             name: 'toStatus2',
@@ -772,17 +812,19 @@ describe('jiraWorkflowFilter', () => {
               ],
             },
           },
-        ],
+        },
       })
       const { client: cli, connection: conn } = mockClient()
       client = cli
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.deploy.taskMaxRetries = 3
-      filter = workflowFilter(getFilterParams({
-        client,
-        config,
-      })) as typeof filter
+      filter = workflowFilter(
+        getFilterParams({
+          client,
+          config,
+        }),
+      ) as typeof filter
     })
     describe('preDeploy', () => {
       let groupType: ObjectType
@@ -795,23 +837,21 @@ describe('jiraWorkflowFilter', () => {
         group2 = new InstanceElement('group2', groupType, { groupId: '2' })
         preDeployWorkflowInstance = workflowInstance.clone()
         uuidMock.mockReturnValueOnce('uuid1').mockReturnValueOnce('uuid2')
-        deployChangeMock.mockResolvedValue(
-          {
-            workflows: [
-              {
+        deployChangeMock.mockResolvedValue({
+          workflows: [
+            {
+              id: '1',
+              name: 'workflow',
+              version: {
+                versionNumber: 1,
                 id: '1',
-                name: 'workflow',
-                version: {
-                  versionNumber: 1,
-                  id: '1',
-                },
-                scope: {
-                  type: 'global',
-                },
               },
-            ],
-          }
-        )
+              scope: {
+                type: 'global',
+              },
+            },
+          ],
+        })
       })
       describe('addition', () => {
         it('should create workflow payload correctly', async () => {
@@ -824,11 +864,13 @@ describe('jiraWorkflowFilter', () => {
           await filter.preDeploy([toChange({ after: workflowInstance })])
           expect(workflowInstance.value).toEqual({
             ...WORKFLOW_PAYLOAD,
-            workflows: [{
-              ...WORKFLOW_PAYLOAD.workflows[0],
-              transitions: [],
-              statuses: undefined,
-            }],
+            workflows: [
+              {
+                ...WORKFLOW_PAYLOAD.workflows[0],
+                transitions: [],
+                statuses: undefined,
+              },
+            ],
             statuses: [],
           })
         })
@@ -860,27 +902,31 @@ describe('jiraWorkflowFilter', () => {
                 },
               ],
             }
-            workflowInstance.value.transitions[1].conditions = conditions
+            workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2].conditions = conditions
           })
           it('should convert transition parameters to concat string', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
-            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[0].parameters)
-              .toEqual({ groupIds: '1,2' })
+            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[0].parameters).toEqual({
+              groupIds: '1,2',
+            })
           })
           it('should do nothing if parameters field not in the relevant list', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
-            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[1].parameters)
-              .toEqual({ fromStatusId: '1' })
+            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[1].parameters).toEqual({
+              fromStatusId: '1',
+            })
           })
           it('should do nothing if parameters is undefined', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
-            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[2].parameters)
-              .toBeUndefined()
+            expect(
+              workflowInstance.value.workflows[0].transitions[1].conditions.conditions[2].parameters,
+            ).toBeUndefined()
           })
           it('should convert parameters to empty string if it is an empty array', async () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
-            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[3].parameters)
-              .toEqual({ groupIds: '' })
+            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[3].parameters).toEqual({
+              groupIds: '',
+            })
           })
         })
       })
@@ -922,49 +968,46 @@ describe('jiraWorkflowFilter', () => {
       describe('modification', () => {
         beforeEach(() => {
           modificationSetup()
-          deployChangeMock.mockResolvedValue(
-            {
-              workflows: [
-                {
+          deployChangeMock.mockResolvedValue({
+            workflows: [
+              {
+                id: '1',
+                name: 'workflow',
+                version: {
+                  versionNumber: 1,
                   id: '1',
-                  name: 'workflow',
-                  version: {
-                    versionNumber: 1,
-                    id: '1',
-                  },
-                  scope: {
-                    type: 'global',
-                  },
-                  statuses: [],
-                  transitions: [],
                 },
-              ],
-              taskId: '1',
-            }
-          )
+                scope: {
+                  type: 'global',
+                },
+                statuses: [],
+                transitions: [],
+              },
+            ],
+            taskId: '1',
+          })
           workflowInstance.value = MODIFICATION_WORKFLOW_PAYLOAD
         })
         it('should wait for successful status migration', async () => {
-          connection.get.mockResolvedValueOnce({
-            status: 200,
-            data: {
-              status: TASK_STATUS.RUNNING,
-              progress: 50,
-            },
-          }).mockResolvedValueOnce({
-            status: 200,
-            data: {
-              status: TASK_STATUS.COMPLETE,
-              progress: 100,
-            },
-          })
+          connection.get
+            .mockResolvedValueOnce({
+              status: 200,
+              data: {
+                status: TASK_STATUS.RUNNING,
+                progress: 50,
+              },
+            })
+            .mockResolvedValueOnce({
+              status: 200,
+              data: {
+                status: TASK_STATUS.COMPLETE,
+                progress: 100,
+              },
+            })
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
           expect(connection.get).toHaveBeenCalledTimes(2)
-          expect(connection.get).toHaveBeenCalledWith(
-            '/rest/api/3/task/1',
-            expect.anything(),
-          )
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
         })
         it('should not fail the deployment if the migration fails', async () => {
           connection.get.mockResolvedValueOnce({
@@ -977,11 +1020,10 @@ describe('jiraWorkflowFilter', () => {
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
           expect(connection.get).toHaveBeenCalledTimes(1)
-          expect(connection.get).toHaveBeenCalledWith(
-            '/rest/api/3/task/1',
-            expect.anything(),
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'Status migration failed for workflow: workflow, with status CANCELLED',
           )
-          expect(logErrorSpy).toHaveBeenCalledWith('Status migration failed for workflow: workflow, with status CANCELLED')
         })
         it('should not fail the deployment when the migration timeout pass', async () => {
           connection.get.mockResolvedValue({
@@ -994,11 +1036,10 @@ describe('jiraWorkflowFilter', () => {
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
           expect(connection.get).toHaveBeenCalledTimes(4)
-          expect(connection.get).toHaveBeenCalledWith(
-            '/rest/api/3/task/1',
-            expect.anything(),
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'Failed to run status migration for workflow: workflow - did not receive success response after await timeout',
           )
-          expect(logErrorSpy).toHaveBeenCalledWith('Failed to run status migration for workflow: workflow - did not receive success response after await timeout')
         })
         it('should not fail the deployment statusMigration task response have unknown status', async () => {
           connection.get.mockResolvedValue({
@@ -1011,11 +1052,10 @@ describe('jiraWorkflowFilter', () => {
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
           expect(connection.get).toHaveBeenCalledTimes(1)
-          expect(connection.get).toHaveBeenCalledWith(
-            '/rest/api/3/task/1',
-            expect.anything(),
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'Status migration failed for workflow: workflow, with unknown status UNKNOWN',
           )
-          expect(logErrorSpy).toHaveBeenCalledWith('Status migration failed for workflow: workflow, with unknown status UNKNOWN')
         })
         it('should not fail the deployment if task response is invalid', async () => {
           connection.get.mockResolvedValueOnce({
@@ -1025,10 +1065,7 @@ describe('jiraWorkflowFilter', () => {
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
           expect(connection.get).toHaveBeenCalledTimes(1)
-          expect(connection.get).toHaveBeenCalledWith(
-            '/rest/api/3/task/1',
-            expect.anything(),
-          )
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
         })
       })
     })
@@ -1037,23 +1074,21 @@ describe('jiraWorkflowFilter', () => {
         beforeEach(async () => {
           preDeployWorkflowInstance = _.cloneDeep(workflowInstance)
           uuidMock.mockReturnValueOnce('uuid1').mockReturnValueOnce('uuid2')
-          deployChangeMock.mockResolvedValue(
-            {
-              workflows: [
-                {
+          deployChangeMock.mockResolvedValue({
+            workflows: [
+              {
+                id: '1',
+                name: 'workflow',
+                version: {
+                  versionNumber: 1,
                   id: '1',
-                  name: 'workflow',
-                  version: {
-                    versionNumber: 1,
-                    id: '1',
-                  },
-                  scope: {
-                    type: 'global',
-                  },
                 },
-              ],
-            }
-          )
+                scope: {
+                  type: 'global',
+                },
+              },
+            ],
+          })
           await filter.preDeploy([toChange({ after: workflowInstance })])
           await filter.deploy([toChange({ after: workflowInstance })])
           await filter.onDeploy([toChange({ after: workflowInstance })])
@@ -1098,7 +1133,7 @@ describe('jiraWorkflowFilter', () => {
         })
         it('should undo the preDeploy changes', async () => {
           workflowInstanceBefore.value.statuses.pop()
-          workflowInstanceBefore.value.transitions.pop()
+          delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
           const { statuses: statusesBefore, transitions: transitionsBefore } = workflowInstanceBefore.value
           const { statuses: statusesAfter, transitions: transitionsAfter } = workflowInstance.value
           expect(statusesAfter).toEqual(statusesBefore)

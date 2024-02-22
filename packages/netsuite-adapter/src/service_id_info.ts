@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { values } from '@salto-io/lowerdash'
 import { ElemID, Element } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
@@ -31,7 +31,10 @@ const SERVICE_ID_REGEX = `${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[
 
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
 //  & '[type=customsegment, scriptid=cseg1]'
-const scriptIdReferenceRegex = new RegExp(`\\[(${BUNDLEID_REGEX})?(${APPID_REGEX})?(${TYPE_REGEX})?${SERVICE_ID_REGEX}]`, 'g')
+const scriptIdReferenceRegex = new RegExp(
+  `\\[(${BUNDLEID_REGEX})?(${APPID_REGEX})?(${TYPE_REGEX})?${SERVICE_ID_REGEX}]`,
+  'g',
+)
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
 const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURED_SERVICE_ID}>\\/.+)]$`)
 
@@ -44,11 +47,8 @@ export type ServiceIdInfo = {
   isFullMatch: boolean
 }
 
-const isRegExpFullMatch = (regExpMatches: Array<RegExpExecArray | null>): boolean => (
-  regExpMatches.length === 1
-  && regExpMatches[0] !== null
-  && regExpMatches[0][0] === regExpMatches[0].input
-)
+const isRegExpFullMatch = (regExpMatches: Array<RegExpExecArray | null>): boolean =>
+  regExpMatches.length === 1 && regExpMatches[0] !== null && regExpMatches[0][0] === regExpMatches[0].input
 
 /**
  * This method tries to capture the serviceId from Netsuite references format. For example:
@@ -75,7 +75,8 @@ export const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
   const scriptIdRefMatches = regexMatches.slice(0, -1)
   const isFullMatch = isRegExpFullMatch(scriptIdRefMatches)
 
-  return scriptIdRefMatches.map(match => match?.groups)
+  return scriptIdRefMatches
+    .map(match => match?.groups)
     .filter(values.isDefined)
     .map(serviceIdRef => ({
       serviceId: serviceIdRef[CAPTURED_SERVICE_ID],

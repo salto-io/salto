@@ -1,22 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import {
-  isObjectType, isInstanceElement, Element, isPrimitiveType, isVariable,
-} from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, Element, isPrimitiveType, isVariable } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { mergeObjectTypes } from './internal/object_types'
@@ -30,8 +28,10 @@ const { awu } = collections.asynciterable
 
 export { MergeError, DuplicateAnnotationError } from './internal/common'
 export {
-  DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
-  ConflictingSettingError, DuplicateAnnotationTypeError,
+  DuplicateAnnotationFieldDefinitionError,
+  ConflictingFieldTypesError,
+  ConflictingSettingError,
+  DuplicateAnnotationTypeError,
 } from './internal/object_types'
 export { DuplicateInstanceKeyError } from './internal/instances'
 export { MultiplePrimitiveTypesError } from './internal/primitives'
@@ -43,10 +43,7 @@ export type MergeResult = {
 
 const log = logger(module)
 
-const mergeElement = (
-  newElement: Element,
-  existingElement?: Element
-): InternalMergeResult<Element> => {
+const mergeElement = (newElement: Element, existingElement?: Element): InternalMergeResult<Element> => {
   if (isPrimitiveType(newElement) && isPrimitiveType(existingElement)) {
     return mergePrimitives([newElement, existingElement])
   }
@@ -65,9 +62,7 @@ const mergeElement = (
   }
 }
 
-export const mergeElements = async (
-  elements: AsyncIterable<Element>
-): Promise<MergeResult> => {
+export const mergeElements = async (elements: AsyncIterable<Element>): Promise<MergeResult> => {
   let elementsCounter = 0
   let mergedCounter = 0
   let errorsCounter = 0
@@ -87,12 +82,15 @@ export const mergeElements = async (
     }
   })
 
-  log.debug(`merged ${elementsCounter} elements to ${mergedCounter} elements [errors=${
-    errorsCounter}]`)
+  log.debug(`merged ${elementsCounter} elements to ${mergedCounter} elements [errors=${errorsCounter}]`)
   if (errorsCounter > 0) {
-    log.warn(`All merge errors:\n${(await awu(errors.values())
-      .flatMap(elemErrs => elemErrs.map(e => e.message)).toArray())
-      .join('\n')}`)
+    log.warn(
+      `All merge errors:\n${(
+        await awu(errors.values())
+          .flatMap(elemErrs => elemErrs.map(e => e.message))
+          .toArray()
+      ).join('\n')}`,
+    )
   }
 
   return { merged, errors }
@@ -116,7 +114,9 @@ export const mergeSingleElement = async <T extends Element>(elementParts: T[]): 
   const mergedElements = await awu(mergeRes.merged.values()).toArray()
 
   if (mergedElements.length !== 1) {
-    throw new Error(`Received invalid number of merged elements when expected one: ${mergedElements.map(e => e.elemID.getFullName()).join(', ')}`)
+    throw new Error(
+      `Received invalid number of merged elements when expected one: ${mergedElements.map(e => e.elemID.getFullName()).join(', ')}`,
+    )
   }
 
   // A merge of elements of type T should result an element of type T

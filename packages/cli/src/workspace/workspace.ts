@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import wu from 'wu'
 import semver from 'semver'
@@ -22,8 +22,15 @@ import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace, nacl, StateRecency, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
-import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
-  formatFinishedLoading, formatWorkspaceAbort, formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState } from '../formatter'
+import {
+  formatWorkspaceError,
+  formatWorkspaceLoadFailed,
+  formatDetailedChanges,
+  formatFinishedLoading,
+  formatWorkspaceAbort,
+  formatShouldCancelWithOldState,
+  formatShouldCancelWithNonexistentState,
+} from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import {
   shouldContinueInCaseOfWarnings,
@@ -64,11 +71,7 @@ export type LoadWorkspaceOptions = {
 }
 
 type ApplyProgressEvents = {
-  workspaceWillBeUpdated: (
-    stepProgress: StepEmitter<number>,
-    changes: number,
-    approved: number
-  ) => void
+  workspaceWillBeUpdated: (stepProgress: StepEmitter<number>, changes: number, approved: number) => void
 }
 
 type ApplyChangesArgs = {
@@ -80,9 +83,7 @@ type ApplyChangesArgs = {
   shouldCalcTotalSize: boolean
   applyProgress: EventEmitter<ApplyProgressEvents>
   output: CliOutput
-  approveChangesCallback: (
-    changes: ReadonlyArray<FetchChange>,
-  ) => Promise<ReadonlyArray<FetchChange>>
+  approveChangesCallback: (changes: ReadonlyArray<FetchChange>) => Promise<ReadonlyArray<FetchChange>>
 }
 
 export const validateWorkspace = async (
@@ -97,9 +98,9 @@ export const validateWorkspace = async (
     return { status: 'Error', errors: groupRelatedErrors([...errors.all('Error')]) }
   }
 
-  const relevantErrors = [...ignoreUnresolvedRefs
-    ? wu.filter(e => !isUnresolvedRefError(e), errors.all('Warning'))
-    : errors.all('Warning')]
+  const relevantErrors = [
+    ...(ignoreUnresolvedRefs ? wu.filter(e => !isUnresolvedRefError(e), errors.all('Warning')) : errors.all('Warning')),
+  ]
 
   if (relevantErrors.length === 0) {
     return { status: 'Valid', errors: [] }
@@ -107,15 +108,15 @@ export const validateWorkspace = async (
   return { status: 'Warning', errors: groupRelatedErrors(relevantErrors) }
 }
 
-export const formatWorkspaceErrors = async (
-  workspace: Workspace,
-  errors: Iterable<SaltoError>,
-): Promise<string> => (await Promise.all(
-  wu(errors)
-    .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
-    .map(err => workspace.transformError(err))
-    .map(async err => formatWorkspaceError(await err))
-)).join(EOL)
+export const formatWorkspaceErrors = async (workspace: Workspace, errors: Iterable<SaltoError>): Promise<string> =>
+  (
+    await Promise.all(
+      wu(errors)
+        .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
+        .map(err => workspace.transformError(err))
+        .map(async err => formatWorkspaceError(await err)),
+    )
+  ).join(EOL)
 
 const printWorkspaceErrors = async (
   status: WorkspaceStatusErrors['status'],
@@ -123,21 +124,18 @@ const printWorkspaceErrors = async (
   { stdout, stderr }: CliOutput,
 ): Promise<void> => {
   if (status === 'Valid') return
-  const stream = (status === 'Error' ? stderr : stdout)
+  const stream = status === 'Error' ? stderr : stdout
   log.debug('workspace status %s, errors:\n%s', status, errorsStr)
   stream.write(`\n${errorsStr}\n`)
 }
 
-const logWorkspaceUpdates = async (
-  ws: Workspace,
-  changes: readonly FetchChange[]
-): Promise<void> => {
-  if (!await ws.isEmpty(true)) {
+const logWorkspaceUpdates = async (ws: Workspace, changes: readonly FetchChange[]): Promise<void> => {
+  if (!(await ws.isEmpty(true))) {
     log.info('going to update workspace with %d changes', changes.length)
     if (changes.length > MAX_DETAIL_CHANGES_TO_LOG) {
       log.debug('going to log only %d changes', MAX_DETAIL_CHANGES_TO_LOG)
     }
-    (await formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)]))
+    ;(await formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)]))
       .split('\n')
       .forEach(s => log.debug(s))
   }
@@ -146,7 +144,7 @@ const logWorkspaceUpdates = async (
 export const shouldRecommendFetch = async (
   stateSaltoVersion: string | undefined,
   invalidRecencies: StateRecency[],
-  cliOutput: CliOutput
+  cliOutput: CliOutput,
 ): Promise<boolean> => {
   if (!stateSaltoVersion) {
     return shouldCancelCommand(Prompts.UNKNOWN_STATE_SALTO_VERSION, cliOutput)
@@ -163,7 +161,8 @@ export const shouldRecommendFetch = async (
   }
   if (!_.isEmpty(invalidRecencies)) {
     const prompt = invalidRecencies.find(recency => recency.status !== 'Nonexistent')
-      ? formatShouldCancelWithOldState : formatShouldCancelWithNonexistentState
+      ? formatShouldCancelWithOldState
+      : formatShouldCancelWithNonexistentState
     return shouldCancelCommand(prompt, cliOutput)
   }
   return false
@@ -200,15 +199,14 @@ export const isValidWorkspaceForCommand = async ({
   return true
 }
 
-export const updateStateOnly = async (ws: Workspace,
-  changes: readonly FetchChange[]): Promise<boolean> => {
+export const updateStateOnly = async (ws: Workspace, changes: readonly FetchChange[]): Promise<boolean> => {
   try {
     log.info('applying %d changes to state only', changes.length)
     await logWorkspaceUpdates(ws, changes)
     await ws.updateNaclFiles(
       changes.map(change => change.change),
       'default',
-      true
+      true,
     )
     await ws.flush()
     return true
@@ -238,14 +236,13 @@ export const updateWorkspace = async ({
     changes.map(c => c.change),
     mode,
   )
-  numberOfAppliedChanges = updateNaclFilesResult.naclFilesChangesCount
-    + updateNaclFilesResult.stateOnlyChangesCount
+  numberOfAppliedChanges = updateNaclFilesResult.naclFilesChangesCount + updateNaclFilesResult.stateOnlyChangesCount
   const { status, errors } = await validateWorkspace(workspace)
   const formattedErrors = await formatWorkspaceErrors(workspace, errors)
   await printWorkspaceErrors(status, formattedErrors, output)
   if (status === 'Error') {
     log.warn(formattedErrors)
-    const shouldAbort = force || await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
+    const shouldAbort = force || (await shouldAbortWorkspaceInCaseOfValidationError(errors.length))
     if (!shouldAbort) {
       await workspace.flush()
     }
@@ -256,18 +253,21 @@ export const updateWorkspace = async ({
   return { success: true, numberOfAppliedChanges }
 }
 
-export const getWorkspaceTelemetryTags = (ws: Workspace): Tags => (
-  { workspaceID: ws.uid }
-)
+export const getWorkspaceTelemetryTags = (ws: Workspace): Tags => ({ workspaceID: ws.uid })
 
 export const applyChangesToWorkspace = async ({
-  workspace, changes, cliTelemetry, approveChangesCallback,
-  mode, force, shouldCalcTotalSize, applyProgress, output,
+  workspace,
+  changes,
+  cliTelemetry,
+  approveChangesCallback,
+  mode,
+  force,
+  shouldCalcTotalSize,
+  applyProgress,
+  output,
 }: ApplyChangesArgs): Promise<boolean> => {
   // If the workspace starts empty there is no point in showing a huge amount of changes
-  const changesToApply = force || (await workspace.isEmpty())
-    ? changes
-    : await approveChangesCallback(changes)
+  const changesToApply = force || (await workspace.isEmpty()) ? changes : await approveChangesCallback(changes)
 
   cliTelemetry.changesToApply(changesToApply.length)
   const updatingWsEmitter = new StepEmitter<number>()

@@ -1,24 +1,60 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
 import { fieldTypes } from '../../types/field_types'
-import { AnalyticOriginalFields, ApplicationId, Audience, BaseRecord, Condition, ConditionOrFilter, DEFAULT_VALUE, DEFAULT_XML_TYPE, DO_NOT_ADD, DefinitionId, Dependencies, Expression, ExpressionValue, FieldOrFormula, FieldReference, Filter, Formula, FormulaFormula, IGNORE_T_VALUE, Join, JoinTrail, Meta, Operator, TargetFieldContext, TranslationType, XML_TYPE } from './analytics_constants'
+import {
+  AnalyticOriginalFields,
+  ApplicationId,
+  Audience,
+  BaseRecord,
+  Condition,
+  ConditionOrFilter,
+  DEFAULT_VALUE,
+  DEFAULT_XML_TYPE,
+  DO_NOT_ADD,
+  DefinitionId,
+  Dependencies,
+  Expression,
+  ExpressionValue,
+  FieldOrFormula,
+  FieldReference,
+  Filter,
+  Formula,
+  FormulaFormula,
+  IGNORE_T_VALUE,
+  Join,
+  JoinTrail,
+  Meta,
+  Operator,
+  TargetFieldContext,
+  TranslationType,
+  XML_TYPE,
+} from './analytics_constants'
 
 type Column = {
   alias?: string
@@ -40,6 +76,19 @@ type DatasetDefinitionType = {
   version?: string
 }
 
+export const datasetDefinitionFields: types.TypeKeysEnum<DatasetDefinitionType> = {
+  applicationId: 'applicationId',
+  audience: 'audience',
+  baseRecord: 'baseRecord',
+  columns: 'columns',
+  criteria: 'criteria',
+  description: 'description',
+  formulas: 'formulas',
+  id: 'id',
+  ownerId: 'ownerId',
+  version: 'version',
+}
+
 export type Dataset = AnalyticOriginalFields & DatasetDefinitionType
 
 export const parsedDatasetType = (): TypeAndInnerTypes => {
@@ -48,8 +97,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetAudienceElemID = new ElemID(constants.NETSUITE, 'dataset_audience')
   const datasetAudience = createMatchingObjectType<Audience>({
     elemID: datasetAudienceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       AudienceItems: { refType: new ListType(BuiltinTypes.UNKNOWN) },
       isPublic: { refType: BuiltinTypes.BOOLEAN },
@@ -61,8 +109,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetDependenciesElemID = new ElemID(constants.NETSUITE, 'dataset_dependencies')
   const datasetDependencies = createMatchingObjectType<Dependencies>({
     elemID: datasetDependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: new ListType(BuiltinTypes.STRING),
@@ -78,8 +125,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetBaseRecordElemID = new ElemID(constants.NETSUITE, 'dataset_base_record')
   const datasetBaseRecord = createMatchingObjectType<BaseRecord>({
     elemID: datasetBaseRecordElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.STRING },
       label: { refType: BuiltinTypes.STRING },
@@ -91,8 +137,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetJoinElemID = new ElemID(constants.NETSUITE, 'dataset_join')
   const datasetJoin = createMatchingObjectType<Join>({
     elemID: datasetJoinElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.STRING },
       targetRecordType: { refType: BuiltinTypes.STRING },
@@ -104,8 +149,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetJoinTrailElemID = new ElemID(constants.NETSUITE, 'dataset_join_trail')
   const datasetJoinTrail = createMatchingObjectType<JoinTrail>({
     elemID: datasetJoinTrailElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       baseRecord: { refType: datasetBaseRecord },
       joins: { refType: new ListType(datasetJoin) },
@@ -117,8 +161,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetFieldReferenceElemID = new ElemID(constants.NETSUITE, 'dataset_field_reference')
   const datasetFieldReference = createMatchingObjectType<FieldReference>({
     elemID: datasetFieldReferenceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       id: { refType: BuiltinTypes.STRING },
       joinTrail: { refType: datasetJoinTrail },
@@ -138,8 +181,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetTranslationElemID = new ElemID(constants.NETSUITE, 'dataset_translation')
   const datasetTranslation = createMatchingObjectType<TranslationType>({
     elemID: datasetTranslationElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       translationScriptId: { refType: BuiltinTypes.STRING },
     },
@@ -169,8 +211,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetFormulaElemID = new ElemID(constants.NETSUITE, 'dataset_formula')
   const datasetFormula = createMatchingObjectType<Formula>({
     elemID: datasetFormulaElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       fields: { refType: BuiltinTypes.UNKNOWN },
       formula: { refType: datasetFormulaFormula },
@@ -206,8 +247,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetColumnElemID = new ElemID(constants.NETSUITE, 'dataset_column')
   const datasetColumn = createMatchingObjectType<Column>({
     elemID: datasetColumnElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       alias: { refType: BuiltinTypes.STRING },
       columnId: { refType: BuiltinTypes.NUMBER },
@@ -221,8 +261,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const expressionValueElemID = new ElemID(constants.NETSUITE, 'dataset_criteria_expression_value')
   const expressionValue = createMatchingObjectType<ExpressionValue>({
     elemID: expressionValueElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.UNKNOWN },
@@ -234,8 +273,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const expressionElemID = new ElemID(constants.NETSUITE, 'dataset_criteria_expression')
   const expression = createMatchingObjectType<Expression>({
     elemID: expressionElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       label: { refType: BuiltinTypes.STRING },
       subType: { refType: BuiltinTypes.UNKNOWN },
@@ -249,8 +287,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetMetaElemID = new ElemID(constants.NETSUITE, 'dataset_meta')
   const datasetMeta = createMatchingObjectType<Meta>({
     elemID: datasetMetaElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       selectorType: { refType: BuiltinTypes.STRING },
       subType: { refType: BuiltinTypes.STRING },
@@ -262,8 +299,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetOperatorElemID = new ElemID(constants.NETSUITE, 'dataset_operator')
   const datasetOperator = createMatchingObjectType<Operator>({
     elemID: datasetOperatorElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       code: {
         refType: BuiltinTypes.STRING,
@@ -279,8 +315,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetTargetFieldContextElemID = new ElemID(constants.NETSUITE, 'dataset_criteria_target_field_context')
   const datasetTargetFieldContext = createMatchingObjectType<TargetFieldContext>({
     elemID: datasetTargetFieldContextElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       name: {
         refType: BuiltinTypes.STRING,
@@ -296,8 +331,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetFilterElemID = new ElemID(constants.NETSUITE, 'dataset_filter')
   const datasetFilter = createMatchingObjectType<Filter>({
     elemID: datasetFilterElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       caseSensitive: { refType: BuiltinTypes.BOOLEAN },
       expressions: { refType: new ListType(expression) },
@@ -316,8 +350,7 @@ export const parsedDatasetType = (): TypeAndInnerTypes => {
   const datasetConditionElemID = new ElemID(constants.NETSUITE, 'dataset_condition')
   const datasetCondition = createMatchingObjectType<Condition>({
     elemID: datasetConditionElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       children: { refType: BuiltinTypes.UNKNOWN },
       operator: { refType: datasetOperator },

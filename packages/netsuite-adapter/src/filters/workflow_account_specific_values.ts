@@ -1,29 +1,63 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'
-import { Element, ElemID, InstanceElement, ReadOnlyElementsSource, Value, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression, ChangeError } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  Value,
+  Values,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+  ChangeError,
+} from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, resolvePath, walkOnElement, walkOnValue } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
-import { ACCOUNT_SPECIFIC_VALUE, ALLOCATION_TYPE, EMPLOYEE, INIT_CONDITION, NAME_FIELD, PROJECT_EXPENSE_TYPE, SCRIPT_ID, SELECT_RECORD_TYPE, TAX_SCHEDULE, WORKFLOW } from '../constants'
-import { QUERY_RECORD_TYPES, QueryRecordType, QueryRecordResponse, QueryRecordSchema } from '../client/suiteapp_client/types'
-import { SUITEQL_TABLE, getSuiteQLNameToInternalIdsMap, getSuiteQLTableInternalIdsMap } from '../data_elements/suiteql_table_elements'
+import {
+  ACCOUNT_SPECIFIC_VALUE,
+  ALLOCATION_TYPE,
+  EMPLOYEE,
+  INIT_CONDITION,
+  NAME_FIELD,
+  PROJECT_EXPENSE_TYPE,
+  SCRIPT_ID,
+  SELECT_RECORD_TYPE,
+  TAX_SCHEDULE,
+  WORKFLOW,
+} from '../constants'
+import {
+  QUERY_RECORD_TYPES,
+  QueryRecordType,
+  QueryRecordResponse,
+  QueryRecordSchema,
+} from '../client/suiteapp_client/types'
+import {
+  SUITEQL_TABLE,
+  getSuiteQLNameToInternalIdsMap,
+  getSuiteQLTableInternalIdsMap,
+} from '../data_elements/suiteql_table_elements'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
@@ -60,19 +94,19 @@ type InstanceWithQueryRecords = {
 }
 
 type WorkflowInternalID = {
-  internalid: [{
-    value: string
-  }]
+  internalid: [
+    {
+      value: string
+    },
+  ]
 }
 
-type GetFieldTypeIDFunc = (
-  params: {
-    fieldValue: unknown
-    instance: InstanceElement
-    isFieldWithAccountSpecificValue: boolean
-    selectRecordTypeMap: Record<string, unknown>
-  }
-) => string | string[] | undefined
+type GetFieldTypeIDFunc = (params: {
+  fieldValue: unknown
+  instance: InstanceElement
+  isFieldWithAccountSpecificValue: boolean
+  selectRecordTypeMap: Record<string, unknown>
+}) => string | string[] | undefined
 
 const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
   STDITEMTAXSCHEDULE: TAX_SCHEDULE,
@@ -84,7 +118,7 @@ const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
 
 const getSelectRecordTypeFromReference = (
   ref: ReferenceExpression,
-  selectRecordTypeMap: Record<string, unknown>
+  selectRecordTypeMap: Record<string, unknown>,
 ): unknown => {
   const baseId = ref.elemID.createBaseID().parent
   if (baseId.idType === 'type') {
@@ -122,17 +156,13 @@ const getSelectRecordType: GetFieldTypeIDFunc = params => {
 }
 
 const GET_FIELD_TYPE_FUNCTIONS: Record<string, GetFieldTypeIDFunc> = {
-  sender: ({ isFieldWithAccountSpecificValue }) => (
-    isFieldWithAccountSpecificValue ? EMPLOYEE : undefined
-  ),
-  recipient: ({ isFieldWithAccountSpecificValue }) => (
+  sender: ({ isFieldWithAccountSpecificValue }) => (isFieldWithAccountSpecificValue ? EMPLOYEE : undefined),
+  recipient: ({ isFieldWithAccountSpecificValue }) =>
     // there is no intersection between the internal ids of those types,
     // and no indication in the element which type should be used.
-    isFieldWithAccountSpecificValue ? [EMPLOYEE, 'contact', 'customer', 'partner', 'vendor'] : undefined
-  ),
-  campaignevent: ({ isFieldWithAccountSpecificValue }) => (
-    isFieldWithAccountSpecificValue ? 'campaignEvent' : undefined
-  ),
+    isFieldWithAccountSpecificValue ? [EMPLOYEE, 'contact', 'customer', 'partner', 'vendor'] : undefined,
+  campaignevent: ({ isFieldWithAccountSpecificValue }) =>
+    isFieldWithAccountSpecificValue ? 'campaignEvent' : undefined,
   selectrecordtype: getSelectRecordType,
   resultfield: params => {
     const { fieldValue, instance } = params
@@ -206,73 +236,73 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
     [QUERY_RECORD_TYPES.workflowcustomfield]: workflowcustomfields = [],
   } = _.groupBy(records, record => record.type)
 
-  const workflowTransitionSchema: QueryRecordSchema | undefined = workflowtransitions.length > 0
-    ? {
-      type: 'workflowtransition',
-      sublistId: 'transitions',
-      idAlias: 'transitionid',
-      fields: getFieldsToQuery(workflowtransitions),
-      filter: getQueryFilter(workflowtransitions),
-    }
-    : undefined
+  const workflowTransitionSchema: QueryRecordSchema | undefined =
+    workflowtransitions.length > 0
+      ? {
+          type: 'workflowtransition',
+          sublistId: 'transitions',
+          idAlias: 'transitionid',
+          fields: getFieldsToQuery(workflowtransitions),
+          filter: getQueryFilter(workflowtransitions),
+        }
+      : undefined
 
-  const workflowActionSchema: QueryRecordSchema | undefined = workflowactions.length > 0
-    ? {
-      type: 'actiontype',
-      sublistId: 'actions',
-      idAlias: 'actionid',
-      typeSuffix: 'action',
-      fields: getFieldsToQuery(workflowactions),
-      filter: getQueryFilter(workflowactions),
-      customTypes: {
-        customactionaction: 'customaction',
-      },
-    }
-    : undefined
+  const workflowActionSchema: QueryRecordSchema | undefined =
+    workflowactions.length > 0
+      ? {
+          type: 'actiontype',
+          sublistId: 'actions',
+          idAlias: 'actionid',
+          typeSuffix: 'action',
+          fields: getFieldsToQuery(workflowactions),
+          filter: getQueryFilter(workflowactions),
+          customTypes: {
+            customactionaction: 'customaction',
+          },
+        }
+      : undefined
 
-  const workflowStateCustomFieldSchema: QueryRecordSchema | undefined = workflowstatecustomfields.length > 0
-    ? {
-      type: 'workflowstatecustomfield',
-      sublistId: 'fields',
-      idAlias: 'id',
-      fields: getFieldsToQuery(workflowstatecustomfields),
-      filter: getQueryFilter(workflowstatecustomfields),
-    }
-    : undefined
+  const workflowStateCustomFieldSchema: QueryRecordSchema | undefined =
+    workflowstatecustomfields.length > 0
+      ? {
+          type: 'workflowstatecustomfield',
+          sublistId: 'fields',
+          idAlias: 'id',
+          fields: getFieldsToQuery(workflowstatecustomfields),
+          filter: getQueryFilter(workflowstatecustomfields),
+        }
+      : undefined
 
-  const workflowStateSchema: QueryRecordSchema | undefined = workflowstates.length > 0
-    ? {
-      type: 'workflowstate',
-      sublistId: 'states',
-      idAlias: 'stateid',
-      fields: getFieldsToQuery(workflowstates),
-      filter: getQueryFilter(workflowstates),
-      sublists: [
-        workflowTransitionSchema,
-        workflowActionSchema,
-        workflowStateCustomFieldSchema,
-      ].flatMap(schema => schema ?? []),
-    }
-    : undefined
+  const workflowStateSchema: QueryRecordSchema | undefined =
+    workflowstates.length > 0
+      ? {
+          type: 'workflowstate',
+          sublistId: 'states',
+          idAlias: 'stateid',
+          fields: getFieldsToQuery(workflowstates),
+          filter: getQueryFilter(workflowstates),
+          sublists: [workflowTransitionSchema, workflowActionSchema, workflowStateCustomFieldSchema].flatMap(
+            schema => schema ?? [],
+          ),
+        }
+      : undefined
 
-  const workflowCustomFieldSchema: QueryRecordSchema | undefined = workflowcustomfields.length > 0
-    ? {
-      type: 'workflowcustomfield',
-      sublistId: 'fields',
-      idAlias: 'id',
-      fields: getFieldsToQuery(workflowcustomfields),
-      filter: getQueryFilter(workflowcustomfields),
-    }
-    : undefined
+  const workflowCustomFieldSchema: QueryRecordSchema | undefined =
+    workflowcustomfields.length > 0
+      ? {
+          type: 'workflowcustomfield',
+          sublistId: 'fields',
+          idAlias: 'id',
+          fields: getFieldsToQuery(workflowcustomfields),
+          filter: getQueryFilter(workflowcustomfields),
+        }
+      : undefined
 
   return {
     type: 'workflow',
     fields: getFieldsToQuery(workflows),
     filter: getQueryFilter(workflows),
-    sublists: [
-      workflowStateSchema,
-      workflowCustomFieldSchema,
-    ].flatMap(schema => schema ?? []),
+    sublists: [workflowStateSchema, workflowCustomFieldSchema].flatMap(schema => schema ?? []),
   }
 }
 
@@ -291,17 +321,20 @@ const getQueryRecordFieldType = (
   value: Values,
   field: string,
   suiteQLTablesMap: Record<string, unknown>,
-  selectRecordTypeMap: Record<string, unknown>
+  selectRecordTypeMap: Record<string, unknown>,
 ): string | string[] | undefined => {
   // a field type by the field itself should be the first option ([field, value[field]])
-  const fieldType = [[field, value[field]]].concat(Object.entries(value))
+  const fieldType = [[field, value[field]]]
+    .concat(Object.entries(value))
     .filter(([key]) => GET_FIELD_TYPE_FUNCTIONS[key] !== undefined)
-    .map(([key, fieldValue]) => GET_FIELD_TYPE_FUNCTIONS[key]({
-      fieldValue,
-      instance,
-      selectRecordTypeMap,
-      isFieldWithAccountSpecificValue: field === key,
-    }))
+    .map(([key, fieldValue]) =>
+      GET_FIELD_TYPE_FUNCTIONS[key]({
+        fieldValue,
+        instance,
+        selectRecordTypeMap,
+        isFieldWithAccountSpecificValue: field === key,
+      }),
+    )
     .find(res => res !== undefined)
 
   if (fieldType === undefined) {
@@ -312,7 +345,7 @@ const getQueryRecordFieldType = (
   if (Array.isArray(fieldType)) {
     const [suiteQLTableNames, nonExistingNames] = _.partition(
       fieldType,
-      typeName => suiteQLTablesMap[typeName] !== undefined
+      typeName => suiteQLTablesMap[typeName] !== undefined,
     )
     if (nonExistingNames.length > 0) {
       log.warn('could not find SuiteQL table instances %s', nonExistingNames)
@@ -320,10 +353,10 @@ const getQueryRecordFieldType = (
     return suiteQLTableNames.length > 0 ? suiteQLTableNames : undefined
   }
 
-  const suiteQLTableName = suiteQLTablesMap[fieldType] !== undefined
-    ? fieldType
-    : (INTERNAL_ID_TO_TYPES[fieldType] ?? [])
-      .find(typeName => suiteQLTablesMap[typeName] !== undefined)
+  const suiteQLTableName =
+    suiteQLTablesMap[fieldType] !== undefined
+      ? fieldType
+      : (INTERNAL_ID_TO_TYPES[fieldType] ?? []).find(typeName => suiteQLTablesMap[typeName] !== undefined)
 
   if (suiteQLTableName === undefined) {
     log.warn('could not find SuiteQL table instance %s', fieldType)
@@ -332,52 +365,48 @@ const getQueryRecordFieldType = (
   return suiteQLTableName
 }
 
-const getConditionParameters = (value: Value): Values[] =>
-  Object.values(value?.parameters?.parameter ?? {})
+const getConditionParameters = (value: Value): Values[] => Object.values(value?.parameters?.parameter ?? {})
 
 const getFieldsWithAccountSpecificValue = (
   instance: InstanceElement,
   value: Values,
   path: ElemID,
   suiteQLTablesMap: Record<string, InstanceElement>,
-  selectRecordTypeMap: Record<string, unknown>
+  selectRecordTypeMap: Record<string, unknown>,
 ): QueryRecordField[] =>
-  Object.entries(value)
-    .flatMap(([field, fieldValue]) => {
-      if (fieldValue === ACCOUNT_SPECIFIC_VALUE) {
-        const fieldType = getQueryRecordFieldType(
-          instance,
-          value,
-          field,
-          suiteQLTablesMap,
-          selectRecordTypeMap,
+  Object.entries(value).flatMap(([field, fieldValue]) => {
+    if (fieldValue === ACCOUNT_SPECIFIC_VALUE) {
+      const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLTablesMap, selectRecordTypeMap)
+      if (fieldType !== undefined) {
+        return { name: field, type: fieldType }
+      }
+    }
+    if (field === INIT_CONDITION) {
+      const parameters = getConditionParameters(fieldValue)
+      if (
+        parameters.some(
+          param =>
+            param?.value === ACCOUNT_SPECIFIC_VALUE &&
+            getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap) !== undefined,
         )
-        if (fieldType !== undefined) {
-          return { name: field, type: fieldType }
+      ) {
+        if (typeof fieldValue[FORMULA] !== 'string') {
+          log.warn('formula of initcondition in %s is not string: %o', path.getFullName(), fieldValue[FORMULA])
+          return []
+        }
+        return {
+          type: FORMULA_PARAMS,
+          name: path.isTopLevel() ? 'initconditionformula' : 'conditionformula',
         }
       }
-      if (field === INIT_CONDITION) {
-        const parameters = getConditionParameters(fieldValue)
-        if (parameters.some(param => param?.value === ACCOUNT_SPECIFIC_VALUE && getQueryRecordFieldType(
-          instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap
-        ) !== undefined)) {
-          if (typeof fieldValue[FORMULA] !== 'string') {
-            log.warn('formula of initcondition in %s is not string: %o', path.getFullName(), fieldValue[FORMULA])
-            return []
-          }
-          return {
-            type: FORMULA_PARAMS,
-            name: path.isTopLevel() ? 'initconditionformula' : 'conditionformula',
-          }
-        }
-      }
-      return []
-    })
+    }
+    return []
+  })
 
 const getQueryRecords = (
   instance: InstanceElement,
   suiteQLTablesMap: Record<string, InstanceElement>,
-  selectRecordTypeMap: Record<string, unknown>
+  selectRecordTypeMap: Record<string, unknown>,
 ): InstanceWithQueryRecords => {
   const allQueryRecords: Record<string, Omit<QueryRecord, 'path'>> = {}
 
@@ -390,13 +419,7 @@ const getQueryRecords = (
       }
       const type = getQueryRecordType(elemID)
       if (type !== undefined) {
-        const fields = getFieldsWithAccountSpecificValue(
-          instance,
-          value,
-          elemID,
-          suiteQLTablesMap,
-          selectRecordTypeMap,
-        )
+        const fields = getFieldsWithAccountSpecificValue(instance, value, elemID, suiteQLTablesMap, selectRecordTypeMap)
         allQueryRecords[elemID.getFullName()] = {
           type,
           serviceId: value[SCRIPT_ID],
@@ -422,7 +445,7 @@ const getQueryRecords = (
       .filter(record => record.fields.length > 0)
       .flatMap(record => record.elemID.createAllElemIdParents())
       .map(elemId => elemId.getFullName())
-      .filter(fullName => allQueryRecords[fullName] !== undefined)
+      .filter(fullName => allQueryRecords[fullName] !== undefined),
   )
 
   const records = queryRecordsToReturn.map(fullName => ({
@@ -436,28 +459,22 @@ const getQueryRecords = (
 const getWorkflowIdsToQuery = async (
   client: NetsuiteClient,
   instances: InstanceElement[],
-  queryRecords: QueryRecord[]
+  queryRecords: QueryRecord[],
 ): Promise<string[]> => {
   const workflowScriptIds = new Set(
-    queryRecords
-      .filter(record => record.type === 'workflow')
-      .map(record => record.serviceId)
+    queryRecords.filter(record => record.type === 'workflow').map(record => record.serviceId),
   )
   const workflowNames = _.uniq(
     instances
       .filter(instance => workflowScriptIds.has(instance.value[SCRIPT_ID]))
-      .map(instance => instance.value[NAME_FIELD])
+      .map(instance => instance.value[NAME_FIELD]),
   )
   const result = await client.runSavedSearchQuery({
     type: 'workflow',
     columns: ['internalid'],
     filters: workflowNames
       .map(name => ['name', 'is', name])
-      .reduce((filter, curr, i) => (
-        i < workflowNames.length - 1
-          ? [...filter, curr, 'OR']
-          : [...filter, curr]
-      ), []),
+      .reduce((filter, curr, i) => (i < workflowNames.length - 1 ? [...filter, curr, 'OR'] : [...filter, curr]), []),
   })
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<WorkflowInternalID[]>(WORKFLOW_INTERNAL_IDS_SCHEMA, result)) {
@@ -470,7 +487,7 @@ const getWorkflowIdsToQuery = async (
 const query = async (
   client: NetsuiteClient,
   instances: InstanceElement[],
-  queryRecords: QueryRecord[]
+  queryRecords: QueryRecord[],
 ): Promise<QueryRecordResponse[] | undefined> => {
   const schema = createQuerySchema(queryRecords)
   const ids = await getWorkflowIdsToQuery(client, instances, queryRecords)
@@ -481,10 +498,7 @@ const query = async (
   return client.runRecordsQuery(ids, schema)
 }
 
-const getInnerResult = (
-  results: QueryRecordResponse[],
-  path: string[]
-): QueryRecordResponse | undefined => {
+const getInnerResult = (results: QueryRecordResponse[], path: string[]): QueryRecordResponse | undefined => {
   const [nextScriptId, ...restOfPath] = path
   const result = results.find(res => res.body[SCRIPT_ID] === nextScriptId)
   if (result === undefined || restOfPath.length === 0) {
@@ -497,24 +511,21 @@ const toResolvedAccountSpecificValue = (name: string): string =>
   `${RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX}${name}${RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX}`
 
 const isResolvedAccountSpecificValue = (name: string): boolean =>
-  name.startsWith(RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX)
-  && name.endsWith(RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX)
+  name.startsWith(RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX) && name.endsWith(RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX)
 
 const getResolvedAccountSpecificValue = (name: string): string =>
-  name.slice(
-    RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX.length,
-    name.length - RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX.length
-  )
+  name.slice(RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX.length, name.length - RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX.length)
 
 const setFieldValue = (
   field: QueryRecordField,
   value: Values,
   internalId: string,
-  suiteQLTablesMap: Record<string, InstanceElement>
+  suiteQLTablesMap: Record<string, InstanceElement>,
 ): void => {
-  const { name } = makeArray(field.type)
-    .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
-    .find(res => res !== undefined) ?? {}
+  const { name } =
+    makeArray(field.type)
+      .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
+      .find(res => res !== undefined) ?? {}
   if (name === undefined) {
     log.warn('could not find internal id %s of type %s', internalId, field.type)
     return
@@ -527,7 +538,7 @@ const setParametersValues = (
   value: Values,
   formulaWithInternalIds: string,
   suiteQLTablesMap: Record<string, InstanceElement>,
-  selectRecordTypeMap: Record<string, unknown>
+  selectRecordTypeMap: Record<string, unknown>,
 ): void => {
   const params = getConditionParameters(value[INIT_CONDITION])
     // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles)
@@ -541,26 +552,19 @@ const setParametersValues = (
     log.warn(
       'params length %d do not match the internal ids extracted from the formula: %s',
       params.length,
-      formulaWithInternalIds
+      formulaWithInternalIds,
     )
     return
   }
-  _.sortBy(params, param => value[INIT_CONDITION][FORMULA].indexOf(`"${param.name}"`))
-    .forEach((param, index) => {
-      if (param.value === ACCOUNT_SPECIFIC_VALUE) {
-        const internalId = internalIds[index]
-        const paramType = getQueryRecordFieldType(
-          instance,
-          param,
-          'value',
-          suiteQLTablesMap,
-          selectRecordTypeMap,
-        )
-        if (paramType !== undefined) {
-          setFieldValue({ name: 'value', type: paramType }, param, internalId, suiteQLTablesMap)
-        }
+  _.sortBy(params, param => value[INIT_CONDITION][FORMULA].indexOf(`"${param.name}"`)).forEach((param, index) => {
+    if (param.value === ACCOUNT_SPECIFIC_VALUE) {
+      const internalId = internalIds[index]
+      const paramType = getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap)
+      if (paramType !== undefined) {
+        setFieldValue({ name: 'value', type: paramType }, param, internalId, suiteQLTablesMap)
       }
-    })
+    }
+  })
 }
 
 const setValuesInInstance = (
@@ -568,11 +572,9 @@ const setValuesInInstance = (
   record: QueryRecord,
   results: QueryRecordResponse[],
   suiteQLTablesMap: Record<string, InstanceElement>,
-  selectRecordTypeMap: Record<string, unknown>
+  selectRecordTypeMap: Record<string, unknown>,
 ): void => {
-  const innerValue = record.elemID.isTopLevel()
-    ? instance.value
-    : resolvePath(instance, record.elemID)
+  const innerValue = record.elemID.isTopLevel() ? instance.value : resolvePath(instance, record.elemID)
   const innerResult = getInnerResult(results, record.path)
   if (innerResult === undefined) {
     log.warn('missing record %s in path %s: %o', record.serviceId, record.path.join('.'), results)
@@ -596,27 +598,18 @@ const setValuesInInstance = (
   })
 }
 
-const toMissingInternalIdWarning = (
-  elemID: ElemID,
-  name: string,
-  field: string
-): ChangeError => ({
+const toMissingInternalIdWarning = (elemID: ElemID, name: string, field: string): ChangeError => ({
   elemID,
   severity: 'Warning',
   message: 'Could not identify value in workflow',
-  // TODO: add help article link
-  detailedMessage: `Could not find object "${name}" for field "${field}". Setting it to ACCOUNT_SPECIFIC_VALUE instead.`,
+  detailedMessage: `Could not find object "${name}" for field "${field}". Setting it to ACCOUNT_SPECIFIC_VALUE instead. Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
 })
 
-const toMultipleInternalIdsWarning = (
-  elemID: ElemID,
-  name: string,
-  internalId: string
-): ChangeError => ({
+const toMultipleInternalIdsWarning = (elemID: ElemID, name: string, internalId: string): ChangeError => ({
   elemID,
   severity: 'Warning',
   message: 'Multiple objects with the same name',
-  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}).`,
+  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}). Learn more at https://help.salto.io/en/articles/8952685-identifying-account-specific-values-in-netsuite`,
 })
 
 const resolveAccountSpecificValues = (
@@ -640,7 +633,9 @@ const resolveAccountSpecificValues = (
     if (internalIds.length === 0) {
       log.warn(
         'could not find internal id of "%s" in field %s from value: %o',
-        name, path.createNestedID(field).getFullName(), value,
+        name,
+        path.createNestedID(field).getFullName(),
+        value,
       )
       resolveWarnings.push(toMissingInternalIdWarning(path, name, field))
       value[field] = ACCOUNT_SPECIFIC_VALUE
@@ -674,10 +669,7 @@ export const resolveWorkflowsAccountSpecificValues = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ChangeError[]> => {
   const suiteQLNameToInternalIdsMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
-  return workflowInstances.flatMap(instance => resolveAccountSpecificValues(
-    instance,
-    suiteQLNameToInternalIdsMap,
-  ))
+  return workflowInstances.flatMap(instance => resolveAccountSpecificValues(instance, suiteQLNameToInternalIdsMap))
 }
 
 const getSelectRecordTypeMap = async (
@@ -686,9 +678,7 @@ const getSelectRecordTypeMap = async (
   isPartial: boolean,
 ): Promise<Record<string, unknown>> => {
   const selectRecordTypeMap = {
-    ...isPartial
-      ? (await elementsSourceIndex.getIndexes()).customFieldsSelectRecordTypeIndex
-      : {},
+    ...(isPartial ? (await elementsSourceIndex.getIndexes()).customFieldsSelectRecordTypeIndex : {}),
   }
   elements.forEach(element => {
     assignToCustomFieldsSelectRecordTypeIndex(element, selectRecordTypeMap)
@@ -703,7 +693,7 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
     const instances = elements.filter(isInstanceElement)
     const suiteQLTablesMap = _.keyBy(
       instances.filter(instance => instance.elemID.typeName === SUITEQL_TABLE),
-      instance => instance.elemID.name
+      instance => instance.elemID.name,
     )
     if (_.isEmpty(suiteQLTablesMap)) {
       log.debug('there are no suiteql tables instances - skipping setting workflow account specific values')
@@ -720,21 +710,19 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
     }
 
     await Promise.all(
-      _.chunk(queryRecords, RECORDS_PER_QUERY).map(
-        async (chunk: InstanceWithQueryRecords[]): Promise<void> => {
-          const chunkRecords = chunk.flatMap(item => item.records)
-          const results = await query(client, workflowInstances, chunkRecords) ?? []
-          if (results.length === 0) {
-            log.warn('skipping setting values due to empty result of query records: %o', chunkRecords)
-            return
-          }
-          chunk.forEach(({ instance, records }) => {
-            records.forEach(record => {
-              setValuesInInstance(instance, record, results, suiteQLTablesMap, selectRecordTypeMap)
-            })
-          })
+      _.chunk(queryRecords, RECORDS_PER_QUERY).map(async (chunk: InstanceWithQueryRecords[]): Promise<void> => {
+        const chunkRecords = chunk.flatMap(item => item.records)
+        const results = (await query(client, workflowInstances, chunkRecords)) ?? []
+        if (results.length === 0) {
+          log.warn('skipping setting values due to empty result of query records: %o', chunkRecords)
+          return
         }
-      )
+        chunk.forEach(({ instance, records }) => {
+          records.forEach(record => {
+            setValuesInInstance(instance, record, results, suiteQLTablesMap, selectRecordTypeMap)
+          })
+        })
+      }),
     )
   },
   preDeploy: async changes => {
@@ -746,10 +734,7 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
     if (workflowInstances.length === 0) {
       return
     }
-    await resolveWorkflowsAccountSpecificValues(
-      workflowInstances,
-      elementsSource,
-    )
+    await resolveWorkflowsAccountSpecificValues(workflowInstances, elementsSource)
   },
 })
 

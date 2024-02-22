@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '../src/collisions'
 
@@ -20,11 +20,10 @@ describe('collisions', () => {
   const instType = new ObjectType({
     elemID: new ElemID('salto', 'obj'),
   })
-  const instance = new InstanceElement(
-    'test',
-    instType,
-    { title: 'test', ref: new ReferenceExpression(new ElemID('salto', 'something'), 'some value') },
-  )
+  const instance = new InstanceElement('test', instType, {
+    title: 'test',
+    ref: new ReferenceExpression(new ElemID('salto', 'something'), 'some value'),
+  })
   const collidedInstance = new InstanceElement('test', instType, { title: 'test', val: 'val' })
   const differentInstance = new InstanceElement('test1', instType, { title: 'test1' })
   describe('getInstancesWithCollidingElemID', () => {
@@ -33,9 +32,7 @@ describe('collisions', () => {
       expect(collidedElements).toHaveLength(0)
     })
     it('should return only the collided instances', () => {
-      const collidedElements = getInstancesWithCollidingElemID(
-        [instance, collidedInstance, differentInstance]
-      )
+      const collidedElements = getInstancesWithCollidingElemID([instance, collidedInstance, differentInstance])
       expect(collidedElements).toHaveLength(2)
       expect(collidedElements).toEqual([instance, collidedInstance])
     })
@@ -107,10 +104,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
   describe('when collision occurs due to instances with empty name', () => {
     let collisionWarnings: SaltoError[]
     beforeEach(async () => {
-      const instanceWithEmptyName = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        instType,
-      )
+      const instanceWithEmptyName = new InstanceElement(ElemID.CONFIG_NAME, instType)
       collisionWarnings = await getAndLogCollisionWarnings({
         instances: [instanceWithEmptyName, instanceWithEmptyName.clone()],
         adapterName: 'salto',
@@ -122,12 +116,14 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
       })
     })
     it('should create indicative warning', () => {
-      expect(collisionWarnings).toEqual(([
+      expect(collisionWarnings).toEqual([
         expect.objectContaining({
           severity: 'Warning',
-          message: expect.stringContaining('Instances with empty name (Due to no values in any of the provided ID fields)'),
+          message: expect.stringContaining(
+            'Instances with empty name (Due to no values in any of the provided ID fields)',
+          ),
         }),
-      ]))
+      ])
     })
   })
 })

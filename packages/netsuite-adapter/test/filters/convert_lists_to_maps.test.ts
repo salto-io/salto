@@ -1,20 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { promises } from '@salto-io/lowerdash'
-import { BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isListType, isObjectType, ListType, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  Change,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isListType,
+  isObjectType,
+  ListType,
+  MapType,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_lists_to_maps'
 import { getStandardTypes } from '../../src/autogen/types'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
@@ -38,7 +50,10 @@ const getDataType = ({ withMaps }: { withMaps: boolean }): TypeAndInnerTypes => 
     elemID: new ElemID(NETSUITE, 'classTranslationList'),
     fields: {
       classTranslation: withMaps
-        ? { refType: new MapType(classTranslationType), annotations: { [LIST_MAPPED_BY_FIELD]: ['locale', 'language'] } }
+        ? {
+            refType: new MapType(classTranslationType),
+            annotations: { [LIST_MAPPED_BY_FIELD]: ['locale', 'language'] },
+          }
         : { refType: new ListType(classTranslationType) },
       replaceAll: { refType: BuiltinTypes.BOOLEAN },
     },
@@ -68,90 +83,84 @@ describe('convert lists to maps filter', () => {
     let customRecordType: ObjectType
     let dataInstance: InstanceElement
     beforeAll(async () => {
-      instance = new InstanceElement(
-        'workflow1',
-        standardTypes.workflow.type,
-        {
-          scriptid: 'customworkflow_changed_id',
-          workflowcustomfields: {
-            workflowcustomfield: [
-              {
-                scriptid: 'custworkflow1',
-              },
-              {
-                scriptid: 'custworkflow2',
-              },
-            ],
-          },
-          workflowstates: {
-            workflowstate: [
-              {
-                scriptid: 'workflowstate1',
-                workflowactions: [
-                  {
-                    triggertype: 'ONENTRY',
-                  },
-                ],
-              },
-            ],
-          },
-        }
-      )
-      instanceWithMixedFieldKeys = new InstanceElement(
-        'centercategory',
-        standardTypes.centercategory.type,
-        {
-          scriptid: 'custcentercategory2',
-          links: {
-            link: [
-              {
-                linklabel: 'Asset Register',
-                linkobject: '[scriptid=customscript_ncfar_assetregisterreport.customdeploy1]',
-                linktasktype: 'SCRIPT',
-                shortlist: false,
-              },
-              {
-                linklabel: 'Asset Summary',
-                linkobject: '[scriptid=customscript_ncfar_summaryreport_sl.customdeploy1]',
-                linktasktype: 'SCRIPT',
-                shortlist: false,
-              },
-              {
-                linklabel: 'Depreciation Schedule',
-                linkid: 'id1',
-                linktasktype: 'SCRIPT',
-                shortlist: false,
-              },
-              {
-                linklabel: 'Depreciation Schedule (portrait)',
-                linkid: 'id2',
-                linktasktype: 'SCRIPT',
-                shortlist: false,
-              },
-              {
-                linklabel: 'Report Status',
-                linkobject: '[scriptid=customscript_ncfar_reportstatus_sl.customdeploy_ncfar_reportstatus_sl]',
-                linktasktype: 'SCRIPT',
-                shortlist: false,
-              },
-            ],
-          },
-        }
-      )
+      instance = new InstanceElement('workflow1', standardTypes.workflow.type, {
+        scriptid: 'customworkflow_changed_id',
+        workflowcustomfields: {
+          workflowcustomfield: [
+            {
+              scriptid: 'custworkflow1',
+            },
+            {
+              scriptid: 'custworkflow2',
+            },
+          ],
+        },
+        workflowstates: {
+          workflowstate: [
+            {
+              scriptid: 'workflowstate1',
+              workflowactions: [
+                {
+                  triggertype: 'ONENTRY',
+                },
+              ],
+            },
+          ],
+        },
+      })
+      instanceWithMixedFieldKeys = new InstanceElement('centercategory', standardTypes.centercategory.type, {
+        scriptid: 'custcentercategory2',
+        links: {
+          link: [
+            {
+              linklabel: 'Asset Register',
+              linkobject: '[scriptid=customscript_ncfar_assetregisterreport.customdeploy1]',
+              linktasktype: 'SCRIPT',
+              shortlist: false,
+            },
+            {
+              linklabel: 'Asset Summary',
+              linkobject: '[scriptid=customscript_ncfar_summaryreport_sl.customdeploy1]',
+              linktasktype: 'SCRIPT',
+              shortlist: false,
+            },
+            {
+              linklabel: 'Depreciation Schedule',
+              linkid: 'id1',
+              linktasktype: 'SCRIPT',
+              shortlist: false,
+            },
+            {
+              linklabel: 'Depreciation Schedule (portrait)',
+              linkid: 'id2',
+              linktasktype: 'SCRIPT',
+              shortlist: false,
+            },
+            {
+              linklabel: 'Report Status',
+              linkobject: '[scriptid=customscript_ncfar_reportstatus_sl.customdeploy_ncfar_reportstatus_sl]',
+              linktasktype: 'SCRIPT',
+              shortlist: false,
+            },
+          ],
+        },
+      })
       customRecordType = new ObjectType({
         elemID: new ElemID(NETSUITE, 'customrecord1'),
-        annotationRefsOrTypes: await promises.object.mapValuesAsync(
-          standardTypes.customrecordtype.type.fields,
-          field => field.getType()
+        annotationRefsOrTypes: await promises.object.mapValuesAsync(standardTypes.customrecordtype.type.fields, field =>
+          field.getType(),
         ),
         annotations: {
           [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
           instances: {
-            instance: [{
-              [SCRIPT_ID]: 'customrecord1_record1',
-            }, {
-              [SCRIPT_ID]: 'customrecord1_record2',
-            }],
+            instance: [
+              {
+                [SCRIPT_ID]: 'customrecord1_record1',
+              },
+              {
+                [SCRIPT_ID]: 'customrecord1_record2',
+              },
+            ],
           },
         },
       })
@@ -160,16 +169,20 @@ describe('convert lists to maps filter', () => {
         identifier: 'subsidiary1',
         internalId: '1',
         classTranslationList: {
-          classTranslation: [{
-            language: 'Czech',
-            name: 'a',
-          }, {
-            language: 'Danish',
-            name: 'b',
-          }, {
-            language: 'German',
-            name: 'c',
-          }],
+          classTranslation: [
+            {
+              language: 'Czech',
+              name: 'a',
+            },
+            {
+              language: 'Danish',
+              name: 'b',
+            },
+            {
+              language: 'German',
+              name: 'c',
+            },
+          ],
         },
       })
 
@@ -331,26 +344,31 @@ describe('convert lists to maps filter', () => {
           identifier: 'subsidiary1',
           internalId: '1',
           classTranslationList: {
-            classTranslation: [{
-              language: 'Czech',
-              name: 'a',
-            }, {
-              language: 'Danish',
-              name: 'b',
-            }, {
-              language: 'German',
-              name: 'c',
-            }],
+            classTranslation: [
+              {
+                language: 'Czech',
+                name: 'a',
+              },
+              {
+                language: 'Danish',
+                name: 'b',
+              },
+              {
+                language: 'German',
+                name: 'c',
+              },
+            ],
           },
         })
       })
       it('should modify data instance ref type', () => {
         const instance = getChangeData(dataInstanceChange)
         expect(
-          isObjectType(instance.refType.type)
-          && isObjectType(instance.refType.type.fields.classTranslationList.refType.type)
-          && isListType(instance.refType.type.fields.classTranslationList.refType.type
-            .fields.classTranslation.refType.type)
+          isObjectType(instance.refType.type) &&
+            isObjectType(instance.refType.type.fields.classTranslationList.refType.type) &&
+            isListType(
+              instance.refType.type.fields.classTranslationList.refType.type.fields.classTranslation.refType.type,
+            ),
         ).toBeTruthy()
       })
     })
@@ -362,46 +380,44 @@ describe('convert lists to maps filter', () => {
     beforeEach(async () => {
       const { type, innerTypes } = getWorkflowType()
       await Promise.all(
-        Object.values(innerTypes).concat(type)
-          .map(element => convertFieldsTypesFromListToMap(element))
+        Object.values(innerTypes)
+          .concat(type)
+          .map(element => convertFieldsTypesFromListToMap(element)),
       )
       instanceChange = toChange({
-        after: new InstanceElement(
-          'workflow',
-          type,
-          {
-            scriptid: 'customworkflow_changed_id',
-            workflowcustomfields: {
-              workflowcustomfield: {
-                custworkflow1: {
-                  scriptid: 'custworkflow1',
-                  index: 0,
-                },
-                custworkflow2: {
-                  scriptid: 'custworkflow2',
-                  index: 1,
-                },
+        after: new InstanceElement('workflow', type, {
+          scriptid: 'customworkflow_changed_id',
+          workflowcustomfields: {
+            workflowcustomfield: {
+              custworkflow1: {
+                scriptid: 'custworkflow1',
+                index: 0,
+              },
+              custworkflow2: {
+                scriptid: 'custworkflow2',
+                index: 1,
               },
             },
-            workflowstates: {
-              workflowstate: {
-                workflowstate1: {
-                  scriptid: 'workflowstate1',
-                  index: 0,
-                  workflowactions: {
-                    ONENTRY: {
-                      triggertype: 'ONENTRY',
-                      index: 0,
-                    },
+          },
+          workflowstates: {
+            workflowstate: {
+              workflowstate1: {
+                scriptid: 'workflowstate1',
+                index: 0,
+                workflowactions: {
+                  ONENTRY: {
+                    triggertype: 'ONENTRY',
+                    index: 0,
                   },
                 },
               },
             },
-          }
-        ),
+          },
+        }),
       })
-      await filterCreator({ changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as LocalFilterOpts)
-        .preDeploy?.([instanceChange])
+      await filterCreator({ changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as LocalFilterOpts).preDeploy?.([
+        instanceChange,
+      ])
     })
     it('should modify instance values', () => {
       expect(getChangeData(instanceChange).value).toEqual({

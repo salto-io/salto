@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import wu from 'wu'
 import _ from 'lodash'
 import { Group } from '@salto-io/dag'
@@ -37,9 +37,7 @@ describe('PlanItem', () => {
   } = planGenerators(allElements)
 
   describe('action property', () => {
-    const toChangeGroup = (
-      groupKey: string, changes: ReadonlyArray<Change>,
-    ): Group<Change<ChangeDataType>> => ({
+    const toChangeGroup = (groupKey: string, changes: ReadonlyArray<Change>): Group<Change<ChangeDataType>> => ({
       groupKey,
       items: new Map(changes.map(change => [_.uniqueId(), change])),
     })
@@ -47,14 +45,12 @@ describe('PlanItem', () => {
       let addItem: PlanItem
       let removeItem: PlanItem
       beforeEach(() => {
-        addItem = addPlanItemAccessors(toChangeGroup(
-          'additions',
-          [toChange({ after: allElements[0] }), toChange({ after: allElements[1] })],
-        ))
-        removeItem = addPlanItemAccessors(toChangeGroup(
-          'removals',
-          [toChange({ before: allElements[0] }), toChange({ before: allElements[1] })],
-        ))
+        addItem = addPlanItemAccessors(
+          toChangeGroup('additions', [toChange({ after: allElements[0] }), toChange({ after: allElements[1] })]),
+        )
+        removeItem = addPlanItemAccessors(
+          toChangeGroup('removals', [toChange({ before: allElements[0] }), toChange({ before: allElements[1] })]),
+        )
       })
       it('should match the change type', () => {
         expect(addItem.action).toEqual('add')
@@ -64,10 +60,12 @@ describe('PlanItem', () => {
     describe('when there are no top level changes in a group', () => {
       let item: PlanItem
       beforeEach(() => {
-        item = addPlanItemAccessors(toChangeGroup(
-          'fieldChanges',
-          Object.values(allElements[1].fields).map(field => toChange({ after: field }))
-        ))
+        item = addPlanItemAccessors(
+          toChangeGroup(
+            'fieldChanges',
+            Object.values(allElements[1].fields).map(field => toChange({ after: field })),
+          ),
+        )
       })
       it('should have a modify action', () => {
         expect(item.action).toEqual('modify')
@@ -76,10 +74,9 @@ describe('PlanItem', () => {
     describe('when there is a mix of different actions in the group', () => {
       let item: PlanItem
       beforeEach(() => {
-        item = addPlanItemAccessors(toChangeGroup(
-          'mixed',
-          [toChange({ before: allElements[0] }), toChange({ after: allElements[1] })]
-        ))
+        item = addPlanItemAccessors(
+          toChangeGroup('mixed', [toChange({ before: allElements[0] }), toChange({ after: allElements[1] })]),
+        )
       })
       it('should have a modify action', () => {
         expect(item.action).toEqual('modify')

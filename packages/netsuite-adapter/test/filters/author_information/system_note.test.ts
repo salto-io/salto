@@ -1,21 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
+import filterCreator, {
+  FILE_FIELD_IDENTIFIER,
+  FOLDER_FIELD_IDENTIFIER,
+} from '../../../src/filters/author_information/system_note'
 import { CUSTOM_RECORD_TYPE, EMPLOYEE, FILE, FOLDER, METADATA_TYPE, NETSUITE } from '../../../src/constants'
 import { createServerTimeElements } from '../../../src/server_time'
 import NetsuiteClient from '../../../src/client/client'
@@ -81,9 +84,7 @@ describe('netsuite system note author information', () => {
     customRecordTypeWithNoInstances.annotations.internalId = '2'
     fileInstance = new InstanceElement(FILE, new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
     fileInstance.value.internalId = '2'
-    folderInstance = new InstanceElement(
-      FOLDER, new ObjectType({ elemID: new ElemID(NETSUITE, FOLDER) })
-    )
+    folderInstance = new InstanceElement(FOLDER, new ObjectType({ elemID: new ElemID(NETSUITE, FOLDER) }))
     folderInstance.value.internalId = '2'
     missingInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     missingInstance.value.internalId = '8'
@@ -118,9 +119,13 @@ describe('netsuite system note author information', () => {
   })
 
   it('should query information from api when there are no files', async () => {
-    await filterCreator(filterOpts).onFetch?.(
-      [accountInstance, customRecordType, customRecord, customRecordTypeWithNoInstances, missingInstance]
-    )
+    await filterCreator(filterOpts).onFetch?.([
+      accountInstance,
+      customRecordType,
+      customRecord,
+      customRecordTypeWithNoInstances,
+      missingInstance,
+    ])
     const systemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
@@ -150,20 +155,14 @@ describe('netsuite system note author information', () => {
       { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01 00:00:00' },
     ])
     const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
-    const employeeSuiteQLTableInstance = new InstanceElement(
-      EMPLOYEE,
-      suiteQLTableType,
-      {
-        [INTERNAL_IDS_MAP]: {
-          1: { name: 'user 1 name' },
-          2: { name: 'user 2 name' },
-          3: { name: 'user 3 name' },
-        },
-      }
-    )
-    await filterCreator(filterOpts).onFetch?.(
-      elements.concat(suiteQLTableType, employeeSuiteQLTableInstance)
-    )
+    const employeeSuiteQLTableInstance = new InstanceElement(EMPLOYEE, suiteQLTableType, {
+      [INTERNAL_IDS_MAP]: {
+        1: { name: 'user 1 name' },
+        2: { name: 'user 2 name' },
+        3: { name: 'user 3 name' },
+      },
+    })
+    await filterCreator(filterOpts).onFetch?.(elements.concat(suiteQLTableType, employeeSuiteQLTableInstance))
     expect(runSuiteQLMock).not.toHaveBeenCalledWith(EMPLOYEE_NAME_QUERY)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
@@ -193,15 +192,16 @@ describe('netsuite system note author information', () => {
     const opts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          ...createEmptyElementsSourceIndexes(),
-          elemIdToChangeByIndex: {
-            [missingInstance.elemID.getFullName()]: 'another user name',
-          },
-          elemIdToChangeAtIndex: {
-            [missingInstance.elemID.getFullName()]: '2022-08-19',
-          },
-        }),
+        getIndexes: () =>
+          Promise.resolve({
+            ...createEmptyElementsSourceIndexes(),
+            elemIdToChangeByIndex: {
+              [missingInstance.elemID.getFullName()]: 'another user name',
+            },
+            elemIdToChangeAtIndex: {
+              [missingInstance.elemID.getFullName()]: '2022-08-19',
+            },
+          }),
       },
       elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,
@@ -216,15 +216,16 @@ describe('netsuite system note author information', () => {
     const opts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          ...createEmptyElementsSourceIndexes(),
-          elemIdToChangeByIndex: {
-            [missingInstance.elemID.getFullName()]: 'another user name',
-          },
-          elemIdToChangeAtIndex: {
-            [missingInstance.elemID.getFullName()]: '8/19/2022',
-          },
-        }),
+        getIndexes: () =>
+          Promise.resolve({
+            ...createEmptyElementsSourceIndexes(),
+            elemIdToChangeByIndex: {
+              [missingInstance.elemID.getFullName()]: 'another user name',
+            },
+            elemIdToChangeAtIndex: {
+              [missingInstance.elemID.getFullName()]: '8/19/2022',
+            },
+          }),
       },
       elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,

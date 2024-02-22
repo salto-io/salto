@@ -1,31 +1,36 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData,
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  ChangeError,
+  ChangeValidator,
+  CORE_ANNOTATIONS,
+  getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange,
+  isInstanceChange,
+} from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import JiraClient from '../client/client'
 import { MASK_VALUE } from '../filters/masking'
 
-export const DETAILED_MESSAGE = 'This element will be deployed with masked values instead of the intended values. It will not operate correctly until manually fixing this after deployment. Learn more at https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
+export const DETAILED_MESSAGE =
+  'This element will be deployed with masked values instead of the intended values. It will not operate correctly until manually fixing this after deployment. Learn more at https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
 export const DOCUMENTATION_URL = 'https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
-export const createChangeError = (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-): ChangeError => {
+export const createChangeError = (change: Change<InstanceElement>, client: JiraClient): ChangeError => {
   const serviceUrl = getChangeData(change).annotations[CORE_ANNOTATIONS.SERVICE_URL]
   return {
     elemID: getChangeData(change).elemID,
@@ -66,10 +71,9 @@ const doesHaveMaskedValues = (instance: InstanceElement): boolean => {
   return maskedValueFound
 }
 
-export const maskingValidator: (client: JiraClient) => ChangeValidator = client => async changes => (
+export const maskingValidator: (client: JiraClient) => ChangeValidator = client => async changes =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(change => doesHaveMaskedValues(getChangeData(change)))
     .map(change => createChangeError(change, client))
-)

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
@@ -24,10 +24,8 @@ import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 
-const {
-  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  throttle, logDecorator, requiresLogin,
-} = clientUtils
+const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, throttle, logDecorator, requiresLogin } =
+  clientUtils
 const log = logger(module)
 
 const ORG_ENDPOINT_TO_FILTER = 'organizations/'
@@ -36,7 +34,6 @@ const OMIT_REPLACEMENT = '<OMITTED>'
 type LogsFilterConfig = {
   allowOrganizationNames?: boolean
 }
-
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -54,10 +51,10 @@ const DEFAULT_FILTER_LOGS_CONFIG: LogsFilterConfig = {
   allowOrganizationNames: false,
 }
 
-
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
-  Credentials, definitions.ClientRateLimitConfig
-  > {
+  Credentials,
+  definitions.ClientRateLimitConfig
+> {
   // These properties create another connection and client for Zendesk resources API
   protected readonly resourceConn: clientUtils.Connection<Credentials>
   protected isResourceApiLoggedIn = false
@@ -65,26 +62,19 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   private logsFilterConfig: LogsFilterConfig
 
-  constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & LogsFilterConfig,
-  ) {
-    super(
-      ZENDESK,
-      clientOpts,
-      createConnection,
-      {
-        pageSize: DEFAULT_PAGE_SIZE,
-        rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-        // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
-        retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
-        timeout: DEFAULT_TIMEOUT_OPTS,
-      },
-    )
+  constructor(clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & LogsFilterConfig) {
+    super(ZENDESK, clientOpts, createConnection, {
+      pageSize: DEFAULT_PAGE_SIZE,
+      rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+      maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
+      retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
+      timeout: DEFAULT_TIMEOUT_OPTS,
+    })
     this.resourceConn = clientUtils.createClientConnection({
       retryOptions: clientUtils.createRetryOptions(
         _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS),
-        _.defaults({}, this.config?.timeout, DEFAULT_TIMEOUT_OPTS)
+        _.defaults({}, this.config?.timeout, DEFAULT_TIMEOUT_OPTS),
       ),
       createConnection: createResourceConnection,
     })
@@ -140,15 +130,20 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       const { url, headers, responseType } = args
       const requestConfig = [headers, responseType].some(values.isDefined)
         ? {
-          headers,
-          responseType,
-        }
+            headers,
+            responseType,
+          }
         : undefined
       const { data, status } = await this.resourceClient.get(url, requestConfig)
       log.debug('Received response for resource request %s with status %d', url, status)
-      log.trace('Full HTTP response for resource %s: %s', url, safeJsonStringify({
-        url, response: data,
-      }))
+      log.trace(
+        'Full HTTP response for resource %s: %s',
+        url,
+        safeJsonStringify({
+          url,
+          response: data,
+        }),
+      )
       return {
         data,
         status,
@@ -163,13 +158,12 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     }
   }
 
-  protected clearValuesFromResponseData(
-    responseData: Values,
-    url: string
-  ): Values {
+  protected clearValuesFromResponseData(responseData: Values, url: string): Values {
     const cloneResponseData = _.cloneDeep(responseData)
     if (!this.logsFilterConfig.allowOrganizationNames && url.includes(ORG_ENDPOINT_TO_FILTER)) {
-      cloneResponseData.organizations?.forEach((org: Values) => { org.name = OMIT_REPLACEMENT })
+      cloneResponseData.organizations?.forEach((org: Values) => {
+        org.name = OMIT_REPLACEMENT
+      })
     }
     return cloneResponseData
   }

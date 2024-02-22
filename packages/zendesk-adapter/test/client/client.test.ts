@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import ZendeskClient from '../../src/client/client'
@@ -52,21 +52,25 @@ describe('client', () => {
     })
     it('should throw when there is a 403 response', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet()
-        .replyOnce(403)
+      mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
       await expect(client.get({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
     })
     it('should throw if there is no status in the error', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet()
-        .replyOnce(() => { throw new Error('Err') })
-      await expect(
-        client.get({ url: '/api/v2/routing/attributes' })
-      ).rejects.toThrow()
+      mockAxios
+        .onGet()
+        .replyOnce(200)
+        .onGet()
+        .replyOnce(() => {
+          throw new Error('Err')
+        })
+      await expect(client.get({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
     })
     it('should retry on 409, 429 and 503', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200)
+      mockAxios
+        .onGet()
+        .replyOnce(200)
         .onPost()
         .replyOnce(429)
         .onPost()
@@ -80,12 +84,22 @@ describe('client', () => {
     })
 
     it('should filter out responses data by config', async () => {
-      const orgsResponse = { organizations: [{ id: 1, name: 'org1' }, { id: 2, name: 'org2' }] }
+      const orgsResponse = {
+        organizations: [
+          { id: 1, name: 'org1' },
+          { id: 2, name: 'org2' },
+        ],
+      }
 
-      mockAxios.onGet().replyOnce(200).onGet().reply(() => [200, orgsResponse])
-      const notFilteringClient = new ZendeskClient(
-        { credentials: { username: 'a', password: 'b', subdomain: 'ignore' }, allowOrganizationNames: true }
-      )
+      mockAxios
+        .onGet()
+        .replyOnce(200)
+        .onGet()
+        .reply(() => [200, orgsResponse])
+      const notFilteringClient = new ZendeskClient({
+        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+        allowOrganizationNames: true,
+      })
       await notFilteringClient.get({ url: 'organizations/show_many' })
       await notFilteringClient.get({ url: 'organizations/autocomplete' })
 

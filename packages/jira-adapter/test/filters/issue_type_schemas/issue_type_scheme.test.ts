@@ -1,19 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ListType,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../../src/constants'
@@ -41,10 +50,12 @@ describe('issueTypeScheme', () => {
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
 
-    filter = issueTypeSchemeFilter(getFilterParams({
-      client,
-      paginator,
-    }))
+    filter = issueTypeSchemeFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    )
     type = new ObjectType({
       elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME),
       fields: {
@@ -56,8 +67,7 @@ describe('issueTypeScheme', () => {
   describe('onFetch', () => {
     it('add the updatable annotation to issueTypeIds', async () => {
       await filter.onFetch?.([type])
-      expect(type.fields.issueTypeIds.annotations)
-        .toEqual({ [CORE_ANNOTATIONS.UPDATABLE]: true })
+      expect(type.fields.issueTypeIds.annotations).toEqual({ [CORE_ANNOTATIONS.UPDATABLE]: true })
     })
   })
 
@@ -75,31 +85,21 @@ describe('issueTypeScheme', () => {
     })
 
     describe('When deploying a modification change', () => {
-      const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-        typeof deployment.deployChange
-      >
+      const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
       let change: Change<InstanceElement>
 
       beforeEach(async () => {
-        const beforeInstance = new InstanceElement(
-          'instance',
-          type,
-          {
-            id: '1',
-            name: 'name1',
-            issueTypeIds: ['1', '2', '3'],
-          }
-        )
+        const beforeInstance = new InstanceElement('instance', type, {
+          id: '1',
+          name: 'name1',
+          issueTypeIds: ['1', '2', '3'],
+        })
 
-        const afterInstance = new InstanceElement(
-          'instance',
-          type,
-          {
-            id: '1',
-            name: 'name2',
-            issueTypeIds: ['6', '1', '5', '3'],
-          }
-        )
+        const afterInstance = new InstanceElement('instance', type, {
+          id: '1',
+          name: 'name2',
+          issueTypeIds: ['6', '1', '5', '3'],
+        })
 
         change = toChange({ before: beforeInstance, after: afterInstance })
 
@@ -125,10 +125,7 @@ describe('issueTypeScheme', () => {
       })
 
       it('should call the endpoint to remove the removed issue types ids', () => {
-        expect(mockConnection.delete).toHaveBeenCalledWith(
-          '/rest/api/3/issuetypescheme/1/issuetype/2',
-          undefined,
-        )
+        expect(mockConnection.delete).toHaveBeenCalledWith('/rest/api/3/issuetypescheme/1/issuetype/2', undefined)
       })
 
       it('should call the endpoint to re-order the issue types ids', () => {
@@ -144,9 +141,7 @@ describe('issueTypeScheme', () => {
     })
 
     describe('When deploying an addition change', () => {
-      const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-        typeof deployment.deployChange
-      >
+      const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
       let change: Change<InstanceElement>
       let instance: InstanceElement
       let instanceBefore: InstanceElement
@@ -155,14 +150,10 @@ describe('issueTypeScheme', () => {
         deployChangeMock.mockClear()
         deployChangeMock.mockResolvedValue({ issueTypeSchemeId: '10' })
 
-        instance = new InstanceElement(
-          'instance',
-          type,
-          {
-            name: 'name2',
-            issueTypeIds: ['6', '1', '5', '3'],
-          }
-        )
+        instance = new InstanceElement('instance', type, {
+          name: 'name2',
+          issueTypeIds: ['6', '1', '5', '3'],
+        })
 
         instanceBefore = instance.clone()
 
@@ -185,25 +176,17 @@ describe('issueTypeScheme', () => {
     })
 
     it('should not call the new issue type ids endpoint if there are no new ids', async () => {
-      const beforeInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name1',
-          issueTypeIds: ['1', '2', '3'],
-        }
-      )
+      const beforeInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name1',
+        issueTypeIds: ['1', '2', '3'],
+      })
 
-      const afterInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name2',
-          issueTypeIds: ['1', '2'],
-        }
-      )
+      const afterInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name2',
+        issueTypeIds: ['1', '2'],
+      })
 
       await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
       expect(mockConnection.put).not.toHaveBeenCalledWith(
@@ -214,27 +197,19 @@ describe('issueTypeScheme', () => {
     })
 
     it('should not call the new issue type ids endpoint if the scheme is the default scheme', async () => {
-      const beforeInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name1',
-          issueTypeIds: ['1', '2'],
-          isDefault: true,
-        }
-      )
+      const beforeInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name1',
+        issueTypeIds: ['1', '2'],
+        isDefault: true,
+      })
 
-      const afterInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name2',
-          issueTypeIds: ['1', '2', '3'],
-          isDefault: true,
-        }
-      )
+      const afterInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name2',
+        issueTypeIds: ['1', '2', '3'],
+        isDefault: true,
+      })
 
       await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
       expect(mockConnection.put).not.toHaveBeenCalledWith(
@@ -245,52 +220,36 @@ describe('issueTypeScheme', () => {
     })
 
     it('should not call the delete issue type ids endpoint if the scheme is the default scheme', async () => {
-      const beforeInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name1',
-          issueTypeIds: ['1', '2', '3'],
-          isDefault: true,
-        }
-      )
+      const beforeInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name1',
+        issueTypeIds: ['1', '2', '3'],
+        isDefault: true,
+      })
 
-      const afterInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name2',
-          issueTypeIds: ['1', '2'],
-          isDefault: true,
-        }
-      )
+      const afterInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name2',
+        issueTypeIds: ['1', '2'],
+        isDefault: true,
+      })
 
       await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
       expect(mockConnection.delete).not.toHaveBeenCalled()
     })
 
     it('should not call the re-order endpoint of there are no changes in the ids', async () => {
-      const beforeInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name1',
-          issueTypeIds: ['1', '2', '3'],
-        }
-      )
+      const beforeInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name1',
+        issueTypeIds: ['1', '2', '3'],
+      })
 
-      const afterInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name2',
-          issueTypeIds: ['1', '2', '3'],
-        }
-      )
+      const afterInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name2',
+        issueTypeIds: ['1', '2', '3'],
+      })
 
       await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
       expect(mockConnection.put).not.toHaveBeenCalledWith(
@@ -301,23 +260,15 @@ describe('issueTypeScheme', () => {
     })
 
     it('should not call the re-order endpoint of there are no ids', async () => {
-      const beforeInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name1',
-        }
-      )
+      const beforeInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name1',
+      })
 
-      const afterInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name2',
-        }
-      )
+      const afterInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name2',
+      })
 
       await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
       expect(mockConnection.put).not.toHaveBeenCalledWith(
@@ -328,33 +279,25 @@ describe('issueTypeScheme', () => {
     })
 
     it('should return the errors', async () => {
-      const beforeInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name1',
-          issueTypeIds: ['1', '2', '3'],
-        }
-      )
+      const beforeInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name1',
+        issueTypeIds: ['1', '2', '3'],
+      })
 
-      const afterInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          id: '1',
-          name: 'name2',
-        }
-      )
+      const afterInstance = new InstanceElement('instance', type, {
+        id: '1',
+        name: 'name2',
+      })
       mockConnection.delete.mockRejectedValueOnce(new Error('some error'))
-      const res = await filter.deploy?.(
-        [toChange({ before: beforeInstance, after: afterInstance })]
-      )
-      expect(res?.deployResult.errors).toEqual([{
-        message: 'Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: Error: some error',
-        severity: 'Error',
-        elemID: afterInstance.elemID,
-      }])
+      const res = await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
+      expect(res?.deployResult.errors).toEqual([
+        {
+          message: 'Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: Error: some error',
+          severity: 'Error',
+          elemID: afterInstance.elemID,
+        },
+      ])
       expect(res?.deployResult.appliedChanges).toEqual([])
     })
   })

@@ -1,22 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { ElemID } from '../src/element_id'
-import { StaticFile, VariableExpression,
-  ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression, TypeReference, Values, cloneDeepWithoutRefs } from '../src/values'
+import {
+  StaticFile,
+  VariableExpression,
+  ReferenceExpression,
+  isStaticFile,
+  calculateStaticFileHash,
+  isPrimitiveValue,
+  TemplateExpression,
+  TypeReference,
+  Values,
+  cloneDeepWithoutRefs,
+} from '../src/values'
 import { BuiltinTypes } from '../src/builtins'
 import { ObjectType, InstanceElement, Variable } from '../src/elements'
 import { isEqualValues } from '../src/comparison'
@@ -52,7 +62,7 @@ describe('Values', () => {
         origRef = new ReferenceExpression(
           targetObj.elemID.createNestedID('attr', 'val'),
           targetObj.annotations.val,
-          targetObj
+          targetObj,
         )
         clonedRef = origRef.clone()
       })
@@ -67,11 +77,9 @@ describe('Values', () => {
     describe('value', () => {
       let refToValue: ReferenceExpression
       beforeEach(() => {
-        const targetInst = new InstanceElement(
-          'test',
-          new ObjectType({ elemID: new ElemID('salto', 'test') }),
-          { value: 'val' }
-        )
+        const targetInst = new InstanceElement('test', new ObjectType({ elemID: new ElemID('salto', 'test') }), {
+          value: 'val',
+        })
         refToValue = new ReferenceExpression(
           targetInst.elemID.createNestedID('value'),
           targetInst.value.value,
@@ -88,24 +96,18 @@ describe('Values', () => {
         beforeEach(() => {
           ref = new ReferenceExpression(new ElemID('salto', 'test', 'attr', 'foo'), refToValue)
         })
-        it('should return the target reference\'s value', () => {
+        it("should return the target reference's value", () => {
           expect(ref.value).toEqual('val')
         })
       })
       describe('with variable value', () => {
         let ref: ReferenceExpression
         beforeEach(() => {
-          const refToRefToValue = new ReferenceExpression(
-            new ElemID('salto', 'test', 'attr', 'foo'),
-            refToValue,
-          )
+          const refToRefToValue = new ReferenceExpression(new ElemID('salto', 'test', 'attr', 'foo'), refToValue)
           const variable = new Variable(new ElemID('var', 'ref'), refToRefToValue)
-          ref = new ReferenceExpression(
-            new ElemID('salto', 'test', 'attr', 'bla'),
-            variable,
-          )
+          ref = new ReferenceExpression(new ElemID('salto', 'test', 'attr', 'bla'), variable)
         })
-        it('should return the variable\'s value', () => {
+        it("should return the variable's value", () => {
           expect(ref.value).toEqual('val')
         })
       })
@@ -135,14 +137,12 @@ describe('Values', () => {
 
   describe('VariableExpression', () => {
     it('should not allow referencing anything but a variable', () => {
-      expect((() => new VariableExpression(
-        new ElemID('salesforce', 'someType')
-      ))).toThrow('A variable expression must point to a variable')
+      expect(() => new VariableExpression(new ElemID('salesforce', 'someType'))).toThrow(
+        'A variable expression must point to a variable',
+      )
     })
     it('should allow referencing a variable', () => {
-      expect((() => new VariableExpression(
-        new ElemID(ElemID.VARIABLES_NAMESPACE, 'someVar')
-      ))).not.toThrow()
+      expect(() => new VariableExpression(new ElemID(ElemID.VARIABLES_NAMESPACE, 'someVar'))).not.toThrow()
     })
   })
 
@@ -237,10 +237,7 @@ describe('Values', () => {
       })
 
       it('Comparing circular dependencies should return true', () => {
-        const instance = new InstanceElement(
-          'instance',
-          new ObjectType({ elemID: new ElemID('adapter', 'type') }),
-        )
+        const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }))
 
         instance.value.a = {
           ref: new ReferenceExpression(instance.elemID.createNestedID('a')),
@@ -257,7 +254,8 @@ describe('Values', () => {
       const zOMGResult = calculateStaticFileHash(zOMGBuffer)
       expect(zOMGResult).toEqual(hash)
     })
-    it('isStaticFile when static file', () => expect(isStaticFile(new StaticFile({ filepath: 'aa', hash: 'bb' }))).toBeTruthy())
+    it('isStaticFile when static file', () =>
+      expect(isStaticFile(new StaticFile({ filepath: 'aa', hash: 'bb' }))).toBeTruthy())
     it('isStaticFile when not static file', () => expect(isStaticFile('ZOMG')).toBeFalsy())
   })
 
@@ -288,33 +286,45 @@ describe('Values', () => {
 
     it('should throw error when no element source and no type', async () => {
       const ref = new TypeReference(elemID)
-      await expect(ref.getResolvedValue()).rejects.toEqual(new Error(`Can not resolve value of reference with ElemID ${elemID.getFullName()} without elementsSource because value does not exist`))
+      await expect(ref.getResolvedValue()).rejects.toEqual(
+        new Error(
+          `Can not resolve value of reference with ElemID ${elemID.getFullName()} without elementsSource because value does not exist`,
+        ),
+      )
     })
 
     it('should throw error when no elemID is not top level', async () => {
       const createReference = (): TypeReference =>
         new TypeReference(ElemID.fromFullName('A.nested.instance.id.should.throw.error'))
-      expect(createReference).toThrow(new Error('Invalid id for type reference: A.nested.instance.id.should.throw.error. Type reference must be top level.'))
+      expect(createReference).toThrow(
+        new Error(
+          'Invalid id for type reference: A.nested.instance.id.should.throw.error. Type reference must be top level.',
+        ),
+      )
     })
 
     it('should resolve with element source if possible', async () => {
       const ref = new TypeReference(elemID, BuiltinTypes.STRING)
-      expect(await ref.getResolvedValue({
-        list: jest.fn(),
-        get: async () => BuiltinTypes.NUMBER,
-        has: jest.fn(),
-        getAll: jest.fn(),
-      })).toEqual(BuiltinTypes.NUMBER)
+      expect(
+        await ref.getResolvedValue({
+          list: jest.fn(),
+          get: async () => BuiltinTypes.NUMBER,
+          has: jest.fn(),
+          getAll: jest.fn(),
+        }),
+      ).toEqual(BuiltinTypes.NUMBER)
     })
 
     it('should resolve without element source if it returns undefined', async () => {
       const ref = new TypeReference(elemID, BuiltinTypes.STRING)
-      expect(await ref.getResolvedValue({
-        list: jest.fn(),
-        get: async () => undefined,
-        has: jest.fn(),
-        getAll: jest.fn(),
-      })).toEqual(BuiltinTypes.STRING)
+      expect(
+        await ref.getResolvedValue({
+          list: jest.fn(),
+          get: async () => undefined,
+          has: jest.fn(),
+          getAll: jest.fn(),
+        }),
+      ).toEqual(BuiltinTypes.STRING)
     })
 
     it('should return empty obj with ID if element returns undefined and type doesnt exist', async () => {

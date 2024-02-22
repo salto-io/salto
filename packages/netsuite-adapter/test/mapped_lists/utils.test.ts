@@ -1,22 +1,45 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, isObjectType, ListType, MapType, ObjectType, Value } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, createConvertStandardElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping, convertAnnotationListsToMaps, convertDataInstanceMapsToLists } from '../../src/mapped_lists/utils'
+import {
+  BuiltinTypes,
+  createRefToElmWithValue,
+  ElemID,
+  Field,
+  FieldMap,
+  InstanceElement,
+  isListType,
+  isMapType,
+  isObjectType,
+  ListType,
+  MapType,
+  ObjectType,
+  Value,
+} from '@salto-io/adapter-api'
+import {
+  convertFieldsTypesFromListToMap,
+  createConvertStandardElementMapsToLists,
+  convertInstanceListsToMaps,
+  getMappedLists,
+  isMappedList,
+  validateTypesFieldMapping,
+  convertAnnotationListsToMaps,
+  convertDataInstanceMapsToLists,
+} from '../../src/mapped_lists/utils'
 import { getStandardTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
@@ -48,66 +71,62 @@ describe('mapped lists', () => {
   let transformedDataInstance: InstanceElement
   let transformedBackDataInstance: InstanceElement
   beforeAll(async () => {
-    instance = new InstanceElement(
-      'instanceName',
-      workflow.type,
-      {
-        scriptid: 'customworkflow_changed_id',
-        workflowcustomfields: {
-          workflowcustomfield: [
-            {
-              scriptid: 'custworkflow1',
-            },
-            {
-              scriptid: 'custworkflow2',
-            },
-            {
-              scriptid: 's0m@ $CR1pt!*()',
-            },
-            {
-              scriptid: '[scriptid=custworkflow2]',
-            },
-            {
-              scriptid: '[type=workflow, scriptid=custworkflow2]',
-            },
-            {
-              scriptid: 's0m@ $CR1pt!*()',
-            },
-          ],
-        },
-        workflowstates: {
-          workflowstate: [
-            {
-              scriptid: 'workflowstate1',
-              workflowactions: [
-                {
-                  triggertype: 'ONENTRY',
-                  setfieldvalueaction: [
-                    {
-                      scriptid: 'workflowaction1',
-                    },
-                    {
-                      scriptid: 'workflowaction2',
-                    },
-                  ],
-                },
-                {
-                  triggertype: 'BEFORELOAD',
-                  setfieldvalueaction: [
-                    {
-                      scriptid: 'workflowaction3',
-                    },
-                    {
-                      scriptid: 'workflowaction4',
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      }
-    )
+    instance = new InstanceElement('instanceName', workflow.type, {
+      scriptid: 'customworkflow_changed_id',
+      workflowcustomfields: {
+        workflowcustomfield: [
+          {
+            scriptid: 'custworkflow1',
+          },
+          {
+            scriptid: 'custworkflow2',
+          },
+          {
+            scriptid: 's0m@ $CR1pt!*()',
+          },
+          {
+            scriptid: '[scriptid=custworkflow2]',
+          },
+          {
+            scriptid: '[type=workflow, scriptid=custworkflow2]',
+          },
+          {
+            scriptid: 's0m@ $CR1pt!*()',
+          },
+        ],
+      },
+      workflowstates: {
+        workflowstate: [
+          {
+            scriptid: 'workflowstate1',
+            workflowactions: [
+              {
+                triggertype: 'ONENTRY',
+                setfieldvalueaction: [
+                  {
+                    scriptid: 'workflowaction1',
+                  },
+                  {
+                    scriptid: 'workflowaction2',
+                  },
+                ],
+              },
+              {
+                triggertype: 'BEFORELOAD',
+                setfieldvalueaction: [
+                  {
+                    scriptid: 'workflowaction3',
+                  },
+                  {
+                    scriptid: 'workflowaction4',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    })
 
     customRecordType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -132,10 +151,12 @@ describe('mapped lists', () => {
       annotations: {
         scriptid: 'customrecord1',
         permissions: {
-          permission: [{
-            permittedlevel: 'EDIT',
-            permittedrole: '[scriptid=customrole1]',
-          }],
+          permission: [
+            {
+              permittedlevel: 'EDIT',
+              permittedrole: '[scriptid=customrole1]',
+            },
+          ],
         },
         metadataType: 'customrecordtype',
       },
@@ -161,16 +182,20 @@ describe('mapped lists', () => {
       identifier: 'subsidiary1',
       internalId: '1',
       classTranslationList: {
-        classTranslation: [{
-          language: 'Czech',
-          name: 'a',
-        }, {
-          language: 'Danish',
-          name: 'b',
-        }, {
-          language: 'German',
-          name: 'c',
-        }],
+        classTranslation: [
+          {
+            language: 'Czech',
+            name: 'a',
+          },
+          {
+            language: 'Danish',
+            name: 'b',
+          },
+          {
+            language: 'German',
+            name: 'c',
+          },
+        ],
       },
     })
 
@@ -179,19 +204,18 @@ describe('mapped lists', () => {
       ...Object.values(kpiscorecard.innerTypes),
       ...Object.values(customrecordtype.innerTypes),
       classTranslationListType,
-    ])
-      .forEach(t => convertFieldsTypesFromListToMap(t))
+    ]).forEach(t => convertFieldsTypesFromListToMap(t))
 
     transformedInstance = instance.clone()
-    transformedInstance.value = await convertInstanceListsToMaps(instance) ?? {}
+    transformedInstance.value = (await convertInstanceListsToMaps(instance)) ?? {}
     transformedCustomRecordType = customRecordType.clone()
     transformedCustomRecordType.annotations = await convertAnnotationListsToMaps(customRecordType)
     transformedDataInstance = dataInstance.clone()
-    transformedDataInstance.value = await convertInstanceListsToMaps(dataInstance) ?? {}
+    transformedDataInstance.value = (await convertInstanceListsToMaps(dataInstance)) ?? {}
 
     const convertElementMapsToLists = await createConvertStandardElementMapsToLists()
-    transformedBackInstance = await convertElementMapsToLists(transformedInstance) as InstanceElement
-    transformedBackCustomRecordType = await convertElementMapsToLists(transformedCustomRecordType) as ObjectType
+    transformedBackInstance = (await convertElementMapsToLists(transformedInstance)) as InstanceElement
+    transformedBackCustomRecordType = (await convertElementMapsToLists(transformedCustomRecordType)) as ObjectType
     transformedBackDataInstance = await convertDataInstanceMapsToLists(transformedDataInstance)
   })
   describe('validateTypesFieldMapping', () => {
@@ -218,7 +242,9 @@ describe('mapped lists', () => {
       expect(() => validateTypesFieldMapping(types)).not.toThrow()
     })
     it('should throw when missing some types with field mapping', async () => {
-      const missingTypes = types.filter(element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields')
+      const missingTypes = types.filter(
+        element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields',
+      )
       expect(() => validateTypesFieldMapping(missingTypes)).toThrow()
 
       const typeWithMissingField = new ObjectType({
@@ -237,32 +263,30 @@ describe('mapped lists', () => {
     expect(workflowcustomfields).toBeDefined()
     const { workflowcustomfield } = workflowcustomfields?.fields as FieldMap
     expect(isMapType(await workflowcustomfield.getType())).toBeTruthy()
-    expect(workflowcustomfield.annotations)
-      .toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
+    expect(workflowcustomfield.annotations).toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
 
     const workflowstates = workflow.innerTypes.workflow_workflowstates
     expect(workflowstates).toBeDefined()
     const { workflowstate } = workflowstates?.fields as FieldMap
     expect(isMapType(await workflowstate.getType())).toBeTruthy()
-    expect(workflowstate.annotations)
-      .toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
+    expect(workflowstate.annotations).toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
 
     const workflowstateObject = workflow.innerTypes.workflow_workflowstates_workflowstate
     expect(workflowstateObject).toBeDefined()
     const { workflowactions } = workflowstateObject?.fields as FieldMap
     expect(isMapType(await workflowactions.getType())).toBeTruthy()
-    expect(workflowactions.annotations)
-      .toEqual({ [LIST_MAPPED_BY_FIELD]: 'triggertype' })
+    expect(workflowactions.annotations).toEqual({ [LIST_MAPPED_BY_FIELD]: 'triggertype' })
 
     expect(isMapType(await classTranslationListType.fields.classTranslation.getType())).toBeTruthy()
-    expect(classTranslationListType.fields.classTranslation.annotations)
-      .toEqual({ [LIST_MAPPED_BY_FIELD]: ['locale', 'language'] })
+    expect(classTranslationListType.fields.classTranslation.annotations).toEqual({
+      [LIST_MAPPED_BY_FIELD]: ['locale', 'language'],
+    })
   })
   it('should add index field', () => {
     expect(
       workflow.innerTypes
-        .workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting
-        .fields.index
+        .workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting.fields
+        .index,
     ).toBeDefined()
   })
   it('should not add index field to unordered lists', async () => {
@@ -396,24 +420,20 @@ describe('mapped lists', () => {
     expect(isListType(await primitiveList.getType())).toBeTruthy()
     expect(primitiveList.annotations).toEqual({})
   })
-  it('should use \'key\' as item key if item has no \'LIST_MAPPED_BY_FIELD\' field', async () => {
-    const inst = new InstanceElement(
-      'instance',
-      workflow.type,
-      {
-        scriptid: 'customworkflow_changed_id',
-        workflowcustomfields: {
-          workflowcustomfield: [
-            {
-              scriptid: 'custworkflow1',
-            },
-            {
-              notscriptid: 'custworkflow2',
-            },
-          ],
-        },
+  it("should use 'key' as item key if item has no 'LIST_MAPPED_BY_FIELD' field", async () => {
+    const inst = new InstanceElement('instance', workflow.type, {
+      scriptid: 'customworkflow_changed_id',
+      workflowcustomfields: {
+        workflowcustomfield: [
+          {
+            scriptid: 'custworkflow1',
+          },
+          {
+            notscriptid: 'custworkflow2',
+          },
+        ],
       },
-    )
+    })
     expect(await convertInstanceListsToMaps(inst)).toEqual({
       scriptid: 'customworkflow_changed_id',
       workflowcustomfields: {
@@ -436,65 +456,64 @@ describe('mapped lists', () => {
     const type = new ObjectType({ elemID })
     const innerType = new ObjectType({ elemID: elemIDinner })
     it('should return false when field has no mapping annotation', async () => {
-      expect(await isMappedList(
-        { a: { a: 1 }, b: { b: 2 } },
-        new Field(
-          type,
-          'field',
-          createRefToElmWithValue(new MapType(innerType))
-        )
-      )).toBeFalsy()
+      expect(
+        await isMappedList(
+          { a: { a: 1 }, b: { b: 2 } },
+          new Field(type, 'field', createRefToElmWithValue(new MapType(innerType))),
+        ),
+      ).toBeFalsy()
     })
     it('should return false when value is not a plain object', async () => {
-      expect(await isMappedList(
-        [{ a: 1 }, { b: 2 }],
-        new Field(
-          type,
-          'field',
-          createRefToElmWithValue(new MapType(innerType)),
-          { [LIST_MAPPED_BY_FIELD]: 'scriptid' }
-        )
-      )).toBeFalsy()
+      expect(
+        await isMappedList(
+          [{ a: 1 }, { b: 2 }],
+          new Field(type, 'field', createRefToElmWithValue(new MapType(innerType)), {
+            [LIST_MAPPED_BY_FIELD]: 'scriptid',
+          }),
+        ),
+      ).toBeFalsy()
     })
     it('should return false when field type is not map/list', async () => {
-      expect(await isMappedList(
-        { a: { a: 1 }, b: { b: 2 } },
-        new Field(
-          type,
-          'field',
-          createRefToElmWithValue(innerType),
-          { [LIST_MAPPED_BY_FIELD]: 'scriptid' }
-        )
-      )).toBeFalsy()
+      expect(
+        await isMappedList(
+          { a: { a: 1 }, b: { b: 2 } },
+          new Field(type, 'field', createRefToElmWithValue(innerType), { [LIST_MAPPED_BY_FIELD]: 'scriptid' }),
+        ),
+      ).toBeFalsy()
     })
     it('should return true when field is list', async () => {
-      expect(await isMappedList(
-        { a: { a: 1 }, b: { b: 2 } },
-        new Field(
-          type,
-          'field',
-          createRefToElmWithValue(new ListType(innerType)),
-          { [LIST_MAPPED_BY_FIELD]: 'scriptid' }
-        )
-      )).toBeTruthy()
+      expect(
+        await isMappedList(
+          { a: { a: 1 }, b: { b: 2 } },
+          new Field(type, 'field', createRefToElmWithValue(new ListType(innerType)), {
+            [LIST_MAPPED_BY_FIELD]: 'scriptid',
+          }),
+        ),
+      ).toBeTruthy()
     })
     it('should return true when field is map', async () => {
-      expect(await isMappedList(
-        { a: { a: 1 }, b: { b: 2 } },
-        new Field(
-          type,
-          'field',
-          createRefToElmWithValue(new MapType(innerType)),
-          { [LIST_MAPPED_BY_FIELD]: 'scriptid' }
-        )
-      )).toBeTruthy()
+      expect(
+        await isMappedList(
+          { a: { a: 1 }, b: { b: 2 } },
+          new Field(type, 'field', createRefToElmWithValue(new MapType(innerType)), {
+            [LIST_MAPPED_BY_FIELD]: 'scriptid',
+          }),
+        ),
+      ).toBeTruthy()
     })
   })
   it('should return mapped lists', async () => {
     expect(await getMappedLists(transformedInstance)).toEqual([
       {
         field: workflow.innerTypes.workflow_workflowcustomfields.fields.workflowcustomfield,
-        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowcustomfields', 'workflowcustomfield'),
+        path: new ElemID(
+          'netsuite',
+          'workflow',
+          'instance',
+          'instanceName',
+          'workflowcustomfields',
+          'workflowcustomfield',
+        ),
         value: {
           custworkflow1: {
             scriptid: 'custworkflow1',
@@ -562,7 +581,16 @@ describe('mapped lists', () => {
       },
       {
         field: workflow.innerTypes.workflow_workflowstates_workflowstate.fields.workflowactions,
-        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions'),
+        path: new ElemID(
+          'netsuite',
+          'workflow',
+          'instance',
+          'instanceName',
+          'workflowstates',
+          'workflowstate',
+          'workflowstate1',
+          'workflowactions',
+        ),
         value: {
           BEFORELOAD: {
             setfieldvalueaction: {
@@ -594,7 +622,18 @@ describe('mapped lists', () => {
       },
       {
         field: workflow.innerTypes.workflow_workflowstates_workflowstate_workflowactions.fields.setfieldvalueaction,
-        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions', 'ONENTRY', 'setfieldvalueaction'),
+        path: new ElemID(
+          'netsuite',
+          'workflow',
+          'instance',
+          'instanceName',
+          'workflowstates',
+          'workflowstate',
+          'workflowstate1',
+          'workflowactions',
+          'ONENTRY',
+          'setfieldvalueaction',
+        ),
         value: {
           workflowaction1: {
             index: 0,
@@ -608,7 +647,18 @@ describe('mapped lists', () => {
       },
       {
         field: workflow.innerTypes.workflow_workflowstates_workflowstate_workflowactions.fields.setfieldvalueaction,
-        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions', 'BEFORELOAD', 'setfieldvalueaction'),
+        path: new ElemID(
+          'netsuite',
+          'workflow',
+          'instance',
+          'instanceName',
+          'workflowstates',
+          'workflowstate',
+          'workflowstate1',
+          'workflowactions',
+          'BEFORELOAD',
+          'setfieldvalueaction',
+        ),
         value: {
           workflowaction3: {
             index: 0,
@@ -626,21 +676,22 @@ describe('mapped lists', () => {
     expect(transformedBackInstance.value).toEqual({
       ...instance.value,
       workflowstates: {
-        workflowstate: instance.value.workflowstates.workflowstate
-          .map((state: Value) => ({
-            ...state,
-            workflowactions: _.sortBy(state.workflowactions, 'triggertype'),
-          })),
+        workflowstate: instance.value.workflowstates.workflowstate.map((state: Value) => ({
+          ...state,
+          workflowactions: _.sortBy(state.workflowactions, 'triggertype'),
+        })),
       },
     })
   })
   it('should convert map back to a list in data instance', async () => {
     expect(transformedBackDataInstance.value).toEqual(dataInstance.value)
     expect(
-      isObjectType(transformedBackDataInstance.refType.type)
-      && isObjectType(transformedBackDataInstance.refType.type.fields.classTranslationList.refType.type)
-      && isListType(transformedBackDataInstance.refType.type.fields.classTranslationList.refType.type
-        .fields.classTranslation.refType.type)
+      isObjectType(transformedBackDataInstance.refType.type) &&
+        isObjectType(transformedBackDataInstance.refType.type.fields.classTranslationList.refType.type) &&
+        isListType(
+          transformedBackDataInstance.refType.type.fields.classTranslationList.refType.type.fields.classTranslation
+            .refType.type,
+        ),
     ).toBeTruthy()
   })
   it('should convert map back to a list in type', () => {

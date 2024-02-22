@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
 import {
@@ -32,18 +32,15 @@ import {
 
 const { createInMemoryElementSource } = elementSource
 
-const createTestInstance = (type: string, field?: string): InstanceElement => new InstanceElement(
-  type,
-  new ObjectType({ elemID: new ElemID(ZENDESK, type) }),
-  {
+const createTestInstance = (type: string, field?: string): InstanceElement =>
+  new InstanceElement(type, new ObjectType({ elemID: new ElemID(ZENDESK, type) }), {
     actions: [
       {
         field: field ?? 'test',
         value: [],
       },
     ],
-  },
-)
+  })
 
 describe('deflectionActionValidator', () => {
   let deflectionTrigger: InstanceElement
@@ -67,7 +64,7 @@ describe('deflectionActionValidator', () => {
         tickets: {
           custom_statuses_enabled: true,
         },
-      }
+      },
     )
   })
   it('should return error if the features are disabled', async () => {
@@ -123,7 +120,7 @@ describe('deflectionActionValidator', () => {
     expect(errors).toHaveLength(0)
   })
 
-  it('should return nothing if no instance is of a feature\'s action ', async () => {
+  it("should return nothing if no instance is of a feature's action ", async () => {
     accountSetting.value.active_features.automatic_answers = false
     accountSetting.value.tickets.custom_statuses_enabled = false
     const elementsSource = createInMemoryElementSource([accountSetting])
@@ -131,11 +128,7 @@ describe('deflectionActionValidator', () => {
     const automation = createTestInstance(AUTOMATION_TYPE_NAME)
     const macro = createTestInstance(MACRO_TYPE_NAME)
 
-    const changes = [
-      toChange({ after: trigger }),
-      toChange({ after: automation }),
-      toChange({ after: macro }),
-    ]
+    const changes = [toChange({ after: trigger }), toChange({ after: automation }), toChange({ after: macro })]
     const errors = await activeActionFeaturesValidator(changes, elementsSource)
 
     expect(errors).toHaveLength(0)
@@ -143,10 +136,7 @@ describe('deflectionActionValidator', () => {
   it('should return nothing if there are relevant changes but no element source', async () => {
     accountSetting.value.active_features.automatic_answers = false
     accountSetting.value.tickets.custom_statuses_enabled = false
-    const changes = [
-      toChange({ after: deflectionTrigger }),
-      toChange({ after: customTicketStatusTrigger }),
-    ]
+    const changes = [toChange({ after: deflectionTrigger }), toChange({ after: customTicketStatusTrigger })]
     const errors = await activeActionFeaturesValidator(changes)
     expect(errors).toHaveLength(0)
   })
@@ -154,10 +144,7 @@ describe('deflectionActionValidator', () => {
   it('should return nothing if the account settings is not valid', async () => {
     accountSetting.value = { test: 'test' }
     const tempElementSource = createInMemoryElementSource([accountSetting])
-    const changes = [
-      toChange({ after: deflectionTrigger }),
-      toChange({ after: customTicketStatusTrigger }),
-    ]
+    const changes = [toChange({ after: deflectionTrigger }), toChange({ after: customTicketStatusTrigger })]
 
     const errors = await activeActionFeaturesValidator(changes, tempElementSource)
     expect(errors).toHaveLength(0)

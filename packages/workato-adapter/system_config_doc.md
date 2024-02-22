@@ -1,5 +1,7 @@
 # Workato system configuration
+
 ## Default Configuration
+
 ```hcl
 workato {
   apiDefinitions = {

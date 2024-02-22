@@ -1,25 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
 import {
-  Change, Element,
+  Change,
+  Element,
   createSaltoElementError,
-  getChangeData, InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
@@ -44,7 +49,9 @@ type JobStatus = {
 const EXPECTED_APP_SCHEMA = Joi.object({
   status: Joi.string().required(),
   message: Joi.string().optional().allow(''),
-}).unknown(true).required()
+})
+  .unknown(true)
+  .required()
 
 const isJobStatus = (value: unknown): value is JobStatus => {
   const { error } = EXPECTED_APP_SCHEMA.validate(value)
@@ -55,19 +62,19 @@ const isJobStatus = (value: unknown): value is JobStatus => {
   return true
 }
 
-const checkIfJobIsDone = async (
-  client: ZendeskClient, jobId: string, change: Change
-): Promise<boolean> => {
+const checkIfJobIsDone = async (client: ZendeskClient, jobId: string, change: Change): Promise<boolean> => {
   const res = (await client.get({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
-    throw createSaltoElementError({ // caught by deployChanges
+    throw createSaltoElementError({
+      // caught by deployChanges
       message: `Got an invalid response for job status. Job ID: ${jobId}`,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })
   }
   if (['failed', 'killed'].includes(res.status)) {
-    throw createSaltoElementError({ // caught by deployChanges
+    throw createSaltoElementError({
+      // caught by deployChanges
       message: `Job status is failed. Job ID: ${jobId}. Error: ${res.message}`,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
@@ -76,25 +83,19 @@ const checkIfJobIsDone = async (
   return res.status === 'completed'
 }
 
-const waitTillJobIsDone = async (client: ZendeskClient, jobId: string, change: Change):
-Promise<void> => {
-  await withRetry(
-    () => checkIfJobIsDone(client, jobId, change),
-    {
-      strategy: intervals({
-        maxRetries: MAX_RETRIES,
-        interval: INTERVAL_TIME,
-      }),
-    }
-  )
+const waitTillJobIsDone = async (client: ZendeskClient, jobId: string, change: Change): Promise<void> => {
+  await withRetry(() => checkIfJobIsDone(client, jobId, change), {
+    strategy: intervals({
+      maxRetries: MAX_RETRIES,
+      interval: INTERVAL_TIME,
+    }),
+  })
 }
 
 const connectAppOwnedToInstallation = (instances: InstanceElement[]): void => {
   const appOwnedById = _.keyBy<InstanceElement>(
-    instances
-      .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME)
-      .filter(e => e.value.id !== undefined),
-    e => e.value.id
+    instances.filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME).filter(e => e.value.id !== undefined),
+    e => e.value.id,
   )
 
   instances
@@ -115,7 +116,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME).forEach(e => {
+      .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
+      .forEach(e => {
         delete e.value.settings_objects
       })
 
@@ -124,25 +126,27 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isAdditionOrModificationChange(change)
-        && (getChangeData(change).elemID.typeName === APP_INSTALLATION_TYPE_NAME),
+      change =>
+        isAdditionOrModificationChange(change) && getChangeData(change).elemID.typeName === APP_INSTALLATION_TYPE_NAME,
     )
-    const deployResult = await deployChanges(
-      relevantChanges,
-      async change => {
-        const response = await deployChange(change, client, config.apiDefinitions, ['app', 'settings.title', 'settings_objects'])
-        if (isAdditionChange(change)) {
-          if (response == null || _.isArray(response) || !_.isString(response.pending_job_id)) {
-            throw createSaltoElementError({ // caught by deployChanges
-              message: 'Got an invalid response when tried to install app',
-              severity: 'Error',
-              elemID: getChangeData(change).elemID,
-            })
-          }
-          await waitTillJobIsDone(client, response.pending_job_id, change)
+    const deployResult = await deployChanges(relevantChanges, async change => {
+      const response = await deployChange(change, client, config.apiDefinitions, [
+        'app',
+        'settings.title',
+        'settings_objects',
+      ])
+      if (isAdditionChange(change)) {
+        if (response == null || _.isArray(response) || !_.isString(response.pending_job_id)) {
+          throw createSaltoElementError({
+            // caught by deployChanges
+            message: 'Got an invalid response when tried to install app',
+            severity: 'Error',
+            elemID: getChangeData(change).elemID,
+          })
         }
+        await waitTillJobIsDone(client, response.pending_job_id, change)
       }
-    )
+    })
     return { deployResult, leftoverChanges }
   },
 })

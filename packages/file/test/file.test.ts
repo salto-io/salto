@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import fs from 'fs'
 import path from 'path'
 import { promisify } from 'util'
@@ -23,9 +23,7 @@ import * as file from '../src/file'
 const rimRaf = promisify(rimRafLib)
 
 describe('file', () => {
-  const expectRejectWithErrnoException = async <TResult>(
-    p: () => Promise<TResult>
-  ): Promise<void> => {
+  const expectRejectWithErrnoException = async <TResult>(p: () => Promise<TResult>): Promise<void> => {
     let hadError = false
     try {
       await p()
@@ -61,8 +59,8 @@ describe('file', () => {
     describe('when the file exists', () => {
       it('should return its stats', () => {
         // can't compare all stats since aTime and aTimeMs might differ slightly
-        const r = (file.statSync(__filename)).ctime
-        expect(r).toEqual((fs.statSync(__filename)).ctime)
+        const r = file.statSync(__filename).ctime
+        expect(r).toEqual(fs.statSync(__filename).ctime)
       })
     })
   })
@@ -84,12 +82,8 @@ describe('file', () => {
 
     describe('when there is another error', () => {
       const tooLongFilename = 'a'.repeat(1000).repeat(1000)
-      it(
-        'should reject with the error',
-        () => expect(
-          file.stat.notFoundAsUndefined(tooLongFilename),
-        ).rejects.toThrow(/ENAMETOOLONG/),
-      )
+      it('should reject with the error', () =>
+        expect(file.stat.notFoundAsUndefined(tooLongFilename)).rejects.toThrow(/ENAMETOOLONG/))
     })
   })
 

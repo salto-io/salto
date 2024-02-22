@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, isField, ObjectType, toChange } from '@salto-io/adapter-api'
 import { getConfigTypes } from '../../src/suiteapp_config_elements'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
@@ -91,13 +91,11 @@ describe('configElements filter', () => {
       expect(isField(type.fields.configType)).toBeTruthy()
 
       expect(isField(type.fields.checkboxField)).toBeTruthy()
-      expect(type.fields.checkboxField.refType.elemID.typeName)
-        .toEqual(BuiltinTypes.BOOLEAN.elemID.typeName)
+      expect(type.fields.checkboxField.refType.elemID.typeName).toEqual(BuiltinTypes.BOOLEAN.elemID.typeName)
       expect(type.fields.checkboxField.annotations).toEqual({ label: 'checkboxField', type: 'checkbox' })
 
       expect(isField(type.fields.integerField)).toBeTruthy()
-      expect(type.fields.integerField.refType.elemID.typeName)
-        .toEqual(BuiltinTypes.NUMBER.elemID.typeName)
+      expect(type.fields.integerField.refType.elemID.typeName).toEqual(BuiltinTypes.NUMBER.elemID.typeName)
       expect(type.fields.integerField.annotations).toEqual({ label: 'integerField', type: 'integer' })
 
       expect(isField(type.fields.selectField)).toBeTruthy()
@@ -105,13 +103,11 @@ describe('configElements filter', () => {
       expect(type.fields.selectField.annotations).toEqual({ label: 'selectField', type: 'select' })
 
       expect(isField(type.fields.multiselectField)).toBeTruthy()
-      expect(type.fields.multiselectField.refType.elemID.typeName)
-        .toEqual(expect.stringContaining(SELECT_OPTION))
+      expect(type.fields.multiselectField.refType.elemID.typeName).toEqual(expect.stringContaining(SELECT_OPTION))
       expect(type.fields.multiselectField.annotations).toEqual({ label: 'multiselectField', type: 'multiselect' })
 
       expect(isField(type.fields.emailField)).toBeTruthy()
-      expect(type.fields.emailField.refType.elemID.typeName)
-        .toEqual(BuiltinTypes.STRING.elemID.typeName)
+      expect(type.fields.emailField.refType.elemID.typeName).toEqual(BuiltinTypes.STRING.elemID.typeName)
       expect(type.fields.emailField.annotations).toEqual({ label: 'emailField', type: 'email' })
 
       expect(isField(type.fields.textField)).toBeFalsy()

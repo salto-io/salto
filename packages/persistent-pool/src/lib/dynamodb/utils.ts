@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   CreateTableCommand,
   CreateTableCommandInput,
@@ -21,12 +21,7 @@ import {
   DynamoDBClient,
   ScalarAttributeType,
 } from '@aws-sdk/client-dynamodb'
-import {
-  BatchWriteCommand,
-  DynamoDBDocumentClient,
-  QueryCommand,
-  QueryCommandInput,
-} from '@aws-sdk/lib-dynamodb'
+import { BatchWriteCommand, DynamoDBDocumentClient, QueryCommand, QueryCommandInput } from '@aws-sdk/lib-dynamodb'
 
 import { retry } from '@salto-io/lowerdash'
 
@@ -46,12 +41,10 @@ export const dbUtils = (db: DynamoDBClient) => {
     }
   }
 
-  const tableExists = async (
-    tableName: string,
-  ): Promise<boolean> => await tableStatus(tableName) === 'ACTIVE'
+  const tableExists = async (tableName: string): Promise<boolean> => (await tableStatus(tableName)) === 'ACTIVE'
 
   const ensureTableExists = async (
-    tableParams: CreateTableCommandInput & { TableName: string},
+    tableParams: CreateTableCommandInput & { TableName: string },
     waitOpts?: retry.RetryOpts,
   ): Promise<void> => {
     try {
@@ -93,23 +86,26 @@ export const dbDocUtils = (dbDoc: DynamoDBDocumentClient) => {
           return { done: true, value: undefined }
         }
 
-        await withRetry(async (): Promise<boolean> => {
-          const queryResults = await dbDoc.send(new QueryCommand({
-            ...input,
-            ExclusiveStartKey: startKey,
-          }))
+        await withRetry(
+          async (): Promise<boolean> => {
+            const queryResults = await dbDoc.send(
+              new QueryCommand({
+                ...input,
+                ExclusiveStartKey: startKey,
+              }),
+            )
 
-          startKey = queryResults.LastEvaluatedKey
+            startKey = queryResults.LastEvaluatedKey
 
-          done = startKey === undefined
-          items = queryResults.Items as TReturn[]
+            done = startKey === undefined
+            items = queryResults.Items as TReturn[]
 
-          return done || Boolean(items?.length)
-        }, { ...opts, description: 'query' })
+            return done || Boolean(items?.length)
+          },
+          { ...opts, description: 'query' },
+        )
 
-        return (items && items.length !== 0)
-          ? { done: false, value: items }
-          : { done: true, value: undefined }
+        return items && items.length !== 0 ? { done: false, value: items } : { done: true, value: undefined }
       },
     }
   }
@@ -128,36 +124,36 @@ export const dbDocUtils = (dbDoc: DynamoDBDocumentClient) => {
           return this.next()
         }
 
-        return batch.done
-          ? { done: true, value: undefined }
-          : { done: false, value: batch.value.shift() as TReturn }
+        return batch.done ? { done: true, value: undefined } : { done: false, value: batch.value.shift() as TReturn }
       },
     }
   }
 
   const MAX_ITEMS_PER_BATCH_WRITE = 25
 
-  const batchDelete = async (
-    tableName: string,
-    keysToDelete: Key[],
-    opts: BatchDeleteOpts,
-  ): Promise<void> => {
-    await withRetry(async () => {
-      const keysToSend = keysToDelete.splice(0, MAX_ITEMS_PER_BATCH_WRITE)
+  const batchDelete = async (tableName: string, keysToDelete: Key[], opts: BatchDeleteOpts): Promise<void> => {
+    await withRetry(
+      async () => {
+        const keysToSend = keysToDelete.splice(0, MAX_ITEMS_PER_BATCH_WRITE)
 
-      const deleteResult = await dbDoc.send(new BatchWriteCommand({
-        RequestItems: {
-          [tableName]: keysToSend.map(r => ({ DeleteRequest: { Key: r } })),
-        },
-      }))
+        const deleteResult = await dbDoc.send(
+          new BatchWriteCommand({
+            RequestItems: {
+              [tableName]: keysToSend.map(r => ({ DeleteRequest: { Key: r } })),
+            },
+          }),
+        )
 
-      const unprocessed = (deleteResult.UnprocessedItems?.[tableName] ?? [])
-        .map(r => (r.DeleteRequest as DeleteRequest).Key)
+        const unprocessed = (deleteResult.UnprocessedItems?.[tableName] ?? []).map(
+          r => (r.DeleteRequest as DeleteRequest).Key,
+        )
 
-      keysToDelete.push(...unprocessed)
+        keysToDelete.push(...unprocessed)
 
-      return keysToDelete.length === 0
-    }, { ...opts, description: 'batchDelete' })
+        return keysToDelete.length === 0
+      },
+      { ...opts, description: 'batchDelete' },
+    )
   }
 
   return {

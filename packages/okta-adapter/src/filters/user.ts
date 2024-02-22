@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData, resolvePath, setPath } from '@salto-io/adapter-utils'
@@ -26,27 +26,24 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-const isRelevantInstance = (instance: InstanceElement): boolean => (
+const isRelevantInstance = (instance: InstanceElement): boolean =>
   Object.keys(USER_MAPPING).includes(instance.elemID.typeName)
-)
 
 const replaceValues = (instance: InstanceElement, mapping: Record<string, string>): void => {
   const paths = USER_MAPPING[instance.elemID.typeName]
-  paths.forEach(
-    path => {
-      const usersPath = instance.elemID.createNestedID(...path)
-      const resolvedPath = resolvePath(instance, usersPath)
-      const userValues = makeArray(resolvedPath)
-      if (resolvedPath === undefined) {
-        return
-      }
-      const newValues = userValues.map(value => {
-        const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
-        return newValue ?? value
-      })
-      setPath(instance, usersPath, _.isArray(resolvedPath) ? newValues : newValues[0])
+  paths.forEach(path => {
+    const usersPath = instance.elemID.createNestedID(...path)
+    const resolvedPath = resolvePath(instance, usersPath)
+    const userValues = makeArray(resolvedPath)
+    if (resolvedPath === undefined) {
+      return
     }
-  )
+    const newValues = userValues.map(value => {
+      const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
+      return newValue ?? value
+    })
+    setPath(instance, usersPath, _.isArray(resolvedPath) ? newValues : newValues[0])
+  })
 }
 
 export const replaceValuesForChanges = async (
@@ -54,13 +51,10 @@ export const replaceValuesForChanges = async (
   mapping: Record<string, string>,
 ): Promise<void> => {
   await awu(changes).forEach(async change => {
-    await applyFunctionToChangeData<Change<InstanceElement>>(
-      change,
-      instance => {
-        replaceValues(instance, mapping)
-        return instance
-      }
-    )
+    await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
+      replaceValues(instance, mapping)
+      return instance
+    })
   })
 }
 
@@ -81,9 +75,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
         log.warn('Could not find any users (onFetch)')
         return
       }
-      const mapping = Object.fromEntries(
-        users.map(user => [user.id, user.profile.login])
-      )
+      const mapping = Object.fromEntries(users.map(user => [user.id, user.profile.login]))
       const instances = elements.filter(isInstanceElement).filter(isRelevantInstance)
       instances.forEach(instance => {
         replaceValues(instance, mapping)
@@ -100,21 +92,17 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       if (_.isEmpty(usersToReplace)) {
         return
       }
-      const users = await getUsers(
-        paginator,
-        { userIds: usersToReplace, property: 'profile.login' },
-      )
+      const users = await getUsers(paginator, { userIds: usersToReplace, property: 'profile.login' })
       if (_.isEmpty(users)) {
         log.warn('Could not find any users (preDeploy)')
         return
       }
 
-      userIdToLogin = Object.fromEntries(
-        users.map(user => [user.id, user.profile.login])
-      )
-      const loginToUserId = Object.fromEntries(
-        users.map(user => [user.profile.login, user.id])
-      ) as Record<string, string>
+      userIdToLogin = Object.fromEntries(users.map(user => [user.id, user.profile.login]))
+      const loginToUserId = Object.fromEntries(users.map(user => [user.profile.login, user.id])) as Record<
+        string,
+        string
+      >
       await replaceValuesForChanges(changes, loginToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
@@ -122,8 +110,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
         log.debug('Converting user ids was disabled (onDeploy)')
         return
       }
-      const relevantChanges = changes
-        .filter(change => isRelevantInstance(getChangeData(change)))
+      const relevantChanges = changes.filter(change => isRelevantInstance(getChangeData(change)))
       if (_.isEmpty(relevantChanges)) {
         return
       }

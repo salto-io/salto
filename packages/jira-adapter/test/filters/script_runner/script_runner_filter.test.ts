@@ -1,25 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import scriptRunnerFilter from '../../../src/filters/script_runner/script_runner_filter'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
-import { JIRA, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE } from '../../../src/constants'
+import {
+  JIRA,
+  SCRIPTED_FIELD_TYPE,
+  SCRIPT_FRAGMENT_TYPE,
+  SCRIPT_RUNNER_LISTENER_TYPE,
+  SCRIPT_RUNNER_SETTINGS_TYPE,
+} from '../../../src/constants'
 import * as users from '../../../src/users'
 
 type FilterType = filterUtils.FilterWith<'preDeploy' | 'onFetch'>
@@ -28,28 +34,15 @@ jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('my-uuid'),
 }))
 
-
 describe('script_runner_filter', () => {
   let filter: FilterType
   let auditInstance: InstanceElement
   let listenerInstance: InstanceElement
   let fragmentInstance: InstanceElement
   beforeEach(() => {
-    auditInstance = new InstanceElement(
-      'instance',
-      createEmptyType(SCRIPTED_FIELD_TYPE),
-      {}
-    )
-    listenerInstance = new InstanceElement(
-      'instance',
-      createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
-      {}
-    )
-    fragmentInstance = new InstanceElement(
-      'instance',
-      createEmptyType(SCRIPT_FRAGMENT_TYPE),
-      {}
-    )
+    auditInstance = new InstanceElement('instance', createEmptyType(SCRIPTED_FIELD_TYPE), {})
+    listenerInstance = new InstanceElement('instance', createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE), {})
+    fragmentInstance = new InstanceElement('instance', createEmptyType(SCRIPT_FRAGMENT_TYPE), {})
   })
   describe('when script runner is enabled', () => {
     beforeEach(() => {
@@ -89,37 +82,29 @@ describe('script_runner_filter', () => {
       expect(settings.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
     })
     it('should remove empty instances', async () => {
-      const emptyListenerInstance = new InstanceElement(
-        'unnamed_0',
-        createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
-        {
-          spaceRemaining: 99.9,
-        }
-      )
+      const emptyListenerInstance = new InstanceElement('unnamed_0', createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE), {
+        spaceRemaining: 99.9,
+      })
       const elements = [emptyListenerInstance]
       await filter.onFetch(elements)
       expect(elements).toHaveLength(0)
     })
     it('should not remove non empty instances', async () => {
-      const nonEmptyListenerInstance = new InstanceElement(
-        'unnamed_0',
-        createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
-        {
-          description: 'not empty',
-        }
-      )
+      const nonEmptyListenerInstance = new InstanceElement('unnamed_0', createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE), {
+        description: 'not empty',
+      })
       const elements = [nonEmptyListenerInstance]
       await filter.onFetch(elements)
       expect(elements).toHaveLength(1)
     })
-
 
     describe('on creation', () => {
       it('should add audit info to relevant types', async () => {
         await filter.preDeploy([
           toChange({ after: auditInstance }),
           toChange({ after: listenerInstance }),
-          toChange({ after: fragmentInstance })])
+          toChange({ after: fragmentInstance }),
+        ])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'salto',
           createdTimestamp: 10,
@@ -130,10 +115,7 @@ describe('script_runner_filter', () => {
         expect(fragmentInstance.value.createdTimestamp).toBeUndefined()
       })
       it('should add uuid', async () => {
-        await filter.preDeploy([
-          toChange({ after: auditInstance }),
-          toChange({ after: listenerInstance }),
-        ])
+        await filter.preDeploy([toChange({ after: auditInstance }), toChange({ after: listenerInstance })])
         expect(auditInstance.value.uuid).toEqual('my-uuid')
         expect(listenerInstance.value.uuid).toEqual('my-uuid')
       })
@@ -161,7 +143,8 @@ describe('script_runner_filter', () => {
       it('should add audit info for relevant types', async () => {
         await filter.preDeploy([
           toChange({ before: auditInstance, after: auditInstance }),
-          toChange({ before: listenerInstance, after: listenerInstance })])
+          toChange({ before: listenerInstance, after: listenerInstance }),
+        ])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'not-salto',
           createdTimestamp: 1,
@@ -179,7 +162,8 @@ describe('script_runner_filter', () => {
         await filter.preDeploy([
           toChange({ before: auditInstance, after: auditInstance }),
           toChange({ before: listenerInstance, after: listenerInstance }),
-          toChange({ before: fragmentInstance, after: auditInstance })])
+          toChange({ before: fragmentInstance, after: auditInstance }),
+        ])
         expect(auditInstance.value.uuid).toEqual('not-my-uuid')
         expect(listenerInstance.value.uuid).toEqual('not-my-uuid')
         expect(fragmentInstance.value.id).toEqual('not-my-uuid')

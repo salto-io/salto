@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ActionName, CORE_ANNOTATIONS, isListType, isMapType, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ActionName,
+  CORE_ANNOTATIONS,
+  isListType,
+  isMapType,
+  isObjectType,
+  ObjectType,
+  TypeElement,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -21,19 +29,23 @@ import { AdapterApiConfig } from '../../../config/shared'
 import { DeploymentRequestsByAction } from '../../../config/request'
 import { LoadedSwagger } from '../swagger'
 import { OPERATION_TO_ANNOTATION } from '../../../deployment/annotations'
-import { extractProperties, isArraySchemaObject, isReferenceObject, isV3, SchemaObject, SchemaOrReference, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
+import {
+  extractProperties,
+  isArraySchemaObject,
+  isReferenceObject,
+  isV3,
+  SchemaObject,
+  SchemaOrReference,
+  SwaggerVersion,
+  toSchema,
+} from '../type_elements/swagger_parser'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const getFields = (
-  swagger: LoadedSwagger,
-  schemaOrRef: SchemaOrReference,
-): Record<string, SchemaObject> => {
-  const schema = isReferenceObject(schemaOrRef)
-    ? swagger.parser.$refs.get(schemaOrRef.$ref)
-    : schemaOrRef
+const getFields = (swagger: LoadedSwagger, schemaOrRef: SchemaOrReference): Record<string, SchemaObject> => {
+  const schema = isReferenceObject(schemaOrRef) ? swagger.parser.$refs.get(schemaOrRef.$ref) : schemaOrRef
 
   const { allProperties, additionalProperties } = extractProperties(schema, swagger.parser.$refs)
   const fields = {
@@ -81,7 +93,7 @@ const setTypeAnnotations = async (
   schema: SchemaOrReference,
   swagger: LoadedSwagger,
   action: ActionName,
-  annotatedTypes: Set<string>
+  annotatedTypes: Set<string>,
 ): Promise<void> => {
   if (annotatedTypes.has(type.elemID.getFullName())) {
     return
@@ -124,10 +136,13 @@ export const addDeploymentAnnotationsFromSwagger = async (
     throw new Error('Deployment currently only supports open api V3')
   }
 
-  const baseUrls = document.servers?.map(
-    // The server url can be either "http://someUrl.." or "//someUrl.."
-    server => new URL(server.url.startsWith('//') ? `http:${server.url}` : server.url).pathname
-  ).filter(baseUrl => baseUrl !== '/') ?? []
+  const baseUrls =
+    document.servers
+      ?.map(
+        // The server url can be either "http://someUrl.." or "//someUrl.."
+        server => new URL(server.url.startsWith('//') ? `http:${server.url}` : server.url).pathname,
+      )
+      .filter(baseUrl => baseUrl !== '/') ?? []
 
   await awu(Object.entries(endpointDetails)).forEach(async ([operation, endpoint]) => {
     if (endpoint === undefined) {
@@ -142,10 +157,7 @@ export const addDeploymentAnnotationsFromSwagger = async (
 
     delete type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
 
-    const schema = toSchema(
-      SwaggerVersion.V3,
-      swagger.document.paths[endpointUrl][endpoint.method].requestBody
-    )
+    const schema = toSchema(SwaggerVersion.V3, swagger.document.paths[endpointUrl][endpoint.method].requestBody)
 
     if (schema === undefined) {
       log.warn('Failed to get schema for type %s', type.elemID.getFullName())
@@ -156,7 +168,6 @@ export const addDeploymentAnnotationsFromSwagger = async (
 
   return foundEndpoint
 }
-
 
 /**
  * Add the deployment annotations to the given object type based on the schemas in the swagger
@@ -172,17 +183,11 @@ const addDeploymentAnnotationsToType = async (
 ): Promise<void> => {
   const foundEndpointsDetails = await awu(swaggers)
     .map(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
-    .toArray();
+    .toArray()
 
-  [
-    endpointDetails.add?.url,
-    endpointDetails.modify?.url,
-    endpointDetails.remove?.url,
-  ].filter(values.isDefined)
-    .filter(
-      url => foundEndpointsDetails
-        .every(foundEndpoints => !foundEndpoints.has(url))
-    )
+  ;[endpointDetails.add?.url, endpointDetails.modify?.url, endpointDetails.remove?.url]
+    .filter(values.isDefined)
+    .filter(url => foundEndpointsDetails.every(foundEndpoints => !foundEndpoints.has(url)))
     .forEach(url => {
       log.warn(`${type.elemID.getFullName()} endpoint ${url} not found in swagger`)
     })
@@ -201,30 +206,16 @@ export const addDeploymentAnnotations = async (
   apiDefinitions: AdapterApiConfig,
 ): Promise<void> => {
   types.forEach(type => {
-    type.annotations[CORE_ANNOTATIONS.CREATABLE] = Boolean(
-      type.annotations[CORE_ANNOTATIONS.CREATABLE]
-    )
-    type.annotations[CORE_ANNOTATIONS.UPDATABLE] = Boolean(
-      type.annotations[CORE_ANNOTATIONS.UPDATABLE]
-    )
-    type.annotations[CORE_ANNOTATIONS.DELETABLE] = Boolean(
-      type.annotations[CORE_ANNOTATIONS.DELETABLE]
-    )
+    type.annotations[CORE_ANNOTATIONS.CREATABLE] = Boolean(type.annotations[CORE_ANNOTATIONS.CREATABLE])
+    type.annotations[CORE_ANNOTATIONS.UPDATABLE] = Boolean(type.annotations[CORE_ANNOTATIONS.UPDATABLE])
+    type.annotations[CORE_ANNOTATIONS.DELETABLE] = Boolean(type.annotations[CORE_ANNOTATIONS.DELETABLE])
     Object.values(type.fields).forEach(field => {
-      field.annotations[CORE_ANNOTATIONS.CREATABLE] = Boolean(
-        field.annotations[CORE_ANNOTATIONS.CREATABLE]
-      )
-      field.annotations[CORE_ANNOTATIONS.UPDATABLE] = Boolean(
-        field.annotations[CORE_ANNOTATIONS.UPDATABLE]
-      )
+      field.annotations[CORE_ANNOTATIONS.CREATABLE] = Boolean(field.annotations[CORE_ANNOTATIONS.CREATABLE])
+      field.annotations[CORE_ANNOTATIONS.UPDATABLE] = Boolean(field.annotations[CORE_ANNOTATIONS.UPDATABLE])
     })
   })
 
-  await awu(types).forEach(
-    type => addDeploymentAnnotationsToType(
-      type,
-      swaggers,
-      apiDefinitions.types[type.elemID.name]?.deployRequests ?? {}
-    )
+  await awu(types).forEach(type =>
+    addDeploymentAnnotationsToType(type, swaggers, apiDefinitions.types[type.elemID.name]?.deployRequests ?? {}),
   )
 }

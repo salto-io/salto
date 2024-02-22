@@ -1,19 +1,18 @@
-
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /* eslint-disable camelcase */
 import _ from 'lodash'
@@ -22,33 +21,17 @@ import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/pars
 import * as constants from '../../src/constants'
 import { translationcollectionType } from '../../src/autogen/types/standard_types/translationcollection'
 import { parsedWorkbookType } from '../../src/type_parsers/analytics_parsers/parsed_workbook'
-import { DATA_VIEWS, DATA_VIEW_IDS, FIELD_DEFINITION, FIELD_TYPE, PIVOTS, PIVOT_IDS } from '../../src/type_parsers/analytics_parsers/analytics_constants'
+import {
+  DATA_VIEWS,
+  DATA_VIEW_IDS,
+  FIELD_DEFINITION,
+  FIELD_TYPE,
+  PIVOTS,
+  PIVOT_IDS,
+} from '../../src/type_parsers/analytics_parsers/analytics_constants'
 
 const dataset = parsedDatasetType().type
 const workbook = parsedWorkbookType().type
-
-// translation collection
-
-const custcollectiontranslations_workbook_example_value = {
-  scriptid: 'custcollectiontranslations_workbook_example',
-  defaultlanguage: 'en-US',
-  strings: {
-    string: {
-      workbookname: {
-        scriptid: 'workbookname',
-        defaulttranslation: 'seggev',
-        description: 'Name in workbook',
-        index: 0,
-      },
-    },
-  },
-}
-export const custcollectiontranslations_workbook_example = new InstanceElement(
-  'custcollectiontranslations_workbook_example',
-  translationcollectionType().type,
-  custcollectiontranslations_workbook_example_value,
-  [constants.NETSUITE, constants.TRANSLATION_COLLECTION],
-)
 
 // basic definition
 const basicDatasetDefinitionOriginal = `
@@ -130,12 +113,10 @@ const basicDatasetValue = {
   scriptid: 'seggevTestBasic',
   definition: basicDatasetDefinitionOriginal,
 }
-export const basicDataset = new InstanceElement(
-  'seggev basic',
-  dataset,
-  basicDatasetValue,
-  [constants.NETSUITE, constants.DATASET],
-)
+export const basicDataset = new InstanceElement('seggev basic', dataset, basicDatasetValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
 export const parsedBasicDatasetValue = {
   scriptid: basicDatasetValue.scriptid,
   name: basicDatasetValue.name,
@@ -196,12 +177,10 @@ export const parsedBasicDatasetValue = {
   },
 }
 
-export const parsedBasicDataset = new InstanceElement(
-  'seggev parsed basic',
-  dataset,
-  parsedBasicDatasetValue,
-  [constants.NETSUITE, constants.DATASET],
-)
+export const parsedBasicDataset = new InstanceElement('seggev parsed basic', dataset, parsedBasicDatasetValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
 
 // definition with unknown attribute
 const originalUnknownDefinition = `
@@ -224,12 +203,10 @@ const unknownDatasetValue = {
   scriptid: 'seggevTestUnknown',
   definition: originalUnknownDefinition,
 }
-export const unknownDataset = new InstanceElement(
-  'seggev unknown',
-  dataset,
-  unknownDatasetValue,
-  [constants.NETSUITE, constants.DATASET],
-)
+export const unknownDataset = new InstanceElement('seggev unknown', dataset, unknownDatasetValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
 
 export const parsedUnknownDatasetValue = {
   name: unknownDatasetValue.name,
@@ -273,10 +250,6 @@ export const unknownDefinition = `<root>
     <isPublic type="boolean">true</isPublic>
     <AudienceItems type="array"></AudienceItems>
   </audience>
-  <strangeAttribute>
-    <num type="string">0.5</num>
-    <_T_>type</_T_>
-  </strangeAttribute>
   <_T_>dataSet</_T_>
   <scriptid type="null"></scriptid>
   <name>seggev test unknown</name>
@@ -309,12 +282,10 @@ const typesValue = {
   scriptid: 'seggevTestTypes',
   definition: typesDefinition,
 }
-export const typesWorkbook = new InstanceElement(
-  'seggev types',
-  workbook,
-  typesValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
+export const typesWorkbook = new InstanceElement('seggev types', workbook, typesValue, [
+  constants.NETSUITE,
+  constants.WORKBOOK,
+])
 export const parsedTypesWorkbook = {
   name: typesValue.name,
   scriptid: typesValue.scriptid,
@@ -327,28 +298,23 @@ export const parsedTypesWorkbook = {
 const emptyAnalyticValue = {
   scriptid: 'seggevTestEmpty',
 }
-export const emptyDataset = new InstanceElement(
-  'seggev empty',
-  dataset,
-  emptyAnalyticValue,
-  [constants.NETSUITE, constants.DATASET],
-)
-export const emptyWorkbook = new InstanceElement(
-  'seggev empty',
-  workbook,
-  emptyAnalyticValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
+export const emptyDataset = new InstanceElement('seggev empty', dataset, emptyAnalyticValue, [
+  constants.NETSUITE,
+  constants.DATASET,
+])
+export const emptyWorkbook = new InstanceElement('seggev empty', workbook, emptyAnalyticValue, [
+  constants.NETSUITE,
+  constants.WORKBOOK,
+])
 
-export const emptyDatasetDefinition = '<root>\n  <_T_>dataSet</_T_>\n  <scriptid type="null"></scriptid>\n  <applicationId type="null"></applicationId>\n  <audience type="null"></audience>\n  <baseRecord type="null"></baseRecord>\n  <columns type="array"></columns>\n  <criteria type="null"></criteria>\n  <description type="null"></description>\n  <formulas type="array"></formulas>\n  <id type="null"></id>\n  <ownerId type="null"></ownerId>\n  <version type="null"></version>\n</root>\n'
+export const emptyDatasetDefinition =
+  '<root>\n  <_T_>dataSet</_T_>\n  <scriptid type="null"></scriptid>\n  <applicationId type="null"></applicationId>\n  <audience type="null"></audience>\n  <baseRecord type="null"></baseRecord>\n  <columns type="array"></columns>\n  <criteria type="null"></criteria>\n  <description type="null"></description>\n  <formulas type="array"></formulas>\n  <id type="null"></id>\n  <ownerId type="null"></ownerId>\n  <version type="null"></version>\n</root>\n'
 
 export const basicDatasetDefinition = `<root>
-  <version type="string">0.1</version>
   <audience>
     <isPublic type="boolean">false</isPublic>
     <AudienceItems type="array"></AudienceItems>
   </audience>
-  <ownerId>5</ownerId>
   <baseRecord>
     <id>account</id>
     <label>Account</label>
@@ -404,6 +370,8 @@ export const basicDatasetDefinition = `<root>
     <field type="null"></field>
     <fieldStateName type="null"></fieldStateName>
   </criteria>
+  <ownerId>5</ownerId>
+  <version type="string">0.1</version>
   <_T_>dataSet</_T_>
   <scriptid type="null"></scriptid>
   <name>seggev test basic</name>
@@ -460,14 +428,6 @@ export const parsedBasicWorkbookValue = {
     '#text': '[scriptid=name]',
   },
   dependencies: workbookDependencies,
-  tables: {
-    table: {
-      custview72_16951029801843995215: {
-        scriptid: 'custview72_16951029801843995215',
-        index: 0,
-      },
-    },
-  },
   Workbook: {
     version: '1.1.1',
     name: {
@@ -477,9 +437,7 @@ export const parsedBasicWorkbookValue = {
       isPublic: false,
     },
     ownerId: 5,
-    dataViewIDs: [
-      'custview72_16951029801843995215',
-    ],
+    dataViewIDs: ['custview72_16951029801843995215'],
   },
   dataViews: [
     {
@@ -491,9 +449,7 @@ export const parsedBasicWorkbookValue = {
           translationScriptId: 'name_of_the_table',
         },
         workbook: 'custworkbook_basic',
-        datasets: [
-          'stddatasetMyTransactionsDataSet',
-        ],
+        datasets: ['stddatasetMyTransactionsDataSet'],
         columns: [
           {
             datasetScriptId: 'stddatasetMyTransactionsDataSet',
@@ -517,35 +473,6 @@ export const parsedBasicWorkbook = new InstanceElement(
 )
 
 export const basicWorkbookDefinition = `<root>
-  <tables>
-    <table>
-      <custview72_16951029801843995215>
-        <scriptid>custview72_16951029801843995215</scriptid>
-        <index>0</index>
-      </custview72_16951029801843995215>
-    </table>
-  </tables>
-  <Workbook>
-    <version>1.1.1</version>
-    <name>
-      <translationScriptId>seggev basic workbook name</translationScriptId>
-    </name>
-    <audience>
-      <isPublic type="boolean">false</isPublic>
-      <AudienceItems type="array"></AudienceItems>
-    </audience>
-    <ownerId>5</ownerId>
-    <dataViewIDs type="array">
-      <_ITEM_>custview72_16951029801843995215</_ITEM_>
-    </dataViewIDs>
-    <_T_>workbook</_T_>
-    <id type="null"></id>
-    <scriptId type="null"></scriptId>
-    <applicationId type="null"></applicationId>
-    <description type="null"></description>
-    <pivotIDs type="array"></pivotIDs>
-    <chartIDs type="array"></chartIDs>
-  </Workbook>
   <dataViews type="array">
     <_ITEM_>
       <_T_>dataView</_T_>
@@ -578,6 +505,27 @@ export const basicWorkbookDefinition = `<root>
       <applicationId type="null"></applicationId>
     </_ITEM_>
   </dataViews>
+  <Workbook>
+    <version>1.1.1</version>
+    <name>
+      <translationScriptId>seggev basic workbook name</translationScriptId>
+    </name>
+    <audience>
+      <isPublic type="boolean">false</isPublic>
+      <AudienceItems type="array"></AudienceItems>
+    </audience>
+    <ownerId>5</ownerId>
+    <dataViewIDs type="array">
+      <_ITEM_>custview72_16951029801843995215</_ITEM_>
+    </dataViewIDs>
+    <_T_>workbook</_T_>
+    <id type="null"></id>
+    <scriptId type="null"></scriptId>
+    <applicationId type="null"></applicationId>
+    <description type="null"></description>
+    <pivotIDs type="array"></pivotIDs>
+    <chartIDs type="array"></chartIDs>
+  </Workbook>
   <scriptid type="null"></scriptid>
   <name>
     <translationScriptId>name</translationScriptId>
@@ -594,23 +542,28 @@ const basicWorkbookValue = {
   },
   dependencies: workbookDependencies,
   definition: basicWorkbookDefinition,
+  tables: {
+    table: {
+      custview72_16951029801843995215: {
+        scriptid: 'custview72_16951029801843995215',
+        index: 0,
+      },
+    },
+  },
 }
 
-export const basicWorkbook = new InstanceElement(
-  'seggev basic workbook',
-  workbook,
-  basicWorkbookValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
+export const basicWorkbook = new InstanceElement('seggev basic workbook', workbook, basicWorkbookValue, [
+  constants.NETSUITE,
+  constants.WORKBOOK,
+])
+
 const parsedDatasetWithDefaultCompletionValue = {
   name: 'default test',
   scriptid: 'default_test',
   criteria: {
     condition: {
-      operator: {
-      },
-      targetFieldContext: {
-      },
+      operator: {},
+      targetFieldContext: {},
     },
   },
 }
@@ -653,7 +606,7 @@ export const defaultValuesDatasetDefinition = `<root>
 
 const parsedWorkbookWithArraysValue = {
   name: 'arrays test',
-  scriptid: 'arrays_test',
+  scriptid: 'custworkbook_with_arrays',
   [DATA_VIEWS]: [
     {
       dataView: {
@@ -666,29 +619,26 @@ const parsedWorkbookWithArraysValue = {
       },
     },
   ],
-  [PIVOTS]: {
-    pivot: {
-      scriptId: '4',
+  [PIVOTS]: [
+    {
+      pivot: {
+        scriptId: '4',
+        datasets: ['a', 'b'],
+        definition:
+          '<root><version>1</version><columnAxis><dimensionTree><_T_>dataDimension</_T_><id>6</id><children type="array"><_ITEM_><ref>3</ref></_ITEM_></children><items type="array"><_ITEM_><id>2</id><expression><function>field</function><args><type><_T_>textType</_T_></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>displaynamewithhierarchy</fieldId></args></expression></_ITEM_></items></dimensionTree><uiSettings><headerAlwaysVisible type="boolean">true</headerAlwaysVisible></uiSettings></columnAxis><rowAxis><dimensionTree><_T_>section</_T_><id>5</id><children type="array"><_ITEM_><_T_>dataDimension</_T_><id>4</id><items type="array"><_ITEM_><id>1</id><expression><function>field</function><args><type><_T_>textType</_T_></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>description</fieldId></args></expression></_ITEM_></items></_ITEM_></children></dimensionTree></rowAxis><measures type="array"><_ITEM_><_T_>dataMeasure</_T_><id>3</id><aggregation>count</aggregation><expression><function>field</function><args><type><_T_>recordType</_T_><id>record_accttype</id></type><dataSourceId>custdataset_dilly_1</dataSourceId><fieldId>accttype</fieldId></args></expression></_ITEM_></measures></root>',
+      },
     },
-  },
+  ],
   Workbook: {
-    [DATA_VIEW_IDS]: [
-      '1',
-      2,
-    ],
-    [PIVOT_IDS]: [
-      '3',
-    ],
+    [DATA_VIEW_IDS]: ['1', 2],
+    [PIVOT_IDS]: ['3'],
   },
 }
-export const tablesArray = [
-  { [constants.SCRIPT_ID]: '1' },
-]
-export const pivotArray = [
-  { [constants.SCRIPT_ID]: '3' },
-]
-export const parsedDatasetWithArrays = new InstanceElement(
-  'arrays test',
+
+export const tablesArray = [{ [constants.SCRIPT_ID]: '1' }]
+export const pivotArray = [{ [constants.SCRIPT_ID]: '3' }]
+export const parsedWorkbookWithArrays = new InstanceElement(
+  'custworkbook_with_arrays',
   workbook,
   parsedWorkbookWithArraysValue,
   [constants.NETSUITE, constants.WORKBOOK],
@@ -721,18 +671,23 @@ export const definitionWithArrays = `<root>
       <order type="null"></order>
     </_ITEM_>
   </dataViews>
-  <pivots>
-    <_T_>pivot</_T_>
-    <scriptId type="string">4</scriptId>
-    <id type="null"></id>
-    <applicationId type="null"></applicationId>
-    <version type="null"></version>
-    <name type="null"></name>
-    <workbook type="null"></workbook>
-    <datasets type="array"></datasets>
-    <format type="null"></format>
-    <order type="null"></order>
-    <definition type="null"></definition>
+  <pivots type="array">
+    <_ITEM_>
+      <_T_>pivot</_T_>
+      <scriptId type="string">4</scriptId>
+      <datasets type="array">
+        <_ITEM_>a</_ITEM_>
+        <_ITEM_>b</_ITEM_>
+      </datasets>
+      <definition>&#x3C;root&#x3E;&#x3C;version&#x3E;1&#x3C;/version&#x3E;&#x3C;columnAxis&#x3E;&#x3C;dimensionTree&#x3E;&#x3C;_T_&#x3E;dataDimension&#x3C;/_T_&#x3E;&#x3C;id&#x3E;6&#x3C;/id&#x3E;&#x3C;children type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;ref&#x3E;3&#x3C;/ref&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/children&#x3E;&#x3C;items type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;id&#x3E;2&#x3C;/id&#x3E;&#x3C;expression&#x3E;&#x3C;function&#x3E;field&#x3C;/function&#x3E;&#x3C;args&#x3E;&#x3C;type&#x3E;&#x3C;_T_&#x3E;textType&#x3C;/_T_&#x3E;&#x3C;/type&#x3E;&#x3C;dataSourceId&#x3E;custdataset_dilly_1&#x3C;/dataSourceId&#x3E;&#x3C;fieldId&#x3E;displaynamewithhierarchy&#x3C;/fieldId&#x3E;&#x3C;/args&#x3E;&#x3C;/expression&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/items&#x3E;&#x3C;/dimensionTree&#x3E;&#x3C;uiSettings&#x3E;&#x3C;headerAlwaysVisible type=&#x22;boolean&#x22;&#x3E;true&#x3C;/headerAlwaysVisible&#x3E;&#x3C;/uiSettings&#x3E;&#x3C;/columnAxis&#x3E;&#x3C;rowAxis&#x3E;&#x3C;dimensionTree&#x3E;&#x3C;_T_&#x3E;section&#x3C;/_T_&#x3E;&#x3C;id&#x3E;5&#x3C;/id&#x3E;&#x3C;children type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;_T_&#x3E;dataDimension&#x3C;/_T_&#x3E;&#x3C;id&#x3E;4&#x3C;/id&#x3E;&#x3C;items type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;id&#x3E;1&#x3C;/id&#x3E;&#x3C;expression&#x3E;&#x3C;function&#x3E;field&#x3C;/function&#x3E;&#x3C;args&#x3E;&#x3C;type&#x3E;&#x3C;_T_&#x3E;textType&#x3C;/_T_&#x3E;&#x3C;/type&#x3E;&#x3C;dataSourceId&#x3E;custdataset_dilly_1&#x3C;/dataSourceId&#x3E;&#x3C;fieldId&#x3E;description&#x3C;/fieldId&#x3E;&#x3C;/args&#x3E;&#x3C;/expression&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/items&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/children&#x3E;&#x3C;/dimensionTree&#x3E;&#x3C;/rowAxis&#x3E;&#x3C;measures type=&#x22;array&#x22;&#x3E;&#x3C;_ITEM_&#x3E;&#x3C;_T_&#x3E;dataMeasure&#x3C;/_T_&#x3E;&#x3C;id&#x3E;3&#x3C;/id&#x3E;&#x3C;aggregation&#x3E;count&#x3C;/aggregation&#x3E;&#x3C;expression&#x3E;&#x3C;function&#x3E;field&#x3C;/function&#x3E;&#x3C;args&#x3E;&#x3C;type&#x3E;&#x3C;_T_&#x3E;recordType&#x3C;/_T_&#x3E;&#x3C;id&#x3E;record_accttype&#x3C;/id&#x3E;&#x3C;/type&#x3E;&#x3C;dataSourceId&#x3E;custdataset_dilly_1&#x3C;/dataSourceId&#x3E;&#x3C;fieldId&#x3E;accttype&#x3C;/fieldId&#x3E;&#x3C;/args&#x3E;&#x3C;/expression&#x3E;&#x3C;/_ITEM_&#x3E;&#x3C;/measures&#x3E;&#x3C;/root&#x3E;</definition>
+      <id type="null"></id>
+      <applicationId type="null"></applicationId>
+      <version type="null"></version>
+      <name type="null"></name>
+      <workbook type="null"></workbook>
+      <format type="null"></format>
+      <order type="null"></order>
+    </_ITEM_>
   </pivots>
   <Workbook>
     <dataViewIDs type="array">
@@ -760,32 +715,88 @@ export const definitionWithArrays = `<root>
 </root>
 `
 
-
-const parsedWorkbookWithStrangeNameValue = {
-  name: {
-    [constants.REAL_VALUE_KEY]: 'name',
-  },
-  scriptid: 'name_test',
-}
-
-export const parsedWorkbookWithStrangeName = new InstanceElement(
-  'name test',
-  workbook,
-  parsedWorkbookWithStrangeNameValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)
-
-export const definitionWithStrangeName = `<root>
+const newDefinitionWithArrays = `<root>
+  <dataViews type="array">
+    <_ITEM_>
+      <_T_>dataView</_T_>
+      <scriptId type="string">1</scriptId>
+      <id type="null"></id>
+      <applicationId type="null"></applicationId>
+      <version type="null"></version>
+      <name type="null"></name>
+      <workbook type="null"></workbook>
+      <datasets type="array"></datasets>
+      <columns type="array"></columns>
+      <order type="null"></order>
+    </_ITEM_>
+    <_ITEM_>
+      <_T_>dataView</_T_>
+      <scriptId>2</scriptId>
+      <id type="null"></id>
+      <applicationId type="null"></applicationId>
+      <version type="null"></version>
+      <name type="null"></name>
+      <workbook type="null"></workbook>
+      <datasets type="array"></datasets>
+      <columns type="array"></columns>
+      <order type="null"></order>
+    </_ITEM_>
+  </dataViews>
+  <pivots type="array">
+    <_ITEM_>
+      <_T_>pivot</_T_>
+      <scriptId type="string">4</scriptId>
+      <datasets type="array">
+        <_ITEM_>b</_ITEM_>
+        <_ITEM_>a</_ITEM_>
+      </datasets>
+      <id type="null"></id>
+      <applicationId type="null"></applicationId>
+      <version type="null"></version>
+      <name type="null"></name>
+      <workbook type="null"></workbook>
+      <format type="null"></format>
+      <order type="null"></order>
+      <definition>&lt;root>&lt;version>1&lt;/version>&lt;rowAxis>&lt;dimensionTree>&lt;_T_>section&lt;/_T_>&lt;id>5&lt;/id>&lt;children type="array">&lt;_ITEM_>&lt;_T_>dataDimension&lt;/_T_>&lt;id>4&lt;/id>&lt;items type="array">&lt;_ITEM_>&lt;id>1&lt;/id>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>textType&lt;/_T_>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>description&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/items>&lt;/_ITEM_>&lt;/children>&lt;/dimensionTree>&lt;/rowAxis>&lt;columnAxis>&lt;dimensionTree>&lt;_T_>dataDimension&lt;/_T_>&lt;id>6&lt;/id>&lt;children type="array">&lt;_ITEM_>&lt;ref>3&lt;/ref>&lt;/_ITEM_>&lt;/children>&lt;items type="array">&lt;_ITEM_>&lt;id>2&lt;/id>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>textType&lt;/_T_>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>displaynamewithhierarchy&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/items>&lt;/dimensionTree>&lt;uiSettings>&lt;headerAlwaysVisible type="boolean">true&lt;/headerAlwaysVisible>&lt;/uiSettings>&lt;/columnAxis>&lt;measures type="array">&lt;_ITEM_>&lt;_T_>dataMeasure&lt;/_T_>&lt;id>3&lt;/id>&lt;aggregation>count&lt;/aggregation>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>recordType&lt;/_T_>&lt;id>record_accttype&lt;/id>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>accttype&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/measures>&lt;/root></definition>
+    </_ITEM_>
+  </pivots>
+  <Workbook>
+    <dataViewIDs type="array">
+      <_ITEM_ type="string">1</_ITEM_>
+      <_ITEM_>2</_ITEM_>
+    </dataViewIDs>
+    <pivotIDs type="array">
+      <_ITEM_ type="string">3</_ITEM_>
+    </pivotIDs>
+    <_T_>workbook</_T_>
+    <id type="null"></id>
+    <scriptId type="null"></scriptId>
+    <applicationId type="null"></applicationId>
+    <version type="null"></version>
+    <name type="null"></name>
+    <audience type="null"></audience>
+    <ownerId type="null"></ownerId>
+    <description type="null"></description>
+    <chartIDs type="array"></chartIDs>
+  </Workbook>
   <scriptid type="null"></scriptid>
-  <name>
-    <translationScriptId>netsuite.workbook_with_name_with_reference_to_not_custcollection</translationScriptId>
-  </name>
-  <dependencies type="null"></dependencies>
-  <definition type="null"></definition>
+  <name>arrays test</name>
   <charts type="array"></charts>
   <datasetLinks type="array"></datasetLinks>
-  <dataViews type="array"></dataViews>
-  <pivots type="array"></pivots>
-  <Workbook type="null"></Workbook>
 </root>
 `
+
+const newWorkbookWithArraysValue = {
+  scriptid: 'custworkbook_with_arrays',
+  name: {
+    '#text': '[scriptid=name]',
+  },
+  definition: newDefinitionWithArrays,
+}
+
+export const newWorkbookWithArrays = new InstanceElement(
+  'custworkbook_with_arrays',
+  workbook,
+  newWorkbookWithArraysValue,
+  [constants.NETSUITE, constants.WORKBOOK],
+)

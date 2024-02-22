@@ -1,26 +1,41 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { DescribeSObjectResult, Field as SObjField } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ObjectType, isInstanceElement, ElemID, InstanceElement, Element } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
+import {
+  ObjectType,
+  isInstanceElement,
+  ElemID,
+  InstanceElement,
+  Element,
+} from '@salto-io/adapter-api'
+import {
+  CUSTOM_OBJECT,
+  COMPOUND_FIELD_TYPE_NAMES,
+  NAME_FIELDS,
+} from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { getSObjectFieldElement, apiName, toCustomField, isSubfieldOfCompound } from '../transformers/transformer'
+import {
+  getSObjectFieldElement,
+  apiName,
+  toCustomField,
+  isSubfieldOfCompound,
+} from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { CustomField } from '../client/types'
 import { createSkippedListConfigChangeFromError } from '../config_change'
@@ -29,7 +44,6 @@ import { FetchProfile } from '../types'
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
-
 
 const createFieldValue = async (
   field: SObjField,
@@ -41,7 +55,9 @@ const createFieldValue = async (
   // temporary hack to maintain the current implementation of the code in transformer.ts
   // in the future we should change the implementation of getSObjectFieldElement to simply
   // create the values we need in the first place instead of having to go through toCustomField
-  const tmpObj = new ObjectType({ elemID: new ElemID('salesforce', objectName) })
+  const tmpObj = new ObjectType({
+    elemID: new ElemID('salesforce', objectName),
+  })
   const dummyField = getSObjectFieldElement(
     tmpObj,
     field,
@@ -72,22 +88,25 @@ const addSObjectInformationToInstance = async (
   systemFields?: string[],
 ): Promise<void> => {
   // Add information to the object type
-  _.defaults(
-    instance.value,
-    {
-      keyPrefix: sobject.keyPrefix,
-      label: sobject.label,
-    }
-  )
+  _.defaults(instance.value, {
+    keyPrefix: sobject.keyPrefix,
+    label: sobject.label,
+  })
   // Fix fields type in case it is not an array yet
   // this can happen if there is just one field, or if there are no fields
   instance.value.fields = makeArray(instance.value.fields)
   // Add information about fields
-  const fieldsFromMetadataApi = _.keyBy(instance.value.fields, field => field.fullName)
+  const fieldsFromMetadataApi = _.keyBy(
+    instance.value.fields,
+    (field) => field.fullName,
+  )
 
-  const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
+  const getCompoundTypeName = (
+    nestedFields: SObjField[],
+    compoundName: string,
+  ): string => {
     if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
-      return nestedFields.some(field => field.name === NAME_FIELDS.SALUTATION)
+      return nestedFields.some((field) => field.name === NAME_FIELDS.SALUTATION)
         ? COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
         : COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION
     }
@@ -99,20 +118,28 @@ const addSObjectInformationToInstance = async (
   const objCompoundFieldNames = _.mapValues(
     _.groupBy(
       sobject.fields.filter(isSubfieldOfCompound),
-      field => field.compoundFieldName,
+      (field) => field.compoundFieldName,
     ),
     getCompoundTypeName,
   )
 
   const sobjectFields = await Promise.all(
     sobject.fields
-      .filter(field => !isSubfieldOfCompound(field)) // Filter out nested fields of compound fields
-      .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, fetchProfile, systemFields))
+      .filter((field) => !isSubfieldOfCompound(field)) // Filter out nested fields of compound fields
+      .map((field) =>
+        createFieldValue(
+          field,
+          sobject.name,
+          objCompoundFieldNames,
+          fetchProfile,
+          systemFields,
+        ),
+      ),
   )
 
   const addedFieldNames: string[] = []
   const modifiedFieldNames: string[] = []
-  sobjectFields.forEach(sobjectField => {
+  sobjectFields.forEach((sobjectField) => {
     const existingField = fieldsFromMetadataApi[sobjectField.fullName]
     if (existingField !== undefined) {
       modifiedFieldNames.push(sobjectField.fullName)
@@ -123,11 +150,22 @@ const addSObjectInformationToInstance = async (
     }
   })
   const instanceFullName = instance.elemID.getFullName()
-  log.debug('added %d fields from soap API to %s, the fields are - %s', addedFieldNames.length, instanceFullName, addedFieldNames.join(', '))
-  log.debug('modified %d fields from soap API to %s, the fields are - %s', modifiedFieldNames.length, instanceFullName, modifiedFieldNames.join(', '))
+  log.debug(
+    'added %d fields from soap API to %s, the fields are - %s',
+    addedFieldNames.length,
+    instanceFullName,
+    addedFieldNames.join(', '),
+  )
+  log.debug(
+    'modified %d fields from soap API to %s, the fields are - %s',
+    modifiedFieldNames.length,
+    instanceFullName,
+    modifiedFieldNames.join(', '),
+  )
 }
 
-const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional information about Custom Objects'
+const WARNING_MESSAGE =
+  'Encountered an error while trying to fetch additional information about Custom Objects'
 
 /**
  * Custom objects filter.
@@ -142,8 +180,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<FilterResult> => {
       const customObjectInstances = await keyByAsync(
-        awu(elements).filter(isInstanceElement).filter(isInstanceOfType(CUSTOM_OBJECT)),
-        instance => apiName(instance),
+        awu(elements)
+          .filter(isInstanceElement)
+          .filter(isInstanceOfType(CUSTOM_OBJECT)),
+        (instance) => apiName(instance),
       )
       if (_.isEmpty(customObjectInstances)) {
         // Not fetching custom objects, no need to do anything
@@ -153,28 +193,30 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       const availableObjects = await client.listSObjects()
       const potentialObjectNames = new Set(Object.keys(customObjectInstances))
       const objectNamesToDescribe = availableObjects
-        .map(objDesc => objDesc.name)
-        .filter(name => potentialObjectNames.has(name))
+        .map((objDesc) => objDesc.name)
+        .filter((name) => potentialObjectNames.has(name))
 
-      const { result: sObjects, errors } = await client.describeSObjects(objectNamesToDescribe)
+      const { result: sObjects, errors } = await client.describeSObjects(
+        objectNamesToDescribe,
+      )
 
       await Promise.all(
-        sObjects.map(
-          description => addSObjectInformationToInstance(
+        sObjects.map((description) =>
+          addSObjectInformationToInstance(
             customObjectInstances[description.name],
             description,
             config.fetchProfile,
             config.systemFields,
-          )
-        )
+          ),
+        ),
       )
       return {
-        configSuggestions:
-          errors
-            .map(({ input, error }) => createSkippedListConfigChangeFromError({
-              creatorInput: { metadataType: CUSTOM_OBJECT, name: input },
-              error,
-            })),
+        configSuggestions: errors.map(({ input, error }) =>
+          createSkippedListConfigChangeFromError({
+            creatorInput: { metadataType: CUSTOM_OBJECT, name: input },
+            error,
+          }),
+        ),
       }
     },
   }),

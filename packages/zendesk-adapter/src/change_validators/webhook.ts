@@ -1,20 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ChangeError, ChangeValidator, ElemID, getChangeData,
-  isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ChangeError,
+  ChangeValidator,
+  ElemID,
+  getChangeData,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+} from '@salto-io/adapter-api'
 import ZendeskClient from '../client/client'
 import { WEBHOOK_TYPE_NAME } from '../constants'
 
@@ -27,7 +34,7 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   detailedMessage: 'Webhook authentication change detected',
   deployActions: {
     preAction: {
-      title: 'Webhook\'s authentication credentials will not be set',
+      title: "Webhook's authentication credentials will not be set",
       description: `Webhook ${instanceElemId.name} will be deployed with placeholder credentials. Salto will guide you on modifying it post deploy`,
       subActions: [],
     },
@@ -46,17 +53,16 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   },
 })
 
-export const webhookAuthDataValidator: (client: ZendeskClient) =>
-  ChangeValidator = client => async changes => (
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
-      .filter(change => ['bearer_token', 'basic_auth'].includes(getChangeData(change).value.authentication?.type))
-      .filter(change =>
-        isAdditionChange(change)
-        || (change.data.before.value.authentication?.type
-          !== change.data.after.value.authentication?.type))
-      .map(getChangeData)
-      .flatMap(instance => ([createChangeError(instance.elemID, client.getUrl().href)]))
-  )
+export const webhookAuthDataValidator: (client: ZendeskClient) => ChangeValidator = client => async changes =>
+  changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
+    .filter(change => ['bearer_token', 'basic_auth'].includes(getChangeData(change).value.authentication?.type))
+    .filter(
+      change =>
+        isAdditionChange(change) ||
+        change.data.before.value.authentication?.type !== change.data.after.value.authentication?.type,
+    )
+    .map(getChangeData)
+    .flatMap(instance => [createChangeError(instance.elemID, client.getUrl().href)])

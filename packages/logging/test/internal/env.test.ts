@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { config } from '../../src/internal/env'
 import { ValidationError } from '../../src/internal/common'
 
@@ -167,9 +167,9 @@ describe('env', () => {
 
     describe('when the env variable is defined and non-empty and error', () => {
       it('should return the definition', () => {
-        expect(
-          () => config({ SALTO_LOG_GLOBAL_TAGS: '{requestId":20}' }).globalTags
-        ).toThrow(new Error('Unexpected token r in JSON at position 1'))
+        expect(() => config({ SALTO_LOG_GLOBAL_TAGS: '{requestId":20}' }).globalTags).toThrow(
+          new Error('Unexpected token r in JSON at position 1'),
+        )
       })
     })
   })
@@ -184,7 +184,7 @@ describe('env', () => {
     describe('when the env variable is an invalid number', () => {
       it('should throw validation error', () => {
         expect(() => config({ SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE: 'aa' }).maxJsonLogChunkSize).toThrow(
-          new ValidationError('invalid value "aa", expected number')
+          new ValidationError('invalid value "aa", expected number'),
         )
       })
     })
@@ -210,7 +210,7 @@ describe('env', () => {
     describe('when the env variable is an invalid number', () => {
       it('should throw validation error', () => {
         expect(() => config({ SALTO_LOG_MAX_TAGS_PER_LOG_MESSAGE: 'aa' }).maxTagsPerLogMessage).toThrow(
-          new ValidationError('invalid value "aa", expected number')
+          new ValidationError('invalid value "aa", expected number'),
         )
       })
     })

@@ -1,22 +1,34 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  TemplateExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
-import { REFERENCE_INDEXES_VERSION, ReferenceTargetIndexValue, updateReferenceIndexes } from '../../src/workspace/reference_indexes'
+import {
+  REFERENCE_INDEXES_VERSION,
+  ReferenceTargetIndexValue,
+  updateReferenceIndexes,
+} from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
@@ -73,9 +85,14 @@ describe('updateReferenceIndexes', () => {
       object,
       {
         someValue: new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance')),
-        templateValue: new TemplateExpression({ parts: ['Template is:',
-          new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someTemplateField', 'value')), 'here',
-          new ReferenceExpression(new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'))] }),
+        templateValue: new TemplateExpression({
+          parts: [
+            'Template is:',
+            new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someTemplateField', 'value')),
+            'here',
+            new ReferenceExpression(new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value')),
+          ],
+        }),
       },
       undefined,
       { someAnnotation: new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someField', 'value')) },
@@ -102,10 +119,12 @@ describe('updateReferenceIndexes', () => {
           value: new collections.treeMap.TreeMap([
             ['someAnnotation', [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }]],
             ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-            ['templateValue', [
-              { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
-              { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-            ],
+            [
+              'templateValue',
+              [
+                { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
+                { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+              ],
             ],
           ]),
         },
@@ -151,27 +170,19 @@ describe('updateReferenceIndexes', () => {
       expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
         {
           key: 'test.target2.field.someField',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-          ],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
         },
         {
           key: 'test.target2.instance.someInstance',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-          ],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
         },
         {
           key: 'test.target2.field.someTemplateField',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
         },
         {
           key: 'test.target2.field.anotherTemplateField',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ],
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
         },
         {
           key: 'test.target1',
@@ -192,9 +203,7 @@ describe('updateReferenceIndexes', () => {
         },
         {
           key: 'test.object',
-          value: [
-            new ElemID('test', 'object', 'field', 'fieldWithRefToType', 'fieldRef'),
-          ],
+          value: [new ElemID('test', 'object', 'field', 'fieldWithRefToType', 'fieldRef')],
         },
       ])
     })
@@ -206,33 +215,29 @@ describe('updateReferenceIndexes', () => {
       delete instanceAfter.annotations.someAnnotation
       delete instanceAfter.value.templateValue
 
-      instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance', 'value'))
+      instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(
+        new ElemID('test', 'target2', 'instance', 'someInstance', 'value'),
+      )
       const changes = [toChange({ before: instance, after: instanceAfter })]
 
-      referenceSourcesIndex.getMany.mockImplementation(async ids => ids.map(id => {
-        if (id === 'test.target2.field.someField') {
-          return [
-            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-          ]
-        }
+      referenceSourcesIndex.getMany.mockImplementation(async ids =>
+        ids.map(id => {
+          if (id === 'test.target2.field.someField') {
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')]
+          }
 
-        if (id === 'test.target2.instance.someInstance') {
-          return [
-            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-          ]
-        }
-        if (id === 'test.target2.field.someTemplateField') {
-          return [
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ]
-        }
-        if (id === 'test.target2.field.anotherTemplateField') {
-          return [
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ]
-        }
-        return undefined
-      }))
+          if (id === 'test.target2.instance.someInstance') {
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')]
+          }
+          if (id === 'test.target2.field.someTemplateField') {
+            return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')]
+          }
+          if (id === 'test.target2.field.anotherTemplateField') {
+            return [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')]
+          }
+          return undefined
+        }),
+      )
 
       await updateReferenceIndexes(
         changes,
@@ -245,23 +250,30 @@ describe('updateReferenceIndexes', () => {
       )
     })
     it('old values should be removed and new values should be added from referenceTargets index', () => {
-      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
-        key: 'test.object.instance.instance',
-        value: new collections.treeMap.TreeMap([
-          ['someAnnotation2', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance', 'value'), type: 'strong' }]],
-          ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-        ]),
-      }])
+      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: 'test.object.instance.instance',
+          value: new collections.treeMap.TreeMap([
+            [
+              'someAnnotation2',
+              [{ id: new ElemID('test', 'target2', 'instance', 'someInstance', 'value'), type: 'strong' }],
+            ],
+            ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+          ]),
+        },
+      ])
     })
 
     it('should add the new references to referenceSources index', () => {
-      expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([{
-        key: 'test.target2.instance.someInstance',
-        value: [
-          new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'),
-          new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-        ],
-      }])
+      expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: 'test.target2.instance.someInstance',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'),
+            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
+          ],
+        },
+      ])
     })
 
     it('should remove old references from referenceSources index', () => {
@@ -281,18 +293,17 @@ describe('updateReferenceIndexes', () => {
       delete objectAfter.fields.someTemplateField
       delete objectAfter.fields.anotherTemplateField
 
-
       const changes = [toChange({ before: object, after: objectAfter })]
 
-      referenceSourcesIndex.getMany.mockImplementation(async ids => ids.map(id => {
-        if (id === 'test.target2') {
-          return [
-            new ElemID('test', 'object', 'field', 'someField', 'fieldRef'),
-          ]
-        }
+      referenceSourcesIndex.getMany.mockImplementation(async ids =>
+        ids.map(id => {
+          if (id === 'test.target2') {
+            return [new ElemID('test', 'object', 'field', 'someField', 'fieldRef')]
+          }
 
-        return undefined
-      }))
+          return undefined
+        }),
+      )
 
       await updateReferenceIndexes(
         changes,
@@ -319,7 +330,8 @@ describe('updateReferenceIndexes', () => {
             ['inner.innerTypeRef', [{ id: new ElemID('test', 'target1', 'attr', 'someAttr'), type: 'strong' }]],
             ['', [{ id: new ElemID('test', 'object'), type: 'strong' }]],
           ]),
-        }])
+        },
+      ])
       expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
         'test.object.field.someField',
         'test.object.field.someTemplateField',
@@ -328,9 +340,7 @@ describe('updateReferenceIndexes', () => {
     })
 
     it('should remove the references from the referenceSources index', () => {
-      expect(referenceSourcesIndex.deleteAll).toHaveBeenCalledWith([
-        'test.target2',
-      ])
+      expect(referenceSourcesIndex.deleteAll).toHaveBeenCalledWith(['test.target2'])
     })
   })
 
@@ -338,20 +348,18 @@ describe('updateReferenceIndexes', () => {
     beforeEach(async () => {
       const changes = [toChange({ before: instance }), toChange({ before: object })]
 
-      referenceSourcesIndex.getMany.mockImplementation(async ids => ids.map(id => {
-        if (id === 'test.target2.field.someField') {
-          return [
-            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-          ]
-        }
+      referenceSourcesIndex.getMany.mockImplementation(async ids =>
+        ids.map(id => {
+          if (id === 'test.target2.field.someField') {
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')]
+          }
 
-        if (id === 'test.target2.instance.someInstance') {
-          return [
-            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-          ]
-        }
-        return undefined
-      }))
+          if (id === 'test.target2.instance.someInstance') {
+            return [new ElemID('test', 'object', 'instance', 'instance', 'someValue')]
+          }
+          return undefined
+        }),
+      )
 
       await updateReferenceIndexes(
         changes,
@@ -403,18 +411,25 @@ describe('updateReferenceIndexes', () => {
       })
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
-        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
-          key: 'test.object.instance.instance',
-          value: new collections.treeMap.TreeMap([
-            ['someAnnotation', [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }]],
-            ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-            ['templateValue', [
-              { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
-              { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-            ],
-            ],
-          ]),
-        }])
+        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+          {
+            key: 'test.object.instance.instance',
+            value: new collections.treeMap.TreeMap([
+              [
+                'someAnnotation',
+                [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
+              ],
+              ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+              [
+                'templateValue',
+                [
+                  { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
+                  { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+                ],
+              ],
+            ]),
+          },
+        ])
       })
 
       it('should update referenceSources index using the element source', () => {
@@ -422,31 +437,28 @@ describe('updateReferenceIndexes', () => {
         expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
           {
             key: 'test.target2.field.someField',
-            value: [
-              new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-            ],
-          }, {
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
+          },
+          {
             key: 'test.target2.instance.someInstance',
-            value: [
-              new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-            ],
-          }, {
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
+          },
+          {
             key: 'test.target2.field.someTemplateField',
-            value: [
-              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-            ],
-          }, {
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          },
+          {
             key: 'test.target2.field.anotherTemplateField',
-            value: [
-              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-            ],
-          }, {
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          },
+          {
             key: 'test.target2',
             value: [
               new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
               new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
             ],
-          }])
+          },
+        ])
       })
     })
 
@@ -466,64 +478,65 @@ describe('updateReferenceIndexes', () => {
       })
       it('should update referenceTargets index using the element source', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
-        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
-          key: 'test.object.instance.instance',
-          value: new collections.treeMap.TreeMap([
-            ['someAnnotation', [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }]],
-            ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-            ['templateValue', [
-              { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
-              { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-            ],
-            ],
-          ]),
-        }])
+        expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+          {
+            key: 'test.object.instance.instance',
+            value: new collections.treeMap.TreeMap([
+              [
+                'someAnnotation',
+                [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
+              ],
+              ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+              [
+                'templateValue',
+                [
+                  { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
+                  { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+                ],
+              ],
+            ]),
+          },
+        ])
       })
 
       it('should update referenceSources index using the element source', () => {
         expect(referenceSourcesIndex.clear).toHaveBeenCalled()
-        expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([{
-          key: 'test.target2.field.someField',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-          ],
-        }, {
-          key: 'test.target2.instance.someInstance',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
-          ],
-        }, {
-          key: 'test.target2.field.someTemplateField',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ],
-        }, {
-          key: 'test.target2.field.anotherTemplateField',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ],
-        }, {
-          key: 'test.target2',
-          value: [
-            new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
-            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
-          ],
-        }])
+        expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
+          {
+            key: 'test.target2.field.someField',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')],
+          },
+          {
+            key: 'test.target2.instance.someInstance',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')],
+          },
+          {
+            key: 'test.target2.field.someTemplateField',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          },
+          {
+            key: 'test.target2.field.anotherTemplateField',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          },
+          {
+            key: 'test.target2',
+            value: [
+              new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+            ],
+          },
+        ])
       })
     })
   })
 
   describe('getCustomReferences additions', () => {
     beforeEach(async () => {
-      const inst = new InstanceElement(
-        'instance',
-        object,
-        {
-          val1: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'someInstance1')),
-          val2: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'someInstance2')),
-          val3: 'string',
-        }
-      )
+      const inst = new InstanceElement('instance', object, {
+        val1: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'someInstance1')),
+        val2: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'someInstance2')),
+        val3: 'string',
+      })
       const changes = [toChange({ after: inst })]
       await updateReferenceIndexes(
         changes,
@@ -532,18 +545,21 @@ describe('updateReferenceIndexes', () => {
         mapVersions,
         elementsSource,
         true,
-        async elements => (elements.length !== 0 ? [
-          {
-            source: inst.elemID.createNestedID('val2'),
-            target: new ElemID('test', 'type', 'instance', 'someInstance2'),
-            type: 'weak',
-          },
-          {
-            source: inst.elemID.createNestedID('val3'),
-            target: new ElemID('test', 'type', 'instance', 'someInstance3'),
-            type: 'weak',
-          },
-        ] : []),
+        async elements =>
+          elements.length !== 0
+            ? [
+                {
+                  source: inst.elemID.createNestedID('val2'),
+                  target: new ElemID('test', 'type', 'instance', 'someInstance2'),
+                  type: 'weak',
+                },
+                {
+                  source: inst.elemID.createNestedID('val3'),
+                  target: new ElemID('test', 'type', 'instance', 'someInstance3'),
+                  type: 'weak',
+                },
+              ]
+            : [],
       )
     })
     it('should override the default references with the custom references', () => {
@@ -562,13 +578,9 @@ describe('updateReferenceIndexes', () => {
 
   describe('getCustomReferences removals', () => {
     beforeEach(async () => {
-      const inst = new InstanceElement(
-        'instance',
-        object,
-        {
-          val1: 'string',
-        }
-      )
+      const inst = new InstanceElement('instance', object, {
+        val1: 'string',
+      })
       const changes = [toChange({ before: inst })]
       await updateReferenceIndexes(
         changes,
@@ -587,26 +599,17 @@ describe('updateReferenceIndexes', () => {
       )
     })
     it('should override the default references with the custom references', () => {
-      expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
-        'test.object.instance.instance',
-      ])
+      expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith(['test.object.instance.instance'])
     })
   })
 
   describe('getCustomReferences modifications', () => {
     beforeEach(async () => {
-      const instBefore = new InstanceElement(
-        'instance',
-        object,
-        {
-          val1: 'string',
-        }
-      )
+      const instBefore = new InstanceElement('instance', object, {
+        val1: 'string',
+      })
 
-      const instAfter = new InstanceElement(
-        'instance',
-        object,
-      )
+      const instAfter = new InstanceElement('instance', object)
       const changes = [toChange({ before: instBefore, after: instAfter })]
 
       await updateReferenceIndexes(
@@ -616,19 +619,20 @@ describe('updateReferenceIndexes', () => {
         mapVersions,
         elementsSource,
         true,
-        async elements => ((elements[0] as InstanceElement).value.val1 !== undefined ? [
-          {
-            source: instBefore.elemID.createNestedID('val1'),
-            target: new ElemID('test', 'type', 'instance', 'someInstance1'),
-            type: 'weak',
-          },
-        ] : []),
+        async elements =>
+          (elements[0] as InstanceElement).value.val1 !== undefined
+            ? [
+                {
+                  source: instBefore.elemID.createNestedID('val1'),
+                  target: new ElemID('test', 'type', 'instance', 'someInstance1'),
+                  type: 'weak',
+                },
+              ]
+            : [],
       )
     })
     it('should remove the removed custom references', () => {
-      expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
-        'test.object.instance.instance',
-      ])
+      expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith(['test.object.instance.instance'])
     })
   })
 })

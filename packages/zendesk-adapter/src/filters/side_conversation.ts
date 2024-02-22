@@ -1,25 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  Element,
-  InstanceElement,
-  isInstanceElement,
-  ReferenceExpression,
-  Value,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { Element, InstanceElement, isInstanceElement, ReferenceExpression, Value } from '@salto-io/adapter-api'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import joi from 'joi'
@@ -38,21 +32,25 @@ type SideConversationTicketAction = {
   field: string
   value: unknown[]
 }
-const sideConversationTicketActionSchema = joi.object({
-  field: joi.string().valid(SIDE_CONVERSATION_FIELD_NAME).required(),
-  value: joi.array().required(),
-}).unknown(true)
+const sideConversationTicketActionSchema = joi
+  .object({
+    field: joi.string().valid(SIDE_CONVERSATION_FIELD_NAME).required(),
+    value: joi.array().required(),
+  })
+  .unknown(true)
 const isSideConversationTicketAction = (action: Value): action is SideConversationTicketAction =>
   sideConversationTicketActionSchema.validate(action).error === undefined
 
 export const sideConversationsOnFetch = (elements: Element[], config: ZendeskConfig): void => {
-  const relevantInstances = elements.filter(isInstanceElement)
+  const relevantInstances = elements
+    .filter(isInstanceElement)
     .filter(instance => TYPES_WITH_SIDE_CONVERSATIONS.includes(instance.elemID.typeName))
   const groupsById = _.keyBy(
-    elements.filter(isInstanceElement)
+    elements
+      .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
       .filter(instance => instance.value.id !== undefined),
-    instance => instance.value.id
+    instance => instance.value.id,
   )
 
   relevantInstances.forEach(instance => {
@@ -77,11 +75,7 @@ export const sideConversationsOnFetch = (elements: Element[], config: ZendeskCon
           missingInstance.value.id = groupId
           // Replace the group part with a missing reference
           action.value[2] = createTemplateExpression({
-            parts: [
-              prefix,
-              new ReferenceExpression(missingInstance.elemID, missingInstance),
-              suffix,
-            ],
+            parts: [prefix, new ReferenceExpression(missingInstance.elemID, missingInstance), suffix],
           })
         }
         return
@@ -90,11 +84,9 @@ export const sideConversationsOnFetch = (elements: Element[], config: ZendeskCon
       // Type check is done in the if statement above
       const group = groupsById[groupId] as InstanceElement
       // Replace the group part with a reference expression
-      action.value[2] = createTemplateExpression({ parts: [
-        prefix,
-        new ReferenceExpression(group.elemID, group),
-        suffix,
-      ] })
+      action.value[2] = createTemplateExpression({
+        parts: [prefix, new ReferenceExpression(group.elemID, group), suffix],
+      })
     })
   })
 }

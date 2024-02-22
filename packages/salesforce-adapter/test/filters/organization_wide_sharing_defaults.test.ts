@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/organization_wide_sharing_defaults'
 import mockAdapter from '../adapter'
@@ -29,7 +29,6 @@ jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
   queryClient: jest.fn(),
 }))
-
 
 describe('organization-wide defaults filter', () => {
   const mockedFilterUtils = jest.mocked(filterUtilsModule)
@@ -104,18 +103,20 @@ describe('organization-wide defaults filter', () => {
     } as const
 
     beforeEach(() => {
-      mockedFilterUtils.queryClient.mockResolvedValue([{
-        [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
-        DefaultAccountAccess: 'Edit',
-        DefaultContactAccess: 'ControlledByParent',
-        DefaultOpportunityAccess: 'None',
-        DefaultLeadAccess: 'ReadEditTransfer',
-        DefaultCaseAccess: 'None',
-        DefaultCalendarAccess: 'HideDetailsInsert',
-        DefaultPricebookAccess: 'ReadSelect',
-        DefaultCampaignAccess: 'All',
-        SomeIrrelevantField: 'SomeIrrelevantValue',
-      }])
+      mockedFilterUtils.queryClient.mockResolvedValue([
+        {
+          [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+          DefaultAccountAccess: 'Edit',
+          DefaultContactAccess: 'ControlledByParent',
+          DefaultOpportunityAccess: 'None',
+          DefaultLeadAccess: 'ReadEditTransfer',
+          DefaultCaseAccess: 'None',
+          DefaultCalendarAccess: 'HideDetailsInsert',
+          DefaultPricebookAccess: 'ReadSelect',
+          DefaultCampaignAccess: 'All',
+          SomeIrrelevantField: 'SomeIrrelevantValue',
+        },
+      ])
       const fieldsOfInterest = [
         'DefaultAccountAccess',
         'DefaultCalendarAccess',
@@ -135,7 +136,10 @@ describe('organization-wide defaults filter', () => {
               name: 'Name',
               nameField: true,
             },
-            ...fieldsOfInterest.map(fieldName => ({ name: fieldName, ...fieldDefaults })),
+            ...fieldsOfInterest.map((fieldName) => ({
+              name: fieldName,
+              ...fieldDefaults,
+            })),
           ],
         },
       ])
@@ -155,7 +159,12 @@ describe('organization-wide defaults filter', () => {
           },
         },
         {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance', '_config'),
+          elemID: new ElemID(
+            SALESFORCE,
+            ORGANIZATION_SETTINGS,
+            'instance',
+            '_config',
+          ),
           value: {
             DefaultAccountAccess: 'Edit',
             DefaultCalendarAccess: 'HideDetailsInsert',

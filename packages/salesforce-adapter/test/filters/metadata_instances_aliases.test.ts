@@ -1,19 +1,23 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  Element,
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/metadata_instances_aliases'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -33,19 +37,13 @@ describe('metadataInstancesAliases filter', () => {
   let filter: FilterWith<'onFetch'>
   beforeEach(() => {
     // Instance that we shouldn't create alias for, as the calculated alias is the same as it's fullName
-    basicInstance = new InstanceElement(
-      'TestInstance',
-      mockTypes.CustomLabel,
-      { fullName: 'TestInstance' }
-    )
-    instanceWithLabel = new InstanceElement(
-      'TestInstance',
-      mockTypes.Flow,
-      {
-        fullName: 'TestInstance',
-        [LABEL]: LABEL_VALUE,
-      }
-    )
+    basicInstance = new InstanceElement('TestInstance', mockTypes.CustomLabel, {
+      fullName: 'TestInstance',
+    })
+    instanceWithLabel = new InstanceElement('TestInstance', mockTypes.Flow, {
+      fullName: 'TestInstance',
+      [LABEL]: LABEL_VALUE,
+    })
 
     instanceWithNamespaceAndLabel = new InstanceElement(
       `${NAMESPACE}__TestInstance`,
@@ -53,7 +51,7 @@ describe('metadataInstancesAliases filter', () => {
       {
         fullName: `${NAMESPACE}__TestInstance`,
         [LABEL]: LABEL_VALUE,
-      }
+      },
     )
 
     instances = [
@@ -76,7 +74,10 @@ describe('metadataInstancesAliases filter', () => {
     })
     it('should not add aliases', async () => {
       await filter.onFetch(fetchElements)
-      expect(instances).toSatisfyAll(instance => instance.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
+      expect(instances).toSatisfyAll(
+        (instance) =>
+          instance.annotations[CORE_ANNOTATIONS.ALIAS] === undefined,
+      )
     })
   })
 
@@ -93,9 +94,15 @@ describe('metadataInstancesAliases filter', () => {
     })
     it('should add correct aliases', async () => {
       await filter.onFetch(fetchElements)
-      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-      expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label')
-      expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label (SBQQ)')
+      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+        'TestInstance',
+      )
+      expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+        'Test Label',
+      )
+      expect(
+        instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS],
+      ).toEqual('Test Label (SBQQ)')
     })
     describe('when useLabelAsAlias is disabled', () => {
       beforeEach(() => {
@@ -103,16 +110,27 @@ describe('metadataInstancesAliases filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { skipAliases: false, useLabelAsAlias: false } },
+              fetchParams: {
+                optionalFeatures: {
+                  skipAliases: false,
+                  useLabelAsAlias: false,
+                },
+              },
             }),
           },
         }) as typeof filter
       })
       it('should add correct aliases', async () => {
         await filter.onFetch(fetchElements)
-        expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-        expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-        expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('SBQQ__TestInstance')
+        expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+          'TestInstance',
+        )
+        expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+          'TestInstance',
+        )
+        expect(
+          instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS],
+        ).toEqual('SBQQ__TestInstance')
       })
     })
   })

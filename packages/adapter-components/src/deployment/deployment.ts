@@ -1,21 +1,38 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
-import { transformElement, inspectValue } from '@salto-io/adapter-utils'
+import {
+  ActionName,
+  Change,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  isAdditionOrModificationChange,
+  isRemovalChange,
+  ModificationChange,
+} from '@salto-io/adapter-api'
+import {
+  transformElement,
+  inspectValue,
+  walkOnValue,
+  resolvePath,
+  setPath,
+  WALK_NEXT_STEP,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../fetch/resource'
 import { HTTPError, HTTPWriteClientInterface } from '../client/http_client'
@@ -31,7 +48,7 @@ export const filterUndeployableValues = async (
   instance: InstanceElement,
   action: ActionName,
   elementsSource?: ReadOnlyElementsSource,
-): Promise<InstanceElement> => (
+): Promise<InstanceElement> =>
   transformElement({
     element: instance,
     strict: false,
@@ -45,7 +62,6 @@ export const filterUndeployableValues = async (
       return value
     },
   })
-)
 
 export const filterIgnoredValues = async (
   instance: InstanceElement,
@@ -54,26 +70,60 @@ export const filterIgnoredValues = async (
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<InstanceElement> => {
   const filteredInstance = _.isFunction(fieldsToIgnore)
-    ? (await transformElement({
-      element: instance,
-      strict: false,
-      allowEmpty: true,
-      elementsSource,
-      transformFunc: ({ value, path }) => {
-        if (path !== undefined && fieldsToIgnore(path)) {
-          return undefined
-        }
-        return value
-      },
-    })) : instance
+    ? await transformElement({
+        element: instance,
+        strict: false,
+        allowEmpty: true,
+        elementsSource,
+        transformFunc: ({ value, path }) => {
+          if (path !== undefined && fieldsToIgnore(path)) {
+            return undefined
+          }
+          return value
+        },
+      })
+    : instance
 
-
-  filteredInstance.value = _.omit(
-    filteredInstance.value,
-    [...configFieldsToIgnore, ...Array.isArray(fieldsToIgnore) ? fieldsToIgnore : []],
-  )
+  filteredInstance.value = _.omit(filteredInstance.value, [
+    ...configFieldsToIgnore,
+    ...(Array.isArray(fieldsToIgnore) ? fieldsToIgnore : []),
+  ])
 
   return filteredInstance
+}
+
+/**
+ * Transform removed change values to null, for APIs that require explicit null values
+ */
+export const transformRemovedValuesToNull = (
+  change: ModificationChange<InstanceElement>,
+  applyToPath?: string[],
+): ModificationChange<InstanceElement> => {
+  const { before, after } = change.data
+  const elemId = applyToPath
+    ? getChangeData(change).elemID.createNestedID(...applyToPath)
+    : getChangeData(change).elemID
+  walkOnValue({
+    elemId,
+    value: resolvePath(before, elemId),
+    func: ({ value, path }) => {
+      const valueInAfter = resolvePath(after, path)
+      if (valueInAfter === undefined) {
+        if (!_.isPlainObject(value)) {
+          setPath(after, path, null)
+          return WALK_NEXT_STEP.SKIP
+        }
+        // if value is an object, we want to recurse into it to set all its values to null
+        return WALK_NEXT_STEP.RECURSE
+      }
+      // Arrays are being skipped to avoid setting null to removed array elements
+      if (Array.isArray(value)) {
+        return WALK_NEXT_STEP.SKIP
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return change
 }
 
 /**
@@ -97,7 +147,7 @@ export const deployChange = async ({
   queryParams,
   elementsSource,
   allowedStatusCodesOnRemoval = [],
-}:{
+}: {
   change: Change<InstanceElement>
   client: HTTPWriteClientInterface
   endpointDetails?: DeploymentRequestsByAction
@@ -113,12 +163,14 @@ export const deployChange = async ({
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
-  const valuesToDeploy = (await filterIgnoredValues(
-    await filterUndeployableValues(getChangeData(change), change.action, elementsSource),
-    fieldsToIgnore,
-    endpoint.fieldsToIgnore,
-    elementsSource,
-  )).value
+  const valuesToDeploy = (
+    await filterIgnoredValues(
+      await filterUndeployableValues(getChangeData(change), change.action, elementsSource),
+      fieldsToIgnore,
+      endpoint.fieldsToIgnore,
+      elementsSource,
+    )
+  ).value
 
   const url = createUrl({
     instance,
@@ -126,14 +178,14 @@ export const deployChange = async ({
     urlParamsToFields: endpoint.urlParamsToFields,
     additionalUrlVars,
   })
-  const data = endpoint.deployAsField
-    ? { [endpoint.deployAsField]: valuesToDeploy }
-    : valuesToDeploy
+  const data = endpoint.deployAsField ? { [endpoint.deployAsField]: valuesToDeploy } : valuesToDeploy
 
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`)
+  log.trace(
+    `deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`,
+  )
   try {
     const response = await client[endpoint.method]({
       url,
@@ -142,9 +194,10 @@ export const deployChange = async ({
     })
     return response.data
   } catch (error) {
-    if (isRemovalChange(change)
-      && error instanceof HTTPError
-      && allowedStatusCodesOnRemoval.includes(error.response.status)
+    if (
+      isRemovalChange(change) &&
+      error instanceof HTTPError &&
+      allowedStatusCodesOnRemoval.includes(error.response.status)
     ) {
       log.debug('%s was deleted and therefore marked as deployed', getChangeData(change).elemID.getFullName())
       return undefined

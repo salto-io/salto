@@ -1,25 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import {
-  CORE_ANNOTATIONS,
-  ElemID,
-  InstanceElement,
-  ObjectType, ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { addAliasToElements, AliasData } from '../src/add_alias'
 
 const groupByTypeName = (instances: InstanceElement[]): Record<string, InstanceElement[]> =>
@@ -42,14 +37,18 @@ describe('addAliasToElements', () => {
 
   const aliasMap: Record<string, AliasData> = {
     [appInstallationTypeName]: {
-      aliasComponents: [{
-        fieldName: 'settings.name',
-      }],
+      aliasComponents: [
+        {
+          fieldName: 'settings.name',
+        },
+      ],
     },
     [dynamicContentItemTypeName]: {
-      aliasComponents: [{
-        fieldName: 'name',
-      }],
+      aliasComponents: [
+        {
+          fieldName: 'name',
+        },
+      ],
     },
     [dynamicContentItemVariantsTypeName]: {
       aliasComponents: [
@@ -65,14 +64,18 @@ describe('addAliasToElements', () => {
       separator: ' - ',
     },
     [localeTypeName]: {
-      aliasComponents: [{
-        fieldName: 'presentation_name',
-      }],
+      aliasComponents: [
+        {
+          fieldName: 'presentation_name',
+        },
+      ],
     },
     [categoryTypeName]: {
-      aliasComponents: [{
-        fieldName: 'name',
-      }],
+      aliasComponents: [
+        {
+          fieldName: 'name',
+        },
+      ],
     },
     [categoryTranslationTypeName]: {
       aliasComponents: [
@@ -110,42 +113,23 @@ describe('addAliasToElements', () => {
   const categoryOrderType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryOrderTypeName) })
   const categoryTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryTranslationTypeName) })
 
+  const localeInstance = new InstanceElement('instance4', localeType, {
+    locale: 'en-us', // will be used for category translation
+    presentation_name: 'en-us',
+  })
 
-  const localeInstance = new InstanceElement(
-    'instance4',
-    localeType,
-    {
-      locale: 'en-us', // will be used for category translation
-      presentation_name: 'en-us',
-    },
-  )
-
-  const categoryInstance = new InstanceElement(
-    'instance6',
-    categoryType,
-    {
-      name: 'category name',
-    },
-  )
+  const categoryInstance = new InstanceElement('instance6', categoryType, {
+    name: 'category name',
+  })
 
   it('should add alias annotation correctly', async () => {
-    const appInstallationInstance = new InstanceElement(
-      'instance1',
-      appInstallationType,
-      { settings: { name: 'app installation name' } },
-    )
-    const appInstallationInstanceInvalid = new InstanceElement(
-      'instance2',
-      appInstallationType,
-      {},
-    )
-    const dynamicContentItemInstance = new InstanceElement(
-      'instance3',
-      dynamicContentItemType,
-      {
-        name: 'dynamic content name',
-      },
-    )
+    const appInstallationInstance = new InstanceElement('instance1', appInstallationType, {
+      settings: { name: 'app installation name' },
+    })
+    const appInstallationInstanceInvalid = new InstanceElement('instance2', appInstallationType, {})
+    const dynamicContentItemInstance = new InstanceElement('instance3', dynamicContentItemType, {
+      name: 'dynamic content name',
+    })
     const dynamicContentItemVariantsInstance = new InstanceElement(
       'instance5',
       dynamicContentItemVariantsType,
@@ -155,17 +139,11 @@ describe('addAliasToElements', () => {
       undefined,
       {
         _parent: [new ReferenceExpression(dynamicContentItemInstance.elemID, dynamicContentItemInstance)],
-      }
+      },
     )
-    const categoryOrderInstance = new InstanceElement(
-      'instance7',
-      categoryOrderType,
-      {},
-      undefined,
-      {
-        _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
-      }
-    )
+    const categoryOrderInstance = new InstanceElement('instance7', categoryOrderType, {}, undefined, {
+      _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
+    })
     const categoryTranslationInstance = new InstanceElement(
       'instance8',
       categoryTranslationType,
@@ -175,15 +153,11 @@ describe('addAliasToElements', () => {
       undefined,
       {
         _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
-      }
-    )
-    const categoryTranslationInstanceInvalid = new InstanceElement(
-      'instance9',
-      categoryTranslationType,
-      {
-        locale: new ReferenceExpression(localeInstance.elemID),
       },
     )
+    const categoryTranslationInstanceInvalid = new InstanceElement('instance9', categoryTranslationType, {
+      locale: new ReferenceExpression(localeInstance.elemID),
+    })
     const elements = [
       appInstallationInstance,
       appInstallationInstanceInvalid,
@@ -213,14 +187,10 @@ describe('addAliasToElements', () => {
     ])
   })
   it('should not crush when one of the values is undefined', async () => {
-    const appInstallationInstanceInvalid = new InstanceElement(
-      'instance2',
-      appInstallationType,
-      { settings: { name: undefined } },
-    )
-    const elements = [
-      appInstallationInstanceInvalid,
-    ]
+    const appInstallationInstanceInvalid = new InstanceElement('instance2', appInstallationType, {
+      settings: { name: undefined },
+    })
+    const elements = [appInstallationInstanceInvalid]
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
@@ -237,9 +207,7 @@ describe('addAliasToElements', () => {
       },
       undefined,
     )
-    const elements = [
-      categoryTranslationInstance,
-    ]
+    const elements = [categoryTranslationInstance]
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
@@ -257,11 +225,9 @@ describe('addAliasToElements', () => {
       undefined,
       {
         _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
-      }
+      },
     )
-    const elements = [
-      categoryTranslationInstance,
-    ]
+    const elements = [categoryTranslationInstance]
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
@@ -270,16 +236,10 @@ describe('addAliasToElements', () => {
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
   it('should not crush when there is a reference instead of a value', async () => {
-    const dynamicContentItemInstance = new InstanceElement(
-      'instance3',
-      dynamicContentItemType,
-      {
-        name: new ReferenceExpression(localeInstance.elemID, localeInstance),
-      },
-    )
-    const elements = [
-      dynamicContentItemInstance,
-    ]
+    const dynamicContentItemInstance = new InstanceElement('instance3', dynamicContentItemType, {
+      name: new ReferenceExpression(localeInstance.elemID, localeInstance),
+    })
+    const elements = [dynamicContentItemInstance]
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
@@ -295,9 +255,7 @@ describe('addAliasToElements', () => {
       },
     })
     const elementsMap = {
-      customrecordtype: [
-        customRecordType,
-      ],
+      customrecordtype: [customRecordType],
     }
     const aliasMapWithType = {
       customrecordtype: {

@@ -1,22 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, nacl, staticFiles } from '@salto-io/workspace'
+import {
+  Workspace,
+  ElementSelector,
+  createElementSelectors,
+  FromSource,
+  selectElementIdsByTraversal,
+  nacl,
+  staticFiles,
+} from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
@@ -24,7 +32,21 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors, formatNonTopLevelSelectors } from '../formatter'
+import {
+  formatTargetEnvRequired,
+  formatUnknownTargetEnv,
+  formatInvalidEnvTargetCurrent,
+  formatCloneToEnvFailed,
+  formatInvalidFilters,
+  formatMoveFailed,
+  formatListFailed,
+  emptyLine,
+  formatListUnresolvedFound,
+  formatListUnresolvedMissing,
+  formatElementListUnresolvedFailed,
+  formatChangeErrors,
+  formatNonTopLevelSelectors,
+} from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -47,11 +69,7 @@ const ALLOW_DELETIONS_OPTION: KeyedOption<AllowDeletionArg> = {
   type: 'boolean',
 }
 
-const validateEnvs = (
-  output: CliOutput,
-  workspace: Workspace,
-  toEnvs: string[] = [],
-): boolean => {
+const validateEnvs = (output: CliOutput, workspace: Workspace, toEnvs: string[] = []): boolean => {
   if (toEnvs.length === 0) {
     errorOutputLine(formatTargetEnvRequired(), output)
     return false
@@ -68,7 +86,6 @@ const validateEnvs = (
   return true
 }
 
-
 const runElementsOperationMessages = async (
   nothingToDo: boolean,
   { stdout }: CliOutput,
@@ -76,7 +93,7 @@ const runElementsOperationMessages = async (
   informationMessage: string,
   questionMessage: string,
   startMessage: string,
-  force: boolean
+  force: boolean,
 ): Promise<boolean> => {
   if (nothingToDo) {
     stdout.write(nothingToDoMessage)
@@ -84,7 +101,7 @@ const runElementsOperationMessages = async (
   }
   stdout.write(informationMessage)
 
-  const shouldStart = force || await getUserBooleanInput(questionMessage)
+  const shouldStart = force || (await getUserBooleanInput(questionMessage))
   if (shouldStart) {
     stdout.write(startMessage)
   }
@@ -104,12 +121,15 @@ const shouldMoveElements = async (
     output,
     Prompts.NO_ELEMENTS_MESSAGE,
     [
-      Prompts.MOVE_MESSAGE(to, elemIds.map(id => id.getFullName())),
-      ...Object.entries(elemIdsToRemove).map(
-        ([envName, ids]) => Prompts.ELEMENTS_DELETION_MESSAGE(
+      Prompts.MOVE_MESSAGE(
+        to,
+        elemIds.map(id => id.getFullName()),
+      ),
+      ...Object.entries(elemIdsToRemove).map(([envName, ids]) =>
+        Prompts.ELEMENTS_DELETION_MESSAGE(
           envName,
           ids.map(id => id.getFullName()),
-        )
+        ),
       ),
     ].join(''),
     Prompts.SHOULD_MOVE_QUESTION(to),
@@ -128,19 +148,23 @@ const moveElement = async (
 ): Promise<CliExitCode> => {
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs' ? { source: 'common' } : { source: 'env' }, true)
+      await workspace.getElementIdsBySelectors(
+        elmSelectors,
+        to === 'envs' ? { source: 'common' } : { source: 'env' },
+        true,
+      ),
     ).toArray()
 
     const elemIdsToRemove = allowElementDeletions
       ? await getEnvsDeletionsDiff(
-        workspace,
-        elemIds,
-        workspace.envs().filter(env => env !== workspace.currentEnv()),
-        elmSelectors
-      )
+          workspace,
+          elemIds,
+          workspace.envs().filter(env => env !== workspace.currentEnv()),
+          elmSelectors,
+        )
       : {}
 
-    if (!await shouldMoveElements(to, elemIds, elemIdsToRemove, cliOutput, force)) {
+    if (!(await shouldMoveElements(to, elemIds, elemIdsToRemove, cliOutput, force))) {
       return CliExitCode.Success
     }
 
@@ -179,9 +203,7 @@ export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs>
 
   await validateAndSetEnv(workspace, input, output)
 
-  const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force }
-  )
+  const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
@@ -212,7 +234,8 @@ const moveToCommonDef = createWorkspaceCommand({
       },
       {
         ...ALLOW_DELETIONS_OPTION,
-        description: 'Delete all the elements in all the environments that match the selectors but do not exists in the source environment (to completely sync the environments)',
+        description:
+          'Delete all the elements in all the environments that match the selectors but do not exists in the source environment (to completely sync the environments)',
       },
     ],
   },
@@ -239,9 +262,7 @@ export const moveToEnvsAction: WorkspaceCommandAction<ElementMoveToEnvsArgs> = a
     return CliExitCode.UserInputError
   }
 
-  const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force }
-  )
+  const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
@@ -286,11 +307,11 @@ const shouldCloneElements = async (
     Prompts.NO_ELEMENTS_MESSAGE,
     [
       Prompts.CLONE_MESSAGE(elemIds.map(id => id.getFullName())),
-      ...Object.entries(elemIdsToRemove).map(
-        ([envName, ids]) => Prompts.ELEMENTS_DELETION_MESSAGE(
+      ...Object.entries(elemIdsToRemove).map(([envName, ids]) =>
+        Prompts.ELEMENTS_DELETION_MESSAGE(
           envName,
           ids.map(id => id.getFullName()),
-        )
+        ),
       ),
     ].join(''),
     Prompts.SHOULD_CLONE_QUESTION,
@@ -334,29 +355,21 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force }
-  )
+  const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
 
   try {
     const sourceElemIds = await awu(
-      await workspace.getElementIdsBySelectors(validSelectors, { source: 'env' }, true)
+      await workspace.getElementIdsBySelectors(validSelectors, { source: 'env' }, true),
     ).toArray()
 
     const elemIdsToRemove = allowElementDeletions
       ? await getEnvsDeletionsDiff(workspace, sourceElemIds, envsToCloneTo, validSelectors)
       : {}
 
-    if (!await shouldCloneElements(
-      envsToCloneTo,
-      sourceElemIds,
-      elemIdsToRemove,
-      output,
-      force ?? false
-    )) {
+    if (!(await shouldCloneElements(envsToCloneTo, sourceElemIds, elemIdsToRemove, output, force ?? false))) {
       return CliExitCode.Success
     }
 
@@ -393,7 +406,6 @@ const cloneDef = createWorkspaceCommand({
         description: 'Clone to all environments',
         type: 'boolean',
         alias: 'a',
-
       },
       // TODO: Check if needed
       {
@@ -405,7 +417,8 @@ const cloneDef = createWorkspaceCommand({
       },
       {
         ...ALLOW_DELETIONS_OPTION,
-        description: 'Delete all the elements that match the selectors in the destination environments but do not exists in the source environment (to completely sync the environments)',
+        description:
+          'Delete all the elements that match the selectors in the destination environments but do not exists in the source environment (to completely sync the environments)',
       },
     ],
   },
@@ -426,9 +439,13 @@ export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedA
   const { completeFrom } = input
   await validateAndSetEnv(workspace, input, output)
 
-  const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator, force: false, ignoreUnresolvedRefs: true }
-  )
+  const validWorkspace = await isValidWorkspaceForCommand({
+    workspace,
+    cliOutput: output,
+    spinnerCreator,
+    force: false,
+    ignoreUnresolvedRefs: true,
+  })
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
@@ -495,11 +512,7 @@ const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID
   }
 }
 
-export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({
-  input,
-  output,
-  workspace,
-}) => {
+export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input, output, workspace }) => {
   const { elementId } = input
   await validateAndSetEnv(workspace, input, output)
 
@@ -514,9 +527,7 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  const serviceUrl = isElement(element)
-    ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
-    : undefined
+  const serviceUrl = isElement(element) ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
   if (serviceUrl === undefined) {
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     return CliExitCode.AppError
@@ -530,9 +541,7 @@ const elementOpenDef = createWorkspaceCommand({
   properties: {
     name: 'open',
     description: 'Opens the service page of an element',
-    keyedOptions: [
-      ENVIRONMENT_OPTION,
-    ],
+    keyedOptions: [ENVIRONMENT_OPTION],
     positionalOptions: [
       {
         name: 'elementId',
@@ -554,11 +563,9 @@ const listElements = async (
   workspace: Workspace,
   output: CliOutput,
   mode: FromSource,
-  elmSelectors: ElementSelector[]
+  elmSelectors: ElementSelector[],
 ): Promise<CliExitCode> => {
-  const elemIds = await awu(
-    await workspace.getElementIdsBySelectors(elmSelectors, { source: mode }, true)
-  ).toArray()
+  const elemIds = await awu(await workspace.getElementIdsBySelectors(elmSelectors, { source: mode }, true)).toArray()
 
   output.stdout.write(Prompts.LIST_MESSAGE(elemIds.map(id => id.getFullName())))
   return CliExitCode.Success
@@ -580,9 +587,7 @@ export const listAction: WorkspaceCommandAction<ElementListArgs> = async ({
 
     await validateAndSetEnv(workspace, input, output)
 
-    const validWorkspace = await isValidWorkspaceForCommand(
-      { workspace, cliOutput: output, spinnerCreator }
-    )
+    const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator })
     if (!validWorkspace) {
       return CliExitCode.AppError
     }
@@ -636,9 +641,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
 
   await validateAndSetEnv(workspace, input, output)
 
-  const validWorkspace = await isValidWorkspaceForCommand(
-    { workspace, cliOutput: output, spinnerCreator }
-  )
+  const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator })
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
@@ -655,15 +658,11 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     await workspace.updateNaclFiles(changes)
     await workspace.flush()
 
-    outputLine(
-      Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()),
-      output
-    )
+    outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()), output)
 
     outputLine(
-      Prompts.RENAME_ELEMENT_REFERENCES(
-        sourceElemId.getFullName(), changes.filter(isModificationChange).length
-      ), output
+      Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(), changes.filter(isModificationChange).length),
+      output,
     )
   } catch (error) {
     if (error instanceof RenameElementIdError) {
@@ -693,9 +692,7 @@ const renameElementsDef = createWorkspaceCommand({
         required: true,
       },
     ],
-    keyedOptions: [
-      ENVIRONMENT_OPTION,
-    ],
+    keyedOptions: [ENVIRONMENT_OPTION],
   },
   action: renameAction,
 })
@@ -705,11 +702,7 @@ type PrintElementArgs = {
   source: 'nacl' | 'state'
   onlyValue: boolean
 } & EnvArg
-export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = async ({
-  workspace,
-  input,
-  output,
-}) => {
+export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = async ({ workspace, input, output }) => {
   const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -717,9 +710,7 @@ export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = asyn
   }
 
   await validateAndSetEnv(workspace, input, output)
-  const elementSource = input.source === 'nacl'
-    ? await workspace.elements()
-    : workspace.state()
+  const elementSource = input.source === 'nacl' ? await workspace.elements() : workspace.state()
 
   const relevantIds = await selectElementIdsByTraversal({
     selectors: validSelectors,
@@ -735,9 +726,7 @@ export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = asyn
     const dumpedValue = isElement(value)
       ? await parser.dumpElements([value], functions)
       : await parser.dumpValues(value, functions)
-    const outputStr = input.onlyValue
-      ? dumpedValue
-      : `${id.getFullName()}: ${dumpedValue}`
+    const outputStr = input.onlyValue ? dumpedValue : `${id.getFullName()}: ${dumpedValue}`
     outputLine(outputStr, output)
   })
   return CliExitCode.Success
@@ -780,11 +769,7 @@ type FixElementsArgs = {
   selectors: string[]
 } & EnvArg
 
-export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async ({
-  workspace,
-  input,
-  output,
-}) => {
+export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async ({ workspace, input, output }) => {
   const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -802,9 +787,8 @@ export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async 
     }
 
     const changeErrors = await promises.array.withLimitedConcurrency(
-      errors
-        .map(error => () => workspace.transformToWorkspaceError(error)),
-      20
+      errors.map(error => () => workspace.transformToWorkspaceError(error)),
+      20,
     )
 
     outputLine(formatChangeErrors(changeErrors), output)
@@ -826,9 +810,7 @@ const fixElementsDef = createWorkspaceCommand({
   properties: {
     name: 'fix',
     description: 'Apply a set of service specific fixes to the NaCls in the workspace',
-    keyedOptions: [
-      ENVIRONMENT_OPTION,
-    ],
+    keyedOptions: [ENVIRONMENT_OPTION],
     positionalOptions: [
       {
         name: 'selectors',
@@ -839,7 +821,6 @@ const fixElementsDef = createWorkspaceCommand({
   },
   action: fixElementsAction,
 })
-
 
 const elementGroupDef = createCommandGroupDef({
   properties: {

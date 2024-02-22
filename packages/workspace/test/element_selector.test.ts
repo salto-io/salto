@@ -1,24 +1,37 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
-  ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  PrimitiveTypes,
+  ObjectType,
+  PrimitiveType,
+  BuiltinTypes,
+  ListType,
+  MapType,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { selectElementsBySelectors, createElementSelectors, createElementSelector,
-  selectElementIdsByTraversal, selectElementsBySelectorsWithoutReferences,
-  ElementSelector } from '../src/workspace/element_selector'
+import {
+  selectElementsBySelectors,
+  createElementSelectors,
+  createElementSelector,
+  selectElementIdsByTraversal,
+  selectElementsBySelectorsWithoutReferences,
+  ElementSelector,
+} from '../src/workspace/element_selector'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMap } from '../src/workspace/remote_map'
 import { createMockRemoteMap } from './utils'
@@ -45,24 +58,28 @@ const mockType = new ObjectType({
     bool: { refType: BuiltinTypes.BOOLEAN },
     num: { refType: BuiltinTypes.NUMBER },
     strArray: { refType: new ListType(BuiltinTypes.STRING) },
-    strMap: { refType: new MapType(BuiltinTypes.STRING),
+    strMap: {
+      refType: new MapType(BuiltinTypes.STRING),
       annotations: {
         _required: true,
-      } },
+      },
+    },
     obj: {
-      refType: new ListType(new ObjectType({
-        elemID: mockElem,
-        fields: {
-          field: { refType: BuiltinTypes.STRING },
-          otherField: {
-            refType: BuiltinTypes.STRING,
+      refType: new ListType(
+        new ObjectType({
+          elemID: mockElem,
+          fields: {
+            field: { refType: BuiltinTypes.STRING },
+            otherField: {
+              refType: BuiltinTypes.STRING,
+            },
+            value: { refType: BuiltinTypes.STRING },
+            mapOfStringList: {
+              refType: new MapType(new ListType(BuiltinTypes.STRING)),
+            },
           },
-          value: { refType: BuiltinTypes.STRING },
-          mapOfStringList: {
-            refType: new MapType(new ListType(BuiltinTypes.STRING)),
-          },
-        },
-      })),
+        }),
+      ),
     },
   },
   path: ['this', 'is', 'happening'],
@@ -101,14 +118,15 @@ const selectElements = async ({
   selectors: string[]
   caseInsensitive?: boolean
   includeNested?: boolean
-}): Promise<ElemID[]> => awu(
-  (selectElementsBySelectors({
-    elementIds: awu(elements),
-    selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
-    referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
-    includeNested,
-  }))
-).toArray()
+}): Promise<ElemID[]> =>
+  awu(
+    selectElementsBySelectors({
+      elementIds: awu(elements),
+      selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
+      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+      includeNested,
+    }),
+  ).toArray()
 
 const selectElementsWitoutRef = ({
   elements,
@@ -118,7 +136,7 @@ const selectElementsWitoutRef = ({
   elements: ElemID[]
   selectors: string[]
   includeNested?: boolean
-}):ElemID[] =>
+}): ElemID[] =>
   selectElementsBySelectorsWithoutReferences({
     elementIds: elements,
     selectors: createElementSelectors(selectors).validSelectors,
@@ -187,12 +205,8 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A'] }
-    )).toEqual([elements[0]])
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance._config'] }
-    )).toEqual([elements[4]])
+    expect(await selectElements({ elements, selectors: ['salesforce.*.instance.A'] })).toEqual([elements[0]])
+    expect(await selectElements({ elements, selectors: ['salesforce.*.instance._config'] })).toEqual([elements[4]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 1', async () => {
@@ -204,24 +218,24 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A'], includeNested: true }
-    )).toEqual([elements[0], elements[1], elements[2]])
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance._config'], includeNested: true }
-    )).toEqual([elements[4], elements[5]])
+    expect(await selectElements({ elements, selectors: ['salesforce.*.instance.A'], includeNested: true })).toEqual([
+      elements[0],
+      elements[1],
+      elements[2],
+    ])
+    expect(
+      await selectElements({ elements, selectors: ['salesforce.*.instance._config'], includeNested: true }),
+    ).toEqual([elements[4], elements[5]])
   })
 
   it('should select fields and attributes when includeNested is true', async () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),
-      new ElemID('salesforce', 'sometype', 'field', 'A',),
+      new ElemID('salesforce', 'sometype', 'field', 'A'),
       new ElemID('salesforce', 'sometype', 'attr', 'B', 'B', 'C'),
       new ElemID('salesforce', 'sometype', 'instance', 'NotA'),
     ]
-    const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.*'], includeNested: true }
-    )
+    const selectedElements = await selectElements({ elements, selectors: ['salesforce.*'], includeNested: true })
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
 
@@ -234,12 +248,8 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A.*'] }
-    )).toEqual([elements[1]])
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance._config.*'] }
-    )).toEqual([elements[5]])
+    expect(await selectElements({ elements, selectors: ['salesforce.*.instance.A.*'] })).toEqual([elements[1]])
+    expect(await selectElements({ elements, selectors: ['salesforce.*.instance._config.*'] })).toEqual([elements[5]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 2', async () => {
@@ -251,12 +261,13 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true }
-    )).toEqual([elements[1], elements[2]])
-    expect(await selectElements(
-      { elements, selectors: ['salesforce.*.instance._config.*'], includeNested: true }
-    )).toEqual([elements[5]])
+    expect(await selectElements({ elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true })).toEqual([
+      elements[1],
+      elements[2],
+    ])
+    expect(
+      await selectElements({ elements, selectors: ['salesforce.*.instance._config.*'], includeNested: true }),
+    ).toEqual([elements[5]])
   })
 
   it('should handle asterisks alongside partial names in type', async () => {
@@ -277,9 +288,7 @@ describe('element selector', () => {
       new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
       new ElemID('salesforce', 'ApexClass', 'instance', 'Analog'),
     ]
-    const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.ApexClass.instance.A*'] }
-    )
+    const selectedElements = await selectElements({ elements, selectors: ['salesforce.ApexClass.instance.A*'] })
     expect(selectedElements).toEqual([elements[0], elements[4]])
   })
 
@@ -294,38 +303,22 @@ describe('element selector', () => {
       new ElemID('salesforce', 'ApexClass', 'instance', 'Imeric'),
       new ElemID('salesforce', 'ApexClass', 'instance', 'ericchan'),
     ]
-    const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.ApexClass.instance.*eric*'] }
-    )
-    expect(selectedElements).toEqual(
-      [elements[0], elements[4], elements[5], elements[6], elements[7]]
-    )
+    const selectedElements = await selectElements({ elements, selectors: ['salesforce.ApexClass.instance.*eric*'] })
+    expect(selectedElements).toEqual([elements[0], elements[4], elements[5], elements[6], elements[7]])
   })
 
   it('should use two selectors and allow any element that matches one of them', async () => {
-    const elements = [
-      new ElemID('salesforce', 'value'),
-      new ElemID('netsuite', 'value'),
-      new ElemID('jira', 'value'),
-    ]
+    const elements = [new ElemID('salesforce', 'value'), new ElemID('netsuite', 'value'), new ElemID('jira', 'value')]
     const selectedElements = await selectElements({ elements, selectors: ['salesforce.*', 'netsuite.*'] })
     expect(selectedElements).toEqual([elements[0], elements[1]])
   })
   it('returns all elements with no selectors', async () => {
-    const elements = [
-      new ElemID('salesforce', 'value'),
-      new ElemID('netsuite', 'value'),
-      new ElemID('jira', 'value'),
-    ]
+    const elements = [new ElemID('salesforce', 'value'), new ElemID('netsuite', 'value'), new ElemID('jira', 'value')]
     expect(await selectElements({ elements, selectors: [] })).toEqual(elements)
   })
   it('should use a wildcard and a specific element id and not throw error if the wildcard covers the element id', async () => {
-    const elements = [
-      new ElemID('salesforce', 'value'),
-    ]
-    const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.*', 'salesforce.value'] }
-    )
+    const elements = [new ElemID('salesforce', 'value')]
+    const selectedElements = await selectElements({ elements, selectors: ['salesforce.*', 'salesforce.value'] })
     expect(selectedElements).toEqual([elements[0]])
   })
 
@@ -354,7 +347,9 @@ describe('validation tests', () => {
     const invalidFilters = ['salesforce.Account.*', 'salesforce', '']
     expect(() => {
       createElementSelector('salesforce.Account.*')
-    }).toThrow(new Error('Illegal element selector includes illegal type name: "*". Full selector is: "salesforce.Account.*"'))
+    }).toThrow(
+      new Error('Illegal element selector includes illegal type name: "*". Full selector is: "salesforce.Account.*"'),
+    )
     expect(() => {
       createElementSelector('salesforce')
     }).toThrow(new Error('Illegal element selector does not contain type name: "salesforce"'))
@@ -370,21 +365,23 @@ describe('validation tests', () => {
 describe('select elements recursively', () => {
   const testElements = [mockInstance, mockType, mockPrimitive]
   const testSelect = async (selectors: ElementSelector[], compact = false): Promise<ElemID[]> =>
-    awu(await selectElementIdsByTraversal({
-      selectors,
-      source: createInMemoryElementSource(testElements),
-      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
-      compact,
-    })).toArray()
+    awu(
+      await selectElementIdsByTraversal({
+        selectors,
+        source: createInMemoryElementSource(testElements),
+        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        compact,
+      }),
+    ).toArray()
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.*',
       'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
       'mockAdapter.*.field.*.*',
-      'mockAdapter.*.attr.testAnno']).validSelectors
-    const elementIds = (await testSelect(selectors)).sort((e1,
-      e2) => e1.getFullName().localeCompare(e2.getFullName()))
+      'mockAdapter.*.attr.testAnno',
+    ]).validSelectors
+    const elementIds = (await testSelect(selectors)).sort((e1, e2) => e1.getFullName().localeCompare(e2.getFullName()))
     const expectedElements = [
       mockInstance.elemID,
       mockType.elemID,
@@ -395,8 +392,7 @@ describe('select elements recursively', () => {
       ElemID.fromFullName('mockAdapter.test.field.num'),
       ElemID.fromFullName('mockAdapter.test.field.strArray'),
       ElemID.fromFullName('mockAdapter.test.attr.testAnno'),
-    ].sort((e1,
-      e2) => e1.getFullName().localeCompare(e2.getFullName()))
+    ].sort((e1, e2) => e1.getFullName().localeCompare(e2.getFullName()))
     expect(elementIds).toEqual(expectedElements)
   })
 
@@ -407,13 +403,18 @@ describe('select elements recursively', () => {
   })
 
   it('returns nothing with non-matching subelements', async () => {
-    const selectors = createElementSelectors(['mockAdapter.test.instance.mockInstance.obj.NoSuchThingExists*']).validSelectors
+    const selectors = createElementSelectors([
+      'mockAdapter.test.instance.mockInstance.obj.NoSuchThingExists*',
+    ]).validSelectors
     const elementIds = await testSelect(selectors)
     expect(elementIds).toEqual([])
   })
   it('removes fields of type from list when compact', async () => {
-    const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.field.*',
-      'mockAdapter.test.field.strMap.*']).validSelectors
+    const selectors = createElementSelectors([
+      'mockAdapter.*',
+      'mockAdapter.*.field.*',
+      'mockAdapter.test.field.strMap.*',
+    ]).validSelectors
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([mockType.elemID])
   })
@@ -421,7 +422,8 @@ describe('select elements recursively', () => {
   it('removes child elements of field from list', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.field.strMap.*',
-      'mockAdapter.test.field.strMap']).validSelectors
+      'mockAdapter.test.field.strMap',
+    ]).validSelectors
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
@@ -429,7 +431,8 @@ describe('select elements recursively', () => {
   it('ignores multiple instances of the same', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.field.strMap.*',
-      'mockAdapter.test.field.strMap']).validSelectors
+      'mockAdapter.test.field.strMap',
+    ]).validSelectors
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
@@ -437,15 +440,14 @@ describe('select elements recursively', () => {
   it('removes child elements of field selected by wildcard from list', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.field.strMap.*',
-      'mockAdapter.*.field.strMap']).validSelectors
+      'mockAdapter.*.field.strMap',
+    ]).validSelectors
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 
   it('should return only the exact match when the selector is a valid elemID', async () => {
-    const selectors = createElementSelectors([
-      'mockAdapter.test.instance.mockInstance.bool',
-    ]).validSelectors
+    const selectors = createElementSelectors(['mockAdapter.test.instance.mockInstance.bool']).validSelectors
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool')])
   })
@@ -455,12 +457,14 @@ describe('select elements recursively', () => {
       'mockAdapter.test.field.strMap',
       'mockAdapter.*.field.strMap',
     ]).validSelectors
-    const elementIds = await awu(await selectElementIdsByTraversal({
-      selectors,
-      source: createInMemoryElementSource([mockInstance, mockType]),
-      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
-      compact: false,
-    })).toArray()
+    const elementIds = await awu(
+      await selectElementIdsByTraversal({
+        selectors,
+        source: createInMemoryElementSource([mockInstance, mockType]),
+        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        compact: false,
+      }),
+    ).toArray()
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
   it('should return all element ids when there are no wildcards', async () => {
@@ -468,12 +472,14 @@ describe('select elements recursively', () => {
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
       'mockAdapter.test.field.strMap',
     ]).validSelectors
-    const elementIds = await awu(await selectElementIdsByTraversal({
-      selectors,
-      source: createInMemoryElementSource([mockInstance, mockType]),
-      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
-      compact: false,
-    })).toArray()
+    const elementIds = await awu(
+      await selectElementIdsByTraversal({
+        selectors,
+        source: createInMemoryElementSource([mockInstance, mockType]),
+        referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+        compact: false,
+      }),
+    ).toArray()
     expect(elementIds).toEqual([
       ElemID.fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist'),
       ElemID.fromFullName('mockAdapter.test.field.strMap'),
@@ -510,25 +516,28 @@ describe('referencedBy', () => {
 
     selector.referencedBy = referencedBy
 
-    await referenceSourcesIndex.set('salesforce.type.instance.inst1', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
+    await referenceSourcesIndex.set('salesforce.type.instance.inst1', [
+      new ElemID('workato', 'type', 'instance', 'inst1', 'val'),
+    ])
 
-    const elements = [
-      new InstanceElement('inst1', objectType),
-      new InstanceElement('inst2', objectType),
-    ]
+    const elements = [new InstanceElement('inst1', objectType), new InstanceElement('inst2', objectType)]
 
-    const selectedElements = await awu(await selectElementIdsByTraversal({
-      selectors: [selector],
-      source: createInMemoryElementSource(elements),
-      referenceSourcesIndex,
-    })).toArray()
+    const selectedElements = await awu(
+      await selectElementIdsByTraversal({
+        selectors: [selector],
+        source: createInMemoryElementSource(elements),
+        referenceSourcesIndex,
+      }),
+    ).toArray()
 
     expect(selectedElements).toEqual([elements[0].elemID])
   })
 
   describe('when a field is referenced', () => {
     beforeEach(async () => {
-      await referenceSourcesIndex.set('salesforce.type.field.field1', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
+      await referenceSourcesIndex.set('salesforce.type.field.field1', [
+        new ElemID('workato', 'type', 'instance', 'inst1', 'val'),
+      ])
       await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
     })
 
@@ -538,16 +547,15 @@ describe('referencedBy', () => {
 
       selector.referencedBy = referencedBy
 
-      const elements = [
-        objectType,
-        anotherObjectType,
-      ]
+      const elements = [objectType, anotherObjectType]
 
-      const selectedElements = await awu(await selectElementIdsByTraversal({
-        selectors: [selector],
-        source: createInMemoryElementSource(elements),
-        referenceSourcesIndex,
-      })).toArray()
+      const selectedElements = await awu(
+        await selectElementIdsByTraversal({
+          selectors: [selector],
+          source: createInMemoryElementSource(elements),
+          referenceSourcesIndex,
+        }),
+      ).toArray()
 
       expect(selectedElements).toEqual([objectType.elemID])
     })
@@ -558,16 +566,15 @@ describe('referencedBy', () => {
 
       selector.referencedBy = referencedBy
 
-      const elements = [
-        objectType,
-        anotherObjectType,
-      ]
+      const elements = [objectType, anotherObjectType]
 
-      const selectedElements = await awu(await selectElementIdsByTraversal({
-        selectors: [selector],
-        source: createInMemoryElementSource(elements),
-        referenceSourcesIndex,
-      })).toArray()
+      const selectedElements = await awu(
+        await selectElementIdsByTraversal({
+          selectors: [selector],
+          source: createInMemoryElementSource(elements),
+          referenceSourcesIndex,
+        }),
+      ).toArray()
 
       expect(selectedElements).toEqual([objectType.fields.field1.elemID])
     })
@@ -582,16 +589,15 @@ describe('referencedBy', () => {
 
     selector.referencedBy = referencedBy
 
-    const elements = [
-      objectType,
-      anotherObjectType,
-    ]
+    const elements = [objectType, anotherObjectType]
 
-    const selectedElements = await awu(await selectElementIdsByTraversal({
-      selectors: [selector],
-      source: createInMemoryElementSource(elements),
-      referenceSourcesIndex,
-    })).toArray()
+    const selectedElements = await awu(
+      await selectElementIdsByTraversal({
+        selectors: [selector],
+        source: createInMemoryElementSource(elements),
+        referenceSourcesIndex,
+      }),
+    ).toArray()
 
     expect(selectedElements).toEqual([objectType.elemID])
   })
@@ -602,11 +608,13 @@ describe('referencedBy', () => {
 
     selector.referencedBy = referencedBy
 
-    await expect(selectElementIdsByTraversal({
-      selectors: [selector],
-      source: createInMemoryElementSource([]),
-      referenceSourcesIndex,
-    })).rejects.toThrow()
+    await expect(
+      selectElementIdsByTraversal({
+        selectors: [selector],
+        source: createInMemoryElementSource([]),
+        referenceSourcesIndex,
+      }),
+    ).rejects.toThrow()
   })
 })
 
@@ -672,12 +680,8 @@ describe('element selector without ref by', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance.A'] }
-    )).toEqual([elements[0]])
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance._config'] }
-    )).toEqual([elements[4]])
+    expect(selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance.A'] })).toEqual([elements[0]])
+    expect(selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance._config'] })).toEqual([elements[4]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 1', () => {
@@ -689,24 +693,24 @@ describe('element selector without ref by', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance.A'], includeNested: true }
-    )).toEqual([elements[0], elements[1], elements[2]])
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance._config'], includeNested: true }
-    )).toEqual([elements[4], elements[5]])
+    expect(selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance.A'], includeNested: true })).toEqual([
+      elements[0],
+      elements[1],
+      elements[2],
+    ])
+    expect(
+      selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance._config'], includeNested: true }),
+    ).toEqual([elements[4], elements[5]])
   })
 
   it('should select fields and attributes when includeNested is true', () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),
-      new ElemID('salesforce', 'sometype', 'field', 'A',),
+      new ElemID('salesforce', 'sometype', 'field', 'A'),
       new ElemID('salesforce', 'sometype', 'attr', 'B', 'B', 'C'),
       new ElemID('salesforce', 'sometype', 'instance', 'NotA'),
     ]
-    const selectedElements = selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*'], includeNested: true }
-    )
+    const selectedElements = selectElementsWitoutRef({ elements, selectors: ['salesforce.*'], includeNested: true })
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
 
@@ -719,12 +723,8 @@ describe('element selector without ref by', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance.A.*'] }
-    )).toEqual([elements[1]])
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance._config.*'] }
-    )).toEqual([elements[5]])
+    expect(selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance.A.*'] })).toEqual([elements[1]])
+    expect(selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance._config.*'] })).toEqual([elements[5]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 2', () => {
@@ -736,12 +736,12 @@ describe('element selector without ref by', () => {
       new ElemID('salesforce', 'othertype', 'instance', '_config'),
       new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true }
-    )).toEqual([elements[1], elements[2]])
-    expect(selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*.instance._config.*'], includeNested: true }
-    )).toEqual([elements[5]])
+    expect(
+      selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true }),
+    ).toEqual([elements[1], elements[2]])
+    expect(
+      selectElementsWitoutRef({ elements, selectors: ['salesforce.*.instance._config.*'], includeNested: true }),
+    ).toEqual([elements[5]])
   })
 
   it('should handle asterisks alongside partial names in type', () => {
@@ -762,9 +762,7 @@ describe('element selector without ref by', () => {
       new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
       new ElemID('salesforce', 'ApexClass', 'instance', 'Analog'),
     ]
-    const selectedElements = selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.ApexClass.instance.A*'] }
-    )
+    const selectedElements = selectElementsWitoutRef({ elements, selectors: ['salesforce.ApexClass.instance.A*'] })
     expect(selectedElements).toEqual([elements[0], elements[4]])
   })
 
@@ -779,38 +777,22 @@ describe('element selector without ref by', () => {
       new ElemID('salesforce', 'ApexClass', 'instance', 'Imeric'),
       new ElemID('salesforce', 'ApexClass', 'instance', 'ericchan'),
     ]
-    const selectedElements = selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.ApexClass.instance.*eric*'] }
-    )
-    expect(selectedElements).toEqual(
-      [elements[0], elements[4], elements[5], elements[6], elements[7]]
-    )
+    const selectedElements = selectElementsWitoutRef({ elements, selectors: ['salesforce.ApexClass.instance.*eric*'] })
+    expect(selectedElements).toEqual([elements[0], elements[4], elements[5], elements[6], elements[7]])
   })
 
   it('should use two selectors and allow any element that matches one of them', () => {
-    const elements = [
-      new ElemID('salesforce', 'value'),
-      new ElemID('netsuite', 'value'),
-      new ElemID('jira', 'value'),
-    ]
+    const elements = [new ElemID('salesforce', 'value'), new ElemID('netsuite', 'value'), new ElemID('jira', 'value')]
     const selectedElements = selectElementsWitoutRef({ elements, selectors: ['salesforce.*', 'netsuite.*'] })
     expect(selectedElements).toEqual([elements[0], elements[1]])
   })
   it('returns all elements with no selectors', () => {
-    const elements = [
-      new ElemID('salesforce', 'value'),
-      new ElemID('netsuite', 'value'),
-      new ElemID('jira', 'value'),
-    ]
+    const elements = [new ElemID('salesforce', 'value'), new ElemID('netsuite', 'value'), new ElemID('jira', 'value')]
     expect(selectElementsWitoutRef({ elements, selectors: [] })).toEqual(elements)
   })
   it('should use a wildcard and a specific element id and not throw error if the wildcard covers the element id', () => {
-    const elements = [
-      new ElemID('salesforce', 'value'),
-    ]
-    const selectedElements = selectElementsWitoutRef(
-      { elements, selectors: ['salesforce.*', 'salesforce.value'] }
-    )
+    const elements = [new ElemID('salesforce', 'value')]
+    const selectedElements = selectElementsWitoutRef({ elements, selectors: ['salesforce.*', 'salesforce.value'] })
     expect(selectedElements).toEqual([elements[0]])
   })
 })

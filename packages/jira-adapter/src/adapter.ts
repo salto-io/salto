@@ -723,17 +723,19 @@ export default class JiraAdapter implements AdapterOperations {
     const typesConfig = {
       ...this.userConfig.apiDefinitions.types,
       ...this.userConfig.jsmApiDefinitions?.types,
-      ...this.userConfig.scriptRunnerApiDefinitions?.types,
     }
-    
+
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated
     addRemainingTypes({
       adapterName: JIRA,
       elements,
       typesConfig,
-      supportedTypes: _.merge(supportedTypes, this.userConfig.jsmApiDefinitions?.supportedTypes, this.userConfig.scriptRunnerApiDefinitions?.supportedTypes),
-      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+      supportedTypes: _.merge(supportedTypes, this.userConfig.jsmApiDefinitions?.supportedTypes),
+      typeDefaultConfig: {
+        ...this.userConfig.apiDefinitions.typeDefaults,
+        ...this.userConfig.jsmApiDefinitions?.typeDefaults,
+      },
     })
 
     return {

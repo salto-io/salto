@@ -41,7 +41,7 @@ import { createCredentialsInstance, createConfigInstance, mockClient, createEmpt
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
 
-const { getAllElements, getEntriesResponseValues } = elements.ducktype
+const { getAllElements, getEntriesResponseValues, addRemainingTypes } = elements.ducktype
 const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -76,6 +76,9 @@ jest.mock('@salto-io/adapter-components', () => {
         }),
         getEntriesResponseValues: jest.fn().mockImplementation(() => {
           throw new Error('getEntriesResponseValues called without a mock')
+        }),
+        addRemainingTypes: jest.fn().mockImplementation(() => {
+          throw new Error('addRemainingTypes called without a mock')
         }),
       },
     },
@@ -273,7 +276,10 @@ describe('adapter', () => {
         })
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValue({ elements: [testInstance2] })
       ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({ elements: [testInstance] })
-      ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
+      ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>)
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      .mockImplementation(() => {});
+          ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
         document: {},
         parser: {},
       } as elements.swagger.LoadedSwagger)
@@ -285,7 +291,7 @@ describe('adapter', () => {
     afterEach(() => {
       mockAxiosAdapter.restore()
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
-    })
+          })
     it('should generate types for the platform and the jira apis', () => {
       expect(loadSwagger).toHaveBeenCalledTimes(2)
       expect(loadSwagger).toHaveBeenCalledWith(
@@ -376,7 +382,7 @@ describe('adapter', () => {
             parsedConfigs: { JiraTest: { request: { url: 'jira' } } },
           })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValue({ elements: [testInstance2] })
-        ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
+                ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [testInstance],
         })
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
@@ -392,7 +398,7 @@ describe('adapter', () => {
       afterEach(() => {
         mockAxiosAdapter.restore()
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
-      })
+              })
       it('should return all types and instances returned from the infrastructure', () => {
         expect(result.elements).toContain(platformTestType)
         expect(result.elements).toContain(jiraTestType)
@@ -552,7 +558,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-        EntriesRequesterFunc = jiraJSMEntriesFunc(serviceDeskProjectInstance)
+                EntriesRequesterFunc = jiraJSMEntriesFunc(serviceDeskProjectInstance)
       })
       it('should add projectKey to the response with all dataField', async () => {
         const result = await EntriesRequesterFunc({
@@ -577,7 +583,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-        const result = await EntriesRequesterFunc({
+                const result = await EntriesRequesterFunc({
           paginator,
           args: { url: '/rest/servicedeskapi/servicedesk/2/requesttype' },
           typesConfig: { RequestType: { transformation: { dataField: 'values' } } },
@@ -621,7 +627,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-        EntriesRequesterFunc = jiraJSMAssetsEntriesFunc()
+                EntriesRequesterFunc = jiraJSMAssetsEntriesFunc()
       })
       it('should change the objectType object struct to id', async () => {
         const result = await EntriesRequesterFunc({
@@ -645,7 +651,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-        const result = await EntriesRequesterFunc({
+                const result = await EntriesRequesterFunc({
           paginator,
           args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
           typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,

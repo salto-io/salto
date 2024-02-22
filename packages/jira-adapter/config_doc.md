@@ -31,13 +31,13 @@ jira {
     fallbackToInternalId = true
     addTypeToFieldName? = true
     parseTemplateExpressions = true
-    removeDuplicateProjectRoles? = boolean
+    removeDuplicateProjectRoles = true
     addAlias = true
     splitFieldConfiguration = true
     enableMissingReferences = true
-    enableIssueLayouts = true
+    enableIssueLayouts = false
     enableScriptRunnerAddon = true
-    enableJSM = true 
+    enableJSM = true
   }
   deploy = {
     defaultMissingUserFallback = "##DEPLOYER##"

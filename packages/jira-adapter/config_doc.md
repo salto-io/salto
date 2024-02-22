@@ -52,7 +52,6 @@ jira {
 | -------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | defaultMissingUserFallback | No fallback            | Configure replacement for missing users during deploy, can be user email for Jira Cloud, or username for Jira DC, or ##DEPLOYER## to fallback to deployer's user |
 
-
 ### Client configuration options
 
 | Name                                             | Default when undefined | Description                                                         |

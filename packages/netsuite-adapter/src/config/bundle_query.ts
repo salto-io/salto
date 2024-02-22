@@ -18,25 +18,14 @@ import _ from 'lodash'
 import { TypesQuery, FileCabinetQuery, NetsuiteQuery, CustomRecordsQuery } from './query'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
 import { SuiteAppBundleType } from '../types/bundle_type'
-import { ALL_TYPES_REGEX, INCLUDE_ALL } from './constants'
-import { bundleIdRegex } from '../filters/bundle_ids'
+import { INCLUDE_ALL } from './constants'
+import { bundleIdRegex, getServiceIdsOfVersion } from '../filters/bundle_ids'
 import { getGroupItemFromRegex } from '../client/utils'
 import { BUNDLE } from '../constants'
 
 export type BundlesQueryAndSupportedBundles = {
   query: NetsuiteQuery
   bundlesToInclude: SuiteAppBundleType[]
-}
-
-const getBundleComponents = (bundleId: string, bundleVersion: string | undefined): Set<string> => {
-  if (bundleVersion) {
-    return BUNDLE_ID_TO_COMPONENTS[bundleId][bundleVersion]
-  }
-  // version is unsupported, check all supported versions of this bundle
-  const versionComponentsUnion = new Set(
-    Object.values(BUNDLE_ID_TO_COMPONENTS[bundleId]).flatMap(versionComponents => Array.from(versionComponents)),
-  )
-  return versionComponentsUnion
 }
 
 const buildTypesQuery = (components: Set<string>): TypesQuery => ({
@@ -73,9 +62,7 @@ const getBundlesToExclude = (
   if (bundlesToExclude.includes(INCLUDE_ALL)) {
     return [installedBundles, []]
   }
-  const bundleMatchers = bundlesToExclude.map(
-    matcher => new RegExp(matcher === INCLUDE_ALL ? ALL_TYPES_REGEX : matcher),
-  )
+  const bundleMatchers = bundlesToExclude.map(matcher => new RegExp(matcher))
   return _.partition(installedBundles, bundle => bundleMatchers.some(matcher => matcher.test(bundle.id.toString())))
 }
 
@@ -85,7 +72,11 @@ export const buildNetsuiteBundlesQuery = (
 ): BundlesQueryAndSupportedBundles => {
   const [bundlesToExcludeFromQuery, bundlesToInclude] = getBundlesToExclude(installedBundles, bundlesToExclude)
   const bundlesToExcludeComponentsSet = new Set(
-    bundlesToExcludeFromQuery.flatMap(bundle => Array.from(getBundleComponents(bundle.id, bundle.version))),
+    bundlesToExcludeFromQuery.flatMap(bundle =>
+      bundle.id in BUNDLE_ID_TO_COMPONENTS
+        ? Array.from(getServiceIdsOfVersion(BUNDLE_ID_TO_COMPONENTS[bundle.id], bundle.id, bundle.version))
+        : [],
+    ),
   )
   const { isTypeMatch, areAllObjectsMatch, isObjectMatch } = buildTypesQuery(bundlesToExcludeComponentsSet)
   const { isFileMatch, isParentFolderMatch, areSomeFilesMatch } = buildFileCabinetQuery(bundlesToExcludeFromQuery)

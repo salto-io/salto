@@ -344,7 +344,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
-      fetchQuery,
+      fetchQueryWithBundles,
       useChangesDetection,
       timeZoneAndFormat,
     )
@@ -376,7 +376,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         importFileCabinetContent(),
         this.client.getCustomObjects(getStandardTypesNames(), {
           updatedFetchQuery,
-          originFetchQuery: fetchQuery,
+          originFetchQuery: fetchQueryWithBundles,
         }),
       ])
       const bundlesCustomInfo = bundlesToInclude.map(bundle => ({
@@ -395,7 +395,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
         this.client,
         customRecordTypes,
-        fetchQuery,
+        fetchQueryWithBundles,
         this.getElemIdFunc,
       )
       return {
@@ -414,7 +414,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
       getStandardAndCustomElements(),
-      getDataElements(this.client, fetchQuery, this.getElemIdFunc),
+      getDataElements(this.client, fetchQueryWithBundles, this.getElemIdFunc),
       getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
     ])
 
@@ -422,7 +422,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     failures.failedTypes.excludedTypes = failures.failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
-      ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
+      ? toConfigElements(configRecords, fetchQueryWithBundles).concat(getConfigTypes())
       : []
 
     // we calculate deleted elements only in partial-fetch mode
@@ -431,7 +431,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ? await getDeletedElements({
             client: this.client,
             elementsSource: this.elementsSource,
-            fetchQuery,
+            fetchQuery: fetchQueryWithBundles,
             serviceInstanceIds: instancesIds,
             requestedCustomRecordTypes: customRecordTypes,
             serviceCustomRecords: customRecords,

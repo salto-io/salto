@@ -733,7 +733,7 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'Exclude bundles',
         [CORE_ANNOTATIONS.DESCRIPTION]:
-          'Salto includes all installed bundles by default.' + ' You can choose to exclude specific bundles.',
+          'Salto includes all installed bundles by default. You can choose to exclude specific bundles.',
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           enforce_value: false,
           values: [INCLUDE_ALL],

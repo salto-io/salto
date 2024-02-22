@@ -1215,6 +1215,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [{ fieldName: 'id' }],
     },
   },
+  WorkflowTransitions: {
+    transformation: {
+      // transitionId is not multi-env friendly
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
   WorkflowTrigger: {
     transformation: {
       fieldsToOmit: [{ fieldName: 'id' }],

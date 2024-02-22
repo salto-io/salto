@@ -63,7 +63,6 @@ import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import commonFilters from './filters/common'
-import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
@@ -115,8 +114,6 @@ const DEFAULT_FILTERS = [
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
-  // should run before fieldReferencesFilter
-  replaceObjectWithIdFilter,
   userFilter,
   groupMembersFilter,
   groupPushFilter,

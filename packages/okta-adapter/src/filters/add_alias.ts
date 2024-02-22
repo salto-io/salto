@@ -45,9 +45,15 @@ import {
   GROUP_PUSH_TYPE_NAME,
   AUTOMATION_TYPE_NAME,
   AUTOMATION_RULE_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
 } from '../constants'
 
-const SECOND_ITERATION_TYPES = [USER_SCHEMA_TYPE_NAME, PROFILE_MAPPING_TYPE_NAME, GROUP_PUSH_TYPE_NAME]
+const SECOND_ITERATION_TYPES = [
+  USER_SCHEMA_TYPE_NAME,
+  PROFILE_MAPPING_TYPE_NAME,
+  GROUP_PUSH_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
+]
 
 const DEFAULT_ALIAS_TYPES = [
   ...POLICY_RULE_TYPE_NAMES,
@@ -126,6 +132,19 @@ const aliasMap: Record<string, AliasData> = {
       },
       {
         fieldName: 'newAppGroupName',
+      },
+    ],
+    separator: ' : ',
+  },
+  [APP_GROUP_ASSIGNMENT_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        fieldName: 'id',
+        referenceFieldName: '_alias',
       },
     ],
     separator: ' : ',

@@ -62,16 +62,6 @@ const log = logger(module)
 
 const AUTO_LOGIN_APP = 'AUTO_LOGIN'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
-  assignedGroups: {
-    add: {
-      url: '/api/v1/apps/{source}/groups/{target}',
-      method: 'put',
-    },
-    remove: {
-      url: '/api/v1/apps/{source}/groups/{target}',
-      method: 'delete',
-    },
-  },
   profileEnrollment: {
     add: {
       url: '/api/v1/apps/{source}/policies/{target}',
@@ -197,8 +187,7 @@ const deployApp = async (
 }
 
 /**
- * Application type is deployed separately to update application's status,
- * application's assigned group and application's policies
+ * Application type is deployed separately to update application's configuration, status and application's policies
  */
 const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
   name: 'appDeploymentFilter',

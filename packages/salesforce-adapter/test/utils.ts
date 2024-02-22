@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import {
   BuiltinTypes,
@@ -24,23 +24,15 @@ import {
   MapType,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes,
-  ProgressReporter,
+  PrimitiveTypes, ProgressReporter,
   TypeElement,
   Values,
 } from '@salto-io/adapter-api'
-import {
-  buildElementsSourceFromElements,
-  findElements as findElementsByID,
-} from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
 import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
-import {
-  annotationsFileName,
-  customFieldsFileName,
-  standardFieldsFileName,
-} from '../src/filters/custom_type_split'
+import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
@@ -48,19 +40,14 @@ export const findElements = (
   elements: ReadonlyArray<Element>,
   ...name: ReadonlyArray<string>
 ): Element[] => {
-  const expectedElemId =
-    name.length === 1
-      ? new ElemID(constants.SALESFORCE, name[0])
-      : new ElemID(constants.SALESFORCE, name[0], 'instance', ...name.slice(1))
+  const expectedElemId = name.length === 1
+    ? new ElemID(constants.SALESFORCE, name[0])
+    : new ElemID(constants.SALESFORCE, name[0], 'instance', ...name.slice(1))
   return [...findElementsByID(elements, expectedElemId)]
 }
 
-export const createField = (
-  parent: ObjectType,
-  fieldType: TypeElement,
-  fieldApiName: string,
-  additionalAnnotations?: Values,
-): Field => {
+export const createField = (parent: ObjectType, fieldType: TypeElement,
+  fieldApiName: string, additionalAnnotations?: Values): Field => {
   const newField = new Field(parent, 'field', fieldType, {
     [constants.API_NAME]: fieldApiName,
     modifyMe: 'modifyMe',
@@ -72,63 +59,54 @@ export const createField = (
 
 export const createMetadataTypeElement = (
   typeName: string,
-  params: Partial<ConstructorParameters<typeof ObjectType>[0]>,
-): ObjectType =>
-  new ObjectType({
-    ...params,
-    annotations: {
-      ...params.annotations,
-      [constants.METADATA_TYPE]: typeName,
-    },
-    elemID: new ElemID(constants.SALESFORCE, typeName),
-  })
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  annotations: {
+    ...params.annotations,
+    [constants.METADATA_TYPE]: typeName,
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
 
 export const createCustomObjectType = (
   typeName: string,
-  params: Partial<ConstructorParameters<typeof ObjectType>[0]>,
-): ObjectType =>
-  new ObjectType({
-    ...params,
-    fields: {
-      Id: {
-        refType: BuiltinTypes.SERVICE_ID,
-        annotations: {
-          [FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: 'Id',
-        },
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  fields: {
+    Id: { refType: BuiltinTypes.SERVICE_ID, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true, [constants.API_NAME]: 'Id' } },
+    Name: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [constants.API_NAME]: 'Name',
       },
-      Name: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [FIELD_ANNOTATIONS.CREATABLE]: true,
-          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          [constants.API_NAME]: 'Name',
-        },
-      },
-      ...params.fields,
     },
-    annotations: {
-      [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-      [constants.API_NAME]: typeName,
-      ...(params.annotations ?? {}),
-    },
-    elemID: new ElemID(constants.SALESFORCE, typeName),
-  })
+    ...params.fields,
+  },
+  annotations: {
+    [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+    [constants.API_NAME]: typeName,
+    ...(params.annotations ?? {}),
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
 
 export const createCustomMetadataType = (
   typeName: string,
-  params: Partial<ConstructorParameters<typeof ObjectType>[0]>,
-): ObjectType =>
-  new ObjectType({
-    ...params,
-    annotations: {
-      [constants.METADATA_TYPE]: constants.CUSTOM_METADATA,
-      [constants.API_NAME]: typeName,
-      ...(params.annotations ?? {}),
-    },
-    elemID: new ElemID(constants.SALESFORCE, typeName),
-  })
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  annotations: {
+    [constants.METADATA_TYPE]: constants.CUSTOM_METADATA,
+    [constants.API_NAME]: typeName,
+    ...(params.annotations ?? {}),
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
 
 export const createValueSetEntry = (
   name: string,
@@ -136,86 +114,66 @@ export const createValueSetEntry = (
   label?: string,
   isActive?: boolean,
   color?: string,
-): Values =>
-  _.omitBy(
-    {
-      [constants.CUSTOM_VALUE.FULL_NAME]: name,
-      [constants.CUSTOM_VALUE.LABEL]: label || name,
-      [constants.CUSTOM_VALUE.DEFAULT]: defaultValue,
-      isActive,
-      color,
-    },
-    _.isUndefined,
-  )
+): Values => _.omitBy(
+  {
+    [constants.CUSTOM_VALUE.FULL_NAME]: name,
+    [constants.CUSTOM_VALUE.LABEL]: label || name,
+    [constants.CUSTOM_VALUE.DEFAULT]: defaultValue,
+    isActive,
+    color,
+  },
+  _.isUndefined
+)
 
 export type ZipFile = {
   path: string
   content: string
 }
 
-export const createEncodedZipContent = async (
-  files: ZipFile[],
-  encoding: BufferEncoding = 'base64',
-): Promise<string> => {
+export const createEncodedZipContent = async (files: ZipFile[],
+  encoding: BufferEncoding = 'base64'):
+  Promise<string> => {
   const zip = new JSZip()
-  files.forEach((file) => zip.file(file.path, file.content))
+  files.forEach(file => zip.file(file.path, file.content))
   return (await zip.generateAsync({ type: 'nodebuffer' })).toString(encoding)
 }
 
-export const findCustomFieldsObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects.find(
-    (obj) => obj.path?.slice(-1)[0] === customFieldsFileName(name),
-  ) as ObjectType
+  return customObjects
+    .find(obj => obj.path?.slice(-1)[0] === customFieldsFileName(name)) as ObjectType
 }
 
-export const findStandardFieldsObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findStandardFieldsObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects.find(
-    (obj) => obj.path?.slice(-1)[0] === standardFieldsFileName(name),
-  ) as ObjectType
+  return customObjects
+    .find(obj => obj.path?.slice(-1)[0] === standardFieldsFileName(name)) as ObjectType
 }
 
-export const findAnnotationsObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findAnnotationsObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects.find(
-    (obj) => obj.path?.slice(-1)[0] === annotationsFileName(name),
-  ) as ObjectType
+  return customObjects
+    .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
 }
 
-export const findFullCustomObject = (
-  elements: Element[],
-  name: string,
-): ObjectType => {
+export const findFullCustomObject = (elements: Element[], name: string): ObjectType => {
   const customObjects = findElements(elements, name) as ObjectType[]
   return new ObjectType({
     elemID: customObjects[0].elemID,
     annotationRefsOrTypes: Object.fromEntries(
-      customObjects.flatMap((obj) => Object.entries(obj.annotationRefTypes)),
+      customObjects.flatMap(obj => Object.entries(obj.annotationRefTypes))
     ),
     annotations: Object.fromEntries(
-      customObjects.flatMap((obj) => Object.entries(obj.annotations)),
+      customObjects.flatMap(obj => Object.entries(obj.annotations))
     ),
     fields: Object.fromEntries(
-      customObjects.flatMap((obj) => Object.entries(obj.fields)),
+      customObjects.flatMap(obj => Object.entries(obj.fields))
     ),
     isSettings: customObjects[0].isSettings,
   })
 }
 
-export const generateProfileType = (
-  useMaps = false,
-  preDeploy = false,
-): ObjectType => {
+export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
@@ -257,15 +215,9 @@ export const generateProfileType = (
 
   if (useMaps || preDeploy) {
     // mark key fields as _required=true
-    ProfileApplicationVisibility.fields.application.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
-    ProfileLayoutAssignment.fields.layout.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
-    ProfileFieldLevelSecurity.fields.field.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
+    ProfileApplicationVisibility.fields.application.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileLayoutAssignment.fields.layout.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   return new ObjectType({
@@ -274,21 +226,15 @@ export const generateProfileType = (
       [constants.INSTANCE_FULL_NAME_FIELD]: {
         refType: BuiltinTypes.STRING,
       },
-      applicationVisibilities: {
-        refType: useMaps
-          ? new MapType(ProfileApplicationVisibility)
-          : ProfileApplicationVisibility,
-      },
-      layoutAssignments: {
-        refType: useMaps
-          ? new MapType(new ListType(ProfileLayoutAssignment))
-          : new ListType(ProfileLayoutAssignment),
-      },
-      fieldPermissions: {
-        refType: useMaps
-          ? new MapType(new MapType(ProfileFieldLevelSecurity))
-          : fieldPermissionsNonMapType,
-      },
+      applicationVisibilities: { refType: useMaps
+        ? new MapType(ProfileApplicationVisibility)
+        : ProfileApplicationVisibility },
+      layoutAssignments: { refType: useMaps
+        ? new MapType(new ListType(ProfileLayoutAssignment))
+        : new ListType(ProfileLayoutAssignment) },
+      fieldPermissions: { refType: useMaps
+        ? new MapType(new MapType(ProfileFieldLevelSecurity))
+        : fieldPermissionsNonMapType },
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
@@ -296,15 +242,9 @@ export const generateProfileType = (
   })
 }
 
-export const generatePermissionSetType = (
-  useMaps = false,
-  preDeploy = false,
-): ObjectType => {
+export const generatePermissionSetType = (useMaps = false, preDeploy = false): ObjectType => {
   const PermissionSetApplicationVisibility = new ObjectType({
-    elemID: new ElemID(
-      constants.SALESFORCE,
-      'PermissionSetApplicationVisibility',
-    ),
+    elemID: new ElemID(constants.SALESFORCE, 'PermissionSetApplicationVisibility'),
     fields: {
       application: { refType: BuiltinTypes.STRING },
       default: { refType: BuiltinTypes.BOOLEAN },
@@ -334,12 +274,9 @@ export const generatePermissionSetType = (
 
   if (useMaps || preDeploy) {
     // mark key fields as _required=true
-    PermissionSetApplicationVisibility.fields.application.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
-    PermissionSetFieldLevelSecurity.fields.field.annotations[
-      CORE_ANNOTATIONS.REQUIRED
-    ] = true
+    PermissionSetApplicationVisibility.fields.application
+      .annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    PermissionSetFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   return new ObjectType({
@@ -348,16 +285,12 @@ export const generatePermissionSetType = (
       [constants.INSTANCE_FULL_NAME_FIELD]: {
         refType: BuiltinTypes.STRING,
       },
-      applicationVisibilities: {
-        refType: useMaps
-          ? new MapType(PermissionSetApplicationVisibility)
-          : PermissionSetApplicationVisibility,
-      },
-      fieldPermissions: {
-        refType: useMaps
-          ? new MapType(new MapType(PermissionSetFieldLevelSecurity))
-          : fieldPermissionsNonMapType,
-      },
+      applicationVisibilities: { refType: useMaps
+        ? new MapType(PermissionSetApplicationVisibility)
+        : PermissionSetApplicationVisibility },
+      fieldPermissions: { refType: useMaps
+        ? new MapType(new MapType(PermissionSetFieldLevelSecurity))
+        : fieldPermissionsNonMapType },
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PERMISSION_SET_METADATA_TYPE,

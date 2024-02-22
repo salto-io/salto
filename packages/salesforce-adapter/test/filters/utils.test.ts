@@ -1,27 +1,24 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
-  BuiltinTypes,
-  Change,
-  CORE_ANNOTATIONS,
+  BuiltinTypes, Change, CORE_ANNOTATIONS,
   createRefToElmWithValue,
   ElemID,
   Field,
-  InstanceElement,
-  ListType,
+  InstanceElement, ListType,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -52,8 +49,7 @@ import {
   isStandardField,
   getFullName,
   isInstanceOfCustomObjectSync,
-  isInstanceOfCustomObjectChangeSync,
-  aliasOrElemID,
+  isInstanceOfCustomObjectChangeSync, aliasOrElemID,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -63,13 +59,9 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   LABEL,
   METADATA_TYPE,
-  SALESFORCE,
-  STATUS,
+  SALESFORCE, STATUS,
 } from '../../src/constants'
-import {
-  createInstanceElement,
-  Types,
-} from '../../src/transformers/transformer'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
 import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField } from '../utils'
@@ -260,9 +252,7 @@ describe('filter utils', () => {
   })
   describe('isCustomMetadataRecordType', () => {
     it('should return true for customMetadataRecordType', async () => {
-      expect(
-        await isCustomMetadataRecordType(mockTypes.CustomMetadataRecordType),
-      ).toBeTrue()
+      expect(await isCustomMetadataRecordType(mockTypes.CustomMetadataRecordType)).toBeTrue()
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(await isCustomMetadataRecordType(mockTypes.Profile)).toBeFalse()
@@ -271,16 +261,14 @@ describe('filter utils', () => {
   describe('isCustomMetadataRecordInstance', () => {
     const customMetadataRecordInstance = createInstanceElement(
       { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },
-      mockTypes.CustomMetadataRecordType,
+      mockTypes.CustomMetadataRecordType
     )
     const profileInstance = createInstanceElement(
       { [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' },
-      mockTypes.Profile,
+      mockTypes.Profile
     )
     it('should return true for customMetadataRecordType instance', async () => {
-      expect(
-        await isCustomMetadataRecordInstance(customMetadataRecordInstance),
-      ).toBeTrue()
+      expect(await isCustomMetadataRecordInstance(customMetadataRecordInstance)).toBeTrue()
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(await isCustomMetadataRecordInstance(profileInstance)).toBeFalse()
@@ -288,19 +276,15 @@ describe('filter utils', () => {
   })
   describe('isMetadataValues', () => {
     it('should return true when values contain a fullName field', () => {
-      expect(
-        isMetadataValues({
-          [INSTANCE_FULL_NAME_FIELD]: 'TestFullName',
-          anotherProperty: 'anotherProperty',
-        }),
-      ).toBeTrue()
+      expect(isMetadataValues({
+        [INSTANCE_FULL_NAME_FIELD]: 'TestFullName',
+        anotherProperty: 'anotherProperty',
+      })).toBeTrue()
     })
     it('should return false when values does not contain a fullName field', () => {
-      expect(
-        isMetadataValues({
-          anotherProperty: 'anotherProperty',
-        }),
-      ).toBeFalse()
+      expect(isMetadataValues({
+        anotherProperty: 'anotherProperty',
+      })).toBeFalse()
     })
   })
   describe('getNamespace', () => {
@@ -308,19 +292,13 @@ describe('filter utils', () => {
       it.each([
         'Instance',
         'Parent.Instance',
-        ...INSTANCE_SUFFIXES.map((suffix) => `Instance__${suffix}`),
+        ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
       ])('%s', async (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
         expect(await getNamespace(instance)).toBeUndefined()
       })
       it('Layout instance', async () => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' },
-          mockTypes.Layout,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
         expect(await getNamespace(instance)).toBeUndefined()
       })
     })
@@ -330,23 +308,13 @@ describe('filter utils', () => {
         `${NAMESPACE}__Instance`,
         `Parent.${NAMESPACE}__Instance`,
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
-        ...INSTANCE_SUFFIXES.map(
-          (suffix) => `${NAMESPACE}__Instance__${suffix}`,
-        ),
+        ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
       ])('%s', async (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
       })
       it('Layout instance', async () => {
-        const instance = createInstanceElement(
-          {
-            [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name`,
-          },
-          mockTypes.Layout,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
       })
     })
@@ -356,19 +324,13 @@ describe('filter utils', () => {
       it.each([
         'Instance',
         'Parent.Instance',
-        ...INSTANCE_SUFFIXES.map((suffix) => `Instance__${suffix}`),
+        ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
       ])('%s', (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
         expect(getNamespaceSync(instance)).toBeUndefined()
       })
       it('Layout instance', () => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' },
-          mockTypes.Layout,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
         expect(getNamespaceSync(instance)).toBeUndefined()
       })
     })
@@ -378,23 +340,13 @@ describe('filter utils', () => {
         `${NAMESPACE}__Instance`,
         `Parent.${NAMESPACE}__Instance`,
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
-        ...INSTANCE_SUFFIXES.map(
-          (suffix) => `${NAMESPACE}__Instance__${suffix}`,
-        ),
+        ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
       ])('%s', (name: string) => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: name },
-          mockTypes.Profile,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
         expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
       })
       it('Layout instance', () => {
-        const instance = createInstanceElement(
-          {
-            [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name`,
-          },
-          mockTypes.Layout,
-        )
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
         expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
       })
     })
@@ -407,13 +359,10 @@ describe('filter utils', () => {
       expect(await isStandardObject(mockTypes.Profile)).toBeFalse()
     })
     describe('when CustomObject has a custom suffix', () => {
-      it.each(INSTANCE_SUFFIXES.map((suffix) => `TestObject__${suffix}`))(
-        'Should return false for CustomObject with name TestObject__%s',
-        async (customObjectName: string) => {
-          const customObject = createCustomObjectType(customObjectName, {})
-          expect(await isStandardObject(customObject)).toBeFalse()
-        },
-      )
+      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))('Should return false for CustomObject with name TestObject__%s', async (customObjectName: string) => {
+        const customObject = createCustomObjectType(customObjectName, {})
+        expect(await isStandardObject(customObject)).toBeFalse()
+      })
     })
   })
   describe('isStandardObjectSync', () => {
@@ -424,13 +373,10 @@ describe('filter utils', () => {
       expect(mockTypes.Profile).not.toSatisfy(isStandardObjectSync)
     })
     describe('when CustomObject has a custom suffix', () => {
-      it.each(INSTANCE_SUFFIXES.map((suffix) => `TestObject__${suffix}`))(
-        'Should return false for CustomObject with name TestObject__%s',
-        (customObjectName: string) => {
-          const customObject = createCustomObjectType(customObjectName, {})
-          expect(customObject).not.toSatisfy(isStandardObjectSync)
-        },
-      )
+      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))('Should return false for CustomObject with name TestObject__%s', (customObjectName: string) => {
+        const customObject = createCustomObjectType(customObjectName, {})
+        expect(customObject).not.toSatisfy(isStandardObjectSync)
+      })
     })
   })
   describe('layoutObjAndName', () => {
@@ -440,10 +386,7 @@ describe('filter utils', () => {
       ['SBQQ__Account__c-Layout Name', 'SBQQ__Account__c', 'Layout Name'],
       ['Account-Layout-Complex-Name', 'Account', 'Layout-Complex-Name'],
     ])('%s', (layoutApiName, expectedObjectName, expectedLayoutName) => {
-      expect(layoutObjAndName(layoutApiName)).toEqual([
-        expectedObjectName,
-        expectedLayoutName,
-      ])
+      expect(layoutObjAndName(layoutApiName)).toEqual([expectedObjectName, expectedLayoutName])
     })
   })
   describe('getChangedAtSingleton', () => {
@@ -456,9 +399,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([changedAtSingleton])
       })
       it('should return the singleton', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toEqual(
-          changedAtSingleton,
-        )
+        expect(await getChangedAtSingleton(elementsSource)).toEqual(changedAtSingleton)
       })
     })
 
@@ -488,16 +429,11 @@ describe('filter utils', () => {
     let parent: ObjectType
 
     beforeEach(() => {
-      instance = createInstanceElement(
-        { [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' },
-        mockTypes.WebLink,
-      )
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
       parent = mockTypes.Account
     })
     it('should return false for element with unresolved parent', () => {
-      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
-        parent.elemID,
-      )
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID)
       expect(isElementWithResolvedParent(instance)).toBeFalse()
     })
     it('should return false for element with no parent', () => {
@@ -508,10 +444,7 @@ describe('filter utils', () => {
       expect(isElementWithResolvedParent(instance)).toBeFalse()
     })
     it('should return true when parent is an Element', () => {
-      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
-        parent.elemID,
-        parent,
-      )
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID, parent)
       expect(isElementWithResolvedParent(instance)).toBeTrue()
     })
   })
@@ -557,10 +490,7 @@ describe('filter utils', () => {
     let instance: InstanceElement
 
     beforeEach(() => {
-      instance = createInstanceElement(
-        { [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' },
-        mockTypes.WebLink,
-      )
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
     })
 
     it('should return undefined on all properties when element is not annotated with any', () => {
@@ -574,8 +504,7 @@ describe('filter utils', () => {
 
     it('should return correct properties when element is annotated with some', () => {
       instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
-      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] =
-        '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
       expect(getElementAuthorInformation(instance)).toEqual({
         createdBy: 'test',
         createdAt: '2023-01-01T16:28:30.000Z',
@@ -586,11 +515,9 @@ describe('filter utils', () => {
 
     it('should return correct properties when element is annotated with all', () => {
       instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
-      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] =
-        '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
       instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'test2'
-      instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] =
-        '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = '2023-01-01T16:28:30.000Z'
       expect(getElementAuthorInformation(instance)).toEqual({
         createdBy: 'test',
         createdAt: '2023-01-01T16:28:30.000Z',
@@ -601,26 +528,19 @@ describe('filter utils', () => {
   })
   describe('toListType', () => {
     it('should wrap a non List type', () => {
-      expect(toListType(mockTypes.Profile)).toEqual(
-        new ListType(mockTypes.Profile),
-      )
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
     })
     it('should not wrap a List type', () => {
-      expect(toListType(new ListType(mockTypes.Profile))).toEqual(
-        new ListType(mockTypes.Profile),
-      )
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
     })
   })
   describe('isInstanceOfTypeSync and isInstanceOfTypeChangeSync', () => {
     let instance: InstanceElement
     beforeEach(() => {
-      instance = createInstanceElement(
-        {
-          [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
-          description: 'Test Instance',
-        },
-        mockTypes.Profile,
-      )
+      instance = createInstanceElement({
+        [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
+        description: 'Test Instance',
+      }, mockTypes.Profile)
     })
     describe('isInstanceOfTypeSync', () => {
       it('should return true when the instance type is one of the provided types', () => {
@@ -629,9 +549,7 @@ describe('filter utils', () => {
       })
       it('should return false when the instance type is not one of the provided types', () => {
         expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow'))
-        expect(instance).not.toSatisfy(
-          isInstanceOfTypeSync('Flow', 'ApexClass'),
-        )
+        expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow', 'ApexClass'))
       })
     })
     describe('isInstanceOfTypeChangeSync', () => {
@@ -645,114 +563,69 @@ describe('filter utils', () => {
       })
       it('should return false when the changed instance type is not one of the provided types', () => {
         expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow'))
-        expect(change).not.toSatisfy(
-          isInstanceOfTypeChangeSync('Flow', 'ApexClass'),
-        )
+        expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow', 'ApexClass'))
       })
     })
   })
 
   describe('isDeactivatedFlowChange', () => {
     it('should return true when Flow is deactivated', () => {
-      const deactivatedFlowChange = createFlowChange({
-        flowApiName: 'flow',
-        beforeStatus: 'Active',
-        afterStatus: 'Draft',
-      })
+      const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft' })
       expect(deactivatedFlowChange).toSatisfy(isDeactivatedFlowChange)
     })
     it('should return false when flow is activated', () => {
-      const activatedFlowChange = createFlowChange({
-        flowApiName: 'flow',
-        beforeStatus: 'Draft',
-        afterStatus: 'Active',
-      })
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Active' })
       expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
     it('should return false when flow was already inactive', () => {
-      const activatedFlowChange = createFlowChange({
-        flowApiName: 'flow',
-        beforeStatus: 'Draft',
-        afterStatus: 'Obsolete',
-      })
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Obsolete' })
       expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
     it('should return false for added inactive flow', () => {
-      const activatedFlowChange = createFlowChange({
-        flowApiName: 'flow',
-        afterStatus: 'Active',
-      })
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
       expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
     it('should return false when a non Flow instance was deactivated', () => {
       const workflowChange = toChange({
-        before: createInstanceElement(
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-            [STATUS]: 'Active',
-          },
-          mockTypes.Workflow,
-        ),
-        after: createInstanceElement(
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-            [STATUS]: 'Draft',
-          },
-          mockTypes.Workflow,
-        ),
+        before: createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+          [STATUS]: 'Active',
+        }, mockTypes.Workflow),
+        after: createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+          [STATUS]: 'Draft',
+        }, mockTypes.Workflow),
       })
       expect(workflowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
 
     describe('isDeactivatedFlowChangeOnly', () => {
       it('should return true for deactivated Flow change with no additional modifications', () => {
-        const deactivatedFlowChange = createFlowChange({
-          flowApiName: 'flow',
-          beforeStatus: 'Active',
-          afterStatus: 'Draft',
-        })
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft' })
         expect(deactivatedFlowChange).toSatisfy(isDeactivatedFlowChangeOnly)
       })
       it('should return false for deactivated Flow change with additional modifications', () => {
-        const deactivatedFlowChange = createFlowChange({
-          flowApiName: 'flow',
-          beforeStatus: 'Active',
-          afterStatus: 'Draft',
-          additionalModifications: true,
-        })
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft', additionalModifications: true })
         expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
       })
       it('should return false for activated Flow change with no additional modifications', () => {
-        const deactivatedFlowChange = createFlowChange({
-          flowApiName: 'flow',
-          beforeStatus: 'Draft',
-          afterStatus: 'Active',
-        })
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Active' })
         expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
       })
       it('should return false for addition of inactive Flow', () => {
-        const deactivatedFlowChange = createFlowChange({
-          flowApiName: 'flow',
-          afterStatus: 'Active',
-        })
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
         expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
       })
       it('should return false when a non Flow instance was deactivated with no additional changes', () => {
         const workflowChange = toChange({
-          before: createInstanceElement(
-            {
-              [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-              [STATUS]: 'Active',
-            },
-            mockTypes.Workflow,
-          ),
-          after: createInstanceElement(
-            {
-              [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-              [STATUS]: 'Draft',
-            },
-            mockTypes.Workflow,
-          ),
+          before: createInstanceElement({
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Active',
+          }, mockTypes.Workflow),
+          after: createInstanceElement({
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Draft',
+          }, mockTypes.Workflow),
         })
         expect(workflowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
       })
@@ -765,11 +638,7 @@ describe('filter utils', () => {
 
     describe('when there is no annotation', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.Lookup,
-          'SomeCustomObject.SomeField',
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.Lookup, 'SomeCustomObject.SomeField')
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return an empty array', () => {
@@ -778,14 +647,9 @@ describe('filter utils', () => {
     })
     describe('when the annotation is empty', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.MasterDetail,
-          'SomeCustomObject.SomeField',
-          {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [],
-          },
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.MasterDetail, 'SomeCustomObject.SomeField', {
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [],
+        })
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return an empty array', () => {
@@ -794,14 +658,9 @@ describe('filter utils', () => {
     })
     describe('when the annotation contains strings', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.Lookup,
-          'SomeCustomObject.SomeField',
-          {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SomeTargetType'],
-          },
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.Lookup, 'SomeCustomObject.SomeField', {
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SomeTargetType'],
+        })
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return the referred type', () => {
@@ -812,16 +671,9 @@ describe('filter utils', () => {
     describe('when the annotation contains references', () => {
       beforeEach(() => {
         const targetType = createCustomObjectType('TargetType', {})
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.MasterDetail,
-          'SomeCustomObject.SomeField',
-          {
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [
-              new ReferenceExpression(targetType.elemID, targetType),
-            ],
-          },
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.MasterDetail, 'SomeCustomObject.SomeField', {
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [new ReferenceExpression(targetType.elemID, targetType)],
+        })
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return the referred type name', () => {
@@ -831,11 +683,7 @@ describe('filter utils', () => {
     })
     describe('when it`s a hierarchy field', () => {
       beforeEach(() => {
-        field = createField(
-          fieldParent,
-          Types.primitiveDataTypes.Hierarchy,
-          'SomeCustomObject.SomeField',
-        )
+        field = createField(fieldParent, Types.primitiveDataTypes.Hierarchy, 'SomeCustomObject.SomeField')
         referenceTargets = referenceFieldTargetTypes(field)
       })
       it('should return the referred type name', () => {
@@ -863,148 +711,39 @@ describe('filter utils', () => {
   describe('getFullName', () => {
     it('should return correct fullNames', () => {
       // instances with no parent
-      expect(
-        getFullName(
-          mockFileProperties({ fullName: 'Test', type: 'ApexClass' }),
-        ),
-      ).toEqual('Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Test',
-            namespacePrefix: 'test',
-            type: 'ApexClass',
-          }),
-        ),
-      ).toEqual('test__Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'test__Test',
-            namespacePrefix: 'test',
-            type: 'ApexClass',
-          }),
-        ),
-      ).toEqual('test__Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Test',
-            namespacePrefix: 'test',
-            type: 'ApexClass',
-          }),
-          false,
-        ),
-      ).toEqual('Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', type: 'ApexClass' }))).toEqual('Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', namespacePrefix: 'test', type: 'ApexClass' }))).toEqual('test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'test__Test', namespacePrefix: 'test', type: 'ApexClass' }))).toEqual('test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', namespacePrefix: 'test', type: 'ApexClass' }), false)).toEqual('Test')
       // layout instances
-      expect(
-        getFullName(
-          mockFileProperties({ fullName: 'Test-Test', type: 'Layout' }),
-        ),
-      ).toEqual('Test-Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Test-Test',
-            namespacePrefix: 'test',
-            type: 'Layout',
-          }),
-        ),
-      ).toEqual('Test-test__Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Test-test__Test',
-            namespacePrefix: 'test',
-            type: 'Layout',
-          }),
-        ),
-      ).toEqual('Test-test__Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Test-Test',
-            namespacePrefix: 'test',
-            type: 'Layout',
-          }),
-          false,
-        ),
-      ).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', type: 'Layout' }))).toEqual('Test-Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', namespacePrefix: 'test', type: 'Layout' }))).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-test__Test', namespacePrefix: 'test', type: 'Layout' }))).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', namespacePrefix: 'test', type: 'Layout' }), false)).toEqual('Test-test__Test')
       // instances with parent
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Parent.Test',
-            type: 'ValidationRule',
-          }),
-        ),
-      ).toEqual('Parent.Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Parent.Test',
-            namespacePrefix: 'test',
-            type: 'ValidationRule',
-          }),
-        ),
-      ).toEqual('Parent.test__Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Parent.test__Test',
-            namespacePrefix: 'test',
-            type: 'ValidationRule',
-          }),
-        ),
-      ).toEqual('Parent.test__Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Parent.Test',
-            namespacePrefix: 'test',
-            type: 'ValidationRule',
-          }),
-          false,
-        ),
-      ).toEqual('Parent.Test')
-      expect(
-        getFullName(
-          mockFileProperties({
-            fullName: 'Parent.Test',
-            namespacePrefix: 'test',
-            type: 'ValidationRule',
-          }),
-          false,
-        ),
-      ).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', type: 'ValidationRule' }))).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }))).toEqual('Parent.test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.test__Test', namespacePrefix: 'test', type: 'ValidationRule' }))).toEqual('Parent.test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }), false)).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }), false)).toEqual('Parent.Test')
     })
   })
   describe('isInstanceOfCustomObjectSync', () => {
     it('should return true for CustomObject instance', () => {
-      const instance = new InstanceElement('TestInstance', mockTypes.Account, {
-        Name: 'TestInstance',
-      })
+      const instance = new InstanceElement('TestInstance', mockTypes.Account, { Name: 'TestInstance' })
       expect(instance).toSatisfy(isInstanceOfCustomObjectSync)
     })
     it('should return false for non CustomObject instance', () => {
-      expect(mockInstances().Profile).not.toSatisfy(
-        isInstanceOfCustomObjectSync,
-      )
+      expect(mockInstances().Profile).not.toSatisfy(isInstanceOfCustomObjectSync)
     })
   })
   describe('isInstanceOfCustomObjectChangeSync', () => {
     it('should return true for CustomObject instance', () => {
-      const instance = new InstanceElement('TestInstance', mockTypes.Account, {
-        Name: 'TestInstance',
-      })
-      expect(toChange({ after: instance })).toSatisfy(
-        isInstanceOfCustomObjectChangeSync,
-      )
+      const instance = new InstanceElement('TestInstance', mockTypes.Account, { Name: 'TestInstance' })
+      expect(toChange({ after: instance })).toSatisfy(isInstanceOfCustomObjectChangeSync)
     })
     it('should return false for non CustomObject instance', () => {
-      expect(toChange({ after: mockInstances().Profile })).not.toSatisfy(
-        isInstanceOfCustomObjectChangeSync,
-      )
+      expect(toChange({ after: mockInstances().Profile })).not.toSatisfy(isInstanceOfCustomObjectChangeSync)
     })
   })
   describe('aliasOrElemID', () => {
@@ -1015,9 +754,7 @@ describe('filter utils', () => {
     })
     it('should return the fullElemID for Element without alias', () => {
       const instanceWithoutAlias = mockInstances().Profile
-      expect(aliasOrElemID(instanceWithoutAlias)).toEqual(
-        instanceWithoutAlias.elemID.getFullName(),
-      )
+      expect(aliasOrElemID(instanceWithoutAlias)).toEqual(instanceWithoutAlias.elemID.getFullName())
     })
   })
 })

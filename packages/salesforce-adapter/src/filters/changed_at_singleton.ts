@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   CORE_ANNOTATIONS,
   Element,
@@ -23,7 +23,10 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ArtificialTypes, DATA_INSTANCES_CHANGED_AT_MAGIC } from '../constants'
+import {
+  ArtificialTypes,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
+} from '../constants'
 import {
   apiNameSync,
   getChangedAtSingleton,
@@ -33,60 +36,50 @@ import {
   metadataTypeSync,
 } from './utils'
 
-const createChangedAtSingletonInstanceValues = (
-  metadataInstancesByType: Record<string, Element[]>,
-): Values => {
+const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, Element[]>): Values => {
   const instanceValues: Values = {}
-  Object.entries(metadataInstancesByType).forEach(
-    ([metadataType, elements]) => {
-      instanceValues[metadataType] = {}
-      elements.forEach((element) => {
-        instanceValues[metadataType][apiNameSync(element) ?? ''] =
-          element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
-      })
-    },
-  )
+  Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
+    instanceValues[metadataType] = {}
+    elements.forEach(element => {
+      instanceValues[metadataType][apiNameSync(element) ?? ''] = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
+    })
+  })
   return instanceValues
 }
 
-const createEmptyChangedAtSingletonInstance =
-  async (): Promise<InstanceElement> =>
-    new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ChangedAtSingleton)
+const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
+  new InstanceElement(
+    ElemID.CONFIG_NAME,
+    ArtificialTypes.ChangedAtSingleton,
+  )
+)
 
 const getChangedAtSingletonInstance = async (
-  elementsSource: ReadOnlyElementsSource | undefined,
+  elementsSource: ReadOnlyElementsSource | undefined
 ): Promise<InstanceElement> => {
-  const changedAtSingleton =
-    elementsSource !== undefined
-      ? await getChangedAtSingleton(elementsSource)
-      : undefined
+  const changedAtSingleton = elementsSource !== undefined
+    ? await getChangedAtSingleton(elementsSource)
+    : undefined
   return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
 }
 
-const dateStringOfMostRecentlyChangedInstance = (
-  instances: InstanceElement[],
-): string | undefined =>
+const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): string | undefined => (
   _(instances)
-    .map((instance) => instance.annotations[CORE_ANNOTATIONS.CHANGED_AT])
+    .map(instance => instance.annotations[CORE_ANNOTATIONS.CHANGED_AT])
     .filter(_.isString)
-    .maxBy((changedAt) => new Date(changedAt).getTime())
+    .maxBy(changedAt => new Date(changedAt).getTime())
+)
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
     const elementsByType = _.groupBy(
       elements
-        .filter(
-          (element) =>
-            isMetadataInstanceElementSync(element) ||
-            isCustomObjectSync(element),
-        )
-        .filter((element) => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
-      metadataTypeSync,
+        .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
+        .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
+      metadataTypeSync
     )
-    const changedAtInstance = await getChangedAtSingletonInstance(
-      config.elementsSource,
-    )
+    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
     elements.push(changedAtInstance)
     // None of the Elements were annotated with changedAt
     if (Object.values(elementsByType).flat().length === 0) {
@@ -99,18 +92,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
 
     const instanceLastChangedByCustomObjectType = _(elements)
       .filter(isInstanceOfCustomObjectSync)
-      .groupBy((instance) => apiNameSync(instance.getTypeSync()))
+      .groupBy(instance => apiNameSync(instance.getTypeSync()))
       .mapValues(dateStringOfMostRecentlyChangedInstance)
 
     instanceLastChangedByCustomObjectType
       .entries()
       .filter(([, mostRecentChangedAt]) => mostRecentChangedAt !== undefined)
       .forEach(([typeName, mostRecentChangedAt]) => {
-        _.set(
-          changedAtInstance.value,
-          [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName],
-          mostRecentChangedAt,
-        )
+        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName], mostRecentChangedAt)
       })
   },
 })

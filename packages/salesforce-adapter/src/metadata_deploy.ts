@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import util from 'util'
 import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
@@ -36,31 +36,16 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import {
-  DeployResult as SFDeployResult,
-  DeployMessage,
-} from '@salto-io/jsforce'
+import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
 import SalesforceClient from './client/client'
+import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
 import {
-  createDeployPackage,
-  DeployPackage,
-} from './transformers/xml_transformer'
-import {
-  isMetadataInstanceElement,
-  apiName,
-  metadataType,
-  isMetadataObjectType,
-  MetadataInstanceElement,
-  assertMetadataObjectType,
-  Types,
+  isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement,
+  assertMetadataObjectType, Types,
 } from './transformers/transformer'
 import { apiNameSync, fullApiName } from './filters/utils'
 import {
-  API_NAME_SEPARATOR,
-  CUSTOM_FIELD,
-  CUSTOM_OBJECT,
-  GLOBAL_VALUE_SET_SUFFIX,
-  INSTANCE_FULL_NAME_FIELD,
+  API_NAME_SEPARATOR, CUSTOM_FIELD, CUSTOM_OBJECT, GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
 } from './constants'
 import { RunTestsResult } from './client/jsforce'
@@ -76,8 +61,7 @@ const log = logger(module)
 
 // Put this marker in the value of an instance if it is just a wrapper for child instances
 // and is not meant to actually be deployed
-export const DEPLOY_WRAPPER_INSTANCE_MARKER =
-  '_magic_constant_that_means_this_is_a_wrapper_instance'
+export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_is_a_wrapper_instance'
 
 // Mapping of metadata type to fullNames
 type MetadataIdsMap = Record<string, Set<string>>
@@ -89,10 +73,7 @@ export type NestedMetadataTypeInfo = {
   isNestedApiNameRelative: boolean
 }
 
-const getTypeOfNestedElement = (
-  changeElem: MetadataInstanceElement,
-  fieldName: string,
-): TypeElement => {
+const getTypeOfNestedElement = (changeElem: MetadataInstanceElement, fieldName: string): TypeElement => {
   const rawFieldType = changeElem.getTypeSync().fields[fieldName]?.getTypeSync()
   // We generally expect these to be lists, handling non list types just in case of a bug
   const fieldType = isContainerType(rawFieldType)
@@ -101,15 +82,10 @@ const getTypeOfNestedElement = (
   return fieldType
 }
 
-const getNamesOfNestedElements = (
-  element: MetadataInstanceElement,
-  fieldName: string,
-): string[] =>
-  makeArray(element.value[fieldName]).map((fieldValue: Value) =>
-    [apiNameSync(element), fieldValue[INSTANCE_FULL_NAME_FIELD]].join(
-      API_NAME_SEPARATOR,
-    ),
-  )
+const getNamesOfNestedElements = (element: MetadataInstanceElement, fieldName: string): string[] => (
+  makeArray(element.value[fieldName])
+    .map((fieldValue: Value) => [apiNameSync(element), fieldValue[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPARATOR))
+)
 
 const addNestedInstancesToPackageManifest = async (
   pkg: DeployPackage,
@@ -119,46 +95,38 @@ const addNestedInstancesToPackageManifest = async (
 ): Promise<MetadataIdsMap> => {
   const changeElem = getChangeData(change)
 
-  const getNestedInstanceApiName = async (name: string): Promise<string> =>
+  const getNestedInstanceApiName = async (name: string): Promise<string> => (
     nestedTypeInfo.isNestedApiNameRelative
       ? fullApiName(await apiName(changeElem), name)
       : name
+  )
 
-  const addNestedInstancesFromField = async (
-    fieldName: string,
-  ): Promise<MetadataIdsMap> => {
+  const addNestedInstancesFromField = async (fieldName: string): Promise<MetadataIdsMap> => {
     const fieldType = getTypeOfNestedElement(changeElem, fieldName)
     if (!isMetadataObjectType(fieldType)) {
       log.error(
         'cannot deploy nested instances in %s field %s because the field type %s is not a metadata type',
-        changeElem.elemID.getFullName(),
-        fieldName,
-        fieldType?.elemID.getFullName(),
+        changeElem.elemID.getFullName(), fieldName, fieldType?.elemID.getFullName(),
       )
       return {}
     }
     const nestedAfter = new Set(
       isRemovalChange(change)
         ? []
-        : makeArray(change.data.after.value[fieldName]).map(
-            (item) => item[INSTANCE_FULL_NAME_FIELD],
-          ),
+        : makeArray(change.data.after.value[fieldName])
+          .map(item => item[INSTANCE_FULL_NAME_FIELD])
     )
     const nestedBefore = isAdditionChange(change)
       ? []
-      : makeArray(change.data.before.value[fieldName]).map(
-          (item) => item[INSTANCE_FULL_NAME_FIELD],
-        )
+      : makeArray(change.data.before.value[fieldName])
+        .map(item => item[INSTANCE_FULL_NAME_FIELD])
 
-    const removedNestedInstances = nestedBefore.filter(
-      (instName) => !nestedAfter.has(instName),
-    )
+    const removedNestedInstances = nestedBefore.filter(instName => !nestedAfter.has(instName))
 
-    const idsToDelete = await Promise.all(
-      removedNestedInstances.map(getNestedInstanceApiName),
-    )
+    const idsToDelete = await Promise.all(removedNestedInstances
+      .map(getNestedInstanceApiName))
 
-    idsToDelete.forEach((nestedInstName) => {
+    idsToDelete.forEach(nestedInstName => {
       pkg.delete(fieldType, nestedInstName)
     })
 
@@ -166,31 +134,26 @@ const addNestedInstancesToPackageManifest = async (
       ? await Promise.all([...nestedAfter].map(getNestedInstanceApiName))
       : []
 
-    idsToAdd.forEach((nestedInstName) => {
+    idsToAdd.forEach(nestedInstName => {
       pkg.addToManifest(fieldType, nestedInstName)
     })
 
-    return {
-      [await metadataType(fieldType)]: new Set([...idsToDelete, ...idsToAdd]),
-    }
+    return { [await metadataType(fieldType)]: new Set([...idsToDelete, ...idsToAdd]) }
   }
 
   return Object.assign(
     {},
-    ...(await Promise.all(
-      nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField),
-    )),
+    ...await Promise.all(nestedTypeInfo.nestedInstanceFields.map(addNestedInstancesFromField))
   )
 }
 
 const addChangeToPackage = async (
   pkg: DeployPackage,
   change: Change<MetadataInstanceElement>,
-  nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
 ): Promise<MetadataIdsMap> => {
   const instance = getChangeData(change)
-  const isWrapperInstance =
-    _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
+  const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
   const instanceMetadataType = await metadataType(instance)
   const instanceApiName = await apiName(instance)
 
@@ -199,10 +162,7 @@ const addChangeToPackage = async (
     ? { [instanceMetadataType]: new Set([instanceApiName]) }
     : {}
   if (isRemovalChange(change)) {
-    pkg.delete(
-      assertMetadataObjectType(await instance.getType()),
-      instanceApiName,
-    )
+    pkg.delete(assertMetadataObjectType(await instance.getType()), instanceApiName)
   } else {
     await pkg.add(instance, addInstanceToManifest)
   }
@@ -227,13 +187,8 @@ const addChangeToPackage = async (
   // adding the __gvs suffix to the deployedIds works because we consider a deployment of a change successful if
   // any of its related deployed IDs are successful, this means that we will consider the global value set change
   // successful even if it came back with the __gvs suffix
-  if (
-    instanceMetadataType === GLOBAL_VALUE_SET &&
-    !instanceApiName.endsWith(GLOBAL_VALUE_SET_SUFFIX)
-  ) {
-    addedIds[instanceMetadataType].add(
-      `${instanceApiName}${GLOBAL_VALUE_SET_SUFFIX}`,
-    )
+  if (instanceMetadataType === GLOBAL_VALUE_SET && !instanceApiName.endsWith(GLOBAL_VALUE_SET_SUFFIX)) {
+    addedIds[instanceMetadataType].add(`${instanceApiName}${GLOBAL_VALUE_SET_SUFFIX}`)
   }
 
   return addedIds
@@ -246,37 +201,29 @@ type MetadataId = {
 
 const getUnFoundDeleteName = (
   message: DeployMessage,
-  deletionsPackageName: string,
+  deletionsPackageName: string
 ): MetadataId | undefined => {
-  const match =
-    message.fullName === deletionsPackageName &&
-    message.problemType === 'Warning'
-      ? message.problem.match(/No.*named: (?<fullName>.*) found/)
-      : undefined
+  const match = (
+    message.fullName === deletionsPackageName && message.problemType === 'Warning'
+  )
+    ? message.problem.match(/No.*named: (?<fullName>.*) found/)
+    : undefined
   const fullName = match?.groups?.fullName
-  return fullName === undefined
-    ? undefined
-    : { type: message.componentType, fullName }
+  return fullName === undefined ? undefined : { type: message.componentType, fullName }
 }
 
-const isUnFoundDelete = (
-  message: DeployMessage,
-  deletionsPackageName: string,
-): boolean => getUnFoundDeleteName(message, deletionsPackageName) !== undefined
+const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean => (
+  getUnFoundDeleteName(message, deletionsPackageName) !== undefined
+)
 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
   typeAndNameToElemId: Record<string, NameToElemIDMap>,
   isCheckOnly: boolean,
-): {
-  successfulFullNames: ReadonlyArray<MetadataId>
-  errors: ReadonlyArray<SaltoError | SaltoElementError>
-} => {
-  const getElemIdForDeployError = ({
-    componentType,
-    fullName,
-  }: DeployMessage): ElemID | undefined => {
+): { successfulFullNames: ReadonlyArray<MetadataId>
+  errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
+  const getElemIdForDeployError = ({ componentType, fullName }: DeployMessage): ElemID | undefined => {
     const rawElemId = typeAndNameToElemId[componentType]?.[fullName]
     if (rawElemId === undefined) {
       return undefined
@@ -295,71 +242,62 @@ const processDeployResponse = (
     return rawElemId
   }
 
-  const allFailureMessages = makeArray(result.details).flatMap((detail) =>
-    makeArray(detail.componentFailures),
-  )
+  const allFailureMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentFailures))
 
   const componentErrors = allFailureMessages
-    .filter((failure) => !isUnFoundDelete(failure, deletionsPackageName))
+    .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
-    .map((failure) => ({
+    .map(failure => ({
       elemID: getElemIdForDeployError(failure),
       message: failure.problem,
       severity: 'Error' as SeverityLevel,
     }))
 
-  const testFailures = makeArray(result.details).flatMap((detail) =>
-    makeArray((detail.runTestResult as RunTestsResult)?.failures),
-  )
-  const testErrors: SaltoError[] = testFailures.map((failure) => ({
-    message: util.format(
-      'Test failed for class %s method %s with error:\n%s\n%s',
-      failure.name,
-      failure.methodName,
-      failure.message,
-      failure.stackTrace,
-    ),
-    severity: 'Error' as SeverityLevel,
-  }))
+  const testFailures = makeArray(result.details)
+    .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
+  const testErrors: SaltoError[] = testFailures
+    .map(failure => ({
+      message: util.format(
+        'Test failed for class %s method %s with error:\n%s\n%s',
+        failure.name,
+        failure.methodName,
+        failure.message,
+        failure.stackTrace
+      ),
+      severity: 'Error' as SeverityLevel,
+    }))
   const codeCoverageWarningErrors = makeArray(result.details)
-    .map((detail) => detail.runTestResult as RunTestsResult | undefined)
-    .flatMap((runTestResult) => makeArray(runTestResult?.codeCoverageWarnings))
-    .map((codeCoverageWarning) => codeCoverageWarning.message)
-    .map((message) => ({ message, severity: 'Error' as SeverityLevel }))
+    .map(detail => detail.runTestResult as RunTestsResult | undefined)
+    .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
+    .map(codeCoverageWarning => codeCoverageWarning.message)
+    .map(message => ({ message, severity: 'Error' as SeverityLevel }))
 
-  const errors = [
-    ...testErrors,
-    ...componentErrors,
-    ...codeCoverageWarningErrors,
-  ]
+  const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
   if (isDefined(result.errorMessage)) {
-    errors.push({
-      message: result.errorMessage,
-      severity: 'Error' as SeverityLevel,
-    })
+    errors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
   }
 
-  const anyErrors =
-    isDefined(result.errorMessage) ||
-    componentErrors.length > 0 ||
-    testErrors.length > 0
-  if (!isCheckOnly && result.rollbackOnError !== false && anyErrors) {
+  const anyErrors = isDefined(result.errorMessage)
+    || componentErrors.length > 0
+    || testErrors.length > 0
+  if (!isCheckOnly
+    && result.rollbackOnError !== false
+    && anyErrors) {
     // If we deployed with 'rollbackOnError' (the default) and any component in the group fails to deploy, then every
     // component in the group will not deploy. Let's create an explicit error for the components that did not have
     // errors to make it clear that they didn't deploy either.
     makeArray(result.details)
-      .flatMap((detail) => makeArray(detail.componentSuccesses))
-      .map((component) => ({
-        elemID:
-          typeAndNameToElemId[component.componentType]?.[component.fullName],
-        message:
-          "Element was not deployed because other elements had errors and the 'rollbackOnError' option is enabled (or not set).",
+      .flatMap(detail => makeArray(detail.componentSuccesses))
+      .map(component => ({
+        elemID: typeAndNameToElemId[component.componentType]?.[component.fullName],
+        message: 'Element was not deployed because other elements had errors and the \'rollbackOnError\' option is enabled (or not set).',
         severity: 'Warning' as const,
         type: 'dependency',
       }))
-      .filter((error) => error.elemID !== undefined)
-      .forEach((error) => errors.push(error))
+      .filter(error => error.elemID !== undefined)
+      .forEach(error => errors.push(error))
   }
 
   // In checkOnly none of the changes are actually applied
@@ -368,94 +306,71 @@ const processDeployResponse = (
     return { successfulFullNames: [], errors }
   }
 
-  const allSuccessMessages = makeArray(result.details).flatMap((detail) =>
-    makeArray(detail.componentSuccesses),
-  )
+  const allSuccessMessages = makeArray(result.details)
+    .flatMap(detail => makeArray(detail.componentSuccesses))
 
   // We want to treat deletes for things we haven't found as success
   // Note that if we deploy with ignoreWarnings, these might show up in the success list
   // so we have to look for these messages in both lists
   const unFoundDeleteNames = [...allSuccessMessages, ...allFailureMessages]
-    .map((message) => getUnFoundDeleteName(message, deletionsPackageName))
+    .map(message => getUnFoundDeleteName(message, deletionsPackageName))
     .filter(isDefined)
 
   const successfulFullNames = allSuccessMessages
-    .map((success) => ({
-      type: success.componentType,
-      fullName: success.fullName,
-    }))
+    .map(success => ({ type: success.componentType, fullName: success.fullName }))
     .concat(unFoundDeleteNames)
 
   return { successfulFullNames, errors }
 }
 
-const getChangeError = async (
-  change: Change,
-): Promise<SaltoElementError | undefined> => {
+const getChangeError = async (change: Change): Promise<SaltoElementError | undefined> => {
   const changeElem = getChangeData(change)
-  if ((await apiName(changeElem)) === undefined) {
-    return {
-      elemID: changeElem.elemID,
-      message: `Cannot ${change.action} element because it has no api name`,
-      severity: 'Error',
-    }
+  if (await apiName(changeElem) === undefined) {
+    return { elemID: changeElem.elemID, message: `Cannot ${change.action} element because it has no api name`, severity: 'Error' }
   }
   if (isModificationChange(change)) {
     const beforeName = await apiName(change.data.before)
     const afterName = await apiName(change.data.after)
     if (beforeName !== afterName) {
-      return {
-        elemID: changeElem.elemID,
-        message: `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`,
-        severity: 'Error',
-      }
+      return { elemID: changeElem.elemID, message: `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`, severity: 'Error' }
     }
   }
-  if (
-    !isInstanceChange(change) ||
-    !(await isMetadataInstanceElement(changeElem))
-  ) {
-    return {
-      elemID: changeElem.elemID,
-      message: 'Cannot deploy because it is not a metadata instance',
-      severity: 'Error',
-    }
+  if (!isInstanceChange(change) || !await isMetadataInstanceElement(changeElem)) {
+    return { elemID: changeElem.elemID, message: 'Cannot deploy because it is not a metadata instance', severity: 'Error' }
   }
   return undefined
 }
 
 const validateChanges = async (
-  changes: ReadonlyArray<Change>,
+  changes: ReadonlyArray<Change>
 ): Promise<{
-  validChanges: ReadonlyArray<Change<MetadataInstanceElement>>
-  errors: (SaltoError | SaltoElementError)[]
-}> => {
+    validChanges: ReadonlyArray<Change<MetadataInstanceElement>>
+    errors: (SaltoError | SaltoElementError)[]
+  }> => {
   const changesAndValidation = await awu(changes)
-    .map(async (change) => ({ change, error: await getChangeError(change) }))
+    .map(async change => ({ change, error: await getChangeError(change) }))
     .toArray()
 
   const [invalidChanges, validChanges] = _.partition(
     changesAndValidation,
-    ({ error }) => isDefined(error),
+    ({ error }) => isDefined(error)
   )
 
   const errors = invalidChanges
-    .filter((change) => isDefined(change.error))
+    .filter(change => isDefined(change.error))
     .map(({ error }) => error) as SaltoElementError[]
 
   return {
     // We can cast to MetadataInstanceElement here because we will have an error for changes that
     // are not metadata instance changes
-    validChanges: validChanges.map(
-      ({ change }) => change as Change<MetadataInstanceElement>,
-    ),
+    validChanges: validChanges.map(({ change }) => change as Change<MetadataInstanceElement>),
     errors,
   }
 }
 
 const getDeployStatusUrl = async (
   { id }: SFDeployResult,
-  client: SalesforceClient,
+  client: SalesforceClient
 ): Promise<string | undefined> => {
   const baseUrl = await client.getUrl()
   if (baseUrl === undefined) {
@@ -484,9 +399,7 @@ const quickDeployOrDeploy = async (
   quickDeployParams?: QuickDeployParams,
   progressReporter?: ProgressReporter,
 ): Promise<SFDeployResult> => {
-  const progressReportCallback = async (
-    deployResult: SFDeployResult,
-  ): Promise<void> => {
+  const progressReportCallback = async (deployResult: SFDeployResult): Promise<void> => {
     if (!progressReporter) {
       return
     }
@@ -499,44 +412,39 @@ const quickDeployOrDeploy = async (
     try {
       return await client.quickDeploy(quickDeployParams.requestId)
     } catch (e) {
-      log.warn(
-        `preforming regular deploy instead of quick deploy due to error: ${e.message}`,
-      )
+      log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
     }
   }
   return client.deploy(pkgData, { checkOnly }, progressReportCallback)
 }
 
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
-  deployRes.id !== undefined &&
-  deployRes.checkOnly &&
-  deployRes.success &&
-  deployRes.numberTestsCompleted >= 1
+  deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
-const mapNestedNamesToElemIds = (
-  nestedType: TypeElement,
-  nestedNames: string[],
-): NameToElemIDMap =>
+const mapNestedNamesToElemIds = (nestedType: TypeElement, nestedNames: string[]): NameToElemIDMap => (
   Object.fromEntries(
-    nestedNames.map((nestedName) => [
-      nestedName,
-      nestedType.elemID.createNestedID('instance', naclCase(nestedName)),
-    ]),
+    nestedNames
+      .map(nestedName => [
+        nestedName,
+        nestedType.elemID.createNestedID('instance', naclCase(nestedName)),
+      ])
   )
+)
 
 const getExistingNestedFields = (
   instance: MetadataInstanceElement,
-  nestedTypeInfo: NestedMetadataTypeInfo,
+  nestedTypeInfo: NestedMetadataTypeInfo
 ): {
   nestedType: TypeElement
   nestedNames: string[]
-}[] =>
+}[] => (
   nestedTypeInfo.nestedInstanceFields
-    .map((field) => ({
+    .map(field => ({
       nestedType: getTypeOfNestedElement(instance, field),
       nestedNames: getNamesOfNestedElements(instance, field),
     }))
     .filter(({ nestedNames }) => nestedNames.length > 0)
+)
 
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
@@ -550,11 +458,11 @@ export const deployMetadata = async (
   const updateTypeToElemIdMapping = (
     deployedComponentsElemIdsByType: Record<string, NameToElemIDMap>,
     deployedIds: Record<string, Set<string>>,
-    instance: MetadataInstanceElement,
+    instance: MetadataInstanceElement
   ): void => {
     const appendToTypeElemIdMapping = (
       typeName: ReturnType<typeof apiNameSync>,
-      nameToElemIdMapping: NameToElemIDMap,
+      nameToElemIdMapping: NameToElemIDMap
     ): void => {
       if (typeName === undefined) {
         return
@@ -564,23 +472,19 @@ export const deployMetadata = async (
       deployedComponentsElemIdsByType[typeName] = _.assign(
         {},
         deployedComponentsElemIdsByType[typeName],
-        nameToElemIdMapping,
+        nameToElemIdMapping
       )
     }
 
-    const updateTypeElemIdMappingWithNestedType = (
-      nestedTypeInfo: NestedMetadataTypeInfo,
-    ): void => {
-      const existingNestedFields = getExistingNestedFields(
-        instance,
-        nestedTypeInfo,
-      )
-      existingNestedFields.forEach(({ nestedType, nestedNames }) => {
-        appendToTypeElemIdMapping(
-          apiNameSync(nestedType),
-          mapNestedNamesToElemIds(nestedType, nestedNames),
-        )
-      })
+    const updateTypeElemIdMappingWithNestedType = (nestedTypeInfo: NestedMetadataTypeInfo): void => {
+      const existingNestedFields = getExistingNestedFields(instance, nestedTypeInfo)
+      existingNestedFields
+        .forEach(({ nestedType, nestedNames }) => {
+          appendToTypeElemIdMapping(
+            apiNameSync(nestedType),
+            mapNestedNamesToElemIds(nestedType, nestedNames),
+          )
+        })
     }
 
     Object.entries(deployedIds).forEach(([type, names]) => {
@@ -589,7 +493,7 @@ export const deployMetadata = async (
       if (nestedTypeInfo) {
         updateTypeElemIdMappingWithNestedType(nestedTypeInfo)
       }
-      names.forEach((name) => {
+      names.forEach(name => {
         nameToElemId[name] = instance.elemID
       })
       appendToTypeElemIdMapping(type, nameToElemId)
@@ -598,8 +502,7 @@ export const deployMetadata = async (
 
   const pkg = createDeployPackage(deleteBeforeUpdate)
 
-  const { validChanges, errors: validationErrors } =
-    await validateChanges(changes)
+  const { validChanges, errors: validationErrors } = await validateChanges(changes)
   if (validChanges.length === 0) {
     // Skip deploy if there are no valid changes
     return { appliedChanges: [], errors: validationErrors }
@@ -607,20 +510,13 @@ export const deployMetadata = async (
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
   const deployedComponentsElemIdsByType: Record<string, NameToElemIDMap> = {}
 
-  await awu(validChanges).forEach(async (change) => {
-    const deployedIds = await addChangeToPackage(
-      pkg,
-      change,
-      nestedMetadataTypes,
-    )
-    const { elemID } = getChangeData(change)
-    changeToDeployedIds[elemID.getFullName()] = deployedIds
-    updateTypeToElemIdMapping(
-      deployedComponentsElemIdsByType,
-      deployedIds,
-      getChangeData(change),
-    )
-  })
+  await awu(validChanges)
+    .forEach(async change => {
+      const deployedIds = await addChangeToPackage(pkg, change, nestedMetadataTypes)
+      const { elemID } = getChangeData(change)
+      changeToDeployedIds[elemID.getFullName()] = deployedIds
+      updateTypeToElemIdMapping(deployedComponentsElemIdsByType, deployedIds, getChangeData(change))
+    })
 
   const pkgData = await pkg.getZip()
   const planHash = hashUtils.toMD5(pkgData)
@@ -628,77 +524,45 @@ export const deployMetadata = async (
     if (quickDeployParams.hash !== planHash) {
       return {
         appliedChanges: [],
-        errors: [
-          {
-            message:
-              'Quick deploy option is not available because the current deploy plan is different than the validated one',
-            severity: 'Error',
-          },
-        ],
+        errors: [{ message: 'Quick deploy option is not available because the current deploy plan is different than the validated one', severity: 'Error' }],
       }
     }
   }
 
-  const sfDeployRes = await quickDeployOrDeploy(
-    client,
-    pkgData,
-    checkOnly,
-    quickDeployParams,
-    progressReporter,
-  )
+  const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams, progressReporter)
 
-  log.debug(
-    'final deploy result: %s',
-    safeJsonStringify(
-      {
-        ...sfDeployRes,
-        details: sfDeployRes.details?.map((detail) => ({
-          ...detail,
-          retrieveResult: _.omit(detail.retrieveResult ?? {}, 'zipFile'),
-          // The test result can be VERY long
-          runTestResult: detail.runTestResult
-            ? safeJsonStringify(detail.runTestResult, undefined, 2).slice(100)
-            : undefined,
-        })),
-      },
-      undefined,
-      2,
-    ),
-  )
+  log.debug('final deploy result: %s', safeJsonStringify({
+    ...sfDeployRes,
+    details: sfDeployRes.details?.map(detail => ({
+      ...detail,
+      retrieveResult: _.omit(detail.retrieveResult ?? {}, 'zipFile'),
+      // The test result can be VERY long
+      runTestResult: detail.runTestResult
+        ? safeJsonStringify(detail.runTestResult, undefined, 2).slice(100)
+        : undefined,
+    })),
+  }, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    sfDeployRes,
-    pkg.getDeletionsPackageName(),
-    deployedComponentsElemIdsByType,
-    checkOnly ?? false,
+    sfDeployRes, pkg.getDeletionsPackageName(), deployedComponentsElemIdsByType, checkOnly ?? false,
   )
-  const isSuccessfulChange = (
-    change: Change<MetadataInstanceElement>,
-  ): boolean => {
+  const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
-    const changeDeployedIds =
-      changeToDeployedIds[changeElem.elemID.getFullName()]
+    const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
-    return successfulFullNames.some((successfulId) =>
-      changeDeployedIds[successfulId.type]?.has(successfulId.fullName),
+    return successfulFullNames.some(
+      successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName)
     )
   }
 
-  const postDeployRetrieveZipContent =
-    sfDeployRes.details?.[0]?.retrieveResult?.zipFile
+  const postDeployRetrieveZipContent = sfDeployRes.details?.[0]?.retrieveResult?.zipFile
 
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
   const artifacts: Artifact[] = [
-    {
-      name: SalesforceArtifacts.DeployPackageXml,
-      content: Buffer.from(pkg.getPackageXmlContent()),
-    },
+    { name: SalesforceArtifacts.DeployPackageXml, content: Buffer.from(pkg.getPackageXmlContent()) },
     postDeployRetrieveZipContent
-      ? {
-          name: SalesforceArtifacts.PostDeployRetrieveZip,
-          content: Buffer.from(postDeployRetrieveZipContent, 'base64'),
-        }
+      ? { name: SalesforceArtifacts.PostDeployRetrieveZip, content: Buffer.from(postDeployRetrieveZipContent, 'base64') }
       : undefined,
   ].filter(isDefined)
   return {
@@ -706,14 +570,7 @@ export const deployMetadata = async (
     errors: [...validationErrors, ...errors],
     extraProperties: {
       groups: isQuickDeployable(sfDeployRes)
-        ? [
-            {
-              requestId: sfDeployRes.id,
-              hash: planHash,
-              url: deploymentUrl,
-              artifacts,
-            },
-          ]
+        ? [{ requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl, artifacts }]
         : [{ url: deploymentUrl, artifacts }],
     },
   }

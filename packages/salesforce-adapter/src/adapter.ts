@@ -510,6 +510,9 @@ export default class SalesforceAdapter implements AdapterOperations {
             elementsSource,
             separateFieldToFiles:
               config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
+            flsProfiles: config.client?.deploy?.flsProfiles ?? [
+              constants.ADMIN_PROFILE,
+            ],
           },
         },
         filterCreators,

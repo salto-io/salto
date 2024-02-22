@@ -181,6 +181,11 @@ const createWorkflowInstances = async ({
         response.data.workflows.map(async workflow => {
           convertTransitionParametersFields(workflow.transitions, convertParametersFieldsToList)
           convertPropertiesToList([...(workflow.statuses ?? []), ...(workflow.transitions ?? [])])
+          if (workflow.id === undefined) {
+            // should never happen
+            errors.push(workflowFetchError('Workflow id is missing'))
+            return undefined
+          }
           // convert transition list to map
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {

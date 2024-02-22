@@ -88,6 +88,7 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflowV2/workflow_filter'
+import workflowTransitionIdsFilter from './filters/workflowV2/transition_ids'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -197,7 +198,7 @@ import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
-const { getAllElements } = elementUtils.ducktype
+const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
 const { computeGetArgs } = fetchUtils.resource
 const { generateTypes, getAllInstances, loadSwagger, addDeploymentAnnotations } = elementUtils.swagger
@@ -260,6 +261,8 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,
+  // must run after scriptRunnerWorkflowReferencesFilter
+  workflowTransitionIdsFilter,
   transitionIdsFilter,
   workflowDeployFilter,
   workflowModificationFilter,
@@ -720,6 +723,21 @@ export default class JiraAdapter implements AdapterOperations {
       ...jsmElements.elements,
       ...jsmAssetsElements.elements,
     ]
+
+    if (this.userConfig.jsmApiDefinitions) {
+      // Remaining types should be added once to avoid overlaps between the generated elements,
+      // so we add them once after all elements are generated
+      addRemainingTypes({
+        adapterName: JIRA,
+        elements,
+        typesConfig: this.userConfig.jsmApiDefinitions?.types ?? {},
+        supportedTypes: this.userConfig.jsmApiDefinitions?.supportedTypes ?? {},
+        typeDefaultConfig: {
+          ...this.userConfig.apiDefinitions.typeDefaults,
+          ...this.userConfig.jsmApiDefinitions?.typeDefaults,
+        },
+      })
+    }
     return {
       elements,
       errors: (swaggerResponse.errors ?? [])

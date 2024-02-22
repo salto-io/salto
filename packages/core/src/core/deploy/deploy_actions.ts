@@ -137,6 +137,7 @@ export const deployActions = async (
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: GroupProperties[] = []
+  const accumulatedNonFatalErrors: DeployError[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -162,9 +163,18 @@ export const deployActions = async (
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
         await postDeployAction(result.appliedChanges)
-        if (result.errors.length > 0) {
-          log.warn('Failed to deploy %s, errors: %s', item.groupKey, result.errors.map(err => err.message).join('\n\n'))
-          throw new WalkDeployError(result.errors)
+        const [fatalErrors, nonFatalErrors] = _.partition(result.errors, error => error.severity === 'Error')
+        if (nonFatalErrors.length > 0) {
+          log.warn(
+            'Deploy of %s encountered non-fatal issues: %s',
+            item.groupKey,
+            nonFatalErrors.map(err => err.message).join('\n\n'),
+          )
+          accumulatedNonFatalErrors.push(...nonFatalErrors.map(err => ({ ...err, groupId: item.groupKey })))
+        }
+        if (fatalErrors.length > 0) {
+          log.warn('Failed to deploy %s, errors: %s', item.groupKey, fatalErrors.map(err => err.message).join('\n\n'))
+          throw new WalkDeployError(fatalErrors)
         }
         reportProgress(item, 'finished')
       } catch (error) {
@@ -173,7 +183,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { groups } }
+    return { errors: accumulatedNonFatalErrors, appliedChanges, extraProperties: { groups } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -208,6 +218,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges, extraProperties: { groups } }
+    return { errors: deployErrors.concat(accumulatedNonFatalErrors), appliedChanges, extraProperties: { groups } }
   }
 }

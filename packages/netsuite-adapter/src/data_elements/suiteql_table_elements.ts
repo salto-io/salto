@@ -45,7 +45,7 @@ const LATEST_VERSION = 1
 
 const ALLOCATION_TYPE_QUERY_LIMIT = 50
 
-const QUERY_RECORDS_LIMITATION = 100_000
+const MAX_ALLOWED_RECORDS = 100_000
 
 type InternalIdsMap = Record<string, { name: string }>
 
@@ -506,27 +506,28 @@ const shouldSkipQuery = async (
   tableName: string,
   queryParams: QueryParams,
   lastFetchTime: Date | undefined,
-): Promise<boolean> => {
+  maxAllowedRecords: number,
+): Promise<{ skip: boolean; exclude?: boolean }> => {
   const whereParam = getWhereParam(queryParams, lastFetchTime)
   const queryString = `SELECT count(*) as count FROM ${tableName} ${whereParam}`
   const results = await client.runSuiteQL(queryString)
   if (results?.length !== 1) {
     log.warn('query received unexpected number of results: %o', { queryString, numOfResults: results?.length })
-    return true
+    return { skip: true }
   }
   const [result] = results
   if (!_.isString(result.count) || !strings.isNumberStr(result.count)) {
     log.warn('query received unexpected result (expected "count" to be a number string): %o', { queryString, result })
-    return true
+    return { skip: true }
   }
   const count = Number(result.count)
-  if (count > QUERY_RECORDS_LIMITATION) {
+  if (count > maxAllowedRecords) {
     log.warn(
-      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results`,
+      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results (max allowed: ${maxAllowedRecords})`,
     )
-    return true
+    return { skip: true, exclude: true }
   }
-  return false
+  return { skip: false }
 }
 
 const getInternalIdsMap = async (
@@ -554,12 +555,16 @@ const getInternalIdsMap = async (
   return Object.fromEntries(validResults.map(({ internalId, name }) => [internalId, { name }]))
 }
 
+const isUpdatedExistingInstance = (
+  existingInstance: InstanceElement | undefined,
+): existingInstance is InstanceElement => existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
+
 const createOrGetExistingInstance = (
   suiteQLTableType: ObjectType,
   tableName: string,
   existingInstance: InstanceElement | undefined,
 ): InstanceElement =>
-  existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
+  isUpdatedExistingInstance(existingInstance)
     ? existingInstance
     : new InstanceElement(tableName, suiteQLTableType, { [INTERNAL_IDS_MAP]: {} }, undefined, {
         [CORE_ANNOTATIONS.HIDDEN]: true,
@@ -582,17 +587,25 @@ const getSuiteQLTableInstance = async (
   elementsSource: ReadOnlyElementsSource,
   lastFetchTime: Date | undefined,
   isPartial: boolean,
+  maxAllowedRecords: number,
+  largeSuiteQLTables: string[],
 ): Promise<InstanceElement | undefined> => {
   const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
   const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
+
+  const lastFetchTimeForQuery = isUpdatedExistingInstance(existingInstance) ? lastFetchTime : undefined
 
   // we always want to query employees, for _changed_by
   if (tableName !== EMPLOYEE) {
     if (isPartial) {
       return existingInstance
     }
-    if (await shouldSkipQuery(client, tableName, queryParams, lastFetchTime)) {
+    const shouldSkip = await shouldSkipQuery(client, tableName, queryParams, lastFetchTimeForQuery, maxAllowedRecords)
+    if (shouldSkip.skip) {
+      if (shouldSkip.exclude) {
+        largeSuiteQLTables.push(tableName)
+      }
       return undefined
     }
   }
@@ -600,12 +613,7 @@ const getSuiteQLTableInstance = async (
   const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
   Object.assign(
     instance.value[INTERNAL_IDS_MAP],
-    await getInternalIdsMap(
-      client,
-      tableName,
-      queryParams,
-      instance.value[VERSION_FIELD] === LATEST_VERSION ? lastFetchTime : undefined,
-    ),
+    await getInternalIdsMap(client, tableName, queryParams, lastFetchTimeForQuery),
   )
   instance.value[VERSION_FIELD] = LATEST_VERSION
   return instance
@@ -709,14 +717,24 @@ const getAdditionalInstances = (
     : getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
 ]
 
+const getMaxAllowedRecordsForTable = (config: NetsuiteConfig, tableName: string): number => {
+  const maxAllowedRecords = (config.suiteAppClient?.maxRecordsPerSuiteQLTable ?? [])
+    .filter(maxType => regex.isFullRegexMatch(tableName, maxType.name))
+    .map(maxType => maxType.limit)
+  if (maxAllowedRecords.length === 0) {
+    return MAX_ALLOWED_RECORDS
+  }
+  return Math.max(...maxAllowedRecords)
+}
+
 export const getSuiteQLTableElements = async (
   config: NetsuiteConfig,
   client: NetsuiteClient,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
-): Promise<TopLevelElement[]> => {
+): Promise<{ elements: TopLevelElement[]; largeSuiteQLTables: string[] }> => {
   if (config.fetch.resolveAccountSpecificValues === false || !client.isSuiteAppConfigured()) {
-    return []
+    return { elements: [], largeSuiteQLTables: [] }
   }
   const suiteQLTableType = new ObjectType({
     elemID: new ElemID(NETSUITE, SUITEQL_TABLE),
@@ -733,6 +751,7 @@ export const getSuiteQLTableElements = async (
     return shouldSkip
   }
 
+  const largeSuiteQLTables: string[] = []
   const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
     Object.entries(QUERIES_BY_TABLE_NAME)
@@ -748,10 +767,15 @@ export const getSuiteQLTableElements = async (
           elementsSource,
           lastFetchTime,
           isPartial,
+          getMaxAllowedRecordsForTable(config, tableName),
+          largeSuiteQLTables,
         )
       })
       .concat(getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)),
   ).then(res => res.flatMap(instance => instance ?? []))
 
-  return [suiteQLTableType, ...instances]
+  return {
+    elements: [suiteQLTableType, ...instances],
+    largeSuiteQLTables,
+  }
 }

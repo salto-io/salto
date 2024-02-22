@@ -198,11 +198,13 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
   httpTimeoutLimitInMinutes?: number
+  maxRecordsPerSuiteQLTable?: MaxInstancesPerType[]
 }
 
 export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
   suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
   httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
+  maxRecordsPerSuiteQLTable: 'maxRecordsPerSuiteQLTable',
 }
 
 export type NetsuiteConfig = {
@@ -383,6 +385,7 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
         }),
       },
     },
+    maxRecordsPerSuiteQLTable: { refType: new ListType(maxInstancesPerConfigType) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -28,6 +28,17 @@ export const SUITE_QL_RESULTS_SCHEMA = {
       type: 'array',
       items: { type: 'object' },
     },
+    links: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          rel: { type: 'string' },
+          href: { type: 'string' },
+        },
+        required: ['rel', 'href'],
+      },
+    },
   },
   required: ['hasMore', 'items'],
   additionalProperties: true,
@@ -37,6 +48,10 @@ export type SuiteQLResults = {
   hasMore: boolean
   items: Values[]
   totalResults?: number
+  links?: {
+    rel: string
+    href: string
+  }[]
 }
 
 export const SAVED_SEARCH_RESULTS_SCHEMA = {

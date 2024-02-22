@@ -595,7 +595,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'locales__locales',
       idFields: ['locale'],
       fileNameFields: ['locale'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      // no need to hide id as consistent across envs
+      fieldsToHide: FIELDS_TO_HIDE.concat([{ fieldName: 'default', fieldType: 'boolean' }]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -1277,6 +1278,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         method: 'put',
         deployAsField: 'settings',
       },
+    },
+  },
+  account_setting__localization: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'locale_ids' }),
     },
   },
   resource_collection: {
@@ -2933,6 +2939,7 @@ export type ChangeValidatorName =
   | 'dynamicContentPlaceholderModification'
   | 'inactiveTicketFormInView'
   | 'immutableTypeAndKeyForUserFields'
+  | 'localeModification'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -3009,6 +3016,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
     immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
+    localeModification: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

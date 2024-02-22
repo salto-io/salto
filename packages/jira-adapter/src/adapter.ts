@@ -720,24 +720,21 @@ export default class JiraAdapter implements AdapterOperations {
       ...jsmElements.elements,
       ...jsmAssetsElements.elements,
     ]
-    const typesConfig = {
-      ...this.userConfig.apiDefinitions.types,
-      ...this.userConfig.jsmApiDefinitions?.types,
+
+    if (this.userConfig.jsmApiDefinitions) {
+      // Remaining types should be added once to avoid overlaps between the generated elements,
+      // so we add them once after all elements are generated
+      addRemainingTypes({
+        adapterName: JIRA,
+        elements,
+        typesConfig: this.userConfig.jsmApiDefinitions?.types ?? {},
+        supportedTypes: this.userConfig.jsmApiDefinitions?.supportedTypes ?? {},
+        typeDefaultConfig: {
+          ...this.userConfig.apiDefinitions.typeDefaults,
+          ...this.userConfig.jsmApiDefinitions?.typeDefaults,
+        },
+      })
     }
-
-    // Remaining types should be added once to avoid overlaps between the generated elements,
-    // so we add them once after all elements are generated
-    addRemainingTypes({
-      adapterName: JIRA,
-      elements,
-      typesConfig,
-      supportedTypes: _.merge(supportedTypes, this.userConfig.jsmApiDefinitions?.supportedTypes),
-      typeDefaultConfig: {
-        ...this.userConfig.apiDefinitions.typeDefaults,
-        ...this.userConfig.jsmApiDefinitions?.typeDefaults,
-      },
-    })
-
     return {
       elements,
       errors: (swaggerResponse.errors ?? [])

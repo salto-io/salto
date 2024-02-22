@@ -277,9 +277,9 @@ describe('adapter', () => {
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValue({ elements: [testInstance2] })
       ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({ elements: [testInstance] })
       ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>)
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      .mockImplementation(() => {});
-          ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        .mockImplementation(() => {})
+      ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
         document: {},
         parser: {},
       } as elements.swagger.LoadedSwagger)
@@ -291,7 +291,8 @@ describe('adapter', () => {
     afterEach(() => {
       mockAxiosAdapter.restore()
       ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
-          })
+      ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
+    })
     it('should generate types for the platform and the jira apis', () => {
       expect(loadSwagger).toHaveBeenCalledTimes(2)
       expect(loadSwagger).toHaveBeenCalledWith(
@@ -382,7 +383,7 @@ describe('adapter', () => {
             parsedConfigs: { JiraTest: { request: { url: 'jira' } } },
           })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValue({ elements: [testInstance2] })
-                ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
+        ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [testInstance],
         })
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
@@ -398,7 +399,7 @@ describe('adapter', () => {
       afterEach(() => {
         mockAxiosAdapter.restore()
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
-              })
+      })
       it('should return all types and instances returned from the infrastructure', () => {
         expect(result.elements).toContain(platformTestType)
         expect(result.elements).toContain(jiraTestType)
@@ -471,6 +472,8 @@ describe('adapter', () => {
           elements: [testInstance2],
           errors: [{ message: 'jsmError', severity: 'Error' }],
         })
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
           errors: [{ message: 'some error', severity: 'Error' }],
@@ -517,6 +520,7 @@ describe('adapter', () => {
       afterEach(() => {
         mockAxiosAdapter.restore()
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
       })
       it('should return all types and instances returned from the infrastructure', () => {
         expect(result.elements).toContain(platformTestType)
@@ -525,6 +529,9 @@ describe('adapter', () => {
       })
       it('should call getAllElements', () => {
         expect(getAllElements).toHaveBeenCalledTimes(2)
+      })
+      it('should call addRemainingTypes', () => {
+        expect(addRemainingTypes).toHaveBeenCalledTimes(1)
       })
       it('should return error', async () => {
         expect(result.errors).toEqual([
@@ -558,7 +565,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-                EntriesRequesterFunc = jiraJSMEntriesFunc(serviceDeskProjectInstance)
+        EntriesRequesterFunc = jiraJSMEntriesFunc(serviceDeskProjectInstance)
       })
       it('should add projectKey to the response with all dataField', async () => {
         const result = await EntriesRequesterFunc({
@@ -583,7 +590,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-                const result = await EntriesRequesterFunc({
+        const result = await EntriesRequesterFunc({
           paginator,
           args: { url: '/rest/servicedeskapi/servicedesk/2/requesttype' },
           typesConfig: { RequestType: { transformation: { dataField: 'values' } } },
@@ -627,7 +634,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-                EntriesRequesterFunc = jiraJSMAssetsEntriesFunc()
+        EntriesRequesterFunc = jiraJSMAssetsEntriesFunc()
       })
       it('should change the objectType object struct to id', async () => {
         const result = await EntriesRequesterFunc({
@@ -651,7 +658,7 @@ describe('adapter', () => {
         ;(getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>).mockResolvedValue(
           responseValue,
         )
-                const result = await EntriesRequesterFunc({
+        const result = await EntriesRequesterFunc({
           paginator,
           args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
           typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,

@@ -22,10 +22,11 @@ import {
   isFieldChange,
   InstanceElement,
   ElemID,
-  Change,
-  getAllChangeData,
   toChange,
   isAdditionChange,
+  ModificationChange,
+  AdditionChange,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
@@ -140,7 +141,10 @@ const addMissingPermissions = (
  * Do the same with added fields and fieldPermissions.
  */
 const filterCreator: LocalFilterCreator = ({ config }) => {
-  let originalProfileChangesByName: Record<string, Change<InstanceElement>> = {}
+  let originalProfileChangesByName: Record<
+    string,
+    AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+  > = {}
   return {
     name: 'profilePermissionsFilter',
     preDeploy: async (changes) => {
@@ -168,7 +172,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       originalProfileChangesByName = _.keyBy(
-        changes.filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE)),
+        changes
+          .filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE))
+          .filter(isAdditionOrModificationChange),
         (change) => apiNameSync(getChangeData(change)) ?? '',
       )
 
@@ -177,12 +183,13 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         if (profileChange !== undefined) {
           _.pull(changes, profileChange)
         }
-        const [before, after] =
-          profileChange !== undefined
-            ? getAllChangeData(profileChange).map((instance) =>
-                instance.clone(),
-              )
-            : [undefined, createProfile(profileName)]
+        const before =
+          profileChange === undefined || isAdditionChange(profileChange)
+            ? undefined
+            : profileChange.data.before
+        const after = profileChange
+          ? profileChange.data.after.clone()
+          : createProfile(profileName)
         addMissingPermissions(after, 'object', newCustomObjects)
         addMissingPermissions(after, 'field', newFields)
         changes.push(toChange({ before, after }))

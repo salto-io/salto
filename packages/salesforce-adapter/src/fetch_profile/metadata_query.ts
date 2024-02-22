@@ -18,7 +18,6 @@ import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
 import {
-  CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -34,6 +33,7 @@ import {
 } from '../config_validation'
 import {
   FetchParameters,
+  LastChangeDateOfTypesWithNestedInstances,
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
   METADATA_SEPARATE_FIELD_LIST,
@@ -41,9 +41,14 @@ import {
   MetadataParams,
   MetadataQuery,
   MetadataQueryParams,
+  TypeWithNestedInstances,
+  TypeWithNestedInstancesPerParent,
 } from '../types'
-import { getChangedAtSingleton } from '../filters/utils'
-import { CUSTOM_OBJECT_FIELDS } from './metadata_types'
+import { getChangedAtSingletonInstance } from '../filters/utils'
+import {
+  isTypeWithNestedInstances,
+  isTypeWithNestedInstancesPerParent,
+} from '../last_change_date_of_types_with_nested_instances'
 
 const { isDefined } = values
 
@@ -70,11 +75,8 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = ['InstalledPackage']
 
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
-  CUSTOM_OBJECT,
-  // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
+  // CustomMetadata Records do not contain lastModifiedDate
   CUSTOM_METADATA,
-  CUSTOM_FIELD,
-  ...CUSTOM_OBJECT_FIELDS,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>
@@ -103,6 +105,7 @@ type BuildMetadataQueryParams = {
 type BuildFetchWithChangesDetectionMetadataQueryParams =
   BuildMetadataQueryParams & {
     elementsSource: ReadOnlyElementsSource
+    lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
   }
 
 export const buildMetadataQuery = ({
@@ -189,26 +192,69 @@ export const buildMetadataQuery = ({
   }
 }
 
+const isValidDateString = (
+  dateString: string | undefined,
+): dateString is string => dateString !== undefined && dateString !== ''
+
 export const buildMetadataQueryForFetchWithChangesDetection = async (
   params: BuildFetchWithChangesDetectionMetadataQueryParams,
 ): Promise<MetadataQuery> => {
-  const changedAtSingleton = await getChangedAtSingleton(params.elementsSource)
+  const { elementsSource, lastChangeDateOfTypesWithNestedInstances } = params
+  const changedAtSingleton = await getChangedAtSingletonInstance(elementsSource)
   if (changedAtSingleton === undefined) {
     throw new Error('First fetch does not support changes detection')
   }
+  const { value: singletonValues } = changedAtSingleton
+  const lastChangeDateOfTypesWithNestedInstancesFromSingleton: LastChangeDateOfTypesWithNestedInstances =
+    {
+      AssignmentRules: singletonValues.AssignmentRules ?? {},
+      AutoResponseRules: singletonValues.AutoResponseRules ?? {},
+      CustomObject: singletonValues.CustomObject ?? {},
+      EscalationRules: singletonValues.EscalationRules ?? {},
+      SharingRules: singletonValues.SharingRules ?? {},
+      Workflow: singletonValues.Workflow ?? {},
+      CustomLabels: singletonValues.CustomLabels,
+    }
   const metadataQuery = buildMetadataQuery(params)
+  const isInstanceWithNestedInstancesIncluded = (
+    type: TypeWithNestedInstances,
+  ): boolean => {
+    const dateFromSingleton =
+      lastChangeDateOfTypesWithNestedInstancesFromSingleton[type]
+    const lastChangeDate = lastChangeDateOfTypesWithNestedInstances[type]
+    return isValidDateString(dateFromSingleton) &&
+      isValidDateString(lastChangeDate)
+      ? new Date(dateFromSingleton).getTime() <
+          new Date(lastChangeDate).getTime()
+      : true
+  }
+
+  const isInstanceWithNestedInstancesPerParentIncluded = (
+    type: TypeWithNestedInstancesPerParent,
+    instanceName: string,
+  ): boolean => {
+    const parentName = instanceName.split('.')[0]
+    const dateFromSingleton =
+      lastChangeDateOfTypesWithNestedInstancesFromSingleton[type][parentName]
+    const lastChangeDate =
+      lastChangeDateOfTypesWithNestedInstances[type][parentName]
+    return isValidDateString(dateFromSingleton) &&
+      isValidDateString(lastChangeDate)
+      ? new Date(dateFromSingleton).getTime() <
+          new Date(lastChangeDate).getTime()
+      : true
+  }
+
   const isIncludedInFetchWithChangesDetection = (
     instance: MetadataInstance,
   ): boolean => {
-    if (instance.changedAt === undefined) {
-      return true
-    }
-    const lastChangedAt = _.get(changedAtSingleton.value, [
+    const dateFromSingleton = _.get(singletonValues, [
       instance.metadataType,
       instance.name,
     ])
-    return _.isString(lastChangedAt)
-      ? new Date(lastChangedAt).getTime() <
+    return isValidDateString(dateFromSingleton) &&
+      isValidDateString(instance.changedAt)
+      ? new Date(dateFromSingleton).getTime() <
           new Date(instance.changedAt).getTime()
       : true
   }
@@ -219,9 +265,22 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
       !UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(type),
     isPartialFetch: () => true,
     isFetchWithChangesDetection: () => true,
-    isInstanceMatch: (instance) =>
-      metadataQuery.isInstanceIncluded(instance) &&
-      isIncludedInFetchWithChangesDetection(instance),
+    isInstanceMatch: (instance) => {
+      if (!metadataQuery.isInstanceIncluded(instance)) {
+        return false
+      }
+      const { metadataType, name } = instance
+      if (isTypeWithNestedInstances(metadataType)) {
+        return isInstanceWithNestedInstancesIncluded(metadataType)
+      }
+      if (isTypeWithNestedInstancesPerParent(metadataType)) {
+        return isInstanceWithNestedInstancesPerParentIncluded(
+          metadataType,
+          name,
+        )
+      }
+      return isIncludedInFetchWithChangesDetection(instance)
+    },
   }
 }
 

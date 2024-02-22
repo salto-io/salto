@@ -82,6 +82,7 @@ import {
   PLURAL_LABEL,
   SALESFORCE,
   STATUS,
+  UNIX_TIME_ZERO_STRING,
   VALUE_SET_FIELDS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
@@ -781,7 +782,7 @@ export const getInstanceAlias = async (
   return namespace === undefined ? label : `${label} (${namespace})`
 }
 
-export const getChangedAtSingleton = async (
+export const getChangedAtSingletonInstance = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<InstanceElement | undefined> => {
   const element = await elementsSource.get(
@@ -951,3 +952,16 @@ export const isInstanceOfCustomObjectChangeSync = (
 
 export const aliasOrElemID = (element: Element): string =>
   element.annotations[CORE_ANNOTATIONS.ALIAS] ?? element.elemID.getFullName()
+
+export const getMostRecentFileProperties = (
+  fileProps: FileProperties[],
+): FileProperties | undefined =>
+  _.maxBy(
+    fileProps.filter(
+      ({ lastModifiedDate }) =>
+        _.isString(lastModifiedDate) &&
+        lastModifiedDate !== '' &&
+        lastModifiedDate !== UNIX_TIME_ZERO_STRING,
+    ),
+    (prop) => new Date(prop.lastModifiedDate).getTime(),
+  )

@@ -70,7 +70,10 @@ import {
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { defaultFilterContext } from '../utils'
+import {
+  defaultFilterContext,
+  emptyLastChangeDateOfTypesWithNestedInstances,
+} from '../utils'
 import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { SalesforceRecord } from '../../src/client/types'
@@ -303,6 +306,8 @@ describe('Custom Object Instances filter', () => {
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams: fetchProfileParams,
           elementsSource: elementsSourceForQuickFetch,
+          lastChangeDateOfTypesWithNestedInstances:
+            emptyLastChangeDateOfTypesWithNestedInstances(),
         })
       : buildMetadataQuery({
           fetchParams: fetchProfileParams,

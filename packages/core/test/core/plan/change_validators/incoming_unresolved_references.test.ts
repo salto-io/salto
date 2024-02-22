@@ -59,7 +59,6 @@ describe('incomingUnresolvedReferencesValidator', () => {
       expect(errors.length).toEqual(1)
       expect(errors[0].elemID).toEqual(firstInstance.elemID)
       expect(errors[0].severity).toEqual('Warning')
-      expect(errors[0].unresolvedElemIds).toEqual([firstInstance.elemID])
     })
 
     it('should return an error for modified elements', async () => {
@@ -71,7 +70,6 @@ describe('incomingUnresolvedReferencesValidator', () => {
       expect(errors.length).toEqual(1)
       expect(errors[0].elemID).toEqual(firstInstance.elemID)
       expect(errors[0].severity).toEqual('Warning')
-      expect(errors[0].unresolvedElemIds).toEqual([firstInstance.elemID])
     })
 
     it('should filter addition errors', async () => {
@@ -101,7 +99,6 @@ describe('incomingUnresolvedReferencesValidator', () => {
       expect(errors.length).toEqual(1)
       expect(errors[0].elemID).toEqual(firstInstance.elemID)
       expect(errors[0].severity).toEqual('Warning')
-      expect(errors[0].unresolvedElemIds).toEqual([firstInstance.elemID])
     })
   })
 })

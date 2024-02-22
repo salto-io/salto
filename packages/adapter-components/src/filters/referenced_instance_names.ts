@@ -37,6 +37,7 @@ import {
   resolvePath,
   createTemplateExpression,
   getParent,
+  hasValidParent,
 } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -149,10 +150,9 @@ const nestedPath = (
   instance: InstanceElement,
   configByType: Record<string, TransformationConfig>,
 ): string[] | undefined => {
-  if (!isStandalone(instance, configByType)) {
+  if (!isStandalone(instance, configByType || !hasValidParent(instance))) {
     return undefined
   }
-  // When the instance is a standalone instance, we already checked for the parent's existence
   const parent = getParent(instance)
   const fieldName = instance.elemID.typeName.split('__').pop() ?? instance.elemID.typeName
   // Remove adapter, Records and the parent instance type name

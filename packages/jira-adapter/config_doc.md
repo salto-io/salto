@@ -28,8 +28,16 @@ jira {
         }
       }
     ]
+    fallbackToInternalId = true
+    addTypeToFieldName? = true
+    parseTemplateExpressions = true
+    removeDuplicateProjectRoles? = boolean
+    addAlias = true
+    splitFieldConfiguration = true
+    enableMissingReferences = true
+    enableIssueLayouts = true
     enableScriptRunnerAddon = true
-    enableJSM = true
+    enableJSM = true 
   }
   deploy = {
     defaultMissingUserFallback = "##DEPLOYER##"

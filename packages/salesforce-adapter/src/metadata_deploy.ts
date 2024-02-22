@@ -295,6 +295,14 @@ const processDeployResponse = (
     return rawElemId
   }
 
+  const problemTypeToSeverity = (messageType: string): SeverityLevel => {
+    if (['Info', 'Warning', 'Error'].includes(messageType)) {
+      return messageType as SeverityLevel
+    }
+    log.warn('unknown messageType %s', messageType)
+    return 'Warning'
+  }
+
   const allFailureMessages = makeArray(result.details).flatMap((detail) =>
     makeArray(detail.componentFailures),
   )
@@ -324,7 +332,7 @@ const processDeployResponse = (
     .map((message) => ({
       elemID: getElemIdForDeployError(message),
       message: message.problem,
-      severity: message.problemType as SeverityLevel, // Salesforce problem types happen to match our severity levels
+      severity: problemTypeToSeverity(message.problemType),
     }))
 
   const componentErrors = failedComponentErrors.concat(

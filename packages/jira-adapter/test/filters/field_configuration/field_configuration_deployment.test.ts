@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -47,11 +47,13 @@ describe('fieldConfigurationDeploymentFilter', () => {
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = fieldConfigurationDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as typeof filter
+    filter = fieldConfigurationDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as typeof filter
 
     fieldConfigurationType = new ObjectType({
       elemID: new ElemID(JIRA, 'FieldConfiguration'),
@@ -60,35 +62,28 @@ describe('fieldConfigurationDeploymentFilter', () => {
 
   describe('deploy', () => {
     const supportedFields = _.range(0, 150).map(i => ({
-      id: new ReferenceExpression(
-        new ElemID(JIRA, 'Field', 'instance', `supported${i}`),
-        {
-          value: {
-            id: `supported${i}`,
-          },
-        }
-      ),
+      id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', `supported${i}`), {
+        value: {
+          id: `supported${i}`,
+        },
+      }),
     }))
 
     let instance: InstanceElement
     let change: Change<InstanceElement>
 
     beforeEach(async () => {
-      (deployChange as jest.Mock).mockClear()
-      instance = new InstanceElement(
-        'instance',
-        fieldConfigurationType,
-        {
-          name: 'name',
-          id: 1,
-          fields: [
-            {
-              id: 'notSupported1',
-            },
-            ...supportedFields,
-          ],
-        }
-      )
+      ;(deployChange as jest.Mock).mockClear()
+      instance = new InstanceElement('instance', fieldConfigurationType, {
+        name: 'name',
+        id: 1,
+        fields: [
+          {
+            id: 'notSupported1',
+          },
+          ...supportedFields,
+        ],
+      })
 
       const beforeInstance = instance.clone()
       beforeInstance.value.description = 'before'
@@ -117,7 +112,8 @@ describe('fieldConfigurationDeploymentFilter', () => {
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
         {
-          fieldConfigurationItems: supportedFields.slice(0, 100)
+          fieldConfigurationItems: supportedFields
+            .slice(0, 100)
             .map(field => ({ ...field, id: field.id.value.value.id })),
         },
         undefined,
@@ -125,7 +121,8 @@ describe('fieldConfigurationDeploymentFilter', () => {
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
         {
-          fieldConfigurationItems: supportedFields.slice(100, supportedFields.length)
+          fieldConfigurationItems: supportedFields
+            .slice(100, supportedFields.length)
             .map(field => ({ ...field, id: field.id.value.value.id })),
         },
         undefined,

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { Element, isInstanceElement, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { multiIndex, collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -42,15 +42,13 @@ function getSelfLink(obj: unknown): string | undefined {
   return undefined
 }
 
-
 const hasSelfLink = (obj: unknown): obj is ObjectWithSelfLink => getSelfLink(obj) !== undefined
 
 type InstanceElementWithSelfLink = InstanceElement & {
   value: InstanceElement['value'] & ObjectWithSelfLink
 }
-const isInstanceElementWithSelfLink = (elem: Element): elem is InstanceElementWithSelfLink => (
+const isInstanceElementWithSelfLink = (elem: Element): elem is InstanceElementWithSelfLink =>
   isInstanceElement(elem) && hasSelfLink(elem.value)
-)
 
 const getRelativeSelfLink = (obj: ObjectWithSelfLink): string => {
   const fullLink = getSelfLink(obj)
@@ -60,22 +58,22 @@ const getRelativeSelfLink = (obj: ObjectWithSelfLink): string => {
   return selfLink.pathname.split('/').slice(4).join('/')
 }
 
-const transformSelfLinkToReference = (
-  elementsBySelfLink: multiIndex.Index<[string], InstanceElementWithSelfLink>
-): TransformFunc => ({ value, path }) => {
-  if (path && path.isTopLevel()) {
-    // Skip the top level value as we should not replace the instance content
-    // with a reference to itself
+const transformSelfLinkToReference =
+  (elementsBySelfLink: multiIndex.Index<[string], InstanceElementWithSelfLink>): TransformFunc =>
+  ({ value, path }) => {
+    if (path && path.isTopLevel()) {
+      // Skip the top level value as we should not replace the instance content
+      // with a reference to itself
+      return value
+    }
+    if (hasSelfLink(value)) {
+      const target = elementsBySelfLink.get(getRelativeSelfLink(value))
+      if (target !== undefined) {
+        return new ReferenceExpression(target.elemID, target)
+      }
+    }
     return value
   }
-  if (hasSelfLink(value)) {
-    const target = elementsBySelfLink.get(getRelativeSelfLink(value))
-    if (target !== undefined) {
-      return new ReferenceExpression(target.elemID, target)
-    }
-  }
-  return value
-}
 
 /**
  * Adds references from every nested element that contains a "self" link
@@ -92,14 +90,15 @@ const filter: FilterCreator = () => ({
       key: inst => [getRelativeSelfLink(inst.value)],
     })
     await awu(instances).forEach(async inst => {
-      inst.value = await transformValues({
-        values: inst.value,
-        type: await inst.getType(),
-        pathID: inst.elemID,
-        transformFunc: transformSelfLinkToReference(elementsBySelfLink),
-        strict: false,
-        allowEmpty: true,
-      }) ?? inst.value
+      inst.value =
+        (await transformValues({
+          values: inst.value,
+          type: await inst.getType(),
+          pathID: inst.elemID,
+          transformFunc: transformSelfLinkToReference(elementsBySelfLink),
+          strict: false,
+          allowEmpty: true,
+        })) ?? inst.value
     })
   },
 })

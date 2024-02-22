@@ -2,16 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "."
   },
-  "include": [
-    "src/**/*",
-    "test/**/*",
-    "index.ts", "../lowerdash/test/retry/wait_for.test.ts"
-  ],
-  "references": [
-    { "path": "../logging" },
-    { "path": "../lowerdash" },
-    { "path": "../test-utils" },
-  ]
+  "include": ["src/**/*", "test/**/*", "index.ts", "../lowerdash/test/retry/wait_for.test.ts"],
+  "references": [{ "path": "../logging" }, { "path": "../lowerdash" }, { "path": "../test-utils" }]
 }

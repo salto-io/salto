@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  AdditionChange,
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isModificationChange,
+  isObjectType,
+  ModificationChange,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -36,7 +47,7 @@ const deployNewAndDeletedIssueTypeIds = async (
 ): Promise<void> => {
   const { addedIds, removedIds } = getDiffIds(
     change.data.before.value.issueTypeIds ?? [],
-    change.data.after.value.issueTypeIds ?? []
+    change.data.after.value.issueTypeIds ?? [],
   )
 
   const instance = getChangeData(change)
@@ -62,18 +73,18 @@ const deployNewAndDeletedIssueTypeIds = async (
   await awu(Array.from(removedIds)).forEach(id =>
     client.delete({
       url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
-    }))
+    }),
+  )
 }
 
 const deployIssueTypeIdsOrder = async (
   change: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  if ((change.data.after.value.issueTypeIds ?? []).length === 0
-    || _.isEqual(
-      change.data.before.value.issueTypeIds,
-      change.data.after.value.issueTypeIds
-    )) {
+  if (
+    (change.data.after.value.issueTypeIds ?? []).length === 0 ||
+    _.isEqual(change.data.before.value.issueTypeIds, change.data.after.value.issueTypeIds)
+  ) {
     return
   }
   await client.put({
@@ -85,7 +96,6 @@ const deployIssueTypeIdsOrder = async (
   })
 }
 
-
 const deployIssueTypeSchema = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   client: JiraClient,
@@ -95,7 +105,12 @@ const deployIssueTypeSchema = async (
     const resolvedChange = await resolveChangeElement(change, getLookUpName)
     await deployNewAndDeletedIssueTypeIds(resolvedChange, client)
     await deployIssueTypeIdsOrder(resolvedChange, client)
-    await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
+    await defaultDeployChange({
+      change,
+      client,
+      apiDefinitions: config.apiDefinitions,
+      fieldsToIgnore: ['issueTypeIds'],
+    })
     return
   }
 
@@ -108,8 +123,7 @@ const filter: FilterCreator = ({ config, client }) => ({
   name: 'issueTypeSchemeFilter',
   onFetch: async elements => {
     const issueTypeSchemaType = elements.find(
-      element => isObjectType(element)
-        && element.elemID.name === ISSUE_TYPE_SCHEMA_NAME
+      element => isObjectType(element) && element.elemID.name === ISSUE_TYPE_SCHEMA_NAME,
     ) as ObjectType | undefined
     if (issueTypeSchemaType !== undefined) {
       issueTypeSchemaType.fields.issueTypeIds.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
@@ -118,21 +132,15 @@ const filter: FilterCreator = ({ config, client }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
+      change =>
+        isInstanceChange(change) &&
+        isAdditionOrModificationChange(change) &&
+        getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME,
     )
 
-
     const deployResult = await deployChanges(
-      relevantChanges
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange),
-      async change => deployIssueTypeSchema(
-        change,
-        client,
-        config
-      )
+      relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
+      async change => deployIssueTypeSchema(change, client, config),
     )
 
     return {

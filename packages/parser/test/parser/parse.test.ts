@@ -1,28 +1,42 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable, isMapType, isContainerType,
-  isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
-  isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression, TemplateExpression,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  Element,
+  ElemID,
+  Variable,
+  isMapType,
+  isContainerType,
+  isObjectType,
+  InstanceElement,
+  BuiltinTypes,
+  isListType,
+  isVariable,
+  isType,
+  isPrimitiveType,
+  ListType,
+  ReferenceExpression,
+  VariableExpression,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { registerTestFunction, registerThrowingFunction } from '../utils'
-import {
-  Functions,
-} from '../../src/parser/functions'
+import { Functions } from '../../src/parser/functions'
 import { SourceRange, parse, SourceMap, tokenizeContent, ParseResult } from '../../src/parser'
 import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
 
@@ -225,7 +239,8 @@ value
       `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
-      elements = await awu(parsed.elements).filter(element => !isContainerType(element))
+      elements = await awu(parsed.elements)
+        .filter(element => !isContainerType(element))
         .toArray()
       genericTypes = await awu(parsed.elements)
         .filter(element => isListType(element) || isMapType(element))
@@ -408,9 +423,7 @@ value
         config = elements[6] as InstanceElement
       })
       it('should have the right id', () => {
-        expect(config.elemID).toEqual(
-          configTypeId.createNestedID('instance', ElemID.CONFIG_NAME),
-        )
+        expect(config.elemID).toEqual(configTypeId.createNestedID('instance', ElemID.CONFIG_NAME))
       })
       it('should have the right type', () => {
         expect(config.refType.elemID).toEqual(configTypeId)
@@ -471,9 +484,7 @@ value
       })
 
       it('should have the correct id', () => {
-        expect(settingsInstance.elemID).toEqual(
-          settingsType.elemID.createNestedID('instance', ElemID.CONFIG_NAME),
-        )
+        expect(settingsInstance.elemID).toEqual(settingsType.elemID.createNestedID('instance', ElemID.CONFIG_NAME))
       })
       it('should have to correct type ID', () => {
         expect(settingsInstance.refType.elemID).toEqual(settingsType.elemID)
@@ -487,9 +498,9 @@ value
       })
 
       it('should contain all top level elements except list and map types', () => {
-        elements.filter(elem => !(isType(elem) && isContainerType(elem))).forEach(
-          elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0)
-        )
+        elements
+          .filter(elem => !(isType(elem) && isContainerType(elem)))
+          .forEach(elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0))
       })
       it('should have correct start and end positions', () => {
         const modelSource = sourceMap.get(model.elemID.getFullName()) as SourceRange[]
@@ -499,8 +510,8 @@ value
         expect(modelSource[0].end.line).toBe(53)
       })
       it('should contain fields', () => {
-        Object.values(model.fields).forEach(
-          field => expect(sourceMap.get(field.elemID.getFullName())).not.toHaveLength(0)
+        Object.values(model.fields).forEach(field =>
+          expect(sourceMap.get(field.elemID.getFullName())).not.toHaveLength(0),
         )
       })
       it('should have all definitions of a field', () => {
@@ -520,15 +531,12 @@ value
         expect(nestedAttrSource).toHaveLength(1)
       })
       it('should contain annotation types', () => {
-        const annotationTypesId = model.elemID
-          .createNestedID('annotation')
+        const annotationTypesId = model.elemID.createNestedID('annotation')
         const annotationTypesSource = sourceMap.get(annotationTypesId.getFullName())
         expect(annotationTypesSource).toHaveLength(1)
       })
       it('should contain a single annotation type', () => {
-        const annotationTypeId = model.elemID
-          .createNestedID('annotation')
-          .createNestedID('convertSettings')
+        const annotationTypeId = model.elemID.createNestedID('annotation').createNestedID('convertSettings')
         const annotationTypeSource = sourceMap.get(annotationTypeId.getFullName())
         expect(annotationTypeSource).toHaveLength(1)
       })
@@ -542,77 +550,60 @@ value
 
       describe('parameters', () => {
         it('number', () => {
-          expect(instanceWithFunctions.value.contentWithNumber)
-            .toHaveProperty('funcName', 'funcush')
-          expect(instanceWithFunctions.value.contentWithNumber)
-            .toHaveProperty('parameters', [1])
+          expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('parameters', [1])
         })
         it('string', () => {
-          expect(instanceWithFunctions.value.content)
-            .toHaveProperty('funcName', 'funcush')
-          expect(instanceWithFunctions.value.content)
-            .toHaveProperty('parameters', ['some.png'])
+          expect(instanceWithFunctions.value.content).toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.content).toHaveProperty('parameters', ['some.png'])
         })
         it('boolean', () => {
-          expect(instanceWithFunctions.value.contentWithBoolean)
-            .toHaveProperty('funcName', 'funcush')
-          expect(instanceWithFunctions.value.contentWithBoolean)
-            .toHaveProperty('parameters', [true])
+          expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('parameters', [true])
         })
         it('list', () => {
-          expect(instanceWithFunctions.value.contentWithList)
-            .toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithList).toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithList).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithList.parameters[0])
-            .toHaveLength(3)
-          expect(instanceWithFunctions.value.contentWithList.parameters[0])
-            .toEqual(['yes', 'dad', true])
+          expect(instanceWithFunctions.value.contentWithList.parameters[0]).toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithList.parameters[0]).toEqual(['yes', 'dad', true])
         })
         it('several params', () => {
-          expect(instanceWithFunctions.value.contentWithSeveralParams)
-            .toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithSeveralParams.parameters)
-            .toHaveLength(3)
-          expect(instanceWithFunctions.value.contentWithSeveralParams.parameters)
-            .toEqual([false, 3, 'WAT'])
+          expect(instanceWithFunctions.value.contentWithSeveralParams.parameters).toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithSeveralParams.parameters).toEqual([false, 3, 'WAT'])
         })
         it('mixed', () => {
-          expect(instanceWithFunctions.value.contentWithMixed)
-            .toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithMixed.parameters)
-            .toHaveLength(3)
-          expect(instanceWithFunctions.value.contentWithMixed.parameters)
-            .toEqual([false, [3, 3], 'WAT'])
+          expect(instanceWithFunctions.value.contentWithMixed.parameters).toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithMixed.parameters).toEqual([false, [3, 3], 'WAT'])
         })
         it('nested', () => {
-          expect(instanceWithFunctions.value.contentWithNested)
-            .toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithNested.parameters)
-            .toHaveLength(3)
-          expect(instanceWithFunctions.value.contentWithNested.parameters)
-            .toEqual([false, [3, [1, 2]], 'WAT'])
+          expect(instanceWithFunctions.value.contentWithNested.parameters).toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithNested.parameters).toEqual([false, [3, [1, 2]], 'WAT'])
         })
         it('multiline', () => {
-          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters)
-            .toHaveProperty('funcName', 'funcush')
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty(
+            'funcName',
+            'funcush',
+          )
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
-            .toHaveLength(3)
-          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
-            .toEqual(['regular', ['aa', 2, false], 321])
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters).toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters).toEqual([
+            'regular',
+            ['aa', 2, false],
+            321,
+          ])
         })
         it('nested in object', () => {
-          expect(instanceWithFunctions.value.contentWithNestedFunction)
-            .toHaveProperty('nestalicous')
+          expect(instanceWithFunctions.value.contentWithNestedFunction).toHaveProperty('nestalicous')
           const func = instanceWithFunctions.value.contentWithNestedFunction.nestalicous
           expect(func).toHaveProperty('parameters')
-          expect(func.parameters)
-            .toHaveLength(1)
-          expect(func.parameters)
-            .toEqual(['yeah'])
+          expect(func.parameters).toHaveLength(1)
+          expect(func.parameters).toEqual(['yeah'])
         })
       })
     })
@@ -649,7 +640,9 @@ value
       })
       it('should preserve end of line spaces on new line', () => {
         expect(multilineObject.annotations).toHaveProperty('withTrailingNewline')
-        expect(multilineObject.annotations.withTrailingNewline).toEqual('        This has \n        a trailing line with spaces\n  ')
+        expect(multilineObject.annotations.withTrailingNewline).toEqual(
+          '        This has \n        a trailing line with spaces\n  ',
+        )
       })
       it('should handle qoutation marks inside the multiline string', () => {
         expect(multilineObject.annotations).toHaveProperty('withQuotes')
@@ -721,16 +714,24 @@ value
 
       it('should parse references to template as TemplateExpression', () => {
         expect(refObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
-        expect(refObj.annotations.tmpl.parts).toEqual(['hello {{', expect.objectContaining({
-          elemID: new ElemID('temp', 'la@te', 'instance', 'stuff@us'),
-        }), '}}'])
+        expect(refObj.annotations.tmpl.parts).toEqual([
+          'hello {{',
+          expect.objectContaining({
+            elemID: new ElemID('temp', 'la@te', 'instance', 'stuff@us'),
+          }),
+          '}}',
+        ])
       })
 
       it('should parse references to multiline template as TemplateExpression', () => {
         expect(multilineRefObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
-        expect(multilineRefObj.annotations.tmpl.parts).toEqual(['multiline\ntemplate {{', expect.objectContaining({
-          elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
-        }), '}}\nvalue'])
+        expect(multilineRefObj.annotations.tmpl.parts).toEqual([
+          'multiline\ntemplate {{',
+          expect.objectContaining({
+            elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
+          }),
+          '}}\nvalue',
+        ])
       })
     })
 
@@ -741,7 +742,7 @@ value
       })
 
       it('should parsed the double escaped string', () => {
-        expect(escapeObj.annotations.str).toEqual('you can\'t run away \\')
+        expect(escapeObj.annotations.str).toEqual("you can't run away \\")
       })
       it('should parse the unicode escaping', () => {
         expect(escapeObj.annotations.unicodeStr).toEqual('this is a basic thing')
@@ -769,7 +770,8 @@ value
     }
     `
     const parsed = await parse(Buffer.from(body), 'none', functions)
-    const elements = await awu(parsed.elements).filter(element => !isContainerType(element))
+    const elements = await awu(parsed.elements)
+      .filter(element => !isContainerType(element))
       .toArray()
     expect(elements[0].annotations.str.length).toEqual(stringLength)
   })
@@ -836,7 +838,9 @@ value
       })
 
       it('puts unexpected errors into the parse result, without additional information', async () => {
-        const throwingFunctions = registerThrowingFunction(funcName, () => { throw new Error('unexpected') })
+        const throwingFunctions = registerThrowingFunction(funcName, () => {
+          throw new Error('unexpected')
+        })
         const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
         expect(result.errors).toHaveLength(1)
         expect(result.errors[0].message).toEqual('unexpected')
@@ -937,8 +941,7 @@ value
     expect(result.errors).toHaveLength(2)
     expect(result.errors[0].summary).toEqual('Invalid type name')
     expect(result.elements).toHaveLength(1)
-    expect((result.elements as InstanceElement[])[0].elemID)
-      .toEqual(new ElemID('salesforce', 'anotherType'))
+    expect((result.elements as InstanceElement[])[0].elemID).toEqual(new ElemID('salesforce', 'anotherType'))
   })
 
   describe('parse when calcSourceMap is false', () => {
@@ -997,7 +1000,6 @@ value
       })
     })
   })
-
 
   describe('tokenizeContent', () => {
     it('separate and token each part of a line correctly', () => {

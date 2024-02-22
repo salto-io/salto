@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { MockInterface } from '@salto-io/test-utils'
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
@@ -88,34 +88,38 @@ describe('defaultPolicyRuleDeployment', () => {
       mockConnection.get
         .mockResolvedValueOnce({
           status: 200,
-          data: [{
-            id: 'accessId',
-            name: 'access',
-            system: true,
-            actions: {
-              appSignOn: {
-                access: 'DENY',
-                verificationMethod: { factorMode: '1FA', type: 'ASSURANCE', reauthenticateIn: 'PT12H' },
+          data: [
+            {
+              id: 'accessId',
+              name: 'access',
+              system: true,
+              actions: {
+                appSignOn: {
+                  access: 'DENY',
+                  verificationMethod: { factorMode: '1FA', type: 'ASSURANCE', reauthenticateIn: 'PT12H' },
+                },
               },
+              type: 'ACCESS_POLICY',
+              createdBy: 'aaa',
             },
-            type: 'ACCESS_POLICY',
-            createdBy: 'aaa',
-          }],
+          ],
         })
         .mockResolvedValueOnce({
           status: 200,
-          data: [{
-            id: 'enrollmentId',
-            name: 'profile enrollment',
-            system: true,
-            actions: {
-              profileEnrollment: {
-                access: 'ALLOW',
-                targetGroupIds: ['123'],
+          data: [
+            {
+              id: 'enrollmentId',
+              name: 'profile enrollment',
+              system: true,
+              actions: {
+                profileEnrollment: {
+                  access: 'ALLOW',
+                  targetGroupIds: ['123'],
+                },
               },
+              createdBy: 'bbb',
             },
-            createdBy: 'bbb',
-          }],
+          ],
         })
       const changes = [toChange({ after: accessRuleInstance }), toChange({ after: enrollmentRuleInstance })]
       const result = await filter.deploy(changes)
@@ -152,15 +156,13 @@ describe('defaultPolicyRuleDeployment', () => {
     })
 
     it('should return error if there is no parent policy', async () => {
-      const noParent = new InstanceElement(
-        'accessPolicyNoParent',
-        accessRuleType,
-        accessRuleInstance.value,
-      )
+      const noParent = new InstanceElement('accessPolicyNoParent', accessRuleType, accessRuleInstance.value)
       const result = await filter.deploy([toChange({ after: noParent })])
       expect(result.deployResult.appliedChanges).toHaveLength(0)
       expect(result.deployResult.errors).toHaveLength(1)
-      expect(result.deployResult.errors.map(e => e.message)).toEqual(['Could not find parent policy id for policy rule accessPolicyNoParent from type AccessPolicyRule'])
+      expect(result.deployResult.errors.map(e => e.message)).toEqual([
+        'Could not find parent policy id for policy rule accessPolicyNoParent from type AccessPolicyRule',
+      ])
     })
 
     it('should return error when policy rules request fails', async () => {

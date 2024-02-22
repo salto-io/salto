@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../../src/client'
 import { PaginationFunction } from '../../../../src/definitions'
@@ -42,13 +42,15 @@ describe('pagination', () => {
       paginationFuncCreator.mockReturnValue(paginationFunc)
     })
     it('should make calls to the correct endpoint', async () => {
-      client.get.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'a',
-        },
-        status: 200,
-        statusText: 'OK',
-      }))
+      client.get.mockResolvedValueOnce(
+        Promise.resolve({
+          data: {
+            a: 'a',
+          },
+          status: 200,
+          statusText: 'OK',
+        }),
+      )
       const result = await traversePages({
         client,
         endpointIdentifier: {
@@ -66,13 +68,15 @@ describe('pagination', () => {
       expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
     })
     it('should support non-GET calls', async () => {
-      client.post.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'a',
-        },
-        status: 200,
-        statusText: 'OK',
-      }))
+      client.post.mockResolvedValueOnce(
+        Promise.resolve({
+          data: {
+            a: 'a',
+          },
+          status: 200,
+          statusText: 'OK',
+        }),
+      )
       const result = await traversePages({
         client,
         endpointIdentifier: {
@@ -93,22 +97,32 @@ describe('pagination', () => {
       expect(client.post).toHaveBeenCalledWith({ url: '/ep', body: { something: 'SOMETHING' } })
     })
     it('should pass query args in all requests', async () => {
-      paginationFunc.mockReturnValueOnce([{
-        queryParams: { offset: '20' },
-      }]).mockReturnValueOnce([])
-      client.get.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'a',
-        },
-        status: 200,
-        statusText: 'OK',
-      })).mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'b',
-        },
-        status: 200,
-        statusText: 'OK',
-      }))
+      paginationFunc
+        .mockReturnValueOnce([
+          {
+            queryParams: { offset: '20' },
+          },
+        ])
+        .mockReturnValueOnce([])
+      client.get
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'a',
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'b',
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
       const result = await traversePages({
         client,
         endpointIdentifier: {
@@ -127,40 +141,50 @@ describe('pagination', () => {
       expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { offset: '20' } })
     })
 
-
     it('should query multiple pages if pagination function returns next pages and avoid getting the same page more than once', async () => {
-      paginationFunc.mockReturnValueOnce([
-        {
-          queryParams: { offset: '20' },
-        },
-        {
-          queryParams: { offset: '40' },
-        },
-      ]).mockReturnValueOnce([
-        {
-          queryParams: { offset: '20' },
-        },
-      ])
+      paginationFunc
+        .mockReturnValueOnce([
+          {
+            queryParams: { offset: '20' },
+          },
+          {
+            queryParams: { offset: '40' },
+          },
+        ])
+        .mockReturnValueOnce([
+          {
+            queryParams: { offset: '20' },
+          },
+        ])
 
-      client.get.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'a',
-        },
-        status: 200,
-        statusText: 'OK',
-      })).mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'b',
-        },
-        status: 200,
-        statusText: 'OK',
-      })).mockResolvedValueOnce(Promise.resolve({
-        data: {
-          a: 'c',
-        },
-        status: 200,
-        statusText: 'OK',
-      }))
+      client.get
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'a',
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'b',
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'c',
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
       const result = await traversePages({
         client,
         endpointIdentifier: {
@@ -202,19 +226,27 @@ describe('pagination', () => {
     })
 
     it('should fail gracefully on HTTP errors', async () => {
-      client.get.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          items: [{
-            a: 'a1',
-          }],
-        },
-        status: 200,
-        statusText: 'OK',
-      })).mockResolvedValueOnce(Promise.resolve({
-        data: {},
-        status: 404,
-        statusText: 'Not Found',
-      }))
+      client.get
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              items: [
+                {
+                  a: 'a1',
+                },
+              ],
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {},
+            status: 404,
+            statusText: 'Not Found',
+          }),
+        )
       paginationFunc.mockReturnValueOnce([{ queryParams: { offset: '20' } }])
       const result = await traversePages({
         client,
@@ -247,29 +279,36 @@ describe('pagination', () => {
       })
     })
     it('should throw if encountered unknown HTTP exception errors', async () => {
-      client.get.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          items: [{
-            a: 'a1',
-          }],
-        },
-        status: 200,
-        statusText: 'OK',
-      }))
+      client.get
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              items: [
+                {
+                  a: 'a1',
+                },
+              ],
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
         .mockRejectedValueOnce(new Error('Something went wrong'))
         .mockRejectedValueOnce(new Error('Something else went wrong'))
       paginationFunc.mockReturnValueOnce([{ queryParams: { offset: '20' } }, { queryParams: { offset: '40' } }])
-      await expect(() => traversePages({
-        client,
-        endpointIdentifier: {
-          path: '/ep',
-        },
-        paginationDef: {
-          funcCreator: paginationFuncCreator,
-        },
-        callArgs: {},
-        contexts: [],
-      })).rejects.toThrow('Something went wrong')
+      await expect(() =>
+        traversePages({
+          client,
+          endpointIdentifier: {
+            path: '/ep',
+          },
+          paginationDef: {
+            funcCreator: paginationFuncCreator,
+          },
+          callArgs: {},
+          contexts: [],
+        }),
+      ).rejects.toThrow('Something went wrong')
     })
   })
 })

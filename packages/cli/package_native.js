@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -67,11 +67,11 @@ const resources = [
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
   resources,
-  ...(BUILD_NODE_EXECUTABLE ? { build: true, make: ['--jobs=4'] } : {} )
+  ...(BUILD_NODE_EXECUTABLE ? { build: true, make: ['--jobs=4'] } : {}),
 }
 
-const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
-  .map(([platform, platformOpts = {}]) => {
+const nexeConfigs = () =>
+  Object.entries(TARGET_PLATFORMS).map(([platform, platformOpts = {}]) => {
     const target = { platform, arch: TARGET_ARCH, version: TARGET_NODE_VERSION }
     return {
       output: `${path.join(TARGET_DIR, platform, TARGET_FILE_BASENAME)}${platformOpts.ext || ''}`,
@@ -81,66 +81,71 @@ const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
   })
 
 const handleError = err => {
-  console.error(err.stack || err);
+  console.error(err.stack || err)
   if (err.details) {
-    console.error(err.details);
+    console.error(err.details)
   }
   process.exit(2)
 }
 
-const doWebpack = (config) => new Promise((resolve, reject) => {
-  console.log('Running webpack')
-  webpack(config, (err, stats) => {
-    if (err) {
-      handleError(err)
-      reject()
-    }
-
-    if (stats.hasErrors()) {
-      console.error(stats.toString())
-      reject()
-    }
-
-    if (stats.hasWarnings()) {
-      const statsObj = stats.toJson({ warnings: true })
-      const warningsToPrint = statsObj.warnings.filter(
-        warning => config.stats.warningsFilter.every(re => !re.test(warning))
-      )
-      if (warningsToPrint.length) {
-        console.warn(stats.toString())
-      }
-    }
-
-    resolve()
-  })
-})
-
-const doNexe = (input) => new Promise((resolve, reject) => {
-  const next = configs => {
-    const [ config ] = configs
-    if (!config) {
-      resolve()
-      return
-    }
-
-    console.log('Running nexe for platform %o', config.target)
-
-    nexe.compile({
-      ...BASE_NEXE_CONFIG,
-      ...config,
-      input,
-    }, err => {
+const doWebpack = config =>
+  new Promise((resolve, reject) => {
+    console.log('Running webpack')
+    webpack(config, (err, stats) => {
       if (err) {
         handleError(err)
         reject()
       }
 
-      next(configs.slice(1))
-    })
-  }
+      if (stats.hasErrors()) {
+        console.error(stats.toString())
+        reject()
+      }
 
-  next(nexeConfigs())
-})
+      if (stats.hasWarnings()) {
+        const statsObj = stats.toJson({ warnings: true })
+        const warningsToPrint = statsObj.warnings.filter(warning =>
+          config.stats.warningsFilter.every(re => !re.test(warning)),
+        )
+        if (warningsToPrint.length) {
+          console.warn(stats.toString())
+        }
+      }
+
+      resolve()
+    })
+  })
+
+const doNexe = input =>
+  new Promise((resolve, reject) => {
+    const next = configs => {
+      const [config] = configs
+      if (!config) {
+        resolve()
+        return
+      }
+
+      console.log('Running nexe for platform %o', config.target)
+
+      nexe.compile(
+        {
+          ...BASE_NEXE_CONFIG,
+          ...config,
+          input,
+        },
+        err => {
+          if (err) {
+            handleError(err)
+            reject()
+          }
+
+          next(configs.slice(1))
+        },
+      )
+    }
+
+    next(nexeConfigs())
+  })
 
 ;(async () => {
   await doWebpack(webpackConfig)

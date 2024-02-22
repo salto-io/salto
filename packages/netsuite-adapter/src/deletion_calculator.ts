@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  SaltoError,
+  isInstanceElement,
+  isObjectType,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -49,7 +57,7 @@ const calculateDeletedStandardInstances = (
 
 const calculateDeletedDataElements = (
   currentDataElements: ElemID[],
-  serviceDataElements: InstanceElement[]
+  serviceDataElements: InstanceElement[],
 ): ElemID[] => {
   if (currentDataElements.length === 0) {
     return []
@@ -57,8 +65,7 @@ const calculateDeletedDataElements = (
 
   const serviceDataElementsSet = new Set(serviceDataElements.map(element => element.elemID.getFullName()))
 
-  return currentDataElements
-    .filter(elemId => !serviceDataElementsSet.has(elemId.getFullName()))
+  return currentDataElements.filter(elemId => !serviceDataElementsSet.has(elemId.getFullName()))
 }
 
 const calculateDeletedCustomRecordsFromFetchResult = (
@@ -70,8 +77,7 @@ const calculateDeletedCustomRecordsFromFetchResult = (
     return []
   }
 
-  const customRecordElemNames = new Set(serviceCustomRecords
-    .map(instance => instance.elemID.getFullName()))
+  const customRecordElemNames = new Set(serviceCustomRecords.map(instance => instance.elemID.getFullName()))
 
   return currentCustomRecords
     .filter(customRecord => requestedCustomRecordTypes.has(customRecord.elemID.typeName))
@@ -93,8 +99,7 @@ const isCustomRecordDeleted = (
     return true // the whole type was deleted
   }
   // some custom types are not returned by SuiteQL queries, so we delete only ones that have SuiteQL results
-  if (serviceCustomRecordsByType.has(type)
-    && !serviceCustomRecordsByType.get(type)?.has(customRecord.serviceID)) {
+  if (serviceCustomRecordsByType.has(type) && !serviceCustomRecordsByType.get(type)?.has(customRecord.serviceID)) {
     return true
   }
   return false
@@ -107,7 +112,7 @@ const calculateDeletedCustomRecordsFromService = async ({
   requestedCustomRecordTypes,
   requestedCustomRecordTypeScriptIds,
   serviceCustomRecordTypes,
-} : {
+}: {
   client: NetsuiteClient
   currentCustomRecords: ElemServiceID[]
   query: NetsuiteQuery
@@ -117,16 +122,17 @@ const calculateDeletedCustomRecordsFromService = async ({
 }): Promise<ElemID[]> => {
   // We can ignore custom types that were already returned by the service, as the missing records there were
   // calculated in calculateDeletedCustomRecordsFromFetchResult
-  const serviceCustomRecordsByType = await getCustomRecords(
-    client,
-    query,
-    requestedCustomRecordTypeScriptIds,
-  )
+  const serviceCustomRecordsByType = await getCustomRecords(client, query, requestedCustomRecordTypeScriptIds)
 
   const deletedCustomRecords = currentCustomRecords
-    .filter(customRecord => isCustomRecordDeleted(
-      customRecord, serviceCustomRecordTypes, serviceCustomRecordsByType, requestedCustomRecordTypes
-    ))
+    .filter(customRecord =>
+      isCustomRecordDeleted(
+        customRecord,
+        serviceCustomRecordTypes,
+        serviceCustomRecordsByType,
+        requestedCustomRecordTypes,
+      ),
+    )
     .map(item => item.elemID)
 
   return deletedCustomRecords
@@ -140,7 +146,7 @@ const calculateDeletedCustomRecords = async ({
   serviceCustomRecords,
   requestedCustomRecordTypeList,
   serviceCustomRecordTypeList,
-} : {
+}: {
   client: NetsuiteClient
   currentCustomRecords: ElemServiceID[]
   currentCustomRecordTypes: ElemServiceID[]
@@ -159,7 +165,7 @@ const calculateDeletedCustomRecords = async ({
   // the ones already covered) and check whether there is any deletion there
   const requestedCustomRecordTypes = new Set(requestedCustomRecordTypeList.map(type => type.elemID.typeName))
   const requestedCustomRecordTypeScriptIds = new Set(
-    requestedCustomRecordTypeList.map(type => type.annotations[SCRIPT_ID] as string)
+    requestedCustomRecordTypeList.map(type => type.annotations[SCRIPT_ID] as string),
   )
   const serviceCustomRecordTypes = new Set(serviceCustomRecordTypeList.map(item => item.instanceId))
 
@@ -208,9 +214,7 @@ const getCurrentElements = async (
     .forEach(async element => {
       if (isInstanceElement(element)) {
         if (isCustomRecordType(await element.getType(elementsSource))) {
-          if (fetchQuery.isCustomRecordMatch(
-            ({ type: element.elemID.typeName, instanceId: element.value[SCRIPT_ID] })
-          )) {
+          if (fetchQuery.isCustomRecordMatch({ type: element.elemID.typeName, instanceId: element.value[SCRIPT_ID] })) {
             currentCustomRecords.push({ elemID: element.elemID, serviceID: getServiceId(element) })
           }
         } else if (fetchQuery.isTypeMatch(element.elemID.typeName)) {
@@ -249,7 +253,7 @@ export const getDeletedElements = async ({
   serviceCustomRecords,
   requestedDataTypes,
   serviceDataElements,
-} : {
+}: {
   client: NetsuiteClient
   elementsSource: ReadOnlyElementsSource
   fetchQuery: NetsuiteQuery
@@ -260,15 +264,12 @@ export const getDeletedElements = async ({
   serviceDataElements: InstanceElement[]
 }): Promise<FetchDeletionResult> => {
   try {
-    const {
-      currentStandardInstances,
-      currentCustomRecords,
-      currentCustomRecordTypes,
-      currentDataElements,
-    } = await getCurrentElements(elementsSource, fetchQuery, requestedDataTypes)
+    const { currentStandardInstances, currentCustomRecords, currentCustomRecordTypes, currentDataElements } =
+      await getCurrentElements(elementsSource, fetchQuery, requestedDataTypes)
 
     const [serviceCustomRecordTypeList, serviceStandardInstanceList] = _.partition(
-      serviceInstanceIds, objectId => objectId.type === CUSTOM_RECORD_TYPE
+      serviceInstanceIds,
+      objectId => objectId.type === CUSTOM_RECORD_TYPE,
     )
 
     const deletedCustomRecords = calculateDeletedCustomRecords({
@@ -281,15 +282,9 @@ export const getDeletedElements = async ({
       serviceCustomRecordTypeList,
     })
 
-    const deletedInstances = calculateDeletedStandardInstances(
-      currentStandardInstances,
-      serviceStandardInstanceList,
-    )
+    const deletedInstances = calculateDeletedStandardInstances(currentStandardInstances, serviceStandardInstanceList)
 
-    const deletedDataElements = calculateDeletedDataElements(
-      currentDataElements,
-      serviceDataElements,
-    )
+    const deletedDataElements = calculateDeletedDataElements(currentDataElements, serviceDataElements)
 
     return { deletedElements: deletedInstances.concat(deletedDataElements).concat(await deletedCustomRecords) }
   } catch (e) {

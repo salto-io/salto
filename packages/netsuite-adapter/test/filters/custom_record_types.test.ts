@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, ElemID, isObjectType, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { LocalFilterOpts } from '../../src/filter'
@@ -88,23 +88,22 @@ describe('custom record types filter', () => {
       'custom_custrecord_ref',
       'custom_custrecord_account',
     ])
-    expect(customRecordType.fields.custom_custrecord_newfield.refType.elemID.name)
-      .toEqual(BuiltinTypes.STRING.elemID.name)
+    expect(customRecordType.fields.custom_custrecord_newfield.refType.elemID.name).toEqual(
+      BuiltinTypes.STRING.elemID.name,
+    )
     expect(customRecordType.fields.custom_custrecord_newfield.annotations).toEqual({
       scriptid: 'custrecord_newfield',
       fieldtype: 'TEXT',
       index: 0,
     })
-    expect(customRecordType.fields.custom_custrecord_ref.refType.elemID.name)
-      .toEqual('customrecord2')
+    expect(customRecordType.fields.custom_custrecord_ref.refType.elemID.name).toEqual('customrecord2')
     expect(customRecordType.fields.custom_custrecord_ref.annotations).toEqual({
       scriptid: 'custrecord_ref',
       fieldtype: 'SELECT',
       selectrecordtype: `[${SCRIPT_ID}=customrecord2]`,
       index: 1,
     })
-    expect(customRecordType.fields.custom_custrecord_account.refType.elemID.name)
-      .toEqual('account')
+    expect(customRecordType.fields.custom_custrecord_account.refType.elemID.name).toEqual('account')
     expect(customRecordType.fields.custom_custrecord_account.annotations).toEqual({
       scriptid: 'custrecord_account',
       fieldtype: 'SELECT',
@@ -116,16 +115,17 @@ describe('custom record types filter', () => {
     await filterCreator({
       ...filterOpts,
       isPartial: true,
-      elementsSourceIndex: ({
-        getIndexes: () => Promise.resolve({
-          serviceIdRecordsIndex: {
-            customrecord2: {
-              elemID: new ElemID(NETSUITE, 'customrecord2', 'attr', 'scriptid'),
-              serviceID: 'customrecord2',
+      elementsSourceIndex: {
+        getIndexes: () =>
+          Promise.resolve({
+            serviceIdRecordsIndex: {
+              customrecord2: {
+                elemID: new ElemID(NETSUITE, 'customrecord2', 'attr', 'scriptid'),
+                serviceID: 'customrecord2',
+              },
             },
-          },
-        }),
-      } as unknown as LazyElementsSourceIndexes),
+          }),
+      } as unknown as LazyElementsSourceIndexes,
       elementsSource: {
         list: async () => awu([dataType.elemID]),
       } as unknown as ReadOnlyElementsSource,

@@ -1,20 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { isObjectType, ObjectType, ListType, BuiltinTypes, TypeElement, MapType, FieldDefinition, ElemID, isListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  isObjectType,
+  ObjectType,
+  ListType,
+  BuiltinTypes,
+  TypeElement,
+  MapType,
+  FieldDefinition,
+  ElemID,
+  isListType,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { types as lowerdashTypes } from '@salto-io/lowerdash'
@@ -26,14 +37,10 @@ import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
 
 const log = logger(module)
 
-const generateNestedType = (args: lowerdashTypes.PickyRequired<GenerateTypeArgs, 'parentName'>): NestedTypeWithNestedTypes => {
-  const {
-    typeName,
-    parentName,
-    entries,
-    isUnknownEntry,
-    isMapWithDynamicType,
-  } = args
+const generateNestedType = (
+  args: lowerdashTypes.PickyRequired<GenerateTypeArgs, 'parentName'>,
+): NestedTypeWithNestedTypes => {
+  const { typeName, parentName, entries, isUnknownEntry, isMapWithDynamicType } = args
 
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
 
@@ -57,9 +64,9 @@ const generateNestedType = (args: lowerdashTypes.PickyRequired<GenerateTypeArgs,
     })
     return {
       type: new ListType(nestedType.type),
-      nestedTypes: (isObjectType(nestedType.type)
+      nestedTypes: isObjectType(nestedType.type)
         ? [nestedType.type, ...nestedType.nestedTypes]
-        : nestedType.nestedTypes),
+        : nestedType.nestedTypes,
     }
   }
   if (isMapWithDynamicType) {
@@ -70,9 +77,9 @@ const generateNestedType = (args: lowerdashTypes.PickyRequired<GenerateTypeArgs,
     })
     return {
       type: new MapType(nestedType.type),
-      nestedTypes: (isObjectType(nestedType.type)
+      nestedTypes: isObjectType(nestedType.type)
         ? [nestedType.type, ...nestedType.nestedTypes]
-        : nestedType.nestedTypes),
+        : nestedType.nestedTypes,
     }
   }
 
@@ -112,9 +119,7 @@ const generateNestedType = (args: lowerdashTypes.PickyRequired<GenerateTypeArgs,
   }
 }
 
-const isItemsOnlyObjectType = (type: ObjectType): boolean => (
-  _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
-)
+const isItemsOnlyObjectType = (type: ObjectType): boolean => _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
 
 const normalizeType = (type: ObjectType): ObjectType => {
   if (type !== undefined && isItemsOnlyObjectType(type)) {
@@ -144,7 +149,7 @@ const normalizeType = (type: ObjectType): ObjectType => {
  * Note: field customizations should be applied separately, once all types have been created
  */
 export const generateType = (
-  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType'>
+  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType'>,
 ): ObjectTypeWithNestedTypes => {
   const {
     adapterName,
@@ -180,15 +185,13 @@ export const generateType = (
 
   const naclName = naclCase(typeName)
   const path = [
-    adapterName, TYPES_PATH,
-    ...(isSubType
-      ? [SUBTYPES_PATH, ...naclName.split(NESTING_SEPARATOR).map(pathNaclCase)]
-      : [pathNaclCase(naclName)])]
+    adapterName,
+    TYPES_PATH,
+    ...(isSubType ? [SUBTYPES_PATH, ...naclName.split(NESTING_SEPARATOR).map(pathNaclCase)] : [pathNaclCase(naclName)]),
+  ]
 
   const nestedTypes: ObjectType[] = []
-  const addNestedType = (
-    typeWithNested: NestedTypeWithNestedTypes
-  ): TypeElement => {
+  const addNestedType = (typeWithNested: NestedTypeWithNestedTypes): TypeElement => {
     if (isObjectType(typeWithNested.type)) {
       nestedTypes.push(typeWithNested.type)
     }
@@ -197,23 +200,24 @@ export const generateType = (
   }
 
   const fields: Record<string, FieldDefinition> = Object.fromEntries(
-    _.uniq(entries.flatMap(e => Object.keys(e)))
-      .map(key => {
-        const fieldName = naclCase(key)
-        return [
-          fieldName,
-          {
-            refType: addNestedType(generateNestedType({
+    _.uniq(entries.flatMap(e => Object.keys(e))).map(key => {
+      const fieldName = naclCase(key)
+      return [
+        fieldName,
+        {
+          refType: addNestedType(
+            generateNestedType({
               ...args,
               typeName: fieldName,
               parentName: typeName,
               entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
               typeNameOverrides: typesToRename,
               isMapWithDynamicType: elementDef?.fieldCustomizations?.[fieldName]?.isMapWithDynamicType,
-            })),
-          },
-        ]
-      })
+            }),
+          ),
+        },
+      ]
+    }),
   )
 
   const { topLevel } = elementDef ?? {}
@@ -224,9 +228,7 @@ export const generateType = (
     fields,
     path,
     isSettings: singleton ?? false,
-    annotations: hide
-      ? { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true }
-      : undefined,
+    annotations: hide ? { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } : undefined,
   })
 
   return { type, nestedTypes }

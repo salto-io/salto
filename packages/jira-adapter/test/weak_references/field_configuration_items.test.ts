@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -46,7 +46,7 @@ describe('field_configuration_items', () => {
           field1ConfigurationItem1: { description: '', isHidden: false, isRequired: false },
           field1ConfigurationItem2: { description: '', isHidden: false, isRequired: false },
         },
-      }
+      },
     )
   })
   describe('findWeakReferences', () => {
@@ -54,8 +54,16 @@ describe('field_configuration_items', () => {
       const references = await fieldConfigurationsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([
-        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem1'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem2'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
+        {
+          source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem1'),
+          target: fieldConfigurationItemInstance.elemID,
+          type: 'weak',
+        },
+        {
+          source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem2'),
+          target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'),
+          type: 'weak',
+        },
       ])
     })
 
@@ -83,7 +91,8 @@ describe('field_configuration_items', () => {
           elemID: instance.elemID.createNestedID('fields'),
           severity: 'Info',
           message: 'Deploying field configuration without all of its fields',
-          detailedMessage: 'This field configuration references some fields that do not exist in the target environment. It will be deployed without them.',
+          detailedMessage:
+            'This field configuration references some fields that do not exist in the target environment. It will be deployed without them.',
         },
       ])
 
@@ -114,9 +123,7 @@ describe('field_configuration_items', () => {
     })
 
     it('should do nothing if all field configuration items are valid', async () => {
-      instance.value.fields = [
-        { description: '', isHidden: false, isRequired: false },
-      ]
+      instance.value.fields = [{ description: '', isHidden: false, isRequired: false }]
       const fixes = await fieldConfigurationsHandler.removeWeakReferences({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])

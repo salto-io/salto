@@ -1,29 +1,62 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
+import {
+  Change,
+  InstanceElement,
+  Element,
+  isInstanceChange,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isAdditionChange,
+  AdditionChange,
+  isInstanceElement,
+  ElemID,
+  ReadOnlyElementsSource,
+  Values,
+  isModificationChange,
+  ModificationChange,
+  isObjectType,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
+import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD, ACTIVE_STATUS, SAML_2_0_APP } from '../constants'
+import {
+  APPLICATION_TYPE_NAME,
+  INACTIVE_STATUS,
+  OKTA,
+  ORG_SETTING_TYPE_NAME,
+  CUSTOM_NAME_FIELD,
+  ACTIVE_STATUS,
+  SAML_2_0_APP,
+} from '../constants'
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange, deployEdges, deployStatusChange, getOktaError, isActivationChange, isDeactivationChange } from '../deployment'
+import {
+  deployChanges,
+  defaultDeployChange,
+  deployEdges,
+  deployStatusChange,
+  getOktaError,
+  isActivationChange,
+  isDeactivationChange,
+} from '../deployment'
 
 const log = logger(module)
 
@@ -65,14 +98,16 @@ const EXPECTED_APP_SCHEMA = Joi.object({
   signOnMode: Joi.string().required(),
 }).unknown(true)
 
-export const isAppResponse = createSchemeGuard<Application>(EXPECTED_APP_SCHEMA, 'Received an invalid application response')
-
-const isCustomApp = (value: Values, subdomain: string): boolean => (
-  [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode)
-  && value.name !== undefined
-  // custom app names starts with subdomain and '_'
-  && _.startsWith(value.name, `${subdomain}_`)
+export const isAppResponse = createSchemeGuard<Application>(
+  EXPECTED_APP_SCHEMA,
+  'Received an invalid application response',
 )
+
+const isCustomApp = (value: Values, subdomain: string): boolean =>
+  [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) &&
+  value.name !== undefined &&
+  // custom app names starts with subdomain and '_'
+  _.startsWith(value.name, `${subdomain}_`)
 
 const assignNameToCustomApp = (
   change: AdditionChange<InstanceElement>,
@@ -89,7 +124,7 @@ const assignNameToCustomApp = (
 
 const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSource): Promise<string | undefined> => {
   const orgSettingInstance = await elementsSource.get(
-    new ElemID(OKTA, ORG_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+    new ElemID(OKTA, ORG_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
   )
   if (!isInstanceElement(orgSettingInstance)) {
     log.error(`Failed to get ${ORG_SETTING_TYPE_NAME} instance, can not find subdomain`)
@@ -99,10 +134,10 @@ const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSo
 }
 
 export const isInactiveCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
-  change.data.before.value.status === INACTIVE_STATUS
-    && change.data.after.value.status === INACTIVE_STATUS
-    // customName field only exist in custom applications
-    && getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
+  change.data.before.value.status === INACTIVE_STATUS &&
+  change.data.after.value.status === INACTIVE_STATUS &&
+  // customName field only exist in custom applications
+  getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 
 const deployApp = async (
   change: Change<InstanceElement>,
@@ -111,38 +146,41 @@ const deployApp = async (
   subdomain?: string,
 ): Promise<void> => {
   const { fieldsToHide } = configUtils.getTypeTransformationConfig(
-    APPLICATION_TYPE_NAME, apiDefinitions.types, apiDefinitions.typeDefaults
+    APPLICATION_TYPE_NAME,
+    apiDefinitions.types,
+    apiDefinitions.typeDefaults,
   )
-  const fieldsToIgnore = [
-    ...Object.keys(APP_ASSIGNMENT_FIELDS),
-    ...(fieldsToHide ?? []).map(f => f.fieldName),
-  ]
+  const fieldsToIgnore = [...Object.keys(APP_ASSIGNMENT_FIELDS), ...(fieldsToHide ?? []).map(f => f.fieldName)]
 
   try {
-    if (isModificationChange(change)
-      && (
-        isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+    if (
+      isModificationChange(change) &&
+      (isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
         // Custom app must be activated before applying any other changes
-        || isInactiveCustomAppChange(change)
-      )) {
+        isInactiveCustomAppChange(change))
+    ) {
       log.debug(`Changing status to ${ACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)
       await deployStatusChange(change, client, apiDefinitions, 'activate')
     }
 
     const response = await defaultDeployChange(
-      change,
+      isModificationChange(change)
+        ? deployment.transformRemovedValuesToNull(_.cloneDeep(change), ['settings'])
+        : change,
       client,
       apiDefinitions,
       fieldsToIgnore,
       // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
-      isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
+      isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS
+        ? { activate: 'false' }
+        : undefined,
     )
 
-    if (isModificationChange(change)
-      && (
-        isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
-        || isInactiveCustomAppChange(change)
-      )) {
+    if (
+      isModificationChange(change) &&
+      (isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status }) ||
+        isInactiveCustomAppChange(change))
+    ) {
       log.debug(`Changing status to ${INACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)
       await deployStatusChange(change, client, apiDefinitions, 'deactivate')
     }
@@ -166,8 +204,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
   name: 'appDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
-    const appInstances = instances
-      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
+    const appInstances = instances.filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
     // OrgSetting is settings type
     const orgInstance = instances.find(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
     const subdomain = orgInstance?.value?.subdomain
@@ -197,25 +234,21 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .forEach(
-        instance => {
-          const { customName } = instance.value
-          if (customName !== undefined) {
-            instance.value.name = customName
-          }
+      .forEach(instance => {
+        const { customName } = instance.value
+        if (customName !== undefined) {
+          instance.value.name = customName
         }
-      )
+      })
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-            && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME,
     )
     const subdomain = await getSubdomainFromElementsSource(elementsSource)
-    const deployResult = await deployChanges(
-      relevantChanges.filter(isInstanceChange),
-      async change => deployApp(change, client, config[API_DEFINITIONS_CONFIG], subdomain)
+    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
+      deployApp(change, client, config[API_DEFINITIONS_CONFIG], subdomain),
     )
 
     return {
@@ -228,14 +261,12 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .forEach(
-        instance => {
-          const { customName } = instance.value
-          if (customName !== undefined) {
-            delete instance.value.name
-          }
+      .forEach(instance => {
+        const { customName } = instance.value
+        if (customName !== undefined) {
+          delete instance.value.name
         }
-      )
+      })
   },
 })
 

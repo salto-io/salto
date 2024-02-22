@@ -1,53 +1,70 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
-  PrimitiveTypes, BuiltinTypes, StaticFile, ListType,
+  ObjectType,
+  InstanceElement,
+  ElemID,
+  ChangeError,
+  SaltoError,
+  PrimitiveType,
+  PrimitiveTypes,
+  BuiltinTypes,
+  StaticFile,
+  ListType,
 } from '@salto-io/adapter-api'
 import { EOL } from 'os'
 import { DeployError, FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
-import { formatExecutionPlan, formatChange,
-  formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign, deployErrorsOutput } from '../src/formatter'
+import {
+  formatExecutionPlan,
+  formatChange,
+  formatFetchChangeForApproval,
+  formatWorkspaceError,
+  formatChangeErrors,
+  formatConfigChangeNeeded,
+  formatShouldChangeFetchModeToAlign,
+  deployErrorsOutput,
+} from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
 describe('formatter', () => {
   const workspaceErrorWithSourceLocations: wsErrors.WorkspaceError<SaltoError> = {
-    sourceLocations: [{
-      sourceRange: {
-        start: { byte: 20, col: 10, line: 2 },
-        end: { byte: 30, col: 10, line: 3 },
-        filename: 'test.nacl',
+    sourceLocations: [
+      {
+        sourceRange: {
+          start: { byte: 20, col: 10, line: 2 },
+          end: { byte: 30, col: 10, line: 3 },
+          filename: 'test.nacl',
+        },
+        subRange: {
+          start: { line: 2, col: 3, byte: 30 },
+          end: { line: 2, col: 4, byte: 31 },
+          filename: 'test.nacl',
+        },
       },
-      subRange: {
-        start: { line: 2, col: 3, byte: 30 },
-        end: { line: 2, col: 4, byte: 31 },
-        filename: 'test.nacl',
+      {
+        sourceRange: {
+          start: { byte: 100, col: 10, line: 10 },
+          end: { byte: 150, col: 10, line: 15 },
+          filename: 'test.nacl',
+        },
       },
-    },
-    {
-      sourceRange: {
-        start: { byte: 100, col: 10, line: 10 },
-        end: { byte: 150, col: 10, line: 15 },
-        filename: 'test.nacl',
-      },
-    }],
+    ],
     message: 'This is my error',
     severity: 'Error',
   }
@@ -64,10 +81,7 @@ describe('formatter', () => {
     deployActions: {
       preAction: {
         title: 'This is my title',
-        subActions: [
-          'first subtext',
-          'second subtext',
-        ],
+        subActions: ['first subtext', 'second subtext'],
       },
     },
   }
@@ -77,44 +91,45 @@ describe('formatter', () => {
     detailedMessage: '',
     severity: 'Info',
   }
-  const workspaceDeployProblems: DeployError[] = [{
-    elemID: new ElemID('salesforce', 'TestType1'),
-    message: 'my error message 1',
-    severity: 'Error',
-    groupId: 'test group',
-  },
-  {
-    elemID: new ElemID('salesforce', 'TestType2'),
-    message: 'my error message 2',
-    severity: 'Error',
-    groupId: 'test group',
-  },
-  {
-    elemID: new ElemID('salesforce', 'TestType3'),
-    message: 'my warning message',
-    severity: 'Warning',
-    groupId: 'test group',
-  },
-  {
-    elemID: new ElemID('salesforce', 'TestType4'),
-    message: 'my info message',
-    severity: 'Info',
-    groupId: 'test group',
-  }]
+  const workspaceDeployProblems: DeployError[] = [
+    {
+      elemID: new ElemID('salesforce', 'TestType1'),
+      message: 'my error message 1',
+      severity: 'Error',
+      groupId: 'test group',
+    },
+    {
+      elemID: new ElemID('salesforce', 'TestType2'),
+      message: 'my error message 2',
+      severity: 'Error',
+      groupId: 'test group',
+    },
+    {
+      elemID: new ElemID('salesforce', 'TestType3'),
+      message: 'my warning message',
+      severity: 'Warning',
+      groupId: 'test group',
+    },
+    {
+      elemID: new ElemID('salesforce', 'TestType4'),
+      message: 'my info message',
+      severity: 'Info',
+      groupId: 'test group',
+    },
+  ]
 
   describe('createPlanOutput', () => {
     const plan = preview()
-    const changeErrors = [
-      ...plan.changeErrors,
-      workspaceErrorWithPreDeployAction,
-      workspaceErrorWithInfoSeverity,
-    ]
+    const changeErrors = [...plan.changeErrors, workspaceErrorWithPreDeployAction, workspaceErrorWithInfoSeverity]
     let output: string
     beforeAll(async () => {
-      output = await formatExecutionPlan(plan, changeErrors.map(ce => ({
-        ...ce,
-        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-      })))
+      output = await formatExecutionPlan(
+        plan,
+        changeErrors.map(ce => ({
+          ...ce,
+          sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+        })),
+      )
     })
 
     it('should return type field addition', () => {
@@ -140,45 +155,49 @@ describe('formatter', () => {
         [workspaceErrorWithInfoSeverity].map(ce => ({
           ...ce,
           sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-        }))
+        })),
       )
       expect(outputWithNoDeployActions).not.toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
     })
   })
 
   describe('formatPlanValidations', () => {
-    const groupedChangeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-      elemID: new ElemID('salesforce', 'test1'),
-      severity: 'Error',
-      message: 'Message key for test',
-      detailedMessage: 'Validation message 1',
-      sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-
-    },
-    {
-      elemID: new ElemID('salesforce', 'test2'),
-      severity: 'Error',
-      message: 'Message key for test',
-      detailedMessage: 'Validation message 2',
-      sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-
-    }]
+    const groupedChangeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [
+      {
+        elemID: new ElemID('salesforce', 'test1'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message 1',
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+      },
+      {
+        elemID: new ElemID('salesforce', 'test2'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message 2',
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+      },
+    ]
     it('should be empty when there are no validations', async () => {
-      const output = formatChangeErrors([],)
+      const output = formatChangeErrors([])
       expect(output).toEqual('')
     })
     it('should have single validation', () => {
-      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-        elemID: new ElemID('salesforce', 'test'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message',
-        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-      }]
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [
+        {
+          elemID: new ElemID('salesforce', 'test'),
+          severity: 'Error',
+          message: 'Message key for test',
+          detailedMessage: 'Validation message',
+          sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+        },
+      ]
       const output = formatChangeErrors(changeErrors)
       expect(output).toContain('Error')
       expect(output).toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
-      expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].sourceRange.filename}`, 's'))
+      expect(output).toMatch(
+        new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].sourceRange.filename}`, 's'),
+      )
     })
     it('should have grouped validations', () => {
       const output = formatChangeErrors(groupedChangeErrors)
@@ -194,55 +213,63 @@ describe('formatter', () => {
       expect(output).toMatch(expectedMessage)
     })
     it('should contain EOL between title and content', () => {
-      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-        elemID: new ElemID('salesforce', 'test'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message',
-        sourceLocations: [],
-      }]
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [
+        {
+          elemID: new ElemID('salesforce', 'test'),
+          severity: 'Error',
+          message: 'Message key for test',
+          detailedMessage: 'Validation message',
+          sourceLocations: [],
+        },
+      ]
       const output = formatChangeErrors(changeErrors)
       expect(output).toMatch(new RegExp(`${EOL} *Error`)) // "Error" is not proceeded by EOL with indentation
     })
     it('should not contain double EOL in change error with several locations', () => {
-      const changeErrorWithLocations: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-        sourceLocations: [{
-          sourceRange: {
-            start: { byte: 20, col: 10, line: 5 },
-            end: { byte: 30, col: 10, line: 3 },
-            filename: 'test.nacl',
-          },
-        },
+      const changeErrorWithLocations: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [
         {
-          sourceRange: {
-            start: { byte: 100, col: 10, line: 15 },
-            end: { byte: 150, col: 10, line: 15 },
-            filename: 'test.nacl',
-          },
+          sourceLocations: [
+            {
+              sourceRange: {
+                start: { byte: 20, col: 10, line: 5 },
+                end: { byte: 30, col: 10, line: 3 },
+                filename: 'test.nacl',
+              },
+            },
+            {
+              sourceRange: {
+                start: { byte: 100, col: 10, line: 15 },
+                end: { byte: 150, col: 10, line: 15 },
+                filename: 'test.nacl',
+              },
+            },
+            {
+              sourceRange: {
+                start: { byte: 100, col: 10, line: 25 },
+                end: { byte: 150, col: 10, line: 15 },
+                filename: 'test2.nacl',
+              },
+            },
+          ],
+          message: 'Operation not supported',
+          detailedMessage: 'Salto does not support "remove" of zendesk...',
+          severity: 'Error',
+          elemID: new ElemID('salesforce', 'test'),
         },
-        {
-          sourceRange: {
-            start: { byte: 100, col: 10, line: 25 },
-            end: { byte: 150, col: 10, line: 15 },
-            filename: 'test2.nacl',
-          },
-        }],
-        message: 'Operation not supported',
-        detailedMessage: 'Salto does not support "remove" of zendesk...',
-        severity: 'Error',
-        elemID: new ElemID('salesforce', 'test'),
-      }]
+      ]
       const output = formatChangeErrors(changeErrorWithLocations)
       expect(output).not.toMatch(new RegExp(`${EOL} *${EOL}`)) // does not contain two EOL with only indent between them
     })
     it('should contain space between title and content', () => {
-      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-        elemID: new ElemID('salesforce', 'test'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message',
-        sourceLocations: [],
-      }]
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [
+        {
+          elemID: new ElemID('salesforce', 'test'),
+          severity: 'Error',
+          message: 'Message key for test',
+          detailedMessage: 'Validation message',
+          sourceLocations: [],
+        },
+      ]
       const output = formatChangeErrors(changeErrors)
       expect(output).toContain(' Error')
     })
@@ -254,24 +281,28 @@ describe('formatter', () => {
         detailedMessage: 'Validation message 3',
         sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       }
-      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-        elemID: new ElemID('salesforce', 'test'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message',
-        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-      },
-      {
-        elemID: new ElemID('salesforce', 'test2'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message 2',
-        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-      },
-      differentValidationKey]
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [
+        {
+          elemID: new ElemID('salesforce', 'test'),
+          severity: 'Error',
+          message: 'Message key for test',
+          detailedMessage: 'Validation message',
+          sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+        },
+        {
+          elemID: new ElemID('salesforce', 'test2'),
+          severity: 'Error',
+          message: 'Message key for test',
+          detailedMessage: 'Validation message 2',
+          sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+        },
+        differentValidationKey,
+      ]
       const output = formatChangeErrors(changeErrors)
       expect(output).toContain('Error')
-      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*${EOL}.*${differentValidationKey.detailedMessage}`, 's'))
+      expect(output).toMatch(
+        new RegExp(`.*${changeErrors[0].message}.*${EOL}.*${differentValidationKey.detailedMessage}`, 's'),
+      )
     })
   })
 
@@ -405,10 +436,12 @@ describe('formatter', () => {
             filepath: 'road/to/nowhere',
             hash: 'asdasdasdasd',
           })
-          const fileChange = detailedChange('modify',
+          const fileChange = detailedChange(
+            'modify',
             instance.elemID.createNestedID('content'),
             staticFileBefore,
-            staticFileAfter)
+            staticFileAfter,
+          )
           output = await formatChange(fileChange, true)
           expect(output).toMatch('content')
           expect(output).not.toMatch('Buffer')

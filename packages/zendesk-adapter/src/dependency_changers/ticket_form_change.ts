@@ -1,25 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  Change, dependencyChange,
+  Change,
+  dependencyChange,
   DependencyChanger,
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, ReferenceExpression,
+  isInstanceChange,
+  isInstanceElement,
+  isReferenceExpression,
+  isRemovalChange,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
@@ -37,15 +42,16 @@ const { isDefined } = lowerDashValues
 export const ticketFormDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
-    .filter(
-      (change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
-        isInstanceChange(change.change)
+    .filter((change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
+      isInstanceChange(change.change),
     )
 
-  const ticketFormChanges = instanceChanges.filter(({ change }) =>
-    getChangeData(change).elemID.typeName === TICKET_FORM_TYPE_NAME)
-  const ticketFormOrderChange = instanceChanges
-    .find(change => getChangeData(change.change).elemID.typeName === TICKET_FORM_ORDER_TYPE_NAME)
+  const ticketFormChanges = instanceChanges.filter(
+    ({ change }) => getChangeData(change).elemID.typeName === TICKET_FORM_TYPE_NAME,
+  )
+  const ticketFormOrderChange = instanceChanges.find(
+    change => getChangeData(change.change).elemID.typeName === TICKET_FORM_ORDER_TYPE_NAME,
+  )
 
   // If the form_order did not change, there is nothing to do
   if (ticketFormOrderChange === undefined) {
@@ -53,33 +59,32 @@ export const ticketFormDependencyChanger: DependencyChanger = async changes => {
   }
 
   const ticketFormOrderValue = getChangeData(ticketFormOrderChange.change).value
-  const orderTicketForms = new Set((ticketFormOrderValue.active ?? []).concat(ticketFormOrderValue.inactive ?? [])
-  // Filter out referenceExpressions that are unresolved (which means they don't have a value)
-    .filter(isReferenceExpression).filter((ref: ReferenceExpression) => isInstanceElement(ref.value))
-    .map((ref: ReferenceExpression) => ref.value.elemID.getFullName())
-    .flat())
+  const orderTicketForms = new Set(
+    (ticketFormOrderValue.active ?? [])
+      .concat(ticketFormOrderValue.inactive ?? [])
+      // Filter out referenceExpressions that are unresolved (which means they don't have a value)
+      .filter(isReferenceExpression)
+      .filter((ref: ReferenceExpression) => isInstanceElement(ref.value))
+      .map((ref: ReferenceExpression) => ref.value.elemID.getFullName())
+      .flat(),
+  )
 
-
-  const addedFormsDependencies = ticketFormChanges.filter(change => isAdditionChange(change.change)).map(change => {
-    const ticketFormInstance = getChangeData(change.change)
-    // If we can't find the ticket_form in the ticket_form_order, add a dependency from the ticket form to the order
-    if (!orderTicketForms.has(ticketFormInstance.elemID.getFullName())) {
-      return dependencyChange(
-        'add',
-        change.key,
-        ticketFormOrderChange.key
-      )
-    }
-    return undefined
-  }).filter(isDefined)
+  const addedFormsDependencies = ticketFormChanges
+    .filter(change => isAdditionChange(change.change))
+    .map(change => {
+      const ticketFormInstance = getChangeData(change.change)
+      // If we can't find the ticket_form in the ticket_form_order, add a dependency from the ticket form to the order
+      if (!orderTicketForms.has(ticketFormInstance.elemID.getFullName())) {
+        return dependencyChange('add', change.key, ticketFormOrderChange.key)
+      }
+      return undefined
+    })
+    .filter(isDefined)
 
   // Forms need to be removed before the ticket_form_order, otherwise we will get an incomplete list error from zendesk
-  const removedFormsDependencies = ticketFormChanges.filter(change => isRemovalChange(change.change)).map(change =>
-    dependencyChange(
-      'add',
-      ticketFormOrderChange.key,
-      change.key
-    ))
+  const removedFormsDependencies = ticketFormChanges
+    .filter(change => isRemovalChange(change.change))
+    .map(change => dependencyChange('add', ticketFormOrderChange.key, change.key))
 
   return addedFormsDependencies.concat(removedFormsDependencies)
 }

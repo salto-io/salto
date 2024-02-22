@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
@@ -47,25 +47,23 @@ describe('jsp_deployment', () => {
       elemID: new ElemID(JIRA, 'test'),
     })
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        name: 'val',
-      }
-    )
+    instance = new InstanceElement('instance', type, {
+      name: 'val',
+    })
   })
 
   describe('on additions', () => {
     it('successful deploy should add id to the element', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          name: 'val',
-          self: 'someSelf',
-          ignored: 'ignored',
-        }],
+        data: [
+          {
+            id: '1',
+            name: 'val',
+            self: 'someSelf',
+            ignored: 'ignored',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ after: instance })],
@@ -80,12 +78,9 @@ describe('jsp_deployment', () => {
         id: '1',
         name: 'val',
       })
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        'https://jira.com/rest/api/2/query',
-        {
-          headers: PRIVATE_API_HEADERS,
-        }
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('https://jira.com/rest/api/2/query', {
+        headers: PRIVATE_API_HEADERS,
+      })
 
       expect(mockConnection.post).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/add',
@@ -94,7 +89,7 @@ describe('jsp_deployment', () => {
         }),
         {
           headers: JSP_API_HEADERS,
-        }
+        },
       )
     })
 
@@ -102,11 +97,13 @@ describe('jsp_deployment', () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
         data: {
-          inner: [{
-            id: '1',
-            name: 'val',
-            self: 'someSelf',
-          }],
+          inner: [
+            {
+              id: '1',
+              name: 'val',
+              self: 'someSelf',
+            },
+          ],
         },
       })
       const results = await deployWithJspEndpoints({
@@ -129,11 +126,13 @@ describe('jsp_deployment', () => {
     it('should use getNameFunction', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          val: 'val',
-          self: 'someSelf',
-        }],
+        data: [
+          {
+            id: '1',
+            val: 'val',
+            self: 'someSelf',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ after: instance })],
@@ -153,11 +152,13 @@ describe('jsp_deployment', () => {
     it('should return an error when there is no name in the service values', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          val: 'val',
-          self: 'someSelf',
-        }],
+        data: [
+          {
+            id: '1',
+            val: 'val',
+            self: 'someSelf',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ after: instance })],
@@ -185,11 +186,13 @@ describe('jsp_deployment', () => {
     it('When the created object is different should return an error', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          name: 'val2',
-          self: 'someSelf',
-        }],
+        data: [
+          {
+            id: '1',
+            name: 'val2',
+            self: 'someSelf',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ after: instance })],
@@ -222,11 +225,13 @@ describe('jsp_deployment', () => {
     it('successful deploy should return the change', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          name: 'val',
-          self: 'someSelf',
-        }],
+        data: [
+          {
+            id: '1',
+            name: 'val',
+            self: 'someSelf',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ before: instance, after: instance })],
@@ -240,12 +245,9 @@ describe('jsp_deployment', () => {
         id: '1',
         name: 'val',
       })
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        'https://jira.com/rest/api/2/query',
-        {
-          headers: PRIVATE_API_HEADERS,
-        }
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('https://jira.com/rest/api/2/query', {
+        headers: PRIVATE_API_HEADERS,
+      })
 
       expect(mockConnection.post).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/modify',
@@ -255,7 +257,7 @@ describe('jsp_deployment', () => {
         }),
         {
           headers: JSP_API_HEADERS,
-        }
+        },
       )
     })
 
@@ -276,11 +278,13 @@ describe('jsp_deployment', () => {
     it('When the modified object is different should return an error', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          name: 'val2',
-          self: 'someSelf',
-        }],
+        data: [
+          {
+            id: '1',
+            name: 'val2',
+            self: 'someSelf',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ before: instance, after: instance })],
@@ -294,11 +298,13 @@ describe('jsp_deployment', () => {
     it('When there is not url for modification, should throw', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          name: 'val',
-          self: 'someSelf',
-        }],
+        data: [
+          {
+            id: '1',
+            name: 'val',
+            self: 'someSelf',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ before: instance, after: instance })],
@@ -327,12 +333,9 @@ describe('jsp_deployment', () => {
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
 
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        'https://jira.com/rest/api/2/query',
-        {
-          headers: PRIVATE_API_HEADERS,
-        }
-      )
+      expect(mockConnection.get).toHaveBeenCalledWith('https://jira.com/rest/api/2/query', {
+        headers: PRIVATE_API_HEADERS,
+      })
 
       expect(mockConnection.post).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/remove',
@@ -344,17 +347,19 @@ describe('jsp_deployment', () => {
         }),
         {
           headers: JSP_API_HEADERS,
-        }
+        },
       )
     })
 
     it('When there is an id in the service should throw an error', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
-        data: [{
-          id: '1',
-          name: 'val',
-        }],
+        data: [
+          {
+            id: '1',
+            name: 'val',
+          },
+        ],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ before: instance })],
@@ -420,10 +425,12 @@ describe('jsp_deployment', () => {
     })
 
     it('Should not throw when the request fail and the instance is already deleted', async () => {
-      mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
-        status: 404,
-        data: {},
-      }))
+      mockConnection.post.mockRejectedValue(
+        new clientUtils.HTTPError('message', {
+          status: 404,
+          data: {},
+        }),
+      )
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
         data: [],
@@ -437,10 +444,12 @@ describe('jsp_deployment', () => {
       expect(results.appliedChanges).toHaveLength(1)
     })
     it('Should throw when the request fail with 500', async () => {
-      mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
-        status: 500,
-        data: {},
-      }))
+      mockConnection.post.mockRejectedValue(
+        new clientUtils.HTTPError('message', {
+          status: 500,
+          data: {},
+        }),
+      )
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
         data: [],

@@ -1,21 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  FetchResult, AdapterOperations, DeployResult, PostFetchOptions, DeployModifiers,
-  FetchOptions, ElemIdGetter,
+  FetchResult,
+  AdapterOperations,
+  DeployResult,
+  PostFetchOptions,
+  DeployModifiers,
+  FetchOptions,
+  ElemIdGetter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
@@ -67,12 +72,7 @@ export default class WorkatoAdapter implements AdapterOperations {
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
 
-  public constructor({
-    filterCreators = DEFAULT_FILTERS,
-    client,
-    getElemIdFunc,
-    config,
-  }: WorkatoAdapterParams) {
+  public constructor({ filterCreators = DEFAULT_FILTERS, client, getElemIdFunc, config }: WorkatoAdapterParams) {
     this.userConfig = config
     this.client = client
     this.getElemIdFunc = getElemIdFunc
@@ -81,23 +81,21 @@ export default class WorkatoAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
-    this.fetchQuery = elementUtils.query.createElementQuery(
-      this.userConfig[FETCH_CONFIG],
-      fetchCriteria,
-    )
-    this.createFiltersRunner = () => filtersRunner(
-      {
-        client,
-        paginator,
-        config: {
-          fetch: config.fetch,
-          apiDefinitions: config.apiDefinitions,
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
+    this.createFiltersRunner = () =>
+      filtersRunner(
+        {
+          client,
+          paginator,
+          config: {
+            fetch: config.fetch,
+            apiDefinitions: config.apiDefinitions,
+          },
+          getElemIdFunc,
+          fetchQuery: this.fetchQuery,
         },
-        getElemIdFunc,
-        fetchQuery: this.fetchQuery,
-      },
-      filterCreators,
-    )
+        filterCreators,
+      )
   }
 
   @logDuration('generating instances and types from service')

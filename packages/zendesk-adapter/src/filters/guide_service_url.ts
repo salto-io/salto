@@ -1,25 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  CORE_ANNOTATIONS,
-  Element,
-  InstanceElement,
-  isInstanceElement,
-  isPrimitiveValue,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import {
@@ -29,7 +23,9 @@ import {
   SECTION_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
-  GUIDE_SETTINGS_TYPE_NAME, BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_SETTINGS_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../constants'
 
 const PARAM_MATCH = /\{([\w_.]+)}/g
@@ -50,25 +46,23 @@ const SERVICE_URL_FOR_GUIDE: Record<string, string> = {
 }
 
 const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =>
-  url.replace(
-    PARAM_MATCH,
-    val => {
-      let replacement
-      if (val.slice(1, -1).startsWith('_')) { // meaning that it refers to an annotation
-        replacement = _.get(instance.annotations, val.slice(1, -1)) ?? val
-      } else {
-        replacement = instance.value[val.slice(1, -1)] ?? val
-      }
-      if (!isPrimitiveValue(replacement)) {
-        throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
-      }
-      return replacement.toString()
+  url.replace(PARAM_MATCH, val => {
+    let replacement
+    if (val.slice(1, -1).startsWith('_')) {
+      // meaning that it refers to an annotation
+      replacement = _.get(instance.annotations, val.slice(1, -1)) ?? val
+    } else {
+      replacement = instance.value[val.slice(1, -1)] ?? val
     }
-  )
+    if (!isPrimitiveValue(replacement)) {
+      throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
+    }
+    return replacement.toString()
+  })
 
-const createServiceUrl = (instance: InstanceElement, baseUrl:string): void => {
+const createServiceUrl = (instance: InstanceElement, baseUrl: string): void => {
   const url = replaceUrlParamsBrand(SERVICE_URL_FOR_GUIDE[instance.elemID.typeName], instance)
-  instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href
+  instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, baseUrl).href
 }
 
 /**

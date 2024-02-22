@@ -1,21 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ElemID, INSTANCE_ANNOTATIONS, GLOBAL_ADAPTER } from './element_id'
-import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType, BuiltinTypesRefByFullName } from './elements'
+import {
+  Element,
+  TypeMap,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  ListType,
+  BuiltinTypesRefByFullName,
+} from './elements'
 import { TypeReference } from './values'
 import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
 
@@ -59,46 +67,25 @@ const restrictionType = new ObjectType({
   fields: {
     // eslint-disable-next-line camelcase
     enforce_value: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.BOOLEAN.elemID,
-        StandardBuiltinTypes.BOOLEAN,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.BOOLEAN.elemID, StandardBuiltinTypes.BOOLEAN),
     },
     values: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.STRING.elemID,
-        StandardBuiltinTypes.STRING,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.STRING.elemID, StandardBuiltinTypes.STRING),
     },
     min: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.NUMBER.elemID,
-        StandardBuiltinTypes.NUMBER,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.NUMBER.elemID, StandardBuiltinTypes.NUMBER),
     },
     max: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.NUMBER.elemID,
-        StandardBuiltinTypes.NUMBER,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.NUMBER.elemID, StandardBuiltinTypes.NUMBER),
     },
     regex: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.STRING.elemID,
-        StandardBuiltinTypes.STRING,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.STRING.elemID, StandardBuiltinTypes.STRING),
     },
     max_length: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.NUMBER.elemID,
-        StandardBuiltinTypes.NUMBER,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.NUMBER.elemID, StandardBuiltinTypes.NUMBER),
     },
     max_list_length: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.NUMBER.elemID,
-        StandardBuiltinTypes.NUMBER
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.NUMBER.elemID, StandardBuiltinTypes.NUMBER),
     },
   },
 })
@@ -107,24 +94,15 @@ export const importantValueType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.IMPORTANT_VALUE),
   fields: {
     value: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.STRING.elemID,
-        StandardBuiltinTypes.STRING,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.STRING.elemID, StandardBuiltinTypes.STRING),
       annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
     },
     indexed: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.BOOLEAN.elemID,
-        StandardBuiltinTypes.BOOLEAN,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.BOOLEAN.elemID, StandardBuiltinTypes.BOOLEAN),
       annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
     },
     highlighted: {
-      refType: new TypeReference(
-        StandardBuiltinTypes.BOOLEAN.elemID,
-        StandardBuiltinTypes.BOOLEAN,
-      ),
+      refType: new TypeReference(StandardBuiltinTypes.BOOLEAN.elemID, StandardBuiltinTypes.BOOLEAN),
       annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
     },
   },
@@ -192,13 +170,11 @@ export const BuiltinTypes = {
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export const isServiceId = (type: any): boolean =>
-  type.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] ?? false
+export const isServiceId = (type: any): boolean => type.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] ?? false
 
-export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
-  Object.values(BuiltinTypes),
-  builtinType => builtinType.elemID.getFullName(),
-))
+export const BuiltinTypesByFullName: Record<string, PrimitiveType> = _.keyBy(Object.values(BuiltinTypes), builtinType =>
+  builtinType.elemID.getFullName(),
+)
 
 // This is a pretty big hack: the map is created in elements, because it is used in
 // the Element constructor. But it can only be initialized here, after types have been defined.
@@ -231,11 +207,8 @@ export const CoreAnnotationTypes: TypeMap = {
   [CORE_ANNOTATIONS.DELETABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
 }
 
-export const getRestriction = (
-  { annotations }: { annotations: Element['annotations'] },
-): RestrictionAnnotationType => (
+export const getRestriction = ({ annotations }: { annotations: Element['annotations'] }): RestrictionAnnotationType =>
   annotations[CORE_ANNOTATIONS.RESTRICTION] ?? {}
-)
 
 // Hack to get typescript to enforce the type
 export const createRestriction = (def: RestrictionAnnotationType): RestrictionAnnotationType => def

@@ -1,19 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, Element } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Element,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
@@ -125,9 +132,17 @@ describe('add alias filter', () => {
       [IS_SUB_INSTANCE]: true,
     })
 
-
     translationCollectionInstance = new InstanceElement('custtranslation1', translationcollection, {
-      name: new ReferenceExpression(translationcollection.elemID.createNestedID('instance', 'custtranslation1', 'strings', 'string', 'self', SCRIPT_ID)),
+      name: new ReferenceExpression(
+        translationcollection.elemID.createNestedID(
+          'instance',
+          'custtranslation1',
+          'strings',
+          'string',
+          'self',
+          SCRIPT_ID,
+        ),
+      ),
       strings: {
         string: {
           self: {
@@ -150,17 +165,23 @@ describe('add alias filter', () => {
       },
     })
     standardInstanceWithTranslation = new InstanceElement('customworkflow2', workflow, {
-      name: new ReferenceExpression(translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customworkflow', SCRIPT_ID)),
+      name: new ReferenceExpression(
+        translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customworkflow', SCRIPT_ID),
+      ),
     })
     customRecordTypeWithTranslation = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord2'),
       annotations: {
-        recordname: new ReferenceExpression(translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customrecord', SCRIPT_ID)),
+        recordname: new ReferenceExpression(
+          translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customrecord', SCRIPT_ID),
+        ),
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
     segmentInstanceWithTranslation = new InstanceElement('cseg2', customsegment, {
-      label: new ReferenceExpression(translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customsegment', SCRIPT_ID)),
+      label: new ReferenceExpression(
+        translationCollectionInstance.elemID.createNestedID('strings', 'string', 'customsegment', SCRIPT_ID),
+      ),
     })
     customRecordTypeWithSegmentWithTranslation = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord_cseg2'),
@@ -253,7 +274,9 @@ describe('add alias filter', () => {
     expect(standardInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Workflow')
     expect(customRecordTypeWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Record Type')
     expect(segmentInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
-    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
+    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+      'Translated Custom Segment',
+    )
   })
   it('should take translated names from element source on partial fetch', async () => {
     await filterCreator(optsWithAliasAndIsPartial).onFetch?.([
@@ -265,6 +288,8 @@ describe('add alias filter', () => {
     expect(standardInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Workflow')
     expect(customRecordTypeWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Record Type')
     expect(segmentInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
-    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Segment')
+    expect(customRecordTypeWithSegmentWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual(
+      'Translated Custom Segment',
+    )
   })
 })

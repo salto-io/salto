@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import { ElementsAndErrors } from '../../definitions/system/fetch/element'
 import { generateType } from './type_element'
@@ -29,7 +29,7 @@ const log = logger(module)
  * since there might be some overlaps between subtypes.
  */
 export const generateInstancesWithInitialTypes = (
-  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>
+  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
 ): ElementsAndErrors => {
   const { defQuery, entries, adapterName, typeName, getElemIdFunc } = args
   const { element: elementDef } = defQuery.query(typeName) ?? {}
@@ -47,7 +47,9 @@ export const generateInstancesWithInitialTypes = (
 
   if (elementDef.topLevel.singleton && entries.length !== 1) {
     log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
-    throw new InvalidSingletonType(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
+    throw new InvalidSingletonType(
+      `Could not fetch type ${typeName}, singleton types should not have more than one instance`,
+    )
   }
 
   // create a temporary type recursively so we can correctly extract standalone instances
@@ -57,14 +59,16 @@ export const generateInstancesWithInitialTypes = (
   // TODO should also nacl-case field names on predefined fields similarly (SALTO-5422)
   const instances = entries
     .map(value => toInstanceValue({ value, type, defQuery }))
-    .map((entry, index) => createInstance({
-      entry,
-      type,
-      toElemName,
-      toPath,
-      // TODO pick better default name, include service id
-      defaultName: `unnamed_${index}`,
-    }))
+    .map((entry, index) =>
+      createInstance({
+        entry,
+        type,
+        toElemName,
+        toPath,
+        // TODO pick better default name, include service id
+        defaultName: `unnamed_${index}`,
+      }),
+    )
 
   // TODO filter instances by fetch query before extracting standalone fields (SALTO-5425)
 

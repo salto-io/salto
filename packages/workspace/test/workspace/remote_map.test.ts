@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { collections } from '@salto-io/lowerdash'
 import { isObjectType, ObjectType, ElemID, Element } from '@salto-io/adapter-api'
 import { InMemoryRemoteMap, RemoteMap, mapRemoteMapResult } from '../../src/workspace/remote_map'
@@ -42,12 +42,10 @@ describe('remote map', () => {
     })
     describe('getMany', () => {
       it('should return correct value', async () => {
-        expect(await inMemRemoteMap.getMany([testKey1, testKey2]))
-          .toEqual([testVal1, testVal2])
+        expect(await inMemRemoteMap.getMany([testKey1, testKey2])).toEqual([testVal1, testVal2])
       })
       it('should return undefined if key does not exist', async () => {
-        expect(await inMemRemoteMap.getMany(['not-exist', testKey1]))
-          .toEqual([undefined, testVal1])
+        expect(await inMemRemoteMap.getMany(['not-exist', testKey1])).toEqual([undefined, testVal1])
       })
     })
     describe('has', () => {
@@ -77,7 +75,7 @@ describe('remote map', () => {
           awu([
             { key: testKey1, value: testVal2 },
             { key: testKey2, value: testVal1 },
-          ])
+          ]),
         )
         expect(await inMemRemoteMap.get(testKey1)).toEqual(testVal2)
         expect(await inMemRemoteMap.get(testKey2)).toEqual(testVal1)
@@ -101,8 +99,10 @@ describe('remote map', () => {
     })
     describe('entries', () => {
       it('should return all entries', async () => {
-        expect(await awu(inMemRemoteMap.entries()).toArray())
-          .toEqual([{ key: testKey1, value: testVal1 }, { key: testKey2, value: testVal2 }])
+        expect(await awu(inMemRemoteMap.entries()).toArray()).toEqual([
+          { key: testKey1, value: testVal1 },
+          { key: testKey2, value: testVal2 },
+        ])
       })
     })
     describe('flush', () => {
@@ -145,7 +145,7 @@ describe('mapRemoteMapValues', () => {
     })
     const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
     const mappedSource = mapRemoteMapResult(source, mapper)
-    const mappedObj = await mappedSource.get(obj.elemID.getFullName()) as ObjectType
+    const mappedObj = (await mappedSource.get(obj.elemID.getFullName())) as ObjectType
     expect(mappedObj.annotations).toEqual({
       ...obj.annotations,
       new: 'NEW',
@@ -162,10 +162,12 @@ describe('mapRemoteMapValues', () => {
     const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
     const mappedSource = mapRemoteMapResult(source, mapper)
     const mappedObjs = await awu(mappedSource.values()).toArray()
-    expect(mappedObjs.map(e => e.annotations)).toEqual([{
-      ...obj.annotations,
-      new: 'NEW',
-    }])
+    expect(mappedObjs.map(e => e.annotations)).toEqual([
+      {
+        ...obj.annotations,
+        new: 'NEW',
+      },
+    ])
   })
 
   it('should map elements obtained via entries', async () => {
@@ -178,10 +180,12 @@ describe('mapRemoteMapValues', () => {
     const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
     const mappedSource = mapRemoteMapResult(source, mapper)
     const mappedObjs = (await awu(mappedSource.entries()).toArray()).map(entry => entry.value)
-    expect(mappedObjs.map(e => e.annotations)).toEqual([{
-      ...obj.annotations,
-      new: 'NEW',
-    }])
+    expect(mappedObjs.map(e => e.annotations)).toEqual([
+      {
+        ...obj.annotations,
+        new: 'NEW',
+      },
+    ])
   })
 
   it('should not effect the original source', async () => {
@@ -194,10 +198,12 @@ describe('mapRemoteMapValues', () => {
     const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
     const mappedSource = mapRemoteMapResult(source, mapper)
     const mappedObjs = await awu(mappedSource.values()).toArray()
-    expect(mappedObjs.map(e => e.annotations)).toEqual([{
-      ...obj.annotations,
-      new: 'NEW',
-    }])
+    expect(mappedObjs.map(e => e.annotations)).toEqual([
+      {
+        ...obj.annotations,
+        new: 'NEW',
+      },
+    ])
     const origObjs = await awu(source.values()).toArray()
     expect(origObjs.map(e => e.annotations)).toEqual([obj.annotations])
   })

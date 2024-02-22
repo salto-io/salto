@@ -1,24 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import path from 'path'
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
 import { setupTmpDir } from '@salto-io/test-utils'
 import { writeFile, readDir } from '@salto-io/file'
-import { createFileStateContentProvider, StateContentProvider } from '../../../../../src/local-workspace/state/content_providers'
+import {
+  createFileStateContentProvider,
+  StateContentProvider,
+} from '../../../../../src/local-workspace/state/content_providers'
 
 const { awu } = collections.asynciterable
 
@@ -33,17 +36,15 @@ describe('createFileStateContentProvider', () => {
   const envPrefix = (): string => path.join(testDir.name(), 'env')
   beforeEach(async () => {
     await Promise.all(
-      accountNames.map(name => writeFile(path.join(testDir.name(), `env.${name}.jsonl.zip`), 'stateData'))
+      accountNames.map(name => writeFile(path.join(testDir.name(), `env.${name}.jsonl.zip`), 'stateData')),
     )
-    await Promise.all(
-      nonStateFiles.map(name => writeFile(path.join(testDir.name(), name), 'data'))
-    )
+    await Promise.all(nonStateFiles.map(name => writeFile(path.join(testDir.name(), name), 'data')))
   })
 
   describe('findStateFiles', () => {
     it('should match only file names of the correct environment state files', async () => {
       expect(await provider.findStateFiles(envPrefix())).toIncludeSameMembers(
-        accountNames.map(name => path.join(testDir.name(), `env.${name}.jsonl.zip`))
+        accountNames.map(name => path.join(testDir.name(), `env.${name}.jsonl.zip`)),
       )
     })
   })
@@ -81,7 +82,9 @@ describe('createFileStateContentProvider', () => {
       // change the test and update it with the new correct value.
       // be aware that this test failing when the setup did not change means all existing workspaces will have
       // their cache invalidated the next time they are loaded
-      expect(await provider.getHash(await provider.findStateFiles(envPrefix()))).toEqual('12dd3066f31529a0b3efc2196a3d896c')
+      expect(await provider.getHash(await provider.findStateFiles(envPrefix()))).toEqual(
+        '12dd3066f31529a0b3efc2196a3d896c',
+      )
     })
   })
   describe('readContents', () => {
@@ -93,7 +96,7 @@ describe('createFileStateContentProvider', () => {
         accountNames.map(name => ({
           name: path.join(testDir.name(), `env.${name}.jsonl.zip`),
           content: Buffer.from('stateData'),
-        }))
+        })),
       )
     })
   })
@@ -101,7 +104,7 @@ describe('createFileStateContentProvider', () => {
     it('should overwrite the contents of the current files', async () => {
       await provider.writeContents(
         envPrefix(),
-        accountNames.map(account => ({ account, content: Buffer.from('newStateData'), contentHash: 'newHash' }))
+        accountNames.map(account => ({ account, content: Buffer.from('newStateData'), contentHash: 'newHash' })),
       )
 
       const streamToContent = await awu(provider.readContents(await provider.findStateFiles(envPrefix())))
@@ -111,7 +114,7 @@ describe('createFileStateContentProvider', () => {
         accountNames.map(name => ({
           name: path.join(testDir.name(), `env.${name}.jsonl.zip`),
           content: Buffer.from('newStateData'),
-        }))
+        })),
       )
     })
   })

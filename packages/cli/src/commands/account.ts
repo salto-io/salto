@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   AdapterAuthentication,
   AdapterAuthMethod,
@@ -39,7 +39,13 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
 import { CliExitCode, CliOutput, KeyedOption } from '../types'
-import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction, WorkspaceCommandArgs, WorkspaceCommandDef } from '../command_builder'
+import {
+  createCommandGroupDef,
+  createWorkspaceCommand,
+  WorkspaceCommandAction,
+  WorkspaceCommandArgs,
+  WorkspaceCommandDef,
+} from '../command_builder'
 import {
   formatAccountAdded,
   formatAccountAlreadyAdded,
@@ -60,16 +66,17 @@ import { getAdaptersTags, getTagsForAccounts } from './common/accounts'
 
 const { isDefined } = values
 
-const wrapWithDeprecationWarning = <T> (func: WorkspaceCommandAction<T>):
-  WorkspaceCommandAction<T> =>
-    async (args: WorkspaceCommandArgs<T>): Promise<CliExitCode> => {
-      errorOutputLine("The 'service' command is deprecated. Use 'account' instead.", args.output)
-      return func(args)
-    }
+const wrapWithDeprecationWarning =
+  <T>(func: WorkspaceCommandAction<T>): WorkspaceCommandAction<T> =>
+  async (args: WorkspaceCommandArgs<T>): Promise<CliExitCode> => {
+    errorOutputLine("The 'service' command is deprecated. Use 'account' instead.", args.output)
+    return func(args)
+  }
 
-const deprecatedCommandDef = <T> (def: WorkspaceCommandDef<T>): WorkspaceCommandDef<T> => (
-  { ...def, action: wrapWithDeprecationWarning(def.action) }
-)
+const deprecatedCommandDef = <T>(def: WorkspaceCommandDef<T>): WorkspaceCommandDef<T> => ({
+  ...def,
+  action: wrapWithDeprecationWarning(def.action),
+})
 
 type AuthTypeArgs = {
   authType: AdapterAuthMethod
@@ -93,7 +100,8 @@ const LOGIN_PARAMETER_OPTION: KeyedOption<LoginParametersArg> = {
   name: 'loginParameters',
   alias: 'p',
   required: false,
-  description: 'Service login parameter in form of NAME=VALUE. Use in order to run this command in non interactive mode',
+  description:
+    'Service login parameter in form of NAME=VALUE. Use in order to run this command in non interactive mode',
   type: 'stringsList',
 }
 
@@ -114,9 +122,15 @@ const getOauthConfig = async (
   outputLine(formatCredentialsHeader(oauthMethod.oauthRequestParameters.elemID.adapter), output)
   const newConfig = await getLoginInput(oauthMethod.oauthRequestParameters)
   const oauthParameters = oauthMethod.createOAuthRequest(newConfig)
-  const credentials = oauthMethod.createFromOauthResponse(newConfig.value,
-    await processOauthCredentials(newConfig.value.port,
-      oauthParameters.oauthRequiredFields, oauthParameters.url, output))
+  const credentials = oauthMethod.createFromOauthResponse(
+    newConfig.value,
+    await processOauthCredentials(
+      newConfig.value.port,
+      oauthParameters.oauthRequiredFields,
+      oauthParameters.url,
+      output,
+    ),
+  )
   return new InstanceElement(ElemID.CONFIG_NAME, oauthMethod.credentialsType, credentials)
 }
 
@@ -124,8 +138,8 @@ const getLoginConfig = async (
   authType: AdapterAuthMethod,
   authMethods: AdapterAuthentication,
   output: CliOutput,
-  getLoginInput: (configType: ObjectType) =>
-    Promise<InstanceElement>): Promise<InstanceElement> => {
+  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<InstanceElement> => {
   let newConfig: InstanceElement
   if (authType === 'oauth' && authMethods.oauth) {
     newConfig = await getOauthConfig(authMethods.oauth, output, getLoginInput)
@@ -141,20 +155,19 @@ const getLoginConfig = async (
   return newConfig
 }
 
-const createConfigFromLoginParameters = (loginParameters: string[]) => (
+const createConfigFromLoginParameters =
+  (loginParameters: string[]) =>
   async (credentialsType: ObjectType): Promise<InstanceElement> => {
     const configValues = Object.fromEntries(loginParameters.map(entryFromRawLoginParameter))
     const requiredFields = Object.entries(credentialsType.fields)
       .filter(([_fieldName, field]) => field.annotations[CORE_ANNOTATIONS.REQUIRED] !== false)
       .map(([fieldName]) => fieldName)
-    const missingLoginParameters = requiredFields
-      .filter(key => _.isUndefined(configValues[key]))
+    const missingLoginParameters = requiredFields.filter(key => _.isUndefined(configValues[key]))
     if (!_.isEmpty(missingLoginParameters)) {
       throw new Error(`Missing the following login parameters: ${missingLoginParameters}`)
     }
     return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, configValues)
   }
-)
 
 const getLoginInputFlow = async (
   workspace: Workspace,
@@ -162,13 +175,12 @@ const getLoginInputFlow = async (
   output: CliOutput,
   authType: AdapterAuthMethod,
   account: string,
-  loginParameters?: string[]
+  loginParameters?: string[],
 ): Promise<void> => {
   const getLoginInput = isDefined(loginParameters)
     ? createConfigFromLoginParameters(loginParameters)
-    // In this login option we ask the user to enter his credentials
-    : (credentialsType: ObjectType) : Promise<InstanceElement> =>
-      getConfigWithHeader(credentialsType, output)
+    : // In this login option we ask the user to enter his credentials
+      (credentialsType: ObjectType): Promise<InstanceElement> => getConfigWithHeader(credentialsType, output)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
   const result = await verifyCredentials(newConfig)
   if (!result.success) {
@@ -181,10 +193,12 @@ const getLoginInputFlow = async (
 
 // Add
 type AccountAddArgs = {
-    login: boolean
-    serviceType: string
-    accountName?: string
-} & AuthTypeArgs & EnvArg & LoginParametersArg
+  login: boolean
+  serviceType: string
+  accountName?: string
+} & AuthTypeArgs &
+  EnvArg &
+  LoginParametersArg
 
 const MAX_ACCOUNT_NAME_LENGTH = 100
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
@@ -195,7 +209,10 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   const { login, serviceType, authType, accountName, loginParameters } = input
   if (accountName !== undefined) {
     if (naclCase(accountName) !== accountName) {
-      errorOutputLine(`Invalid account name: ${accountName}, account name may only include letters, digits or underscores`, output)
+      errorOutputLine(
+        `Invalid account name: ${accountName}, account name may only include letters, digits or underscores`,
+        output,
+      )
       return CliExitCode.UserInputError
     }
     if (accountName === '') {
@@ -229,8 +246,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   if (login) {
     const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType])[serviceType]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsTypes, output,
-        authType, theAccountName, loginParameters)
+      await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, theAccountName, loginParameters)
     } catch (e) {
       errorOutputLine(formatAddServiceFailed(serviceType, e.message), output)
       return CliExitCode.AppError
@@ -246,7 +262,8 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 const accountAddCommandDef: WorkspaceCommandDef<AccountAddArgs> = {
   properties: {
     name: 'add',
-    description: 'Add an application account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+    description:
+      'Add an application account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
     keyedOptions: [
       {
         // Will be replaced with --no-login
@@ -254,13 +271,14 @@ const accountAddCommandDef: WorkspaceCommandDef<AccountAddArgs> = {
         default: true,
         alias: 'n',
         type: 'boolean',
-        description: 'Do not login to account when adding it. Example usage: \'add <service-name> --no-login\'.',
+        description: "Do not login to account when adding it. Example usage: 'add <service-name> --no-login'.",
         required: false,
       },
       {
         name: 'accountName',
         type: 'string',
-        description: 'Application account name. Use in case more than one account of a certain service type is added to the same environment.',
+        description:
+          'Application account name. Use in case more than one account of a certain service type is added to the same environment.',
         required: false,
       },
       AUTH_TYPE_OPTION,
@@ -286,9 +304,11 @@ const serviceAddDef = createWorkspaceCommand(deprecatedCommandDef(accountAddComm
 // List
 type AccountListArgs = {} & EnvArg
 
-export const listAction: WorkspaceCommandAction<AccountListArgs> = async (
-  { input, output, workspace },
-): Promise<CliExitCode> => {
+export const listAction: WorkspaceCommandAction<AccountListArgs> = async ({
+  input,
+  output,
+  workspace,
+}): Promise<CliExitCode> => {
   await validateAndSetEnv(workspace, input, output)
   outputLine(formatConfiguredAndAdditionalAccounts(workspace.accounts()), output)
   return CliExitCode.Success
@@ -298,9 +318,7 @@ const accountListCommandDef: WorkspaceCommandDef<AccountListArgs> = {
   properties: {
     name: 'list',
     description: 'List all environment application accounts',
-    keyedOptions: [
-      ENVIRONMENT_OPTION,
-    ],
+    keyedOptions: [ENVIRONMENT_OPTION],
   },
   action: listAction,
 }
@@ -310,8 +328,10 @@ const serviceListDef = createWorkspaceCommand(deprecatedCommandDef(accountListCo
 
 // Login
 type AccountLoginArgs = {
-    accountName: string
-} & AuthTypeArgs & EnvArg & LoginParametersArg
+  accountName: string
+} & AuthTypeArgs &
+  EnvArg &
+  LoginParametersArg
 
 export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
   input,
@@ -324,16 +344,19 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
     errorOutputLine(formatAccountNotConfigured(accountName), output)
     return CliExitCode.AppError
   }
-  const accountLoginStatus = (await getLoginStatuses(
-    workspace,
-    [accountName],
-  ))[accountName] as LoginStatus
+  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName]))[accountName] as LoginStatus
   if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }
   try {
-    await getLoginInputFlow(workspace, accountLoginStatus.configTypeOptions,
-      output, authType, accountName, loginParameters)
+    await getLoginInputFlow(
+      workspace,
+      accountLoginStatus.configTypeOptions,
+      output,
+      authType,
+      accountName,
+      loginParameters,
+    )
   } catch (e) {
     errorOutputLine(formatLoginToAccountFailed(accountName, e.message), output)
     return CliExitCode.AppError
@@ -344,17 +367,15 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
 const accountLoginCommandDef: WorkspaceCommandDef<AccountLoginArgs> = {
   properties: {
     name: 'login',
-    description: 'Login to an application account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
-    keyedOptions: [
-      AUTH_TYPE_OPTION,
-      ENVIRONMENT_OPTION,
-      LOGIN_PARAMETER_OPTION,
-    ],
+    description:
+      'Login to an application account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+    keyedOptions: [AUTH_TYPE_OPTION, ENVIRONMENT_OPTION, LOGIN_PARAMETER_OPTION],
     positionalOptions: [
       {
         name: 'accountName',
         type: 'string',
-        description: 'The name of the application account, usually same as service type unless specified differently when adding the account',
+        description:
+          'The name of the application account, usually same as service type unless specified differently when adding the account',
         required: true,
       },
     ],
@@ -372,11 +393,7 @@ const serviceGroupDef = createCommandGroupDef({
     name: 'service',
     description: 'Manage the environment accounts (DEPRECATED, use `account` command instead)',
   },
-  subCommands: [
-    serviceAddDef,
-    serviceListDef,
-    serviceLoginDef,
-  ],
+  subCommands: [serviceAddDef, serviceListDef, serviceLoginDef],
 })
 
 const accountGroupDef = createCommandGroupDef({
@@ -384,11 +401,7 @@ const accountGroupDef = createCommandGroupDef({
     name: 'account',
     description: 'Manage the environment accounts',
   },
-  subCommands: [
-    accountAddDef,
-    accountListDef,
-    accountLoginDef,
-  ],
+  subCommands: [accountAddDef, accountListDef, accountLoginDef],
 })
 
 export { serviceGroupDef, accountGroupDef }

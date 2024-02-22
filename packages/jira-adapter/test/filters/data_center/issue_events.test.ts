@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ElemIdGetter, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { filterUtils } from '@salto-io/adapter-components'
@@ -27,23 +27,25 @@ describe('issue_events', () => {
   let objectType: ObjectType
   let objectWrongType: ObjectType
   beforeEach(() => {
-    const elemIdGetter = mockFunction<ElemIdGetter>()
-      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+    const elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
+      (adapterName, _serviceIds, name) => new ElemID(adapterName, name),
+    )
 
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
 
     const { client, paginator } = mockClient(true)
-    filter = issueEventsDcDeployFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      getElemIdFunc: elemIdGetter,
-    })) as typeof filter
+    filter = issueEventsDcDeployFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        getElemIdFunc: elemIdGetter,
+      }),
+    ) as typeof filter
 
     objectType = new ObjectType({
       elemID: new ElemID(JIRA, 'IssueEvent'),
-      fields:
-      {
+      fields: {
         name: { refType: BuiltinTypes.STRING },
         templateName: { refType: BuiltinTypes.STRING },
         description: { refType: BuiltinTypes.STRING },
@@ -52,8 +54,7 @@ describe('issue_events', () => {
     })
     objectWrongType = new ObjectType({
       elemID: new ElemID(JIRA, 'PermissionScheme'),
-      fields:
-      {
+      fields: {
         name: { refType: BuiltinTypes.STRING },
         templateName: { refType: BuiltinTypes.STRING },
         description: { refType: BuiltinTypes.STRING },
@@ -82,26 +83,25 @@ describe('issue_events', () => {
     expect(objectWrongType.fields.id.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeUndefined()
     expect(objectWrongType.fields.name.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeUndefined()
     expect(objectWrongType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeUndefined()
-    expect(objectWrongType.fields.description.annotations[CORE_ANNOTATIONS.UPDATABLE])
-      .toBeUndefined()
-    expect(objectWrongType.fields.description.annotations[CORE_ANNOTATIONS.CREATABLE])
-      .toBeUndefined()
-    expect(objectWrongType.fields.templateName.annotations[CORE_ANNOTATIONS.UPDATABLE])
-      .toBeUndefined()
-    expect(objectWrongType.fields.templateName.annotations[CORE_ANNOTATIONS.CREATABLE])
-      .toBeUndefined()
+    expect(objectWrongType.fields.description.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeUndefined()
+    expect(objectWrongType.fields.description.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeUndefined()
+    expect(objectWrongType.fields.templateName.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeUndefined()
+    expect(objectWrongType.fields.templateName.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeUndefined()
   })
   it('should not change type on cloud flow', async () => {
-    const elemIdGetter = mockFunction<ElemIdGetter>()
-      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+    const elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
+      (adapterName, _serviceIds, name) => new ElemID(adapterName, name),
+    )
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     const { client, paginator } = mockClient()
-    const cloudFilter = issueEventsDcDeployFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      getElemIdFunc: elemIdGetter,
-    })) as typeof filter
+    const cloudFilter = issueEventsDcDeployFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        getElemIdFunc: elemIdGetter,
+      }),
+    ) as typeof filter
     await cloudFilter.onFetch([objectType])
     expect(objectType.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeUndefined()
     expect(objectType.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeUndefined()

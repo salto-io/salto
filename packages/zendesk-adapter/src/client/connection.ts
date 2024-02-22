@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import axios from 'axios'
 import axiosRetry from 'axios-retry'
@@ -21,7 +21,12 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../auth'
+import {
+  Credentials,
+  isOauthAccessTokenCredentials,
+  OauthAccessTokenCredentials,
+  UsernamePasswordCredentials,
+} from '../auth'
 
 const log = logger(module)
 type AccountRes = {
@@ -36,16 +41,21 @@ const EXPECTED_VALID_ACCOUNT_RES = Joi.object({
   data: Joi.object({
     account: Joi.object({
       sandbox: Joi.boolean().required(),
-    }).unknown(true).required(),
-  }).unknown(true).required(),
-}).unknown(true).required()
+    })
+      .unknown(true)
+      .required(),
+  })
+    .unknown(true)
+    .required(),
+})
+  .unknown(true)
+  .required()
 
-export const instanceUrl = (subdomain: string, domain?: string): string => (
+export const instanceUrl = (subdomain: string, domain?: string): string =>
   _.isEmpty(domain) ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
-)
 const baseUrl = instanceUrl
 // A URL for resource files
-const resourceUrl = (subdomain: string, domain?: string): string => (new URL('/', instanceUrl(subdomain, domain))).href
+const resourceUrl = (subdomain: string, domain?: string): string => new URL('/', instanceUrl(subdomain, domain)).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
@@ -57,9 +67,15 @@ export const APP_MARKETPLACE_HEADERS = {
   'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
 }
 
-const isValidAccountRes = createSchemeGuard<AccountRes>(EXPECTED_VALID_ACCOUNT_RES, 'Received an invalid current account response')
+const isValidAccountRes = createSchemeGuard<AccountRes>(
+  EXPECTED_VALID_ACCOUNT_RES,
+  'Received an invalid current account response',
+)
 
-export const validateCredentials = async ({ credentials, connection }: {
+export const validateCredentials = async ({
+  credentials,
+  connection,
+}: {
   credentials: Credentials
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
@@ -78,9 +94,10 @@ export const validateCredentials = async ({ credentials, connection }: {
   }
 }
 
-const usernamePasswordAuthParamsFunc = (
-  { username, password }: UsernamePasswordCredentials
-): clientUtils.AuthParams => ({
+const usernamePasswordAuthParamsFunc = ({
+  username,
+  password,
+}: UsernamePasswordCredentials): clientUtils.AuthParams => ({
   auth: {
     username,
     password,
@@ -88,42 +105,33 @@ const usernamePasswordAuthParamsFunc = (
   headers: APP_MARKETPLACE_HEADERS,
 })
 
-const accessTokenAuthParamsFunc = (
-  { accessToken }: OauthAccessTokenCredentials
-): clientUtils.AuthParams => ({
+const accessTokenAuthParamsFunc = ({ accessToken }: OauthAccessTokenCredentials): clientUtils.AuthParams => ({
   headers: {
     Authorization: `Bearer ${accessToken}`,
     ...APP_MARKETPLACE_HEADERS,
   },
 })
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async (creds: Credentials) => (
-      isOauthAccessTokenCredentials(creds)
-        ? accessTokenAuthParamsFunc(creds)
-        : usernamePasswordAuthParamsFunc(creds)
-    ),
+    authParamsFunc: async (creds: Credentials) =>
+      isOauthAccessTokenCredentials(creds) ? accessTokenAuthParamsFunc(creds) : usernamePasswordAuthParamsFunc(creds),
     baseURLFunc: async ({ subdomain, domain }) => baseUrl(subdomain, domain),
     credValidateFunc: validateCredentials,
     timeout,
   })
-)
 
-export const createResourceConnection:
-  clientUtils.ConnectionCreator<Credentials> = retryOptions => {
-    const login = async (
-      creds: Credentials,
-    ): Promise<clientUtils.AuthenticatedAPIConnection> => {
-      const httpClient = axios.create({
-        baseURL: resourceUrl(creds.subdomain, creds.domain),
-        headers: APP_MARKETPLACE_HEADERS,
-      })
-      axiosRetry(httpClient, retryOptions)
-      return Object.assign(httpClient, { accountInfo: { accountId: creds.subdomain } })
-    }
-    return {
-      login,
-    }
+export const createResourceConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => {
+  const login = async (creds: Credentials): Promise<clientUtils.AuthenticatedAPIConnection> => {
+    const httpClient = axios.create({
+      baseURL: resourceUrl(creds.subdomain, creds.domain),
+      headers: APP_MARKETPLACE_HEADERS,
+    })
+    axiosRetry(httpClient, retryOptions)
+    return Object.assign(httpClient, { accountInfo: { accountId: creds.subdomain } })
   }
+  return {
+    login,
+  }
+}

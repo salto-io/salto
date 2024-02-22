@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../config/query'
@@ -46,14 +46,15 @@ const SUPPORTED_TYPES = new Set(DETECTORS.flatMap(detector => detector.getTypes(
 const getChangedIds = (
   changes: ChangedObject[],
   idToLastFetchDate: Record<string, Date>,
-  filterFunc: (id: string) => boolean = () => true
-): Set<string> => new Set(
-  changes
-    .map(item => ({ ...item, lastFetchDate: idToLastFetchDate[item.objectId] }))
-    .filter(({ time, lastFetchDate }) => lastFetchDate === undefined || time > lastFetchDate)
-    .map(change => change.objectId)
-    .filter(filterFunc)
-)
+  filterFunc: (id: string) => boolean = () => true,
+): Set<string> =>
+  new Set(
+    changes
+      .map(item => ({ ...item, lastFetchDate: idToLastFetchDate[item.objectId] }))
+      .filter(({ time, lastFetchDate }) => lastFetchDate === undefined || time > lastFetchDate)
+      .map(change => change.objectId)
+      .filter(filterFunc),
+  )
 
 export const getChangedObjects = async (
   client: NetsuiteClient,
@@ -63,43 +64,29 @@ export const getChangedObjects = async (
 ): Promise<NetsuiteQuery> => {
   log.debug('Starting to look for changed objects')
 
-  const {
-    isTypeMatch,
-    isFileMatch,
-    areSomeFilesMatch,
-    isParentFolderMatch,
-    isCustomRecordTypeMatch,
-  } = query
+  const { isTypeMatch, isFileMatch, areSomeFilesMatch, isParentFolderMatch, isCustomRecordTypeMatch } = query
 
   const instancesChangesPromise = Promise.all(
-    DETECTORS
-      .filter(detector => detector.getTypes().some(isTypeMatch))
-      .map(detector => detector.getChanges(client, dateRange))
+    DETECTORS.filter(detector => detector.getTypes().some(isTypeMatch)).map(detector =>
+      detector.getChanges(client, dateRange),
+    ),
   ).then(output => output.flat())
 
-  const changedFileCabinetPromises: [
-    ReturnType<FileCabinetChangesDetector>,
-    ReturnType<FileCabinetChangesDetector>
-  ] = areSomeFilesMatch() ? [
-    getChangedFiles(client, dateRange),
-    getChangedFolders(client, dateRange),
-  ] : [
-    Promise.resolve([]),
-    Promise.resolve([]),
-  ]
+  const changedFileCabinetPromises: [ReturnType<FileCabinetChangesDetector>, ReturnType<FileCabinetChangesDetector>] =
+    areSomeFilesMatch()
+      ? [getChangedFiles(client, dateRange), getChangedFolders(client, dateRange)]
+      : [Promise.resolve([]), Promise.resolve([])]
 
-  const [
-    changedInstances,
-    changedFiles,
-    changedFolders,
-    changedCustomRecords,
-  ] = await Promise.all([
+  const [changedInstances, changedFiles, changedFolders, changedCustomRecords] = await Promise.all([
     instancesChangesPromise,
     ...changedFileCabinetPromises,
     getChangedCustomRecords(client, dateRange, { isCustomRecordTypeMatch }),
   ])
 
-  const [changedTypes, changedObjects] = _.partition(changedInstances, (change): change is ChangedType => change.type === 'type')
+  const [changedTypes, changedObjects] = _.partition(
+    changedInstances,
+    (change): change is ChangedType => change.type === 'type',
+  )
 
   const scriptIds = getChangedIds(
     changedObjects.map(({ objectId, ...change }) => ({ ...change, objectId: objectId.toLowerCase() })),
@@ -132,29 +119,23 @@ export const getChangedObjects = async (
 
   return {
     isTypeMatch: type =>
-      !SUPPORTED_TYPES.has(type)
-      || scriptIds.size !== 0
-      || types.size !== 0
-      || ([CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT].includes(type) && shouldFetchCustomRecordTypes),
+      !SUPPORTED_TYPES.has(type) ||
+      scriptIds.size !== 0 ||
+      types.size !== 0 ||
+      ([CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT].includes(type) && shouldFetchCustomRecordTypes),
     areAllObjectsMatch: () => false,
     isObjectMatch: ({ type, instanceId }) =>
-      !SUPPORTED_TYPES.has(type)
-      || scriptIds.has(instanceId)
-      || types.has(type)
-      || (type === CUSTOM_RECORD_TYPE && instanceId in customRecordsByType)
-      || (type === CUSTOM_SEGMENT && addCustomRecordTypePrefix(instanceId) in customRecordsByType),
-    isFileMatch: filePath =>
-      filePaths.has(filePath)
-      || unresolvedFolderPaths.some(path => filePath.startsWith(path)),
+      !SUPPORTED_TYPES.has(type) ||
+      scriptIds.has(instanceId) ||
+      types.has(type) ||
+      (type === CUSTOM_RECORD_TYPE && instanceId in customRecordsByType) ||
+      (type === CUSTOM_SEGMENT && addCustomRecordTypePrefix(instanceId) in customRecordsByType),
+    isFileMatch: filePath => filePaths.has(filePath) || unresolvedFolderPaths.some(path => filePath.startsWith(path)),
     isParentFolderMatch,
-    areSomeFilesMatch: () =>
-      filePaths.size !== 0
-      || folderPaths.length !== 0,
-    isCustomRecordTypeMatch: type =>
-      type in customRecordsByType,
+    areSomeFilesMatch: () => filePaths.size !== 0 || folderPaths.length !== 0,
+    isCustomRecordTypeMatch: type => type in customRecordsByType,
     areAllCustomRecordsMatch: () => false,
     isCustomRecordMatch: ({ type, instanceId }) =>
-      type in customRecordsByType
-      && customRecordsByType[type].has(instanceId),
+      type in customRecordsByType && customRecordsByType[type].has(instanceId),
   }
 }

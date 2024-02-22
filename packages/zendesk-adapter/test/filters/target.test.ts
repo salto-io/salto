@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
@@ -34,19 +34,15 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('target filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
-  const target = new InstanceElement(
-    'test',
-    new ObjectType({ elemID: new ElemID(ZENDESK, TARGET_TYPE_NAME) }),
-    {
-      title: 'test',
-      method: 'get',
-      active: true,
-      attribute: 'test-attr',
-      username: 'test-username',
-      password: 'password',
-      target_url: 'http://test.com/test',
-    },
-  )
+  const target = new InstanceElement('test', new ObjectType({ elemID: new ElemID(ZENDESK, TARGET_TYPE_NAME) }), {
+    title: 'test',
+    method: 'get',
+    active: true,
+    attribute: 'test-attr',
+    username: 'test-username',
+    password: 'password',
+    target_url: 'http://test.com/test',
+  })
   beforeEach(async () => {
     jest.clearAllMocks()
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
@@ -71,8 +67,7 @@ describe('target filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: clonedTarget } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedTarget } }])
     })
 
     it('should pass the correct params to deployChange on update - changed auth', async () => {
@@ -87,8 +82,9 @@ describe('target filter', () => {
       delete deployedTargetAfter.value.username
       delete deployedTargetAfter.value.password
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedTargetBefore, after: clonedTargetAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedTargetBefore, after: clonedTargetAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
@@ -99,13 +95,12 @@ describe('target filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedTargetBefore, after: clonedTargetAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedTargetBefore, after: clonedTargetAfter },
+        },
+      ])
     })
     it('should pass the correct params to deployChange on update - auth was not changed', async () => {
       const id = 2
@@ -118,8 +113,9 @@ describe('target filter', () => {
       delete deployedTargetAfter.value.username
       delete deployedTargetAfter.value.password
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedTargetBefore, after: clonedTargetAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedTargetBefore, after: clonedTargetAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
@@ -130,13 +126,12 @@ describe('target filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedTargetBefore, after: clonedTargetAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedTargetBefore, after: clonedTargetAfter },
+        },
+      ])
     })
 
     it('should pass the correct params to deployChange on update - auth was deleted', async () => {
@@ -151,8 +146,9 @@ describe('target filter', () => {
       deployedTargetAfter.value.username = null
       deployedTargetAfter.value.password = null
       mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter
-        .deploy([{ action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } }])
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
+      ])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
@@ -163,13 +159,12 @@ describe('target filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          {
-            action: 'modify',
-            data: { before: clonedTargetBefore, after: deployedTargetAfter },
-          },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedTargetBefore, after: deployedTargetAfter },
+        },
+      ])
     })
 
     it('should not handle remove changes', async () => {

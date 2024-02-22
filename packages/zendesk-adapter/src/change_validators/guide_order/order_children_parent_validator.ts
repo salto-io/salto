@@ -1,31 +1,39 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   ChangeError,
   ChangeValidator,
-  getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReferenceExpression,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME,
-  ARTICLES_FIELD, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  ARTICLES_FIELD,
+  CATEGORIES_FIELD,
+  CATEGORY_ORDER_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTIONS_FIELD,
 } from '../../constants'
@@ -45,10 +53,13 @@ const getChildParent = (child: InstanceElement): ReferenceExpression => {
   }
 }
 
-const createNotSameParentError = (
-  { orderInstance, wrongParentChildren }:
-  { orderInstance: InstanceElement; wrongParentChildren: InstanceElement[] }
-): ChangeError => ({
+const createNotSameParentError = ({
+  orderInstance,
+  wrongParentChildren,
+}: {
+  orderInstance: InstanceElement
+  wrongParentChildren: InstanceElement[]
+}): ChangeError => ({
   elemID: orderInstance.elemID,
   severity: 'Error',
   message: 'Guide elements order list includes instances that are not of the same parent',
@@ -71,23 +82,40 @@ const orderChildrenDifferentParent = (
   }
 }
 
-const validateOrdersChildrenSameParent = ({ changes, orderField, orderTypeName }: {
+const validateOrdersChildrenSameParent = ({
+  changes,
+  orderField,
+  orderTypeName,
+}: {
   changes: readonly Change[]
   orderField: string
   orderTypeName: string
-}): ChangeError[] => changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
-  .filter(change => change.elemID.typeName === orderTypeName)
-  .filter(order => validateOrderType(order, orderField))
-  .map(order => orderChildrenDifferentParent(order, order.value[orderField].map((c: ReferenceExpression) => c.value)))
-  .filter(isDefined)
-  .map(createNotSameParentError)
-
+}): ChangeError[] =>
+  changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(change => change.elemID.typeName === orderTypeName)
+    .filter(order => validateOrderType(order, orderField))
+    .map(order =>
+      orderChildrenDifferentParent(
+        order,
+        order.value[orderField].map((c: ReferenceExpression) => c.value),
+      ),
+    )
+    .filter(isDefined)
+    .map(createNotSameParentError)
 
 /**
  * Validates that all children in an order instance have the same parent as the order
  */
-export const orderChildrenParentValidator: ChangeValidator = async changes => [
-  validateOrdersChildrenSameParent({ changes, orderField: ARTICLES_FIELD, orderTypeName: ARTICLE_ORDER_TYPE_NAME }),
-  validateOrdersChildrenSameParent({ changes, orderField: SECTIONS_FIELD, orderTypeName: SECTION_ORDER_TYPE_NAME }),
-  validateOrdersChildrenSameParent({ changes, orderField: CATEGORIES_FIELD, orderTypeName: CATEGORY_ORDER_TYPE_NAME }),
-].flat()
+export const orderChildrenParentValidator: ChangeValidator = async changes =>
+  [
+    validateOrdersChildrenSameParent({ changes, orderField: ARTICLES_FIELD, orderTypeName: ARTICLE_ORDER_TYPE_NAME }),
+    validateOrdersChildrenSameParent({ changes, orderField: SECTIONS_FIELD, orderTypeName: SECTION_ORDER_TYPE_NAME }),
+    validateOrdersChildrenSameParent({
+      changes,
+      orderField: CATEGORIES_FIELD,
+      orderTypeName: CATEGORY_ORDER_TYPE_NAME,
+    }),
+  ].flat()

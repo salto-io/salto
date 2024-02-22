@@ -1,22 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
 import { TypeAndInnerTypes } from '../../../types/object_types'
@@ -29,26 +35,23 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedsearch_dependencies = new ObjectType({
     elemID: savedsearch_dependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SuiteCloud project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */
+      } /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SuiteCloud project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
   })
 
   innerTypes.savedsearch_dependencies = savedsearch_dependencies
 
-
   const savedsearch = new ObjectType({
     elemID: savedsearchElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -57,7 +60,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customsearch[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
+      } /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */,
       definition: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
@@ -66,13 +69,11 @@ export const savedsearchType = (): TypeAndInnerTypes => {
       },
       dependencies: {
         refType: createRefToElmWithValue(savedsearch_dependencies),
-        annotations: {
-        },
+        annotations: {},
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
   })
-
 
   return { type: savedsearch, innerTypes }
 }

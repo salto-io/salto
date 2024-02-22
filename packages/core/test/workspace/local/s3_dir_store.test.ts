@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { staticFiles } from '@salto-io/workspace'
 import * as AWS from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
@@ -46,18 +46,14 @@ describe('buildS3DirectoryStore', () => {
 
   describe('list', () => {
     it('should return true if the file exists', async () => {
-      listObjectsV2Mock.mockResolvedValueOnce({
-        Contents: [
-          { Key: `${baseDir}/a1` },
-          { Key: `${baseDir}/a2` },
-        ],
-        NextContinuationToken: 'nextToken',
-      }).mockResolvedValueOnce({
-        Contents: [
-          { Key: `${baseDir}/a3` },
-          { Key: `${baseDir}/a4` },
-        ],
-      })
+      listObjectsV2Mock
+        .mockResolvedValueOnce({
+          Contents: [{ Key: `${baseDir}/a1` }, { Key: `${baseDir}/a2` }],
+          NextContinuationToken: 'nextToken',
+        })
+        .mockResolvedValueOnce({
+          Contents: [{ Key: `${baseDir}/a3` }, { Key: `${baseDir}/a4` }],
+        })
       expect(await directoryStore.list()).toEqual(['a1', 'a2', 'a3', 'a4'])
       expect(listObjectsV2Mock).toHaveBeenCalledWith({
         Bucket: bucketName,
@@ -107,7 +103,8 @@ describe('buildS3DirectoryStore', () => {
         Body: readable,
       })
       expect(await directoryStore.get('a/b')).toEqual({
-        filename: 'a/b', buffer: Buffer.from('body'),
+        filename: 'a/b',
+        buffer: Buffer.from('body'),
       })
       expect(getObjectMock).toHaveBeenCalledWith({
         Bucket: bucketName,
@@ -148,7 +145,8 @@ describe('buildS3DirectoryStore', () => {
     it('should use cached data', async () => {
       await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
       expect(await directoryStore.get('a/b')).toEqual({
-        filename: 'a/b', buffer: Buffer.from('aaa'),
+        filename: 'a/b',
+        buffer: Buffer.from('aaa'),
       })
 
       expect(getObjectMock).not.toHaveBeenCalled()

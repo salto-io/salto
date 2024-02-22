@@ -1,28 +1,47 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
-  DeployModifiers, Element, FetchOptions,
+  FetchResult,
+  AdapterOperations,
+  DeployResult,
+  InstanceElement,
+  TypeMap,
+  isObjectType,
+  DeployModifiers,
+  Element,
+  FetchOptions,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  config as configUtils,
+  elements as elementUtils,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
-import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, SETTING_TYPES, SUPPORTED_TYPES } from './config'
+import {
+  ZuoraConfig,
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  ZuoraApiConfig,
+  SETTING_TYPES,
+  SUPPORTED_TYPES,
+} from './config'
 import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import commonFilters from './filters/common'
@@ -75,11 +94,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private userConfig: ZuoraConfig
   private fetchQuery: elementUtils.query.ElementQuery
 
-  public constructor({
-    filterCreators = DEFAULT_FILTERS,
-    client,
-    config,
-  }: ZuoraAdapterParams) {
+  public constructor({ filterCreators = DEFAULT_FILTERS, client, config }: ZuoraAdapterParams) {
     this.userConfig = config
     this.client = client
     const paginator = createPaginator({
@@ -87,27 +102,21 @@ export default class ZuoraAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
-    this.fetchQuery = elementUtils.query.createElementQuery(
-      this.userConfig[FETCH_CONFIG],
-      fetchCriteria,
-    )
-    this.createFiltersRunner = () => (
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG], fetchCriteria)
+    this.createFiltersRunner = () =>
       filtersRunner({ client, paginator, config, fetchQuery: this.fetchQuery }, filterCreators)
-    )
   }
 
-  private apiDefinitions(
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-  ): ZuoraApiConfig {
+  private apiDefinitions(parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>): ZuoraApiConfig {
     return {
       ...this.userConfig[API_DEFINITIONS_CONFIG],
       // user config takes precedence over parsed config
       types: {
         ...parsedConfigs,
-        ..._.mapValues(
-          this.userConfig[API_DEFINITIONS_CONFIG].types,
-          (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
-        ),
+        ..._.mapValues(this.userConfig[API_DEFINITIONS_CONFIG].types, (def, typeName) => ({
+          ...parsedConfigs[typeName],
+          ...def,
+        })),
       },
     }
   }
@@ -116,15 +125,13 @@ export default class ZuoraAdapter implements AdapterOperations {
   private async getSwaggerTypes(): Promise<elementUtils.swagger.ParsedTypes> {
     const config = _.cloneDeep(this.userConfig[API_DEFINITIONS_CONFIG])
     config.supportedTypes[LIST_ALL_SETTINGS_TYPE] = [LIST_ALL_SETTINGS_TYPE]
-    return generateTypes(
-      ZUORA_BILLING,
-      config,
-    )
+    return generateTypes(ZUORA_BILLING, config)
   }
 
   @logDuration('generating types for billing settings')
   private async getBillingSettingsTypes({
-    parsedConfigs, allTypes,
+    parsedConfigs,
+    allTypes,
   }: elementUtils.swagger.ParsedTypes): Promise<elementUtils.swagger.ParsedTypes> {
     if (!Object.keys(SETTING_TYPES).some(this.fetchQuery.isTypeMatch)) {
       return { allTypes: {}, parsedConfigs: {} }
@@ -146,14 +153,12 @@ export default class ZuoraAdapter implements AdapterOperations {
 
   @logDuration('generating type and instances for standard objects')
   private async getStandardObjectElements({
-    parsedConfigs, allTypes,
+    parsedConfigs,
+    allTypes,
   }: elementUtils.swagger.ParsedTypes): Promise<Element[]> {
     const apiConfig = this.apiDefinitions(parsedConfigs)
     const standardObjectTypeName = getStandardObjectTypeName(apiConfig)
-    if (
-      standardObjectTypeName === undefined
-      || !this.fetchQuery.isTypeMatch(standardObjectTypeName)
-    ) {
+    if (standardObjectTypeName === undefined || !this.fetchQuery.isTypeMatch(standardObjectTypeName)) {
       return []
     }
     const standardObjectWrapperType = allTypes[standardObjectTypeName]
@@ -184,8 +189,7 @@ export default class ZuoraAdapter implements AdapterOperations {
       apiConfig: this.apiDefinitions(parsedConfigs),
       supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
       fetchQuery: {
-        isTypeMatch: typeName => typeName !== standardObjectTypeName
-          && this.fetchQuery.isTypeMatch(typeName),
+        isTypeMatch: typeName => typeName !== standardObjectTypeName && this.fetchQuery.isTypeMatch(typeName),
       },
     })
   }
@@ -203,7 +207,6 @@ export default class ZuoraAdapter implements AdapterOperations {
     // and give them a custom prefix to avoid conflicts
     const settingsTypes = await this.getBillingSettingsTypes(swaggerTypes)
 
-
     const { allTypes, parsedConfigs } = {
       allTypes: { ...swaggerTypes.allTypes, ...settingsTypes.allTypes },
       parsedConfigs: { ...swaggerTypes.parsedConfigs, ...settingsTypes.parsedConfigs },
@@ -213,11 +216,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     const { elements: instances } = await this.getInstances(allTypes, parsedConfigs)
     const standardObjectElements = await this.getStandardObjectElements({ allTypes, parsedConfigs })
 
-    const elements = [
-      ...Object.values(allTypes),
-      ...instances,
-      ...standardObjectElements,
-    ]
+    const elements = [...Object.values(allTypes), ...instances, ...standardObjectElements]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })

@@ -2,7 +2,6 @@
 
 AWS utils for salto.io.
 
-
 ### Build instructions
 
 ```

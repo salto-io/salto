@@ -1,24 +1,35 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { ReferenceExpression, isAdditionOrModificationChange, getChangeData, isInstanceChange, isInstanceElement, Field, ListType, BuiltinTypes, Value, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import {
+  ReferenceExpression,
+  isAdditionOrModificationChange,
+  getChangeData,
+  isInstanceChange,
+  isInstanceElement,
+  Field,
+  ListType,
+  BuiltinTypes,
+  Value,
+  CORE_ANNOTATIONS,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { BEHAVIOR_TYPE } from '../../constants'
 import { findObject } from '../../utils'
-
 
 const getIssueTypesForProject = (project: ReferenceExpression): string[] => {
   const issueTypeSchemeRef = project.value.value.issueTypeScheme
@@ -61,8 +72,18 @@ const filter: FilterCreator = ({ config }) => {
           [CORE_ANNOTATIONS.UPDATABLE]: true,
           [CORE_ANNOTATIONS.DELETABLE]: true,
         }
-        behaviorType.fields.projects = new Field(behaviorType, 'projects', new ListType(BuiltinTypes.STRING), deployAnnotations)
-        behaviorType.fields.issueTypes = new Field(behaviorType, 'issueTypes', new ListType(BuiltinTypes.STRING), deployAnnotations)
+        behaviorType.fields.projects = new Field(
+          behaviorType,
+          'projects',
+          new ListType(BuiltinTypes.STRING),
+          deployAnnotations,
+        )
+        behaviorType.fields.issueTypes = new Field(
+          behaviorType,
+          'issueTypes',
+          new ListType(BuiltinTypes.STRING),
+          deployAnnotations,
+        )
         delete behaviorType.fields.mappings
       }
     },
@@ -78,11 +99,16 @@ const filter: FilterCreator = ({ config }) => {
         .forEach(instance => {
           preDeployProjects[instance.elemID.getFullName()] = instance.value.projects
           preDeployIssueTypes[instance.elemID.getFullName()] = instance.value.issueTypes
-          instance.value.mappings = Object.fromEntries(instance.value.projects
-            .filter(isResolvedReferenceExpression)
-            .map((project: ReferenceExpression) =>
-              [project.value.value.id, getIssueTypesForProject(project)
-                .filter(issueType => getIssueTypesForBehavior(instance).includes(issueType))]))
+          instance.value.mappings = Object.fromEntries(
+            instance.value.projects
+              .filter(isResolvedReferenceExpression)
+              .map((project: ReferenceExpression) => [
+                project.value.value.id,
+                getIssueTypesForProject(project).filter(issueType =>
+                  getIssueTypesForBehavior(instance).includes(issueType),
+                ),
+              ]),
+          )
           delete instance.value.projects
           delete instance.value.issueTypes
         })

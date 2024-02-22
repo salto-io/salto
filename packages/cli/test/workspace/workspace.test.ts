@@ -1,24 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { FetchChange } from '@salto-io/core'
 import { Workspace, state } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { EventEmitter } from 'pietile-eventemitter'
-import { validateWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
+import {
+  validateWorkspace,
+  updateWorkspace,
+  MAX_DETAIL_CHANGES_TO_LOG,
+  updateStateOnly,
+  applyChangesToWorkspace,
+} from '../../src/workspace/workspace'
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors, getMockTelemetry } from '../mocks'
 import { getCliTelemetry } from '../../src/telemetry'
 
@@ -35,8 +41,8 @@ const mockWsFunctions = {
   }),
   isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
   flush: mockFunction<Workspace['flush']>(),
-  transformError: mockFunction<Workspace['transformError']>().mockImplementation(
-    error => Promise.resolve({ ...error, sourceLocations: [] })
+  transformError: mockFunction<Workspace['transformError']>().mockImplementation(error =>
+    Promise.resolve({ ...error, sourceLocations: [] }),
   ),
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
   getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
@@ -75,20 +81,24 @@ describe('workspace', () => {
     })
     describe('when there are errors', () => {
       it('returns true if there are only warnings', async () => {
-        mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
-          { message: 'Error', severity: 'Warning' },
-          { message: 'Error2', severity: 'Warning' },
-        ]))
+        mockWsFunctions.errors.mockResolvedValueOnce(
+          mockErrors([
+            { message: 'Error', severity: 'Warning' },
+            { message: 'Error2', severity: 'Warning' },
+          ]),
+        )
 
         const wsValid = (await validateWorkspace(mockWs)).status
         expect(wsValid).toBe('Warning')
       })
 
       it('returns false if there is at least one sever error', async () => {
-        mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
-          { message: 'Error', severity: 'Warning' },
-          { message: 'Error2', severity: 'Error' },
-        ]))
+        mockWsFunctions.errors.mockResolvedValueOnce(
+          mockErrors([
+            { message: 'Error', severity: 'Warning' },
+            { message: 'Error2', severity: 'Error' },
+          ]),
+        )
 
         const wsValid = (await validateWorkspace(mockWs)).status
         expect(wsValid).toBe('Error')
@@ -114,8 +124,10 @@ describe('workspace', () => {
     })
 
     it('with more changes than max changes to log', async () => {
-      const changes = _.fill(Array(MAX_DETAIL_CHANGES_TO_LOG + 1),
-        detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'))
+      const changes = _.fill(
+        Array(MAX_DETAIL_CHANGES_TO_LOG + 1),
+        detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'),
+      )
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
@@ -127,9 +139,7 @@ describe('workspace', () => {
     })
 
     it('with validation errors', async () => {
-      mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
-        { message: 'Error BLA', severity: 'Error' },
-      ]))
+      mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([{ message: 'Error BLA', severity: 'Error' }]))
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
@@ -181,9 +191,7 @@ describe('workspace', () => {
       expect(res).toBeTruthy()
     })
     it('should return false on error', async () => {
-      mockWsFunctions.errors.mockResolvedValue(mockErrors([
-        { message: 'Error BLA', severity: 'Error' },
-      ]))
+      mockWsFunctions.errors.mockResolvedValue(mockErrors([{ message: 'Error BLA', severity: 'Error' }]))
       const res = await applyChangesToWorkspace({
         workspace: mockWs,
         changes,

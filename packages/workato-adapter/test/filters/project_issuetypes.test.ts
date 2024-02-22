@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -112,19 +112,16 @@ describe('projectIssuetype filter', () => {
               as: 'recipeCodeNested',
               keyword: 'action',
               dynamicPickListSelection: {
-                project_issuetype: 'project name with \' : \' sign : Issue Type Name with \' : \' sign and \'--\' sign ',
+                project_issuetype: "project name with ' : ' sign : Issue Type Name with ' : ' sign and '--' sign ",
                 sample_project_issuetype: 'sampleProjectName : SampleIssueTypeName',
                 priority: 'High',
               },
               input: {
-                project_issuetype: 'PRN--Issue Type Name with \' : \' sign and \'--\' sign ',
+                project_issuetype: "PRN--Issue Type Name with ' : ' sign and '--' sign ",
                 sample_project_issuetype: 'SPN--SampleIssueTypeName',
                 summary: "#{_('data.jira.recipeCode.fields.summary')}",
               },
-              visible_config_fields: [
-                'project_issuetype',
-                'sample_project_issuetype',
-              ],
+              visible_config_fields: ['project_issuetype', 'sample_project_issuetype'],
               uuid: 'uuid1',
             },
           ],
@@ -139,14 +136,8 @@ describe('projectIssuetype filter', () => {
           keyword: 'action',
           dynamicPickListSelection: {
             project_issuetype: {
-              ids: [
-                'projectInSecondBlockName@@PISB',
-                'PISB--IssueType',
-              ],
-              titles: [
-                'projectInSecondBlockName',
-                'projectInSecondBlockName : IssueType',
-              ],
+              ids: ['projectInSecondBlockName@@PISB', 'PISB--IssueType'],
+              titles: ['projectInSecondBlockName', 'projectInSecondBlockName : IssueType'],
             },
           },
           input: {
@@ -188,7 +179,7 @@ describe('projectIssuetype filter', () => {
       expect(notRecipeCode).toEqual(notRecipeCodeBefore)
     })
 
-    it('should remove \'project_issuetype\' from dynamicPickListSelection', async () => {
+    it("should remove 'project_issuetype' from dynamicPickListSelection", async () => {
       expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.project_issuetype).toBeDefined()
       expect(recipeCode.value.block[1].dynamicPickListSelection.project_issuetype).toBeDefined()
 
@@ -198,7 +189,7 @@ describe('projectIssuetype filter', () => {
       expect(recipeCode.value.block[1].dynamicPickListSelection.project_issuetype).toBeUndefined()
     })
 
-    it('should remove \'sample_project_issuetype\' from dynamicPickListSelection', async () => {
+    it("should remove 'sample_project_issuetype' from dynamicPickListSelection", async () => {
       expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.sample_project_issuetype).toBeDefined()
 
       await filter.onFetch(elements)
@@ -206,7 +197,7 @@ describe('projectIssuetype filter', () => {
       expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.sample_project_issuetype).toBeUndefined()
     })
 
-    it('should replace \'project_issuetype\' to projectKey and issueType at input', async () => {
+    it("should replace 'project_issuetype' to projectKey and issueType at input", async () => {
       expect(recipeCode.value.block[0].block[0].input.project_issuetype).toBeDefined()
       expect(recipeCode.value.block[0].block[0].input.projectKey).toBeUndefined()
       expect(recipeCode.value.block[0].block[0].input.issueType).toBeUndefined()
@@ -225,7 +216,9 @@ describe('projectIssuetype filter', () => {
       expect(recipeCode.value.block[0].block[0].input.projectKey).toBeDefined()
       expect(recipeCode.value.block[0].block[0].input.projectKey).toEqual('PRN')
       expect(recipeCode.value.block[0].block[0].input.issueType).toBeDefined()
-      expect(recipeCode.value.block[0].block[0].input.issueType).toEqual('Issue Type Name with \' : \' sign and \'--\' sign ')
+      expect(recipeCode.value.block[0].block[0].input.issueType).toEqual(
+        "Issue Type Name with ' : ' sign and '--' sign ",
+      )
 
       expect(recipeCode.value.block[1].input.project_issuetype).toBeUndefined()
       expect(recipeCode.value.block[1].input.projectKey).toBeDefined()
@@ -240,7 +233,7 @@ describe('projectIssuetype filter', () => {
       expect(recipeCode.value.block[2].input.issueType).toEqual('DynamicPickListSelction')
     })
 
-    it('should replace \'sample_project_issuetype\' to sampleProjectKey and sampleIssueType at input', async () => {
+    it("should replace 'sample_project_issuetype' to sampleProjectKey and sampleIssueType at input", async () => {
       expect(recipeCode.value.block[0].block[0].input.sample_project_issuetype).toBeDefined()
       expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toBeUndefined()
       expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toBeUndefined()

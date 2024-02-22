@@ -1,21 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { collections } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  ListType,
+  MapType,
+  InstanceElement,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
@@ -98,15 +106,13 @@ describe('swagger_instance_elements', () => {
 
     beforeEach(() => {
       mockPaginator = mockFunction<Paginator>().mockImplementation(
-        async function *getAll(getParams, extractPageEntries) {
+        async function* getAll(getParams, extractPageEntries) {
           if (getParams.url === '/pet') {
             yield [
               {
                 id: 'dog',
                 name: 'def',
-                owners: [
-                  { name: 'o1', bla: 'BLA', x: { nested: 'value' } },
-                ],
+                owners: [{ name: 'o1', bla: 'BLA', x: { nested: 'value' } }],
                 primaryOwner: { name: 'primary' },
                 food1: { id: 'f1' },
                 food2: { id: 'f2' },
@@ -114,9 +120,7 @@ describe('swagger_instance_elements', () => {
               {
                 id: 'cat',
                 name: 'def',
-                owners: [
-                  { name: 'o2', bla: 'BLA', x: { nested: 'value' } },
-                ],
+                owners: [{ name: 'o2', bla: 'BLA', x: { nested: 'value' } }],
                 food1: { id: 'f1' },
                 food2: { id: 'f2' },
               },
@@ -125,23 +129,17 @@ describe('swagger_instance_elements', () => {
               {
                 id: 'mouse',
                 name: 'def',
-                owners: [
-                  { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
-                ],
+                owners: [{ name: 'o3', bla: 'BLA', x: { nested: 'value' } }],
                 food1: { id: 'f1' },
                 food2: { id: 'f2' },
               },
             ].flatMap(extractPageEntries)
           }
           if (getParams.url === '/owner') {
-            yield [
-              { name: 'owner2' },
-            ].flatMap(extractPageEntries)
+            yield [{ name: 'owner2' }].flatMap(extractPageEntries)
           }
           if (getParams.url === '/status') {
-            yield [
-              { id: '1', name: 'DoNe' },
-            ].flatMap(extractPageEntries)
+            yield [{ id: '1', name: 'DoNe' }].flatMap(extractPageEntries)
           }
           if (getParams.url === '/fail') {
             throw new HTTPError('failed', { data: {}, status: 403 })
@@ -184,9 +182,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: '.*' },
-          ],
+          include: [{ type: '.*' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -200,11 +196,13 @@ describe('swagger_instance_elements', () => {
       expect(res.errors).toEqual([
         {
           severity: 'Warning',
-          message: "Salto could not access the Fail resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          message:
+            "Salto could not access the Fail resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
         {
           severity: 'Warning',
-          message: "Salto could not access the Fail401 resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          message:
+            "Salto could not access the Fail401 resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
       ])
     })
@@ -238,10 +236,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -260,42 +255,56 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
       const ownerInst = res.elements.find(e => e.elemID.name === 'owner2')
-      expect(ownerInst?.isEqual(new InstanceElement(
-        'owner2',
-        objectTypes.Owner,
-        {
-          name: 'owner2',
-        },
-        [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
-      ))).toBeTruthy()
-      const petInst = res.elements.find(e => e.elemID.name === 'dog')
-      expect(petInst?.isEqual(new InstanceElement(
-        'dog',
-        objectTypes.Pet,
-        {
-          id: 'dog',
-          name: 'def',
-          owners: [
+      expect(
+        ownerInst?.isEqual(
+          new InstanceElement(
+            'owner2',
+            objectTypes.Owner,
             {
-              name: 'o1',
+              name: 'owner2',
+            },
+            [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
+          ),
+        ),
+      ).toBeTruthy()
+      const petInst = res.elements.find(e => e.elemID.name === 'dog')
+      expect(
+        petInst?.isEqual(
+          new InstanceElement(
+            'dog',
+            objectTypes.Pet,
+            {
+              id: 'dog',
+              name: 'def',
+              owners: [
+                {
+                  name: 'o1',
+                  additionalProperties: {
+                    bla: 'BLA',
+                    x: { nested: 'value' },
+                  },
+                },
+              ],
+              primaryOwner: { name: 'primary' },
               additionalProperties: {
-                bla: 'BLA',
-                x: { nested: 'value' },
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
               },
             },
-          ],
-          primaryOwner: { name: 'primary' },
-          additionalProperties: {
-            food1: { id: 'f1' },
-            food2: { id: 'f2' },
-          },
-        },
-        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
-      ))).toBeTruthy()
+            [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     it('should use the request defaults', async () => {
@@ -331,10 +340,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -353,8 +359,14 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: 'abc' }, expect.anything())
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: 'abc' }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: 'abc' },
+        expect.anything(),
+      )
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: 'abc' },
+        expect.anything(),
+      )
     })
 
     it('should not extract standalone fields', async () => {
@@ -385,20 +397,14 @@ describe('swagger_instance_elements', () => {
                 },
               },
               transformation: {
-                standaloneFields: [
-                  { fieldName: 'owners' },
-                  { fieldName: 'primaryOwner' },
-                ],
+                standaloneFields: [{ fieldName: 'owners' }, { fieldName: 'primaryOwner' }],
                 nestStandaloneInstances: false,
               },
             },
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -459,19 +465,13 @@ describe('swagger_instance_elements', () => {
                 },
               },
               transformation: {
-                standaloneFields: [
-                  { fieldName: 'owners' },
-                  { fieldName: 'primaryOwner' },
-                ],
+                standaloneFields: [{ fieldName: 'owners' }, { fieldName: 'primaryOwner' }],
               },
             },
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -504,8 +504,14 @@ describe('swagger_instance_elements', () => {
         [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'owners', 'mouse__o3'],
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
       const primaryOInst = res.elements.find(e => e.elemID.name === 'dog__primary') as InstanceElement
       const dogO1Inst = res.elements.find(e => e.elemID.name === 'dog__o1') as InstanceElement
@@ -513,56 +519,62 @@ describe('swagger_instance_elements', () => {
       expect(primaryOInst).toBeInstanceOf(InstanceElement)
       expect(dogO1Inst).toBeInstanceOf(InstanceElement)
       expect(petInst).toBeInstanceOf(InstanceElement)
-      expect(dogO1Inst.isEqual(new InstanceElement(
-        'dog__o1',
-        objectTypes.Owner,
-        {
-          name: 'o1',
-          additionalProperties: {
-            bla: 'BLA',
-            x: { nested: 'value' },
-          },
-        },
-        // path has no effect on equality
-        [],
-        {
-          _parent: [
-            new ReferenceExpression(petInst.elemID),
-          ],
-        }
-      ))).toBeTruthy()
-      expect(primaryOInst.isEqual(new InstanceElement(
-        'dog__primary',
-        objectTypes.Owner,
-        {
-          name: 'primary',
-        },
-        // path has no effect on equality
-        [],
-        {
-          _parent: [
-            new ReferenceExpression(petInst.elemID),
-          ],
-        }
-      ))).toBeTruthy()
-      expect(petInst.isEqual(new InstanceElement(
-        'dog',
-        objectTypes.Pet,
-        {
-          id: 'dog',
-          name: 'def',
-          owners: [
-            new ReferenceExpression(dogO1Inst.elemID),
-          ],
-          primaryOwner: new ReferenceExpression(primaryOInst.elemID),
-          additionalProperties: {
-            food1: { id: 'f1' },
-            food2: { id: 'f2' },
-          },
-        },
-        // path has no effect on equality
-        [],
-      ))).toBeTruthy()
+      expect(
+        dogO1Inst.isEqual(
+          new InstanceElement(
+            'dog__o1',
+            objectTypes.Owner,
+            {
+              name: 'o1',
+              additionalProperties: {
+                bla: 'BLA',
+                x: { nested: 'value' },
+              },
+            },
+            // path has no effect on equality
+            [],
+            {
+              _parent: [new ReferenceExpression(petInst.elemID)],
+            },
+          ),
+        ),
+      ).toBeTruthy()
+      expect(
+        primaryOInst.isEqual(
+          new InstanceElement(
+            'dog__primary',
+            objectTypes.Owner,
+            {
+              name: 'primary',
+            },
+            // path has no effect on equality
+            [],
+            {
+              _parent: [new ReferenceExpression(petInst.elemID)],
+            },
+          ),
+        ),
+      ).toBeTruthy()
+      expect(
+        petInst.isEqual(
+          new InstanceElement(
+            'dog',
+            objectTypes.Pet,
+            {
+              id: 'dog',
+              name: 'def',
+              owners: [new ReferenceExpression(dogO1Inst.elemID)],
+              primaryOwner: new ReferenceExpression(primaryOInst.elemID),
+              additionalProperties: {
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
+              },
+            },
+            // path has no effect on equality
+            [],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     it('should not extract standalone fields that are not object types or lists of object types', async () => {
@@ -592,19 +604,13 @@ describe('swagger_instance_elements', () => {
                 },
               },
               transformation: {
-                standaloneFields: [
-                  { fieldName: 'additionalProperties' },
-                  { fieldName: 'name' },
-                ],
+                standaloneFields: [{ fieldName: 'additionalProperties' }, { fieldName: 'name' }],
               },
             },
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -651,19 +657,13 @@ describe('swagger_instance_elements', () => {
                 },
               },
               transformation: {
-                fieldsToOmit: [
-                  { fieldName: 'name', fieldType: 'string' },
-                  { fieldName: 'primaryOwner' },
-                ],
+                fieldsToOmit: [{ fieldName: 'name', fieldType: 'string' }, { fieldName: 'primaryOwner' }],
               },
             },
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -682,36 +682,46 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
       const petInst = res.elements.find(e => e.elemID.name === 'dog') as InstanceElement
       expect(petInst).toBeInstanceOf(InstanceElement)
       // primaryOwner and name are omitted from the value
-      expect(petInst.isEqual(new InstanceElement(
-        'dog',
-        objectTypes.Pet,
-        {
-          id: 'dog',
-          owners: [
+      expect(
+        petInst.isEqual(
+          new InstanceElement(
+            'dog',
+            objectTypes.Pet,
             {
-              name: 'o1',
+              id: 'dog',
+              owners: [
+                {
+                  name: 'o1',
+                  additionalProperties: {
+                    bla: 'BLA',
+                    x: { nested: 'value' },
+                  },
+                },
+              ],
               additionalProperties: {
-                bla: 'BLA',
-                x: { nested: 'value' },
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
               },
             },
-          ],
-          additionalProperties: {
-            food1: { id: 'f1' },
-            food2: { id: 'f2' },
-          },
-        },
-        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
-      ))).toBeTruthy()
+            [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
-    it('should return nested instances when nestedFieldFinder returns a specific field\'s details', async () => {
+    it("should return nested instances when nestedFieldFinder returns a specific field's details", async () => {
       const objectTypes = generateObjectTypes()
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -741,10 +751,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Owner' }, { type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -771,23 +778,33 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Owner.instance.o3`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
       const dogO1Inst = res.elements.find(e => e.elemID.name === 'o1') as InstanceElement
       expect(dogO1Inst).toBeInstanceOf(InstanceElement)
-      expect(dogO1Inst.isEqual(new InstanceElement(
-        'o1',
-        objectTypes.Owner,
-        {
-          name: 'o1',
-          additionalProperties: {
-            bla: 'BLA',
-            x: { nested: 'value' },
-          },
-        },
-        [ADAPTER_NAME, 'Records', 'Owner', 'o1'],
-      ))).toBeTruthy()
+      expect(
+        dogO1Inst.isEqual(
+          new InstanceElement(
+            'o1',
+            objectTypes.Owner,
+            {
+              name: 'o1',
+              additionalProperties: {
+                bla: 'BLA',
+                x: { nested: 'value' },
+              },
+            },
+            [ADAPTER_NAME, 'Records', 'Owner', 'o1'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     it('should fail gracefully if data field is not an object type', async () => {
@@ -809,9 +826,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -835,16 +850,12 @@ describe('swagger_instance_elements', () => {
         },
       })
 
-      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get(
-        _args, extractPageEntries,
-      ) {
+      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function* get(_args, extractPageEntries) {
         yield [
           {
             id: 'dog',
             name: 'def',
-            owners: [
-              { name: 'o1', bla: 'BLA', x: { nested: 'value' } },
-            ],
+            owners: [{ name: 'o1', bla: 'BLA', x: { nested: 'value' } }],
             primaryOwner: { name: 'primary' },
             food1: { id: 'f1' },
             food2: { id: 'f2' },
@@ -852,9 +863,7 @@ describe('swagger_instance_elements', () => {
           {
             id: 'cat',
             name: 'def',
-            owners: [
-              { name: 'o2', bla: 'BLA', x: { nested: 'value' } },
-            ],
+            owners: [{ name: 'o2', bla: 'BLA', x: { nested: 'value' } }],
             food1: { id: 'f1' },
             food2: { id: 'f2' },
           },
@@ -863,9 +872,7 @@ describe('swagger_instance_elements', () => {
           {
             id: 'mouse',
             name: 'def',
-            owners: [
-              { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
-            ],
+            owners: [{ name: 'o3', bla: 'BLA', x: { nested: 'value' } }],
             food1: { id: 'f1' },
             food2: { id: 'f2' },
           },
@@ -874,9 +881,7 @@ describe('swagger_instance_elements', () => {
           {
             id: '33',
             name: 'def',
-            owners: [
-              { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
-            ],
+            owners: [{ name: 'o3', bla: 'BLA', x: { nested: 'value' } }],
             food1: { id: 'f1' },
             food2: { id: 'f2' },
           },
@@ -899,9 +904,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -920,32 +923,39 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.33@`, // digit-only ids should be escaped
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet_list', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet_list', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
       const petInst = res.elements.find(e => e.elemID.name === 'dog')
-      expect(petInst?.isEqual(new InstanceElement(
-        'dog',
-        objectTypes.Pet,
-        {
-          id: 'dog',
-          name: 'def',
-          owners: [
+      expect(
+        petInst?.isEqual(
+          new InstanceElement(
+            'dog',
+            objectTypes.Pet,
             {
-              name: 'o1',
+              id: 'dog',
+              name: 'def',
+              owners: [
+                {
+                  name: 'o1',
+                  additionalProperties: {
+                    bla: 'BLA',
+                    x: { nested: 'value' },
+                  },
+                },
+              ],
+              primaryOwner: { name: 'primary' },
               additionalProperties: {
-                bla: 'BLA',
-                x: { nested: 'value' },
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
               },
             },
-          ],
-          primaryOwner: { name: 'primary' },
-          additionalProperties: {
-            food1: { id: 'f1' },
-            food2: { id: 'f2' },
-          },
-        },
-        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
-      ))).toBeTruthy()
+            [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     it('(special case) should extract additionalProperties values if it is the only field nested under a dataField specified in configuration', async () => {
@@ -978,9 +988,7 @@ describe('swagger_instance_elements', () => {
         AllCustomObjects,
       }
 
-      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get(
-        _args, extractPageEntries,
-      ) {
+      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function* get(_args, extractPageEntries) {
         yield [
           {
             definitions: {
@@ -1023,9 +1031,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'AllCustomObjects' },
-          ],
+          include: [{ type: 'AllCustomObjects' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -1040,40 +1046,45 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.CustomObjectDefinition.instance.Food`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/custom_objects', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/custom_objects', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
       const petInst = res.elements.find(e => e.elemID.name === 'Pet') as InstanceElement
       expect(petInst).toBeInstanceOf(InstanceElement)
-      expect(petInst.isEqual(new InstanceElement(
-        'Pet',
-        objectTypes.CustomObjectDefinition,
-        {
-          name: 'Pet',
-          additionalProperties: {
-            something: 'else',
-          },
-        },
-        [ADAPTER_NAME, 'CustomObjectDefinition', 'Owner', 'Pet'],
-      ))).toBeTruthy()
+      expect(
+        petInst.isEqual(
+          new InstanceElement(
+            'Pet',
+            objectTypes.CustomObjectDefinition,
+            {
+              name: 'Pet',
+              additionalProperties: {
+                something: 'else',
+              },
+            },
+            [ADAPTER_NAME, 'CustomObjectDefinition', 'Owner', 'Pet'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     it('should not put existing field values under additionalProperties even if they unexpectedly contain lists', async () => {
       const objectTypes = generateObjectTypes()
 
       mockPaginator = mockFunction<Paginator>().mockImplementation(
-        async function *getAll(getParams, extractPageEntries) {
+        async function* getAll(getParams, extractPageEntries) {
           if (getParams.url === '/pet') {
             yield [
               {
                 id: 'mouse',
                 name: 'def',
-                primaryOwner: [
-                  { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
-                ],
+                primaryOwner: [{ name: 'o3', bla: 'BLA', x: { nested: 'value' } }],
               },
             ].flatMap(extractPageEntries)
           }
-        }
+        },
       )
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -1092,9 +1103,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -1108,33 +1117,40 @@ describe('swagger_instance_elements', () => {
       const petInst = res.elements[0]
       expect(petInst.elemID.getFullName()).toEqual(`${ADAPTER_NAME}.Pet.instance.mouse`)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
-      expect(petInst.isEqual(new InstanceElement(
-        'mouse',
-        objectTypes.Pet,
-        {
-          id: 'mouse',
-          name: 'def',
-          primaryOwner: [
+      expect(
+        petInst.isEqual(
+          new InstanceElement(
+            'mouse',
+            objectTypes.Pet,
             {
-              name: 'o3',
-              additionalProperties: {
-                bla: 'BLA',
-                x: { nested: 'value' },
-              },
+              id: 'mouse',
+              name: 'def',
+              primaryOwner: [
+                {
+                  name: 'o3',
+                  additionalProperties: {
+                    bla: 'BLA',
+                    x: { nested: 'value' },
+                  },
+                },
+              ],
             },
-          ],
-        },
-        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
-      ))).toBeTruthy()
+            [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     it('should not put existing field values under additionalProperties even if they unexpectedly contain single values', async () => {
       const objectTypes = generateObjectTypes()
 
       mockPaginator = mockFunction<Paginator>().mockImplementation(
-        async function *getAll(getParams, extractPageEntries) {
+        async function* getAll(getParams, extractPageEntries) {
           if (getParams.url === '/pet') {
             yield [
               {
@@ -1144,7 +1160,7 @@ describe('swagger_instance_elements', () => {
               },
             ].flatMap(extractPageEntries)
           }
-        }
+        },
       )
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -1163,9 +1179,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -1179,24 +1193,31 @@ describe('swagger_instance_elements', () => {
       const petInst = res.elements[0]
       expect(petInst.elemID.getFullName()).toEqual(`${ADAPTER_NAME}.Pet.instance.mouse`)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith(
+        { url: '/pet', recursiveQueryParams: undefined, paginationField: undefined },
+        expect.anything(),
+      )
 
-      expect(petInst.isEqual(new InstanceElement(
-        'mouse',
-        objectTypes.Pet,
-        {
-          id: 'mouse',
-          name: 'def',
-          owners: {
-            name: 'o3',
-            additionalProperties: {
-              bla: 'BLA',
-              x: { nested: 'value' },
+      expect(
+        petInst.isEqual(
+          new InstanceElement(
+            'mouse',
+            objectTypes.Pet,
+            {
+              id: 'mouse',
+              name: 'def',
+              owners: {
+                name: 'o3',
+                additionalProperties: {
+                  bla: 'BLA',
+                  x: { nested: 'value' },
+                },
+              },
             },
-          },
-        },
-        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
-      ))).toBeTruthy()
+            [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
+          ),
+        ),
+      ).toBeTruthy()
     })
 
     describe('with types that require recursing', () => {
@@ -1205,17 +1226,16 @@ describe('swagger_instance_elements', () => {
       beforeEach(async () => {
         mockPaginator.mockImplementation(({ url }) => {
           if (url === '/pet') {
-            return toAsyncIterable([[
-              { id: 'dog', name: 'def' },
-              { id: 'cat', name: 'def' },
-              { id: 'fish', name: 'fish' },
-            ]])
+            return toAsyncIterable([
+              [
+                { id: 'dog', name: 'def' },
+                { id: 'cat', name: 'def' },
+                { id: 'fish', name: 'fish' },
+              ],
+            ])
           }
           if (url === '/pet/dog/owner' || url === '/pet/fish/owner') {
-            return toAsyncIterable([[
-              { name: 'o1' },
-              { name: 'o2' },
-            ]])
+            return toAsyncIterable([[{ name: 'o1' }, { name: 'o2' }]])
           }
           if (url === '/pet/dog/owner/o1/nicknames') {
             return toAsyncIterable([[{ names: ['n1', 'n2'] }]])
@@ -1251,9 +1271,7 @@ describe('swagger_instance_elements', () => {
                         { name: 'petId', fromField: 'id' },
                         { name: 'petName', fromField: 'name' },
                       ],
-                      conditions: [
-                        { fromField: 'id', match: ['dog', 'fish'] },
-                      ],
+                      conditions: [{ fromField: 'id', match: ['dog', 'fish'] }],
                     },
                   ],
                 },
@@ -1291,9 +1309,7 @@ describe('swagger_instance_elements', () => {
             },
           },
           fetchQuery: createElementQuery({
-            include: [
-              { type: 'Pet' },
-            ],
+            include: [{ type: 'Pet' }],
             exclude: [],
           }),
           supportedTypes: {
@@ -1303,9 +1319,11 @@ describe('swagger_instance_elements', () => {
             ...objectTypes,
             OwnerNickNames: new ObjectType({
               elemID: new ElemID(ADAPTER_NAME, 'OwnerNickNames'),
-              fields: { names: {
-                refType: new ListType(BuiltinTypes.STRING),
-              } },
+              fields: {
+                names: {
+                  refType: new ListType(BuiltinTypes.STRING),
+                },
+              },
             }),
             OwnerInfo: new ObjectType({
               elemID: new ElemID(ADAPTER_NAME, 'OwnerInfo'),
@@ -1317,71 +1335,91 @@ describe('swagger_instance_elements', () => {
         instances = (await getAllInstances(getAllInstancesParams)).elements
       })
       it('should get inner types recursively for instances that match the condition', () => {
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner' }), expect.anything())
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner' }), expect.anything())
-        expect(mockPaginator).not.toHaveBeenCalledWith(expect.objectContaining({ url: expect.stringContaining('/pet/cat/') }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/dog/owner' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/fish/owner' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).not.toHaveBeenCalledWith(
+          expect.objectContaining({ url: expect.stringContaining('/pet/cat/') }),
+          expect.anything(),
+        )
       })
       it('should get inner types for instances based on context from previous requests', () => {
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/nicknames' }), expect.anything())
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/nicknames' }), expect.anything())
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/info' }), expect.anything())
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/info' }), expect.anything())
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o1/info' }), expect.anything())
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o2/info' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/dog/owner/o1/nicknames' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/dog/owner/o2/nicknames' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/dog/owner/o1/info' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/dog/owner/o2/info' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/fish/owner/o1/info' }),
+          expect.anything(),
+        )
+        expect(mockPaginator).toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/pet/fish/owner/o2/info' }),
+          expect.anything(),
+        )
 
         expect(mockPaginator).not.toHaveBeenCalledWith(
-          expect.objectContaining({ url: expect.stringMatching(/\/pet\/fish\/owner\/.*\/nicknames/) })
+          expect.objectContaining({ url: expect.stringMatching(/\/pet\/fish\/owner\/.*\/nicknames/) }),
         )
       })
       it('should return nested value list in the instance when isSingle is falsy and single item when isSingle=true', () => {
         expect(instances).toHaveLength(3)
         const [dog, cat, fish] = instances
-        expect(dog.value).toHaveProperty(
-          'owners',
-          [
-            {
-              name: 'o1',
-              additionalProperties: {
-                nicknames: [{ names: ['n1', 'n2'] }],
-                info: { numOfPets: 2 },
-              },
+        expect(dog.value).toHaveProperty('owners', [
+          {
+            name: 'o1',
+            additionalProperties: {
+              nicknames: [{ names: ['n1', 'n2'] }],
+              info: { numOfPets: 2 },
             },
-            {
-              name: 'o2',
-              additionalProperties: {
-                nicknames: [{ names: ['n3'] }],
-                info: { numOfPets: 2 },
-              },
+          },
+          {
+            name: 'o2',
+            additionalProperties: {
+              nicknames: [{ names: ['n3'] }],
+              info: { numOfPets: 2 },
             },
-          ]
-        )
+          },
+        ])
         expect(cat.value).not.toHaveProperty('owners')
-        expect(fish.value).toHaveProperty(
-          'owners',
-          [
-            { name: 'o1', additionalProperties: { info: { numOfPets: 2 } } },
-            { name: 'o2', additionalProperties: { info: { numOfPets: 2 } } },
-          ]
-        )
+        expect(fish.value).toHaveProperty('owners', [
+          { name: 'o1', additionalProperties: { info: { numOfPets: 2 } } },
+          { name: 'o2', additionalProperties: { info: { numOfPets: 2 } } },
+        ])
       })
 
       it('should not return instances if failed to get their inner values', async () => {
         mockPaginator.mockImplementation(({ url }) => {
           if (url === '/pet') {
-            return toAsyncIterable([[
-              { id: 'dog', name: 'def' },
-              { id: 'cat', name: 'def' },
-              { id: 'fish', name: 'fish' },
-            ]])
+            return toAsyncIterable([
+              [
+                { id: 'dog', name: 'def' },
+                { id: 'cat', name: 'def' },
+                { id: 'fish', name: 'fish' },
+              ],
+            ])
           }
           if (url === '/pet/fish/owner') {
             throw new Error('some error')
           }
           if (url === '/pet/dog/owner') {
-            return toAsyncIterable([[
-              { name: 'o1' },
-              { name: 'o2' },
-            ]])
+            return toAsyncIterable([[{ name: 'o1' }, { name: 'o2' }]])
           }
           if (url === '/pet/dog/owner/o1/nicknames') {
             return toAsyncIterable([[{ names: ['n1', 'n2'] }]])
@@ -1399,25 +1437,22 @@ describe('swagger_instance_elements', () => {
 
         expect(instances).toHaveLength(2)
         const [dog, cat] = instances
-        expect(dog.value).toHaveProperty(
-          'owners',
-          [
-            {
-              name: 'o1',
-              additionalProperties: {
-                nicknames: [{ names: ['n1', 'n2'] }],
-                info: { numOfPets: 2 },
-              },
+        expect(dog.value).toHaveProperty('owners', [
+          {
+            name: 'o1',
+            additionalProperties: {
+              nicknames: [{ names: ['n1', 'n2'] }],
+              info: { numOfPets: 2 },
             },
-            {
-              name: 'o2',
-              additionalProperties: {
-                nicknames: [{ names: ['n3'] }],
-                info: { numOfPets: 2 },
-              },
+          },
+          {
+            name: 'o2',
+            additionalProperties: {
+              nicknames: [{ names: ['n3'] }],
+              info: { numOfPets: 2 },
             },
-          ]
-        )
+          },
+        ])
         expect(cat.value).not.toHaveProperty('owners')
       })
 
@@ -1428,20 +1463,19 @@ describe('swagger_instance_elements', () => {
 
         mockPaginator.mockImplementation(({ url }) => {
           if (url === '/pet') {
-            return toAsyncIterable([[
-              { id: 'dog', name: 'def' },
-              { id: 'cat', name: 'def' },
-              { id: 'fish', name: 'fish' },
-            ]])
+            return toAsyncIterable([
+              [
+                { id: 'dog', name: 'def' },
+                { id: 'cat', name: 'def' },
+                { id: 'fish', name: 'fish' },
+              ],
+            ])
           }
           if (url === '/pet/fish/owner') {
             throw new Error('some error')
           }
           if (url === '/pet/dog/owner') {
-            return toAsyncIterable([[
-              { name: 'o1' },
-              { name: 'o2' },
-            ]])
+            return toAsyncIterable([[{ name: 'o1' }, { name: 'o2' }]])
           }
           if (url === '/pet/dog/owner/o1/nicknames') {
             return toAsyncIterable([[{ names: ['n1', 'n2'] }]])
@@ -1459,25 +1493,22 @@ describe('swagger_instance_elements', () => {
 
         expect(instances).toHaveLength(3)
         const [dog, cat, fish] = instances
-        expect(dog.value).toHaveProperty(
-          'owners',
-          [
-            {
-              name: 'o1',
-              additionalProperties: {
-                nicknames: [{ names: ['n1', 'n2'] }],
-                info: { numOfPets: 2 },
-              },
+        expect(dog.value).toHaveProperty('owners', [
+          {
+            name: 'o1',
+            additionalProperties: {
+              nicknames: [{ names: ['n1', 'n2'] }],
+              info: { numOfPets: 2 },
             },
-            {
-              name: 'o2',
-              additionalProperties: {
-                nicknames: [{ names: ['n3'] }],
-                info: { numOfPets: 2 },
-              },
+          },
+          {
+            name: 'o2',
+            additionalProperties: {
+              nicknames: [{ names: ['n3'] }],
+              info: { numOfPets: 2 },
             },
-          ]
-        )
+          },
+        ])
         expect(cat.value).not.toHaveProperty('owners')
         expect(fish.value).not.toHaveProperty('owners')
       })
@@ -1485,84 +1516,81 @@ describe('swagger_instance_elements', () => {
 
     it('should fail if type is missing from config', async () => {
       const objectTypes = generateObjectTypes()
-      await expect(() => getAllInstances({
-        paginator: mockPaginator,
-        apiConfig: {
-          typeDefaults: {
-            transformation: {
-              idFields: ['id'],
+      await expect(() =>
+        getAllInstances({
+          paginator: mockPaginator,
+          apiConfig: {
+            typeDefaults: {
+              transformation: {
+                idFields: ['id'],
+              },
+            },
+            types: {
+              Pet: {},
             },
           },
-          types: {
-            Pet: {
-            },
+          fetchQuery: createElementQuery({
+            include: [{ type: 'Owner' }],
+            exclude: [],
+          }),
+          supportedTypes: {
+            Owner: ['Owner'],
           },
-        },
-        fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-          ],
-          exclude: [],
+          objectTypes,
         }),
-        supportedTypes: {
-          Owner: ['Owner'],
-        },
-        objectTypes,
-      })).rejects.toThrow(new Error('could not find type Owner'))
+      ).rejects.toThrow(new Error('could not find type Owner'))
     })
     it('should fail if type is missing from object types', async () => {
       const objectTypes = generateObjectTypes()
-      await expect(() => getAllInstances({
-        paginator: mockPaginator,
-        apiConfig: {
-          typeDefaults: {
-            transformation: {
-              idFields: ['id'],
+      await expect(() =>
+        getAllInstances({
+          paginator: mockPaginator,
+          apiConfig: {
+            typeDefaults: {
+              transformation: {
+                idFields: ['id'],
+              },
+            },
+            types: {
+              Bla: {},
             },
           },
-          types: {
-            Bla: {
-            },
+          fetchQuery: createElementQuery({
+            include: [{ type: 'Bla' }],
+            exclude: [],
+          }),
+          supportedTypes: {
+            Bla: ['Bla'],
           },
-        },
-        fetchQuery: createElementQuery({
-          include: [
-            { type: 'Bla' },
-          ],
-          exclude: [],
+          objectTypes,
         }),
-        supportedTypes: {
-          Bla: ['Bla'],
-        },
-        objectTypes,
-      })).rejects.toThrow(new Error('could not find type Bla'))
+      ).rejects.toThrow(new Error('could not find type Bla'))
     })
     it('should fail if type does not have request details', async () => {
       const objectTypes = generateObjectTypes()
-      await expect(() => getAllInstances({
-        paginator: mockPaginator,
-        apiConfig: {
-          typeDefaults: {
-            transformation: {
-              idFields: ['id'],
+      await expect(() =>
+        getAllInstances({
+          paginator: mockPaginator,
+          apiConfig: {
+            typeDefaults: {
+              transformation: {
+                idFields: ['id'],
+              },
+            },
+            types: {
+              Pet: {},
             },
           },
-          types: {
-            Pet: {
-            },
+          fetchQuery: createElementQuery({
+            include: [{ type: 'Pet' }],
+            exclude: [],
+          }),
+          supportedTypes: {
+            Pet: ['Pet'],
           },
-        },
-        fetchQuery: createElementQuery({
-          include: [
-            { type: 'Pet' },
-          ],
-          exclude: [],
+          objectTypes,
         }),
-        supportedTypes: {
-          Pet: ['Pet'],
-        },
-        objectTypes,
-      })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
+      ).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
 
     it('should convert name and filename if nameMapping exists', async () => {
@@ -1597,10 +1625,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Status' },
-            { type: 'Owner' },
-          ],
+          include: [{ type: 'Status' }, { type: 'Owner' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -1613,18 +1638,8 @@ describe('swagger_instance_elements', () => {
       })
       expect(res.elements.map(e => e.elemID.name)).toEqual(['done', 'OWNER2'])
       expect(res.elements.map(e => e.path)).toEqual([
-        [
-          ADAPTER_NAME,
-          'Records',
-          'Status',
-          'done',
-        ],
-        [
-          ADAPTER_NAME,
-          'Records',
-          'Owner',
-          'OWNER2',
-        ],
+        [ADAPTER_NAME, 'Records', 'Status', 'done'],
+        [ADAPTER_NAME, 'Records', 'Owner', 'OWNER2'],
       ])
     })
   })
@@ -1659,7 +1674,7 @@ describe('swagger_instance_elements', () => {
 
     beforeEach(() => {
       mockPaginator = mockFunction<Paginator>().mockImplementation(
-        async function *getAll(getParams, extractPageEntries) {
+        async function* getAll(getParams, extractPageEntries) {
           if (getParams.url === '/pet') {
             yield [
               {
@@ -1673,11 +1688,9 @@ describe('swagger_instance_elements', () => {
             ].flatMap(extractPageEntries)
           }
           if (getParams.url === '/owner') {
-            yield [
-              { name: 'owner2' },
-            ].flatMap(extractPageEntries)
+            yield [{ name: 'owner2' }].flatMap(extractPageEntries)
           }
-        }
+        },
       )
     })
 
@@ -1708,9 +1721,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Owner' },
-          ],
+          include: [{ type: 'Owner' }],
           exclude: [],
         }),
         supportedTypes: {
@@ -1720,17 +1731,8 @@ describe('swagger_instance_elements', () => {
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
       })
-      expect(res.elements.map(e => e.elemID.name)).toEqual([
-        `${ElemID.CONFIG_NAME}`,
-      ])
-      expect(res.elements.map(e => e.path)).toEqual([
-        [
-          ADAPTER_NAME,
-          'Records',
-          'Settings',
-          'Owner',
-        ],
-      ])
+      expect(res.elements.map(e => e.elemID.name)).toEqual([`${ElemID.CONFIG_NAME}`])
+      expect(res.elements.map(e => e.path)).toEqual([[ADAPTER_NAME, 'Records', 'Settings', 'Owner']])
     })
     it('should return fetch error if singleton type have more than one instance', async () => {
       const objectTypes = generateObjectTypes()
@@ -1757,9 +1759,7 @@ describe('swagger_instance_elements', () => {
           },
         },
         fetchQuery: createElementQuery({
-          include: [
-            { type: 'Pet' },
-          ],
+          include: [{ type: 'Pet' }],
           exclude: [],
         }),
         supportedTypes: {

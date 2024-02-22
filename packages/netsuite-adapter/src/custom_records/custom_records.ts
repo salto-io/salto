@@ -1,23 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import Ajv from 'ajv'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, ObjectType, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ObjectType,
+  ElemIdGetter,
+  OBJECT_SERVICE_ID,
+  toServiceIdsString,
+  OBJECT_NAME,
+} from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_RECORDS_PATH, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
 import { NetsuiteQuery } from '../config/query'
@@ -47,9 +54,9 @@ const SUITE_QL_RESULTS_SCHEMA = {
 
 const queryCustomRecordsTable = async (
   client: NetsuiteClient,
-  type: string
+  type: string,
 ): Promise<Record<string, SuiteQLRecord>> => {
-  log.debug('querying custom record type \'%s\' SuiteQL table', type)
+  log.debug("querying custom record type '%s' SuiteQL table", type)
   const result = await client.runSuiteQL(`SELECT id, scriptid FROM ${type} ORDER BY id ASC`)
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SuiteQLRecord[]>(SUITE_QL_RESULTS_SCHEMA, result)) {
@@ -69,31 +76,38 @@ const createInstances = async (
     ? await queryCustomRecordsTable(client, type.annotations[SCRIPT_ID])
     : {}
 
-  return records.map(record => ({
-    [SCRIPT_ID]: record[SOAP_SCRIPT_ID]
-      ? String(record[SOAP_SCRIPT_ID]).toLowerCase()
-      : idToSuiteQLRecord[record.attributes.internalId]?.scriptid.toLowerCase(),
-    ..._.omit(record, SOAP_SCRIPT_ID),
-  })).filter(record => {
-    if (!record[SCRIPT_ID]) {
-      log.warn('Dropping record without %s of type %s: %o', SCRIPT_ID, type.elemID.name, record)
-      return false
-    }
-    return true
-  }).map(record => ({
-    name: elemIdGetter?.(NETSUITE, {
-      [SCRIPT_ID]: record[SCRIPT_ID],
-      [OBJECT_SERVICE_ID]: toServiceIdsString({
-        [OBJECT_NAME]: type.elemID.getFullName(),
-      }),
-    }, naclCase(record[SCRIPT_ID])).name ?? naclCase(record[SCRIPT_ID]),
-    record,
-  })).map(({ name, record }) => new InstanceElement(
-    name,
-    type,
-    record,
-    [NETSUITE, CUSTOM_RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
-  ))
+  return records
+    .map(record => ({
+      [SCRIPT_ID]: record[SOAP_SCRIPT_ID]
+        ? String(record[SOAP_SCRIPT_ID]).toLowerCase()
+        : idToSuiteQLRecord[record.attributes.internalId]?.scriptid.toLowerCase(),
+      ..._.omit(record, SOAP_SCRIPT_ID),
+    }))
+    .filter(record => {
+      if (!record[SCRIPT_ID]) {
+        log.warn('Dropping record without %s of type %s: %o', SCRIPT_ID, type.elemID.name, record)
+        return false
+      }
+      return true
+    })
+    .map(record => ({
+      name:
+        elemIdGetter?.(
+          NETSUITE,
+          {
+            [SCRIPT_ID]: record[SCRIPT_ID],
+            [OBJECT_SERVICE_ID]: toServiceIdsString({
+              [OBJECT_NAME]: type.elemID.getFullName(),
+            }),
+          },
+          naclCase(record[SCRIPT_ID]),
+        ).name ?? naclCase(record[SCRIPT_ID]),
+      record,
+    }))
+    .map(
+      ({ name, record }) =>
+        new InstanceElement(name, type, record, [NETSUITE, CUSTOM_RECORDS_PATH, type.elemID.name, pathNaclCase(name)]),
+    )
 }
 
 export const getCustomRecords = async (
@@ -105,28 +119,29 @@ export const getCustomRecords = async (
   if (!client.isSuiteAppConfigured()) {
     return { elements: [], largeTypesError: [] }
   }
-  const customRecordTypesMap = _.keyBy(
-    customRecordTypes,
-    type => type.annotations[SCRIPT_ID] as string
-  )
+  const customRecordTypesMap = _.keyBy(customRecordTypes, type => type.annotations[SCRIPT_ID] as string)
   const { customRecords, largeTypesError } = await client.getCustomRecords(
-    Object.keys(customRecordTypesMap).filter(query.isCustomRecordTypeMatch)
+    Object.keys(customRecordTypesMap).filter(query.isCustomRecordTypeMatch),
   )
 
-  const results = await awu(customRecords).map(async ({ type, records }) => (
-    !customRecordTypesMap[type] || records.length === 0 ? {
-      type,
-      instances: [],
-    } : {
-      type,
-      instances: await createInstances(client, records, customRecordTypesMap[type], elemIdGetter),
-    }
-  )).toArray()
+  const results = await awu(customRecords)
+    .map(async ({ type, records }) =>
+      !customRecordTypesMap[type] || records.length === 0
+        ? {
+            type,
+            instances: [],
+          }
+        : {
+            type,
+            instances: await createInstances(client, records, customRecordTypesMap[type], elemIdGetter),
+          },
+    )
+    .toArray()
 
   return {
-    elements: results.flatMap(({ type, instances }) => instances.filter(
-      instance => query.isCustomRecordMatch({ type, instanceId: instance.value[SCRIPT_ID] })
-    )),
+    elements: results.flatMap(({ type, instances }) =>
+      instances.filter(instance => query.isCustomRecordMatch({ type, instanceId: instance.value[SCRIPT_ID] })),
+    ),
     largeTypesError,
   }
 }

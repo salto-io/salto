@@ -1,23 +1,31 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import Joi from 'joi'
 import {
-  Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, TemplatePart, toChange, Value,
+  Change,
+  ChangeDataType,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  ReferenceExpression,
+  TemplatePart,
+  toChange,
+  Value,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -40,8 +48,11 @@ import {
   BRAND_TYPE_NAME,
   CATEGORIES_FIELD,
   CATEGORY_TYPE_NAME,
-  CUSTOM_FIELD_OPTIONS_FIELD_NAME, SECTION_TYPE_NAME,
-  SECTIONS_FIELD, TICKET_FORM_TYPE_NAME, ZENDESK,
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
+  SECTION_TYPE_NAME,
+  SECTIONS_FIELD,
+  TICKET_FORM_TYPE_NAME,
+  ZENDESK,
 } from '../constants'
 
 const { isDefined } = lowerDashValues
@@ -69,10 +80,7 @@ export const applyforInstanceChangesOfType = async (
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(change => typeNames.includes(getChangeData(change).elemID.typeName))
-    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
-      change,
-      func,
-    ))
+    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(change, func))
 }
 
 export const createAdditionalParentChanges = async (
@@ -82,44 +90,60 @@ export const createAdditionalParentChanges = async (
   const childrenInstance = getChangeData(childrenChanges[0])
   const parents = getParents(childrenInstance)
   if (_.isEmpty(parents) || !isArrayOfRefExprToInstances(parents)) {
-    log.error(`Failed to update the following ${
-      childrenInstance.elemID.typeName} instances since they have no valid parent: ${
-      childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)
+    log.error(
+      `Failed to update the following ${
+        childrenInstance.elemID.typeName
+      } instances since they have no valid parent: ${childrenChanges
+        .map(getChangeData)
+        .map(e => e.elemID.getFullName())}`,
+    )
     return undefined
   }
-  const changes = parents.map(parent => toChange({
-    before: parent.value.clone(), after: parent.value.clone(),
-  }))
+  const changes = parents.map(parent =>
+    toChange({
+      before: parent.value.clone(),
+      after: parent.value.clone(),
+    }),
+  )
   return shouldResolve
-    ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
+    ? awu(changes)
+        .map(change => resolveChangeElement(change, lookupFunc))
+        .toArray()
     : changes
 }
 
-const CONDITION_SCHEMA = Joi.array().items(Joi.object({
-  field: [Joi.string().required(), Joi.object().required()],
-  value: Joi.optional(),
-}).unknown(true)).required()
+const CONDITION_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      field: [Joi.string().required(), Joi.object().required()],
+      value: Joi.optional(),
+    }).unknown(true),
+  )
+  .required()
 
-const CONDITION_SUBJECT_SCHEMA = Joi.array().items(Joi.object({
-  subject: [Joi.string().required(), Joi.object().required()],
-  value: Joi.optional(),
-}).unknown(true)).required()
+const CONDITION_SUBJECT_SCHEMA = Joi.array()
+  .items(
+    Joi.object({
+      subject: [Joi.string().required(), Joi.object().required()],
+      value: Joi.optional(),
+    }).unknown(true),
+  )
+  .required()
 
 export const isConditions = createSchemeGuard<Condition[]>(CONDITION_SCHEMA, 'Found invalid values for conditions')
-export const isSubjectConditions = createSchemeGuard<SubjectCondition[]>(CONDITION_SUBJECT_SCHEMA, 'Found invalid values for subject conditions')
+export const isSubjectConditions = createSchemeGuard<SubjectCondition[]>(
+  CONDITION_SUBJECT_SCHEMA,
+  'Found invalid values for subject conditions',
+)
 export const conditionFieldValue = (
-  condition: Condition | SubjectCondition, typeName: string
-): string | ReferenceExpression => (
+  condition: Condition | SubjectCondition,
+  typeName: string,
+): string | ReferenceExpression =>
   TYPES_WITH_SUBJECT_CONDITIONS.includes(typeName)
     ? (condition as SubjectCondition).subject
     : (condition as Condition).field
-)
-export const isCorrectConditions = (value: unknown, typeName: string):
-value is (Condition | SubjectCondition)[] => (
-  TYPES_WITH_SUBJECT_CONDITIONS.includes(typeName)
-    ? isSubjectConditions(value)
-    : isConditions(value)
-)
+export const isCorrectConditions = (value: unknown, typeName: string): value is (Condition | SubjectCondition)[] =>
+  TYPES_WITH_SUBJECT_CONDITIONS.includes(typeName) ? isSubjectConditions(value) : isConditions(value)
 
 const getBrandsForFilter = (
   elements: InstanceElement[],
@@ -133,10 +157,8 @@ const getBrandsForFilter = (
     .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
 }
 
-export const getBrandsForGuide = (
-  elements: InstanceElement[],
-  fetchConfig: ZendeskFetchConfig,
-): InstanceElement[] => getBrandsForFilter(elements, fetchConfig, 'brands')
+export const getBrandsForGuide = (elements: InstanceElement[], fetchConfig: ZendeskFetchConfig): InstanceElement[] =>
+  getBrandsForFilter(elements, fetchConfig, 'brands')
 
 export const getBrandsForGuideThemes = (
   elements: InstanceElement[],
@@ -153,8 +175,11 @@ const isCustomFieldOption = (value: Value): value is CustomFieldOption =>
   _.isPlainObject(value) && _.isString(value.raw_name)
 
 // Get all the custom field options from the changes, including the ones nested inside the children of the parent
-export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTypeName: string, changes: Change[])
-  : CustomFieldOption[] => {
+export const getCustomFieldOptionsFromChanges = (
+  parentTypeName: string,
+  childTypeName: string,
+  changes: Change[],
+): CustomFieldOption[] => {
   const relevantInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -166,7 +191,8 @@ export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTy
     instance => instance.elemID.typeName === parentTypeName,
   )
 
-  return childrenInstances.map(instance => instance.value)
+  return childrenInstances
+    .map(instance => instance.value)
     .concat(parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []))
     .flat()
     .filter(isCustomFieldOption)
@@ -177,18 +203,27 @@ export const ELEMENTS_REGEXES = [
   [SECTIONS_FIELD, SECTION_TYPE_NAME],
   [ARTICLES_FIELD, ARTICLE_TYPE_NAME],
   [ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ATTACHMENT_TYPE_NAME],
-].map(([field, type]) => ({
-  type,
-  urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
-  idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
-})).concat({
-  type: TICKET_FORM_TYPE_NAME,
-  urlRegex: /(ticket_form_id=\d+)/,
-  idRegex: /(?<url>ticket_form_id=)(?<id>\d+)/,
-})
+]
+  .map(([field, type]) => ({
+    type,
+    urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
+    idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
+  }))
+  .concat({
+    type: TICKET_FORM_TYPE_NAME,
+    urlRegex: /(ticket_form_id=\d+)/,
+    idRegex: /(?<url>ticket_form_id=)(?<id>\d+)/,
+  })
 
 // Attempt to match the regex to an element and create a reference to that element
-const createInstanceReference = ({ urlPart, brandOfInstance, instancesById, idRegex, type, enableMissingReferences }: {
+const createInstanceReference = ({
+  urlPart,
+  brandOfInstance,
+  instancesById,
+  idRegex,
+  type,
+  enableMissingReferences,
+}: {
   urlPart: string
   brandOfInstance?: InstanceElement
   instancesById: Record<string, InstanceElement>
@@ -216,22 +251,30 @@ const createInstanceReference = ({ urlPart, brandOfInstance, instancesById, idRe
 }
 
 // Receives a url part (e.g. /categories/123) and attempts to replace the number with a reference to the element
-export const transformReferenceUrls = ({ urlPart, brandOfInstance, instancesById, enableMissingReferences }: {
+export const transformReferenceUrls = ({
+  urlPart,
+  brandOfInstance,
+  instancesById,
+  enableMissingReferences,
+}: {
   urlPart: string
   brandOfInstance?: InstanceElement
   instancesById: Record<string, InstanceElement>
   enableMissingReferences?: boolean
 }): TemplatePart[] => {
   // Attempt to match other instances, stop on the first result
-  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, type }) =>
-    createInstanceReference({
-      urlPart,
-      brandOfInstance,
-      instancesById,
-      idRegex,
-      type,
-      enableMissingReferences,
-    })).find(isDefined)
+  const result = wu(ELEMENTS_REGEXES)
+    .map(({ idRegex, type }) =>
+      createInstanceReference({
+        urlPart,
+        brandOfInstance,
+        instancesById,
+        idRegex,
+        type,
+        enableMissingReferences,
+      }),
+    )
+    .find(isDefined)
 
   // If nothing matched, return the original url
   return result ?? [urlPart]

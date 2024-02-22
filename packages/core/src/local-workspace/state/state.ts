@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
@@ -29,8 +29,14 @@ import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } 
 import { hash, collections, promises } from '@salto-io/lowerdash'
 import semver from 'semver'
 
-
-import { ContentAndHash, createFileStateContentProvider, createS3StateContentProvider, getHashFromHashes, NamedStream, StateContentProvider } from './content_providers'
+import {
+  ContentAndHash,
+  createFileStateContentProvider,
+  createS3StateContentProvider,
+  getHashFromHashes,
+  NamedStream,
+  StateContentProvider,
+} from './content_providers'
 import { version } from '../../generated/version.json'
 import { getLocalStoragePath } from '../../app_config'
 
@@ -38,9 +44,7 @@ const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
 const { toMD5 } = hash
 
-
 const log = logger(module)
-
 
 // a single entry in the path index, [elemid, filepath[] ] - based on the types defined in workspace/path_index.ts
 type PathEntry = [string, string[][]]
@@ -51,9 +55,7 @@ type ParsedState = {
   versions: string[]
 }
 
-const parseStateContent = async (
-  contentStreams: AsyncIterable<NamedStream>,
-): Promise<ParsedState> => {
+const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
   const res: ParsedState = {
     elements: [],
     updateDates: [],
@@ -61,37 +63,40 @@ const parseStateContent = async (
     versions: [],
   }
 
-  await awu(contentStreams).forEach(async ({ name, stream }) => getStream(chain([
-    stream,
-    createGunzip(),
-    parser({ checkErrors: true }),
-    async ({ key, value }) => {
-      if (key === 0) {
-        // line 1 - serialized elements, e.g.
-        //   [{"elemID":{...},"annotations":{...}},{"elemID":{...},"annotations":{...}},...]
-        res.elements = res.elements.concat(await deserializeParsed(value))
-      } else if (key === 1) {
-        // line 2 - update dates, e.g.
-        //   {"dummy":"2023-01-09T15:57:59.322Z"}
-        res.updateDates.push(value)
-      } else if (key === 2) {
-        // line 3 - path index, e.g.
-        //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]
-        res.pathIndices = res.pathIndices.concat(value)
-      } else if (key === 3) {
-        // line 4 - version, e.g.
-        //   "0.1.2"
-        if (!_.isEmpty(value)) {
-          res.versions.push(value)
-        }
-      } else {
-        log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
-      }
-    },
-  ])))
+  await awu(contentStreams).forEach(async ({ name, stream }) =>
+    getStream(
+      chain([
+        stream,
+        createGunzip(),
+        parser({ checkErrors: true }),
+        async ({ key, value }) => {
+          if (key === 0) {
+            // line 1 - serialized elements, e.g.
+            //   [{"elemID":{...},"annotations":{...}},{"elemID":{...},"annotations":{...}},...]
+            res.elements = res.elements.concat(await deserializeParsed(value))
+          } else if (key === 1) {
+            // line 2 - update dates, e.g.
+            //   {"dummy":"2023-01-09T15:57:59.322Z"}
+            res.updateDates.push(value)
+          } else if (key === 2) {
+            // line 3 - path index, e.g.
+            //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]
+            res.pathIndices = res.pathIndices.concat(value)
+          } else if (key === 3) {
+            // line 4 - version, e.g.
+            //   "0.1.2"
+            if (!_.isEmpty(value)) {
+              res.versions.push(value)
+            }
+          } else {
+            log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
+          }
+        },
+      ]),
+    ),
+  )
   return res
 }
-
 
 export const getStateContentProvider = (
   workspaceId: string,
@@ -120,7 +125,7 @@ export const localState = (
   remoteMapCreator: remoteMap.RemoteMapCreator,
   contentProvider: StateContentProvider,
   staticFilesSource?: staticFiles.StateStaticFilesSource,
-  persistent = true
+  persistent = true,
 ): state.State => {
   let dirty = false
   let cacheDirty = false
@@ -128,9 +133,8 @@ export const localState = (
   let currentFilePrefix = filePrefix
   let currentContentProvider = contentProvider
 
-  const currentStaticFilesSource = (): staticFiles.StateStaticFilesSource => (
+  const currentStaticFilesSource = (): staticFiles.StateStaticFilesSource =>
     staticFilesSource ?? currentContentProvider.staticFilesSource
-  )
 
   const setDirty = (): void => {
     dirty = true
@@ -138,7 +142,9 @@ export const localState = (
   }
 
   const syncQuickAccessStateData = async ({
-    stateData, filePaths, newHash,
+    stateData,
+    filePaths,
+    newHash,
   }: {
     stateData: state.StateData
     filePaths: string[]
@@ -151,17 +157,15 @@ export const localState = (
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
     const updateDatesByAccount = _.mapValues(
       res.updateDates
-        .map(entry => (entry ?? {}))
+        .map(entry => entry ?? {})
         .filter(entry => !_.isEmpty(entry))
         .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
-      dateStr => new Date(dateStr)
+      dateStr => new Date(dateStr),
     )
     const stateUpdateDate = stateData.accountsUpdateDate
     if (stateUpdateDate !== undefined) {
       await stateUpdateDate.clear()
-      await stateUpdateDate.setAll(awu(
-        Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))
-      ))
+      await stateUpdateDate.setAll(awu(Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))))
     }
     const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
     if (currentVersion) {
@@ -181,7 +185,11 @@ export const localState = (
     const stateFilesHash = await currentContentProvider.getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash')) ?? toMD5(safeJsonStringify([]))
     if (quickAccessHash !== stateFilesHash) {
-      log.debug('found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)', quickAccessHash, stateFilesHash)
+      log.debug(
+        'found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)',
+        quickAccessHash,
+        stateFilesHash,
+      )
       await syncQuickAccessStateData({
         stateData: quickAccessStateData,
         filePaths,
@@ -200,18 +208,15 @@ export const localState = (
   const createStateTextPerAccount = async (): Promise<Record<string, Readable>> => {
     const elements = await awu(await inMemState.getAll()).toArray()
     const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
-    const accountToElementStreams = await promises.object.mapValuesAsync(
-      elementsByAccount,
-      accountElements => serializeStream(
-        _.sortBy(accountElements, element => element.elemID.getFullName())
-      ),
+    const accountToElementStreams = await promises.object.mapValuesAsync(elementsByAccount, accountElements =>
+      serializeStream(_.sortBy(accountElements, element => element.elemID.getFullName())),
     )
     const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
-      await awu((await inMemState.getPathIndex()).entries()).toArray()
+      await awu((await inMemState.getPathIndex()).entries()).toArray(),
     )
-    async function *getStateStream(account: string): AsyncIterable<string> {
-      async function *yieldWithEOL(streams: AsyncIterable<string>[]): AsyncIterable<string> {
+    async function* getStateStream(account: string): AsyncIterable<string> {
+      async function* yieldWithEOL(streams: AsyncIterable<string>[]): AsyncIterable<string> {
         for (const stream of streams) {
           yield* stream
           yield EOL
@@ -305,13 +310,14 @@ export const localState = (
     },
     calculateHash: calculateHashImpl,
     clear: async (): Promise<void> => {
-      await Promise.all([
-        currentContentProvider.clear(currentFilePrefix),
-        inMemState.clear(),
-      ])
+      await Promise.all([currentContentProvider.clear(currentFilePrefix), inMemState.clear()])
       setDirty()
     },
-    updateStateFromChanges: async ({ changes, unmergedElements, fetchAccounts } : {
+    updateStateFromChanges: async ({
+      changes,
+      unmergedElements,
+      fetchAccounts,
+    }: {
       changes: DetailedChange[]
       unmergedElements?: Element[]
       fetchAccounts?: string[]
@@ -355,7 +361,7 @@ export const loadState = ({
   remoteMapCreator,
   staticFilesSource,
   persistent,
-}: LoadStateArgs): state.State => (
+}: LoadStateArgs): state.State =>
   localState(
     baseDir,
     envName,
@@ -364,4 +370,3 @@ export const loadState = ({
     staticFilesSource,
     persistent,
   )
-)

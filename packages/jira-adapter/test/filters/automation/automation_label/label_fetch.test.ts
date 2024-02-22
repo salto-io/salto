@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -26,7 +26,6 @@ import { JIRA } from '../../../../src/constants'
 import JiraClient from '../../../../src/client/client'
 import { createAutomationLabelType } from '../../../../src/filters/automation/automation_label/types'
 import { CLOUD_RESOURCE_FIELD } from '../../../../src/filters/automation/cloud_id'
-
 
 describe('automationLabelFetchFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -44,24 +43,22 @@ describe('automationLabelFetchFilter', () => {
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     automationLabelType = createAutomationLabelType()
-    automationLabelInstance = new InstanceElement(
-      'labelName',
-      automationLabelType,
-      {
-        id: 555,
-        name: 'labelName',
-        color: 'color',
-      },
-    )
+    automationLabelInstance = new InstanceElement('labelName', automationLabelType, {
+      id: 555,
+      name: 'labelName',
+      color: 'color',
+    })
 
     fetchQuery = elementUtils.query.createMockQuery()
 
-    filter = automationLabelFetchFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-      fetchQuery,
-    })) as filterUtils.FilterWith<'onFetch'>
+    filter = automationLabelFetchFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        fetchQuery,
+      }),
+    ) as filterUtils.FilterWith<'onFetch'>
 
     connection.post.mockImplementation(async url => {
       if (url === '/rest/webResources/1.0/resources') {
@@ -82,11 +79,13 @@ describe('automationLabelFetchFilter', () => {
       if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
         return {
           status: 200,
-          data: [{
-            id: 555,
-            name: 'labelName',
-            color: 'color',
-          }],
+          data: [
+            {
+              id: 555,
+              name: 'labelName',
+              color: 'color',
+            },
+          ],
         }
       }
       throw new Error(`Unexpected url ${url}`)
@@ -131,19 +130,23 @@ describe('automationLabelFetchFilter', () => {
       client = cli
       connection = conn
 
-      filter = automationLabelFetchFilter(getFilterParams({
-        client,
-      })) as filterUtils.FilterWith<'onFetch'>
+      filter = automationLabelFetchFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as filterUtils.FilterWith<'onFetch'>
 
       connection.get.mockImplementation(async url => {
         if (url === '/rest/cb-automation/latest/rule-label') {
           return {
             status: 200,
-            data: [{
-              id: 555,
-              name: 'labelName',
-              color: 'color',
-            }],
+            data: [
+              {
+                id: 555,
+                name: 'labelName',
+                color: 'color',
+              },
+            ],
           }
         }
         throw new Error(`Unexpected url ${url}`)
@@ -162,10 +165,7 @@ describe('automationLabelFetchFilter', () => {
 
       expect(labelType).toEqual(automationLabelType)
 
-      expect(connection.get).toHaveBeenCalledWith(
-        '/rest/cb-automation/latest/rule-label',
-        undefined,
-      )
+      expect(connection.get).toHaveBeenCalledWith('/rest/cb-automation/latest/rule-label', undefined)
     })
 
     it('should not fetch automation labels if usePrivateApi is false', async () => {
@@ -191,12 +191,14 @@ describe('automationLabelFetchFilter', () => {
 
     it('should use elemIdGetter', async () => {
       const { paginator } = mockClient()
-      filter = automationLabelFetchFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-        getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-      })) as filterUtils.FilterWith<'onFetch'>
+      filter = automationLabelFetchFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+          getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+        }),
+      ) as filterUtils.FilterWith<'onFetch'>
 
       const elements = [] as Element[]
       await filter.onFetch(elements)
@@ -211,8 +213,7 @@ describe('automationLabelFetchFilter', () => {
           return {
             status: 200,
             data: {
-              unparsedData: {
-              },
+              unparsedData: {},
             },
           }
         }
@@ -268,10 +269,12 @@ describe('automationLabelFetchFilter', () => {
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,
-            data: [{
-              name: 'labelName',
-              color: 'color',
-            }],
+            data: [
+              {
+                name: 'labelName',
+                color: 'color',
+              },
+            ],
           }
         }
 
@@ -280,10 +283,12 @@ describe('automationLabelFetchFilter', () => {
 
       const elements = [] as Element[]
       expect(await filter.onFetch(elements)).toEqual({
-        errors: [{
-          message: 'Unable to fetch automation labels due to invalid response',
-          severity: 'Warning',
-        }],
+        errors: [
+          {
+            message: 'Unable to fetch automation labels due to invalid response',
+            severity: 'Warning',
+          },
+        ],
       })
     })
   })
@@ -300,15 +305,20 @@ describe('automationLabelFetchFilter', () => {
       throw new Error(`Unexpected url ${url}`)
     })
 
-    filter = automationLabelFetchFilter(getFilterParams({
-      client,
-    })) as filterUtils.FilterWith<'onFetch'>
+    filter = automationLabelFetchFilter(
+      getFilterParams({
+        client,
+      }),
+    ) as filterUtils.FilterWith<'onFetch'>
     const elements = [] as Element[]
     expect(await filter.onFetch(elements)).toEqual({
-      errors: [{
-        message: 'Salto could not access the AutomationLabel resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
-        severity: 'Warning',
-      }],
+      errors: [
+        {
+          message:
+            "Salto could not access the AutomationLabel resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          severity: 'Warning',
+        },
+      ],
     })
   })
   it('should warn if response is 405', async () => {
@@ -324,15 +334,20 @@ describe('automationLabelFetchFilter', () => {
       throw new Error(`Unexpected url ${url}`)
     })
 
-    filter = automationLabelFetchFilter(getFilterParams({
-      client,
-    })) as filterUtils.FilterWith<'onFetch'>
+    filter = automationLabelFetchFilter(
+      getFilterParams({
+        client,
+      }),
+    ) as filterUtils.FilterWith<'onFetch'>
     const elements = [] as Element[]
     expect(await filter.onFetch(elements)).toEqual({
-      errors: [{
-        message: 'Salto could not access the AutomationLabel resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
-        severity: 'Warning',
-      }],
+      errors: [
+        {
+          message:
+            "Salto could not access the AutomationLabel resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          severity: 'Warning',
+        },
+      ],
     })
   })
   it('should fail for other errors', async () => {

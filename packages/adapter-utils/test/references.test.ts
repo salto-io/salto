@@ -1,21 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, BuiltinTypes, ObjectType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { transformElement } from '../src/utils'
-import { getUpdatedReference, getReferences, createReferencesTransformFunc, isArrayOfRefExprToInstances } from '../src/references'
+import {
+  getUpdatedReference,
+  getReferences,
+  createReferencesTransformFunc,
+  isArrayOfRefExprToInstances,
+} from '../src/references'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -35,32 +40,20 @@ describe('references functions', () => {
       parent_book_id: { refType: BuiltinTypes.NUMBER },
     },
   })
-  const mainBook = new InstanceElement(
-    'rootBook',
-    bookType,
-    {
-      id: 101,
-      parent_book_id: 'ROOT',
-    },
-  )
+  const mainBook = new InstanceElement('rootBook', bookType, {
+    id: 101,
+    parent_book_id: 'ROOT',
+  })
   const recipes = [
-    new InstanceElement(
-      'recipe123',
-      recipeType,
-      {
-        name: 'chamber of secrets',
-        book_id: new ReferenceExpression(mainBook.elemID, mainBook),
-        main_book_id: new ReferenceExpression(mainBook.elemID, mainBook),
-      },
-    ),
-    new InstanceElement(
-      'recipe456',
-      recipeType,
-      {
-        name: 'order of phoenix',
-        book_id: new ReferenceExpression(mainBook.elemID, mainBook),
-      },
-    ),
+    new InstanceElement('recipe123', recipeType, {
+      name: 'chamber of secrets',
+      book_id: new ReferenceExpression(mainBook.elemID, mainBook),
+      main_book_id: new ReferenceExpression(mainBook.elemID, mainBook),
+    }),
+    new InstanceElement('recipe456', recipeType, {
+      name: 'order of phoenix',
+      book_id: new ReferenceExpression(mainBook.elemID, mainBook),
+    }),
   ]
 
   it('should find all references of element', () => {

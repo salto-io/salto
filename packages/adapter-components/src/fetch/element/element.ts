@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { ElemIdGetter, Element, ObjectType, SeverityLevel, Values } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -33,17 +33,17 @@ export type ElementGenerator = {
    * (if the type's definition contains standalone fields, then more than one instance).
    * the generator runs basic validations and adds the entries to the queue.
    */
-  pushEntries: (args: {
-    typeName: string
-    entries: unknown[]
-  }) => void
+  pushEntries: (args: { typeName: string; entries: unknown[] }) => void
 
   // produce all types and instances based on all entries processed until now
   generate: () => FetchElements
 }
 
 export const getElementGenerator = ({
-  adapterName, defQuery, predefinedTypes, getElemIdFunc,
+  adapterName,
+  defQuery,
+  predefinedTypes,
+  getElemIdFunc,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -57,7 +57,13 @@ export const getElementGenerator = ({
     const { element: elementDef } = defQuery.query(typeName) ?? {}
     const valueGuard = elementDef?.topLevel?.valueGuard ?? lowerdashValues.isPlainObject
     const [validEntries, invalidEntries] = _.partition(entries, valueGuard)
-    log.warn('[%s] omitted %d entries of type %s that did not match the value guard, first item:', adapterName, invalidEntries.length, typeName, safeJsonStringify(invalidEntries[0]))
+    log.warn(
+      '[%s] omitted %d entries of type %s that did not match the value guard, first item:',
+      adapterName,
+      invalidEntries.length,
+      typeName,
+      safeJsonStringify(invalidEntries[0]),
+    )
 
     // TODO make sure type + service ids are unique
     if (valuesByType[typeName] === undefined) {

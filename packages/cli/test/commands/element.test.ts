@@ -1,25 +1,43 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import open from 'open'
-import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement, isObjectType } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  ObjectType,
+  CORE_ANNOTATIONS,
+  isInstanceElement,
+  InstanceElement,
+  isObjectType,
+} from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { SelectorsError, fixElements } from '@salto-io/core'
 import { CliExitCode } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction, printElementAction, fixElementsAction } from '../../src/commands/element'
+import {
+  cloneAction,
+  moveToEnvsAction,
+  moveToCommonAction,
+  listUnresolvedAction,
+  openAction,
+  listAction,
+  renameAction,
+  printElementAction,
+  fixElementsAction,
+} from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
@@ -28,17 +46,16 @@ import { MockWorkspace } from '../mocks'
 
 const { awu } = collections.asynciterable
 
-const mockedList = async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => (
+const mockedList = async (completeFromEnv?: string): Promise<UnresolvedElemIDs> =>
   completeFromEnv !== undefined
     ? Promise.resolve({
-      found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
-      missing: [],
-    })
+        found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
+        missing: [],
+      })
     : Promise.resolve({
-      found: [],
-      missing: [new ElemID('salesforce', 'fail')],
-    })
-)
+        found: [],
+        missing: [new ElemID('salesforce', 'fail')],
+      })
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
@@ -100,8 +117,7 @@ describe('Element command group', () => {
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain('Failed to clone the specified elements to the target environments')
+        expect(output.stderr.content).toContain('Failed to clone the specified elements to the target environments')
       })
     })
 
@@ -257,8 +273,7 @@ Cloning the specified elements to inactive.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain('Unknown target environment')
+        expect(output.stderr.content).toContain('Unknown target environment')
       })
     })
 
@@ -287,8 +302,7 @@ Cloning the specified elements to inactive.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain('Unknown target environment')
+        expect(output.stderr.content).toContain('Unknown target environment')
       })
     })
     describe('clone with empty list as target envs', () => {
@@ -316,8 +330,7 @@ Cloning the specified elements to inactive.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain(formatTargetEnvRequired())
+        expect(output.stderr.content).toContain(formatTargetEnvRequired())
       })
     })
     describe('clone with current env as target env', () => {
@@ -345,19 +358,20 @@ Cloning the specified elements to inactive.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
+        expect(output.stderr.content).toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
       })
     })
 
     describe('clone with -to-all-envs params', () => {
       const runClone = async ({
-        toEnvs, toAllEnvs, workspace,
-      } : {
+        toEnvs,
+        toAllEnvs,
+        workspace,
+      }: {
         toEnvs?: string[]
         toAllEnvs?: boolean
         workspace?: MockWorkspace
-      }) : Promise<{ result: CliExitCode; output: mocks.MockCliOutput }> => {
+      }): Promise<{ result: CliExitCode; output: mocks.MockCliOutput }> => {
         const cliArgs = mocks.mockCliArgs()
         const { output } = cliArgs
         const selector = new ElemID('salto', 'Account')
@@ -379,13 +393,17 @@ Cloning the specified elements to inactive.
       it('should fail receiving both toEnvs and toAllEnvs', async () => {
         const { result, output } = await runClone({ toEnvs: ['env1'], toAllEnvs: true })
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain('Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters')
+        expect(output.stderr.content).toContain(
+          "Please specify the target environment(s) by passing exactly one of '--to-envs' and '--to-all-envs' parameters",
+        )
       })
 
       it('should fail not receiving one of toEnvs or toAllEnvs', async () => {
-        const { result, output } = await runClone({ })
+        const { result, output } = await runClone({})
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain('Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters')
+        expect(output.stderr.content).toContain(
+          "Please specify the target environment(s) by passing exactly one of '--to-envs' and '--to-all-envs' parameters",
+        )
       })
 
       it('should fail running toAllEnvs with only current env', async () => {
@@ -623,8 +641,7 @@ Nothing to do.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
+        expect(output.stderr.content).toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
       })
     })
 
@@ -766,8 +783,7 @@ Moving the specified elements to envs.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
+        expect(output.stderr.content).toContain(Prompts.MOVE_FAILED('Oy Vey Zmir'))
       })
     })
 
@@ -925,10 +941,7 @@ Moving the specified elements to common.
         expect(result).toBe(CliExitCode.Success)
       })
       it('should call workspace promote', () => {
-        expect(workspace.promote).toHaveBeenCalledWith([
-          elemToAdd,
-        ],
-        {
+        expect(workspace.promote).toHaveBeenCalledWith([elemToAdd], {
           env2: [elemToRemoveFromEnv2],
           env3: [elemToRemoveFromEnv3],
         })
@@ -963,7 +976,7 @@ Moving the specified elements to common.
     describe('success - all unresolved references are found in complete-from', () => {
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
-      let userBooleanInput: jest.SpiedFunction<typeof callbacks['getUserBooleanInput']>
+      let userBooleanInput: jest.SpiedFunction<(typeof callbacks)['getUserBooleanInput']>
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
@@ -973,14 +986,18 @@ Moving the specified elements to common.
         workspace = mocks.mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         // Should ignore unresolved reference errors
-        workspace.errors.mockResolvedValue(new errors.Errors({
-          parse: [],
-          merge: [],
-          validation: [new errors.UnresolvedReferenceValidationError({
-            elemID: new ElemID('test', 'src'),
-            target: new ElemID('test', 'target'),
-          })],
-        }))
+        workspace.errors.mockResolvedValue(
+          new errors.Errors({
+            parse: [],
+            merge: [],
+            validation: [
+              new errors.UnresolvedReferenceValidationError({
+                elemID: new ElemID('test', 'src'),
+                target: new ElemID('test', 'target'),
+              }),
+            ],
+          }),
+        )
         result = await listUnresolvedAction({
           ...mocks.mockCliCommandArgs(listUnresolvedName, cliArgs),
           input: {
@@ -1022,10 +1039,12 @@ Moving the specified elements to common.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        workspace.listUnresolvedReferences.mockImplementationOnce(() => Promise.resolve({
-          found: [],
-          missing: [],
-        }))
+        workspace.listUnresolvedReferences.mockImplementationOnce(() =>
+          Promise.resolve({
+            found: [],
+            missing: [],
+          }),
+        )
 
         result = await listUnresolvedAction({
           ...mocks.mockCliCommandArgs(listUnresolvedName, cliArgs),
@@ -1054,10 +1073,12 @@ Moving the specified elements to common.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        workspace.listUnresolvedReferences.mockImplementationOnce(() => Promise.resolve({
-          found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
-          missing: [new ElemID('salesforce', 'fail')],
-        }))
+        workspace.listUnresolvedReferences.mockImplementationOnce(() =>
+          Promise.resolve({
+            found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
+            missing: [new ElemID('salesforce', 'fail')],
+          }),
+        )
         result = await listUnresolvedAction({
           ...mocks.mockCliCommandArgs(listUnresolvedName, cliArgs),
           input: {
@@ -1075,8 +1096,12 @@ Moving the specified elements to common.
       })
 
       it('should print list to console', () => {
-        expect(output.stdout.content).toMatch(/The following unresolved references can be copied from inactive:(\s*)salesforce.aaa(\s*)salesforce.bbb.instance.ccc/)
-        expect(output.stdout.content).toMatch(/The following unresolved references could not be found:(\s*)salesforce.fail/)
+        expect(output.stdout.content).toMatch(
+          /The following unresolved references can be copied from inactive:(\s*)salesforce.aaa(\s*)salesforce.bbb.instance.ccc/,
+        )
+        expect(output.stdout.content).toMatch(
+          /The following unresolved references could not be found:(\s*)salesforce.fail/,
+        )
       })
     })
 
@@ -1138,12 +1163,13 @@ Moving the specified elements to common.
       workspace = mocks.mockWorkspace({})
     })
 
-    const getMockElement = (url?: string): ObjectType => new ObjectType({
-      elemID: new ElemID('salesforce', 'Lead'),
-      annotations: {
-        ...url === undefined ? {} : { [CORE_ANNOTATIONS.SERVICE_URL]: url },
-      },
-    })
+    const getMockElement = (url?: string): ObjectType =>
+      new ObjectType({
+        elemID: new ElemID('salesforce', 'Lead'),
+        annotations: {
+          ...(url === undefined ? {} : { [CORE_ANNOTATIONS.SERVICE_URL]: url }),
+        },
+      })
 
     describe('with valid elem ID that has a URL', () => {
       let result: CliExitCode
@@ -1254,7 +1280,9 @@ Moving the specified elements to common.
         })
       })
       it('should print element does not have a url', () => {
-        expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Lead.field.Account.label\n')
+        expect(output.stderr.content).toEqual(
+          'Go to service is not supported for element salesforce.Lead.field.Account.label\n',
+        )
       })
       it('should return error exit code', () => {
         expect(result).toEqual(CliExitCode.AppError)
@@ -1290,8 +1318,7 @@ Moving the specified elements to common.
       })
 
       it('should print failure to console', () => {
-        expect(output.stderr.content)
-          .toContain(Prompts.LIST_FAILED('Oy Vey Zmir'))
+        expect(output.stderr.content).toContain(Prompts.LIST_FAILED('Oy Vey Zmir'))
       })
     })
 
@@ -1352,11 +1379,7 @@ Moving the specified elements to common.
       })
       it('should call workspace getElementIdsBySelectors', () => {
         const elemSelector = createElementSelector(stringSelector)
-        expect(workspace.getElementIdsBySelectors).toHaveBeenCalledWith(
-          [elemSelector],
-          { source: mode },
-          true,
-        )
+        expect(workspace.getElementIdsBySelectors).toHaveBeenCalledWith([elemSelector], { source: mode }, true)
       })
 
       it('should print to stdout', () => {
@@ -1440,14 +1463,16 @@ Moving the specified elements to common.
         workspace.getValue.mockRejectedValue(new Error('some error'))
       })
       it('should fail', async () =>
-        expect(renameAction({
-          ...mocks.mockCliCommandArgs(commandName, cliArgs),
-          input: {
-            sourceElementId: 'salto.object.instance.name',
-            targetElementId: 'salto.object.instance.rename',
-          },
-          workspace,
-        })).rejects.toThrow('some error'))
+        expect(
+          renameAction({
+            ...mocks.mockCliCommandArgs(commandName, cliArgs),
+            input: {
+              sourceElementId: 'salto.object.instance.name',
+              targetElementId: 'salto.object.instance.rename',
+            },
+            workspace,
+          }),
+        ).rejects.toThrow('some error'))
     })
     describe('valid rename', () => {
       let output: mocks.MockCliOutput
@@ -1579,7 +1604,8 @@ Moving the specified elements to common.
         expect(result).toEqual(CliExitCode.Success)
       })
       it('should print the element without the ID as a prefix', () => {
-        const fieldsWithLabel = mocks.elements()
+        const fieldsWithLabel = mocks
+          .elements()
           .filter(isObjectType)
           .flatMap(objType => Object.values(objType.fields))
           .filter(field => field.annotations.label !== undefined)
@@ -1623,8 +1649,7 @@ Moving the specified elements to common.
       expect(result).toBe(CliExitCode.Success)
       expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
       expect(workspace.flush).not.toHaveBeenCalled()
-      expect(cliArgs.output.stdout.content)
-        .toContain('Nothing to do.')
+      expect(cliArgs.output.stdout.content).toContain('Nothing to do.')
     })
 
     it('should return an error for invalid selector', async () => {
@@ -1653,15 +1678,17 @@ Moving the specified elements to common.
       typeWithFix.annotations.fix1 = 'fix1'
 
       fixElementsMock.mockResolvedValue({
-        changes: [{
-          action: 'add',
-          data: { after: 'fix1' },
-          id: typeWithFix.elemID.createNestedID('attr', 'fix1'),
-          elemIDs: {
-            before: typeWithFix.elemID.createNestedID('attr', 'fix1'),
-            after: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+        changes: [
+          {
+            action: 'add',
+            data: { after: 'fix1' },
+            id: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+            elemIDs: {
+              before: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+              after: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+            },
           },
-        }],
+        ],
         errors: [
           {
             elemID: typeWithFix.elemID,
@@ -1679,10 +1706,8 @@ Moving the specified elements to common.
       })
 
       expect(result).toBe(CliExitCode.Success)
-      expect(cliArgs.output.stdout.content)
-        .toContain('Fix1')
-      expect(cliArgs.output.stdout.content)
-        .toContain('Detailed fix1')
+      expect(cliArgs.output.stdout.content).toContain('Fix1')
+      expect(cliArgs.output.stdout.content).toContain('Detailed fix1')
 
       expect(workspace.updateNaclFiles).toHaveBeenCalledWith([
         {

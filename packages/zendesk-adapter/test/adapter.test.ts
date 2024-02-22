@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import axios, { AxiosRequestConfig } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -28,7 +28,11 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData, TemplateExpression, isObjectType, ProgressReporter, StaticFile,
+  getChangeData,
+  TemplateExpression,
+  isObjectType,
+  ProgressReporter,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -39,7 +43,10 @@ import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   BRAND_TYPE_NAME,
-  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_THEME_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -72,16 +79,13 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
   if (baseURL?.toLowerCase() === 'https://mybrand.zendesk.com') {
     return [
       200,
-      (defaultBrandMockReplies as MockReply[])
-        .find(reply => reply.url === url && _.isEqual(reply.params, requestParams?.params))?.response || [],
+      (defaultBrandMockReplies as MockReply[]).find(
+        reply => reply.url === url && _.isEqual(reply.params, requestParams?.params),
+      )?.response || [],
     ]
   }
   if (baseURL?.toLowerCase() === 'https://brandwithguide.zendesk.com') {
-    return [
-      200,
-      (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response
-      || [],
-    ]
+    return [200, (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response || []]
   }
   return [404]
 }
@@ -97,7 +101,7 @@ const callbackResponseFuncWith403 = (config: AxiosRequestConfig): any => {
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => { },
+  reportProgress: () => {},
 }
 
 describe('adapter', () => {
@@ -120,37 +124,33 @@ describe('adapter', () => {
     describe('full fetch', () => {
       it('should generate the right elements on fetch', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            usernamePasswordCredentialsType,
-            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'token456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
-                include: [{
-                  type: '.*',
-                }],
+                include: [
+                  {
+                    type: '.*',
+                  },
+                ],
                 exclude: [],
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
-            }
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.account_features',
           'zendesk.account_setting',
@@ -642,8 +642,16 @@ describe('adapter', () => {
           'zendesk.workspaces',
         ])
 
-        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'))
-        const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
+        const supportAddress = elements
+          .filter(isInstanceElement)
+          .find(e =>
+            e.elemID
+              .getFullName()
+              .startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'),
+          )
+        const brand = elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
         expect(brand).toBeDefined()
         if (brand === undefined) {
           return
@@ -667,20 +675,20 @@ describe('adapter', () => {
       })
       it('should not generate tags when excluded', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            usernamePasswordCredentialsType,
-            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'token456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
-                include: [{
-                  type: '.*',
-                }],
+                include: [
+                  {
+                    type: '.*',
+                  },
+                ],
                 exclude: [
                   {
                     type: 'tag',
@@ -689,19 +697,15 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
-            }
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.account_features',
           'zendesk.account_setting',
@@ -1191,8 +1195,16 @@ describe('adapter', () => {
           'zendesk.workspaces',
         ])
 
-        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'))
-        const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
+        const supportAddress = elements
+          .filter(isInstanceElement)
+          .find(e =>
+            e.elemID
+              .getFullName()
+              .startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'),
+          )
+        const brand = elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
         expect(brand).toBeDefined()
         if (brand === undefined) {
           return
@@ -1216,36 +1228,33 @@ describe('adapter', () => {
       })
       it('should omit inactive instances according to config', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            usernamePasswordCredentialsType,
-            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'token456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
-                include: [{
-                  type: '.*',
-                }],
+                include: [
+                  {
+                    type: '.*',
+                  },
+                ],
                 exclude: [],
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: true,
-                  },
+                omitInactive: {
+                  default: true,
+                  customizations: {},
                 },
               },
-            },
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.account_features',
           'zendesk.account_setting',
@@ -1732,8 +1741,16 @@ describe('adapter', () => {
           'zendesk.workspaces',
         ])
 
-        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'))
-        const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
+        const supportAddress = elements
+          .filter(isInstanceElement)
+          .find(e =>
+            e.elemID
+              .getFullName()
+              .startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'),
+          )
+        const brand = elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
         expect(brand).toBeDefined()
         if (brand === undefined) {
           return
@@ -1757,16 +1774,14 @@ describe('adapter', () => {
       })
       it('should filter elements by type+name on fetch', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            usernamePasswordCredentialsType,
-            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'token456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
                 include: [
                   { type: 'automation' },
@@ -1774,26 +1789,25 @@ describe('adapter', () => {
                   { type: 'organization_field', criteria: { key: '.*_.*', type: 'dropdown' } },
                   { type: 'ticket_field', criteria: { raw_title: 'A.*|agent.*' } },
                 ],
-                exclude: [
-                  { type: 'ticket_field', criteria: { type: 'assignee' } },
-                ],
+                exclude: [{ type: 'ticket_field', criteria: { type: 'assignee' } }],
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
-            }
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName()).sort()).toEqual([
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
+        expect(
+          elements
+            .filter(isInstanceElement)
+            .map(e => e.elemID.getFullName())
+            .sort(),
+        ).toEqual([
           'zendesk.automation.instance.Close_ticket_4_days_after_status_is_set_to_solved@s',
           'zendesk.automation.instance.Close_ticket_5_days_after_status_is_set_to_solved@s',
           'zendesk.automation.instance.Pending_notification_24_hours@s',
@@ -1815,48 +1829,53 @@ describe('adapter', () => {
       })
       it('should return an 403 error for custom statuses', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFuncWith403)
-        const { elements, errors } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            usernamePasswordCredentialsType,
-            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements, errors } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'token456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
-                include: [{
-                  type: '.*',
-                }],
+                include: [
+                  {
+                    type: '.*',
+                  },
+                ],
                 exclude: [],
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
-            }
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
         expect(errors).toBeDefined()
         expect(errors?.length).toEqual(3)
         expect(errors?.[0]).toEqual({
           severity: 'Warning',
-          message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          message:
+            "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         })
-        expect(errors?.[1].message.split('.')[0]).toEqual('Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions')
-        expect(errors?.[2].message.split('.')[0]).toEqual('Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions')
+        expect(errors?.[1].message.split('.')[0]).toEqual(
+          'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
+        )
+        expect(errors?.[2].message.split('.')[0]).toEqual(
+          'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
+        )
         const elementsNames = elements.map(e => e.elemID.getFullName())
-        expect(elementsNames).not.toContain('zendesk.custom_status.instance.new___zd_status_new__@u_00123_00123vu_00125_00125')
-        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open___zd_status_open__@u_00123_00123vu_00125_00125')
+        expect(elementsNames).not.toContain(
+          'zendesk.custom_status.instance.new___zd_status_new__@u_00123_00123vu_00125_00125',
+        )
+        expect(elementsNames).not.toContain(
+          'zendesk.custom_status.instance.open___zd_status_open__@u_00123_00123vu_00125_00125',
+        )
         expect(elementsNames).not.toContain('zendesk.custom_status.instance.open_test_n1')
         expect(elementsNames).not.toContain('zendesk.custom_status.instance.open_test_n1@ub')
       })
@@ -1864,108 +1883,119 @@ describe('adapter', () => {
       it('should generate guide elements according to brands config', async () => {
         const zip = new JSZip()
         zip.file('hello.txt', 'Hello World\n')
-        mockAxiosAdapter.onGet('https://download.theme.url.for.test').reply(200, await zip.generateAsync({ type: 'nodebuffer' }))
+        mockAxiosAdapter
+          .onGet('https://download.theme.url.for.test')
+          .reply(200, await zip.generateAsync({ type: 'nodebuffer' }))
 
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         mockAxiosAdapter.onPost().reply(callbackResponseFunc)
-        const creds = new InstanceElement(
-          'config',
-          usernamePasswordCredentialsType,
-          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-        )
-        const config = new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: {
-              include: [{
+        const creds = new InstanceElement('config', usernamePasswordCredentialsType, {
+          username: 'user123',
+          password: 'token456',
+          subdomain: 'myBrand',
+        })
+        const config = new InstanceElement('config', configType, {
+          [FETCH_CONFIG]: {
+            include: [
+              {
                 type: '.*',
-              }],
-              exclude: [],
-              guide: {
-                brands: ['.WithGuide'],
-                themesForBrands: ['my.'],
               },
+            ],
+            exclude: [],
+            guide: {
+              brands: ['.WithGuide'],
+              themesForBrands: ['my.'],
             },
-          }
-        )
-        const { elements } = await adapter.operations({
-          credentials: creds,
-          config,
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements
+          },
+        })
+        const { elements } = await adapter
+          .operations({
+            credentials: creds,
+            config,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
+        expect(
+          elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.typeName === 'article')
+            .map(e => e.elemID.getFullName())
+            .sort(),
+        ).toEqual(['zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu'])
+        const themeElements = elements
           .filter(isInstanceElement)
-          .filter(e => e.elemID.typeName === 'article')
-          .map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-        ])
-        const themeElements = elements.filter(isInstanceElement)
           .filter(e => e.elemID.typeName === GUIDE_THEME_TYPE_NAME)
         expect(themeElements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.theme.instance.myBrand_Copenhagen',
         ])
-        expect(themeElements[0].value.root.files['hello_txt@v'].content).toEqual(new StaticFile({
-          filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt', content: Buffer.from('Hello World\n'),
-        }))
+        expect(themeElements[0].value.root.files['hello_txt@v'].content).toEqual(
+          new StaticFile({
+            filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt',
+            content: Buffer.from('Hello World\n'),
+          }),
+        )
 
         config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
-        const fetchRes = await adapter.operations({
-          credentials: creds,
-          config,
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(fetchRes.elements
-          .filter(isInstanceElement)
-          .filter(e => e.elemID.typeName === 'article')
-          .map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-        ])
+        const fetchRes = await adapter
+          .operations({
+            credentials: creds,
+            config,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
+        expect(
+          fetchRes.elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.typeName === 'article')
+            .map(e => e.elemID.getFullName())
+            .sort(),
+        ).toEqual(['zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu'])
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
 
       it('should return fetch error when no brand matches brands config, and still generate types', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
-        const creds = new InstanceElement(
-          'config',
-          usernamePasswordCredentialsType,
-          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
-        )
-        const config = new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: {
-              include: [{
+        const creds = new InstanceElement('config', usernamePasswordCredentialsType, {
+          username: 'user123',
+          password: 'token456',
+          subdomain: 'myBrand',
+        })
+        const config = new InstanceElement('config', configType, {
+          [FETCH_CONFIG]: {
+            include: [
+              {
                 type: '.*',
-              }],
-              exclude: [],
-              guide: {
-                brands: ['BestBrand'],
               },
+            ],
+            exclude: [],
+            guide: {
+              brands: ['BestBrand'],
             },
-            [API_DEFINITIONS_CONFIG]: {
-              ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-              typeDefaults: {
-                transformation: {
-                  omitInactive: false,
-                },
-              },
+            omitInactive: {
+              default: false,
+              customizations: {},
             },
-          }
-        )
-        const fetchRes = await adapter.operations({
-          credentials: creds,
-          config,
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+          },
+        })
+        const fetchRes = await adapter
+          .operations({
+            credentials: creds,
+            config,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
         expect(fetchRes.errors?.length).toEqual(3)
         expect(fetchRes.errors?.[0]).toEqual({
           severity: 'Warning',
-          message: 'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
+          message:
+            'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
         })
-        expect(fetchRes.errors?.[1].message.split('.')[0]).toEqual('Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions')
-        expect(fetchRes.errors?.[2].message.split('.')[0]).toEqual('Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions')
+        expect(fetchRes.errors?.[1].message.split('.')[0]).toEqual(
+          'Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions',
+        )
+        expect(fetchRes.errors?.[2].message.split('.')[0]).toEqual(
+          'Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions',
+        )
         expect(fetchRes.elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'article')).not.toBeDefined()
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
@@ -1973,24 +2003,23 @@ describe('adapter', () => {
 
     describe('type overrides', () => {
       it('should fetch only the relevant types', async () => {
-        (defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
-          mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
-            .replyOnce(callbackResponseFunc)
+        ;(defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
+          mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(callbackResponseFunc)
         })
-        const { elements } = await adapter.operations({
-          credentials: new InstanceElement(
-            'config',
-            usernamePasswordCredentialsType,
-            { username: 'user123', password: 'pwd456', subdomain: 'myBrand' },
-          ),
-          config: new InstanceElement(
-            'config',
-            configType,
-            {
+        const { elements } = await adapter
+          .operations({
+            credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+              username: 'user123',
+              password: 'pwd456',
+              subdomain: 'myBrand',
+            }),
+            config: new InstanceElement('config', configType, {
               [FETCH_CONFIG]: {
-                include: [{
-                  type: 'group',
-                }],
+                include: [
+                  {
+                    type: 'group',
+                  },
+                ],
                 exclude: [],
               },
               [API_DEFINITIONS_CONFIG]: {
@@ -2010,13 +2039,13 @@ describe('adapter', () => {
                   },
                 },
               },
-            },
-          ),
-          elementsSource: buildElementsSourceFromElements([]),
-        }).fetch({ progressReporter: { reportProgress: () => null } })
+            }),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          .fetch({ progressReporter: { reportProgress: () => null } })
         const instances = elements.filter(isInstanceElement)
-        expect(instances.map(e => e.elemID.getFullName()).sort())
-          .toEqual([
+        expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual(
+          [
             'zendesk.group.instance.Support',
             'zendesk.group.instance.Support2',
             'zendesk.group.instance.Support4',
@@ -2030,51 +2059,48 @@ describe('adapter', () => {
             'zendesk.user_field_order.instance',
             'zendesk.view_order.instance',
             'zendesk.workspace_order.instance',
-          ].sort())
+          ].sort(),
+        )
       })
     })
     it('should use elemIdGetter', async () => {
-      (defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
-        mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
-          .replyOnce(callbackResponseFunc)
+      ;(defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
+        mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(callbackResponseFunc)
       })
       const supportInstanceId = 1500002894482
       const operations = adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          usernamePasswordCredentialsType,
-          { username: 'user123', password: 'pwd456', subdomain: 'myBrand' },
-        ),
-        config: new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: {
-              include: [{
+        credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+          username: 'user123',
+          password: 'pwd456',
+          subdomain: 'myBrand',
+        }),
+        config: new InstanceElement('config', configType, {
+          [FETCH_CONFIG]: {
+            include: [
+              {
                 type: 'group',
-              }],
-              exclude: [],
-
-            },
-            [API_DEFINITIONS_CONFIG]: {
-              types: {
-                group: {
-                  transformation: {
-                    sourceTypeName: 'groups__groups',
-                  },
+              },
+            ],
+            exclude: [],
+          },
+          [API_DEFINITIONS_CONFIG]: {
+            types: {
+              group: {
+                transformation: {
+                  sourceTypeName: 'groups__groups',
                 },
-                groups: {
-                  request: {
-                    url: '/api/v2/groups',
-                  },
-                  transformation: {
-                    dataField: 'groups',
-                  },
+              },
+              groups: {
+                request: {
+                  url: '/api/v2/groups',
+                },
+                transformation: {
+                  dataField: 'groups',
                 },
               },
             },
           },
-        ),
+        }),
         elementsSource: buildElementsSourceFromElements([]),
         getElemIdFunc: (adapterName, serviceIds, name) => {
           if (Number(serviceIds.id) === supportInstanceId) {
@@ -2083,11 +2109,8 @@ describe('adapter', () => {
           return new ElemID(adapterName, name)
         },
       })
-      const { elements } = await operations
-        .fetch({ progressReporter: { reportProgress: () => null } })
-      const instances = elements
-        .filter(isInstanceElement)
-        .filter(inst => inst.elemID.typeName === 'group')
+      const { elements } = await operations.fetch({ progressReporter: { reportProgress: () => null } })
+      const instances = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'group')
       expect(instances).toHaveLength(4)
       expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zendesk.group.instance.Support',
@@ -2112,9 +2135,7 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/api/v2/groups').replyOnce(
-        200, response
-      )
+      mockAxiosAdapter.onGet('/api/v2/groups').replyOnce(200, response)
       const usersResponse = {
         users: [
           {
@@ -2163,17 +2184,10 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/api/v2/users').replyOnce(
-        200, usersResponse
-      )
-      const { elements: newElements } = await operations
-        .fetch({ progressReporter: { reportProgress: () => null } })
-      const newInstances = newElements
-        .filter(isInstanceElement)
-        .filter(inst => inst.elemID.typeName === 'group')
-      expect(newInstances.map(e => e.elemID.getFullName()).sort()).toEqual([
-        'zendesk.group.instance.Support',
-      ])
+      mockAxiosAdapter.onGet('/api/v2/users').replyOnce(200, usersResponse)
+      const { elements: newElements } = await operations.fetch({ progressReporter: { reportProgress: () => null } })
+      const newInstances = newElements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'group')
+      expect(newInstances.map(e => e.elemID.getFullName()).sort()).toEqual(['zendesk.group.instance.Support'])
     })
   })
 
@@ -2186,9 +2200,8 @@ describe('adapter', () => {
     const anotherType = new ObjectType({ elemID: new ElemID(ZENDESK, 'anotherType') })
 
     beforeEach(() => {
-      (defaultBrandMockReplies as MockReply[]).forEach(({ url, params, response }) => {
-        mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
-          .replyOnce(200, response)
+      ;(defaultBrandMockReplies as MockReply[]).forEach(({ url, params, response }) => {
+        mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(200, response)
       })
       mockDeployChange.mockImplementation(async ({ change }) => {
         if (isRemovalChange(change)) {
@@ -2206,108 +2219,101 @@ describe('adapter', () => {
         return { key: 2 }
       })
       operations = adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          usernamePasswordCredentialsType,
-          { username: 'user123', password: 'pwd456', subdomain: 'myBrand' },
-        ),
-        config: new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: {
-              include: [
-                {
-                  type: 'group',
-                },
-                {
-                  type: 'brand',
-                },
-              ],
-              exclude: [],
-            },
-            [API_DEFINITIONS_CONFIG]: {
-              types: {
-                group: {
-                  deployRequests: {
-                    add: {
-                      url: '/api/v2/groups',
-                      deployAsField: 'group',
-                      method: 'post',
-                    },
-                    modify: {
-                      url: '/api/v2/groups/{groupId}',
-                      method: 'put',
-                      deployAsField: 'group',
-                      urlParamsToFields: {
-                        groupId: 'id',
-                      },
-                    },
-                    remove: {
-                      url: '/api/v2/groups/{groupId}',
-                      method: 'delete',
-                      deployAsField: 'group',
-                      urlParamsToFields: {
-                        groupId: 'id',
-                      },
-                    },
-                  },
-                },
-                brand: {
-                  transformation: {
-                    serviceIdField: 'key',
-                  },
-                  deployRequests: {
-                    add: {
-                      url: '/api/v2/brands',
-                      method: 'post',
-                    },
-                  },
-                },
-                [TICKET_FORM_TYPE_NAME]: {
-                  deployRequests: {
-                    add: {
-                      url: '/api/v2/ticket_forms',
-                      deployAsField: 'ticket_form',
-                      method: 'post',
-                    },
-                  },
-                },
-                anotherType: {
-                  transformation: {
-                    serviceIdField: 'key',
-                  },
-                  deployRequests: {
-                    add: {
-                      url: '/api/v2/anotherType',
-                      method: 'post',
-                    },
-                  },
-                },
-                groups: {
-                  request: {
+        credentials: new InstanceElement('config', usernamePasswordCredentialsType, {
+          username: 'user123',
+          password: 'pwd456',
+          subdomain: 'myBrand',
+        }),
+        config: new InstanceElement('config', configType, {
+          [FETCH_CONFIG]: {
+            include: [
+              {
+                type: 'group',
+              },
+              {
+                type: 'brand',
+              },
+            ],
+            exclude: [],
+          },
+          [API_DEFINITIONS_CONFIG]: {
+            types: {
+              group: {
+                deployRequests: {
+                  add: {
                     url: '/api/v2/groups',
+                    deployAsField: 'group',
+                    method: 'post',
                   },
-                  transformation: {
-                    dataField: 'groups',
+                  modify: {
+                    url: '/api/v2/groups/{groupId}',
+                    method: 'put',
+                    deployAsField: 'group',
+                    urlParamsToFields: {
+                      groupId: 'id',
+                    },
                   },
-                },
-                brands: {
-                  request: {
-                    url: '/api/v2/brands',
-                  },
-                  transformation: {
-                    dataField: 'brands',
+                  remove: {
+                    url: '/api/v2/groups/{groupId}',
+                    method: 'delete',
+                    deployAsField: 'group',
+                    urlParamsToFields: {
+                      groupId: 'id',
+                    },
                   },
                 },
               },
+              brand: {
+                transformation: {
+                  serviceIdField: 'key',
+                },
+                deployRequests: {
+                  add: {
+                    url: '/api/v2/brands',
+                    method: 'post',
+                  },
+                },
+              },
+              [TICKET_FORM_TYPE_NAME]: {
+                deployRequests: {
+                  add: {
+                    url: '/api/v2/ticket_forms',
+                    deployAsField: 'ticket_form',
+                    method: 'post',
+                  },
+                },
+              },
+              anotherType: {
+                transformation: {
+                  serviceIdField: 'key',
+                },
+                deployRequests: {
+                  add: {
+                    url: '/api/v2/anotherType',
+                    method: 'post',
+                  },
+                },
+              },
+              groups: {
+                request: {
+                  url: '/api/v2/groups',
+                },
+                transformation: {
+                  dataField: 'groups',
+                },
+              },
+              brands: {
+                request: {
+                  url: '/api/v2/brands',
+                },
+                transformation: {
+                  dataField: 'brands',
+                },
+              },
             },
-          }
-        ),
-        elementsSource: buildElementsSourceFromElements([
-          userSegmentType,
-          everyoneUserSegmentInstance,
-        ]),
+          },
+        }),
+        elementsSource: buildElementsSourceFromElements([userSegmentType, everyoneUserSegmentInstance]),
       })
     })
     afterEach(() => {
@@ -2315,10 +2321,7 @@ describe('adapter', () => {
     })
 
     it('should return the applied changes', async () => {
-      const ref = new ReferenceExpression(
-        new ElemID(ZENDESK, 'test', 'instance', 'ins'),
-        { externalId: 5 },
-      )
+      const ref = new ReferenceExpression(new ElemID(ZENDESK, 'test', 'instance', 'ins'), { externalId: 5 })
       const modificationChange = toChange({
         before: new InstanceElement('inst4', brandType, { externalId: 4 }),
         after: new InstanceElement('inst4', brandType, { externalId: 5 }),
@@ -2341,23 +2344,15 @@ describe('adapter', () => {
       // Mind that brands have filter that deploys them before the default instances
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement(
-            'inst3',
-            brandType,
-            { key: 2, ref: expect.any(ReferenceExpression) },
-            undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/account/brand_management/brands' },
-          ),
+          after: new InstanceElement('inst3', brandType, { key: 2, ref: expect.any(ReferenceExpression) }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/account/brand_management/brands',
+          }),
         }),
         modificationChange,
         toChange({
-          after: new InstanceElement(
-            'inst',
-            groupType,
-            { id: 1 },
-            undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          ),
+          after: new InstanceElement('inst', groupType, { id: 1 }, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          }),
         }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
       ])
@@ -2391,21 +2386,15 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [
-            toChange({ after: new InstanceElement('inst', groupType) }),
-          ],
+          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement(
-            'inst',
-            groupType,
-            undefined,
-            undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          ),
+          after: new InstanceElement('inst', groupType, undefined, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          }),
         }),
       ])
     })
@@ -2416,16 +2405,9 @@ describe('adapter', () => {
       const refWithoutId = new ReferenceExpression(ticketFieldWithoutId.elemID, ticketFieldWithoutId)
 
       const additionChange = toChange({
-        after: new InstanceElement(
-          'inst4',
-          ticketFormType,
-          {
-            ticket_field_ids: [
-              refWithId,
-              refWithoutId,
-            ],
-          }
-        ),
+        after: new InstanceElement('inst4', ticketFormType, {
+          ticket_field_ids: [refWithId, refWithoutId],
+        }),
       })
       const appliedChanges = toChange({
         after: new InstanceElement(
@@ -2437,43 +2419,34 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/objects-rules/tickets/ticket-forms/edit/3',
-          }
+            [CORE_ANNOTATIONS.SERVICE_URL]:
+              'https://mybrand.zendesk.com/admin/objects-rules/tickets/ticket-forms/edit/3',
+          },
         ),
       })
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: TICKET_FORM_TYPE_NAME,
-          changes: [
-            additionChange,
-          ],
+          changes: [additionChange],
         },
         progressReporter: nullProgressReporter,
       })
-      expect(deployRes.appliedChanges).toEqual([
-        appliedChanges,
-      ])
+      expect(deployRes.appliedChanges).toEqual([appliedChanges])
     })
     it('should not update id if the response is primitive', async () => {
       mockDeployChange.mockImplementation(async () => 2)
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [
-            toChange({ after: new InstanceElement('inst', groupType) }),
-          ],
+          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement(
-            'inst',
-            groupType,
-            undefined,
-            undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          ),
+          after: new InstanceElement('inst', groupType, undefined, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          }),
         }),
       ])
     })
@@ -2482,21 +2455,15 @@ describe('adapter', () => {
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [
-            toChange({ after: new InstanceElement('inst', groupType) }),
-          ],
+          changes: [toChange({ after: new InstanceElement('inst', groupType) })],
         },
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({
-          after: new InstanceElement(
-            'inst',
-            groupType,
-            undefined,
-            undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          ),
+          after: new InstanceElement('inst', groupType, undefined, undefined, {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups',
+          }),
         }),
       ])
     })
@@ -2505,9 +2472,7 @@ describe('adapter', () => {
       await operations.deploy({
         changeGroup: {
           groupID: 'group',
-          changes: [
-            toChange({ after: instance }),
-          ],
+          changes: [toChange({ after: instance })],
         },
         progressReporter: nullProgressReporter,
       })
@@ -2602,9 +2567,7 @@ describe('adapter', () => {
         endpointDetails: expect.anything(),
         fieldsToIgnore: undefined,
       })
-      expect(deployRes.appliedChanges).toEqual([
-        toChange({ before: new InstanceElement('inst', groupType) }),
-      ])
+      expect(deployRes.appliedChanges).toEqual([toChange({ before: new InstanceElement('inst', groupType) })])
     })
     describe('clients tests', () => {
       const { client } = createFilterCreatorParams({})
@@ -2616,8 +2579,16 @@ describe('adapter', () => {
         subdomain: 'domain2',
         id: 2,
       })
-      const settings1 = new InstanceElement('guide_language_settings1', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 1 })
-      const settings2 = new InstanceElement('guide_language_settings2', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 2 })
+      const settings1 = new InstanceElement(
+        'guide_language_settings1',
+        new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }),
+        { brand: 1 },
+      )
+      const settings2 = new InstanceElement(
+        'guide_language_settings2',
+        new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }),
+        { brand: 2 },
+      )
       it('should rate limit guide requests to 1, and not limit support requests', async () => {
         const zendeskAdapter = new ZendeskAdapter({
           config: DEFAULT_CONFIG,

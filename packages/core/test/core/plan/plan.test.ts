@@ -1,20 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, StaticFile, Variable, VariableExpression, TemplateExpression } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  getChangeData,
+  isInstanceElement,
+  ChangeGroupIdFunction,
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  ReferenceExpression,
+  StaticFile,
+  Variable,
+  VariableExpression,
+  TemplateExpression,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import wu from 'wu'
 import * as mock from '../../common/elements'
@@ -112,12 +125,12 @@ describe('getPlan', () => {
     const [plan, field] = await planWithFieldDependency(true)
     const planItems = [...plan.itemsByEvalOrder()]
     expect(planItems).toHaveLength(7)
-    const fieldPlanItem = planItems.find(item => wu(item.changes())
-      .some(change => getChangeData(change).elemID.isEqual(field.elemID)))
+    const fieldPlanItem = planItems.find(item =>
+      wu(item.changes()).some(change => getChangeData(change).elemID.isEqual(field.elemID)),
+    )
     expect(fieldPlanItem?.action).toEqual('modify')
     expect(fieldPlanItem?.items.size).toEqual(1)
-    const parentPlanItems = planItems
-      .filter(item => item.groupKey === field.parent.elemID.getFullName())
+    const parentPlanItems = planItems.filter(item => item.groupKey === field.parent.elemID.getFullName())
     expect(parentPlanItems).toHaveLength(1)
     expect(parentPlanItems[0].action).toEqual('add')
   })
@@ -125,8 +138,7 @@ describe('getPlan', () => {
     const [plan, field] = await planWithFieldDependency(false)
     const planItems = [...plan.itemsByEvalOrder()]
     expect(planItems).toHaveLength(7)
-    const splitElemChanges = planItems
-      .filter(item => item.groupKey === field.parent.elemID.getFullName())
+    const splitElemChanges = planItems.filter(item => item.groupKey === field.parent.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
     expect(splitElemChanges[0].action).toEqual('modify')
     expect(splitElemChanges[1].action).toEqual('modify')
@@ -161,9 +173,7 @@ describe('getPlan', () => {
   describe('with custom group key function', () => {
     let plan: Plan
     let changeGroup: PlanItem
-    const dummyGroupKeyFunc = mockFunction<ChangeGroupIdFunction>().mockResolvedValue(
-      { changeGroupIdMap: new Map() }
-    )
+    const dummyGroupKeyFunc = mockFunction<ChangeGroupIdFunction>().mockResolvedValue({ changeGroupIdMap: new Map() })
     beforeAll(async () => {
       const before = mock.getAllElements()
       const after = mock.getAllElements()
@@ -175,8 +185,7 @@ describe('getPlan', () => {
         after: createElementSource(after),
         customGroupIdFunctions: {
           salto: async changes => ({
-            changeGroupIdMap: new Map([...changes.entries()]
-              .map(([changeId]) => [changeId, 'all'])),
+            changeGroupIdMap: new Map([...changes.entries()].map(([changeId]) => [changeId, 'all'])),
           }),
           dummy: dummyGroupKeyFunc,
         },
@@ -213,114 +222,60 @@ describe('getPlan', () => {
       },
     })
 
-    const firstInstance1 = new InstanceElement(
-      'instance1',
-      type,
-      {
-        value: 'some value',
-        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'value')) },
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'inner')),
-      }
-    )
+    const firstInstance1 = new InstanceElement('instance1', type, {
+      value: 'some value',
+      inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'value')) },
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'inner')),
+    })
 
-    const secondInstance1 = new InstanceElement(
-      'instance1',
-      type,
-      {
-        value: 'some value',
-        inner: { inner: 'some value' },
-        ref: { inner: 'some value' },
-      }
-    )
+    const secondInstance1 = new InstanceElement('instance1', type, {
+      value: 'some value',
+      inner: { inner: 'some value' },
+      ref: { inner: 'some value' },
+    })
 
+    const firstInstance2 = new InstanceElement('instance2', type, {
+      value: 'some value',
+      inner: { inner: 'some value' },
+      ref: { inner: 'some value' },
+    })
 
-    const firstInstance2 = new InstanceElement(
-      'instance2',
-      type,
-      {
-        value: 'some value',
-        inner: { inner: 'some value' },
-        ref: { inner: 'some value' },
-      }
-    )
+    const secondInstance2 = new InstanceElement('instance2', type, {
+      value: 'some value',
+      inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'value')) },
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'inner')),
+    })
 
-    const secondInstance2 = new InstanceElement(
-      'instance2',
-      type,
-      {
-        value: 'some value',
-        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'value')) },
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'inner')),
-      }
-    )
+    const firstInstance3 = new InstanceElement('instance3', type, {
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance3', 'inner'), {
+        inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance3', 'value'), 'some value'),
+      }),
+    })
 
+    const secondInstance3 = new InstanceElement('instance3', type, {
+      ref: { inner: 'some value' },
+    })
 
-    const firstInstance3 = new InstanceElement(
-      'instance3',
-      type,
-      {
-        ref: new ReferenceExpression(
-          new ElemID('adapter', 'type', 'instance', 'instance3', 'inner'),
-          {
-            inner: new ReferenceExpression(
-              new ElemID('adapter', 'type', 'instance', 'instance3', 'value'),
-              'some value'
-            ),
-          }
-        ),
-      }
-    )
+    const firstInstance4 = new InstanceElement('instance4', type, {
+      ref: { inner: 'some value' },
+    })
 
-    const secondInstance3 = new InstanceElement(
-      'instance3',
-      type,
-      {
-        ref: { inner: 'some value' },
-      }
-    )
-
-    const firstInstance4 = new InstanceElement(
-      'instance4',
-      type,
-      {
-        ref: { inner: 'some value' },
-      }
-    )
-
-    const secondInstance4 = new InstanceElement(
-      'instance4',
-      type,
-      {
-        ref: new ReferenceExpression(
-          new ElemID('adapter', 'type', 'instance', 'instance4', 'inner'),
-          {
-            inner: new ReferenceExpression(
-              new ElemID('adapter', 'type', 'instance', 'instance4', 'value'),
-              'some value'
-            ),
-          }
-        ),
-      }
-    )
-
+    const secondInstance4 = new InstanceElement('instance4', type, {
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance4', 'inner'), {
+        inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance4', 'value'), 'some value'),
+      }),
+    })
 
     const plan = await getPlan({
-      before: createElementSource(
-        [firstInstance1, firstInstance2, firstInstance3, firstInstance4, type, innerType]
-      ),
-      after: createElementSource(
-        [secondInstance1, secondInstance2, secondInstance3, secondInstance4, type, innerType]
-      ),
+      before: createElementSource([firstInstance1, firstInstance2, firstInstance3, firstInstance4, type, innerType]),
+      after: createElementSource([secondInstance1, secondInstance2, secondInstance3, secondInstance4, type, innerType]),
       compareOptions: { compareByValue: true },
     })
     expect(plan.size).toBe(0)
   })
 
   it('when instances use variables and there is no change should create empty plan when compareByValue is on', async () => {
-    const variableObject = new Variable(
-      new ElemID('var', 'a'),
-      5
-    )
+    const variableObject = new Variable(new ElemID('var', 'a'), 5)
 
     const type = new ObjectType({
       elemID: new ElemID('adapter', 'type'),
@@ -329,21 +284,13 @@ describe('getPlan', () => {
       },
     })
 
-    const instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        value: new VariableExpression(variableObject.elemID),
-      }
-    )
+    const instance = new InstanceElement('instance', type, {
+      value: new VariableExpression(variableObject.elemID),
+    })
 
-    const stateInstance = new InstanceElement(
-      'instance',
-      type,
-      {
-        value: 5,
-      }
-    )
+    const stateInstance = new InstanceElement('instance', type, {
+      value: 5,
+    })
 
     const plan = await getPlan({
       before: createElementSource([stateInstance, type]),
@@ -360,16 +307,10 @@ describe('getPlan', () => {
         value: { refType: BuiltinTypes.STRING },
       },
     })
-    const inst1 = new InstanceElement(
-      'instance1',
-      type,
-      { value: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance1', 'value')) }
-    )
-    const inst2 = new InstanceElement(
-      'instance1',
-      type,
-      { value: 'value' }
-    )
+    const inst1 = new InstanceElement('instance1', type, {
+      value: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance1', 'value')),
+    })
+    const inst2 = new InstanceElement('instance1', type, { value: 'value' })
 
     const plan = await getPlan({
       before: createElementSource([type, inst1]),
@@ -392,25 +333,17 @@ describe('getPlan', () => {
       },
     })
 
-    const instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        a: 5,
-        b: 5,
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a')),
-      }
-    )
+    const instance = new InstanceElement('instance', type, {
+      a: 5,
+      b: 5,
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a')),
+    })
 
-    const changedInstance = new InstanceElement(
-      'instance',
-      type,
-      {
-        a: 5,
-        b: 5,
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'b')),
-      }
-    )
+    const changedInstance = new InstanceElement('instance', type, {
+      a: 5,
+      b: 5,
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'b')),
+    })
 
     const plan = await getPlan({
       before: createElementSource([instance, type]),
@@ -436,41 +369,25 @@ describe('getPlan', () => {
         },
       })
 
-      referencedBefore = new InstanceElement(
-        'instance2',
-        type,
-        {
-          a: 1,
-        }
-      )
+      referencedBefore = new InstanceElement('instance2', type, {
+        a: 1,
+      })
 
-      instanceBefore = new InstanceElement(
-        'instance',
-        type,
-        {
-          a: 5,
-          b: 5,
-          ref: new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
-        }
-      )
+      instanceBefore = new InstanceElement('instance', type, {
+        a: 5,
+        b: 5,
+        ref: new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
+      })
 
-      referencedAfter = new InstanceElement(
-        'instance2',
-        type,
-        {
-          a: 2,
-        }
-      )
+      referencedAfter = new InstanceElement('instance2', type, {
+        a: 2,
+      })
 
-      instanceAfter = new InstanceElement(
-        'instance',
-        type,
-        {
-          a: 5,
-          b: 5,
-          ref: new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
-        }
-      )
+      instanceAfter = new InstanceElement('instance', type, {
+        a: 5,
+        b: 5,
+        ref: new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
+      })
     })
 
     it('when true should add a change to plan when a value of a reference to inner property is changed', async () => {
@@ -534,17 +451,13 @@ describe('getPlan', () => {
     })
 
     it('when true should add a change to plan when a value of a reference to inner property in template expression is changed', async () => {
-      instanceBefore.value.ref = new TemplateExpression({ parts: [
-        'a',
-        new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
-        'b',
-      ] })
+      instanceBefore.value.ref = new TemplateExpression({
+        parts: ['a', new ReferenceExpression(referencedBefore.elemID.createNestedID('a')), 'b'],
+      })
 
-      instanceAfter.value.ref = new TemplateExpression({ parts: [
-        'a',
-        new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
-        'b',
-      ] })
+      instanceAfter.value.ref = new TemplateExpression({
+        parts: ['a', new ReferenceExpression(referencedAfter.elemID.createNestedID('a')), 'b'],
+      })
 
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
@@ -563,17 +476,13 @@ describe('getPlan', () => {
     it('when true should not add a change to plan when a value of a reference to inner property in template expression is not changed', async () => {
       referencedAfter.value.a = 1
 
-      instanceBefore.value.ref = new TemplateExpression({ parts: [
-        'a',
-        new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
-        'b',
-      ] })
+      instanceBefore.value.ref = new TemplateExpression({
+        parts: ['a', new ReferenceExpression(referencedBefore.elemID.createNestedID('a')), 'b'],
+      })
 
-      instanceAfter.value.ref = new TemplateExpression({ parts: [
-        'a',
-        new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
-        'b',
-      ] })
+      instanceAfter.value.ref = new TemplateExpression({
+        parts: ['a', new ReferenceExpression(referencedAfter.elemID.createNestedID('a')), 'b'],
+      })
 
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
@@ -602,23 +511,15 @@ describe('getPlan', () => {
       },
     })
 
-    const instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        id: 'id1',
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance')),
-      }
-    )
+    const instance = new InstanceElement('instance', type, {
+      id: 'id1',
+      ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance')),
+    })
 
-    const changedInstance = new InstanceElement(
-      'instance',
-      type,
-      {
-        id: 'id1',
-        ref: 'id1',
-      }
-    )
+    const changedInstance = new InstanceElement('instance', type, {
+      id: 'id1',
+      ref: 'id1',
+    })
 
     const plan = await getPlan({
       before: createElementSource([instance, type]),
@@ -632,21 +533,13 @@ describe('getPlan', () => {
       elemID: new ElemID('adapter', 'type'),
     })
 
-    const instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') }),
-      }
-    )
+    const instance = new InstanceElement('instance', type, {
+      file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') }),
+    })
 
-    const changedInstance = new InstanceElement(
-      'instance',
-      type,
-      {
-        file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMGI') }),
-      }
-    )
+    const changedInstance = new InstanceElement('instance', type, {
+      file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMGI') }),
+    })
 
     const plan = await getPlan({
       before: createElementSource([instance, type]),
@@ -660,13 +553,9 @@ describe('getPlan', () => {
       elemID: new ElemID('adapter', 'type'),
     })
 
-    const before = new InstanceElement(
-      'instance',
-      type,
-      {
-        file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') }),
-      }
-    )
+    const before = new InstanceElement('instance', type, {
+      file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') }),
+    })
 
     const after = before.clone()
     after.value.file.filepath = 'another/path.ext'

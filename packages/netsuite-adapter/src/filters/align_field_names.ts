@@ -1,22 +1,34 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
-import { AdditionChange, Field, InstanceElement, ModificationChange, ObjectType, Values, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType, isObjectTypeChange } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  Field,
+  InstanceElement,
+  ModificationChange,
+  ObjectType,
+  Values,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isObjectType,
+  isObjectTypeChange,
+} from '@salto-io/adapter-api'
 import { customrecordtypeType } from '../autogen/types/standard_types/customrecordtype'
 import { INACTIVE_FIELDS } from '../constants'
 import { LocalFilterCreator } from '../filter'
@@ -35,9 +47,8 @@ const CUSTOM_RECORD_TYPE_ANNOTATIONS_TO_ALIGN = [
   { from: customrecordtypeType().type.fields.isinactive.name, to: INACTIVE_FIELDS.isInactive },
 ]
 
-const runFuncOnFieldType = (
-  func: (fieldType: ObjectType, value: Values) => void
-): TransformFuncSync =>
+const runFuncOnFieldType =
+  (func: (fieldType: ObjectType, value: Values) => void): TransformFuncSync =>
   ({ field, value }) => {
     const fieldType = field?.getTypeSync()
     if (isObjectType(fieldType) && _.isPlainObject(value)) {
@@ -48,7 +59,7 @@ const runFuncOnFieldType = (
 
 const runFuncOnCustomRecordTypeNestedAnnotations = (
   type: ObjectType,
-  func: (fieldType: ObjectType, values: Values) => void
+  func: (fieldType: ObjectType, values: Values) => void,
 ): void => {
   Object.entries(type.annotationRefTypes).forEach(([anno, annoRefType]) => {
     const annoType = annoRefType.getResolvedValueSync()
@@ -65,10 +76,7 @@ const runFuncOnCustomRecordTypeNestedAnnotations = (
   })
 }
 
-const runFuncOnInstance = (
-  instance: InstanceElement,
-  func: (fieldType: ObjectType, values: Values) => void
-): void => {
+const runFuncOnInstance = (instance: InstanceElement, func: (fieldType: ObjectType, values: Values) => void): void => {
   const type = instance.getTypeSync()
   func(type, instance.value)
   transformValuesSync({
@@ -155,15 +163,15 @@ const restoreFieldNamesInInstance = (instance: InstanceElement): void =>
   runFuncOnInstance(instance, restoreFieldNamesInValue)
 
 const restoreFieldNamesInInstanceChange = (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
 ): void => {
   const type = change.data.after.getTypeSync()
   if (isCustomRecordType(type)) {
     return
   }
   const changeData = isDataObjectType(type)
-    // in data instances we should transform also the before
-    ? Object.values(change.data)
+    ? // in data instances we should transform also the before
+      Object.values(change.data)
     : [change.data.after]
 
   changeData.forEach(restoreFieldNamesInInstance)
@@ -172,24 +180,19 @@ const restoreFieldNamesInInstanceChange = (
 const filterCreator: LocalFilterCreator = () => ({
   name: 'alignFieldNames',
   onFetch: async elements => {
-    const [customRecordTypes, types] = _.partition(
-      elements.filter(isObjectType),
-      isCustomRecordType
-    )
+    const [customRecordTypes, types] = _.partition(elements.filter(isObjectType), isCustomRecordType)
 
     types.forEach(alignFieldNamesInType)
     customRecordTypes.forEach(alignFieldNamesInCustomRecordType)
 
-    elements.filter(isInstanceElement)
+    elements
+      .filter(isInstanceElement)
       // custom record instances don't have field names to align ATM
       .filter(instance => !isCustomRecordType(instance.getTypeSync()))
       .forEach(alignFieldNamesInInstance)
   },
   preDeploy: async changes => {
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .forEach(restoreFieldNamesInInstanceChange)
+    changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).forEach(restoreFieldNamesInInstanceChange)
 
     changes
       .filter(isAdditionOrModificationChange)

@@ -1,7 +1,5 @@
 {
-  "fileTypes": [
-    "nacl"
-  ],
+  "fileTypes": ["nacl"],
   "name": "Salto",
   "patterns": [
     {

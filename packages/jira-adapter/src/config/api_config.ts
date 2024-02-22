@@ -1,20 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, PROJECTS_FIELD, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import {
+  AUTOMATION_LABEL_TYPE,
+  AUTOMATION_TYPE,
+  BOARD_COLUMN_CONFIG_TYPE,
+  BOARD_ESTIMATION_TYPE,
+  ISSUE_TYPE_NAME,
+  ISSUE_TYPE_SCHEMA_NAME,
+  PROJECTS_FIELD,
+  RESOLUTION_TYPE_NAME,
+  STATUS_TYPE_NAME,
+} from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const DEFAULT_MAX_RESULTS = '1000'
@@ -28,9 +38,12 @@ export type JspUrls = {
 }
 
 export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
-  types: Record<string, configUtils.TypeConfig & {
-    jspRequests?: JspUrls
-  }>
+  types: Record<
+    string,
+    configUtils.TypeConfig & {
+      jspRequests?: JspUrls
+    }
+  >
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   typesToFallbackToInternalId: string[]
@@ -39,9 +52,7 @@ export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'>
 export type JiraDuckTypeConfig = configUtils.AdapterDuckTypeApiConfig
 
 const DEFAULT_ID_FIELDS = ['name']
-const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  { fieldName: 'expand', fieldType: 'string' },
-]
+const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [{ fieldName: 'expand', fieldType: 'string' }]
 
 const DEFAULT_SERVICE_ID_FIELD = 'id'
 
@@ -85,9 +96,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   DashboardGadget: {
     transformation: {
       idFields: ['title', 'position.column', 'position.row'],
-      fieldTypeOverrides: [
-        { fieldName: 'properties', fieldType: 'Map<unknown>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'properties', fieldType: 'Map<unknown>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -142,9 +151,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'isFavourite' },
-      ],
+      fieldsToOmit: [{ fieldName: 'isFavourite' }],
       standaloneFields: [
         {
           fieldName: 'gadgets',
@@ -172,9 +179,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   BoardConfiguration_columnConfig_columns: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'statuses', fieldType: 'List<string>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'statuses', fieldType: 'List<string>' }],
     },
   },
   Fields: {
@@ -193,24 +198,28 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
             { name: 'fieldId', fromField: 'id' },
             { name: 'fieldSchema', fromField: 'schema.custom' },
           ],
-          conditions: [{
-            fromField: 'id',
-            match: ['customfield_.*'],
-          }],
+          conditions: [
+            {
+              fromField: 'id',
+              match: ['customfield_.*'],
+            },
+          ],
         },
         {
           type: 'PageBeanCustomFieldContextDefaultValue',
           toField: 'contextDefaults',
           skipOnError: true,
           context: [{ name: 'fieldId', fromField: 'id' }],
-          conditions: [{
-            fromField: 'schema.custom',
-            // This condition is to avoid trying to fetch the default value
-            // for unsupported types (e.g., com.atlassian.jira.ext.charting:timeinstatus)
-            // for which Jira will return "Retrieving default value for provided
-            // custom field is not supported."
-            match: ['com.atlassian.jira.plugin.system.customfieldtypes:*'],
-          }],
+          conditions: [
+            {
+              fromField: 'schema.custom',
+              // This condition is to avoid trying to fetch the default value
+              // for unsupported types (e.g., com.atlassian.jira.ext.charting:timeinstatus)
+              // for which Jira will return "Retrieving default value for provided
+              // custom field is not supported."
+              match: ['com.atlassian.jira.plugin.system.customfieldtypes:*'],
+            },
+          ],
         },
         {
           type: 'PageBeanIssueTypeToContextMapping',
@@ -258,9 +267,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'contextIssueTypes', fieldType: 'list<IssueTypeToContextMapping>' },
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
       ],
-      fileNameFields: [
-        'name',
-      ],
+      fileNameFields: ['name'],
     },
     deployRequests: {
       add: {
@@ -308,10 +315,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           type: 'PageBeanCustomFieldContextOption',
           toField: 'options',
           context: [{ name: 'contextId', fromField: 'id' }],
-          conditions: [{
-            fromContext: 'fieldSchema',
-            match: FIELD_TYPES_WITH_OPTIONS,
-          }],
+          conditions: [
+            {
+              fromContext: 'fieldSchema',
+              match: FIELD_TYPES_WITH_OPTIONS,
+            },
+          ],
         },
       ],
     },
@@ -329,17 +338,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   CustomFieldContext: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'options', fieldType: 'list<CustomFieldContextOption>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'options', fieldType: 'list<CustomFieldContextOption>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'isAnyIssueType' },
-      ],
+      fieldsToOmit: [{ fieldName: 'isAnyIssueType' }],
     },
     deployRequests: {
       add: {
@@ -520,9 +525,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'expand' },
-      ],
+      fieldsToOmit: [{ fieldName: 'expand' }],
       serviceUrl: '/issues/?filter={id}',
     },
     deployRequests: {
@@ -543,9 +546,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   GroupName: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'groupId' },
-      ],
+      fieldsToOmit: [{ fieldName: 'groupId' }],
     },
   },
   IssueTypeSchemes: {
@@ -567,9 +568,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Board_location: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'projectKeyOrId', fieldType: 'number' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'projectKeyOrId', fieldType: 'number' }],
       fieldsToOmit: [
         { fieldName: 'displayName' },
         { fieldName: 'projectName' },
@@ -585,9 +584,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'issueTypeIds', fieldType: 'list<IssueTypeSchemeMapping>' }],
       serviceIdField: 'issueTypeSchemeId',
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/ConfigureOptionSchemes!default.jspa?fieldId=&schemeId={id}',
     },
     deployRequests: {
@@ -713,9 +710,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       dataField: '.',
       isSingleton: true,
-      fieldTypeOverrides: [
-        { fieldName: 'permissions', fieldType: 'Map<UserPermission>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'permissions', fieldType: 'Map<UserPermission>' }],
     },
   },
   PermissionSchemes: {
@@ -735,11 +730,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'notificationType', fieldType: 'string' },
         { fieldName: 'parameter', fieldType: 'unknown' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'value' },
-        { fieldName: 'expand' },
-        { fieldName: 'user' },
-      ],
+      fieldsToOmit: [{ fieldName: 'value' }, { fieldName: 'expand' }, { fieldName: 'user' }],
     },
   },
 
@@ -790,9 +781,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   ProjectType: {
     transformation: {
       idFields: ['key'],
-      fieldsToOmit: [
-        { fieldName: 'icon' },
-      ],
+      fieldsToOmit: [{ fieldName: 'icon' }],
     },
   },
   RoleActor: {
@@ -848,9 +837,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: [
         { fieldName: 'style' },
         { fieldName: 'isPrivate' },
@@ -904,9 +891,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'componentBean', fieldType: 'ProjectComponent' },
         { fieldName: 'deleted', fieldType: 'boolean' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: [
         { fieldName: 'issueCount' },
         { fieldName: 'projectId' },
@@ -1051,9 +1036,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Screen: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'tabs', fieldType: 'list<ScreenableTab>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'tabs', fieldType: 'list<ScreenableTab>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1100,9 +1083,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   ScreenableTab: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'fields', fieldType: 'list<ScreenableField>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'fields', fieldType: 'list<ScreenableField>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1161,16 +1142,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   WorkflowCondition: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'nodeType' },
-      ],
+      fieldsToOmit: [{ fieldName: 'nodeType' }],
     },
   },
   TransitionScreenDetails: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'name' },
-      ],
+      fieldsToOmit: [{ fieldName: 'name' }],
     },
   },
   Workflow: {
@@ -1186,10 +1163,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'entityId',
         },
       ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'updated' },
-      ],
+      fieldsToOmit: [{ fieldName: 'created' }, { fieldName: 'updated' }],
       serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
     },
     deployRequests: {
@@ -1215,10 +1189,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'statusMappings', fieldType: 'List<StatusMappingDTO>' },
         { fieldName: 'transitions', fieldType: 'Map<WorkflowTransitions>' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'version' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'version' }],
       idFields: ['name'],
       serviceIdField: 'id',
       serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
@@ -1241,16 +1212,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   WorkflowRuleConfiguration: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'id' },
-      ],
+      fieldsToOmit: [{ fieldName: 'id' }],
+    },
+  },
+  WorkflowTransitions: {
+    transformation: {
+      // transitionId is not multi-env friendly
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   WorkflowTrigger: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'id' },
-      ],
+      fieldsToOmit: [{ fieldName: 'id' }],
     },
   },
   WorkflowRuleConfiguration_parameters: {
@@ -1343,9 +1316,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   IssueSecurityLevelMember: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'issueSecurityLevelId' },
-      ],
+      fieldsToOmit: [{ fieldName: 'issueSecurityLevelId' }],
     },
   },
 
@@ -1356,9 +1327,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           type: 'PageBeanIssueSecurityLevelMember',
           toField: 'members',
-          context: [{
-            name: 'issueSecurityLevelId', fromField: 'id',
-          }],
+          context: [
+            {
+              name: 'issueSecurityLevelId',
+              fromField: 'id',
+            },
+          ],
         },
       ],
     },
@@ -1430,9 +1404,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   WorkflowScheme: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'statusMigrations', fieldType: 'List<StatusMapping>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'statusMigrations', fieldType: 'List<StatusMapping>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1462,13 +1434,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
-      fieldTypeOverrides: [
-        { fieldName: 'untranslatedName', fieldType: 'string' },
-      ],
-      fieldsToOmit: [
-        { fieldName: 'avatarId' },
-        { fieldName: 'iconUrl' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'untranslatedName', fieldType: 'string' }],
+      fieldsToOmit: [{ fieldName: 'avatarId' }, { fieldName: 'iconUrl' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1525,21 +1492,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'timeTracking', fieldType: 'string' },
         { fieldName: 'field', fieldType: 'string' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'type' },
-      ],
+      fieldsToOmit: [{ fieldName: 'type' }],
     },
   },
 
   Group: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'originalName', fieldType: 'string' },
-      ],
-      fieldsToHide: [
-        { fieldName: 'groupId' },
-        { fieldName: 'originalName' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'originalName', fieldType: 'string' }],
+      fieldsToHide: [{ fieldName: 'groupId' }, { fieldName: 'originalName' }],
       serviceIdField: 'groupId',
     },
     deployRequests: {
@@ -1574,9 +1534,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'subQuery', fieldType: 'string' },
         { fieldName: 'estimation', fieldType: BOARD_ESTIMATION_TYPE },
       ],
-      fieldsToOmit: [
-        { fieldName: 'canEdit' },
-      ],
+      fieldsToOmit: [{ fieldName: 'canEdit' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1717,9 +1675,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   FilterSubscription: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'id' },
-      ],
+      fieldsToOmit: [{ fieldName: 'id' }],
     },
   },
 
@@ -1811,8 +1767,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     request: {
       url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
     },
-    transformation: {
-    },
+    transformation: {},
     deployRequests: {
       add: {
         url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
@@ -1912,12 +1867,8 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
-      fieldsToOmit: [
-        { fieldName: 'use_s3_storage@b' },
-      ],
-      fieldsToHide: [
-        { fieldName: 'jql_aliases@b' },
-      ],
+      fieldsToOmit: [{ fieldName: 'use_s3_storage@b' }],
+      fieldsToHide: [{ fieldName: 'jql_aliases@b' }],
     },
     deployRequests: {
       modify: {
@@ -1949,10 +1900,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'groupIds' },
         { fieldName: 'serviceDeskId' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'icon' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }],
       serviceIdField: 'id',
     },
     deployRequests: {
@@ -1993,9 +1941,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'customerRoleMisconfigured' },
         { fieldName: 'serviceDeskPublicSignup' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
     },
   },
@@ -2008,15 +1954,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       serviceIdField: 'id',
       sourceTypeName: 'Queue__values',
       dataField: 'values',
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
-      fieldsToOmit: [
-        { fieldName: '_links' },
-      ],
-      fieldTypeOverrides: [
-        { fieldName: 'columns', fieldType: 'List<Field>' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: [{ fieldName: '_links' }],
+      fieldTypeOverrides: [{ fieldName: 'columns', fieldType: 'List<Field>' }],
       serviceUrl: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
     },
     deployRequests: {
@@ -2052,13 +1992,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['name', 'projectKey'],
       sourceTypeName: 'PortalGroup__groups',
       dataField: 'groups',
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
-      fieldTypeOverrides: [
-        { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' }],
       serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
     },
     deployRequests: {
@@ -2093,9 +2029,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['name', 'projectKey'],
       sourceTypeName: 'Calendar__calendars',
       dataField: 'calendars',
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
       fieldsToOmit: [
         { fieldName: 'canUpdate' },
@@ -2128,9 +2062,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   Calendar__holidays: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'date' },
-      ],
+      fieldsToOmit: [{ fieldName: 'date' }],
     },
   },
   RequestType__workflowStatuses: {
@@ -2140,11 +2072,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     transformation: {
       dataField: 'statuses',
       sourceTypeName: 'RequestType__workflowStatuses__statuses',
-      fieldsToOmit: [
-        { fieldName: 'projectKey' },
-        { fieldName: 'statusNameId' },
-        { fieldName: 'original' },
-      ],
+      fieldsToOmit: [{ fieldName: 'projectKey' }, { fieldName: 'statusNameId' }, { fieldName: 'original' }],
     },
   },
   PortalSettings: {
@@ -2168,9 +2096,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   PortalSettings__announcementSettings: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'canAgentsManageHelpCenterAnnouncement' },
-      ],
+      fieldsToOmit: [{ fieldName: 'canAgentsManageHelpCenterAnnouncement' }],
     },
   },
   SLA: {
@@ -2181,11 +2107,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: 'timeMetrics',
       sourceTypeName: 'SLA__timeMetrics',
       idFields: ['name', 'projectKey'],
-      fieldsToHide: [
-        { fieldName: 'projectKey' },
-        { fieldName: 'id' },
-        { fieldName: 'customFieldId' },
-      ],
+      fieldsToHide: [{ fieldName: 'projectKey' }, { fieldName: 'id' }, { fieldName: 'customFieldId' }],
       serviceIdField: 'id',
       serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
     },
@@ -2216,40 +2138,27 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   SLA__config__goals: {
     transformation: {
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   SLA__config__definition__pause: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'type' },
-        { fieldName: 'missing' },
-      ],
+      fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],
     },
   },
   SLA__config__definition__start: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'type' },
-        { fieldName: 'missing' },
-      ],
+      fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],
     },
   },
   SLA__config__definition__stop: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'type' },
-        { fieldName: 'missing' },
-      ],
+      fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],
     },
   },
   SLA__config__definition: {
     transformation: {
-      fieldsToOmit: [
-        { fieldName: 'inconsistent' },
-      ],
+      fieldsToOmit: [{ fieldName: 'inconsistent' }],
     },
   },
   ObjectSchemas: {
@@ -2269,16 +2178,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         {
           type: 'ObjectTypeAttribute',
           toField: 'attributes',
-          context: [
-            { name: 'AssetsSchemaId', fromField: 'id' },
-          ],
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
         {
           type: 'ObjectSchemaReferenceTypes',
           toField: 'referenceTypes',
-          context: [
-            { name: 'AssetsSchemaId', fromField: 'id' },
-          ],
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
       ],
     },
@@ -2298,11 +2203,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'canManage' },
         { fieldName: 'atlassianTemplateId' },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'idAsInt' },
-        { fieldName: 'workspaceId' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'idAsInt' }, { fieldName: 'workspaceId' }],
       serviceIdField: 'id',
       standaloneFields: [
         { fieldName: 'objectSchemaStatuses' },
@@ -2310,9 +2211,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'attributes' },
         { fieldName: 'referenceTypes' },
       ],
-      fieldTypeOverrides: [
-        { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' }],
       serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
@@ -2344,11 +2243,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ObjectSchemaStatus: {
     transformation: {
       sourceTypeName: 'ObjectSchema__objectSchemaStatuses',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'workspaceId' },
-        { fieldName: 'objectSchemaId' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }, { fieldName: 'objectSchemaId' }],
       serviceIdField: 'id',
       serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
@@ -2383,10 +2278,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     transformation: {
       sourceTypeName: 'ObjectSchema__objectTypes',
       idFields: ['&parentObjectTypeId', 'name'],
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'objectSchemaId' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'objectSchemaId' }],
       fieldsToOmit: [
         { fieldName: 'created' },
         { fieldName: 'updated' },
@@ -2425,10 +2317,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: '.',
       idFields: ['&objectType', 'name'],
       sourceTypeName: 'ObjectSchema__attributes',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'workspaceId' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }],
       fieldsToOmit: [
         { fieldName: 'globalId' },
         { fieldName: 'system' },
@@ -2440,7 +2329,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'additionalValue', fieldType: 'string' },
       ],
       serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
-
     },
     deployRequests: {
       add: {
@@ -2469,16 +2357,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ObjectSchemaReferenceType: {
     transformation: {
       sourceTypeName: 'ObjectSchema__referenceTypes',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'workspaceId' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }],
       serviceIdField: 'id',
-      fieldsToOmit: [
-        { fieldName: 'objectSchemaId' },
-        { fieldName: 'url16' },
-        { fieldName: 'globalId' },
-      ],
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }, { fieldName: 'url16' }, { fieldName: 'globalId' }],
     },
     deployRequests: {
       add: {
@@ -2496,22 +2377,16 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
-  ObjectSchemaDefaultReferenceType: { // This endpoint returns only the default object reference types.
+  ObjectSchemaDefaultReferenceType: {
+    // This endpoint returns only the default object reference types.
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
     },
     transformation: {
       dataField: '.',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'workspaceId' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'workspaceId' }],
       serviceIdField: 'id',
-      fieldsToOmit: [
-        { fieldName: 'objectSchemaId' },
-        { fieldName: 'url16' },
-        { fieldName: 'globalId' },
-      ],
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }, { fieldName: 'url16' }, { fieldName: 'globalId' }],
     },
   },
 }

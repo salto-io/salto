@@ -1,21 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import nock from 'nock'
-import { Bulk, FileProperties, Metadata, RetrieveResult } from '@salto-io/jsforce-types'
+import {
+  Bulk,
+  FileProperties,
+  Metadata,
+  RetrieveResult,
+} from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections, types, values } from '@salto-io/lowerdash'
@@ -29,19 +34,29 @@ import SalesforceClient, {
   validateCredentials,
 } from '../src/client/client'
 import mockClient from './client'
-import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
+import {
+  OauthAccessTokenCredentials,
+  UsernamePasswordCredentials,
+} from '../src/types'
 import Connection from '../src/client/jsforce'
 import {
   ENOTFOUND,
-  ERROR_HTTP_502, ERROR_PROPERTIES,
+  ERROR_HTTP_502,
+  ERROR_PROPERTIES,
   ErrorProperty,
   INVALID_GRANT,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   SALESFORCE_ERRORS,
 } from '../src/constants'
-import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import {
-  ERROR_HTTP_502_MESSAGE, ERROR_MAPPERS, ErrorMappers,
+  mockFileProperties,
+  mockRetrieveLocator,
+  mockRetrieveResult,
+} from './connection'
+import {
+  ERROR_HTTP_502_MESSAGE,
+  ERROR_MAPPERS,
+  ErrorMappers,
   INVALID_GRANT_MESSAGE,
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
@@ -53,7 +68,6 @@ const { mapAsync, toArrayAsync } = asynciterable
 const { isDefined } = values
 
 const logging = logger('salesforce-adapter/src/client/client')
-
 
 describe('salesforce client', () => {
   let client: SalesforceClient
@@ -98,21 +112,33 @@ describe('salesforce client', () => {
   const { connection } = mockClient()
   const headers = { 'content-type': 'application/json' }
   const workingReadReplay = {
-    'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
+    'a:Envelope': {
+      'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } },
+    },
   }
 
   describe('with failed delete', () => {
     it('should not fail if the element is already deleted', async () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
-          success: false,
-          fullName: 'bla',
-          errors: [{
-            statusCode: 'INVALID_CROSS_REFERENCE_KEY',
-            message: 'no bla named foo found',
-          }],
-        } } } } })
+        .reply(200, {
+          'a:Envelope': {
+            'a:Body': {
+              a: {
+                result: {
+                  success: false,
+                  fullName: 'bla',
+                  errors: [
+                    {
+                      statusCode: 'INVALID_CROSS_REFERENCE_KEY',
+                      message: 'no bla named foo found',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        })
       await expect(client.delete('bla', 'foo')).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -120,14 +146,24 @@ describe('salesforce client', () => {
     it('should fail delete error if it is not the specific error we filter out', async () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
-          success: false,
-          fullName: 'bla',
-          errors: [{
-            statusCode: 'CANNOT_DELETE_MANAGED_OBJECT',
-            message: 'bla',
-          }],
-        } } } } })
+        .reply(200, {
+          'a:Envelope': {
+            'a:Body': {
+              a: {
+                result: {
+                  success: false,
+                  fullName: 'bla',
+                  errors: [
+                    {
+                      statusCode: 'CANNOT_DELETE_MANAGED_OBJECT',
+                      message: 'bla',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        })
 
       await expect(client.delete('bla', 'foo')).rejects.toThrow()
       expect(dodoScope.isDone()).toBeTruthy()
@@ -147,8 +183,15 @@ describe('salesforce client', () => {
         .times(1)
         .reply(400, {})
         .post(/.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
-          headers)
+        .reply(
+          200,
+          {
+            'a:Envelope': {
+              'a:Body': { a: { result: { metadataObjects: [] } } },
+            },
+          },
+          headers,
+        )
       const res = await client.listMetadataTypes()
       expect(dodoScope.isDone()).toBeTruthy()
       expect(res).toEqual([])
@@ -182,16 +225,26 @@ describe('salesforce client', () => {
           code: 'ECONNRESET',
         })
         .post(/.*/)
-        .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } },
-        }, headers)
+        .reply(
+          200,
+          {
+            'a:Envelope': {
+              'a:Body': { a: { result: { metadataObjects: [] } } },
+            },
+          },
+          headers,
+        )
 
       const res = await client.listMetadataTypes()
       expect(dodoScope.isDone()).toBeTruthy()
       expect(res).toEqual([])
     })
     it('writes the right things to log', () => {
-      expect(logWarnSpy).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'something awful happened', 0.1)
+      expect(logWarnSpy).toHaveBeenCalledWith(
+        'failed to run SFDC call for reason: %s. Retrying in %ss.',
+        'something awful happened',
+        0.1,
+      )
     })
   })
 
@@ -202,8 +255,15 @@ describe('salesforce client', () => {
         .times(1)
         .reply(500, 'server error')
         .post(/.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
-          headers)
+        .reply(
+          200,
+          {
+            'a:Envelope': {
+              'a:Body': { a: { result: { metadataObjects: [] } } },
+            },
+          },
+          headers,
+        )
 
       try {
         await client.listMetadataTypes()
@@ -228,7 +288,8 @@ describe('salesforce client', () => {
         .reply(200, workingReadReplay, headers)
       // create an array with 30 names so we will have 3 calls (chunk size is 10 for readMetadata)
       const { result } = await client.readMetadata(
-        'FakeType', Array.from({ length: 30 }, () => 'FakeName')
+        'FakeType',
+        Array.from({ length: 30 }, () => 'FakeName'),
       )
       expect(result).toHaveLength(12)
       expect(dodoScope.isDone()).toBeTruthy()
@@ -240,9 +301,12 @@ describe('salesforce client', () => {
         .times(22)
         .reply(500, 'server error')
       // create an array with 20 names so we will have 2 calls
-      await expect(client.readMetadata(
-        'FakeType', Array.from({ length: 20 }, () => 'FakeName')
-      )).rejects.toEqual(new Error('server error'))
+      await expect(
+        client.readMetadata(
+          'FakeType',
+          Array.from({ length: 20 }, () => 'FakeName'),
+        ),
+      ).rejects.toEqual(new Error('server error'))
       expect(dodoScope.isDone()).toBeTruthy()
     })
 
@@ -251,13 +315,17 @@ describe('salesforce client', () => {
         .post(/.*/)
         .times(1)
         .reply(500, 'server error')
-      expect(await client.readMetadata('FakeType', 'FakeName', _err => false))
-        .toEqual({
-          result: [],
-          errors: [
-            { input: 'FakeName', error: expect.objectContaining({ name: 'ERROR_HTTP_500' }) },
-          ],
-        })
+      expect(
+        await client.readMetadata('FakeType', 'FakeName', (_err) => false),
+      ).toEqual({
+        result: [],
+        errors: [
+          {
+            input: 'FakeName',
+            error: expect.objectContaining({ name: 'ERROR_HTTP_500' }),
+          },
+        ],
+      })
       expect(dodoScope.isDone()).toBeTruthy()
     })
 
@@ -267,16 +335,28 @@ describe('salesforce client', () => {
         .times(1)
         .reply(
           500,
-          { 'a:Envelope': { 'a:Body': { 'a:Fault': { faultcode: 'sf:INVALID_TYPE', faultstring: 'INVALID_TYPE: This type of metadata is not available for this organization' } } } },
+          {
+            'a:Envelope': {
+              'a:Body': {
+                'a:Fault': {
+                  faultcode: 'sf:INVALID_TYPE',
+                  faultstring:
+                    'INVALID_TYPE: This type of metadata is not available for this organization',
+                },
+              },
+            },
+          },
           headers,
         )
-      expect(await client.readMetadata('FakeType', 'FakeName'))
-        .toEqual({
-          result: [],
-          errors: [
-            { input: 'FakeName', error: expect.objectContaining({ name: 'sf:INVALID_TYPE' }) },
-          ],
-        })
+      expect(await client.readMetadata('FakeType', 'FakeName')).toEqual({
+        result: [],
+        errors: [
+          {
+            input: 'FakeName',
+            error: expect.objectContaining({ name: 'sf:INVALID_TYPE' }),
+          },
+        ],
+      })
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })
@@ -287,7 +367,9 @@ describe('salesforce client', () => {
         .post(/.*/)
         .reply(500, 'targetObject is invalid')
 
-      await expect(client.readMetadata('QuickAction', 'SendEmail')).resolves.not.toThrow()
+      await expect(
+        client.readMetadata('QuickAction', 'SendEmail'),
+      ).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTruthy()
     })
 
@@ -300,7 +382,10 @@ describe('salesforce client', () => {
         .times(1)
         .reply(200, workingReadReplay)
 
-      const { result } = await client.readMetadata('QuickAction', ['SendEmail', 'LogACall'])
+      const { result } = await client.readMetadata('QuickAction', [
+        'SendEmail',
+        'LogACall',
+      ])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -336,7 +421,10 @@ describe('salesforce client', () => {
         .times(1)
         .reply(200, workingReadReplay)
 
-      const { result } = await client.readMetadata('TopicsForObjects', ['aaa', 'bbb'])
+      const { result } = await client.readMetadata('TopicsForObjects', [
+        'aaa',
+        'bbb',
+      ])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -353,18 +441,24 @@ describe('salesforce client', () => {
       errorProperties: Partial<Record<ErrorProperty, unknown>>
     }
 
-    const mappableErrorToTestInputs: Record<keyof ErrorMappers, types.NonEmptyArray<TestInput> | TestInput> = {
+    const mappableErrorToTestInputs: Record<
+      keyof ErrorMappers,
+      types.NonEmptyArray<TestInput> | TestInput
+    > = {
       [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: [
         {
           errorProperties: {
-            [ERROR_PROPERTIES.ERROR_CODE]: SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
-            [ERROR_PROPERTIES.MESSAGE]: 'ConcurrentRequests (Concurrent API Requests) Limit exceeded.',
+            [ERROR_PROPERTIES.ERROR_CODE]:
+              SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
+            [ERROR_PROPERTIES.MESSAGE]:
+              'ConcurrentRequests (Concurrent API Requests) Limit exceeded.',
           },
           expectedMessage: MAX_CONCURRENT_REQUESTS_MESSAGE,
         },
         {
           errorProperties: {
-            [ERROR_PROPERTIES.ERROR_CODE]: SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
+            [ERROR_PROPERTIES.ERROR_CODE]:
+              SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
             [ERROR_PROPERTIES.MESSAGE]: 'TotalRequests Limit exceeded.',
           },
           expectedMessage: REQUEST_LIMIT_EXCEEDED_MESSAGE,
@@ -375,8 +469,9 @@ describe('salesforce client', () => {
           [ERROR_PROPERTIES.HOSTNAME]: TEST_HOSTNAME,
           [ERROR_PROPERTIES.CODE]: ENOTFOUND,
         },
-        expectedMessage: `Unable to communicate with the salesforce org at ${TEST_HOSTNAME}.`
-          + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
+        expectedMessage:
+          `Unable to communicate with the salesforce org at ${TEST_HOSTNAME}.` +
+          ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
       },
       [ERROR_HTTP_502]: {
         errorProperties: {
@@ -392,9 +487,12 @@ describe('salesforce client', () => {
       },
     }
 
-    describe.each(Object.keys(ERROR_MAPPERS))('%p', mappableError => {
-      const testInputs = mappableErrorToTestInputs[mappableError as keyof ErrorMappers]
-      const withTestName = (testInput: TestInput): TestInput & {name: string} => ({
+    describe.each(Object.keys(ERROR_MAPPERS))('%p', (mappableError) => {
+      const testInputs =
+        mappableErrorToTestInputs[mappableError as keyof ErrorMappers]
+      const withTestName = (
+        testInput: TestInput,
+      ): TestInput & { name: string } => ({
         name: isDefined(testInput.errorProperties)
           ? safeJsonStringify(testInput.errorProperties)
           : 'should replace error message',
@@ -406,14 +504,17 @@ describe('salesforce client', () => {
         testClient = mocks.client
         testConnection = mocks.connection
       })
-      it.each(makeArray(testInputs).map(withTestName))('$name',
+      it.each(makeArray(testInputs).map(withTestName))(
+        '$name',
         async ({ expectedMessage, errorProperties }) => {
           testConnection.metadata.describe.mockImplementation(() => {
             throw Object.assign(new Error('Test error'), errorProperties)
           })
-          await expect(testClient.listMetadataTypes())
-            .rejects.toThrow(expectedMessage)
-        })
+          await expect(testClient.listMetadataTypes()).rejects.toThrow(
+            expectedMessage,
+          )
+        },
+      )
     })
 
     describe('when login throws invaid_grant error', () => {
@@ -426,8 +527,9 @@ describe('salesforce client', () => {
         })
       })
       it('should be mapped to user friendly message', async () => {
-        await expect(testClient.listMetadataTypes())
-          .rejects.toThrow(INVALID_GRANT_MESSAGE)
+        await expect(testClient.listMetadataTypes()).rejects.toThrow(
+          INVALID_GRANT_MESSAGE,
+        )
       })
     })
   })
@@ -443,10 +545,9 @@ describe('salesforce client', () => {
       const mockClientAndConnection = mockClient()
       testConnection = mockClientAndConnection.connection
       testClient = mockClientAndConnection.client
-      nullFailingImplementation = async () => (
+      nullFailingImplementation = async () =>
         // Intentionally access .result on null
         (null as unknown as { result: FileProperties[] }).result
-      )
       unknownErrorToRetryImplementation = async () => {
         throw new Error('unknown_error: retry your request')
       }
@@ -458,7 +559,10 @@ describe('salesforce client', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
       let expectedProperties: FileProperties
       beforeEach(() => {
-        expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
+        expectedProperties = mockFileProperties({
+          type: 'CustomObject',
+          fullName: 'A__c',
+        })
         testConnection.metadata.list
           .mockImplementationOnce(unknownErrorToRetryImplementation)
           .mockImplementationOnce(pollingTimeOutImplementation)
@@ -467,13 +571,17 @@ describe('salesforce client', () => {
         result = testClient.listMetadataObjects({ type: 'CustomObject' })
       })
       it('should resolve with the value of the successful attempt', async () => {
-        await expect(result).resolves.toMatchObject({ result: [expectedProperties] })
+        await expect(result).resolves.toMatchObject({
+          result: [expectedProperties],
+        })
       })
     })
     describe('when the error persists', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
       beforeEach(() => {
-        testConnection.metadata.list.mockImplementation(nullFailingImplementation)
+        testConnection.metadata.list.mockImplementation(
+          nullFailingImplementation,
+        )
         result = testClient.listMetadataObjects({ type: 'CustomObject' })
       })
       it('should fail with the error', async () => {
@@ -491,15 +599,23 @@ describe('salesforce client', () => {
       testClient = mockClientAndConnection.client
     })
     it('when the json is a valid string should parse and return it', async () => {
-      const expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
-      testConnection.metadata.list
-        .mockResolvedValue(safeJsonStringify(expectedProperties) as unknown as FileProperties[])
+      const expectedProperties = mockFileProperties({
+        type: 'CustomObject',
+        fullName: 'A__c',
+      })
+      testConnection.metadata.list.mockResolvedValue(
+        safeJsonStringify(expectedProperties) as unknown as FileProperties[],
+      )
 
       const result = testClient.listMetadataObjects({ type: 'CustomObject' })
-      await expect(result).resolves.toMatchObject({ result: [expectedProperties] })
+      await expect(result).resolves.toMatchObject({
+        result: [expectedProperties],
+      })
     })
     it('when the json is not a valid string should throw an error', async () => {
-      testConnection.metadata.list.mockResolvedValue('aaa' as unknown as FileProperties[])
+      testConnection.metadata.list.mockResolvedValue(
+        'aaa' as unknown as FileProperties[],
+      )
       const result = testClient.listMetadataObjects({ type: 'CustomObject' })
       await expect(result).rejects.toThrow()
     })
@@ -507,7 +623,10 @@ describe('salesforce client', () => {
 
   describe('getConnectionDetails', () => {
     it('should return empty orgId', async () => {
-      const { orgId, remainingDailyRequests } = await getConnectionDetails(credentials, connection)
+      const { orgId, remainingDailyRequests } = await getConnectionDetails(
+        credentials,
+        connection,
+      )
       expect(orgId).toEqual('')
       expect(remainingDailyRequests).toEqual(10000)
     })
@@ -516,7 +635,7 @@ describe('salesforce client', () => {
   describe('validateCredentials', () => {
     it('should throw ApiLimitsTooLowError exception', async () => {
       await expect(
-        validateCredentials(credentials, 100000, connection)
+        validateCredentials(credentials, 100000, connection),
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
     it('should return empty string as accountId and no values for accountType and isProduction', async () => {
@@ -530,21 +649,34 @@ describe('salesforce client', () => {
     describe('isProduction and accountType', () => {
       const PRODUCTION_ORGANIZATION_TYPE = 'Professional Edition'
       const NON_PRODUCTION_ORGANIZATION_TYPE = 'Developer Edition'
-      const mockOrganizationQueryResult = ({ orgType, isSandbox }: {orgType: string; isSandbox: boolean}): void => {
+      const mockOrganizationQueryResult = ({
+        orgType,
+        isSandbox,
+      }: {
+        orgType: string
+        isSandbox: boolean
+      }): void => {
         connection.query.mockResolvedValue({
-          records: [{
-            OrganizationType: orgType,
-            IsSandbox: isSandbox,
-          }],
-        } as unknown as QueryResult<{OrganizationType: string}>)
+          records: [
+            {
+              OrganizationType: orgType,
+              IsSandbox: isSandbox,
+            },
+          ],
+        } as unknown as QueryResult<{ OrganizationType: string }>)
       }
       describe('when organization is a sandbox', () => {
         describe('when OrganizationType is PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationQueryResult({ orgType: PRODUCTION_ORGANIZATION_TYPE, isSandbox: true })
+            mockOrganizationQueryResult({
+              orgType: PRODUCTION_ORGANIZATION_TYPE,
+              isSandbox: true,
+            })
           })
           it('should return isProduction false and correct accountType', async () => {
-            expect(await validateCredentials(sandboxCredentials, 3, connection)).toEqual({
+            expect(
+              await validateCredentials(sandboxCredentials, 3, connection),
+            ).toEqual({
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
@@ -554,10 +686,15 @@ describe('salesforce client', () => {
         })
         describe('when OrganizationType is NON_PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationQueryResult({ orgType: NON_PRODUCTION_ORGANIZATION_TYPE, isSandbox: true })
+            mockOrganizationQueryResult({
+              orgType: NON_PRODUCTION_ORGANIZATION_TYPE,
+              isSandbox: true,
+            })
           })
           it('should return isProduction false and correct accountType', async () => {
-            expect(await validateCredentials(sandboxCredentials, 3, connection)).toEqual({
+            expect(
+              await validateCredentials(sandboxCredentials, 3, connection),
+            ).toEqual({
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
@@ -567,18 +704,26 @@ describe('salesforce client', () => {
           it('should throw an error when there is no instanceUrl', async () => {
             const mockConnection = mockClient().connection
             _.set(mockConnection, 'instanceUrl', undefined)
-            await expect(validateCredentials(sandboxCredentials, 3, mockConnection))
-              .rejects.toThrow('Expected Salesforce organization URL to exist in the connection')
+            await expect(
+              validateCredentials(sandboxCredentials, 3, mockConnection),
+            ).rejects.toThrow(
+              'Expected Salesforce organization URL to exist in the connection',
+            )
           })
         })
       })
       describe('when organization is not a sandbox', () => {
         describe('when OrganizationType is PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationQueryResult({ orgType: PRODUCTION_ORGANIZATION_TYPE, isSandbox: false })
+            mockOrganizationQueryResult({
+              orgType: PRODUCTION_ORGANIZATION_TYPE,
+              isSandbox: false,
+            })
           })
           it('should return isProduction true and correct accountType', async () => {
-            expect(await validateCredentials(credentials, 3, connection)).toEqual({
+            expect(
+              await validateCredentials(credentials, 3, connection),
+            ).toEqual({
               accountId: '',
               isProduction: true,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
@@ -588,10 +733,15 @@ describe('salesforce client', () => {
         })
         describe('when OrganizationType is NON_PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationQueryResult({ orgType: NON_PRODUCTION_ORGANIZATION_TYPE, isSandbox: false })
+            mockOrganizationQueryResult({
+              orgType: NON_PRODUCTION_ORGANIZATION_TYPE,
+              isSandbox: false,
+            })
           })
           it('should return isProduction false and correct accountType', async () => {
-            expect(await validateCredentials(credentials, 3, connection)).toEqual({
+            expect(
+              await validateCredentials(credentials, 3, connection),
+            ).toEqual({
               accountId: '',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
@@ -608,12 +758,15 @@ describe('salesforce client', () => {
     let dodoScope: nock.Scope
 
     const asyncCounter = async (
-      iterator: AsyncIterable<Values[]>
+      iterator: AsyncIterable<Values[]>,
     ): Promise<number> =>
-      _.sum((await toArrayAsync(mapAsync(
-        iterator,
-        vals => makeArray(vals).map(() => 1)
-      ))).flat())
+      _.sum(
+        (
+          await toArrayAsync(
+            mapAsync(iterator, (vals) => makeArray(vals).map(() => 1)),
+          )
+        ).flat(),
+      )
 
     describe('when all results are in a single query', () => {
       beforeEach(async () => {
@@ -641,7 +794,9 @@ describe('salesforce client', () => {
 
     describe('when all results are in a single query from tooling api', () => {
       beforeEach(async () => {
-        dodoScope = nock(`http://dodo22/services/data/v${API_VERSION}/tooling/query/`)
+        dodoScope = nock(
+          `http://dodo22/services/data/v${API_VERSION}/tooling/query/`,
+        )
           .get(/.*tooling.*/)
           .times(1)
           .reply(200, {
@@ -789,7 +944,11 @@ describe('salesforce client', () => {
           '<?xml version="1.0" encoding="UTF-8"?><jobInfo\n   xmlns="http://www.force.com/2009/06/asyncapi/dataload">\n <id>7513z00000Wgd6AAAR</id>\n <jobId>7503z00000WDQ4SAAX</jobId>\n <state>Completed</state>\n <createdDate>2020-06-22T07:23:32.000Z</createdDate>\n <systemModstamp>2020-06-22T07:23:33.000Z</systemModstamp>\n <numberRecordsProcessed>1</numberRecordsProcessed>\n <numberRecordsFailed>0</numberRecordsFailed>\n <totalProcessingTime>226</totalProcessingTime>\n <apiActiveProcessingTime>170</apiActiveProcessingTime>\n <apexProcessingTime>120</apexProcessingTime>\n</jobInfo>',
           { 'content-type': 'application/xml' },
         )
-      const result = await client.bulkLoadOperation('SBQQ__ProductRule__c', 'update', [{ Id: 'a0w3z000007qWOLAA2' }])
+      const result = await client.bulkLoadOperation(
+        'SBQQ__ProductRule__c',
+        'update',
+        [{ Id: 'a0w3z000007qWOLAA2' }],
+      )
       expect(result.length).toEqual(1)
       expect(result[0].id).toEqual('a0w3z000007qWOLAA2')
       expect(result[0].success).toEqual(false)
@@ -799,7 +958,8 @@ describe('salesforce client', () => {
     })
 
     it('should succeed when returned without errors', async () => {
-      dodoScope.get(/.*/)
+      dodoScope
+        .get(/.*/)
         .reply(
           200,
           '"Id","Success","Created","Error"\n"a0w3z000007qWOLAA2","true","false",""\n',
@@ -811,7 +971,11 @@ describe('salesforce client', () => {
           '<?xml version="1.0" encoding="UTF-8"?><jobInfo\n   xmlns="http://www.force.com/2009/06/asyncapi/dataload">\n <id>7513z00000Wgd6AAAR</id>\n <jobId>7503z00000WDQ4SAAX</jobId>\n <state>Completed</state>\n <createdDate>2020-06-22T07:23:32.000Z</createdDate>\n <systemModstamp>2020-06-22T07:23:33.000Z</systemModstamp>\n <numberRecordsProcessed>1</numberRecordsProcessed>\n <numberRecordsFailed>0</numberRecordsFailed>\n <totalProcessingTime>226</totalProcessingTime>\n <apiActiveProcessingTime>170</apiActiveProcessingTime>\n <apexProcessingTime>120</apexProcessingTime>\n</jobInfo>',
           { 'content-type': 'application/xml' },
         )
-      const result = await client.bulkLoadOperation('SBQQ__ProductRule__c', 'update', [{ Id: 'a0w3z000007qWOLAA2' }])
+      const result = await client.bulkLoadOperation(
+        'SBQQ__ProductRule__c',
+        'update',
+        [{ Id: 'a0w3z000007qWOLAA2' }],
+      )
       expect(result.length).toEqual(1)
       expect(result[0].id).toEqual('a0w3z000007qWOLAA2')
       expect(result[0].success).toEqual(true)
@@ -833,8 +997,10 @@ describe('salesforce client', () => {
       clientId: 'clientId',
     })
     it('should return empty orgId for oauth credentials', async () => {
-      const { orgId, remainingDailyRequests } = await getConnectionDetails(oauthCredentials,
-        connection)
+      const { orgId, remainingDailyRequests } = await getConnectionDetails(
+        oauthCredentials,
+        connection,
+      )
       expect(orgId).toEqual('')
       expect(remainingDailyRequests).toEqual(10000)
     })
@@ -843,11 +1009,21 @@ describe('salesforce client', () => {
     it('should call the upsert API endpoint', async () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*<upsertMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
-          success: true,
-          fullName: 'bla',
-        } } } } })
-      await expect(client.upsert('bla', { fullName: 'bla' })).resolves.not.toThrow()
+        .reply(200, {
+          'a:Envelope': {
+            'a:Body': {
+              a: {
+                result: {
+                  success: true,
+                  fullName: 'bla',
+                },
+              },
+            },
+          },
+        })
+      await expect(
+        client.upsert('bla', { fullName: 'bla' }),
+      ).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })
@@ -865,7 +1041,9 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
-          config: { polling: { interval: 100, fetchTimeout: 1000, deployTimeout: 2000 } },
+          config: {
+            polling: { interval: 100, fetchTimeout: 1000, deployTimeout: 2000 },
+          },
         })
       })
       it('should set polling and timeout on the metadata connection', () => {
@@ -896,14 +1074,23 @@ describe('salesforce client', () => {
           connection: testConnection,
           config: {
             deploy: { rollbackOnError: false, testLevel: 'NoTestRun' },
-            polling: { interval: 100, fetchTimeout: FETCH_TIMEOUT, deployTimeout: DEPLOY_TIMEOUT },
+            polling: {
+              interval: 100,
+              fetchTimeout: FETCH_TIMEOUT,
+              deployTimeout: DEPLOY_TIMEOUT,
+            },
           },
         })
 
         metadataPollTimeoutHistory = []
         bulkPollTimeoutHistory = []
         const connectionMetadataProxy = new Proxy(testConnection.metadata, {
-          set(target: Metadata, p: PropertyKey, value: unknown, receiver: unknown): boolean {
+          set(
+            target: Metadata,
+            p: PropertyKey,
+            value: unknown,
+            receiver: unknown,
+          ): boolean {
             if (p === 'pollTimeout' && _.isNumber(value)) {
               metadataPollTimeoutHistory.push(value)
             }
@@ -911,7 +1098,12 @@ describe('salesforce client', () => {
           },
         })
         const connectionBulkProxy = new Proxy(testConnection.bulk, {
-          set(target: Bulk, p: PropertyKey, value: unknown, receiver: unknown): boolean {
+          set(
+            target: Bulk,
+            p: PropertyKey,
+            value: unknown,
+            receiver: unknown,
+          ): boolean {
             if (p === 'pollTimeout' && _.isNumber(value)) {
               bulkPollTimeoutHistory.push(value)
             }
@@ -935,7 +1127,10 @@ describe('salesforce client', () => {
         )
       })
       it('should set deploy polling timeout at the beginning and revert to fetch timeout at the end', async () => {
-        expect(metadataPollTimeoutHistory).toEqual([DEPLOY_TIMEOUT, FETCH_TIMEOUT])
+        expect(metadataPollTimeoutHistory).toEqual([
+          DEPLOY_TIMEOUT,
+          FETCH_TIMEOUT,
+        ])
         expect(bulkPollTimeoutHistory).toEqual([DEPLOY_TIMEOUT, FETCH_TIMEOUT])
       })
     })
@@ -946,13 +1141,19 @@ describe('salesforce client', () => {
         promise: Promise<T>
         resolve: () => void
       }
-      let reads: Resolvable<PromiseVal<ReturnType<typeof testConnection.metadata.read>>>[]
+      let reads: Resolvable<
+        PromiseVal<ReturnType<typeof testConnection.metadata.read>>
+      >[]
       let mockRead: jest.MockedFunction<typeof testConnection.metadata.read>
       let readReqs: ReturnType<typeof testClient.readMetadata>[]
       let retrieves: Resolvable<RetrieveResult>[]
-      let mockRetrieve: jest.MockedFunction<typeof testConnection.metadata.retrieve>
+      let mockRetrieve: jest.MockedFunction<
+        typeof testConnection.metadata.retrieve
+      >
       let retrieveReqs: ReturnType<typeof testClient.retrieve>[]
-      let lists: Resolvable<PromiseVal<ReturnType<typeof testConnection.metadata.list>>>[]
+      let lists: Resolvable<
+        PromiseVal<ReturnType<typeof testConnection.metadata.list>>
+      >[]
       let mockList: jest.MockedFunction<typeof testConnection.metadata.list>
       let listReqs: ReturnType<typeof testClient.listMetadataObjects>[]
 
@@ -966,7 +1167,7 @@ describe('salesforce client', () => {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         let resolve: () => void = () => {}
         // Unsafe assumption - promise constructor calls the paramter function synchronously
-        const promise = new Promise<T>(resolveFunc => {
+        const promise = new Promise<T>((resolveFunc) => {
           resolve = () => resolveFunc(resolveValue)
         })
         return { promise, resolve }
@@ -992,28 +1193,48 @@ describe('salesforce client', () => {
             },
           })
           mockRead = testConnection.metadata.read as jest.MockedFunction<
-              typeof testConnection.metadata.read>
-          mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
-              typeof testConnection.metadata.retrieve>
+            typeof testConnection.metadata.read
+          >
+          mockRetrieve = testConnection.metadata
+            .retrieve as jest.MockedFunction<
+            typeof testConnection.metadata.retrieve
+          >
           mockList = testConnection.metadata.list as jest.MockedFunction<
-              typeof testConnection.metadata.list>
+            typeof testConnection.metadata.list
+          >
 
           reads = _.times(2, () => makeResolvablePromise([]))
-          _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
-          readReqs = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
-          retrieves = _.times(4, () => makeResolvablePromise(emptyRetrieveResult))
-          _.times(
-            retrieves.length,
-            i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)),
+          _.times(reads.length, (i) =>
+            mockRead.mockResolvedValueOnce(reads[i].promise),
           )
-          retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
-            apiVersion: API_VERSION,
-            singlePackage: false,
-            unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
-          }))
+          readReqs = _.times(reads.length, (i) =>
+            testClient.readMetadata(`t${i}`, 'name'),
+          )
+          retrieves = _.times(4, () =>
+            makeResolvablePromise(emptyRetrieveResult),
+          )
+          _.times(retrieves.length, (i) =>
+            mockRetrieve.mockReturnValueOnce(
+              mockRetrieveLocator(retrieves[i].promise),
+            ),
+          )
+          retrieveReqs = _.times(retrieves.length, (i) =>
+            testClient.retrieve({
+              apiVersion: API_VERSION,
+              singlePackage: false,
+              unpackaged: {
+                version: API_VERSION,
+                types: [{ name: `n${i}`, members: ['x', 'y'] }],
+              },
+            }),
+          )
           lists = _.times(2, () => makeResolvablePromise([]))
-          _.times(lists.length, i => mockList.mockResolvedValueOnce(lists[i].promise))
-          listReqs = _.times(lists.length, i => testClient.listMetadataObjects({ type: `t${i}` }))
+          _.times(lists.length, (i) =>
+            mockList.mockResolvedValueOnce(lists[i].promise),
+          )
+          listReqs = _.times(lists.length, (i) =>
+            testClient.listMetadataObjects({ type: `t${i}` }),
+          )
 
           retrieves[0].resolve()
           retrieves[1].resolve()
@@ -1059,23 +1280,38 @@ describe('salesforce client', () => {
             },
           })
           mockRead = testConnection.metadata.read as jest.MockedFunction<
-              typeof testConnection.metadata.read>
-          mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
-              typeof testConnection.metadata.retrieve>
+            typeof testConnection.metadata.read
+          >
+          mockRetrieve = testConnection.metadata
+            .retrieve as jest.MockedFunction<
+            typeof testConnection.metadata.retrieve
+          >
 
           reads = _.times(2, () => makeResolvablePromise([]))
-          _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
-          readReqs = _.times(reads.length, i => testClient.readMetadata(`t${i}`, 'name'))
-          retrieves = _.times(4, () => makeResolvablePromise(emptyRetrieveResult))
-          _.times(
-            retrieves.length,
-            i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)),
+          _.times(reads.length, (i) =>
+            mockRead.mockResolvedValueOnce(reads[i].promise),
           )
-          retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
-            apiVersion: API_VERSION,
-            singlePackage: false,
-            unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
-          }))
+          readReqs = _.times(reads.length, (i) =>
+            testClient.readMetadata(`t${i}`, 'name'),
+          )
+          retrieves = _.times(4, () =>
+            makeResolvablePromise(emptyRetrieveResult),
+          )
+          _.times(retrieves.length, (i) =>
+            mockRetrieve.mockReturnValueOnce(
+              mockRetrieveLocator(retrieves[i].promise),
+            ),
+          )
+          retrieveReqs = _.times(retrieves.length, (i) =>
+            testClient.retrieve({
+              apiVersion: API_VERSION,
+              singlePackage: false,
+              unpackaged: {
+                version: API_VERSION,
+                types: [{ name: `n${i}`, members: ['x', 'y'] }],
+              },
+            }),
+          )
         })
 
         it('should call 2nd read before 1st completed', async () => {
@@ -1092,7 +1328,9 @@ describe('salesforce client', () => {
         })
 
         afterAll(async () => {
-          [...reads, ...retrieves].forEach(delayedPromise => delayedPromise.resolve())
+          ;[...reads, ...retrieves].forEach((delayedPromise) =>
+            delayedPromise.resolve(),
+          )
           await Promise.all(readReqs)
           await Promise.all(retrieveReqs)
         })
@@ -1109,19 +1347,29 @@ describe('salesforce client', () => {
             }),
             connection: testConnection,
           })
-          mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
-              typeof testConnection.metadata.retrieve>
+          mockRetrieve = testConnection.metadata
+            .retrieve as jest.MockedFunction<
+            typeof testConnection.metadata.retrieve
+          >
 
-          retrieves = _.times(6, () => makeResolvablePromise(emptyRetrieveResult))
-          _.times(
-            retrieves.length,
-            i => mockRetrieve.mockReturnValueOnce(mockRetrieveLocator(retrieves[i].promise)),
+          retrieves = _.times(6, () =>
+            makeResolvablePromise(emptyRetrieveResult),
           )
-          retrieveReqs = _.times(retrieves.length, i => testClient.retrieve({
-            apiVersion: API_VERSION,
-            singlePackage: false,
-            unpackaged: { version: API_VERSION, types: [{ name: `n${i}`, members: ['x', 'y'] }] },
-          }))
+          _.times(retrieves.length, (i) =>
+            mockRetrieve.mockReturnValueOnce(
+              mockRetrieveLocator(retrieves[i].promise),
+            ),
+          )
+          retrieveReqs = _.times(retrieves.length, (i) =>
+            testClient.retrieve({
+              apiVersion: API_VERSION,
+              singlePackage: false,
+              unpackaged: {
+                version: API_VERSION,
+                types: [{ name: `n${i}`, members: ['x', 'y'] }],
+              },
+            }),
+          )
 
           retrieves[0].resolve()
           await retrieveReqs[0]
@@ -1132,7 +1380,7 @@ describe('salesforce client', () => {
         })
 
         afterAll(async () => {
-          retrieves.forEach(delayedPromise => delayedPromise.resolve())
+          retrieves.forEach((delayedPromise) => delayedPromise.resolve())
           await Promise.all(retrieveReqs)
         })
       })
@@ -1167,11 +1415,19 @@ describe('salesforce client', () => {
       ]
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*<listMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } } })
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } },
+        })
         .post(/.*/, /.*<listMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } } })
-      const { result: firstResult } = await client.listMetadataObjects({ type: 'CustomObject' })
-      const { result: secondResult } = await client.listMetadataObjects({ type: 'CustomObject' })
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } },
+        })
+      const { result: firstResult } = await client.listMetadataObjects({
+        type: 'CustomObject',
+      })
+      const { result: secondResult } = await client.listMetadataObjects({
+        type: 'CustomObject',
+      })
       expect(firstResult).toEqual(firstReplyResult)
       expect(secondResult).toEqual(firstReplyResult)
       expect(dodoScope.isDone()).toBeFalse()
@@ -1189,11 +1445,21 @@ describe('salesforce client', () => {
       ]
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*<listMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } } })
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } },
+        })
         .post(/.*/, /.*<listMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } } })
-      const { result: firstResult } = await client.listMetadataObjects({ type: 'Report', folder: 'TestFolder' })
-      const { result: secondResult } = await client.listMetadataObjects({ type: 'Report', folder: 'TestFolder' })
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } },
+        })
+      const { result: firstResult } = await client.listMetadataObjects({
+        type: 'Report',
+        folder: 'TestFolder',
+      })
+      const { result: secondResult } = await client.listMetadataObjects({
+        type: 'Report',
+        folder: 'TestFolder',
+      })
       expect(firstResult).toEqual(firstReplyResult)
       expect(secondResult).toEqual(secondReplyResult)
       expect(dodoScope.isDone()).toBeTrue()
@@ -1203,7 +1469,10 @@ describe('salesforce client', () => {
       const firstReplyResult = [
         mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
         mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
-        mockFileProperties({ type: 'CustomField', fullName: 'Account.Field__c' }),
+        mockFileProperties({
+          type: 'CustomField',
+          fullName: 'Account.Field__c',
+        }),
         mockFileProperties({ type: 'CustomField', fullName: 'Case.Field__c' }),
       ]
       const secondReplyResult = [
@@ -1211,19 +1480,19 @@ describe('salesforce client', () => {
       ]
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*<listMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } } })
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } },
+        })
         .post(/.*/, /.*<listMetadata>.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } } })
-      const firstInput = [
-        { type: 'CustomObject' },
-        { type: 'CustomField' },
-      ]
-      const secondInput = [
-        ...firstInput,
-        { type: 'Role' },
-      ]
-      const { result: firstResult } = await client.listMetadataObjects(firstInput)
-      const { result: secondResult } = await client.listMetadataObjects(secondInput)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } },
+        })
+      const firstInput = [{ type: 'CustomObject' }, { type: 'CustomField' }]
+      const secondInput = [...firstInput, { type: 'Role' }]
+      const { result: firstResult } =
+        await client.listMetadataObjects(firstInput)
+      const { result: secondResult } =
+        await client.listMetadataObjects(secondInput)
       expect(firstResult).toEqual(firstReplyResult)
       expect(secondResult).toEqual(firstReplyResult.concat(secondReplyResult))
       expect(dodoScope.isDone()).toBeTrue()

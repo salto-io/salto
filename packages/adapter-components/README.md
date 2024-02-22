@@ -4,7 +4,6 @@ Adapter components for salto.io.
 
 Contains shared parts for creating new adapters.
 
-
 ### Build instructions
 
 ```

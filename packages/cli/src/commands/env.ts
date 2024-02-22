@@ -1,28 +1,43 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { EOL } from 'os'
 import { diff, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
 import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
-import { CommandDefAction, createCommandGroupDef, createPublicCommandDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
+import {
+  CommandDefAction,
+  createCommandGroupDef,
+  createPublicCommandDef,
+  createWorkspaceCommand,
+  WorkspaceCommandAction,
+} from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
 import {
-  formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv,
-  formatRenameEnv, formatApproveIsolateCurrentEnvPrompt, formatDoneIsolatingCurrentEnv,
-  formatInvalidFilters, formatStepStart, formatStepCompleted, formatEnvDiff,
+  formatEnvListItem,
+  formatCurrentEnv,
+  formatCreateEnv,
+  formatSetEnv,
+  formatDeleteEnv,
+  formatRenameEnv,
+  formatApproveIsolateCurrentEnvPrompt,
+  formatDoneIsolatingCurrentEnv,
+  formatInvalidFilters,
+  formatStepStart,
+  formatStepCompleted,
+  formatEnvDiff,
 } from '../formatter'
 import Prompts from '../prompts'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
@@ -31,25 +46,15 @@ import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './co
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 
-const setEnvironment = async (
-  envName: string,
-  output: CliOutput,
-  workspace: Workspace,
-): Promise<CliExitCode> => {
+const setEnvironment = async (envName: string, output: CliOutput, workspace: Workspace): Promise<CliExitCode> => {
   await workspace.setCurrentEnv(envName)
   outputLine(formatSetEnv(envName), output)
   return CliExitCode.Success
 }
 
-const shouldRecommendToIsolateCurrentEnv = async (
-  workspace: Workspace,
-): Promise<boolean> => {
+const shouldRecommendToIsolateCurrentEnv = async (workspace: Workspace): Promise<boolean> => {
   const envNames = workspace.envs()
-  return (
-    envNames.length === 1
-    && !await workspace.isEmpty(true)
-    && !await workspace.hasElementsInEnv(envNames[0])
-  )
+  return envNames.length === 1 && !(await workspace.isEmpty(true)) && !(await workspace.hasElementsInEnv(envNames[0]))
 }
 
 const isolateExistingEnvironments = async (workspace: Workspace): Promise<void> => {
@@ -63,13 +68,10 @@ const maybeIsolateExistingEnv = async (
   force?: boolean,
   acceptSuggestions?: boolean,
 ): Promise<void> => {
-  if (
-    (!force || acceptSuggestions)
-    && await shouldRecommendToIsolateCurrentEnv(workspace)
-  ) {
+  if ((!force || acceptSuggestions) && (await shouldRecommendToIsolateCurrentEnv(workspace))) {
     const existingEnv = workspace.envs()[0]
     outputLine(formatApproveIsolateCurrentEnvPrompt(existingEnv), output)
-    if (acceptSuggestions || await cliApproveIsolateBeforeMultiEnv(existingEnv)) {
+    if (acceptSuggestions || (await cliApproveIsolateBeforeMultiEnv(existingEnv))) {
       await isolateExistingEnvironments(workspace)
       outputLine(formatDoneIsolatingCurrentEnv(existingEnv), output)
     }
@@ -98,11 +100,11 @@ export const diffAction: WorkspaceCommandAction<EnvDiffArgs> = async ({
     return CliExitCode.UserInputError
   }
   const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
-  if (!(workspace.envs().includes(fromEnv))) {
+  if (!workspace.envs().includes(fromEnv)) {
     errorOutputLine(`Unknown environment ${fromEnv}`, output)
     return CliExitCode.UserInputError
   }
-  if (!(workspace.envs().includes(toEnv))) {
+  if (!workspace.envs().includes(toEnv)) {
     errorOutputLine(`Unknown environment ${toEnv}`, output)
     return CliExitCode.UserInputError
   }
@@ -221,9 +223,11 @@ type EnvDeleteArgs = {
   keepNacls?: boolean
 }
 
-export const deleteAction: WorkspaceCommandAction<EnvDeleteArgs> = async (
-  { input, output, workspace },
-): Promise<CliExitCode> => {
+export const deleteAction: WorkspaceCommandAction<EnvDeleteArgs> = async ({
+  input,
+  output,
+  workspace,
+}): Promise<CliExitCode> => {
   const { envName, keepNacls } = input
   await workspace.deleteEnvironment(envName, keepNacls)
   outputLine(formatDeleteEnv(envName), output)
@@ -259,11 +263,11 @@ type EnvSetArgs = {
   envName: string
 }
 
-export const setAction: WorkspaceCommandAction<EnvSetArgs> = async (
-  { input: { envName }, output, workspace },
-): Promise<CliExitCode> => (
-  setEnvironment(envName, output, workspace)
-)
+export const setAction: WorkspaceCommandAction<EnvSetArgs> = async ({
+  input: { envName },
+  output,
+  workspace,
+}): Promise<CliExitCode> => setEnvironment(envName, output, workspace)
 
 const envSetDef = createWorkspaceCommand({
   properties: {
@@ -284,9 +288,10 @@ const envSetDef = createWorkspaceCommand({
 // Current
 type EnvCurrentArgs = {}
 
-export const currentAction: WorkspaceCommandAction<EnvCurrentArgs> = async (
-  { output, workspace },
-): Promise<CliExitCode> => {
+export const currentAction: WorkspaceCommandAction<EnvCurrentArgs> = async ({
+  output,
+  workspace,
+}): Promise<CliExitCode> => {
   outputLine(formatCurrentEnv(workspace.currentEnv()), output)
   return CliExitCode.Success
 }
@@ -302,9 +307,7 @@ const envCurrentDef = createWorkspaceCommand({
 // List
 type EnvListArgs = {}
 
-export const listAction: WorkspaceCommandAction<EnvListArgs> = async (
-  { output, workspace },
-): Promise<CliExitCode> => {
+export const listAction: WorkspaceCommandAction<EnvListArgs> = async ({ output, workspace }): Promise<CliExitCode> => {
   const list = formatEnvListItem(workspace.envs(), workspace.currentEnv())
   outputLine(list, output)
   return CliExitCode.Success
@@ -325,8 +328,7 @@ type EnvCreateArgs = {
   yesAll?: boolean
 }
 
-export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> = async (args):
-Promise<CliExitCode> => {
+export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> = async (args): Promise<CliExitCode> => {
   // Note: Some of the code here is copied from createWorkspaceCommand.
   // We do it since we need the workspace config in order to create the environment source
   const { force, yesAll, envName } = args.input
@@ -340,8 +342,7 @@ Promise<CliExitCode> => {
 
   try {
     await maybeIsolateExistingEnv(args.output, workspace, force, yesAll)
-    const rmcToEnvSource = async (remoteMapCreator: rm.RemoteMapCreator):
-    Promise<EnvironmentSource> =>
+    const rmcToEnvSource = async (remoteMapCreator: rm.RemoteMapCreator): Promise<EnvironmentSource> =>
       createEnvironmentSource({
         env: envName,
         baseDir: args.workspacePath,
@@ -397,15 +398,7 @@ const envGroupDef = createCommandGroupDef({
     name: 'env',
     description: 'Manage the workspace environments',
   },
-  subCommands: [
-    envCreateDef,
-    envListDef,
-    envCurrentDef,
-    envSetDef,
-    envDeleteDef,
-    envRenameDef,
-    envDiffDef,
-  ],
+  subCommands: [envCreateDef, envListDef, envCurrentDef, envSetDef, envDeleteDef, envRenameDef, envDiffDef],
 })
 
 export default envGroupDef

@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, toChange, Change, Value, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+  Change,
+  Value,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -32,31 +40,29 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     const usersType = new ObjectType({
       elemID: new ElemID(JIRA, 'Users'),
     })
-    const usersElements = new InstanceElement(
-      'users',
-      usersType,
-      {
-        users: {
-          id1: {
-            accountId: 'id1',
-            locale: 'en_US',
-            displayName: 'name1',
-          },
-          id4: {
-            accountId: 'id4',
-            locale: 'en_US',
-            displayName: 'name2',
-          },
-          id5: {
-            accountId: 'id5',
-            locale: 'en_US',
-            displayName: 'name3',
-          },
+    const usersElements = new InstanceElement('users', usersType, {
+      users: {
+        id1: {
+          accountId: 'id1',
+          locale: 'en_US',
+          displayName: 'name1',
         },
-      }
-    )
+        id4: {
+          accountId: 'id4',
+          locale: 'en_US',
+          displayName: 'name2',
+        },
+        id5: {
+          accountId: 'id5',
+          locale: 'en_US',
+          displayName: 'name3',
+        },
+      },
+    })
     elementsSource = buildElementsSourceFromElements([usersElements])
-    filter = wrongUserPermissionSchemeFilter(getFilterParams({ elementsSource })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+    filter = wrongUserPermissionSchemeFilter(getFilterParams({ elementsSource })) as filterUtils.FilterWith<
+      'preDeploy' | 'onDeploy'
+    >
     const type = new ObjectType({
       elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
     })
@@ -81,16 +87,8 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     value1.permissions[5].holder.parameter.wrong = 'wrong'
     // add wrong structure
     value1.permissions.push({ wrong: { anotherWrong: 'anotherWrong' } })
-    instances[0] = new InstanceElement(
-      'instance',
-      type,
-      value1
-    )
-    instances[1] = new InstanceElement(
-      'instance2',
-      type,
-      value2
-    )
+    instances[0] = new InstanceElement('instance', type, value1)
+    instances[1] = new InstanceElement('instance2', type, value2)
     changes[0] = toChange({ after: instances[0] })
     changes[1] = toChange({ after: instances[1] })
   })
@@ -108,7 +106,7 @@ describe('wrongUsersPermissionSchemeFilter', () => {
   })
   it('should not raise error on empty users', async () => {
     filter = wrongUserPermissionSchemeFilter(
-      getFilterParams({ elementsSource: buildElementsSourceFromElements([]) })
+      getFilterParams({ elementsSource: buildElementsSourceFromElements([]) }),
     ) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
     await expect(filter.preDeploy(changes)).resolves.not.toThrow()
   })
@@ -130,10 +128,12 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     const configFFOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     configFFOff.fetch.convertUsersIds = false
     const { paginator: paginFFOff, connection: connectionFFOff } = mockClient()
-    const filterFFOff = wrongUserPermissionSchemeFilter(getFilterParams({
-      paginator: paginFFOff,
-      config: configFFOff,
-    })) as typeof filter
+    const filterFFOff = wrongUserPermissionSchemeFilter(
+      getFilterParams({
+        paginator: paginFFOff,
+        config: configFFOff,
+      }),
+    ) as typeof filter
     await filterFFOff.onDeploy(changes)
     expect(connectionFFOff.get).not.toHaveBeenCalled()
     expect(instances[0].value.permissions.length).toEqual(7)

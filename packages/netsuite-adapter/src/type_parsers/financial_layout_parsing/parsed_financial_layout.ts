@@ -1,21 +1,19 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
-} from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
@@ -37,7 +35,6 @@ type InnerFields = {
 type LayoutDependencies = {
   dependency: string
 }
-
 
 export type RowRecordType = {
   FIELD_GROUP_BY?: string
@@ -93,11 +90,9 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
   const financialLayoutRowsRecordElemID = new ElemID(constants.NETSUITE, 'financiallayout_rowRecord')
   const financialLayoutInnerFieldsElemID = new ElemID(constants.NETSUITE, 'financiallayout_fields')
 
-
   const financialLayoutRowsRecord = createMatchingObjectType<RowRecordType>({
     elemID: financialLayoutRowsRecordElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_GROUP_BY: { refType: BuiltinTypes.STRING },
       FIELD_GROUP_BY_FULL: { refType: BuiltinTypes.BOOLEAN },
@@ -110,8 +105,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
 
   const financialLayoutRows = createMatchingObjectType<LayoutRowType>({
     elemID: financialLayoutRowsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_KEY: { refType: BuiltinTypes.NUMBER },
       FIELD_NAME: { refType: BuiltinTypes.STRING },
@@ -139,8 +133,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
 
   const financialLayoutDependencies = createMatchingObjectType<LayoutDependencies>({
     elemID: financialLayoutDependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: BuiltinTypes.STRING,
@@ -177,8 +170,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
 
   const financiallayout = createMatchingObjectType<FullFinancialLayoutType>({
     elemID: financialLayoutElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       scriptid: {
         refType: BuiltinTypes.SERVICE_ID,
@@ -202,8 +194,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       },
       dependencies: {
         refType: financialLayoutDependencies,
-        annotations: {
-        },
+        annotations: {},
       },
       rows: {
         refType: new ListType(financialLayoutRows),

@@ -1,19 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
@@ -35,11 +44,13 @@ describe('fieldConfigurationItemsFilter', () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.splitFieldConfiguration = true
 
-    filter = fieldConfigurationItemsFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as typeof filter
+    filter = fieldConfigurationItemsFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),
@@ -56,30 +67,28 @@ describe('fieldConfigurationItemsFilter', () => {
         elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME),
       })
 
-      changes = _.range(0, 150).map(i => toChange({
-        after: new InstanceElement(
-          `instance${i}`,
-          type,
-          {
-            id: `supported${i}`,
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [
-              new ReferenceExpression(
-                new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME, 'instance', 'inst'),
-                new InstanceElement(
-                  'instance',
-                  fieldConfigurationType,
-                  {
+      changes = _.range(0, 150).map(i =>
+        toChange({
+          after: new InstanceElement(
+            `instance${i}`,
+            type,
+            {
+              id: `supported${i}`,
+            },
+            undefined,
+            {
+              [CORE_ANNOTATIONS.PARENT]: [
+                new ReferenceExpression(
+                  new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME, 'instance', 'inst'),
+                  new InstanceElement('instance', fieldConfigurationType, {
                     id: '1',
-                  },
+                  }),
                 ),
-              ),
-            ],
-          }
-        ),
-      }))
+              ],
+            },
+          ),
+        }),
+      )
     })
 
     it('should deploy configuration items in chunks', async () => {
@@ -90,16 +99,14 @@ describe('fieldConfigurationItemsFilter', () => {
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
         {
-          fieldConfigurationItems: changes.slice(0, 100)
-            .map(change => getChangeData(change).value),
+          fieldConfigurationItems: changes.slice(0, 100).map(change => getChangeData(change).value),
         },
         undefined,
       )
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
         {
-          fieldConfigurationItems: changes.slice(100, changes.length)
-            .map(change => getChangeData(change).value),
+          fieldConfigurationItems: changes.slice(100, changes.length).map(change => getChangeData(change).value),
         },
         undefined,
       )

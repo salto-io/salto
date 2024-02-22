@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../utils'
@@ -30,7 +30,6 @@ describe('projectFieldContext', () => {
   let firstContextInstance: InstanceElement
   let secondContextInstance: InstanceElement
 
-
   beforeEach(() => {
     contextType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
@@ -40,32 +39,20 @@ describe('projectFieldContext', () => {
       elemID: new ElemID(JIRA, PROJECT_TYPE),
     })
 
-    firstContextInstance = new InstanceElement(
-      'first',
-      contextType,
-      {
-        id: 1,
-      }
-    )
+    firstContextInstance = new InstanceElement('first', contextType, {
+      id: 1,
+    })
 
-    secondContextInstance = new InstanceElement(
-      'second',
-      contextType,
-      {
-        id: 2,
-      }
-    )
+    secondContextInstance = new InstanceElement('second', contextType, {
+      id: 2,
+    })
 
-    projectInstance = new InstanceElement(
-      'instance',
-      projectType,
-      {
-        [PROJECT_CONTEXTS_FIELD]: [
-          new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
-          new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
-        ],
-      }
-    )
+    projectInstance = new InstanceElement('instance', projectType, {
+      [PROJECT_CONTEXTS_FIELD]: [
+        new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
+        new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
+      ],
+    })
 
     filter = projectFieldContextsFilter(getFilterParams()) as typeof filter
   })
@@ -96,15 +83,9 @@ describe('projectFieldContext', () => {
   })
   describe('onDeploy', () => {
     beforeEach(() => {
-      beforeProjectInstance = new InstanceElement(
-        'first',
-        projectType,
-        {
-          [PROJECT_CONTEXTS_FIELD]: [
-            new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
-          ],
-        }
-      )
+      beforeProjectInstance = new InstanceElement('first', projectType, {
+        [PROJECT_CONTEXTS_FIELD]: [new ReferenceExpression(firstContextInstance.elemID, firstContextInstance)],
+      })
     })
     it('should append the new context to the end of the list', async () => {
       await filter.onDeploy([toChange({ before: beforeProjectInstance, after: projectInstance })])

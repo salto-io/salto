@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, ElemID, Element, InstanceElement, ObjectType, createRefToElmWithValue, getChangeData, isModificationChange, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  ElemID,
+  Element,
+  InstanceElement,
+  ObjectType,
+  createRefToElmWithValue,
+  getChangeData,
+  isModificationChange,
+  toChange,
+} from '@salto-io/adapter-api'
 import { fileType as fileTypeCreator } from '../../src/types/file_cabinet_types'
 import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
@@ -80,56 +91,40 @@ describe('align field names filter', () => {
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
-    formInstance = new InstanceElement(
-      'form123',
-      formType,
-      {
-        scriptid: 'form123',
-        inactive: true,
+    formInstance = new InstanceElement('form123', formType, {
+      scriptid: 'form123',
+      inactive: true,
+    })
+    fileInstance = new InstanceElement('file123', fileType, {
+      path: '/file123',
+      isinactive: false,
+    })
+    workflowInstance = new InstanceElement('workflow123', workflowType, {
+      scriptid: 'workflow123',
+      isinactive: false,
+      workflowstates: {
+        workflowstate: [
+          {
+            scriptid: 'workflowstate6',
+            workflowactions: [
+              {
+                triggertype: 'ONENTRY',
+                setfieldvalueaction: [
+                  {
+                    scriptid: 'workflowaction23',
+                    isinactive: true,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       },
-    )
-    fileInstance = new InstanceElement(
-      'file123',
-      fileType,
-      {
-        path: '/file123',
-        isinactive: false,
-      },
-    )
-    workflowInstance = new InstanceElement(
-      'workflow123',
-      workflowType,
-      {
-        scriptid: 'workflow123',
-        isinactive: false,
-        workflowstates: {
-          workflowstate: [
-            {
-              scriptid: 'workflowstate6',
-              workflowactions: [
-                {
-                  triggertype: 'ONENTRY',
-                  setfieldvalueaction: [
-                    {
-                      scriptid: 'workflowaction23',
-                      isinactive: true,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    )
-    dataInstance = new InstanceElement(
-      'data123',
-      dataType,
-      {
-        name: 'data123',
-        isinactive: false,
-      }
-    )
+    })
+    dataInstance = new InstanceElement('data123', dataType, {
+      name: 'data123',
+      isinactive: false,
+    })
     elements = [
       formType,
       fileType,
@@ -156,13 +151,17 @@ describe('align field names filter', () => {
       expect(fileType.fields.isInactive.annotations).toEqual({ originalName: 'isinactive' })
       expect(workflowType.fields.isInactive).toBeDefined()
       expect(workflowType.fields.isInactive.annotations).toEqual({ originalName: 'isinactive' })
-      const innerWorkflowType = workflowInnerTypes.find(type => type.elemID.name === 'workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction')
+      const innerWorkflowType = workflowInnerTypes.find(
+        type => type.elemID.name === 'workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction',
+      )
       expect(innerWorkflowType?.fields.isInactive).toBeDefined()
       expect(innerWorkflowType?.fields.isInactive.annotations).toEqual({ originalName: 'isinactive' })
       expect(dataType.fields.isInactive).toBeDefined()
       expect(dataType.fields.isInactive.annotations).toEqual({ originalName: 'isinactive', someAnno: 'test' })
       expect(standardCustomRecordType.innerTypes.customrecordtype_instances_instance.fields.isInactive).toBeDefined()
-      expect(standardCustomRecordType.innerTypes.customrecordtype_instances_instance.fields.isInactive.annotations).toEqual({ originalName: 'isinactive' })
+      expect(
+        standardCustomRecordType.innerTypes.customrecordtype_instances_instance.fields.isInactive.annotations,
+      ).toEqual({ originalName: 'isinactive' })
     })
     it('should align fields in instances', () => {
       expect(formInstance.value).toEqual({

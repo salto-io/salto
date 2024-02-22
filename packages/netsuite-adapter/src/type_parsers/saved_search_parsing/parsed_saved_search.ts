@@ -1,22 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue, Values,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ObjectType,
+  createRestriction,
+  ListType,
+  createRefToElmWithValue,
+  Values,
 } from '@salto-io/adapter-api'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
@@ -47,8 +54,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchFilterRecord = new ObjectType({
     elemID: savedSearchFilterRecordElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_ID: { refType: BuiltinTypes.NUMBER },
       FIELD_VALUE: { refType: BuiltinTypes.STRING },
@@ -58,8 +64,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchFilter = new ObjectType({
     elemID: savedSearchFilterElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FLAG_DATE_TIME_SECOND: { refType: BuiltinTypes.BOOLEAN },
       FLAG_FROM_AVAILABLE_FILTER: { refType: BuiltinTypes.BOOLEAN },
@@ -80,8 +85,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchAvailableFilter = new ObjectType({
     elemID: savedSearchAvailableFilterElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
       FIELD_NAME: { refType: BuiltinTypes.STRING },
@@ -94,8 +98,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchReturnField = new ObjectType({
     elemID: savedSearchReturnFieldElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_ALIAS: { refType: BuiltinTypes.STRING },
       FIELD_INDEX: { refType: BuiltinTypes.NUMBER },
@@ -112,8 +115,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchSortColumns = new ObjectType({
     elemID: savedSearchSortColumnsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_FIELD: { refType: BuiltinTypes.STRING },
       FILELD_ORDER: { refType: BuiltinTypes.NUMBER },
@@ -124,8 +126,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchAlertRecipients = new ObjectType({
     elemID: savedSearchAlertRecipientsElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FIELD_NAME: { refType: BuiltinTypes.STRING },
     },
@@ -134,8 +135,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchAudience = new ObjectType({
     elemID: savedSearchAudienceElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       FLAG_AUDIENCE_ALL_CUSTOMERS: { refType: BuiltinTypes.BOOLEAN },
       FLAG_AUDIENCE_ALL_EMPLOYEES: { refType: BuiltinTypes.BOOLEAN },
@@ -149,15 +149,14 @@ export const savedsearchType = (): TypeAndInnerTypes => {
 
   const savedSearchDependencies = new ObjectType({
     elemID: savedSearchDependenciesElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       dependency: {
         refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      }, /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SDF project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */
+      } /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SDF project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */,
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
   })
@@ -171,11 +170,9 @@ export const savedsearchType = (): TypeAndInnerTypes => {
   innerTypes.savedSearchFilter = savedSearchFilter
   innerTypes.savedSearchAudience = savedSearchAudience
 
-
   const savedsearch = new ObjectType({
     elemID: savedSearchElemID,
-    annotations: {
-    },
+    annotations: {},
     fields: {
       KEY_PACKAGE: { refType: BuiltinTypes.STRING },
       KEY_SCRIPT_ID: { refType: BuiltinTypes.STRING },
@@ -234,7 +231,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customsearch[0-9a-z_]+' }),
         },
-      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
+      } /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */,
       definition: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
@@ -243,8 +240,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
       },
       dependencies: {
         refType: createRefToElmWithValue(savedSearchDependencies),
-        annotations: {
-        },
+        annotations: {},
       },
       search_filters: {
         refType: createRefToElmWithValue(new ListType(savedSearchFilter)),

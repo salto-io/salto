@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -29,9 +29,11 @@ describe('fetch utils', () => {
         value: {
           a: {
             x: 'X',
-            z: [{
-              something: true,
-            }],
+            z: [
+              {
+                something: true,
+              },
+            ],
           },
           other: 'other',
         },
@@ -40,15 +42,17 @@ describe('fetch utils', () => {
     describe('when def combines multiple args', () => {
       it('should transform values based on the privided definitions', () => {
         const func = createValueTransformer({ root: 'a', nestUnderField: 'b', pick: ['x', 'y', 'z'], omit: ['z'] })
-        expect(func(item)).toEqual([{
-          context: {},
-          typeName: 't',
-          value: {
-            b: {
-              x: 'X',
+        expect(func(item)).toEqual([
+          {
+            context: {},
+            typeName: 't',
+            value: {
+              b: {
+                x: 'X',
+              },
             },
           },
-        }])
+        ])
       })
       it('should not modify item if no customizations are provided, but still convert to array', () => {
         expect(createValueTransformer({})(item)).toEqual([item])
@@ -59,38 +63,52 @@ describe('fetch utils', () => {
           root: 'a',
           nestUnderField: 'b',
           pick: ['x', 'z'],
-          adjust: ({ value }) => ({ value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown' }),
+          adjust: ({ value }) => ({
+            value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown',
+          }),
         })
-        expect(func(item)).toEqual([{
-          context: {},
-          typeName: 't',
-          value: {
-            B: {
-              x: 'X',
-              z: [{
-                something: true,
-              }],
+        expect(func(item)).toEqual([
+          {
+            context: {},
+            typeName: 't',
+            value: {
+              B: {
+                x: 'X',
+                z: [
+                  {
+                    something: true,
+                  },
+                ],
+              },
             },
           },
-        }])
+        ])
       })
       it('should give precedence to properties returned from adjust', () => {
         const func = createValueTransformer({
-          adjust: ({ value, context, typeName }) => ({ context, typeName, value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown' }),
+          adjust: ({ value, context, typeName }) => ({
+            context,
+            typeName,
+            value: lowerdashValues.isPlainObject(value) ? _.mapKeys(value, (_v, key) => key.toUpperCase()) : 'unknown',
+          }),
         })
-        expect(func(item)).toEqual([{
-          context: {},
-          typeName: 't',
-          value: {
-            A: {
-              x: 'X',
-              z: [{
-                something: true,
-              }],
+        expect(func(item)).toEqual([
+          {
+            context: {},
+            typeName: 't',
+            value: {
+              A: {
+                x: 'X',
+                z: [
+                  {
+                    something: true,
+                  },
+                ],
+              },
+              OTHER: 'other',
             },
-            OTHER: 'other',
           },
-        }])
+        ])
       })
       it('should return a single item if single=true and item has single value', () => {
         const func = createValueTransformer({ root: 'a', omit: ['z'], single: true })

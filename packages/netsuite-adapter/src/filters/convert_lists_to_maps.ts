@@ -1,21 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { InstanceElement, getChangeData, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
-import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, convertDataInstanceMapsToLists, createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
+import {
+  convertAnnotationListsToMaps,
+  convertFieldsTypesFromListToMap,
+  convertInstanceListsToMaps,
+  convertDataInstanceMapsToLists,
+  createConvertStandardElementMapsToLists,
+} from '../mapped_lists/utils'
 import { LocalFilterCreator } from '../filter'
 import { isStandardType, getInnerStandardTypes, isCustomRecordType } from '../types'
 import { getStandardTypes } from '../autogen/types'
@@ -28,8 +34,7 @@ const { mapValuesAsync } = promises.object
 const { awu } = collections.asynciterable
 
 const shouldTransformDataInstance = async (instance: InstanceElement): Promise<boolean> =>
-  Object.values((await instance.getType()).fields)
-    .some(field => dataTypesToConvert.has(field.refType.elemID.name))
+  Object.values((await instance.getType()).fields).some(field => dataTypesToConvert.has(field.refType.elemID.name))
 
 const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
   name: 'convertListsToMaps',
@@ -50,36 +55,33 @@ const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
    */
   onFetch: async elements => {
     const innerStandardTypesNames = new Set(
-      getInnerStandardTypes(getStandardTypes())
-        .map(element => element.elemID.name)
+      getInnerStandardTypes(getStandardTypes()).map(element => element.elemID.name),
     )
 
     await awu(elements)
       .filter(isObjectType)
-      .filter(type =>
-        isStandardType(type)
-        || innerStandardTypesNames.has(type.elemID.name)
-        || dataTypesToConvert.has(type.elemID.name))
+      .filter(
+        type =>
+          isStandardType(type) ||
+          innerStandardTypesNames.has(type.elemID.name) ||
+          dataTypesToConvert.has(type.elemID.name),
+      )
       .forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)
       .filter(isInstanceElement)
       .filter(elem => elem.elemID.typeName !== DATASET && elem.elemID.typeName !== WORKBOOK)
       .filter(inst => isStandardType(inst.refType) || shouldTransformDataInstance(inst))
-      .forEach(
-        async inst => {
-          inst.value = await convertInstanceListsToMaps(inst) ?? inst.value
-        }
-      )
+      .forEach(async inst => {
+        inst.value = (await convertInstanceListsToMaps(inst)) ?? inst.value
+      })
 
     await awu(elements)
       .filter(isObjectType)
       .filter(isCustomRecordType)
-      .forEach(
-        async type => {
-          type.annotations = await convertAnnotationListsToMaps(type)
-        }
-      )
+      .forEach(async type => {
+        type.annotations = await convertAnnotationListsToMaps(type)
+      })
   },
   /**
    * Transform maps back to lists before deploy - in data instances.
@@ -88,20 +90,22 @@ const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
    * The reverse conversion of standard instances & custom record types happens in sdfDeploy
    */
   preDeploy: async changes => {
-    const convertElementMapsToLists = changesGroupId && isSdfCreateOrUpdateGroupId(changesGroupId)
-      ? await createConvertStandardElementMapsToLists()
-      : undefined
+    const convertElementMapsToLists =
+      changesGroupId && isSdfCreateOrUpdateGroupId(changesGroupId)
+        ? await createConvertStandardElementMapsToLists()
+        : undefined
 
     await awu(changes)
-      .filter(change =>
-        getChangeData(change).elemID.typeName !== DATASET
-        && getChangeData(change).elemID.typeName !== WORKBOOK)
+      .filter(
+        change =>
+          getChangeData(change).elemID.typeName !== DATASET && getChangeData(change).elemID.typeName !== WORKBOOK,
+      )
       .forEach(async change => {
         const transformedData = await mapValuesAsync(change.data, async changeData => {
           if (convertElementMapsToLists) {
             return convertElementMapsToLists(changeData)
           }
-          if (isInstanceElement(changeData) && await shouldTransformDataInstance(changeData)) {
+          if (isInstanceElement(changeData) && (await shouldTransformDataInstance(changeData))) {
             return convertDataInstanceMapsToLists(changeData)
           }
           return changeData

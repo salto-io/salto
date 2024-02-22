@@ -1,24 +1,22 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { hostname } from 'os'
 import { retry } from '@salto-io/lowerdash'
 import { Logger } from '@salto-io/logging'
-import {
-  Pool, dynamoDbRepo, RenewedLease, Lease,
-} from '@salto-io/persistent-pool'
+import { Pool, dynamoDbRepo, RenewedLease, Lease } from '@salto-io/persistent-pool'
 import humanizeDuration from 'humanize-duration'
 import REPO_PARAMS from '../repo_params'
 import createEnvUtils from '../process_env'
@@ -53,12 +51,9 @@ const creds = <TCreds extends {}>(
   spec: CredsSpec<TCreds>,
   env: NodeJS.ProcessEnv,
   logger: Logger,
-  runningTasksPrinter: IntervalScheduler
+  runningTasksPrinter: IntervalScheduler,
 ): Promise<CredsLease<TCreds>> => {
-  const clientId = [
-    env.JEST_WORKER_ID,
-    env.CIRCLE_BUILD_URL ?? hostname(),
-  ].filter(x => x).join(';')
+  const clientId = [env.JEST_WORKER_ID, env.CIRCLE_BUILD_URL ?? hostname()].filter(x => x).join(';')
 
   const pool = async (): Promise<Pool<TCreds>> => {
     const repo = await dynamoDbRepo({ ...REPO_PARAMS, clientId })
@@ -106,12 +101,10 @@ const creds = <TCreds extends {}>(
   }
 
   const envUtils = createEnvUtils(env)
-  return envUtils.bool('USE_CRED_POOL') || !spec.envHasCreds(env)
-    ? fromPool()
-    : Promise.resolve(fromEnv())
+  return envUtils.bool('USE_CRED_POOL') || !spec.envHasCreds(env) ? fromPool() : Promise.resolve(fromEnv())
 }
 
-export default <TCreds extends {}> (
+export default <TCreds extends {}>(
   credsSpec: CredsSpec<TCreds>,
   logger: Logger,
   credsLeaseUpdateInterval = 30000,
@@ -120,11 +113,8 @@ export default <TCreds extends {}> (
     credsSpec,
     process.env,
     logger,
-    new IntervalScheduler(
-      (id, startTime) => {
-        const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
-        logger.warn('Still leasing credentials (%s): %s', duration, id)
-      },
-      credsLeaseUpdateInterval,
-    )
+    new IntervalScheduler((id, startTime) => {
+      const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
+      logger.warn('Still leasing credentials (%s): %s', duration, id)
+    }, credsLeaseUpdateInterval),
   )

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { AdditionChange, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -30,25 +30,23 @@ describe('triggersDeployment', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   beforeEach(async () => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
-    instance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        name: 'workflowName',
-        transitions: {
-          'name__From__any_status__Circular@fffssff': {
-            id: '1',
-            name: 'name',
-            rules: {
-              triggers: [{
+    instance = new InstanceElement('instance', workflowType, {
+      name: 'workflowName',
+      transitions: {
+        'name__From__any_status__Circular@fffssff': {
+          id: '1',
+          name: 'name',
+          rules: {
+            triggers: [
+              {
                 key: 'key',
                 configuration: { a: 'b' },
-              }],
-            },
+              },
+            ],
           },
         },
-      }
-    )
+      },
+    })
 
     const { client: cli, connection } = mockClient()
     client = cli
@@ -77,7 +75,7 @@ describe('triggersDeployment', () => {
   it('should throw when workflow does not have a name', async () => {
     delete instance.value.name
     await expect(
-      deployTriggers(toChange({ after: instance }) as AdditionChange<WorkflowV1Instance>, client)
+      deployTriggers(toChange({ after: instance }) as AdditionChange<WorkflowV1Instance>, client),
     ).rejects.toThrow()
   })
 })

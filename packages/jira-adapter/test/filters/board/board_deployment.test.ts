@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
@@ -52,11 +60,13 @@ describe('boardDeploymentFilter', () => {
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = boardDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as typeof filter
+    filter = boardDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as typeof filter
 
     locationType = new ObjectType({
       elemID: new ElemID(JIRA, BOARD_LOCATION_TYPE),
@@ -75,35 +85,31 @@ describe('boardDeploymentFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        id: '1',
-        name: 'someName',
-        filterId: '2',
-        location: {
-          projectKeyOrId: '3',
-          type: 'project',
-        },
-        [COLUMNS_CONFIG_FIELD]: {
-          columns: [
-            {
-              name: 'someColumn',
-              statuses: ['4'],
-              min: 2,
-              max: 4,
-            },
-          ],
-          constraintType: 'issueCount',
-        },
-        estimation: {
-          field: '5',
-          timeTracking: '6',
-        },
-        subQuery: 'someQuery',
-      }
-    )
+    instance = new InstanceElement('instance', type, {
+      id: '1',
+      name: 'someName',
+      filterId: '2',
+      location: {
+        projectKeyOrId: '3',
+        type: 'project',
+      },
+      [COLUMNS_CONFIG_FIELD]: {
+        columns: [
+          {
+            name: 'someColumn',
+            statuses: ['4'],
+            min: 2,
+            max: 4,
+          },
+        ],
+        constraintType: 'issueCount',
+      },
+      estimation: {
+        field: '5',
+        timeTracking: '6',
+      },
+      subQuery: 'someQuery',
+    })
 
     connection.get.mockResolvedValue({
       status: 200,
@@ -164,9 +170,7 @@ describe('boardDeploymentFilter', () => {
 
   describe('deploy', () => {
     let change: Change<InstanceElement>
-    const deployChangeMock = deployment.deployChange as jest.MockedFunction<
-        typeof deployment.deployChange
-      >
+    const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
 
     beforeEach(() => {
       deployChangeMock.mockReset()
@@ -195,8 +199,8 @@ describe('boardDeploymentFilter', () => {
         expect(deployChangeMock).toHaveBeenCalledWith({
           change,
           client,
-          endpointDetails: getDefaultConfig({ isDataCenter: false })
-            .apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
+          endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types[BOARD_TYPE_NAME]
+            .deployRequests,
           fieldsToIgnore: [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
         })
 
@@ -218,7 +222,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledWith(
@@ -228,7 +232,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledWith(
@@ -240,7 +244,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
       })
 
@@ -254,8 +258,8 @@ describe('boardDeploymentFilter', () => {
         expect(deployChangeMock).toHaveBeenCalledWith({
           change,
           client,
-          endpointDetails: getDefaultConfig({ isDataCenter: false })
-            .apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
+          endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types[BOARD_TYPE_NAME]
+            .deployRequests,
           fieldsToIgnore: [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
         })
 
@@ -291,7 +295,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -310,7 +314,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -328,7 +332,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -375,7 +379,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -428,7 +432,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -501,7 +505,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledTimes(3)
@@ -537,8 +541,7 @@ describe('boardDeploymentFilter', () => {
       it('should do nothing if get columns response is invalid', async () => {
         connection.get.mockResolvedValue({
           status: 200,
-          data: {
-          },
+          data: {},
         })
 
         instance.value[COLUMNS_CONFIG_FIELD] = {
@@ -562,7 +565,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -583,7 +586,7 @@ describe('boardDeploymentFilter', () => {
           },
           {
             headers: PRIVATE_API_HEADERS,
-          }
+          },
         )
 
         expect(connection.put).toHaveBeenCalledOnce()

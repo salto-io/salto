@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { inspect } from 'util'
 import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
@@ -28,7 +28,9 @@ export const GLOBAL_ADAPTER = ''
 
 export type ContainerTypeName = 'Map' | 'List'
 const CONTAINER_PREFIXES = [MAP_ID_PREFIX, LIST_ID_PREFIX]
-const CONTAINER_PARTS_REGEX = new RegExp(`^(${CONTAINER_PREFIXES.join('|')})${GENERIC_ID_PREFIX}(.+)${GENERIC_ID_SUFFIX}$`)
+const CONTAINER_PARTS_REGEX = new RegExp(
+  `^(${CONTAINER_PREFIXES.join('|')})${GENERIC_ID_PREFIX}(.+)${GENERIC_ID_SUFFIX}$`,
+)
 
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: CORE_ANNOTATIONS.DEPENDS_ON,
@@ -119,10 +121,7 @@ export class ElemID {
     if (deepInnerTypeStart === -1 || deepInnerTypeEnd < deepInnerTypeStart) {
       throw new Error(`Invalid < > structure in ElemID - ${fullName}`)
     }
-    return ElemID.fromFullName(fullName.slice(
-      deepInnerTypeStart,
-      deepInnerTypeEnd
-    ))
+    return ElemID.fromFullName(fullName.slice(deepInnerTypeStart, deepInnerTypeEnd))
   }
 
   readonly adapter: string
@@ -130,14 +129,9 @@ export class ElemID {
   readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
   private readonly fullName: string
-  constructor(
-    adapter: string,
-    typeName?: string,
-    idType?: ElemIDType,
-    ...name: ReadonlyArray<string>
-  ) {
+  constructor(adapter: string, typeName?: string, idType?: ElemIDType, ...name: ReadonlyArray<string>) {
     this.adapter = adapter
-    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
+    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : (typeName as string)
     this.idType = idType || ElemID.getDefaultIdType(adapter)
     this.nameParts = name
     this.fullName = this.generateFullName()
@@ -171,10 +165,12 @@ export class ElemID {
 
   private generateFullName(): string {
     const nameParts = this.fullNameParts()
-    return nameParts
-      // If the last part of the name is empty we can omit it
-      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
-      .join(ElemID.NAMESPACE_SEPARATOR)
+    return (
+      nameParts
+        // If the last part of the name is empty we can omit it
+        .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
+        .join(ElemID.NAMESPACE_SEPARATOR)
+    )
   }
 
   getFullName(): string {
@@ -187,9 +183,11 @@ export class ElemID {
 
   getFullNameParts(): string[] {
     const nameParts = this.fullNameParts()
-    return nameParts
-      // If the last part of the name is empty we can omit it
-      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
+    return (
+      nameParts
+        // If the last part of the name is empty we can omit it
+        .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
+    )
   }
 
   isConfigType(): boolean {
@@ -201,9 +199,10 @@ export class ElemID {
   }
 
   isTopLevel(): boolean {
-    return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
-      || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType)
-        && this.nameParts.length === 1)
+    return (
+      ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType) ||
+      (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType) && this.nameParts.length === 1)
+    )
   }
 
   isBaseID(): boolean {
@@ -260,9 +259,7 @@ export class ElemID {
   }
 
   createAllElemIdParents(): ElemID[] {
-    return this.isTopLevel()
-      ? [this]
-      : [this, ...this.createParentID().createAllElemIdParents()]
+    return this.isTopLevel() ? [this] : [this, ...this.createParentID().createAllElemIdParents()]
   }
 
   createTopLevelParentID(): { parent: ElemID; path: ReadonlyArray<string> } {
@@ -295,8 +292,9 @@ export class ElemID {
 
   getRelativePath(other: ElemID): ReadonlyArray<string> {
     if (!this.isEqual(other) && !this.isParentOf(other)) {
-      throw new Error(`Cannot get relative path of ${this.getFullName()} and ${other.getFullName()
-      } - ${this.getFullName()} is not parent of ${other.getFullName()}`)
+      throw new Error(
+        `Cannot get relative path of ${this.getFullName()} and ${other.getFullName()} - ${this.getFullName()} is not parent of ${other.getFullName()}`,
+      )
     }
     const relPath = other.createTopLevelParentID().path.slice(this.nestingLevel)
     return this.idType === 'type' && ['attr', 'annotation', 'field'].includes(other.idType)
@@ -306,17 +304,14 @@ export class ElemID {
 
   replaceParentId(newParent: ElemID): ElemID {
     const relativeId = this.fullNameParts().splice(newParent.fullNameParts().length)
-    return relativeId.length !== 0
-      ? newParent.createNestedID(...relativeId)
-      : newParent
+    return relativeId.length !== 0 ? newParent.createNestedID(...relativeId) : newParent
   }
 
   isAttrID(): boolean {
-    return this.idType === 'attr'
-      || (
-        this.idType === 'instance'
-        && Object.values(INSTANCE_ANNOTATIONS).includes(this.nameParts[1])
-      )
+    return (
+      this.idType === 'attr' ||
+      (this.idType === 'instance' && Object.values(INSTANCE_ANNOTATIONS).includes(this.nameParts[1]))
+    )
   }
 
   isAnnotationTypeID(): boolean {

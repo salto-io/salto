@@ -1,20 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { v4 as uuidv4 } from 'uuid'
-import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  Element,
+  ElemID,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  ModificationChange,
+} from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { ISSUE_TYPE_NAME, JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
@@ -33,15 +40,11 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
   const uuid = uuidv4()
 
-  const issueType = new InstanceElement(
-    randomString,
-    findType(ISSUE_TYPE_NAME, fetchedElements),
-    {
-      description: randomString,
-      name: randomString,
-      hierarchyLevel: 0,
-    }
-  )
+  const issueType = new InstanceElement(randomString, findType(ISSUE_TYPE_NAME, fetchedElements), {
+    description: randomString,
+    name: randomString,
+    hierarchyLevel: 0,
+  })
 
   const field = new InstanceElement(
     `${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}`,
@@ -55,7 +58,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     findType('CustomFieldContext', fetchedElements),
     createContextValues(randomString, fetchedElements),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] },
   )
 
   const screen = new InstanceElement(
@@ -70,17 +73,13 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     createWorkflowSchemeValues(randomString, fetchedElements),
   )
 
-  const screenScheme = new InstanceElement(
-    randomString,
-    findType('ScreenScheme', fetchedElements),
-    {
-      name: randomString,
-      description: randomString,
-      screens: {
-        default: createReference(new ElemID(JIRA, 'Screen', 'instance', 'Default_Screen@s'), fetchedElements),
-      },
+  const screenScheme = new InstanceElement(randomString, findType('ScreenScheme', fetchedElements), {
+    name: randomString,
+    description: randomString,
+    screens: {
+      default: createReference(new ElemID(JIRA, 'Screen', 'instance', 'Default_Screen@s'), fetchedElements),
     },
-  )
+  })
 
   const issueTypeScreenScheme = new InstanceElement(
     randomString,
@@ -94,24 +93,16 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     createFieldConfigurationSchemeValues(randomString, fetchedElements),
   )
 
-  const issueLinkType = new InstanceElement(
-    randomString,
-    findType('IssueLinkType', fetchedElements),
-    {
-      name: randomString,
-      inward: randomString,
-      outward: randomString,
-    },
-  )
+  const issueLinkType = new InstanceElement(randomString, findType('IssueLinkType', fetchedElements), {
+    name: randomString,
+    inward: randomString,
+    outward: randomString,
+  })
 
-  const projectRole = new InstanceElement(
-    randomString,
-    findType('ProjectRole', fetchedElements),
-    {
-      name: randomString,
-      description: randomString,
-    },
-  )
+  const projectRole = new InstanceElement(randomString, findType('ProjectRole', fetchedElements), {
+    name: randomString,
+    description: randomString,
+  })
 
   const webhook = new InstanceElement(
     randomString,
@@ -134,11 +125,9 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
   )
 
   return [
-    ...(
-      isDataCenter
-        ? createDataCenterInstances(randomString, fetchedElements)
-        : createCloudInstances(randomString, uuid, fetchedElements)
-    ),
+    ...(isDataCenter
+      ? createDataCenterInstances(randomString, fetchedElements)
+      : createCloudInstances(randomString, uuid, fetchedElements)),
     [issueType],
     [field],
     [fieldContext],
@@ -157,11 +146,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
 
 export const createModifyInstances = (
   fetchedElements: Element[],
-  isDataCenter: boolean
+  isDataCenter: boolean,
 ): ModificationChange<InstanceElement>[][] => [
-  ...(
-    isDataCenter
-      ? modifyDataCenterInstances(fetchedElements)
-      : modifyCloudInstances(fetchedElements)
-  ),
+  ...(isDataCenter ? modifyDataCenterInstances(fetchedElements) : modifyCloudInstances(fetchedElements)),
 ]

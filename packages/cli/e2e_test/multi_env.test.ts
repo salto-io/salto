@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
@@ -24,7 +24,15 @@ import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
 import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance, getSalesforceClient } from './helpers/salesforce'
+import {
+  addElements,
+  objectExists,
+  naclNameToSFName,
+  instanceExists,
+  removeElements,
+  getSalesforceCredsInstance,
+  getSalesforceClient,
+} from './helpers/salesforce'
 import * as callbacks from '../src/callbacks'
 import {
   runInit,
@@ -40,7 +48,6 @@ import {
   loadValidWorkspace,
 } from './helpers/workspace'
 import * as templates from './helpers/templates'
-
 
 const { awu } = collections.asynciterable
 const { dumpElements } = parser
@@ -71,67 +78,28 @@ describe.each([
   const commonInstWithDiffName = `TestDiffInst${tempID}`
   const env1InstName = `Env1TestInst${tempID}`
   const env2InstName = `Env2TestInst${tempID}`
-  const homeWSDir = (): string => (
-    path.join(saltoHomeDir, '*')
-  )
-  const commonObjectDir = (): string => (
-    path.join(baseDir, accountName, 'Objects')
-  )
-  const commonInstanceDir = (): string => (
-    path.join(baseDir, accountName, 'Records', 'Role')
-  )
-  const env1ObjectDir = (): string => (
-    path.join(baseDir, 'envs', ENV1_NAME, accountName, 'Objects')
-  )
-  const env2ObjectDir = (): string => (
-    path.join(baseDir, 'envs', ENV2_NAME, accountName, 'Objects')
-  )
-  const env1InstanceDir = (): string => (
-    path.join(baseDir, 'envs', ENV1_NAME, accountName, 'Records', 'Role')
-  )
-  const env2InstanceDir = (): string => (
-    path.join(baseDir, 'envs', ENV2_NAME, accountName, 'Records', 'Role')
-  )
-  const workspaceConfigFilePath = (): string => (
-    path.join(baseDir, 'salto.config', 'workspace.nacl')
-  )
-  const adapterConfigsFilePath = (): string => (
-    path.join(baseDir, 'salto.config', 'adapters', accountName,
-      `${accountName}.nacl`)
-  )
-  const workspaceUserConfigFilePath = (): string => (
-    path.join(homeWSDir(), 'workspaceUser.nacl')
-  )
-  const env1ObjFilePath = (): string => (
-    path.join(env1ObjectDir(), naclNameToSFName(env1ObjName))
-  )
-  const env2ObjFilePath = (): string => (
-    path.join(env2ObjectDir(), naclNameToSFName(env2ObjName))
-  )
-  const env1InstFilePath = (): string => (
-    path.join(env1InstanceDir(), `${env1InstName}.nacl`)
-  )
-  const env2InstFilePath = (): string => (
-    path.join(env2InstanceDir(), `${env2InstName}.nacl`)
-  )
-  const commonWithDiffCommonFilePath = (): string => (
-    path.join(commonObjectDir(), naclNameToSFName(commonWithDiffName))
-  )
-  const commonInstWithDiffCommonFilePath = (): string => (
+  const homeWSDir = (): string => path.join(saltoHomeDir, '*')
+  const commonObjectDir = (): string => path.join(baseDir, accountName, 'Objects')
+  const commonInstanceDir = (): string => path.join(baseDir, accountName, 'Records', 'Role')
+  const env1ObjectDir = (): string => path.join(baseDir, 'envs', ENV1_NAME, accountName, 'Objects')
+  const env2ObjectDir = (): string => path.join(baseDir, 'envs', ENV2_NAME, accountName, 'Objects')
+  const env1InstanceDir = (): string => path.join(baseDir, 'envs', ENV1_NAME, accountName, 'Records', 'Role')
+  const env2InstanceDir = (): string => path.join(baseDir, 'envs', ENV2_NAME, accountName, 'Records', 'Role')
+  const workspaceConfigFilePath = (): string => path.join(baseDir, 'salto.config', 'workspace.nacl')
+  const adapterConfigsFilePath = (): string =>
+    path.join(baseDir, 'salto.config', 'adapters', accountName, `${accountName}.nacl`)
+  const workspaceUserConfigFilePath = (): string => path.join(homeWSDir(), 'workspaceUser.nacl')
+  const env1ObjFilePath = (): string => path.join(env1ObjectDir(), naclNameToSFName(env1ObjName))
+  const env2ObjFilePath = (): string => path.join(env2ObjectDir(), naclNameToSFName(env2ObjName))
+  const env1InstFilePath = (): string => path.join(env1InstanceDir(), `${env1InstName}.nacl`)
+  const env2InstFilePath = (): string => path.join(env2InstanceDir(), `${env2InstName}.nacl`)
+  const commonWithDiffCommonFilePath = (): string => path.join(commonObjectDir(), naclNameToSFName(commonWithDiffName))
+  const commonInstWithDiffCommonFilePath = (): string =>
     path.join(commonInstanceDir(), `${commonInstWithDiffName}.nacl`)
-  )
-  const commonWithDiffEnv1FilePath = (): string => (
-    path.join(env1ObjectDir(), naclNameToSFName(commonWithDiffName))
-  )
-  const commonWithDiffEnv2FilePath = (): string => (
-    path.join(env2ObjectDir(), naclNameToSFName(commonWithDiffName))
-  )
-  const commonInstWithDiffEnv1FilePath = (): string => (
-    path.join(env1InstanceDir(), `${commonInstWithDiffName}.nacl`)
-  )
-  const commonInstWithDiffEnv2FilePath = (): string => (
-    path.join(env2InstanceDir(), `${commonInstWithDiffName}.nacl`)
-  )
+  const commonWithDiffEnv1FilePath = (): string => path.join(env1ObjectDir(), naclNameToSFName(commonWithDiffName))
+  const commonWithDiffEnv2FilePath = (): string => path.join(env2ObjectDir(), naclNameToSFName(commonWithDiffName))
+  const commonInstWithDiffEnv1FilePath = (): string => path.join(env1InstanceDir(), `${commonInstWithDiffName}.nacl`)
+  const commonInstWithDiffEnv2FilePath = (): string => path.join(env2InstanceDir(), `${commonInstWithDiffName}.nacl`)
 
   const commonInst = templates.instance({
     instName: commonInstName,
@@ -246,14 +214,12 @@ describe.each([
       await runInit(WS_NAME, baseDir)
       // run add salesforce service
       const mockGetCreds = jest.spyOn(callbacks, 'getCredentialsFromUser')
-      mockGetCreds.mockImplementation(() =>
-        Promise.resolve(getSalesforceCredsInstance(env1Creds)))
+      mockGetCreds.mockImplementation(() => Promise.resolve(getSalesforceCredsInstance(env1Creds)))
       await runAddSalesforceService(baseDir, accounts ? accounts[0] : undefined)
       // run create env with env2
       await runCreateEnv(baseDir, ENV2_NAME)
       // run add salesforce service
-      mockGetCreds.mockImplementation(() =>
-        Promise.resolve(getSalesforceCredsInstance(env2Creds)))
+      mockGetCreds.mockImplementation(() => Promise.resolve(getSalesforceCredsInstance(env2Creds)))
       await runAddSalesforceService(baseDir, accounts ? accounts[0] : undefined)
     })
 
@@ -291,7 +257,7 @@ describe.each([
         expect(path.join(env2ObjectDir(), naclNameToSFName(env1ObjName))).not.toExist()
         expect(path.join(env1ObjectDir(), naclNameToSFName(env2ObjName))).not.toExist()
         expect(path.join(env1InstanceDir(), `${env2InstName}.nacl`)).not.toExist()
-        expect(path.join(env2InstanceDir(), `${env1InstName}.nacl`),).not.toExist()
+        expect(path.join(env2InstanceDir(), `${env1InstName}.nacl`)).not.toExist()
       })
 
       it('should split common elements with diffs between common and env folders', () => {
@@ -325,33 +291,31 @@ describe.each([
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
         const workspace = await loadValidWorkspace(baseDir)
-        visibleElements = await awu(await (await workspace.elements(false)).getAll())
-          .toArray()
-        elementsWithHidden = await awu(await (await workspace.elements(true)).getAll())
-          .toArray()
+        visibleElements = await awu(await (await workspace.elements(false)).getAll()).toArray()
+        elementsWithHidden = await awu(await (await workspace.elements(true)).getAll()).toArray()
       })
 
       it('not have internalId in visible elements', async () => {
-        expect(visibleElements
-          .filter(isInstanceElement)
-          .some(e => e?.value?.internalId !== undefined)).toEqual(false)
-        expect(visibleElements
-          .filter(isObjectType)
-          .flatMap(e => [e, ...Object.values(e.fields)])
-          .some(e => e?.annotations?.internalId !== undefined)).toEqual(false)
+        expect(visibleElements.filter(isInstanceElement).some(e => e?.value?.internalId !== undefined)).toEqual(false)
+        expect(
+          visibleElements
+            .filter(isObjectType)
+            .flatMap(e => [e, ...Object.values(e.fields)])
+            .some(e => e?.annotations?.internalId !== undefined),
+        ).toEqual(false)
       })
 
       it('have internalId in state', async () => {
-        expect(elementsWithHidden
-          .filter(isInstanceElement)
-          .some(e => e?.value?.internalId !== undefined)).toEqual(true)
-        expect(elementsWithHidden
-          .filter(isObjectType)
-          .some(e => e?.annotations?.internalId !== undefined)).toEqual(true)
-        expect(elementsWithHidden
-          .filter(isObjectType)
-          .flatMap(e => Object.values(e.fields))
-          .some(e => e?.annotations?.internalId !== undefined)).toEqual(true)
+        expect(elementsWithHidden.filter(isInstanceElement).some(e => e?.value?.internalId !== undefined)).toEqual(true)
+        expect(elementsWithHidden.filter(isObjectType).some(e => e?.annotations?.internalId !== undefined)).toEqual(
+          true,
+        )
+        expect(
+          elementsWithHidden
+            .filter(isObjectType)
+            .flatMap(e => Object.values(e.fields))
+            .some(e => e?.annotations?.internalId !== undefined),
+        ).toEqual(true)
       })
     })
   })
@@ -417,10 +381,7 @@ describe.each([
       })
 
       it('should create the element in the target env', async () => {
-        expect(await objectExists(
-          env2Client,
-          naclNameToSFName(objToSyncFromAccountName)
-        )).toBeTruthy()
+        expect(await objectExists(env2Client, naclNameToSFName(objToSyncFromAccountName))).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', instToSyncFromAccountName)).toBeTruthy()
       })
     })
@@ -432,10 +393,7 @@ describe.each([
       // were added to env1 and common. env2 cleanup will happen when we will
       // test Nacl based deletion below...
       beforeAll(async () => {
-        await removeElements(env1Client, [
-          ...fromSyncToRemove,
-          ...env1ElementAfterDeploy,
-        ])
+        await removeElements(env1Client, [...fromSyncToRemove, ...env1ElementAfterDeploy])
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
         afterDeleteFetchPlan = await runPreviewGetPlan(baseDir, accounts)
@@ -444,9 +402,7 @@ describe.each([
       it('should remove the elements from the nacl files in the common folder', () => {
         expect(path.join(commonObjectDir(), naclNameToSFName(commonObjName))).not.toExist()
         expect(path.join(commonInstanceDir(), `${commonInstName}.nacl`)).not.toExist()
-        expect(
-          path.join(commonObjectDir(), naclNameToSFName(objToSyncFromAccountName))
-        ).not.toExist()
+        expect(path.join(commonObjectDir(), naclNameToSFName(objToSyncFromAccountName))).not.toExist()
         expect(path.join(commonInstanceDir(), `${instToSyncFromAccountName}.nacl`)).not.toExist()
         expect(commonWithDiffCommonFilePath()).not.toExist()
         expect(commonInstWithDiffCommonFilePath()).not.toExist()
@@ -476,10 +432,7 @@ describe.each([
       })
 
       it('should delete the elements in the target env', async () => {
-        expect(await objectExists(
-          env2Client,
-          naclNameToSFName(objToSyncFromAccountName)
-        )).toBeFalsy()
+        expect(await objectExists(env2Client, naclNameToSFName(objToSyncFromAccountName))).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', instToSyncFromAccountName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', commonInstName)).toBeFalsy()
       })
@@ -494,20 +447,8 @@ describe.each([
     const env1NaclFileInstName = `Env1InstNacl${tempID}`
     const env2NaclFileInstName = `Env2InstNacl${tempID}`
     const commonNaclFileName = (): string => path.join(baseDir, accountName, 'common.nacl')
-    const env1NaclFileName = (): string => path.join(
-      baseDir,
-      'envs',
-      ENV1_NAME,
-      accountName,
-      'env1.nacl'
-    )
-    const env2NaclFileName = (): string => path.join(
-      baseDir,
-      'envs',
-      ENV2_NAME,
-      accountName,
-      'env2.nacl'
-    )
+    const env1NaclFileName = (): string => path.join(baseDir, 'envs', ENV1_NAME, accountName, 'env1.nacl')
+    const env2NaclFileName = (): string => path.join(baseDir, 'envs', ENV2_NAME, accountName, 'env2.nacl')
 
     describe('handle nacl based add change', () => {
       beforeAll(async () => {
@@ -564,27 +505,15 @@ describe.each([
       })
 
       it('should create common elements in both envs', async () => {
-        expect(await objectExists(
-          env1Client,
-          naclNameToSFName(commonNaclFileObjectName)
-        )).toBeTruthy()
-        expect(await objectExists(
-          env2Client,
-          naclNameToSFName(commonNaclFileObjectName)
-        )).toBeTruthy()
+        expect(await objectExists(env1Client, naclNameToSFName(commonNaclFileObjectName))).toBeTruthy()
+        expect(await objectExists(env2Client, naclNameToSFName(commonNaclFileObjectName))).toBeTruthy()
         expect(await instanceExists(env1Client, 'Role', commonNaclFileInstName)).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', commonNaclFileInstName)).toBeTruthy()
       })
       // eslint-disable-next-line
       it.skip('should create env specific elements in proper env', async () => {
-        expect(await objectExists(
-          env1Client,
-          naclNameToSFName(env1NaclFileObjectName)
-        )).toBeTruthy()
-        expect(await objectExists(
-          env2Client,
-          naclNameToSFName(env2NaclFileObjectName)
-        )).toBeTruthy()
+        expect(await objectExists(env1Client, naclNameToSFName(env1NaclFileObjectName))).toBeTruthy()
+        expect(await objectExists(env2Client, naclNameToSFName(env2NaclFileObjectName))).toBeTruthy()
         expect(await instanceExists(env1Client, 'Role', env1NaclFileInstName)).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', env2NaclFileInstName)).toBeTruthy()
       })
@@ -598,20 +527,19 @@ describe.each([
 
       // eslint-disable-next-line
       it.skip('should update the attributes added in the deploy in the proper env file', async () => {
-        await Promise.all([
-          env1NaclFileName(),
-          env2NaclFileName(),
-        ].map(async filename => {
-          const element = (await getNaclFileElements(filename))[0]
-          expect(isObjectType(element)).toBeTruthy()
-          const obj = element as ObjectType
-          expect(obj.fields.alpha.annotations.apiName).toBeDefined()
-          expect(obj.fields.alpha.annotations.apiName).toBeDefined()
-          expect(obj.annotations.metadataType).toBeDefined()
-          expect(obj.annotations.apiName).toBeDefined()
-          expect(obj.annotationRefTypes.apiName).toBeDefined()
-          expect(obj.annotationRefTypes.metadataType).toBeDefined()
-        }))
+        await Promise.all(
+          [env1NaclFileName(), env2NaclFileName()].map(async filename => {
+            const element = (await getNaclFileElements(filename))[0]
+            expect(isObjectType(element)).toBeTruthy()
+            const obj = element as ObjectType
+            expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+            expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+            expect(obj.annotations.metadataType).toBeDefined()
+            expect(obj.annotations.apiName).toBeDefined()
+            expect(obj.annotationRefTypes.apiName).toBeDefined()
+            expect(obj.annotationRefTypes.metadataType).toBeDefined()
+          }),
+        )
       })
 
       it('should update common with the attributes added in the deploy', async () => {
@@ -653,14 +581,8 @@ describe.each([
       })
 
       it('should remove common elements from nacl change', async () => {
-        expect(await objectExists(
-          env1Client,
-          naclNameToSFName(commonNaclFileObjectName)
-        )).toBeFalsy()
-        expect(await objectExists(
-          env2Client,
-          naclNameToSFName(commonNaclFileObjectName)
-        )).toBeFalsy()
+        expect(await objectExists(env1Client, naclNameToSFName(commonNaclFileObjectName))).toBeFalsy()
+        expect(await objectExists(env2Client, naclNameToSFName(commonNaclFileObjectName))).toBeFalsy()
         expect(await instanceExists(env1Client, 'Role', commonNaclFileInstName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', commonNaclFileInstName)).toBeFalsy()
       })

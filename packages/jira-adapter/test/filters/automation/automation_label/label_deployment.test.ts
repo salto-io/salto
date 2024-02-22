@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { getChangeData, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -25,7 +25,6 @@ import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import JiraClient from '../../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../../src/filters/automation/cloud_id'
 
-
 describe('automationLabelDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let automationLabelType: ObjectType
@@ -35,38 +34,31 @@ describe('automationLabelDeploymentFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
 
-
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = automationLabelDeploymentFilter(getFilterParams({
-      client,
-      paginator,
-      config,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    filter = automationLabelDeploymentFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     automationLabelType = createAutomationLabelType()
 
-    automationLabelInstance = new InstanceElement(
-      'labelName',
-      automationLabelType,
-      {
-        name: 'labelName',
-        color: 'color',
-      },
-    )
-    changedInstance = new InstanceElement(
-      'labelName',
-      automationLabelType,
-      {
-        id: 555,
-        name: 'labelName',
-        color: 'other color',
-      },
-    )
+    automationLabelInstance = new InstanceElement('labelName', automationLabelType, {
+      name: 'labelName',
+      color: 'color',
+    })
+    changedInstance = new InstanceElement('labelName', automationLabelType, {
+      id: 555,
+      name: 'labelName',
+      color: 'other color',
+    })
   })
 
   describe('onFetch', () => {
@@ -122,9 +114,7 @@ describe('automationLabelDeploymentFilter', () => {
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,
-            data:
-            { ...automationLabelInstance.value,
-              id: 555 },
+            data: { ...automationLabelInstance.value, id: 555 },
           }
         }
         throw new Error(`Unexpected url ${url}`)
@@ -148,8 +138,7 @@ describe('automationLabelDeploymentFilter', () => {
       )
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
-        { name: automationLabelInstance.value.name,
-          color: automationLabelInstance.value.color },
+        { name: automationLabelInstance.value.name, color: automationLabelInstance.value.color },
         undefined,
       )
     })
@@ -163,17 +152,17 @@ describe('automationLabelDeploymentFilter', () => {
         if (url === '/rest/cb-automation/latest/rule-label') {
           return {
             status: 200,
-            data:
-            { ...automationLabelInstance.value,
-              id: 555 },
+            data: { ...automationLabelInstance.value, id: 555 },
           }
         }
         throw new Error(`Unexpected url ${url}`)
       })
 
-      filter = automationLabelDeploymentFilter(getFilterParams({
-        client,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+      filter = automationLabelDeploymentFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
       await filter.onFetch([automationLabelType])
       await filter.deploy([toChange({ after: automationLabelInstance })])
@@ -208,8 +197,7 @@ describe('automationLabelDeploymentFilter', () => {
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,
-            data:
-            { ...automationLabelInstance.value },
+            data: { ...automationLabelInstance.value },
           }
         }
         throw new Error(`Unexpected url ${url}`)
@@ -220,9 +208,9 @@ describe('automationLabelDeploymentFilter', () => {
 
     it('should modify automation label', async () => {
       automationLabelInstance.value.id = 555
-      const { deployResult } = await filter.deploy([toChange(
-        { before: automationLabelInstance, after: changedInstance }
-      )])
+      const { deployResult } = await filter.deploy([
+        toChange({ before: automationLabelInstance, after: changedInstance }),
+      ])
       expect(deployResult.appliedChanges).toHaveLength(1)
       expect(getChangeData(deployResult.appliedChanges[0])).toEqual(changedInstance)
       expect(connection.put).toHaveBeenCalledTimes(1)
@@ -238,14 +226,16 @@ describe('automationLabelDeploymentFilter', () => {
       client = cli
       connection = conn
 
-      filter = automationLabelDeploymentFilter(getFilterParams({
-        client,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+      filter = automationLabelDeploymentFilter(
+        getFilterParams({
+          client,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
       automationLabelInstance.value.id = 555
-      const { deployResult } = await filter.deploy([toChange(
-        { before: automationLabelInstance, after: changedInstance }
-      )])
+      const { deployResult } = await filter.deploy([
+        toChange({ before: automationLabelInstance, after: changedInstance }),
+      ])
       expect(deployResult.appliedChanges).toHaveLength(1)
       expect(getChangeData(deployResult.appliedChanges[0])).toEqual(changedInstance)
       expect(connection.put).toHaveBeenCalledWith(

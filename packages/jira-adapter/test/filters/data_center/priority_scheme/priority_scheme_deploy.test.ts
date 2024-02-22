@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -28,16 +28,17 @@ describe('prioritySchemeDeployFilter', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
 
-
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient(true)
     client = cli
     connection = conn
 
-    filter = prioritySchemeDeployFilter(getFilterParams({
-      client,
-      paginator,
-    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    filter = prioritySchemeDeployFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, PRIORITY_SCHEME_TYPE_NAME),
@@ -48,15 +49,11 @@ describe('prioritySchemeDeployFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        name: 'someName',
-        description: 'desc',
-        optionIds: [1, 2],
-      }
-    )
+    instance = new InstanceElement('instance', type, {
+      name: 'someName',
+      description: 'desc',
+      optionIds: [1, 2],
+    })
   })
 
   describe('onFetch', () => {
@@ -80,10 +77,12 @@ describe('prioritySchemeDeployFilter', () => {
       client = cli
       connection = conn
 
-      filter = prioritySchemeDeployFilter(getFilterParams({
-        client,
-        paginator,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+      filter = prioritySchemeDeployFilter(
+        getFilterParams({
+          client,
+          paginator,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
       await filter.onFetch([type])
 
@@ -144,10 +143,7 @@ describe('prioritySchemeDeployFilter', () => {
       instance.value.id = 2
       await filter.deploy([toChange({ before: instance })])
 
-      expect(connection.delete).toHaveBeenCalledWith(
-        '/rest/api/2/priorityschemes/2',
-        undefined,
-      )
+      expect(connection.delete).toHaveBeenCalledWith('/rest/api/2/priorityschemes/2', undefined)
     })
 
     it('should modify priority scheme', async () => {

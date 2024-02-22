@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
@@ -32,9 +32,11 @@ describe('plugin_version', () => {
   beforeEach(async () => {
     const { client, connection } = mockClient(true)
     mockConnection = connection
-    filter = pluginVersionFilter(getFilterParams({
-      client,
-    })) as filterUtils.FilterWith<'onFetch'>
+    filter = pluginVersionFilter(
+      getFilterParams({
+        client,
+      }),
+    ) as filterUtils.FilterWith<'onFetch'>
   })
   it('should not raise a warning if plugin version is the same', async () => {
     mockConnection.get.mockResolvedValueOnce({
@@ -55,10 +57,12 @@ describe('plugin_version', () => {
     })
     const errors = await filter.onFetch([])
     expect(errors).toEqual({
-      errors: [{
-        message: `Your Jira instance is running an old version ${changeVersion(PLUGIN_VERSION_NUMBER, -1)} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`,
-        severity: 'Warning',
-      }],
+      errors: [
+        {
+          message: `Your Jira instance is running an old version ${changeVersion(PLUGIN_VERSION_NUMBER, -1)} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`,
+          severity: 'Warning',
+        },
+      ],
     })
   })
   it('should not raise an error if plugin version is newer', async () => {
@@ -81,10 +85,13 @@ describe('plugin_version', () => {
     })
     const errors = await filter.onFetch([])
     expect(errors).toEqual({
-      errors: [{
-        message: 'Could not verify version number for Salto for Jira DC addon. Please make sure you are using the latest version of Salto Configuration Manager for Jira Data Center. You can download it from the Jira Marketplace: https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira?tab=overview&hosting=datacenter',
-        severity: 'Warning',
-      }],
+      errors: [
+        {
+          message:
+            'Could not verify version number for Salto for Jira DC addon. Please make sure you are using the latest version of Salto Configuration Manager for Jira Data Center. You can download it from the Jira Marketplace: https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira?tab=overview&hosting=datacenter',
+          severity: 'Warning',
+        },
+      ],
     })
   })
 })

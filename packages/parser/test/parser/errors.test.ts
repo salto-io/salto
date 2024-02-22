@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -45,11 +45,9 @@ describe('parsing errors', () => {
           end: { byte: 8, col: 8, line: 2 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].summary)
-          .toBe('Expected block labels')
+        expect(res.errors[0].summary).toBe('Expected block labels')
         expect(res.errors[0].message).toBe('Expected block labels, found { instead.')
-        expect(res.errors[1].summary)
-          .toBe('Ambigious block definition')
+        expect(res.errors[1].summary).toBe('Ambigious block definition')
       })
 
       it('should continue parsing other blocks and ignore the labeless block', async () => {
@@ -75,15 +73,11 @@ describe('parsing errors', () => {
           end: { byte: 13, col: 13, line: 2 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].summary)
-          .toBe('Expected {')
+        expect(res.errors[0].summary).toBe('Expected {')
         expect(res.errors[0].message).toBe('Expected {')
-        expect(res.errors[1].summary)
-          .toBe('Invalid block item')
-        expect(res.errors[2].summary)
-          .toBe('Invalid block item')
-        expect(res.errors[3].summary)
-          .toBe('Invalid block item')
+        expect(res.errors[1].summary).toBe('Invalid block item')
+        expect(res.errors[2].summary).toBe('Invalid block item')
+        expect(res.errors[3].summary).toBe('Invalid block item')
       })
     })
   })
@@ -105,8 +99,7 @@ describe('parsing errors', () => {
             end: { byte: 42, col: 42, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message)
-            .toBe('Unknown primitive type amazing.')
+          expect(res.errors[0].message).toBe('Unknown primitive type amazing.')
           expect(res.errors[0].summary).toBe('unknown primitive type')
         })
         it('should use unknown type as the primitive type primitive', async () => {
@@ -126,8 +119,7 @@ describe('parsing errors', () => {
         })
         it('should create an error', async () => {
           expect(res.errors).toHaveLength(1)
-          expect(res.errors[0].message)
-            .toBe('Expected a primitive type definition.')
+          expect(res.errors[0].message).toBe('Expected a primitive type definition.')
           expect(res.errors[0].summary).toBe('unknown primitive type')
           expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
@@ -154,16 +146,14 @@ describe('parsing errors', () => {
             end: { byte: 38, col: 38, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message)
-            .toBe('Expected inheritance operator \'is\' found tanananana instead')
+          expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead")
           expect(res.errors[0].summary).toBe('invalid type definition')
           expect(res.errors[1].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
             end: { byte: 38, col: 38, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[1].message)
-            .toBe('Expected a primitive type definition.')
+          expect(res.errors[1].message).toBe('Expected a primitive type definition.')
           expect(res.errors[1].summary).toBe('unknown primitive type')
           expect(await awu(res.elements).toArray()).toHaveLength(1)
         })
@@ -188,8 +178,7 @@ describe('parsing errors', () => {
             end: { byte: 47, col: 47, line: 2 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message)
-            .toBe('Expected inheritance operator \'is\' found tanananana instead')
+          expect(res.errors[0].message).toBe("Expected inheritance operator 'is' found tanananana instead")
           expect(res.errors[0].summary).toBe('invalid type definition')
         })
         it('should still create the element', async () => {
@@ -218,8 +207,7 @@ describe('parsing errors', () => {
             end: { byte: 108, col: 12, line: 6 },
             filename: 'file.nacl',
           })
-          expect(res.errors[0].message)
-            .toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
+          expect(res.errors[0].message).toBe('Unexpected field definition(s) in a primitive type. Expected no fields.')
           expect(res.errors[0].summary).toBe('invalid fields in primitive type')
         })
         it('should create the element without the fields', async () => {
@@ -251,8 +239,9 @@ describe('parsing errors', () => {
           end: { byte: 107, col: 10, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message)
-          .toBe('Unexpected field or annotation type definition(s) in a primitive type. Expected only values.')
+        expect(res.errors[0].message).toBe(
+          'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
+        )
         expect(res.errors[0].summary).toBe('invalid blocks in an instance')
       })
       it('should parse the rest of the instance correctly', async () => {
@@ -519,8 +508,9 @@ describe('parsing errors', () => {
           end: { byte: 174, col: 12, line: 10 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message)
-          .toBe('Invalid annotations block, only one annotation block can be defined in a fragment.')
+        expect(res.errors[0].message).toBe(
+          'Invalid annotations block, only one annotation block can be defined in a fragment.',
+        )
         expect(res.errors[0].summary).toBe('Invalid annotations block')
       })
       it('should use annotation for the all defined annotation types block', async () => {
@@ -552,8 +542,9 @@ describe('parsing errors', () => {
           end: { byte: 93, col: 10, line: 8 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message)
-          .toBe('Duplicated field name mycar, a field can only be defined once in a source fragment.')
+        expect(res.errors[0].message).toBe(
+          'Duplicated field name mycar, a field can only be defined once in a source fragment.',
+        )
         expect(res.errors[0].summary).toBe('Duplicated field name')
       })
       it('should use the first definition of the field', async () => {
@@ -1210,8 +1201,7 @@ describe('parsing errors', () => {
           end: { byte: 130, col: 1, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message)
-          .toBe('Unresolved merge conflict')
+        expect(res.errors[0].message).toBe('Unresolved merge conflict')
         expect(res.errors[0].summary).toBe('Unresolved merge conflict')
       })
       it('should parse the first instance correctly', async () => {
@@ -1221,7 +1211,7 @@ describe('parsing errors', () => {
       })
     })
 
-    describe('non closed conflict markers (lacking \'>\')', () => {
+    describe("non closed conflict markers (lacking '>')", () => {
       const nacl = `
         rocky.racoon checked {
           only
@@ -1246,8 +1236,7 @@ describe('parsing errors', () => {
           end: { byte: 118, col: 1, line: 7 },
           filename: 'file.nacl',
         })
-        expect(res.errors[1].message)
-          .toBe('Invalid string character')
+        expect(res.errors[1].message).toBe('Invalid string character')
         expect(res.errors[1].summary).toBe('Invalid string character')
       })
       it('should parse the first instance correctly', async () => {
@@ -1296,8 +1285,7 @@ describe('parsing errors', () => {
           end: { byte: 66, col: 1, line: 4 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message)
-          .toBe('Invalid block item. Expected a new block or an attribute definition.')
+        expect(res.errors[0].message).toBe('Invalid block item. Expected a new block or an attribute definition.')
         expect(res.errors[0].summary).toBe('Invalid block item')
       })
     })

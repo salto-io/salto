@@ -1,5 +1,7 @@
 # JIRA system configuration
+
 ## Default Configuration
+
 ```hcl
 jira {
   apiDefinitions = {

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -25,26 +25,18 @@ import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 describe('labelAttributeValidator', () => {
   let attributeInstance: InstanceElement
   let config: JiraConfig
-  const objectTypeInstance = new InstanceElement(
-    'objectTypeInstance',
-    createEmptyType(OBJECT_TYPE_TYPE),
-    {
-      id: '1',
-      name: 'ObjectType',
-    },
-  )
+  const objectTypeInstance = new InstanceElement('objectTypeInstance', createEmptyType(OBJECT_TYPE_TYPE), {
+    id: '1',
+    name: 'ObjectType',
+  })
   let objectTypeLabelAttributeInstance: InstanceElement
   beforeEach(async () => {
-    attributeInstance = new InstanceElement(
-      'attribute1',
-      createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
-      {
-        id: 22,
-        name: 'Name',
-        objectType: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-        description: 'description',
-      },
-    )
+    attributeInstance = new InstanceElement('attribute1', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
+      id: 22,
+      name: 'Name',
+      objectType: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+      description: 'description',
+    })
     objectTypeLabelAttributeInstance = new InstanceElement(
       'ObjectTypeLabelAttributeInstance',
       createEmptyType(OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE),
@@ -61,7 +53,7 @@ describe('labelAttributeValidator', () => {
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ before: attributeInstance })],
-      buildElementsSourceFromElements([objectTypeLabelAttributeInstance])
+      buildElementsSourceFromElements([objectTypeLabelAttributeInstance]),
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -75,7 +67,7 @@ describe('labelAttributeValidator', () => {
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ after: attributeInstance })],
-      buildElementsSourceFromElements([objectTypeLabelAttributeInstance])
+      buildElementsSourceFromElements([objectTypeLabelAttributeInstance]),
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -85,25 +77,21 @@ describe('labelAttributeValidator', () => {
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ before: attributeInstance, after: attributeAfter })],
-      buildElementsSourceFromElements([objectTypeLabelAttributeInstance])
+      buildElementsSourceFromElements([objectTypeLabelAttributeInstance]),
     )
     expect(changeErrors).toHaveLength(0)
   })
   it('should not return error on removal change of non label attribute', async () => {
-    const nonLbaelAttribute = new InstanceElement(
-      'attribute2',
-      createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
-      {
-        id: 222,
-        name: 'Name',
-        objectType: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-        description: 'description',
-      },
-    )
+    const nonLbaelAttribute = new InstanceElement('attribute2', createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE), {
+      id: 222,
+      name: 'Name',
+      objectType: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+      description: 'description',
+    })
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ before: nonLbaelAttribute })],
-      buildElementsSourceFromElements([objectTypeLabelAttributeInstance])
+      buildElementsSourceFromElements([objectTypeLabelAttributeInstance]),
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -112,7 +100,7 @@ describe('labelAttributeValidator', () => {
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ before: attributeInstance })],
-      buildElementsSourceFromElements([objectTypeLabelAttributeInstance])
+      buildElementsSourceFromElements([objectTypeLabelAttributeInstance]),
     )
     expect(changeErrors).toHaveLength(0)
   })

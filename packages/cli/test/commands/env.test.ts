@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { locateWorkspaceRoot, loadLocalWorkspace } from '@salto-io/core'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
@@ -26,12 +26,8 @@ jest.mock('@salto-io/core', () => ({
   locateWorkspaceRoot: jest.fn(),
 }))
 
-const mockLocateWorkspaceRoot = (
-  locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
-)
-const mockLoadLocalWorkspace = (
-  loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
-)
+const mockLocateWorkspaceRoot = locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
+const mockLoadLocalWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
 
 describe('env command group', () => {
   let cliArgs: mocks.MockCliArgs
@@ -63,9 +59,7 @@ describe('env command group', () => {
       beforeEach(() => {
         workspace = mocks.mockWorkspace({ envs: ['me1'] })
         mockLoadLocalWorkspace.mockResolvedValue(workspace)
-        jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(
-          () => Promise.resolve(false)
-        )
+        jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(() => Promise.resolve(false))
       })
 
       it('should prompt on 2nd environment creation, and do nothing if false', async () => {
@@ -83,9 +77,7 @@ describe('env command group', () => {
       })
 
       it('should prompt on 2nd environment creation, and isolate if true', async () => {
-        jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementationOnce(
-          () => Promise.resolve(true)
-        )
+        jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementationOnce(() => Promise.resolve(true))
 
         await createAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),

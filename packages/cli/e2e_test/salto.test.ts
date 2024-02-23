@@ -569,7 +569,7 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
           }
         }
         deploy = {
-          standardFieldOrObjectAdditionsOrDeletions
+          standardFieldOrObjectAdditionsOrDeletions = false
         }
       }`,
         )

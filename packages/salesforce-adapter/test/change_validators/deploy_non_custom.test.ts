@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeError, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  InstanceElement,
+  toChange,
+  ObjectType,
+  ElemID,
+} from '@salto-io/adapter-api'
 import deployNonDeployableTypes from '../../src/change_validators/deploy_non_custom'
 import { createMetadataObjectType } from '../../src/transformers/transformer'
-import { METADATA_TYPE } from '../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 
 describe('deployNonDeployableTypes', () => {
@@ -58,6 +69,23 @@ describe('deployNonDeployableTypes', () => {
       expect(validatorResult).toSatisfyAll((error) =>
         error.elemID.isEqual(metadataType.elemID),
       )
+    })
+  })
+  describe('E2E test', () => {
+    const objectType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'NewObjectName'),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [API_NAME]: 'NewObjectName',
+      },
+    })
+    beforeEach(async () => {
+      validatorResult = await deployNonDeployableTypes([
+        toChange({ after: objectType }),
+      ])
+    })
+    it('should not generate errors', () => {
+      expect(validatorResult).toBeEmpty()
     })
   })
 })

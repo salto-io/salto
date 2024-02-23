@@ -22,11 +22,15 @@ import {
   isObjectTypeChange,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
 import { API_NAME } from '../constants'
 
 const { isDefined } = values
+
+const log = logger(module)
 
 const createNonDeployableTypeError = (objectType: ObjectType): ChangeError => ({
   elemID: objectType.elemID,
@@ -55,6 +59,10 @@ const changeValidator: ChangeValidator = async (changes) =>
     .map((change) => getAffectedType(change))
     .filter(isDefined)
     .filter(isMetadataType)
+    .filter((objectType) => {
+      log.info('Invalid object type %s', safeJsonStringify(objectType))
+      return true
+    })
     .map(createNonDeployableTypeError)
 
 export default changeValidator

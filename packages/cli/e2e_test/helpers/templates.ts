@@ -48,6 +48,8 @@ export const customObject = (data: {
       pluralLabel: 'Tests',
       sharingModel: 'ReadWrite',
       nameField: { type: 'Text', label: 'Name' },
+      apiName: data.objName,
+      metadataType: 'CustomObject',
     },
     annotationRefsOrTypes: {
       deploymentStatus: BuiltinTypes.STRING,

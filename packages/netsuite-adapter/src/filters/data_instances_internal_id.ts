@@ -63,7 +63,7 @@ const isNestedPath = (path: ElemID | undefined): path is ElemID => path !== unde
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'dataInstancesInternalId',
   onFetch: async elements => {
-    if (config.fetch.resolveAccountSpecificValues !== false) {
+    if (config.fetch.resolveAccountSpecificValues) {
       return
     }
     const newInstancesMap: Record<string, InstanceElement> = {}
@@ -121,7 +121,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   },
 
   preDeploy: async changes => {
-    if (config.fetch.resolveAccountSpecificValues !== false) {
+    if (config.fetch.resolveAccountSpecificValues) {
       return
     }
     await awu(changes).forEach(async change => {

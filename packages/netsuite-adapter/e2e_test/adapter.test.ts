@@ -92,7 +92,6 @@ import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
 import { bundleType as bundle } from '../src/types/bundle_type'
 import { addApplicationIdToType } from '../src/transformer'
-import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -986,8 +985,6 @@ describe('Netsuite adapter E2E with real account', () => {
           .concat(filesToImport)
           .concat(existingFileCabinetInstances)
           .concat(newFileCabinetInstancesElemIds)
-          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
-          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID.createNestedID('instance', ElemID.CONFIG_NAME) })
 
         const expectedElements = _.uniq(allTypes.map(type => type.elemID.getFullName())).sort()
 

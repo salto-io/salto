@@ -90,7 +90,7 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     return []
   }
 
-  if (config?.fetch.resolveAccountSpecificValues !== false && elementsSource !== undefined) {
+  if (config?.fetch.resolveAccountSpecificValues && elementsSource !== undefined) {
     const unknownTypeReferencesMap = await getUnknownTypeReferencesMap(elementsSource)
     const suiteQLTablesMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
     return relevantChangedInstances.flatMap(instance =>

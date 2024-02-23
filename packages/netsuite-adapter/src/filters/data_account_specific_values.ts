@@ -381,7 +381,7 @@ const resolveAccountSpecificValues = ({
 const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }) => ({
   name: 'dataAccountSpecificValues',
   onFetch: async elements => {
-    if (config.fetch.resolveAccountSpecificValues === false) {
+    if (!config.fetch.resolveAccountSpecificValues) {
       return
     }
     const instances = elements.filter(isInstanceElement)
@@ -402,7 +402,7 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
     addReferenceTypes(elements)
   },
   preDeploy: async changes => {
-    if (config.fetch.resolveAccountSpecificValues === false) {
+    if (!config.fetch.resolveAccountSpecificValues) {
       return
     }
     const relevantChangedInstances = changes

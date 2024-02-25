@@ -62,16 +62,16 @@ export const addAppGroupToAppDependency: DependencyChanger = async changes => {
   return appGroupChanges
     .map(appGroupChange => {
       try {
-      const parentApp = getParent(getChangeData(appGroupChange.change))
-      const parentAppChange = appModificationByAppName[parentApp.elemID.getFullName()]
-      if (parentAppChange === undefined) {
+        const parentApp = getParent(getChangeData(appGroupChange.change))
+        const parentAppChange = appModificationByAppName[parentApp.elemID.getFullName()]
+        if (parentAppChange === undefined) {
+          return undefined
+        }
+        return dependencyChange('add', appGroupChange.key, parentAppChange.key)
+      } catch (err) {
+        log.error('Failed to add dependency from ApplicationGroupAssignment to Application: %s', err)
         return undefined
       }
-      return dependencyChange('add', appGroupChange.key, parentAppChange.key)
-    } catch (err) {
-      log.error('Failed to add dependency from ApplicationGroupAssignment to Application: %s', err)
-      return undefined
-    }
     })
     .filter(values.isDefined)
 }

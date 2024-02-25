@@ -15,8 +15,16 @@
  */
 import _ from 'lodash'
 import {
-  InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType, ElemIdGetter, SaltoError, isMapType,
+  InstanceElement,
+  Values,
+  ObjectType,
+  isObjectType,
+  ReferenceExpression,
+  isReferenceExpression,
+  isListType,
+  ElemIdGetter,
+  SaltoError,
+  isMapType,
 } from '@salto-io/adapter-api'
 import { TransformFunc, safeJsonStringify, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -175,19 +183,21 @@ const generateInstancesForType = ({
 }): Promise<InstanceElement[]> => {
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
   return awu(entries)
-    .map((entry, index) => toBasicInstance({
-      entry,
-      type: objType,
-      nestName,
-      parent,
-      transformationConfigByType,
-      transformationDefaultConfig,
-      normalized,
-      nestedPath,
-      defaultName: `unnamed_${index}`, // TODO improve
-      getElemIdFunc,
-    }))
-    .flatMap(inst => (
+    .map((entry, index) =>
+      toBasicInstance({
+        entry,
+        type: objType,
+        nestName,
+        parent,
+        transformationConfigByType,
+        transformationDefaultConfig,
+        normalized,
+        nestedPath,
+        defaultName: `unnamed_${index}`, // TODO improve
+        getElemIdFunc,
+      }),
+    )
+    .flatMap(inst =>
       standaloneFields === undefined
         ? [inst]
         : extractStandaloneFields(inst, {
@@ -200,13 +210,10 @@ const generateInstancesForType = ({
     .toArray()
 }
 
-const isItemsOnlyObjectType = (type: ObjectType): boolean => (
-  _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
-)
+const isItemsOnlyObjectType = (type: ObjectType): boolean => _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
 
-const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean => (
+const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean =>
   _.isEqual(Object.keys(type.fields), [ADDITIONAL_PROPERTIES_FIELD])
-)
 
 const normalizeType = async (type: ObjectType | undefined): Promise<ObjectType | undefined> => {
   if (type !== undefined && isItemsOnlyObjectType(type)) {

@@ -15,6 +15,7 @@
  */
 
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   DependencyChanger,
   InstanceElement,
@@ -28,6 +29,8 @@ import { deployment } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, APP_GROUP_ASSIGNMENT_TYPE_NAME } from '../constants'
+
+const log = logger(module)
 
 /*
  * Add dependency from ApplicationGroupAssignment change to Application modification change.
@@ -58,12 +61,17 @@ export const addAppGroupToAppDependency: DependencyChanger = async changes => {
 
   return appGroupChanges
     .map(appGroupChange => {
+      try {
       const parentApp = getParent(getChangeData(appGroupChange.change))
       const parentAppChange = appModificationByAppName[parentApp.elemID.getFullName()]
       if (parentAppChange === undefined) {
         return undefined
       }
       return dependencyChange('add', appGroupChange.key, parentAppChange.key)
+    } catch (err) {
+      log.error('Failed to add dependency from ApplicationGroupAssignment to Application: %s', err)
+      return undefined
+    }
     })
     .filter(values.isDefined)
 }

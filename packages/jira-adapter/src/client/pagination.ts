@@ -31,20 +31,15 @@ const notTeamScopeObject = (obj: clientUtils.ResponseValue): boolean => (
   !(_.isPlainObject(obj) && 'scope' in obj && !_.isEqual(obj.scope, { type: 'GLOBAL' }))
 )
 
-// const notTeamProject = (obj: clientUtils.ResponseValue): boolean => (
-//   !(_.isPlainObject(obj) && 'style' in obj && obj.style === 'next-gen')
-// )
-
+// filters out boards located in team managed projects
 const notTeamBoard = (obj: clientUtils.ResponseValue): boolean => (
   !(_.isPlainObject(obj) && 'type' in obj && obj.type === 'simple')
 )
-
 
 const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(response: T | T[]): T | T[] => {
   if (Array.isArray(response)) {
     return response
     .filter(notTeamScopeObject)
-    // .filter(notTeamProject)
     .filter(notTeamBoard)
     .flatMap(removeScopedObjectsImpl) as T[]
   }

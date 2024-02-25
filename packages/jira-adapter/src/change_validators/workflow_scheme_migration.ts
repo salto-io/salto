@@ -39,7 +39,7 @@ import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
-import { doesProjectHaveIssues } from './project_deletion'
+import { doesProjectHaveIssues } from './projects/project_deletion'
 
 const { addUrlToInstance } = filters
 const { awu } = collections.asynciterable

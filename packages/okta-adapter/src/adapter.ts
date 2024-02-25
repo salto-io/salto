@@ -90,6 +90,7 @@ import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
+import groupPushPathFilter from './filters/group_push_path'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
@@ -138,6 +139,8 @@ const DEFAULT_FILTERS = [
   profileMappingAdditionFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
+  // should run after commonFilters,
+  groupPushPathFilter,
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,

@@ -30,7 +30,7 @@ import { getFilterParams } from '../utils'
 import { APPLICATION_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME, OKTA } from '../../src/constants'
 import groupPushPathFilter from '../../src/filters/group_push_path'
 
-describe('groupPushFilter', () => {
+describe('groupPushPathFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const appType = new ObjectType({
@@ -74,7 +74,6 @@ describe('groupPushFilter', () => {
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appWithGroupPush.elemID, appWithGroupPush)] },
   )
 
-  describe('fetch', () => {
     it('should modify group push path to be nested under the parent app', async () => {
       const elements: Element[] = [appType, groupPushType, pushRuleType, appWithGroupPush, groupPushA, pushRuleInstance]
       filter = groupPushPathFilter(getFilterParams()) as typeof filter
@@ -100,5 +99,16 @@ describe('groupPushFilter', () => {
         'testRule',
       ])
     })
-  })
+    it('it should do nothing if there is no parent app', async () => {
+      const elements: Element[] = [groupPushType, new InstanceElement('noParent', groupPushType, { id: 3}, [OKTA, elementUtils.RECORDS_PATH, GROUP_PUSH_TYPE_NAME, 'noParent'])]
+      filter = groupPushPathFilter(getFilterParams()) as typeof filter
+      await filter.onFetch(elements)
+      const groupPush = elements.filter(isInstanceElement).find(i => i.elemID.typeName === GROUP_PUSH_TYPE_NAME)
+      expect(groupPush?.path).toEqual([
+        OKTA,
+        elementUtils.RECORDS_PATH,
+        GROUP_PUSH_TYPE_NAME,
+        'noParent',
+      ])
+    })
 })

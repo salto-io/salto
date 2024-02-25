@@ -167,7 +167,9 @@ describe('status mappings', () => {
         elemID: workflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status2', 'status3']),
+        detailedMessage:
+          ERROR_MESSAGE_PREFIX +
+          getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status2', 'status3']),
       },
     ])
   })
@@ -271,7 +273,8 @@ describe('status mappings', () => {
         elemID: workflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status3']),
+        detailedMessage:
+          ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status3']),
       },
     ])
   })

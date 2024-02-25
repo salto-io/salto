@@ -376,9 +376,6 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client, usersPromise 
         return
       }
       const { users } = await usersPromise
-      // eslint-disable-next-line no-console
-      console.log(`(3/5) in custom objects fields filter, ${users.length}  users`)
-
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

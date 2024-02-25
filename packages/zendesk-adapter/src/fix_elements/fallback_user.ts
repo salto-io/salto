@@ -140,10 +140,6 @@ export const fallbackUsersHandler: FixElementsHandler =
   ({ client, config, usersPromise }) =>
   async elements => {
     const { users } = await usersPromise
-
-    // eslint-disable-next-line no-console
-    console.log(`(5/5) in fallback_users fix elements, ${users.length} users`)
-
     const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
     if (
       defaultMissingUserFallback === undefined ||

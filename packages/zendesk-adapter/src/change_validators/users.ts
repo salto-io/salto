@@ -116,8 +116,6 @@ export const usersValidator: (usersPromise: Promise<GetUsersResponse>) => Change
     }
 
     const { users } = await usersPromise
-    // eslint-disable-next-line no-console
-    console.log(`(2/5) in users CV, ${users.length}  users`)
 
     const existingUsersEmails = new Set(users.map(user => user.email))
     const instancesUserPaths = relevantInstances.flatMap(instance => {

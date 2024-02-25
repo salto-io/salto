@@ -36,8 +36,6 @@ export const customRoleRemovalValidator: (
   }
 
   const { users } = await usersPromise
-  // eslint-disable-next-line no-console
-  console.log(`(1/5) in role removal, ${users.length}  users`)
   if (_.isEmpty(users)) {
     return []
   }

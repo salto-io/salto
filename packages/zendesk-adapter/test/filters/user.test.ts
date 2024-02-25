@@ -29,8 +29,8 @@ import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
 import { getIdByEmail, getUsers } from '../../src/users/user_utils'
 
-jest.mock('../../src/user_utils', () => ({
-  ...jest.requireActual<{}>('../../src/user_utils'),
+jest.mock('../../src/users/user_utils', () => ({
+  ...jest.requireActual<{}>('../../src/users/user_utils'),
   getIdByEmail: jest.fn(),
   getUsers: jest.fn(),
 }))
@@ -182,10 +182,17 @@ describe('user filter', () => {
     it('returns a warning if users query is forbidden, and does not replace anything', async () => {
       const elements = [macroType.clone(), macroInstance.clone()]
       const errors: SaltoError[] = [{ message: 'Bad user, go away!', severity: 'Warning' }]
-      getUsersMock.mockResolvedValueOnce({ users: [], errors })
       getIdByEmailMock.mockResolvedValueOnce({})
       const paginator = mockFunction<clientUtils.Paginator>()
-      const newFilter = filterCreator(createFilterCreatorParams({ paginator })) as FilterType
+      const newFilter = filterCreator(
+        createFilterCreatorParams({
+          paginator,
+          usersPromise: Promise.resolve({
+            users: [],
+            errors,
+          }),
+        }),
+      ) as FilterType
       expect(await newFilter.onFetch(elements)).toEqual({ errors })
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
@@ -208,14 +215,19 @@ describe('user filter', () => {
       getUsersMock = getUsers as jest.MockedFunction<typeof getUsers>
     })
     it('should change the emails to user ids', async () => {
-      filter = filterCreator(createFilterCreatorParams({ paginator: mockPaginator })) as FilterType
-      getUsersMock.mockResolvedValue({
-        users: [
-          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ],
-      })
+      const users = [
+        { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
+        { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
+        { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+      ]
+      filter = filterCreator(
+        createFilterCreatorParams({
+          paginator: mockPaginator,
+          usersPromise: Promise.resolve({
+            users,
+          }),
+        }),
+      ) as FilterType
       getIdByEmailMock.mockResolvedValue({ 1: 'a@a.com', 2: 'b@b.com', 3: 'c@c.com' })
       const instances = [macroInstance, userSegmentInstance, articleInstance].map(e => e.clone())
       await filter.onFetch(instances)
@@ -245,15 +257,21 @@ describe('user filter', () => {
     })
   })
   describe('onDeploy', () => {
-    const filter = filterCreator(createFilterCreatorParams({ paginator: mockPaginator })) as FilterType
     it('should change the user ids to emails', async () => {
-      getUsersMock.mockResolvedValue({
-        users: [
-          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ],
-      })
+      const users = [
+        { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
+        { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
+        { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+      ]
+      const filter = filterCreator(
+        createFilterCreatorParams({
+          paginator: mockPaginator,
+          usersPromise: Promise.resolve({
+            users,
+          }),
+        }),
+      ) as FilterType
+
       getIdByEmailMock.mockResolvedValue({ 1: 'a@a.com', 2: 'b@b.com', 3: 'c@c.com' })
       const instances = [macroInstance, userSegmentInstance, articleInstance].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))

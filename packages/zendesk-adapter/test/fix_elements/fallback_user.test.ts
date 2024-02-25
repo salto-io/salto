@@ -71,13 +71,6 @@ describe('fallbackUsersHandler', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGetUsers.mockResolvedValue({
-      users: [
-        { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
-      ],
-    })
-
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
@@ -94,6 +87,12 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
           [FETCH_CONFIG]: { resolveUserIDs: true },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
     })
     it('should replace missing user emails or ids', () => {
@@ -157,6 +156,12 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'non-existing-user@.com' },
           [FETCH_CONFIG]: { resolveUserIDs: true },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
     })
     it('should not replace missing user emails or ids', () => {
@@ -191,6 +196,12 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined },
           [FETCH_CONFIG]: { resolveUserIDs: true },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
       expect(fixedElements).toEqual([])
       expect(errors).toEqual([])
@@ -201,7 +212,7 @@ describe('fallbackUsersHandler', () => {
     let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      jest.clearAllMocks()
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       fallbackResponse = await fallbackUsersHandler({
         client,
@@ -209,10 +220,18 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'notDeployer@.com' },
           [FETCH_CONFIG]: { resolveUserIDs: false },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 1, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 3, email: 'a@a.com', role: 'admin', custom_role_id: 1234, name: 'a', locale: 'en-US' },
+            { id: 4, email: 'notDeployer@.com', role: 'admin', custom_role_id: 1234, name: 'a', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
     })
 
     it('should not replace missing users and should not report errors', () => {
+      console.log(fallbackResponse)
       expect(fallbackResponse.fixedElements).toEqual([])
       expect(fallbackResponse.errors).toEqual([])
     })
@@ -239,6 +258,10 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: '##DEPLOYER##' },
           [FETCH_CONFIG]: { resolveUserIDs: false },
         },
+        usersPromise: Promise.resolve({
+          users: [{}],
+          errors: [{ message: 'No users here!', severity: 'Warning' }],
+        }),
       } as FixElementsArgs)(instances)
     })
 
@@ -267,6 +290,12 @@ describe('fallbackUsersHandler', () => {
         [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
         [FETCH_CONFIG]: { resolveUserIDs: true },
       },
+      usersPromise: Promise.resolve({
+        users: [
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+          { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+        ],
+      }),
     } as FixElementsArgs)(instances)
     expect(fallbackResponse.fixedElements).toEqual([])
   })

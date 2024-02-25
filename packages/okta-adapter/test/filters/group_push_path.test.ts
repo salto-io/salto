@@ -74,41 +74,42 @@ describe('groupPushPathFilter', () => {
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appWithGroupPush.elemID, appWithGroupPush)] },
   )
 
-    it('should modify group push path to be nested under the parent app', async () => {
-      const elements: Element[] = [appType, groupPushType, pushRuleType, appWithGroupPush, groupPushA, pushRuleInstance]
-      filter = groupPushPathFilter(getFilterParams()) as typeof filter
-      await filter.onFetch(elements)
-      const groupPush = elements.filter(isInstanceElement).find(i => i.elemID.typeName === GROUP_PUSH_TYPE_NAME)
-      expect(groupPush?.path).toEqual([
-        OKTA,
-        elementUtils.RECORDS_PATH,
-        APPLICATION_TYPE_NAME,
-        'regular_app',
-        GROUP_PUSH_TYPE_NAME,
-        'g1',
-      ])
-      const groupPushRule = elements
-        .filter(isInstanceElement)
-        .find(i => i.elemID.typeName === GROUP_PUSH_RULE_TYPE_NAME)
-      expect(groupPushRule?.path).toEqual([
-        OKTA,
-        elementUtils.RECORDS_PATH,
-        APPLICATION_TYPE_NAME,
-        'regular_app',
-        GROUP_PUSH_RULE_TYPE_NAME,
-        'testRule',
-      ])
-    })
-    it('it should do nothing if there is no parent app', async () => {
-      const elements: Element[] = [groupPushType, new InstanceElement('noParent', groupPushType, { id: 3}, [OKTA, elementUtils.RECORDS_PATH, GROUP_PUSH_TYPE_NAME, 'noParent'])]
-      filter = groupPushPathFilter(getFilterParams()) as typeof filter
-      await filter.onFetch(elements)
-      const groupPush = elements.filter(isInstanceElement).find(i => i.elemID.typeName === GROUP_PUSH_TYPE_NAME)
-      expect(groupPush?.path).toEqual([
+  it('should modify group push path to be nested under the parent app', async () => {
+    const elements: Element[] = [appType, groupPushType, pushRuleType, appWithGroupPush, groupPushA, pushRuleInstance]
+    filter = groupPushPathFilter(getFilterParams()) as typeof filter
+    await filter.onFetch(elements)
+    const groupPush = elements.filter(isInstanceElement).find(i => i.elemID.typeName === GROUP_PUSH_TYPE_NAME)
+    expect(groupPush?.path).toEqual([
+      OKTA,
+      elementUtils.RECORDS_PATH,
+      APPLICATION_TYPE_NAME,
+      'regular_app',
+      GROUP_PUSH_TYPE_NAME,
+      'g1',
+    ])
+    const groupPushRule = elements.filter(isInstanceElement).find(i => i.elemID.typeName === GROUP_PUSH_RULE_TYPE_NAME)
+    expect(groupPushRule?.path).toEqual([
+      OKTA,
+      elementUtils.RECORDS_PATH,
+      APPLICATION_TYPE_NAME,
+      'regular_app',
+      GROUP_PUSH_RULE_TYPE_NAME,
+      'testRule',
+    ])
+  })
+  it('it should do nothing if there is no parent app', async () => {
+    const elements: Element[] = [
+      groupPushType,
+      new InstanceElement('noParent', groupPushType, { id: 3 }, [
         OKTA,
         elementUtils.RECORDS_PATH,
         GROUP_PUSH_TYPE_NAME,
         'noParent',
-      ])
-    })
+      ]),
+    ]
+    filter = groupPushPathFilter(getFilterParams()) as typeof filter
+    await filter.onFetch(elements)
+    const groupPush = elements.filter(isInstanceElement).find(i => i.elemID.typeName === GROUP_PUSH_TYPE_NAME)
+    expect(groupPush?.path).toEqual([OKTA, elementUtils.RECORDS_PATH, GROUP_PUSH_TYPE_NAME, 'noParent'])
+  })
 })

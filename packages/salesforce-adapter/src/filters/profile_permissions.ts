@@ -139,6 +139,7 @@ const addMissingPermissions = (
 /**
  * If any object types were added, add them to the configured FLS Profiles' objectPermissions section.
  * Do the same with added fields and fieldPermissions.
+ * No reason to handle deleted Profiles.
  */
 const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalProfileChangesByName: Record<
@@ -171,42 +172,55 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         safeJsonStringify(flsProfiles),
       )
 
-      originalProfileChangesByName = _.keyBy(
-        changes
-          .filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE))
-          .filter(isAdditionOrModificationChange),
-        (change) => apiNameSync(getChangeData(change)) ?? '',
+      // No reason to add FLS Permissions to a Profile that is being deleted
+      const [flsProfileChanges, removedFLSProfileChanges] = _.partition(
+        changes.filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE)),
+        isAdditionOrModificationChange,
       )
 
-      flsProfiles.forEach((profileName) => {
-        const profileChange = originalProfileChangesByName[profileName]
-        if (profileChange !== undefined) {
-          _.pull(changes, profileChange)
-        }
-        const before =
-          profileChange === undefined || isAdditionChange(profileChange)
-            ? undefined
-            : profileChange.data.before
-        const after = profileChange
-          ? profileChange.data.after.clone()
-          : createProfile(profileName)
-        addMissingPermissions(after, 'object', newCustomObjects)
-        addMissingPermissions(after, 'field', newFields)
-        changes.push(toChange({ before, after }))
-      })
+      originalProfileChangesByName = _.keyBy(
+        flsProfileChanges,
+        (change) => apiNameSync(getChangeData(change)) ?? '',
+      )
+      const removedFLSProfileNames = new Set(
+        removedFLSProfileChanges.map(
+          (change) => apiNameSync(getChangeData(change)) ?? '',
+        ),
+      )
+
+      flsProfiles
+        .filter((flsProfile) => !removedFLSProfileNames.has(flsProfile))
+        .forEach((profileName) => {
+          const profileChange = originalProfileChangesByName[profileName]
+          if (profileChange !== undefined) {
+            _.pull(changes, profileChange)
+          }
+          const before =
+            profileChange === undefined || isAdditionChange(profileChange)
+              ? undefined
+              : profileChange.data.before
+          const after = profileChange
+            ? profileChange.data.after.clone()
+            : createProfile(profileName)
+          addMissingPermissions(after, 'object', newCustomObjects)
+          addMissingPermissions(after, 'field', newFields)
+          changes.push(toChange({ before, after }))
+        })
     },
     onDeploy: async (changes) => {
       const appliedFLSProfileChanges = changes
         .filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE))
+        .filter(isAdditionOrModificationChange)
         .filter((profileChange) =>
           config.flsProfiles.includes(
             apiNameSync(getChangeData(profileChange)) ?? '',
           ),
         )
-      const appliedFLSProfileNames = appliedFLSProfileChanges
-        .map((change) => apiNameSync(getChangeData(change)))
-        .filter(isDefined)
+      const appliedFLSProfileNames = appliedFLSProfileChanges.map(
+        (change) => apiNameSync(getChangeData(change)) ?? '',
+      )
 
+      // Revert to the original Profile Addition/Modification changes that were applied
       _.pullAll(changes, appliedFLSProfileChanges)
       Object.entries(originalProfileChangesByName)
         .filter(([profileName]) => appliedFLSProfileNames.includes(profileName))

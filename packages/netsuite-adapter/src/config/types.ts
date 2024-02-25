@@ -214,6 +214,7 @@ export type NetsuiteConfig = {
   includeInactiveRecords?: string[]
   includeDataFileTypes?: string[]
   includeFileCabinetFolders?: string[]
+  excludeBundles?: string[]
 
   // complex config
   typesToSkip?: string[]
@@ -236,6 +237,7 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   includeInactiveRecords: 'includeInactiveRecords',
   includeDataFileTypes: 'includeDataFileTypes',
   includeFileCabinetFolders: 'includeFileCabinetFolders',
+  excludeBundles: 'excludeBundles',
   typesToSkip: 'typesToSkip',
   filePathRegexSkipList: 'filePathRegexSkipList',
   deploy: 'deploy',
@@ -724,6 +726,18 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
           'Salto fetches the Templates and Suitscripts folders.' +
           ' You can choose to include additional folders.' +
           ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+      },
+    },
+    excludeBundles: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'Exclude bundles',
+        [CORE_ANNOTATIONS.DESCRIPTION]:
+          'Salto includes all installed bundles by default. You can choose to exclude specific bundles.',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: false,
+          values: [INCLUDE_ALL],
+        }),
       },
     },
     fetch: {

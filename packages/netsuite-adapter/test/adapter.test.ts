@@ -187,6 +187,14 @@ describe('Adapter', () => {
     createCustomRecordTypes([], standardTypes.customrecordtype.type),
   )
 
+  const getSystemInformationMock = jest.fn().mockResolvedValue({
+    time: new Date(1000),
+    appVersion: [0, 1, 0],
+  })
+
+  const getConfigRecordsMock = jest.fn()
+  const getCustomRecordsMock = jest.fn()
+
   beforeEach(() => {
     jest.clearAllMocks()
     client.listInstances = mockFunction<SdfClient['listInstances']>().mockResolvedValue([])
@@ -1126,12 +1134,6 @@ describe('Adapter', () => {
   })
 
   describe('SuiteAppClient', () => {
-    const getSystemInformationMock = jest.fn().mockResolvedValue({
-      time: new Date(1000),
-      appVersion: [0, 1, 0],
-    })
-    const getConfigRecordsMock = jest.fn()
-    const getCustomRecordsMock = jest.fn()
     let adapter: NetsuiteAdapter
 
     const dummyElement = new ObjectType({ elemID: new ElemID('dum', 'test') })

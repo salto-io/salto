@@ -327,11 +327,15 @@ const formulaToTemplate = ({
   // we continuously split the expression to find all kinds of potential references
   return extractTemplate(seekAndMarkPotentialReferences(formula), potentialRegexes, expression => {
     const zendeskReference = expression.match(potentialReferenceTypeRegex)
+    if (expression.includes('dc')) {
+      console.log(formula, expression, zendeskReference)
+    }
     if (zendeskReference) {
       return handleZendeskReference(expression, zendeskReference)
     }
     const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX)
     if (dynamicContentReference) {
+      console.log('do i get here? ', dynamicContentReference)
       return handleDynamicContentReference(expression, dynamicContentReference)
     }
     if (extractReferencesFromFreeText) {

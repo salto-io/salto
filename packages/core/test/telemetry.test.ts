@@ -1,37 +1,38 @@
-
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import nock from 'nock'
 import _ from 'lodash'
 import waitForExpect from 'wait-for-expect'
 import axios from 'axios'
 import {
-  telemetrySender, EVENT_TYPES,
-  TelemetryEvent, StackEvent,
-  Tags, isCountEvent, isStackEvent,
+  telemetrySender,
+  EVENT_TYPES,
+  TelemetryEvent,
+  StackEvent,
+  Tags,
+  isCountEvent,
+  isStackEvent,
   DEFAULT_EVENT_NAME_PREFIX as prefix,
   MAX_CONSECUTIVE_RETRIES,
 } from '../src/telemetry'
 
 describe('telemetry', () => {
-  const eventByName = (
-    name: string,
-    events: Array<TelemetryEvent>
-  ): TelemetryEvent | undefined => _(events).find(ev => ev.name === name)
+  const eventByName = (name: string, events: Array<TelemetryEvent>): TelemetryEvent | undefined =>
+    _(events).find(ev => ev.name === name)
   const token = '12345'
   const url = 'http://telemetry.local'
   const installationID = '8113a616-bbe6-43cb-b51d-e2e3d4c1400d'
@@ -162,8 +163,9 @@ describe('telemetry', () => {
     expect(eventCustomTags.workspace_id).toEqual(customTags.workspaceID)
 
     const noCustomTags: Tags = eventByName(`${prefix}.ev_without_custom_tags`, reqEvents)?.tags || {}
-    expect(Object.keys(noCustomTags).length)
-      .toEqual(Object.keys(eventCustomTags).length - Object.keys(customTags).length)
+    expect(Object.keys(noCustomTags).length).toEqual(
+      Object.keys(eventCustomTags).length - Object.keys(customTags).length,
+    )
     expect(noCustomTags.app).toEqual(app)
     expect(noCustomTags.installation_id).toEqual(installationID)
   })
@@ -304,11 +306,14 @@ describe('telemetry', () => {
     let timesHTTPCalled = 0
     let testDone = false
     nock.cleanAll()
-    // eslint-disable-next-line prefer-arrow-callback
-    nockScope.post('/v1/events').delayConnection(5000).reply(201, function reply(_url, _body) {
-      timesHTTPCalled += 1
-      return 'Created'
-    })
+    nockScope
+      .post('/v1/events')
+      .delayConnection(5000)
+      // eslint-disable-next-line prefer-arrow-callback
+      .reply(201, function reply(_url, _body) {
+        timesHTTPCalled += 1
+        return 'Created'
+      })
     axios.defaults.timeout = 1
     const telemetry = telemetrySender({ ...config, flushInterval: 1 }, requiredTags)
     telemetry.sendCountEvent('ev', 1)

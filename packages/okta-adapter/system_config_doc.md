@@ -1,5 +1,7 @@
 # Okta system configuration
+
 ## Default Configuration
+
 ```hcl
 okta {
   apiDefinitions = {

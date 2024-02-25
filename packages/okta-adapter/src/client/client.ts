@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
@@ -28,8 +28,11 @@ import { OktaClientRateLimitConfig } from '../config'
 
 const { sleep } = promises.timeout
 const {
-  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS,
-  throttle, logDecorator,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  DEFAULT_RETRY_OPTS,
+  DEFAULT_TIMEOUT_OPTS,
+  throttle,
+  logDecorator,
 } = clientUtils
 const log = logger(module)
 
@@ -110,25 +113,23 @@ const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): 
   const isRateLimitResetSet = rateLimits.rateLimitReset !== INIT_RATE_LIMITS.rateLimitReset
   const isMaxPerMinuteReached = rateLimits.currentlyRunning >= rateLimits.maxPerMinute - rateLimitBuffer
 
-  return isRateLimitDisabled
-    || isInitialRequest
-    || isWithinRateLimitBuffer
-    || (
-      didRateLimitReset
-      && isRateLimitResetSet // We need to make sure we have a valid reset time
-      && !isMaxPerMinuteReached // In case there were more waiting than the max per minute, we need this safety
-    )
+  return (
+    isRateLimitDisabled ||
+    isInitialRequest ||
+    isWithinRateLimitBuffer ||
+    (didRateLimitReset &&
+      isRateLimitResetSet && // We need to make sure we have a valid reset time
+      !isMaxPerMinuteReached) // In case there were more waiting than the max per minute, we need this safety
+  )
 }
-export const updateRateLimits = (
-  rateLimits: OktaRateLimits,
-  headers: Record<string, string>,
-  url: string
-): void => {
+export const updateRateLimits = (rateLimits: OktaRateLimits, headers: Record<string, string>, url: string): void => {
   const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
   const updateMaxPerMinute = Number(headers['x-rate-limit-limit'])
   if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset) || !_.isFinite(updateMaxPerMinute)) {
-    log.warn(`Invalid get response headers for url: ${url}, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
+    log.warn(
+      `Invalid get response headers for url: ${url}, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`,
+    )
     return
   }
   // If this is a new limitation, reset the remaining count
@@ -142,9 +143,7 @@ export const updateRateLimits = (
   rateLimits.maxPerMinute = updateMaxPerMinute
 }
 
-export default class OktaClient extends clientUtils.AdapterHTTPClient<
-  Credentials, definitions.ClientRateLimitConfig
-> {
+export default class OktaClient extends clientUtils.AdapterHTTPClient<Credentials, definitions.ClientRateLimitConfig> {
   private readonly rateLimitBuffer: number
 
   private rateLimits = RATE_LIMIT_BUCKETS.map(url => ({
@@ -154,23 +153,17 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
 
   private defaultRateLimits = { ...INIT_RATE_LIMITS } // All other endpoints share the same rate limit
 
-  constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, OktaClientRateLimitConfig>
-  ) {
-    super(
-      OKTA,
-      clientOpts,
-      createConnection,
-      {
-        pageSize: DEFAULT_PAGE_SIZE,
-        rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        maxRequestsPerMinute: clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
+  constructor(clientOpts: clientUtils.ClientOpts<Credentials, OktaClientRateLimitConfig>) {
+    super(OKTA, clientOpts, createConnection, {
+      pageSize: DEFAULT_PAGE_SIZE,
+      rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+      maxRequestsPerMinute:
+        clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
           : UNLIMITED_MAX_REQUESTS_PER_MINUTE, // Unlimited because the rate max requests is calculated dynamically
-        retry: DEFAULT_RETRY_OPTS,
-        timeout: DEFAULT_TIMEOUT_OPTS,
-      }
-    )
+      retry: DEFAULT_RETRY_OPTS,
+      timeout: DEFAULT_TIMEOUT_OPTS,
+    })
     this.rateLimitBuffer = clientOpts.config?.rateLimit?.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER
   }
 
@@ -225,13 +218,10 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   }
 
   /**
-  * Clear response data values might contain secrets, returns a new object
-  */
+   * Clear response data values might contain secrets, returns a new object
+   */
   // eslint-disable-next-line class-methods-use-this
-  protected clearValuesFromResponseData(
-    responseData: Values,
-    url: string
-  ): Values {
+  protected clearValuesFromResponseData(responseData: Values, url: string): Values {
     const OMITTED_PLACEHOLER = '<OMITTED>'
     const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
       '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHOLER : undefined),
@@ -241,11 +231,9 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     if (!Object.keys(URL_TO_OMIT_FUNC).includes(url)) {
       return responseData
     }
-    const res = _.cloneDeepWith(responseData, (val, key) => (
-      (_.isString(key) && URL_TO_OMIT_FUNC[url])
-        ? URL_TO_OMIT_FUNC[url](key, val)
-        : undefined
-    ))
+    const res = _.cloneDeepWith(responseData, (val, key) =>
+      _.isString(key) && URL_TO_OMIT_FUNC[url] ? URL_TO_OMIT_FUNC[url](key, val) : undefined,
+    )
     return res
   }
 
@@ -256,9 +244,9 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       ? {
-        ...super.extractHeaders(headers),
-        ..._.pickBy(headers, (_val, key) => key.toLowerCase() === LINK_HEADER_NAME),
-      }
+          ...super.extractHeaders(headers),
+          ..._.pickBy(headers, (_val, key) => key.toLowerCase() === LINK_HEADER_NAME),
+        }
       : undefined
   }
 
@@ -276,9 +264,14 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       const response = await httpClient.get(url, { responseType })
       const { data, status } = response
       log.debug('Received response for resource request %s with status %d', url, status)
-      log.trace('Full HTTP response for resource %s: %s', url, safeJsonStringify({
-        url, response: data,
-      }))
+      log.trace(
+        'Full HTTP response for resource %s: %s',
+        url,
+        safeJsonStringify({
+          url,
+          response: data,
+        }),
+      )
       return {
         data,
         status,

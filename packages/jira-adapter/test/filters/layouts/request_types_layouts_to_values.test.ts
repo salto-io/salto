@@ -1,20 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { InstanceElement, ReferenceExpression, Element, ObjectType, ElemID, CORE_ANNOTATIONS, Value, toChange } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ReferenceExpression,
+  Element,
+  ObjectType,
+  ElemID,
+  CORE_ANNOTATIONS,
+  Value,
+  toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getDefaultConfig } from '../../../src/config/config'
 import requestTypelayoutsToValuesFilter from '../../../src/filters/layouts/request_types_layouts_to_values'
@@ -45,7 +54,7 @@ describe('requestTypelayoutsToValuesFilter', () => {
           simplified: false,
           projectTypeKey: 'service_desk',
         },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
+        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
       )
       requestTypeType = new ObjectType({
         elemID: new ElemID(JIRA, REQUEST_TYPE_NAME),
@@ -65,82 +74,66 @@ describe('requestTypelayoutsToValuesFilter', () => {
             id: '10000000',
           },
         },
-        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest']
+        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest'],
       )
-      fieldInstance1 = new InstanceElement(
-        'testField1',
-        createEmptyType('Field'),
-        {
-          id: 'testField1',
-          name: 'TestField1',
-          type: 'testField1',
-        }
-      )
-      fieldInstance2 = new InstanceElement(
-        'testField2',
-        createEmptyType('Field'),
-        {
-          id: 'testField2',
-          name: 'TestField2',
-          schema: {
-            system: 'testField2',
-          },
-        }
-      )
+      fieldInstance1 = new InstanceElement('testField1', createEmptyType('Field'), {
+        id: 'testField1',
+        name: 'TestField1',
+        type: 'testField1',
+      })
+      fieldInstance2 = new InstanceElement('testField2', createEmptyType('Field'), {
+        id: 'testField2',
+        name: 'TestField2',
+        schema: {
+          system: 'testField2',
+        },
+      })
       const requestFormType = createEmptyType(REQUEST_FORM_TYPE)
-      requestFormInstance = new InstanceElement(
-        'requestForm1',
-        requestFormType,
-        {
-          id: '1',
-          extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
-          requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
-          issueLayoutConfig: {
-            items: [
-              {
-                type: 'FIELD',
-                sectionType: 'PRIMARY',
-                key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
-                data: {
-                  properties: {
-                    'jsd.field.displayName': 'Quack',
-                    'jsd.field.helpText': 'Quack Quack',
-                  },
+      requestFormInstance = new InstanceElement('requestForm1', requestFormType, {
+        id: '1',
+        extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+        requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+        issueLayoutConfig: {
+          items: [
+            {
+              type: 'FIELD',
+              sectionType: 'PRIMARY',
+              key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+              data: {
+                properties: {
+                  'jsd.field.displayName': 'Quack',
+                  'jsd.field.helpText': 'Quack Quack',
                 },
               },
-              {
-                type: 'FIELD',
-                sectionType: 'SECONDARY',
-                key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
-              },
-            ],
-          },
+            },
+            {
+              type: 'FIELD',
+              sectionType: 'SECONDARY',
+              key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+            },
+          ],
         },
-      )
+      })
       const issueViewType = createEmptyType(ISSUE_VIEW_TYPE)
-      issueViewInstance = new InstanceElement(
-        'issueView1',
-        issueViewType,
-        {
-          id: '2',
-          extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
-          requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
-          issueLayoutConfig: {
-            items: [
-              {
-                type: 'FIELD',
-                sectionType: 'PRIMARY',
-                key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
-              },
-              {
-                type: 'FIELD',
-                sectionType: 'SECONDARY',
-                key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
-              },
-            ],
-          },
+      issueViewInstance = new InstanceElement('issueView1', issueViewType, {
+        id: '2',
+        extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+        requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+        issueLayoutConfig: {
+          items: [
+            {
+              type: 'FIELD',
+              sectionType: 'PRIMARY',
+              key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+            },
+            {
+              type: 'FIELD',
+              sectionType: 'SECONDARY',
+              key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+            },
+          ],
         },
-      )
+      })
 
       elements = [
         projectInstance,
@@ -221,24 +214,25 @@ describe('requestTypelayoutsToValuesFilter', () => {
     beforeEach(async () => {
       requestFormValue = {
         issueLayoutConfig: {
-          items: [{
-            type: 'FIELD',
-            data: {
-              properties: [
-                {
-                  key: 'jsd.field.displayName',
-                  value: 'Quack',
-                },
-                {
-                  key: 'jsd.field.helpText',
-                  value: 'Quack Quack',
-                },
-              ],
+          items: [
+            {
+              type: 'FIELD',
+              data: {
+                properties: [
+                  {
+                    key: 'jsd.field.displayName',
+                    value: 'Quack',
+                  },
+                  {
+                    key: 'jsd.field.helpText',
+                    value: 'Quack Quack',
+                  },
+                ],
+              },
             },
-          },
-          {
-            type: 'FIELD',
-          },
+            {
+              type: 'FIELD',
+            },
           ],
         },
       }
@@ -248,7 +242,7 @@ describe('requestTypelayoutsToValuesFilter', () => {
         {
           requestForm: requestFormValue,
         },
-        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest']
+        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest'],
       )
     })
     it('should convert requestForm properties to a map', async () => {
@@ -274,18 +268,19 @@ describe('requestTypelayoutsToValuesFilter', () => {
     beforeEach(async () => {
       requestFormValue = {
         issueLayoutConfig: {
-          items: [{
-            type: 'FIELD',
-            data: {
-              properties: {
-                'jsd.field.displayName': 'Quack',
-                'jsd.field.helpText': 'Quack Quack',
+          items: [
+            {
+              type: 'FIELD',
+              data: {
+                properties: {
+                  'jsd.field.displayName': 'Quack',
+                  'jsd.field.helpText': 'Quack Quack',
+                },
               },
             },
-          },
-          {
-            type: 'FIELD',
-          },
+            {
+              type: 'FIELD',
+            },
           ],
         },
       }
@@ -295,7 +290,7 @@ describe('requestTypelayoutsToValuesFilter', () => {
         {
           requestForm: requestFormValue,
         },
-        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest']
+        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest'],
       )
     })
     it('should convert requestForm properties to a list', async () => {

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
@@ -43,24 +43,22 @@ const ITEM_TYPES = [
   'downloadItem',
 ] as const
 
-type ItemType = typeof ITEM_TYPES[number]
+type ItemType = (typeof ITEM_TYPES)[number]
 
-type TypeWithMultiFieldsIdentifier = 'accountingPeriod' |
-'nexus' |
-'account' |
-'bin'
+type TypeWithMultiFieldsIdentifier = 'accountingPeriod' | 'nexus' | 'account' | 'bin'
 
-type TypeWithSingleFieldIdentifier = 'subsidiary' |
-'department' |
-'classification' |
-'location' |
-'currency' |
-'customer' |
-'employee' |
-'job' |
-'manufacturingCostTemplate' |
-'partner' |
-'solution'
+type TypeWithSingleFieldIdentifier =
+  | 'subsidiary'
+  | 'department'
+  | 'classification'
+  | 'location'
+  | 'currency'
+  | 'customer'
+  | 'employee'
+  | 'job'
+  | 'manufacturingCostTemplate'
+  | 'partner'
+  | 'solution'
 
 export type SupportedDataType = ItemType | TypeWithMultiFieldsIdentifier | TypeWithSingleFieldIdentifier
 
@@ -179,12 +177,9 @@ const ALL_TABLE_TO_INTERNAL_ID = {
   ...MANUALLY_TABLE_TO_INTERNAL_ID,
 } as const
 
-const ADDITIONAL_TABLES = [
-  'entityStatus',
-  'campaignEvent',
-] as const
+const ADDITIONAL_TABLES = ['entityStatus', 'campaignEvent'] as const
 
-export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | typeof ADDITIONAL_TABLES[number]
+export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | (typeof ADDITIONAL_TABLES)[number]
 
 const TRANSACTION_TYPES = [
   'advInterCompanyJournalEntry',
@@ -300,8 +295,7 @@ export const ITEM_TYPE_TO_SEARCH_STRING: Record<ItemType, string> = {
   downloadItem: '_downloadItem',
 }
 
-export const isItemType = (type: string): type is ItemType =>
-  type in ITEM_TYPE_TO_SEARCH_STRING
+export const isItemType = (type: string): type is ItemType => type in ITEM_TYPE_TO_SEARCH_STRING
 
 // This is used for constructing a unique identifier for data types
 // field using multiple other fields
@@ -373,10 +367,7 @@ const supportedTypesToIdentifier: Record<SupportedDataType, string> = {
 
 export const TYPE_TO_IDENTIFIER: Record<string, string> = supportedTypesToIdentifier
 
-export const getTypeIdentifier = (type: ObjectType): string => (
-  type.fields[IDENTIFIER_FIELD] !== undefined
-    ? IDENTIFIER_FIELD
-    : TYPE_TO_IDENTIFIER[type.elemID.name]
-)
+export const getTypeIdentifier = (type: ObjectType): string =>
+  type.fields[IDENTIFIER_FIELD] !== undefined ? IDENTIFIER_FIELD : TYPE_TO_IDENTIFIER[type.elemID.name]
 
 export const SUPPORTED_TYPES = Object.keys(TYPE_TO_IDENTIFIER)

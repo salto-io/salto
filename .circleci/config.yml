@@ -86,7 +86,7 @@ jobs:
           # (see: https://github.com/yarnpkg/yarn/issues/4098)
           # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
           name: ensure yarn.lock file is up to date
-          command: "! git diff --name-only | grep yarn.lock"
+          command: '! git diff --name-only | grep yarn.lock'
 
       - run:
           name: fix eslint cache
@@ -127,7 +127,7 @@ jobs:
           name: Run unit tests
           command: yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/unittests"
+            JEST_JUNIT_OUTPUT_DIR: 'reports/unittests'
             # https://github.com/pinojs/koa-pino-logger/issues/16
             FORCE_COLOR: 1
 
@@ -135,6 +135,18 @@ jobs:
           path: reports
 
       - coveralls/upload
+
+  prettier:
+    docker:
+      - image: cimg/node:14.15
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run prettier
+          command: yarn check-format --concurrency 2
 
   publish_on_version_change:
     docker:
@@ -146,7 +158,7 @@ jobs:
 
       - add_ssh_keys:
           fingerprints:
-              - "49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17"
+            - '49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17'
 
       - set_s3_pkg_urls
 
@@ -212,7 +224,7 @@ jobs:
 
       - run:
           environment:
-            PYTHON: "/usr/bin/python3"
+            PYTHON: '/usr/bin/python3'
           name: Build native executables
           command: yarn workspace @salto-io/cli package
 
@@ -370,6 +382,10 @@ workflows:
             - build
 
       - e2e_test:
+          requires:
+            - build
+
+      - prettier:
           requires:
             - build
 

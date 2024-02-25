@@ -1,20 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, isInstanceElement, MapType, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  isInstanceElement,
+  MapType,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { NETSUITE } from './constants'
 
@@ -39,13 +49,9 @@ const serverTimeType = new ObjectType({
 
 export const createServerTimeElements = (time: Date): [ObjectType, InstanceElement] => {
   log.debug(`Creating server time elements with time: ${time.toJSON()}`)
-  const instance = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    serverTimeType,
-    { serverTime: time.toJSON() },
-    undefined,
-    { [CORE_ANNOTATIONS.HIDDEN]: true },
-  )
+  const instance = new InstanceElement(ElemID.CONFIG_NAME, serverTimeType, { serverTime: time.toJSON() }, undefined, {
+    [CORE_ANNOTATIONS.HIDDEN]: true,
+  })
 
   return [serverTimeType, instance]
 }
@@ -69,13 +75,12 @@ export const getOrCreateServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
-): Promise<[ObjectType, InstanceElement]> => (isPartial
-  ? getExistingServerTimeElements(time, elementsSource)
-  : createServerTimeElements(time)
-)
+): Promise<[ObjectType, InstanceElement]> =>
+  isPartial ? getExistingServerTimeElements(time, elementsSource) : createServerTimeElements(time)
 
-export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElementsSource):
-  Promise<Record<string, Date>> => {
+export const getLastServiceIdToFetchTime = async (
+  elementsSource: ReadOnlyElementsSource,
+): Promise<Record<string, Date>> => {
   const serverTimeElement = await elementsSource.get(SERVER_TIME_INSTANCE_ID)
 
   if (!isInstanceElement(serverTimeElement)) {
@@ -88,14 +93,10 @@ export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElemen
     log.warn('instancesFetchTime value does not exists in server time instance')
     return {}
   }
-  return _.mapValues(
-    instancesFetchTime,
-    timeJson => new Date(timeJson),
-  )
+  return _.mapValues(instancesFetchTime, timeJson => new Date(timeJson))
 }
 
-export const getLastServerTime = async (elementsSource: ReadOnlyElementsSource):
-  Promise<Date | undefined> => {
+export const getLastServerTime = async (elementsSource: ReadOnlyElementsSource): Promise<Date | undefined> => {
   log.debug('Getting server time')
   const serverTimeInstance = await elementsSource.get(SERVER_TIME_INSTANCE_ID)
 

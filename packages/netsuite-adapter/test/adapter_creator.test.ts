@@ -1,21 +1,25 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
-  AdapterFailureInstallResult, AdapterSuccessInstallResult,
-  ElemID, InstanceElement, isAdapterSuccessInstallResult, ObjectType,
+  AdapterFailureInstallResult,
+  AdapterSuccessInstallResult,
+  ElemID,
+  InstanceElement,
+  isAdapterSuccessInstallResult,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -42,17 +46,13 @@ describe('NetsuiteAdapter creator', () => {
     jest.clearAllMocks()
   })
 
-  const credentials = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.authenticationMethods.basic.credentialsType,
-    {
-      accountId: 'foo-a',
-      tokenId: 'bar',
-      tokenSecret: 'secret',
-      suiteAppTokenId: '',
-      suiteAppTokenSecret: '',
-    },
-  )
+  const credentials = new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, {
+    accountId: 'foo-a',
+    tokenId: 'bar',
+    tokenSecret: 'secret',
+    suiteAppTokenId: '',
+    suiteAppTokenSecret: '',
+  })
 
   const sdfConcurrencyLimit = 2
   const fetchTypeTimeoutInMinutes = 1
@@ -64,23 +64,18 @@ describe('NetsuiteAdapter creator', () => {
     sdfConcurrencyLimit,
     notExistInClient: ['not exist in client'],
   }
-  const config = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.configType as ObjectType,
-    {
-      fetch: fullFetchConfig(),
-      skipList: {},
-      typesToSkip: ['test1'],
-      filePathRegexSkipList: ['^/Templates.*'],
-      client: clientConfig,
-    }
-  )
+  const config = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+    fetch: fullFetchConfig(),
+    skipList: {},
+    typesToSkip: ['test1'],
+    filePathRegexSkipList: ['^/Templates.*'],
+    client: clientConfig,
+  })
 
   describe('validateCredentials', () => {
     const accountId = 'testAccountId'
     const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
-    const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
-      .mockResolvedValue({ accountId })
+    const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials').mockResolvedValue({ accountId })
 
     beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
@@ -90,11 +85,13 @@ describe('NetsuiteAdapter creator', () => {
 
     it('Should call validateCredentials with the correct credentials', async () => {
       await adapter.validateCredentials(credentials)
-      expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
-        accountId: 'FOO_A',
-        tokenId: 'bar',
-        tokenSecret: 'secret',
-      }))
+      expect(netsuiteValidateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountId: 'FOO_A',
+          tokenId: 'bar',
+          tokenSecret: 'secret',
+        }),
+      )
       expect(suiteAppClientValidateMock).not.toHaveBeenCalledWith()
     })
 
@@ -155,16 +152,19 @@ describe('NetsuiteAdapter creator', () => {
             { accountType: 'INTERNAL', envType: EnvType.INTERNAL },
             { accountType: 'SANDBOX', envType: EnvType.SANDBOX },
           ]
-          test.each(envTypes)('Should return accountInfo with accountType = $accountType and isProduction = false', async ({ accountType, envType }) => {
-            suiteAppClientValidateMock.mockResolvedValueOnce({
-              time: new Date(),
-              appVersion: [1, 2, 3],
-              envType,
-            })
+          test.each(envTypes)(
+            'Should return accountInfo with accountType = $accountType and isProduction = false',
+            async ({ accountType, envType }) => {
+              suiteAppClientValidateMock.mockResolvedValueOnce({
+                time: new Date(),
+                appVersion: [1, 2, 3],
+                envType,
+              })
 
-            const accountInfo = await adapter.validateCredentials(cred)
-            expect(accountInfo).toEqual({ accountId, accountType, isProduction: false })
-          })
+              const accountInfo = await adapter.validateCredentials(cred)
+              expect(accountInfo).toEqual({ accountId, accountType, isProduction: false })
+            },
+          )
         })
       })
     })
@@ -207,8 +207,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         accountId: ' account-id',
       }
-      await expect(adapter.validateCredentials(cred)).rejects
-        .toThrow(/received an invalid accountId value.*/g)
+      await expect(adapter.validateCredentials(cred)).rejects.toThrow(/received an invalid accountId value.*/g)
     })
   })
 
@@ -254,11 +253,13 @@ describe('NetsuiteAdapter creator', () => {
         suiteAppActivationKey: '',
       }
 
-      expect(() => adapter.operations({
-        credentials: cred,
-        config,
-        elementsSource: buildElementsSourceFromElements([]),
-      })).toThrow('Missing SuiteApp login creds')
+      expect(() =>
+        adapter.operations({
+          credentials: cred,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
+      ).toThrow('Missing SuiteApp login creds')
     })
 
     it('should create the client if credentials were passed', () => {
@@ -343,10 +344,7 @@ describe('NetsuiteAdapter creator', () => {
 
     describe('validateConfig', () => {
       it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
-        const conf = new InstanceElement(
-          ElemID.CONFIG_NAME,
-        adapter.configType as ObjectType,
-        {
+        const conf = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
           fetch: fullFetchConfig(),
           client: {
             fetchAllTypesAtOnce: true,
@@ -354,8 +352,7 @@ describe('NetsuiteAdapter creator', () => {
           fetchTarget: {
             filePaths: ['aaa'],
           },
-        }
-        )
+        })
 
         adapter.operations({
           credentials,
@@ -392,443 +389,363 @@ describe('NetsuiteAdapter creator', () => {
       })
 
       it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-        adapter.configType as ObjectType,
-        {
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
           fetch: fullFetchConfig(),
           filePathRegexSkipList: ['\\'],
-        }
-        )
-        expect(
-          () => adapter.operations({
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should throw an error when fetchTarget is invalid', () => {
-        expect(
-          () => adapter.operations({
+        expect(() =>
+          adapter.operations({
             credentials,
-            config: new InstanceElement(
-              ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
+            config: new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
               fetch: fullFetchConfig(),
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
-            }
-            ),
+            }),
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow('fetchTarget.types should be an object')
-        expect(
-          () => adapter.operations({
+        expect(() =>
+          adapter.operations({
             credentials,
-            config: new InstanceElement(
-              ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
+            config: new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
               fetch: fullFetchConfig(),
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
-            }
-            ),
+            }),
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow('fetchTarget.customRecords should be an object')
-        expect(
-          () => adapter.operations({
+        expect(() =>
+          adapter.operations({
             credentials,
-            config: new InstanceElement(
-              ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
+            config: new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
               fetch: fullFetchConfig(),
               fetchTarget: {
                 types: {
                   type1: 'id',
                 },
               },
-            }
-            ),
+            }),
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow('fetchTarget.types.type1 should be a list of strings')
-        expect(
-          () => adapter.operations({
+        expect(() =>
+          adapter.operations({
             credentials,
-            config: new InstanceElement(
-              ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
+            config: new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
               fetch: fullFetchConfig(),
               fetchTarget: {
                 customRecords: {
                   customrecord1: 'id',
                 },
               },
-            }
-            ),
+            }),
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow('fetchTarget.customRecords.customrecord1 should be a list of strings')
       })
 
       it('should throw an error when include is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-        adapter.configType as ObjectType,
-        {
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
           fetch: {
             include: {
               types: 'supposed to be an array',
             },
             exclude: emptyQueryParams(),
           },
-        }
-        )
-        expect(
-          () => adapter.operations({
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should throw an error when exclude is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-        adapter.configType as ObjectType,
-        {
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
           fetch: {
             include: fullQueryParams(),
             exclude: {
-              types: [
-                { name: ['should be a string'] },
-              ],
+              types: [{ name: ['should be a string'] }],
             },
           },
-        }
-        )
-        expect(
-          () => adapter.operations({
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should throw an error when fieldsToOmit is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-        adapter.configType as ObjectType,
-        {
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
           fetch: {
             include: fullQueryParams(),
             exclude: emptyQueryParams(),
-            fieldsToOmit: [{
-              type: 'a',
-            }],
+            fieldsToOmit: [
+              {
+                type: 'a',
+              },
+            ],
           },
-        }
-        )
-        expect(
-          () => adapter.operations({
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
     })
 
     describe('deploy params', () => {
       it('should throw an error when deployReferencedElements is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            deploy: {
-              deployReferencedElements: 'should be a boolean',
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          deploy: {
+            deployReferencedElements: 'should be a boolean',
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should throw an error when warnOnStaleWorkspaceData is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            deploy: {
-              warnOnStaleWorkspaceData: 'should be a boolean',
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          deploy: {
+            warnOnStaleWorkspaceData: 'should be a boolean',
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
-      it('should throw an error when \'validate\' is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            deploy: {
-              validate: 'should be a boolean',
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+      it("should throw an error when 'validate' is invalid", () => {
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          deploy: {
+            validate: 'should be a boolean',
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
       describe('additionalDependencies', () => {
         it('should not throw', () => {
-          const validConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: {
-                    features: ['feature1'],
-                    objects: ['object1'],
-                    files: ['file1'],
-                  },
-                  exclude: {
-                    features: ['feature2'],
-                    objects: ['object2'],
-                    files: ['fil2'],
-                  },
+          const validConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: {
+                  features: ['feature1'],
+                  objects: ['object1'],
+                  files: ['file1'],
+                },
+                exclude: {
+                  features: ['feature2'],
+                  objects: ['object2'],
+                  files: ['fil2'],
                 },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: validConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).not.toThrow()
         })
         it('should throw an error when additionalDependencies is invalid', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: 'should be an object',
-              },
-            }
-          )
-          expect(
-            () => adapter.operations({
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: 'should be an object',
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
         it('should throw an error when additionalDependencies.include is invalid', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: { features: ['should be list of strings', 1] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: { features: ['should be list of strings', 1] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
         it('should throw an error when files in additionalDependencies is invalid', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: { files: ['should be list of strings', 1] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: { files: ['should be list of strings', 1] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
         it('should throw an error when additionalDependencies.exclude is invalid', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  exclude: { objects: ['should be list of strings', 1] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                exclude: { objects: ['should be list of strings', 1] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
         it('should throw an error when additionalDependencies has conflicting features', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: { features: ['feature'] },
-                  exclude: { features: ['feature'] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: { features: ['feature'] },
+                exclude: { features: ['feature'] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
         it('should throw an error when additionalDependencies has conflicting features (with required)', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: { features: ['feature:required'] },
-                  exclude: { features: ['feature'] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: { features: ['feature:required'] },
+                exclude: { features: ['feature'] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
         it('should throw an error when additionalDependencies has conflicting objects', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: { objects: ['script_id'] },
-                  exclude: { objects: ['script_id'] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: { objects: ['script_id'] },
+                exclude: { objects: ['script_id'] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
 
         it('should throw an Error when additionalDependencies has conflicting files', () => {
-          const invalidConfig = new InstanceElement(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType,
-            {
-              fetch: fullFetchConfig(),
-              deploy: {
-                additionalDependencies: {
-                  include: { files: ['/Folder/filePath'] },
-                  exclude: { files: ['/Folder/filePath'] },
-                },
+          const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+            fetch: fullFetchConfig(),
+            deploy: {
+              additionalDependencies: {
+                include: { files: ['/Folder/filePath'] },
+                exclude: { files: ['/Folder/filePath'] },
               },
-            }
-          )
-          expect(
-            () => adapter.operations({
+            },
+          })
+          expect(() =>
+            adapter.operations({
               credentials,
               config: invalidConfig,
               getElemIdFunc: mockGetElemIdFunc,
               elementsSource: buildElementsSourceFromElements([]),
-            })
+            }),
           ).toThrow()
         })
       })
@@ -836,86 +753,70 @@ describe('NetsuiteAdapter creator', () => {
 
     describe('installedSuiteApps', () => {
       it('should throw an error when installedSuiteApps is not a list', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            client: {
-              installedSuiteApps: 2,
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          client: {
+            installedSuiteApps: 2,
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should throw an error when installedSuiteApps has an item that is not a string', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            client: {
-              installedSuiteApps: ['a.b.c', 2],
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          client: {
+            installedSuiteApps: ['a.b.c', 2],
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should throw an error when installedSuiteApps has an item that is not a valid id', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            client: {
-              installedSuiteApps: ['a', 'a.b.c'],
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+        const invalidConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          client: {
+            installedSuiteApps: ['a', 'a.b.c'],
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).toThrow()
       })
 
       it('should not throw an error when installedSuiteApps is valid', () => {
-        const validConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            fetch: fullFetchConfig(),
-            client: {
-              installedSuiteApps: ['a.b.c', 'b.c.d'],
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
+        const validConfig = new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, {
+          fetch: fullFetchConfig(),
+          client: {
+            installedSuiteApps: ['a.b.c', 'b.c.d'],
+          },
+        })
+        expect(() =>
+          adapter.operations({
             credentials,
             config: validConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
-          })
+          }),
         ).not.toThrow()
       })
     })

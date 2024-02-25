@@ -1,19 +1,26 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ObjectType,
+  ElemID,
+  Element,
+  InstanceElement,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
@@ -31,62 +38,49 @@ describe('query filter', () => {
     const conn2 = new InstanceElement('sb2', connectionType, { name: 'sandbox 2' })
     const folderType = new ObjectType({ elemID: new ElemID('salto', 'folder') })
     const folder1 = new InstanceElement('folder1', folderType, { name: 'folder 1' })
-    const folder2 = new InstanceElement(
-      'folder2',
-      folderType,
-      { name: 'folder 2' },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder1.elemID)] },
-    )
-    const folder3 = new InstanceElement(
-      'folder3',
-      folderType,
-      { name: 'folder 3' },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder2.elemID)] },
-    )
+    const folder2 = new InstanceElement('folder2', folderType, { name: 'folder 2' }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder1.elemID)],
+    })
+    const folder3 = new InstanceElement('folder3', folderType, { name: 'folder 3' }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(folder2.elemID)],
+    })
 
     const itemType = new ObjectType({ elemID: new ElemID('salto', 'item') })
     const innerType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
-    const item1 = new InstanceElement(
-      'item1',
-      itemType,
-      {
-        name: 'item1',
-        folder_id: new ReferenceExpression(folder1.elemID),
-      },
-    )
-    const inner1 = new InstanceElement(
-      'inner1',
-      innerType,
-      { name: 'ignored' },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(item1.elemID)] },
-    )
-    const item2 = new InstanceElement(
-      'item2',
-      itemType,
-      {
-        name: 'item2',
-        folder_id: new ReferenceExpression(folder2.elemID),
-      },
-    )
-    const inner2 = new InstanceElement(
-      'inner2',
-      innerType,
-      { name: 'ignored' },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(item2.elemID)] },
-    )
+    const item1 = new InstanceElement('item1', itemType, {
+      name: 'item1',
+      folder_id: new ReferenceExpression(folder1.elemID),
+    })
+    const inner1 = new InstanceElement('inner1', innerType, { name: 'ignored' }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(item1.elemID)],
+    })
+    const item2 = new InstanceElement('item2', itemType, {
+      name: 'item2',
+      folder_id: new ReferenceExpression(folder2.elemID),
+    })
+    const inner2 = new InstanceElement('inner2', innerType, { name: 'ignored' }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(item2.elemID)],
+    })
 
     const extraType = new ObjectType({ elemID: new ElemID('salto', 'extra') })
     const extra1 = new InstanceElement('extra1', extraType, {})
 
     return [
-      connectionType, conn1, conn2,
-      folderType, folder1, folder2, folder3,
-      itemType, innerType, item1, item2, inner1, inner2,
-      extraType, extra1,
+      connectionType,
+      conn1,
+      conn2,
+      folderType,
+      folder1,
+      folder2,
+      folder3,
+      itemType,
+      innerType,
+      item1,
+      item2,
+      inner1,
+      inner2,
+      extraType,
+      extra1,
     ]
   }
 
@@ -129,10 +123,10 @@ describe('query filter', () => {
         jest.clearAllMocks()
         fetchQuery = createMockQuery()
         elements = generateElements()
-        fetchQuery.isInstanceMatch.mockImplementation(instance => (
-          instance.elemID.typeName !== 'extra'
-          && instance.elemID.getFullName() !== 'salto.folder.instance.folder2'
-        ))
+        fetchQuery.isInstanceMatch.mockImplementation(
+          instance =>
+            instance.elemID.typeName !== 'extra' && instance.elemID.getFullName() !== 'salto.folder.instance.folder2',
+        )
         filter = queryFilterCreator({})({
           client: {} as unknown,
           paginator: undefined as unknown as Paginator,
@@ -163,10 +157,10 @@ describe('query filter', () => {
         jest.clearAllMocks()
         fetchQuery = createMockQuery()
         elements = generateElements()
-        fetchQuery.isInstanceMatch.mockImplementation(instance => (
-          instance.elemID.typeName !== 'extra'
-          && instance.elemID.getFullName() !== 'salto.folder.instance.folder2'
-        ))
+        fetchQuery.isInstanceMatch.mockImplementation(
+          instance =>
+            instance.elemID.typeName !== 'extra' && instance.elemID.getFullName() !== 'salto.folder.instance.folder2',
+        )
         filter = queryFilterCreator({
           additionalParentFields: {
             item: ['folder_id'],

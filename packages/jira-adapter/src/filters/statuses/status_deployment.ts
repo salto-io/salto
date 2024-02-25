@@ -1,19 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  isInstanceElement,
+  isInstanceChange,
+  getChangeData,
+  Change,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isModificationChange,
+  AdditionChange,
+  ModificationChange,
+  Values,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
@@ -27,7 +40,7 @@ import JiraClient from '../../client/client'
 
 const log = logger(module)
 const MAX_RETRIES = 3
-const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
+const STATUS_CATEGORY_NAME_TO_ID: Record<string, number> = {
   TODO: 2,
   DONE: 3,
   IN_PROGRESS: 4,
@@ -43,35 +56,36 @@ const STATUS_RESPONSE_SCHEME = Joi.array().items(
   Joi.object({
     id: Joi.string().required(),
     name: Joi.string().required(),
-  }).unknown(true).required(),
+  })
+    .unknown(true)
+    .required(),
 )
 
-const isStatusResponse = createSchemeGuard<StatusResponse>(STATUS_RESPONSE_SCHEME, 'Received an invalid status addition response')
+const isStatusResponse = createSchemeGuard<StatusResponse>(
+  STATUS_RESPONSE_SCHEME,
+  'Received an invalid status addition response',
+)
 
-const createDeployableStatusValues = (
-  statusChange: Change<InstanceElement>
-): Values => {
+const createDeployableStatusValues = (statusChange: Change<InstanceElement>): Values => {
   const { value } = getChangeData(statusChange)
   const deployableValue = _.clone(value)
   if (isResolvedReferenceExpression(value.statusCategory)) {
     // resolve statusCategory value before deploy
-    const resolvedCategory = INVERTED_STATUS_CATEGORY_NAME_TO_ID[
-      value.statusCategory.value.value.id
-    ]
+    const resolvedCategory = INVERTED_STATUS_CATEGORY_NAME_TO_ID[value.statusCategory.value.value.id]
     deployableValue.statusCategory = resolvedCategory
   }
   return deployableValue
 }
 
-const retry = async <T>(
-  fn: () => Promise<T>,
-  retries: number = MAX_RETRIES,
-): Promise<T> => {
+const retry = async <T>(fn: () => Promise<T>, retries: number = MAX_RETRIES): Promise<T> => {
   try {
     return await fn()
   } catch (error) {
-    if (error instanceof clientUtils.HTTPError && Array.isArray(error.response.data.errorMessages)
-      && error.response?.data?.errorMessages?.some((message: string) => message.includes('Failed to acquire lock'))) {
+    if (
+      error instanceof clientUtils.HTTPError &&
+      Array.isArray(error.response.data.errorMessages) &&
+      error.response?.data?.errorMessages?.some((message: string) => message.includes('Failed to acquire lock'))
+    ) {
       if (retries === 1) {
         throw error
       }
@@ -92,13 +106,11 @@ const modifyStatus = async (
       data: {
         statuses: [createDeployableStatusValues(modificationChange)],
       },
-    }))
+    }),
+  )
 }
 
-const addStatus = async (
-  additionChange: AdditionChange<InstanceElement>,
-  client: JiraClient,
-): Promise<void> => {
+const addStatus = async (additionChange: AdditionChange<InstanceElement>, client: JiraClient): Promise<void> => {
   const response = await retry(async () =>
     client.post({
       url: '/rest/api/3/statuses',
@@ -108,10 +120,13 @@ const addStatus = async (
         },
         statuses: [createDeployableStatusValues(additionChange)],
       },
-    }))
+    }),
+  )
 
   if (!isStatusResponse(response.data)) {
-    throw new Error(`Received an invalid status response when attempting to create status: ${additionChange.data.after.elemID.getFullName()}`)
+    throw new Error(
+      `Received an invalid status response when attempting to create status: ${additionChange.data.after.elemID.getFullName()}`,
+    )
   }
   getChangeData(additionChange).value.id = response.data[0].id
 }
@@ -136,8 +151,8 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.value.statusCategory !== undefined)
       .forEach(instance => {
         // statusCategory has a fixed number of options so we map the statusCategory name to its id
-        instance.value.statusCategory = STATUS_CATEGORY_NAME_TO_ID[instance.value.statusCategory]
-        ?? instance.value.statusCategory
+        instance.value.statusCategory =
+          STATUS_CATEGORY_NAME_TO_ID[instance.value.statusCategory] ?? instance.value.statusCategory
       })
 
     if (!config.client.usePrivateAPI) {
@@ -162,9 +177,10 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === STATUS_TYPE_NAME
+      change =>
+        isInstanceChange(change) &&
+        isAdditionOrModificationChange(change) &&
+        getChangeData(change).elemID.typeName === STATUS_TYPE_NAME,
     )
 
     if (relevantChanges.length === 0) {
@@ -178,9 +194,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
 
     const deployResult = await deployChanges(
-      relevantChanges
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange),
+      relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
       async change => deployStatus(change, client),
     )
 

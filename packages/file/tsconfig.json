@@ -1,18 +1,10 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "baseUrl": ".",
-        "declaration": true
-    },
-    "include": [
-        "src/**/*",
-        "test/**/*",
-        "index.ts"
-    ],
-    "references": [
-        { "path": "../lowerdash" },
-	{ "path": "../logging" },
-    ]
-
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true
+  },
+  "include": ["src/**/*", "test/**/*", "index.ts"],
+  "references": [{ "path": "../lowerdash" }, { "path": "../logging" }]
 }

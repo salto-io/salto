@@ -1,20 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { InstanceElement, isObjectType, isInstanceElement, Values, CORE_ANNOTATIONS, ReferenceExpression, isInstanceChange, getChangeData, Change, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  isObjectType,
+  isInstanceElement,
+  Values,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  isInstanceChange,
+  getChangeData,
+  Change,
+  isAdditionChange,
+  AdditionChange,
+} from '@salto-io/adapter-api'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
@@ -44,12 +56,12 @@ const getUserSchemaId = (instance: InstanceElement): string | undefined => {
   return undefined
 }
 
-const getUserSchema = async (
-  userSchemaId: string,
-  client: OktaClient
-): Promise<Values> => (await client.get({
-  url: `/api/v1/meta/schemas/user/${userSchemaId}`,
-})).data as Values[]
+const getUserSchema = async (userSchemaId: string, client: OktaClient): Promise<Values> =>
+  (
+    await client.get({
+      url: `/api/v1/meta/schemas/user/${userSchemaId}`,
+    })
+  ).data as Values[]
 
 /**
  * 1. onFetch: Fetch UserSchema instances and add UserType as parent to its UserSchema instance
@@ -68,33 +80,39 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
 
     const schemaIdToUserType = Object.fromEntries(
-      userTypeInstances.map(userType => [getUserSchemaId(userType), userType])
+      userTypeInstances.map(userType => [getUserSchemaId(userType), userType]),
     )
     const userSchemaIds = Object.keys(schemaIdToUserType)
-    const userSchemaEntries = (await Promise.all(
-      userSchemaIds.map(async userSchemaId => {
-        try {
-          const entry = await getUserSchema(userSchemaId, client)
-          // update UserSchema id in entry
-          entry.id = userSchemaId
-          return entry
-        } catch (e) {
-          log.error('Error while trying to get userSchema entry with id: %s, error: %s', userSchemaId, e)
-        }
-        return undefined
-      })
-    )).filter(isDefined)
+    const userSchemaEntries = (
+      await Promise.all(
+        userSchemaIds.map(async userSchemaId => {
+          try {
+            const entry = await getUserSchema(userSchemaId, client)
+            // update UserSchema id in entry
+            entry.id = userSchemaId
+            return entry
+          } catch (e) {
+            log.error('Error while trying to get userSchema entry with id: %s, error: %s', userSchemaId, e)
+          }
+          return undefined
+        }),
+      )
+    ).filter(isDefined)
 
-    const userSchemaInstances = await Promise.all(userSchemaEntries.map(async (entry, index) => toBasicInstance({
-      entry,
-      type: userSchemaType,
-      transformationConfigByType: getTransformationConfigByType(config[API_DEFINITIONS_CONFIG].types),
-      transformationDefaultConfig: config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
-      nestName: undefined,
-      parent: undefined,
-      defaultName: `unnamed_${index}`,
-      getElemIdFunc: undefined,
-    })))
+    const userSchemaInstances = await Promise.all(
+      userSchemaEntries.map(async (entry, index) =>
+        toBasicInstance({
+          entry,
+          type: userSchemaType,
+          transformationConfigByType: getTransformationConfigByType(config[API_DEFINITIONS_CONFIG].types),
+          transformationDefaultConfig: config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+          nestName: undefined,
+          parent: undefined,
+          defaultName: `unnamed_${index}`,
+          getElemIdFunc: undefined,
+        }),
+      ),
+    )
 
     // Add UserType instance as parent to UserSchema instance
     userSchemaInstances.forEach(instance => {
@@ -116,18 +134,17 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(async change => {
         const userTypeValues = getParents(getChangeData(change))?.[0]
         if (!isUserType(userTypeValues)) {
-          log.error(`Failed to find matching UserType instance for UserSchema: ${getChangeData(change).elemID.getFullName()}, can not updadate id`)
+          log.error(
+            `Failed to find matching UserType instance for UserSchema: ${getChangeData(change).elemID.getFullName()}, can not updadate id`,
+          )
           return
         }
         // get schemaId from the parent UserType _links object
         const schemaId = extractIdFromUrl(userTypeValues[LINKS_FIELD].schema.href)
-        await applyFunctionToChangeData<AdditionChange<InstanceElement>>(
-          change,
-          async instance => {
-            instance.value.id = schemaId
-            return instance
-          }
-        )
+        await applyFunctionToChangeData<AdditionChange<InstanceElement>>(change, async instance => {
+          instance.value.id = schemaId
+          return instance
+        })
       })
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
@@ -142,13 +159,10 @@ const filter: FilterCreator = ({ client, config }) => ({
           log.error(`Failed to update id for UserSchema instance: ${getChangeData(change).elemID.getFullName()}`)
           return
         }
-        await applyFunctionToChangeData<AdditionChange<InstanceElement>>(
-          change,
-          async instance => {
-            instance.value.id = id
-            return instance
-          }
-        )
+        await applyFunctionToChangeData<AdditionChange<InstanceElement>>(change, async instance => {
+          instance.value.id = id
+          return instance
+        })
       })
   },
 })

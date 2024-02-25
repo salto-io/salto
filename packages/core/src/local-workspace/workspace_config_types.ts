@@ -1,27 +1,33 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import _ from 'lodash'
 import { EnvConfig, WorkspaceConfig } from '@salto-io/workspace'
-import { InstanceElement, ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ListType,
+  MapType,
+} from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
-export type WorkspaceMetadataConfig = Pick<
-  WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes' | 'state'
->
+export type WorkspaceMetadataConfig = Pick<WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes' | 'state'>
 export type EnvsConfig = Pick<WorkspaceConfig, 'envs'>
 export type UserDataConfig = Pick<WorkspaceConfig, 'currentEnv'>
 
@@ -70,18 +76,13 @@ const workspaceMetadataConfigType = new ObjectType({
   isSettings: true,
 })
 
-export const workspaceConfigTypes = [
-  envsConfigType, userDataConfigType, envConfigType, workspaceMetadataConfigType,
-]
+export const workspaceConfigTypes = [envsConfigType, userDataConfigType, envConfigType, workspaceMetadataConfigType]
 
-export const userDataConfigInstance = (
-  pref: UserDataConfig
-): InstanceElement => new InstanceElement(USER_CONFIG_NAME, userDataConfigType, pref)
+export const userDataConfigInstance = (pref: UserDataConfig): InstanceElement =>
+  new InstanceElement(USER_CONFIG_NAME, userDataConfigType, pref)
 
 export const envsConfigInstance = (envs: EnvsConfig): InstanceElement =>
   new InstanceElement(ENVS_CONFIG_NAME, envsConfigType, envs)
 
-export const workspaceMetadataConfigInstance = (
-  wsConfig: WorkspaceMetadataConfig
-): InstanceElement =>
+export const workspaceMetadataConfigInstance = (wsConfig: WorkspaceMetadataConfig): InstanceElement =>
   new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceMetadataConfigType, _.omitBy(wsConfig, _.isUndefined))

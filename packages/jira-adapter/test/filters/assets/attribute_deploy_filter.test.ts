@@ -1,22 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
@@ -30,14 +38,10 @@ describe('deployAttributesFilter', () => {
   let filter: FilterType
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
-  const assetsObjectTypeInstance = new InstanceElement(
-    'assetsObjectType',
-    createEmptyType(OBJECT_TYPE_TYPE),
-    {
-      id: '11111',
-      name: 'ObjectType',
-    },
-  )
+  const assetsObjectTypeInstance = new InstanceElement('assetsObjectType', createEmptyType(OBJECT_TYPE_TYPE), {
+    id: '11111',
+    name: 'ObjectType',
+  })
   const attributeType = new ObjectType({
     elemID: new ElemID(JIRA, OBJECT_TYPE_ATTRIBUTE_TYPE),
     fields: {
@@ -57,19 +61,16 @@ describe('deployAttributesFilter', () => {
       connection = conn
       elementsSource = buildElementsSourceFromElements([assetsObjectTypeInstance])
       filter = deployAttributesFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
-      attributesInstance = new InstanceElement(
-        'attributesInstance',
-        attributeType,
-        {
-          id: '11',
-          name: 'attributesInstance',
-          objectType: new ReferenceExpression(assetsObjectTypeInstance.elemID, assetsObjectTypeInstance),
-          type: 0,
-          defaultTypeId: 0,
-          description: 'description',
-          uniqueAttribute: false,
-        },
-      )
+      attributesInstance = new InstanceElement('attributesInstance', attributeType, {
+        id: '11',
+        name: 'attributesInstance',
+        objectType: new ReferenceExpression(assetsObjectTypeInstance.elemID, assetsObjectTypeInstance),
+        type: 0,
+        defaultTypeId: 0,
+        description: 'description',
+        uniqueAttribute: false,
+        additionalValue: 'additionalValue',
+      })
       connection.get.mockImplementation(async url => {
         if (url === '/rest/servicedeskapi/assets/workspace') {
           return {
@@ -118,6 +119,18 @@ describe('deployAttributesFilter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledTimes(1)
+      expect(connection.put).toHaveBeenCalledWith(
+        'gateway/api/jsm/assets/workspace/workspaceId/v1/objecttypeattribute/11/configure',
+        {
+          name: 'attributesInstance',
+          type: 0,
+          id: '11',
+          defaultTypeId: 0,
+          description: 'description',
+          uniqueAttribute: false,
+        },
+        undefined,
+      )
     })
     it('should modify attribute when changing values for first api', async () => {
       const attributesInstanceAfter = attributesInstance.clone()
@@ -140,6 +153,18 @@ describe('deployAttributesFilter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(0)
       expect(connection.put).toHaveBeenCalledTimes(2)
+      expect(connection.put).toHaveBeenCalledWith(
+        'gateway/api/jsm/assets/workspace/workspaceId/v1/objecttypeattribute/11/configure',
+        {
+          name: 'attributesInstance',
+          type: 0,
+          id: '11',
+          defaultTypeId: 0,
+          description: 'description',
+          uniqueAttribute: true,
+        },
+        undefined,
+      )
     })
     it('should remove attribute', async () => {
       const changes = [toChange({ before: attributesInstance })]

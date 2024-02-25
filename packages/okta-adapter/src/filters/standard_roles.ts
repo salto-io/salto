@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Element, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { naclCase, findObjectType } from '@salto-io/adapter-utils'
@@ -51,17 +51,19 @@ const filter: FilterCreator = () => ({
     if (roleObjectType === undefined) {
       return
     }
-    const standardRoles = Object.keys(ROLE_TYPE_TO_LABEL).map(roleTypeName =>
-      new InstanceElement(
-        naclCase(ROLE_TYPE_TO_LABEL[roleTypeName]),
-        roleObjectType,
-        {
-          id: roleTypeName,
-          label: ROLE_TYPE_TO_LABEL[roleTypeName],
-          type: roleTypeName,
-        },
-        [OKTA, RECORDS_PATH, ROLE_TYPE_NAME, roleTypeName],
-      ))
+    const standardRoles = Object.keys(ROLE_TYPE_TO_LABEL).map(
+      roleTypeName =>
+        new InstanceElement(
+          naclCase(ROLE_TYPE_TO_LABEL[roleTypeName]),
+          roleObjectType,
+          {
+            id: roleTypeName,
+            label: ROLE_TYPE_TO_LABEL[roleTypeName],
+            type: roleTypeName,
+          },
+          [OKTA, RECORDS_PATH, ROLE_TYPE_NAME, roleTypeName],
+        ),
+    )
     elements.push(...standardRoles)
   },
 })

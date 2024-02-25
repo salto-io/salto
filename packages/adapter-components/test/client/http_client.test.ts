@@ -1,23 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { mockFunction } from '@salto-io/test-utils'
 import { ClientRateLimitConfig } from '../../src/definitions/user/client_config'
-import { AdapterHTTPClient, APIConnection, ClientOpts, ConnectionCreator, HTTPError, UnauthorizedError } from '../../src/client'
+import {
+  AdapterHTTPClient,
+  APIConnection,
+  ClientOpts,
+  ConnectionCreator,
+  HTTPError,
+  UnauthorizedError,
+} from '../../src/client'
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'
 
@@ -37,31 +44,22 @@ describe('client_http_client', () => {
     mockAxiosAdapter.restore()
   })
 
-  class MyCustomClient extends AdapterHTTPClient<
-    Credentials, ClientRateLimitConfig
-  > {
-    constructor(
-      clientOpts: ClientOpts<Credentials, ClientRateLimitConfig>,
-    ) {
-      super(
-        'MyCustom',
-        clientOpts,
-        mockCreateConnection,
-        {
-          pageSize: { get: 123 },
-          rateLimit: { total: -1, get: 3, deploy: 4 },
-          maxRequestsPerMinute: -1,
-          retry: {
-            maxAttempts: 3,
-            retryDelay: 123,
-            additionalStatusCodesToRetry: STATUSES_TO_RETRY,
-          },
-          timeout: {
-            lastRetryNoTimeout: true,
-            retryOnTimeout: true,
-          },
-        }
-      )
+  class MyCustomClient extends AdapterHTTPClient<Credentials, ClientRateLimitConfig> {
+    constructor(clientOpts: ClientOpts<Credentials, ClientRateLimitConfig>) {
+      super('MyCustom', clientOpts, mockCreateConnection, {
+        pageSize: { get: 123 },
+        rateLimit: { total: -1, get: 3, deploy: 4 },
+        maxRequestsPerMinute: -1,
+        retry: {
+          maxAttempts: 3,
+          retryDelay: 123,
+          additionalStatusCodesToRetry: STATUSES_TO_RETRY,
+        },
+        timeout: {
+          lastRetryNoTimeout: true,
+          retryOnTimeout: true,
+        },
+      })
     }
   }
 
@@ -153,7 +151,9 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(200, {
         accountId: 'ACCOUNT_ID',
       })
-      mockAxiosAdapter.onHead('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      mockAxiosAdapter
+        .onHead('/ep')
+        .replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
       mockAxiosAdapter.onHead('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const res = await client.head({ url: '/ep' })
@@ -169,7 +169,6 @@ describe('client_http_client', () => {
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
     })
-
 
     it('should throw HTTPError on http errors', async () => {
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
@@ -194,7 +193,9 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(200, {
         accountId: 'ACCOUNT_ID',
       })
-      mockAxiosAdapter.onOptions('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      mockAxiosAdapter
+        .onOptions('/ep')
+        .replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
       mockAxiosAdapter.onOptions('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const res = await client.options({ url: '/ep' })
@@ -210,7 +211,6 @@ describe('client_http_client', () => {
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
     })
-
 
     it('should throw HTTPError on http errors', async () => {
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })

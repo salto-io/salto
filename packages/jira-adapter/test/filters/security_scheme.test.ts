@@ -1,19 +1,32 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isReferenceExpression, ListType, ObjectType, ReferenceExpression, SeverityLevel, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isReferenceExpression,
+  ListType,
+  ObjectType,
+  ReferenceExpression,
+  SeverityLevel,
+  toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -69,44 +82,31 @@ describe('securitySchemeFilter', () => {
       },
     })
 
-    securityLevelInstance = new InstanceElement(
-      'securityLevel',
-      securityLevelType,
-      {
-        name: 'securityLevelName',
-        description: 'securityLevelDesc',
-        members: [
-          {
-            holder: {
-              type: 'group',
-              parameter: 'atlassian-addons-admin',
-            },
+    securityLevelInstance = new InstanceElement('securityLevel', securityLevelType, {
+      name: 'securityLevelName',
+      description: 'securityLevelDesc',
+      members: [
+        {
+          holder: {
+            type: 'group',
+            parameter: 'atlassian-addons-admin',
           },
-          {
-            holder: {
-              type: 'projectLead',
-            },
+        },
+        {
+          holder: {
+            type: 'projectLead',
           },
-        ],
-      }
-    )
+        },
+      ],
+    })
 
-    securitySchemeInstance = new InstanceElement(
-      'securityScheme',
-      securitySchemeType,
-      {
-        id: '1',
-        name: 'securitySchemeName',
-        description: 'securitySchemeDesc',
-        levels: [
-          new ReferenceExpression(securityLevelInstance.elemID, securityLevelInstance),
-        ],
-        defaultLevel: new ReferenceExpression(
-          securityLevelInstance.elemID,
-          securityLevelInstance.clone()
-        ),
-      }
-    )
+    securitySchemeInstance = new InstanceElement('securityScheme', securitySchemeType, {
+      id: '1',
+      name: 'securitySchemeName',
+      description: 'securitySchemeDesc',
+      levels: [new ReferenceExpression(securityLevelInstance.elemID, securityLevelInstance)],
+      defaultLevel: new ReferenceExpression(securityLevelInstance.elemID, securityLevelInstance.clone()),
+    })
 
     securityLevelInstance.value.id = '2'
 
@@ -120,11 +120,13 @@ describe('securitySchemeFilter', () => {
       client = cli
 
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-      filter = securitySchemeFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      filter = securitySchemeFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
     })
     describe('onFetch', () => {
       it('should add deployment annotations', async () => {
@@ -251,8 +253,7 @@ describe('securitySchemeFilter', () => {
 
       it('should add defaultLevel to securityScheme', async () => {
         const originalScheme = securitySchemeInstance.clone()
-        securitySchemeInstance.value.defaultSecurityLevelId = securitySchemeInstance.value
-          .defaultLevel
+        securitySchemeInstance.value.defaultSecurityLevelId = securitySchemeInstance.value.defaultLevel
         delete securitySchemeInstance.value.defaultLevel
 
         await filter.onFetch([securitySchemeInstance])
@@ -264,9 +265,7 @@ describe('securitySchemeFilter', () => {
     describe('deploy', () => {
       let deployWithJspEndpointsMock: jest.MockedFunction<typeof deployWithJspEndpoints>
       beforeEach(() => {
-        deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<
-          typeof deployWithJspEndpoints
-        >
+        deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<typeof deployWithJspEndpoints>
 
         deployWithJspEndpointsMock.mockClear()
 
@@ -315,27 +314,24 @@ describe('securitySchemeFilter', () => {
 
         expect(deployWithJspEndpointsMock).toHaveBeenNthCalledWith(3, {
           changes: [
-            toChange({ after: new InstanceElement(
-              'group-atlassian-addons-admin',
-              securityMemberType,
-              {
+            toChange({
+              after: new InstanceElement('group-atlassian-addons-admin', securityMemberType, {
                 name: 'group-atlassian-addons-admin',
                 schemeId: '1',
                 security: '2',
                 type: 'group',
                 group: 'atlassian-addons-admin',
-              }
-            ) }),
-            toChange({ after: new InstanceElement(
-              'projectLead-undefined',
-              securityMemberType,
-              {
+              }),
+            }),
+            toChange({
+              after: new InstanceElement('projectLead-undefined', securityMemberType, {
                 name: 'projectLead-undefined',
                 schemeId: '1',
                 security: '2',
                 type: 'lead',
-              }
-            ) })],
+              }),
+            }),
+          ],
           client,
           urls: {
             add: '/secure/admin/AddIssueSecurity.jspa',
@@ -392,9 +388,7 @@ describe('securitySchemeFilter', () => {
           errors: [{ message: 'error', severity: 'Error' as SeverityLevel }],
         })
 
-        const { deployResult } = await filter.deploy([
-          toChange({ after: securityLevelInstance }),
-        ])
+        const { deployResult } = await filter.deploy([toChange({ after: securityLevelInstance })])
 
         expect(deployResult.errors).toHaveLength(1)
         expect(deployResult.appliedChanges).toHaveLength(0)
@@ -431,25 +425,22 @@ describe('securitySchemeFilter', () => {
 
         expect(deployWithJspEndpointsMock).toHaveBeenNthCalledWith(2, {
           changes: [
-            toChange({ before: new InstanceElement(
-              'other-undefined',
-              securityMemberType,
-              {
+            toChange({
+              before: new InstanceElement('other-undefined', securityMemberType, {
                 name: 'other-undefined',
                 schemeId: '1',
                 id: '3',
-              }
-            ) }),
-            toChange({ after: new InstanceElement(
-              'projectLead-undefined',
-              securityMemberType,
-              {
+              }),
+            }),
+            toChange({
+              after: new InstanceElement('projectLead-undefined', securityMemberType, {
                 name: 'projectLead-undefined',
                 schemeId: '1',
                 security: '2',
                 type: 'lead',
-              }
-            ) })],
+              }),
+            }),
+          ],
           client,
           urls: {
             add: '/secure/admin/AddIssueSecurity.jspa',
@@ -485,9 +476,9 @@ describe('securitySchemeFilter', () => {
       it('should return an error if there are no jsp urls for security level members', async () => {
         delete config.apiDefinitions.types[SECURITY_LEVEL_MEMBER_TYPE].jspRequests
 
-        const { deployResult: { errors, appliedChanges } } = await filter.deploy(
-          [toChange({ after: securityLevelInstance })]
-        )
+        const {
+          deployResult: { errors, appliedChanges },
+        } = await filter.deploy([toChange({ after: securityLevelInstance })])
 
         expect(errors).toHaveLength(1)
         expect(appliedChanges).toHaveLength(0)
@@ -508,9 +499,9 @@ describe('securitySchemeFilter', () => {
       it('should throw if there is no level member type definition', async () => {
         delete config.apiDefinitions.types[SECURITY_LEVEL_MEMBER_TYPE]
 
-        const { deployResult: { errors, appliedChanges } } = await filter.deploy(
-          [toChange({ after: securityLevelInstance })]
-        )
+        const {
+          deployResult: { errors, appliedChanges },
+        } = await filter.deploy([toChange({ after: securityLevelInstance })])
 
         expect(errors).toHaveLength(1)
         expect(appliedChanges).toHaveLength(0)
@@ -519,24 +510,20 @@ describe('securitySchemeFilter', () => {
       it('should throw if level has invalid member', async () => {
         securityLevelInstance.value.members.push({ holder: { parameter: 'parameter' } })
 
-        const { deployResult: { errors, appliedChanges } } = await filter.deploy(
-          [toChange({ after: securityLevelInstance })]
-        )
+        const {
+          deployResult: { errors, appliedChanges },
+        } = await filter.deploy([toChange({ after: securityLevelInstance })])
 
         expect(appliedChanges).toHaveLength(0)
         expect(errors).toHaveLength(1)
       })
 
       it('should throw if members is not an object type', async () => {
-        securityLevelType.fields.members = new Field(
-          securityLevelType,
-          'members',
-          BuiltinTypes.STRING,
-        )
+        securityLevelType.fields.members = new Field(securityLevelType, 'members', BuiltinTypes.STRING)
 
-        const { deployResult: { errors, appliedChanges } } = await filter.deploy(
-          [toChange({ after: securityLevelInstance })]
-        )
+        const {
+          deployResult: { errors, appliedChanges },
+        } = await filter.deploy([toChange({ after: securityLevelInstance })])
 
         expect(errors).toHaveLength(1)
         expect(appliedChanges).toHaveLength(0)
@@ -553,19 +540,14 @@ describe('securitySchemeFilter', () => {
       it('should set defaultLevel with not defined', async () => {
         const schemeWithoutDefault = securitySchemeInstance.clone()
         delete schemeWithoutDefault.value.defaultLevel
-        await filter.preDeploy([
-          toChange({ after: securitySchemeInstance }),
-          toChange({ after: schemeWithoutDefault }),
-        ])
+        await filter.preDeploy([toChange({ after: securitySchemeInstance }), toChange({ after: schemeWithoutDefault })])
 
         expect(schemeWithoutDefault.value.defaultLevel).toEqual(NO_DEFAULT_VALUE)
         expect(isReferenceExpression(securitySchemeInstance.value.defaultLevel)).toBeTrue()
       })
 
       it('should add level id to security levels', async () => {
-        await filter.preDeploy([
-          toChange({ after: securityLevelInstance }),
-        ])
+        await filter.preDeploy([toChange({ after: securityLevelInstance })])
 
         expect(securityLevelInstance.value.levelId).toBe('2')
       })
@@ -577,10 +559,7 @@ describe('securitySchemeFilter', () => {
         schemeWithoutDefault.value.defaultLevel = NO_DEFAULT_VALUE
         schemeWithoutDefault.value.schemeId = schemeWithoutDefault.value.id
         securitySchemeInstance.value.schemeId = securitySchemeInstance.value.id
-        await filter.onDeploy([
-          toChange({ after: securitySchemeInstance }),
-          toChange({ after: schemeWithoutDefault }),
-        ])
+        await filter.onDeploy([toChange({ after: securitySchemeInstance }), toChange({ after: schemeWithoutDefault })])
 
         expect(schemeWithoutDefault.value.defaultLevel).toBeUndefined()
         expect(schemeWithoutDefault.value.schemeId).toBeUndefined()
@@ -592,9 +571,7 @@ describe('securitySchemeFilter', () => {
       it('should remove pre deploy added values from security levels', async () => {
         securityLevelInstance.value.schemeId = securityLevelInstance.value.id
         securityLevelInstance.value.levelId = securityLevelInstance.value.id
-        await filter.onDeploy([
-          toChange({ after: securityLevelInstance }),
-        ])
+        await filter.onDeploy([toChange({ after: securityLevelInstance })])
 
         expect(securityLevelInstance.value.schemeId).toBeUndefined()
         expect(securityLevelInstance.value.levelId).toBeUndefined()
@@ -611,20 +588,18 @@ describe('securitySchemeFilter', () => {
       client = cli
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
-      filter = securitySchemeFilter(getFilterParams({
-        client,
-        paginator,
-        config,
-      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      filter = securitySchemeFilter(
+        getFilterParams({
+          client,
+          paginator,
+          config,
+        }),
+      ) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
-      securitySchemeCreateInstance = new InstanceElement(
-        'securityScheme',
-        securitySchemeType,
-        {
-          name: 'securitySchemeName',
-          description: 'securitySchemeDesc',
-        }
-      )
+      securitySchemeCreateInstance = new InstanceElement('securityScheme', securitySchemeType, {
+        name: 'securitySchemeName',
+        description: 'securitySchemeDesc',
+      })
       levelInstanceStandAlone = new InstanceElement(
         'levelInstance',
         securityLevelType,
@@ -637,14 +612,10 @@ describe('securitySchemeFilter', () => {
           _parent: { value: { value: { id: 12 } } },
         },
       )
-      securityLevelCreateInstance = new InstanceElement(
-        'levelInstance',
-        securityLevelType,
-        {
-          name: 'level10',
-          description: 'desc100',
-        },
-      )
+      securityLevelCreateInstance = new InstanceElement('levelInstance', securityLevelType, {
+        name: 'level10',
+        description: 'desc100',
+      })
       connection.post.mockResolvedValueOnce({
         status: 200,
         data: {
@@ -653,9 +624,10 @@ describe('securitySchemeFilter', () => {
       })
     })
     it('should deploy scheme only changes', async () => {
-      const { deployResult: { errors, appliedChanges }, leftoverChanges } = await filter.deploy(
-        [toChange({ after: securitySchemeCreateInstance })]
-      )
+      const {
+        deployResult: { errors, appliedChanges },
+        leftoverChanges,
+      } = await filter.deploy([toChange({ after: securitySchemeCreateInstance })])
       expect(errors.length).toEqual(0)
       expect(appliedChanges.length).toEqual(1)
       expect(getChangeData(appliedChanges[0]).elemID.typeName).toEqual(SECURITY_SCHEME_TYPE)
@@ -670,9 +642,13 @@ describe('securitySchemeFilter', () => {
       )
     })
     it('should deploy create scheme and level', async () => {
-      const { deployResult: { errors, appliedChanges }, leftoverChanges } = await filter.deploy(
-        [toChange({ after: securitySchemeCreateInstance }), toChange({ after: securityLevelCreateInstance })]
-      )
+      const {
+        deployResult: { errors, appliedChanges },
+        leftoverChanges,
+      } = await filter.deploy([
+        toChange({ after: securitySchemeCreateInstance }),
+        toChange({ after: securityLevelCreateInstance }),
+      ])
       expect(errors.length).toEqual(0)
       expect(appliedChanges.length).toEqual(2)
       expect(getChangeData(appliedChanges[0]).elemID.typeName).toEqual(SECURITY_LEVEL_TYPE)
@@ -698,10 +674,13 @@ describe('securitySchemeFilter', () => {
       )
     })
     it('should deploy modify scheme and level', async () => {
-      const { deployResult: { errors, appliedChanges }, leftoverChanges } = await filter.deploy(
-        [toChange({ before: securitySchemeCreateInstance, after: securitySchemeInstance }),
-          toChange({ before: securitySchemeCreateInstance, after: securityLevelInstance })]
-      )
+      const {
+        deployResult: { errors, appliedChanges },
+        leftoverChanges,
+      } = await filter.deploy([
+        toChange({ before: securitySchemeCreateInstance, after: securitySchemeInstance }),
+        toChange({ before: securitySchemeCreateInstance, after: securityLevelInstance }),
+      ])
       expect(errors.length).toEqual(0)
       expect(appliedChanges.length).toEqual(2)
       expect(getChangeData(appliedChanges[0]).elemID.typeName).toEqual(SECURITY_LEVEL_TYPE)
@@ -743,9 +722,10 @@ describe('securitySchemeFilter', () => {
       )
     })
     it('should deploy level only changes', async () => {
-      const { deployResult: { errors, appliedChanges }, leftoverChanges } = await filter.deploy(
-        [toChange({ before: securityLevelInstance, after: levelInstanceStandAlone })]
-      )
+      const {
+        deployResult: { errors, appliedChanges },
+        leftoverChanges,
+      } = await filter.deploy([toChange({ before: securityLevelInstance, after: levelInstanceStandAlone })])
       expect(errors.length).toEqual(0)
       expect(appliedChanges.length).toEqual(1)
       expect(getChangeData(appliedChanges[0]).elemID.typeName).toEqual(SECURITY_LEVEL_TYPE)
@@ -762,30 +742,35 @@ describe('securitySchemeFilter', () => {
     it('should return error if failed on scheme', async () => {
       connection.post.mockReset()
       connection.post.mockRejectedValueOnce(new Error('Name already exists'))
-      const { deployResult: { errors, appliedChanges }, leftoverChanges } = await filter.deploy(
-        [toChange({ after: securitySchemeInstance }), toChange({ after: securityLevelInstance })]
-      )
+      const {
+        deployResult: { errors, appliedChanges },
+        leftoverChanges,
+      } = await filter.deploy([toChange({ after: securitySchemeInstance }), toChange({ after: securityLevelInstance })])
       expect(errors.length).toEqual(1)
-      expect(errors[0].message).toEqual('Error: Failed to post /rest/api/3/issuesecurityschemes with error: Error: Name already exists')
+      expect(errors[0].message).toEqual(
+        'Error: Failed to post /rest/api/3/issuesecurityschemes with error: Error: Name already exists',
+      )
       expect(appliedChanges.length).toEqual(0)
       expect(leftoverChanges.length).toEqual(0)
     })
     it('Should not throw when delete request fail and the instance is already deleted', async () => {
-      connection.delete.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-        status: 404,
-        data: {},
-      }))
-      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
-        [toChange({ before: securityLevelInstance })]
+      connection.delete.mockRejectedValueOnce(
+        new clientUtils.HTTPError('message', {
+          status: 404,
+          data: {},
+        }),
       )
+      const {
+        deployResult: { errors, appliedChanges },
+      } = await filter.deploy([toChange({ before: securityLevelInstance })])
       expect(errors).toHaveLength(0)
       expect(appliedChanges).toHaveLength(1)
     })
     it('Should throw when the request fail with 500', async () => {
       connection.delete.mockRejectedValueOnce(new Error('Name already exists'))
-      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
-        [toChange({ before: securityLevelInstance })]
-      )
+      const {
+        deployResult: { errors, appliedChanges },
+      } = await filter.deploy([toChange({ before: securityLevelInstance })])
       expect(errors).toHaveLength(1)
       expect(appliedChanges).toHaveLength(0)
     })

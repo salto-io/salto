@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { isInstanceElement, isObjectType, Values, Element, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
@@ -38,21 +38,26 @@ export const FIELDS_TO_OMIT_PRE_DEPLOY: FieldToOmitParams[] = [
 
 export const getFieldsToOmitByType = (
   typeNames: string[],
-  fieldsToOmit: FieldToOmitParams[]
+  fieldsToOmit: FieldToOmitParams[],
 ): Record<string, string[]> =>
   Object.fromEntries(
-    typeNames.map((typeName: string): [string, string[]] => [
-      typeName,
-      fieldsToOmit
-        .filter(({ type, subtype }) => isFullRegexMatch(typeName, subtype !== undefined ? subtype : type))
-        .flatMap(params => params.fields),
-    ]).filter(([_t, fields]) => fields.length > 0)
+    typeNames
+      .map((typeName: string): [string, string[]] => [
+        typeName,
+        fieldsToOmit
+          .filter(({ type, subtype }) => isFullRegexMatch(typeName, subtype !== undefined ? subtype : type))
+          .flatMap(params => params.fields),
+      ])
+      .filter(([_t, fields]) => fields.length > 0),
   )
 
 export const getTypesForDeepTransformation = (typeNames: string[], fieldsToOmit: FieldToOmitParams[]): Set<string> =>
   new Set(
-    typeNames.filter(typeName => fieldsToOmit
-      .some(({ type, subtype }) => subtype !== undefined && subtype !== type && isFullRegexMatch(typeName, type)))
+    typeNames.filter(typeName =>
+      fieldsToOmit.some(
+        ({ type, subtype }) => subtype !== undefined && subtype !== type && isFullRegexMatch(typeName, type),
+      ),
+    ),
   )
 
 export const omitFieldsFromElements = async (
@@ -60,12 +65,12 @@ export const omitFieldsFromElements = async (
   fieldsToOmitByType: Record<string, string[]>,
   typesForDeepTransformation: Set<string>,
 ): Promise<void> => {
-  const omitValues = (value: Values, typeName: string): Values => (
+  const omitValues = (value: Values, typeName: string): Values =>
     typeName in fieldsToOmitByType
-      ? _.omitBy(value, (_val, key) => fieldsToOmitByType[typeName]
-        .some(fieldToOmit => isFullRegexMatch(key, fieldToOmit)))
+      ? _.omitBy(value, (_val, key) =>
+          fieldsToOmitByType[typeName].some(fieldToOmit => isFullRegexMatch(key, fieldToOmit)),
+        )
       : value
-  )
 
   const transformFunc: TransformFunc = async ({ value, field }) => {
     if (!_.isPlainObject(value)) {
@@ -83,12 +88,13 @@ export const omitFieldsFromElements = async (
     .forEach(async instance => {
       instance.value = omitValues(instance.value, instance.elemID.typeName)
       if (typesForDeepTransformation.has(instance.elemID.typeName)) {
-        instance.value = await transformValues({
-          values: instance.value,
-          type: await instance.getType(),
-          transformFunc,
-          strict: false,
-        }) ?? {}
+        instance.value =
+          (await transformValues({
+            values: instance.value,
+            type: await instance.getType(),
+            transformFunc,
+            strict: false,
+          })) ?? {}
       }
     })
 
@@ -110,7 +116,6 @@ export const omitFieldsFromElements = async (
     })
 }
 
-
 const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
   name: 'omitFieldsFilter',
   onFetch: async elements => {
@@ -120,7 +125,10 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
       return
     }
 
-    const typeNames = elements.filter(isObjectType).map(elem => elem.elemID.name).concat(CUSTOM_FIELDS_LIST)
+    const typeNames = elements
+      .filter(isObjectType)
+      .map(elem => elem.elemID.name)
+      .concat(CUSTOM_FIELDS_LIST)
     const fieldsToOmitByType = getFieldsToOmitByType(typeNames, fieldsToOmit)
 
     if (_.isEmpty(fieldsToOmitByType)) {
@@ -132,9 +140,7 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
     await omitFieldsFromElements(elements, fieldsToOmitByType, typesForDeepTransformation)
   },
   preDeploy: async changes => {
-    const elements = changes
-      .filter(isAdditionOrModificationChange)
-      .flatMap(change => Object.values(change.data))
+    const elements = changes.filter(isAdditionOrModificationChange).flatMap(change => Object.values(change.data))
     const fieldsToOmit = FIELDS_TO_OMIT_PRE_DEPLOY.concat(config.deploy?.fieldsToOmit ?? [])
 
     if (fieldsToOmit.length === 0) {
@@ -143,7 +149,8 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
 
     const typeNames = await awu(await elementsSource.list())
       .filter(elemId => elemId.idType === 'type')
-      .map(elemId => elemId.name).toArray()
+      .map(elemId => elemId.name)
+      .toArray()
     const fieldsToOmitByType = getFieldsToOmitByType(typeNames, fieldsToOmit)
     if (_.isEmpty(fieldsToOmitByType)) {
       return

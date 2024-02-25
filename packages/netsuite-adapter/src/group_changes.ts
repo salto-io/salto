@@ -1,29 +1,47 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import wu from 'wu'
 import {
-  Change, ChangeGroupIdFunction, ChangeId, getChangeData, isAdditionChange,
-  isInstanceElement, isModificationChange, isObjectType, isReferenceExpression,
-  isField, isRemovalChange, Element, isAdditionOrModificationChange, ChangeEntry,
+  Change,
+  ChangeGroupIdFunction,
+  ChangeId,
+  getChangeData,
+  isAdditionChange,
+  isInstanceElement,
+  isModificationChange,
+  isObjectType,
+  isReferenceExpression,
+  isField,
+  isRemovalChange,
+  Element,
+  isAdditionOrModificationChange,
+  ChangeEntry,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './client/suiteapp_client/suiteapp_file_cabinet'
-import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType, isCustomRecordType } from './types'
+import {
+  isSuiteAppConfigInstance,
+  isSDFConfigTypeName,
+  isDataObjectType,
+  isFileCabinetInstance,
+  isStandardInstanceOrCustomRecordType,
+  isCustomRecordType,
+} from './types'
 import { APPLICATION_ID } from './constants'
 import { isPathAllowedBySdf } from './types/file_cabinet_types'
 
@@ -42,8 +60,7 @@ export const SUITEAPP_UPDATING_CONFIG_GROUP_ID = 'Salto SuiteApp - Updating Conf
 export const isSdfCreateOrUpdateGroupId = (groupId: string): boolean =>
   groupId.startsWith(SDF_CREATE_OR_UPDATE_GROUP_ID)
 
-export const isSdfDeleteGroupId = (groupId: string): boolean =>
-  groupId.startsWith(SDF_DELETE_GROUP_ID)
+export const isSdfDeleteGroupId = (groupId: string): boolean => groupId.startsWith(SDF_DELETE_GROUP_ID)
 
 export const isSuiteAppCreateRecordsGroupId = (groupId: string): boolean =>
   groupId.startsWith(SUITEAPP_CREATING_RECORDS_GROUP_ID)
@@ -80,16 +97,18 @@ const getSdfWithSuiteAppGroupName = (change: Change): string => {
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
   const isSdfChange = (change: Change): boolean => {
     const changeData = getChangeData(change)
-    return isAdditionOrModificationChange(change)
-      && (isStandardInstanceOrCustomRecordType(changeData)
-      || (isFileCabinetInstance(changeData) && isPathAllowedBySdf(changeData))
-      || isSDFConfigTypeName(changeData.elemID.typeName))
+    return (
+      isAdditionOrModificationChange(change) &&
+      (isStandardInstanceOrCustomRecordType(changeData) ||
+        (isFileCabinetInstance(changeData) && isPathAllowedBySdf(changeData)) ||
+        isSDFConfigTypeName(changeData.elemID.typeName))
+    )
   }
   return {
     changeGroupIdMap: new Map(
       wu(changes.entries())
         .filter(([_id, change]) => isSdfChange(change))
-        .map(([id, change]) => [id, getSdfWithSuiteAppGroupName(change)])
+        .map(([id, change]) => [id, getSdfWithSuiteAppGroupName(change)]),
     ),
   }
 }
@@ -113,10 +132,12 @@ const getRecordDependencies = (element: Element): string[] => {
 }
 
 const calculateChangesChunks = (changes: ChangeEntry[]): ChangeId[][] => {
-  const changesMap = new Map(changes.map(entry => {
-    const [, change] = entry
-    return [getChangeData(change).elemID.getFullName(), entry]
-  }))
+  const changesMap = new Map(
+    changes.map(entry => {
+      const [, change] = entry
+      return [getChangeData(change).elemID.getFullName(), entry]
+    }),
+  )
   const changesChunks: Array<ChangeId[]> = []
   const chunkIndexMap = new Map<ChangeId, number>()
   const iteratedIds = new Set<ChangeId>()
@@ -146,10 +167,7 @@ const calculateChangesChunks = (changes: ChangeEntry[]): ChangeId[][] => {
   return changesChunks
 }
 
-const getChangesChunks = (
-  changes: ChangeEntry[],
-  groupID: string,
-): ChangeId[][] => {
+const getChangesChunks = (changes: ChangeEntry[], groupID: string): ChangeId[][] => {
   if (SUITEAPP_CREATING_RECORDS_GROUP_ID === groupID) {
     return calculateChangesChunks(changes)
   }
@@ -161,33 +179,39 @@ const getChangesChunks = (
 
 const isSuiteAppFileCabinetModification = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isFileCabinetInstance(changeData)
-  && await suiteAppFileCabinet.isChangeDeployable(change)
-  && isModificationChange(change)
+  return (
+    isFileCabinetInstance(changeData) &&
+    (await suiteAppFileCabinet.isChangeDeployable(change)) &&
+    isModificationChange(change)
+  )
 }
 
 const isSuiteAppFileCabinetAddition = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isFileCabinetInstance(changeData)
-  && await suiteAppFileCabinet.isChangeDeployable(change)
-  && isAdditionChange(change)
+  return (
+    isFileCabinetInstance(changeData) &&
+    (await suiteAppFileCabinet.isChangeDeployable(change)) &&
+    isAdditionChange(change)
+  )
 }
 
 const isSuiteAppFileCabinetDeletion = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isFileCabinetInstance(changeData)
-  && await suiteAppFileCabinet.isChangeDeployable(change)
-  && isRemovalChange(change)
+  return (
+    isFileCabinetInstance(changeData) &&
+    (await suiteAppFileCabinet.isChangeDeployable(change)) &&
+    isRemovalChange(change)
+  )
 }
 
 const isSdfCreateOrUpdate = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isAdditionOrModificationChange(change)
-    && (
-      isStandardInstanceOrCustomRecordType(changeData)
-    || (isFileCabinetInstance(changeData) && !await suiteAppFileCabinet.isChangeDeployable(change))
-    || isSDFConfigTypeName(changeData.elemID.typeName)
-    )
+  return (
+    isAdditionOrModificationChange(change) &&
+    (isStandardInstanceOrCustomRecordType(changeData) ||
+      (isFileCabinetInstance(changeData) && !(await suiteAppFileCabinet.isChangeDeployable(change))) ||
+      isSDFConfigTypeName(changeData.elemID.typeName))
+  )
 }
 
 const isSdfDelete = async (change: Change): Promise<boolean> => {
@@ -205,16 +229,13 @@ const isSuiteAppRecordChange = async (change: Change): Promise<boolean> => {
 }
 
 const isSuiteAppRecordAddition = async (change: Change): Promise<boolean> =>
-  await isSuiteAppRecordChange(change)
-  && isAdditionChange(change)
+  (await isSuiteAppRecordChange(change)) && isAdditionChange(change)
 
 const isSuiteAppRecordModification = async (change: Change): Promise<boolean> =>
-  await isSuiteAppRecordChange(change)
-  && isModificationChange(change)
+  (await isSuiteAppRecordChange(change)) && isModificationChange(change)
 
 const isSuiteAppRecordDeletion = async (change: Change): Promise<boolean> =>
-  await isSuiteAppRecordChange(change)
-  && isRemovalChange(change)
+  (await isSuiteAppRecordChange(change)) && isRemovalChange(change)
 
 const isSuiteAppConfigChange = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
@@ -236,37 +257,33 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
 
   const changesWithGroups = await awu(changes.entries())
     .map(async ([id, change]) => {
-      const group = (await awu(conditionsToGroups).find(
-        ({ condition }) => condition(change)
-      ))?.group
+      const group = (await awu(conditionsToGroups).find(({ condition }) => condition(change)))?.group
 
       return group !== undefined ? { change, id, group } : undefined
     })
     .filter(values.isDefined)
     .map(change => ({
       ...change,
-      group: change.group === SDF_CREATE_OR_UPDATE_GROUP_ID
-        ? getSdfWithSuiteAppGroupName(change.change)
-        : change.group,
+      group: change.group === SDF_CREATE_OR_UPDATE_GROUP_ID ? getSdfWithSuiteAppGroupName(change.change) : change.group,
     }))
     .toArray()
 
   const groupToChanges = _.groupBy(changesWithGroups, ({ group }) => group)
 
-  const groups = Object.entries(groupToChanges)
-    .flatMap(([groupId, groupChanges]) => {
-      const entries = groupChanges.map(({ id, change }): ChangeEntry => [id, change])
-      const chunks = getChangesChunks(entries, groupId)
-      return chunks.length === 1
-        ? chunks[0].map((id): [collections.set.SetId, string] => [id, groupId])
-        : chunks.flatMap((chunk, i): [collections.set.SetId, string][] =>
-          chunk.map(id => [id, `${groupId} - ${i + 1}/${chunks.length}`]))
-    })
+  const groups = Object.entries(groupToChanges).flatMap(([groupId, groupChanges]) => {
+    const entries = groupChanges.map(({ id, change }): ChangeEntry => [id, change])
+    const chunks = getChangesChunks(entries, groupId)
+    return chunks.length === 1
+      ? chunks[0].map((id): [collections.set.SetId, string] => [id, groupId])
+      : chunks.flatMap((chunk, i): [collections.set.SetId, string][] =>
+          chunk.map(id => [id, `${groupId} - ${i + 1}/${chunks.length}`]),
+        )
+  })
 
   return { changeGroupIdMap: new Map(groups) }
 }
 
-export const getChangeGroupIdsFunc = (isSuiteAppConfigured: boolean): ChangeGroupIdFunction =>
-  async changes => (isSuiteAppConfigured
-    ? getChangeGroupIdsWithSuiteApp(changes)
-    : getChangeGroupIdsWithoutSuiteApp(changes))
+export const getChangeGroupIdsFunc =
+  (isSuiteAppConfigured: boolean): ChangeGroupIdFunction =>
+  async changes =>
+    isSuiteAppConfigured ? getChangeGroupIdsWithSuiteApp(changes) : getChangeGroupIdsWithoutSuiteApp(changes)

@@ -1,26 +1,50 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, ReadOnlyElementsSource, isInstanceElement, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
-import { addAliasToElements, AliasData as GenericAliasData, AliasComponent, ConstantComponent } from '@salto-io/adapter-components'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  isInstanceElement,
+  isObjectType,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
+import {
+  addAliasToElements,
+  AliasData as GenericAliasData,
+  AliasComponent,
+  ConstantComponent,
+} from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { APPLICATION_ID, BUNDLE, CUSTOM_RECORD_TYPE, FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, IS_SUB_INSTANCE, PATH, TRANSLATION_COLLECTION } from '../constants'
+import {
+  APPLICATION_ID,
+  BUNDLE,
+  CUSTOM_RECORD_TYPE,
+  FILE,
+  FILE_CABINET_PATH_SEPARATOR,
+  FOLDER,
+  IS_SUB_INSTANCE,
+  PATH,
+  TRANSLATION_COLLECTION,
+} from '../constants'
 import { SuiteAppConfigTypeName, getElementValueOrAnnotations, isCustomRecordType, isFileCabinetType } from '../types'
 import { ConfigurationTypeName } from '../types/configuration_types'
 import { StandardType } from '../autogen/types'
@@ -72,10 +96,12 @@ const applicationIdAlias = toAliasDataWithSingleComponent(APPLICATION_ID)
 
 const CUSTOM_SEGMENT_FIELD = 'customsegment'
 const customRecordTypesWithSegmentAlias: AliasDataWithSingleComponent = {
-  aliasComponents: [{
-    fieldName: CUSTOM_SEGMENT_FIELD,
-    referenceFieldName: CORE_ANNOTATIONS.ALIAS,
-  }],
+  aliasComponents: [
+    {
+      fieldName: CUSTOM_SEGMENT_FIELD,
+      referenceFieldName: CORE_ANNOTATIONS.ALIAS,
+    },
+  ],
 }
 
 const standardInstancesAliasMap: Record<StandardType, AliasDataWithSingleComponent> = {
@@ -306,7 +332,9 @@ const fileCabinetTypesAliasMap: Record<string, ConstantAliasData> = {
   [FOLDER]: toConstantAliasData('Folder'),
 }
 
-const splitInstancesToGroups = async (instances: InstanceElement[]): Promise<{
+const splitInstancesToGroups = async (
+  instances: InstanceElement[],
+): Promise<{
   fileCabinetInstances: InstanceElement[]
   customRecordInstances: InstanceElement[]
   subInstances: InstanceElement[]
@@ -335,7 +363,9 @@ const splitInstancesToGroups = async (instances: InstanceElement[]): Promise<{
   }
 }
 
-const splitTypesToGroups = (types: ObjectType[]): {
+const splitTypesToGroups = (
+  types: ObjectType[],
+): {
   definitionTypes: ObjectType[]
   customRecordTypes: ObjectType[]
   customRecordTypesWithSegment: ObjectType[]
@@ -343,7 +373,7 @@ const splitTypesToGroups = (types: ObjectType[]): {
   const [customRecordTypes, definitionTypes] = _.partition(types, isCustomRecordType)
   const [customRecordTypesWithSegment, otherCustomRecordTypes] = _.partition(
     customRecordTypes,
-    type => type.annotations[CUSTOM_SEGMENT_FIELD] !== undefined
+    type => type.annotations[CUSTOM_SEGMENT_FIELD] !== undefined,
   )
   return {
     definitionTypes,
@@ -363,7 +393,9 @@ const addAliasToFileCabinetInstance = (instance: InstanceElement): void => {
 }
 
 const addAliasFromTranslatedFields = async ({
-  elementsSource, elementsMap, aliasMap,
+  elementsSource,
+  elementsMap,
+  aliasMap,
 }: {
   elementsSource: ReadOnlyElementsSource
   elementsMap: ElementsMap
@@ -371,17 +403,19 @@ const addAliasFromTranslatedFields = async ({
 }): Promise<void> => {
   const relevantElementsMap = _.pick(elementsMap, Object.keys(aliasMap))
   await awu(Object.keys(relevantElementsMap)).forEach(async group => {
-    const { aliasComponents: [{ fieldName }] } = aliasMap[group]
+    const {
+      aliasComponents: [{ fieldName }],
+    } = aliasMap[group]
 
     await awu(relevantElementsMap[group]).forEach(async element => {
       const fieldValue = getElementValueOrAnnotations(element)[fieldName]
       if (!isReferenceExpression(fieldValue) || fieldValue.elemID.typeName !== TRANSLATION_COLLECTION) {
         log.warn(
-          'cannot extract translated alias for element %s from field %s -'
-          + ' field value is not a translation collection reference: %o',
+          'cannot extract translated alias for element %s from field %s -' +
+            ' field value is not a translation collection reference: %o',
           element.elemID.getFullName(),
           fieldName,
-          fieldValue
+          fieldValue,
         )
         return
       }
@@ -394,11 +428,10 @@ const addAliasFromTranslatedFields = async ({
 
       if (typeof alias !== 'string') {
         log.warn(
-          'cannot extract translated alias for element %s from reference %s -'
-          + ' reference value is not a string: %o',
+          'cannot extract translated alias for element %s from reference %s - reference value is not a string: %o',
           element.elemID.getFullName(),
           defaultTranslationElemId,
-          alias
+          alias,
         )
         return
       }
@@ -411,11 +444,11 @@ const addAliasFromTranslatedFields = async ({
 const getElementsWithoutAlias = (elementsMap: ElementsMap): ElementsMap =>
   Object.fromEntries(
     Object.entries(elementsMap)
-      .map(([group, elems]) => [
-        group,
-        elems.filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined),
-      ] as const)
-      .filter(([_group, elems]) => elems.length > 0)
+      .map(
+        ([group, elems]) =>
+          [group, elems.filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)] as const,
+      )
+      .filter(([_group, elems]) => elems.length > 0),
   )
 
 const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }) => ({
@@ -427,18 +460,12 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
     }
 
     const instances = elements.filter(isInstanceElement)
-    const {
-      fileCabinetInstances,
-      customRecordInstances,
-      subInstances,
-      otherInstances,
-    } = await splitInstancesToGroups(instances)
+    const { fileCabinetInstances, customRecordInstances, subInstances, otherInstances } =
+      await splitInstancesToGroups(instances)
 
-    const {
-      definitionTypes,
-      customRecordTypes,
-      customRecordTypesWithSegment,
-    } = splitTypesToGroups(elements.filter(isObjectType))
+    const { definitionTypes, customRecordTypes, customRecordTypesWithSegment } = splitTypesToGroups(
+      elements.filter(isObjectType),
+    )
 
     addAliasToElements({
       elementsMap: _.groupBy(definitionTypes, type => type.elemID.name),

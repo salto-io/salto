@@ -1,22 +1,20 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { SetId } from '../../src/collections/set'
-import {
-  groupBy, toIndexedIterable, IndexedIterable, IndexedIterator,
-} from '../../src/collections/iterable'
+import { groupBy, toIndexedIterable, IndexedIterable, IndexedIterator } from '../../src/collections/iterable'
 import { RequiredMember } from '../../src/types'
 
 describe('iterable', () => {
@@ -39,7 +37,11 @@ describe('iterable', () => {
       })
 
       it('transforms the iterable correctly', () => {
-        expect([...result]).toEqual([[0, 12], [1, 13], [2, 14]])
+        expect([...result]).toEqual([
+          [0, 12],
+          [1, 13],
+          [2, 14],
+        ])
       })
     })
   })
@@ -53,8 +55,12 @@ describe('iterable', () => {
         return {
           v: 'yo',
           next: i.next.bind(i),
-          return(value) { return { done: true, value: `${this.v} ${value}` } },
-          throw(e) { throw new Error(`testing: ${this.v} ${e.message}`) },
+          return(value) {
+            return { done: true, value: `${this.v} ${value}` }
+          },
+          throw(e) {
+            throw new Error(`testing: ${this.v} ${e.message}`)
+          },
         } as Iterator<number> & { v: string }
       },
     }
@@ -65,7 +71,11 @@ describe('iterable', () => {
     })
 
     it('transforms the iterable correctly', () => {
-      expect([...result]).toEqual([[0, 12], [1, 13], [2, 14]])
+      expect([...result]).toEqual([
+        [0, 12],
+        [1, 13],
+        [2, 14],
+      ])
     })
 
     it('defines `return` correctly', () => {

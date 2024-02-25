@@ -3,9 +3,11 @@
 NetSuite adapter for salto.io
 
 ### Prerequisites
+
 ###### taken from https://github.com/oracle/netsuite-suitecloud-sdk/tree/master/packages/node-cli
 
 Install Java 17 (OpenJDK / JDK)
+
 ```
 OpenJDK
     (using macOS)
@@ -16,18 +18,20 @@ JDK - https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.ht
 ```
 
 ### Build instructions
+
 ```
 yarn
 yarn build
 ```
 
 ## Configure your NetSuite account to work with Salto
-* Enable SDF in Your NetSuite Account (Admin Only) - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=section_4724921034.html
-* Setup Your Role (prefer Administrator) for SDF Development - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1539287603.html
+
+- Enable SDF in Your NetSuite Account (Admin Only) - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=section_4724921034.html
+- Setup Your Role (prefer Administrator) for SDF Development - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1539287603.html
 
 ### Limitations
-Deleting record of CustomTypes & FileCabinet is not supported.
 
+Deleting record of CustomTypes & FileCabinet is not supported.
 
 ## E2E tests
 
@@ -38,6 +42,7 @@ Run `CONSOLE=1 yarn e2e-test` to print log messages to stdout.
 ### Using a specific set of credentials
 
 Add the following environment variables to bash_profile:
+
 ```bash
 export NS_ACCOUNT_ID='XXXX'
 export NS_TOKEN_ID='XXXX'
@@ -55,6 +60,7 @@ The pool is used if the `NS_` environment variables are not defined. You can als
 The pool uses Amazon DynamoDB, and needs read/write/list permissions for the `e2e_permissions` table.
 
 Make sure your [AWS credentials are set](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html), e.g, as environment variables:
+
 ```bash
 export AWS_ACCESS_KEY_ID='XXXX'
 export AWS_SECRET_ACCESS_KEY='XXXX'

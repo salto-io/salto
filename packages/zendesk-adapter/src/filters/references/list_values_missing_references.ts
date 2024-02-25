@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { references as referencesUtils } from '@salto-io/adapter-components'
@@ -29,9 +29,7 @@ type FieldMissingReferenceDefinition = {
   valueIndexToRedefine: number
 }
 
-const isNumberStr = (str: string | undefined): boolean => (
-  !_.isEmpty(str) && !Number.isNaN(Number(str))
-)
+const isNumberStr = (str: string | undefined): boolean => !_.isEmpty(str) && !Number.isNaN(Number(str))
 
 const NON_NUMERIC_MISSING_VALUES_TYPES = ['webhook']
 
@@ -76,22 +74,15 @@ export const listValuesMissingReferencesOnFetch = (elements: Element[], config: 
       valueObjects.forEach(obj => {
         const valueToRedefine = obj.value[def.valueIndexToRedefine]
         const valueType = def.fieldNameToValueType[obj.field]
-        if (fieldRefTypes.includes(obj.field)
-          && !isReferenceExpression(valueToRedefine)
-          && !VALUES_TO_SKIP_BY_TYPE[valueType]?.includes(valueToRedefine)
-          && _.isArray(obj.value) // INCIDENT-3157, Handle cases when for some reason the value is a string
-          && (isNumberStr(valueToRedefine)
-            || NON_NUMERIC_MISSING_VALUES_TYPES.includes(valueType)
-          )) {
-          const missingInstance = createMissingInstance(
-            instance.elemID.adapter,
-            valueType,
-            valueToRedefine
-          )
-          obj.value[def.valueIndexToRedefine] = new ReferenceExpression(
-            missingInstance.elemID,
-            missingInstance
-          )
+        if (
+          fieldRefTypes.includes(obj.field) &&
+          !isReferenceExpression(valueToRedefine) &&
+          !VALUES_TO_SKIP_BY_TYPE[valueType]?.includes(valueToRedefine) &&
+          _.isArray(obj.value) && // INCIDENT-3157, Handle cases when for some reason the value is a string
+          (isNumberStr(valueToRedefine) || NON_NUMERIC_MISSING_VALUES_TYPES.includes(valueType))
+        ) {
+          const missingInstance = createMissingInstance(instance.elemID.adapter, valueType, valueToRedefine)
+          obj.value[def.valueIndexToRedefine] = new ReferenceExpression(missingInstance.elemID, missingInstance)
         }
       })
     })

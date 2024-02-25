@@ -1,23 +1,21 @@
-
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { exists, mkdirp, readFile, replaceContents } from '@salto-io/file'
 import * as conf from '../src/app_config'
-
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual<{}>('@salto-io/file'),
@@ -31,14 +29,10 @@ const mockReplaceContents = replaceContents as jest.Mock
 const mockExists = exists as jest.Mock
 const mockReadFile = readFile as unknown as jest.Mock
 
-const cleanEnvVars = (): void => (
-  [
-    'SALTO_TELEMETRY_URL',
-    'SALTO_TELEMETRY_DISABLE',
-    'SALTO_TELEMETRY_TOKEN',
-    'SALTO_HOME',
-  ].forEach(e => delete process.env[e])
-)
+const cleanEnvVars = (): void =>
+  ['SALTO_TELEMETRY_URL', 'SALTO_TELEMETRY_DISABLE', 'SALTO_TELEMETRY_TOKEN', 'SALTO_HOME'].forEach(
+    e => delete process.env[e],
+  )
 
 let keepEnv: NodeJS.ProcessEnv = {}
 describe('app config', () => {
@@ -49,7 +43,9 @@ describe('app config', () => {
   afterEach(() => {
     cleanEnvVars()
   })
-  afterAll(() => { process.env = keepEnv })
+  afterAll(() => {
+    process.env = keepEnv
+  })
 
   it('should load config from disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'

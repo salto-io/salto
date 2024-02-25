@@ -1,5 +1,7 @@
 # Stripe system configuration
+
 ## Default Configuration
+
 ```hcl
 stripe {
   apiDefinitions = {

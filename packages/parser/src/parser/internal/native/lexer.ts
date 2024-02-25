@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as moo from 'moo'
 
 export const WILDCARD = '****dynamic****'
@@ -64,7 +64,11 @@ export const rules: Record<string, moo.Rules> = {
   // We throw our own error with the token and reflect this to the user.
   main: {
     [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
-    [TOKEN_TYPES.MULTILINE_START]: { match: new RegExp(`'''[ \t]*[${NEWLINE_CHARS}]`), lineBreaks: true, push: 'multilineString' },
+    [TOKEN_TYPES.MULTILINE_START]: {
+      match: new RegExp(`'''[ \t]*[${NEWLINE_CHARS}]`),
+      lineBreaks: true,
+      push: 'multilineString',
+    },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     [TOKEN_TYPES.LEFT_PAREN]: '(',
@@ -156,76 +160,73 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
 }
 
 class PeekableLexer {
-    private lexer: moo.Lexer
-    private peeked?: LexerToken
-    private peekedNoNewline?: LexerToken
-    constructor(src: string) {
-      this.lexer = moo.states(rules)
-      this.lexer.reset(src)
-    }
+  private lexer: moo.Lexer
+  private peeked?: LexerToken
+  private peekedNoNewline?: LexerToken
+  constructor(src: string) {
+    this.lexer = moo.states(rules)
+    this.lexer.reset(src)
+  }
 
-    private advance(): LexerToken | undefined {
-      let token = this.lexer.next()
+  private advance(): LexerToken | undefined {
+    let token = this.lexer.next()
 
-      while (token && (token.type === TOKEN_TYPES.WHITESPACE
-        || token.type === TOKEN_TYPES.COMMENT)) {
-        if (token.type === TOKEN_TYPES.COMMENT) {
-          while (token && token.type !== TOKEN_TYPES.NEWLINE) {
-            token = this.lexer.next()
-          }
+    while (token && (token.type === TOKEN_TYPES.WHITESPACE || token.type === TOKEN_TYPES.COMMENT)) {
+      if (token.type === TOKEN_TYPES.COMMENT) {
+        while (token && token.type !== TOKEN_TYPES.NEWLINE) {
+          token = this.lexer.next()
         }
-        token = this.lexer.next()
       }
-      return validateToken(token) ? token : undefined
+      token = this.lexer.next()
+    }
+    return validateToken(token) ? token : undefined
+  }
+
+  public peek(ignoreNewlines = true): LexerToken | undefined {
+    if (this.peeked === undefined) {
+      this.peeked = this.advance()
+    }
+    if (!ignoreNewlines) {
+      return this.peeked
+    }
+    if (this.peekedNoNewline === undefined) {
+      let token = this.peeked
+      while (token && token.type === TOKEN_TYPES.NEWLINE) {
+        token = this.advance()
+      }
+      this.peekedNoNewline = token
     }
 
-    public peek(ignoreNewlines = true): LexerToken | undefined {
-      if (this.peeked === undefined) {
-        this.peeked = this.advance()
-      }
-      if (!ignoreNewlines) {
-        return this.peeked
-      }
-      if (this.peekedNoNewline === undefined) {
-        let token = this.peeked
-        while (token && token.type === TOKEN_TYPES.NEWLINE) {
-          token = this.advance()
-        }
-        this.peekedNoNewline = token
-      }
+    return this.peekedNoNewline
+  }
 
-      return this.peekedNoNewline
+  public next(ignoreNewlines = true): LexerToken {
+    if (!ignoreNewlines && this.peeked?.type === TOKEN_TYPES.NEWLINE && this.peekedNoNewline !== undefined) {
+      const t = this.peeked
+      this.peeked = this.peekedNoNewline
+      return t
     }
+    const token = this.peek(ignoreNewlines)
 
-    public next(ignoreNewlines = true): LexerToken {
-      if (!ignoreNewlines
-        && this.peeked?.type === TOKEN_TYPES.NEWLINE
-        && this.peekedNoNewline !== undefined) {
-        const t = this.peeked
-        this.peeked = this.peekedNoNewline
-        return t
-      }
-      const token = this.peek(ignoreNewlines)
-
-      if (!token) {
-        throw new NoSuchElementError(this.peeked)
-      }
-      this.peeked = undefined
-      this.peekedNoNewline = undefined
-      return token
+    if (!token) {
+      throw new NoSuchElementError(this.peeked)
     }
+    this.peeked = undefined
+    this.peekedNoNewline = undefined
+    return token
+  }
 
-    public recover(stopTokens: string[], advancePastNewlines = true): void {
-      // This is handling a special case in which the recover char
-      // is not a new line. In such case, there is a chance that the
-      // char is already loaded to the peekNoNewLine attr, which means
-      // that the lexer has already advanced
-      while (!stopTokens.includes(this.peek(false)?.type || '')) {
-        this.next(false)
-      }
-      if (advancePastNewlines && this.peek(false)?.type === TOKEN_TYPES.NEWLINE) {
-        this.next(false)
-      }
+  public recover(stopTokens: string[], advancePastNewlines = true): void {
+    // This is handling a special case in which the recover char
+    // is not a new line. In such case, there is a chance that the
+    // char is already loaded to the peekNoNewLine attr, which means
+    // that the lexer has already advanced
+    while (!stopTokens.includes(this.peek(false)?.type || '')) {
+      this.next(false)
     }
+    if (advancePastNewlines && this.peek(false)?.type === TOKEN_TYPES.NEWLINE) {
+      this.next(false)
+    }
+  }
 }
 export default PeekableLexer

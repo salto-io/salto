@@ -1,22 +1,35 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
-  Element, isType, isField, isInstanceElement, getChangeData, Value, ElemID, DetailedChange,
+  Values,
+  isObjectType,
+  TypeElement,
+  ObjectType,
+  PrimitiveType,
+  Field,
+  InstanceElement,
+  Element,
+  isType,
+  isField,
+  isInstanceElement,
+  getChangeData,
+  Value,
+  ElemID,
+  DetailedChange,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
@@ -53,7 +66,7 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement => {
     })
   }
   return new PrimitiveType({
-    ...src as PrimitiveType,
+    ...(src as PrimitiveType),
     annotationRefsOrTypes: annotationRefTypes,
     annotations,
   })
@@ -62,26 +75,15 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement => {
 const projectField = (src: Field, target: Field): Field => {
   if (!src.refType.elemID.isEqual(target.refType.elemID)) return src
   const annotations = projectValue(src.annotations, target.annotations)
-  return _.isEmpty(annotations)
-    ? target
-    : new Field(target.parent, src.name, src.refType, annotations)
+  return _.isEmpty(annotations) ? target : new Field(target.parent, src.name, src.refType, annotations)
 }
 
-const projectInstance = (
-  src: InstanceElement,
-  target: InstanceElement
-): InstanceElement | undefined => {
+const projectInstance = (src: InstanceElement, target: InstanceElement): InstanceElement | undefined => {
   const projectedValue = projectValue(src.value, target.value)
   const projectedAnnotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(projectedValue) && _.isEmpty(projectedAnnotations)
     ? undefined
-    : new InstanceElement(
-      src.elemID.name,
-      src.refType,
-      projectedValue,
-      src.path,
-      projectedAnnotations
-    )
+    : new InstanceElement(src.elemID.name, src.refType, projectedValue, src.path, projectedAnnotations)
 }
 
 export const projectElementOrValueToEnv = (
@@ -100,11 +102,7 @@ export const projectElementOrValueToEnv = (
   return projectValue(value, targetElement)
 }
 
-export const createAddChange = (
-  value: Element | Value,
-  id: ElemID,
-  path?: ReadonlyArray<string>
-): DetailedChange => ({
+export const createAddChange = (value: Element | Value, id: ElemID, path?: ReadonlyArray<string>): DetailedChange => ({
   data: { after: value },
   action: 'add',
   id,
@@ -114,7 +112,7 @@ export const createAddChange = (
 export const createRemoveChange = (
   value: Element | Value,
   id: ElemID,
-  path?: ReadonlyArray<string>
+  path?: ReadonlyArray<string>,
 ): DetailedChange => ({
   data: { before: value },
   action: 'remove',
@@ -122,24 +120,17 @@ export const createRemoveChange = (
   path,
 })
 
-export const projectChange = async (
-  change: DetailedChange,
-  env: ElementsSource
-): Promise<DetailedChange[]> => {
+export const projectChange = async (change: DetailedChange, env: ElementsSource): Promise<DetailedChange[]> => {
   const targetElement = await env.get(change.id)
   if (targetElement === undefined) {
     return change.action === 'add' ? [change] : []
   }
   if (change.action === 'add') {
-    throw new InvalidProjectionError(
-      change,
-      'can not project an add change to an existing env element.'
-    )
+    throw new InvalidProjectionError(change, 'can not project an add change to an existing env element.')
   }
 
-  const projectedChange = await applyFunctionToChangeData(
-    change,
-    changeData => projectElementOrValueToEnv(changeData, targetElement),
+  const projectedChange = await applyFunctionToChangeData(change, changeData =>
+    projectElementOrValueToEnv(changeData, targetElement),
   )
   return [projectedChange]
 }

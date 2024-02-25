@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -37,20 +37,25 @@ const filter: FilterCreator = ({ config }) => ({
     }
     const builtInProjectRoles = elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_ROLE_TYPE
-        && instance.value.name === BUILT_IN_PROJECT_ROLE_NAME)
+      .filter(
+        instance =>
+          instance.elemID.typeName === PROJECT_ROLE_TYPE && instance.value.name === BUILT_IN_PROJECT_ROLE_NAME,
+      )
     if (builtInProjectRoles.length <= 1) {
       return
     }
     // as this is a built-in role, we assume that the one with the lowest id is the global one
     const originalElementId = _.minBy(builtInProjectRoles, instance => instance.value.id)?.value.id
-    log.info(`Found ${builtInProjectRoles.length} instances of ${BUILT_IN_PROJECT_ROLE_NAME} role, keeping only lowest id ${originalElementId}`)
+    log.info(
+      `Found ${builtInProjectRoles.length} instances of ${BUILT_IN_PROJECT_ROLE_NAME} role, keeping only lowest id ${originalElementId}`,
+    )
     _.remove(
       elements,
-      element => isInstanceElement(element)
-        && element.elemID.typeName === PROJECT_ROLE_TYPE
-        && element.value.name === BUILT_IN_PROJECT_ROLE_NAME
-        && element.value.id !== originalElementId
+      element =>
+        isInstanceElement(element) &&
+        element.elemID.typeName === PROJECT_ROLE_TYPE &&
+        element.value.name === BUILT_IN_PROJECT_ROLE_NAME &&
+        element.value.id !== originalElementId,
     )
   },
 })

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
@@ -69,16 +69,13 @@ const createMap = async (
     persistent,
   })
 
-const createReadOnlyMap = async (
-  namespace: string, location = DB_LOCATION
-): Promise<rm.RemoteMap<Element>> =>
+const createReadOnlyMap = async (namespace: string, location = DB_LOCATION): Promise<rm.RemoteMap<Element>> =>
   createReadOnlyRemoteMapCreator(location)({
     namespace,
     deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
   })
 
-async function *createAsyncIterable(iterable: Element[]):
-AsyncGenerator<rm.RemoteMapEntry<Element, string>> {
+async function* createAsyncIterable(iterable: Element[]): AsyncGenerator<rm.RemoteMapEntry<Element, string>> {
   for (const elem of iterable) {
     yield { key: elem.elemID.getFullName(), value: elem }
   }
@@ -89,12 +86,11 @@ describe('test operations on remote db', () => {
   let sortedElements: string[]
   let filteredSortedElements: string[]
 
-  const filterFn = (key: string): boolean => (key.includes('a'))
+  const filterFn = (key: string): boolean => key.includes('a')
 
   beforeEach(async () => {
     elements = await createElements()
-    sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
-      .map(e => e.elemID.getFullName())
+    sortedElements = _.sortBy(elements, e => e.elemID.getFullName()).map(e => e.elemID.getFullName())
     filteredSortedElements = sortedElements.filter(filterFn)
     const namespace = 'namespace'
     remoteMap = await createMap(namespace)
@@ -138,24 +134,22 @@ describe('test operations on remote db', () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       const anotherElemID = 'dummy.bla'
       await remoteMap.set(anotherElemID, elements[0])
-      expect(await remoteMap.getMany([elements[0].elemID.getFullName(), anotherElemID]))
-        .toEqual([elements[0], elements[0]])
+      expect(await remoteMap.getMany([elements[0].elemID.getFullName(), anotherElemID])).toEqual([
+        elements[0],
+        elements[0],
+      ])
     })
 
     it('get non existent key', async () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       const id = 'not.exist'
-      expect(await remoteMap.getMany([id, elements[0].elemID.getFullName()]))
-        .toEqual([undefined, elements[0]])
+      expect(await remoteMap.getMany([id, elements[0].elemID.getFullName()])).toEqual([undefined, elements[0]])
     })
     describe('read only', () => {
       it('should get items after set', async () => {
         const anotherElemID = 'dummy.bla'
-        const res = await readOnlyRemoteMap.getMany(
-          [elements[0].elemID.getFullName(), anotherElemID]
-        )
-        expect(res.map(e => e?.elemID?.getFullName()))
-          .toEqual([elements[0].elemID.getFullName(), undefined])
+        const res = await readOnlyRemoteMap.getMany([elements[0].elemID.getFullName(), anotherElemID])
+        expect(res.map(e => e?.elemID?.getFullName())).toEqual([elements[0].elemID.getFullName(), undefined])
       })
     })
   })
@@ -179,11 +173,17 @@ describe('test operations on remote db', () => {
     it('deleted elements should not be returned from keys with pages', async () => {
       const elemID = elements[0].elemID.getFullName()
       await remoteMap.set(elemID, elements[0])
-      expect(await awu(remoteMap.keys({ pageSize: 2 })).flat().toArray())
-        .toContain(elements[0].elemID.getFullName())
+      expect(
+        await awu(remoteMap.keys({ pageSize: 2 }))
+          .flat()
+          .toArray(),
+      ).toContain(elements[0].elemID.getFullName())
       await remoteMap.delete(elemID)
-      expect(await awu(remoteMap.keys({ pageSize: 2 })).flat().toArray())
-        .not.toContain(elements[0].elemID.getFullName())
+      expect(
+        await awu(remoteMap.keys({ pageSize: 2 }))
+          .flat()
+          .toArray(),
+      ).not.toContain(elements[0].elemID.getFullName())
     })
 
     it('should delete all elements chosen when deleting all', async () => {
@@ -191,7 +191,7 @@ describe('test operations on remote db', () => {
       await remoteMap.deleteAll(awu(createAsyncIterable(elements.slice(1))).map(entry => entry.key))
       const res = await awu(remoteMap.values()).toArray()
       expect(res.map(elem => elem.elemID.getFullName())).toEqual(
-        elements.slice(0, 1).map(elem => elem.elemID.getFullName())
+        elements.slice(0, 1).map(elem => elem.elemID.getFullName()),
       )
     })
     describe('read only', () => {
@@ -236,14 +236,10 @@ describe('test operations on remote db', () => {
       })
       it('should return from get only values set after clear', async () => {
         expect(await remoteMap.get(elements[0].elemID.getFullName())).toBeUndefined()
-        expect((await remoteMap.get(elements[1].elemID.getFullName()))
-          ?.isEqual(elements[1])).toBeTruthy()
+        expect((await remoteMap.get(elements[1].elemID.getFullName()))?.isEqual(elements[1])).toBeTruthy()
       })
       it('should return from getMany only values set after clear', async () => {
-        const vals = await remoteMap.getMany([
-          elements[0].elemID.getFullName(),
-          elements[1].elemID.getFullName(),
-        ])
+        const vals = await remoteMap.getMany([elements[0].elemID.getFullName(), elements[1].elemID.getFullName()])
         expect(vals[0]).toBeUndefined()
         expect(vals[1]?.isEqual(elements[1])).toBeTruthy()
       })
@@ -330,10 +326,12 @@ describe('test operations on remote db', () => {
 
       it('should return a paged iterator with a limit', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(remoteMap.keys({
-          first: 8,
-          pageSize: 3,
-        })).toArray() as unknown as string[][]
+        const pages = (await awu(
+          remoteMap.keys({
+            first: 8,
+            pageSize: 3,
+          }),
+        ).toArray()) as unknown as string[][]
         expect(pages).toHaveLength(Math.ceil(8 / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page)).toEqual(sortedElements.slice(0, 8))
@@ -390,11 +388,13 @@ describe('test operations on remote db', () => {
 
       it('should return a paged iterator with a limit of filtered elements', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(remoteMap.keys({
-          first: 8,
-          pageSize: 3,
-          filter: filterFn,
-        })).toArray() as unknown as string[][]
+        const pages = (await awu(
+          remoteMap.keys({
+            first: 8,
+            pageSize: 3,
+            filter: filterFn,
+          }),
+        ).toArray()) as unknown as string[][]
         expect(pages).toHaveLength(Math.ceil(8 / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page)).toEqual(filteredSortedElements.slice(0, 8))
@@ -426,8 +426,9 @@ describe('test operations on remote db', () => {
         for await (const element of iter) {
           res.push(element)
         }
-        expect(res.map(elem => elem.elemID.getFullName()))
-          .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+        expect(res.map(elem => elem.elemID.getFullName())).toEqual(
+          elements.map(elem => elem.elemID.getFullName()).sort(),
+        )
       })
 
       it('should get all values - paginated', async () => {
@@ -449,31 +450,26 @@ describe('test operations on remote db', () => {
 
       it('should return a paged iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(remoteMap.values({ pageSize: 3 }))
-          .toArray() as unknown as Element[][]
+        const pages = (await awu(remoteMap.values({ pageSize: 3 })).toArray()) as unknown as Element[][]
         expect(pages).toHaveLength(5)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-        expect(
-          pages.flatMap(page => page.map(element => element.elemID.getFullName()))
-        ).toEqual(sortedElements)
+        expect(pages.flatMap(page => page.map(element => element.elemID.getFullName()))).toEqual(sortedElements)
       })
 
       it('should return a paged limited iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(remoteMap.values({ first: 8, pageSize: 3 }))
-          .toArray() as unknown as Element[][]
+        const pages = (await awu(remoteMap.values({ first: 8, pageSize: 3 })).toArray()) as unknown as Element[][]
         expect(pages).toHaveLength(Math.ceil(8 / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-        expect(
-          pages.flatMap(page => page.map(element => element.elemID.getFullName()))
-        ).toEqual(sortedElements.slice(0, 8))
+        expect(pages.flatMap(page => page.map(element => element.elemID.getFullName()))).toEqual(
+          sortedElements.slice(0, 8),
+        )
       })
 
       it('should return a paged iterator after flush', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         await remoteMap.flush()
-        const pages = await awu(remoteMap.values({ pageSize: 3 }))
-          .toArray() as unknown as Element[][]
+        const pages = (await awu(remoteMap.values({ pageSize: 3 })).toArray()) as unknown as Element[][]
         expect(pages).toHaveLength(5)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(_.flatten(pages).map(e => e.elemID.getFullName())).toEqual(sortedElements)
@@ -482,8 +478,7 @@ describe('test operations on remote db', () => {
       describe('read only', () => {
         it('should get all values', async () => {
           const res = await awu(readOnlyRemoteMap.values()).toArray()
-          expect(res.map(elem => elem.elemID.getFullName()))
-            .toEqual(sortedElements)
+          expect(res.map(elem => elem.elemID.getFullName())).toEqual(sortedElements)
         })
       })
     })
@@ -496,8 +491,7 @@ describe('test operations on remote db', () => {
         for await (const element of iter) {
           res.push(element)
         }
-        expect(res.map(elem => elem.elemID.getFullName()))
-          .toEqual(filteredSortedElements)
+        expect(res.map(elem => elem.elemID.getFullName())).toEqual(filteredSortedElements)
       })
 
       it('should get all values - paginated', async () => {
@@ -507,45 +501,44 @@ describe('test operations on remote db', () => {
           firstPageRes.push(element)
         }
         expect(firstPageRes).toHaveLength(5)
-        expect(firstPageRes.map(e => e.elemID.getFullName()))
-          .toEqual(filteredSortedElements.slice(0, 5))
+        expect(firstPageRes.map(e => e.elemID.getFullName())).toEqual(filteredSortedElements.slice(0, 5))
         const after = firstPageRes[firstPageRes.length - 1].elemID.getFullName()
         const nextPageRes: Element[] = []
         for await (const element of remoteMap.values({ first: 100, after, filter: filterFn })) {
           nextPageRes.push(element)
         }
-        expect(nextPageRes)
-          .toHaveLength(filteredSortedElements.length - 5)
-        expect(nextPageRes.map(e => e.elemID.getFullName()))
-          .toEqual(filteredSortedElements.slice(5))
+        expect(nextPageRes).toHaveLength(filteredSortedElements.length - 5)
+        expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(filteredSortedElements.slice(5))
       })
 
       it('should return a paged iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(remoteMap.values({ pageSize: 3, filter: filterFn }))
-          .toArray() as unknown as Element[][]
+        const pages = (await awu(
+          remoteMap.values({ pageSize: 3, filter: filterFn }),
+        ).toArray()) as unknown as Element[][]
         expect(pages).toHaveLength(Math.ceil(filteredSortedElements.length / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-        expect(pages.flatMap(page => page.map(element => element.elemID.getFullName())))
-          .toEqual(filteredSortedElements)
+        expect(pages.flatMap(page => page.map(element => element.elemID.getFullName()))).toEqual(filteredSortedElements)
       })
 
       it('should return a paged limited iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(remoteMap.values({ first: 8, pageSize: 3, filter: filterFn }))
-          .toArray() as unknown as Element[][]
+        const pages = (await awu(
+          remoteMap.values({ first: 8, pageSize: 3, filter: filterFn }),
+        ).toArray()) as unknown as Element[][]
         expect(pages).toHaveLength(Math.ceil(8 / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-        expect(
-          pages.flatMap(page => page.map(element => element.elemID.getFullName()))
-        ).toEqual(filteredSortedElements.slice(0, 8))
+        expect(pages.flatMap(page => page.map(element => element.elemID.getFullName()))).toEqual(
+          filteredSortedElements.slice(0, 8),
+        )
       })
 
       it('should return a paged iterator after flush', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         await remoteMap.flush()
-        const pages = await awu(remoteMap.values({ pageSize: 3, filter: filterFn }))
-          .toArray() as unknown as Element[][]
+        const pages = (await awu(
+          remoteMap.values({ pageSize: 3, filter: filterFn }),
+        ).toArray()) as unknown as Element[][]
         expect(pages).toHaveLength(Math.ceil(filteredSortedElements.length / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(_.flatten(pages).map(e => e.elemID.getFullName())).toEqual(filteredSortedElements)
@@ -554,8 +547,7 @@ describe('test operations on remote db', () => {
       describe('read only', () => {
         it('should get all values', async () => {
           const res = await awu(readOnlyRemoteMap.values({ filter: filterFn })).toArray()
-          expect(res.map(elem => elem.elemID.getFullName()))
-            .toEqual(filteredSortedElements)
+          expect(res.map(elem => elem.elemID.getFullName())).toEqual(filteredSortedElements)
         })
       })
     })
@@ -569,10 +561,8 @@ describe('test operations on remote db', () => {
         for await (const element of iter) {
           res.push(element)
         }
-        expect(res.map(elem => elem.key))
-          .toEqual(sortedElements)
-        expect(res.map(elem => elem.value.elemID.getFullName()))
-          .toEqual(sortedElements)
+        expect(res.map(elem => elem.key)).toEqual(sortedElements)
+        expect(res.map(elem => elem.value.elemID.getFullName())).toEqual(sortedElements)
       })
 
       it('should get all entries after inserting empty string key', async () => {
@@ -583,10 +573,10 @@ describe('test operations on remote db', () => {
         for await (const element of iter) {
           res.push(element)
         }
-        expect(res.map(elem => elem.key))
-          .toEqual(['', ...elements.map(elem => elem.elemID.getFullName()).sort()])
-        expect(res.map(elem => elem.value.elemID.getFullName()))
-          .toEqual([elements[0], ...elements].map(elem => elem.elemID.getFullName()).sort())
+        expect(res.map(elem => elem.key)).toEqual(['', ...elements.map(elem => elem.elemID.getFullName()).sort()])
+        expect(res.map(elem => elem.value.elemID.getFullName())).toEqual(
+          [elements[0], ...elements].map(elem => elem.elemID.getFullName()).sort(),
+        )
       })
 
       it('should get all entries - paginated', async () => {
@@ -596,8 +586,7 @@ describe('test operations on remote db', () => {
           firstPageRes.push(element)
         }
         expect(firstPageRes).toHaveLength(5)
-        expect(firstPageRes.map(e => e.value.elemID.getFullName()))
-          .toEqual(sortedElements.slice(0, 5))
+        expect(firstPageRes.map(e => e.value.elemID.getFullName())).toEqual(sortedElements.slice(0, 5))
         expect(firstPageRes.map(e => e.key)).toEqual(sortedElements.slice(0, 5))
         const after = firstPageRes[firstPageRes.length - 1].key
         const nextPageRes: { key: string; value: Element }[] = []
@@ -605,16 +594,15 @@ describe('test operations on remote db', () => {
           nextPageRes.push(element)
         }
         expect(nextPageRes).toHaveLength(10)
-        expect(nextPageRes.map(e => e.value.elemID.getFullName()))
-          .toEqual(sortedElements.slice(5))
+        expect(nextPageRes.map(e => e.value.elemID.getFullName())).toEqual(sortedElements.slice(5))
         expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))
       })
 
       it('should return a paged iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(
-          remoteMap.entries({ pageSize: 3 })
-        ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+        const pages = (await awu(
+          remoteMap.entries({ pageSize: 3 }),
+        ).toArray()) as unknown as rm.RemoteMapEntry<Element>[][]
         expect(pages).toHaveLength(5)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(sortedElements)
@@ -622,9 +610,9 @@ describe('test operations on remote db', () => {
 
       it('should return a paged limited iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(
-          remoteMap.entries({ pageSize: 3, first: 8 })
-        ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+        const pages = (await awu(
+          remoteMap.entries({ pageSize: 3, first: 8 }),
+        ).toArray()) as unknown as rm.RemoteMapEntry<Element>[][]
         expect(pages).toHaveLength(Math.ceil(8 / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(sortedElements.slice(0, 8))
@@ -633,9 +621,9 @@ describe('test operations on remote db', () => {
       it('should return a paged iterator after flush', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         await remoteMap.flush()
-        const pages = await awu(
-          remoteMap.entries({ pageSize: 3 })
-        ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+        const pages = (await awu(
+          remoteMap.entries({ pageSize: 3 }),
+        ).toArray()) as unknown as rm.RemoteMapEntry<Element>[][]
         expect(pages).toHaveLength(5)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(sortedElements)
@@ -644,10 +632,8 @@ describe('test operations on remote db', () => {
       describe('read only', () => {
         it('should get all entries', async () => {
           const res = await awu(readOnlyRemoteMap.entries()).toArray()
-          expect(res.map(elem => elem.key))
-            .toEqual(sortedElements)
-          expect(res.map(elem => elem.value.elemID.getFullName()))
-            .toEqual(sortedElements)
+          expect(res.map(elem => elem.key)).toEqual(sortedElements)
+          expect(res.map(elem => elem.value.elemID.getFullName())).toEqual(sortedElements)
         })
       })
     })
@@ -660,10 +646,8 @@ describe('test operations on remote db', () => {
         for await (const element of iter) {
           res.push(element)
         }
-        expect(res.map(elem => elem.key))
-          .toEqual(filteredSortedElements)
-        expect(res.map(elem => elem.value.elemID.getFullName()))
-          .toEqual(filteredSortedElements)
+        expect(res.map(elem => elem.key)).toEqual(filteredSortedElements)
+        expect(res.map(elem => elem.value.elemID.getFullName())).toEqual(filteredSortedElements)
       })
 
       it('should get all entries after inserting a string that passes the filter key', async () => {
@@ -674,10 +658,11 @@ describe('test operations on remote db', () => {
         for await (const element of iter) {
           res.push(element)
         }
-        expect(res.map(elem => elem.key))
-          .toEqual(['a', ...filteredSortedElements])
-        expect(res.map(elem => elem.value.elemID.getFullName()))
-          .toEqual([elements[0].elemID.getFullName(), ...filteredSortedElements])
+        expect(res.map(elem => elem.key)).toEqual(['a', ...filteredSortedElements])
+        expect(res.map(elem => elem.value.elemID.getFullName())).toEqual([
+          elements[0].elemID.getFullName(),
+          ...filteredSortedElements,
+        ])
       })
 
       it('should get all entries - paginated', async () => {
@@ -687,8 +672,7 @@ describe('test operations on remote db', () => {
           firstPageRes.push(element)
         }
         expect(firstPageRes).toHaveLength(5)
-        expect(firstPageRes.map(e => e.value.elemID.getFullName()))
-          .toEqual(filteredSortedElements.slice(0, 5))
+        expect(firstPageRes.map(e => e.value.elemID.getFullName())).toEqual(filteredSortedElements.slice(0, 5))
         expect(firstPageRes.map(e => e.key)).toEqual(filteredSortedElements.slice(0, 5))
         const after = firstPageRes[firstPageRes.length - 1].key
         const nextPageRes: { key: string; value: Element }[] = []
@@ -696,16 +680,15 @@ describe('test operations on remote db', () => {
           nextPageRes.push(element)
         }
         expect(nextPageRes).toHaveLength(filteredSortedElements.length - 5)
-        expect(nextPageRes.map(e => e.value.elemID.getFullName()))
-          .toEqual(filteredSortedElements.slice(5))
+        expect(nextPageRes.map(e => e.value.elemID.getFullName())).toEqual(filteredSortedElements.slice(5))
         expect(nextPageRes.map(e => e.key)).toEqual(filteredSortedElements.slice(5))
       })
 
       it('should return a paged iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(
-          remoteMap.entries({ pageSize: 3, filter: filterFn })
-        ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+        const pages = (await awu(
+          remoteMap.entries({ pageSize: 3, filter: filterFn }),
+        ).toArray()) as unknown as rm.RemoteMapEntry<Element>[][]
         expect(pages).toHaveLength(Math.ceil(filteredSortedElements.length / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(filteredSortedElements)
@@ -713,21 +696,20 @@ describe('test operations on remote db', () => {
 
       it('should return a paged limited iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
-        const pages = await awu(
-          remoteMap.entries({ pageSize: 3, first: 8, filter: filterFn })
-        ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+        const pages = (await awu(
+          remoteMap.entries({ pageSize: 3, first: 8, filter: filterFn }),
+        ).toArray()) as unknown as rm.RemoteMapEntry<Element>[][]
         expect(pages).toHaveLength(Math.ceil(8 / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-        expect(pages.flatMap(page => page.map(e => e.key)))
-          .toEqual(filteredSortedElements.slice(0, 8))
+        expect(pages.flatMap(page => page.map(e => e.key))).toEqual(filteredSortedElements.slice(0, 8))
       })
 
       it('should return a paged iterator after flush', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         await remoteMap.flush()
-        const pages = await awu(
-          remoteMap.entries({ pageSize: 3, filter: filterFn })
-        ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+        const pages = (await awu(
+          remoteMap.entries({ pageSize: 3, filter: filterFn }),
+        ).toArray()) as unknown as rm.RemoteMapEntry<Element>[][]
         expect(pages).toHaveLength(Math.ceil(filteredSortedElements.length / 3))
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(filteredSortedElements)
@@ -736,10 +718,8 @@ describe('test operations on remote db', () => {
       describe('read only', () => {
         it('should get all entries', async () => {
           const res = await awu(readOnlyRemoteMap.entries({ filter: filterFn })).toArray()
-          expect(res.map(elem => elem.key))
-            .toEqual(filteredSortedElements)
-          expect(res.map(elem => elem.value.elemID.getFullName()))
-            .toEqual(filteredSortedElements)
+          expect(res.map(elem => elem.key)).toEqual(filteredSortedElements)
+          expect(res.map(elem => elem.value.elemID.getFullName())).toEqual(filteredSortedElements)
         })
       })
     })
@@ -760,16 +740,21 @@ describe('test operations on remote db', () => {
     const changedElement = cloneElements[0] as ObjectType
     const changedValue = Object.values(changedElement.fields)[0]
     changedValue.name += 'A CHANGE'
-    changedElement.fields = { [Object.keys(changedElement.fields)[0].concat('A CHANGE')]:
-      changedValue }
+    changedElement.fields = { [Object.keys(changedElement.fields)[0].concat('A CHANGE')]: changedValue }
     await remoteMap.set(cloneElements[0].elemID.getFullName(), cloneElements[0])
     const res = await awu(remoteMap.values()).toArray()
     const elemToFieldNameMapping = (elem: Element): string | undefined =>
-      (isObjectType(elem) ? Object.values((elem as ObjectType).fields)
-        .map(field => field.name).sort().toString() : undefined)
-    expect(res.map(elemToFieldNameMapping)).toEqual(cloneElements.sort((a, b) =>
-      (a.elemID.getFullName() < b.elemID.getFullName() ? -1 : 1))
-      .map(elemToFieldNameMapping))
+      isObjectType(elem)
+        ? Object.values((elem as ObjectType).fields)
+            .map(field => field.name)
+            .sort()
+            .toString()
+        : undefined
+    expect(res.map(elemToFieldNameMapping)).toEqual(
+      cloneElements
+        .sort((a, b) => (a.elemID.getFullName() < b.elemID.getFullName() ? -1 : 1))
+        .map(elemToFieldNameMapping),
+    )
   })
   it('should throw exception if the namespace is invalid', async () => {
     await expect(createMap('inval:d')).rejects.toThrow()
@@ -829,8 +814,9 @@ describe('full integration', () => {
     for await (const element of iter) {
       res.push(element)
     }
-    expect(_.uniq(res.map(elem => elem.elemID.getFullName()))).toEqual(elements
-      .map(elem => elem.elemID.getFullName()).sort())
+    expect(_.uniq(res.map(elem => elem.elemID.getFullName()))).toEqual(
+      elements.map(elem => elem.elemID.getFullName()).sort(),
+    )
     await closeRemoteMapsOfLocation(DB_LOCATION)
     const db = rocksdb(DB_LOCATION)
     await promisify(db.open.bind(db))()
@@ -862,8 +848,7 @@ describe('full integration', () => {
         ids.push(id)
       }
     }
-    expect(ids).toEqual(elements.map(elem => 'integration::'
-      .concat(elem.elemID.getFullName())).sort())
+    expect(ids).toEqual(elements.map(elem => 'integration::'.concat(elem.elemID.getFullName())).sort())
 
     await promisify(db.close.bind(db))()
   })

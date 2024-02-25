@@ -1,23 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils, client, auth as authUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Credentials, AccessTokenCredentials, isOAuthAccessTokenCredentials, OAuthAccessTokenCredentials } from '../auth'
+import {
+  Credentials,
+  AccessTokenCredentials,
+  isOAuthAccessTokenCredentials,
+  OAuthAccessTokenCredentials,
+} from '../auth'
 
 const log = logger(module)
 
@@ -53,14 +58,16 @@ export const validateCredentials = async (_creds: {
       isProduction: accountType === PRODUCTION_ACCOUNT_TYPE,
     }
   } catch (error) {
-    log.error('Failed to validate credentials, error: %s, stack: %s', safeJsonStringify({ data: error?.response?.data, status: error?.response?.status }), error.stack)
+    log.error(
+      'Failed to validate credentials, error: %s, stack: %s',
+      safeJsonStringify({ data: error?.response?.data, status: error?.response?.status }),
+      error.stack,
+    )
     throw new client.UnauthorizedError('Invalid Credentials')
   }
 }
 
-const apiTokenAuthParamsFunc = (
-  { token }: AccessTokenCredentials
-): clientUtils.AuthParams => ({
+const apiTokenAuthParamsFunc = ({ token }: AccessTokenCredentials): clientUtils.AuthParams => ({
   headers: {
     Authorization: `SSWS ${token}`,
   },
@@ -81,16 +88,12 @@ const oauthAuthParamsFunc = async (
   })
 }
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async (creds: Credentials) => (
-      isOAuthAccessTokenCredentials(creds)
-        ? oauthAuthParamsFunc(creds, retryOptions)
-        : apiTokenAuthParamsFunc(creds)
-    ),
+    authParamsFunc: async (creds: Credentials) =>
+      isOAuthAccessTokenCredentials(creds) ? oauthAuthParamsFunc(creds, retryOptions) : apiTokenAuthParamsFunc(creds),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,
     timeout,
   })
-)

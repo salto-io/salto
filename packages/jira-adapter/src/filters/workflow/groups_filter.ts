@@ -1,33 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Element, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, WorkflowInstance } from './types'
+import { isWorkflowV1Instance, WorkflowV1Instance } from './types'
 import { GROUP_TYPE_NAME } from '../../constants'
 
 const ANY_GROUP_CONDITION = 'UserInAnyGroupCondition'
 const SINGLE_GROUP_CONDITION = 'UserInGroupCondition'
 
-
-export const fixGroupNames = (
-  instance: WorkflowInstance,
-  groups: Record<string, InstanceElement> = {}
-): void => {
+export const fixGroupNames = (instance: WorkflowV1Instance, groups: Record<string, InstanceElement> = {}): void => {
   walkOnElement({
     element: instance,
     func: ({ value }) => {
@@ -38,11 +34,11 @@ export const fixGroupNames = (
       if (value.type === ANY_GROUP_CONDITION) {
         value.configuration.groups = value.configuration.groups
           ?.map((groupName: string) => groupName.toLowerCase())
-          .map((groupName: string) => (
+          .map((groupName: string) =>
             groupName in groups
               ? new ReferenceExpression(groups[groupName].elemID.createNestedID('name'), groups[groupName].value.name)
-              : groupName
-          ))
+              : groupName,
+          )
         return WALK_NEXT_STEP.SKIP
       }
 
@@ -53,7 +49,7 @@ export const fixGroupNames = (
         if (groupInstance !== undefined) {
           value.configuration.group = new ReferenceExpression(
             groupInstance.elemID.createNestedID('name'),
-            groupInstance.value.name
+            groupInstance.value.name,
           )
         }
 
@@ -81,11 +77,9 @@ const filter: FilterCreator = () => ({
       .keyBy(group => group.value.name.toLowerCase())
       .value()
 
-    instances
-      .filter(isWorkflowInstance)
-      .forEach(instance => {
-        fixGroupNames(instance, groups)
-      })
+    instances.filter(isWorkflowV1Instance).forEach(instance => {
+      fixGroupNames(instance, groups)
+    })
   },
 })
 

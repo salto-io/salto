@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
 import { EOL } from 'os'
@@ -32,10 +32,7 @@ describe('pino based logger', () => {
   const NAMESPACE = 'my-namespace'
   let repo: LoggerRepo
 
-  const createRepo = (): LoggerRepo => loggerRepo(
-    pinoLoggerRepo({ consoleStream }, initialConfig),
-    initialConfig,
-  )
+  const createRepo = (): LoggerRepo => loggerRepo(pinoLoggerRepo({ consoleStream }, initialConfig), initialConfig)
 
   const createLogger = (): Logger => {
     repo = createRepo()
@@ -50,12 +47,13 @@ describe('pino based logger', () => {
   let logger: Logger
   let line: string
 
-  const logLine = async (
-    { level = 'error', logger: l = logger }: { level?: LogLevel; logger?: Logger } = {},
-  ): Promise<void> => {
+  const logLine = async ({
+    level = 'error',
+    logger: l = logger,
+  }: { level?: LogLevel; logger?: Logger } = {}): Promise<void> => {
     l[level]('hello %o', { world: true })
-    await repo.end();
-    [line] = consoleStream.contents().split(EOL)
+    await repo.end()
+    ;[line] = consoleStream.contents().split(EOL)
   }
   describe('sanity', () => {
     beforeEach(() => {
@@ -86,8 +84,8 @@ describe('pino based logger', () => {
           logger.error('hello1 %o', { world: true }, { extra: 'stuff' })
           logger.warn('hello2 %o', { world: true }, { extra: 'stuff' })
           await repo.end()
-          const fileContents = readFileContent();
-          [line, line2] = fileContents.split(EOL)
+          const fileContents = readFileContent()
+          ;[line, line2] = fileContents.split(EOL)
         })
 
         afterEach(() => {
@@ -124,8 +122,8 @@ describe('pino based logger', () => {
           logger = createLogger()
           logger.error('hello1 %o', { world: true }, { extra: 'stuff' })
           logger.warn('hello2 %o', { world: true }, { extra: 'stuff' })
-          await repo.end();
-          [line, line2] = consoleStream.contents().split(EOL)
+          await repo.end()
+          ;[line, line2] = consoleStream.contents().split(EOL)
         })
 
         it('should write the first message to the console stream', () => {
@@ -433,7 +431,7 @@ describe('pino based logger', () => {
           })
         })
         describe('getGlobalTags', () => {
-          let globalTagsResponse: LogTags| undefined
+          let globalTagsResponse: LogTags | undefined
           beforeEach(async () => {
             initialConfig.globalTags = logTags
             logger = createLogger()
@@ -467,8 +465,8 @@ describe('pino based logger', () => {
             logger2.error('something happened')
             logger2.assignGlobalTags({ someTags: undefined })
             logger3 = createLogger()
-            logger3.error('something happened');
-            [line1, line2] = consoleStream.contents().split(EOL)
+            logger3.error('something happened')
+            ;[line1, line2] = consoleStream.contents().split(EOL)
           })
 
           it('line1 should contain global logTags assigned from other repo', () => {
@@ -484,7 +482,7 @@ describe('pino based logger', () => {
   })
   describe('log level methods', () => {
     beforeEach(() => {
-      [initialConfig.minLevel] = LOG_LEVELS
+      ;[initialConfig.minLevel] = LOG_LEVELS
       initialConfig.colorize = false
       logger = createLogger()
     })
@@ -516,8 +514,8 @@ describe('pino based logger', () => {
 
       beforeEach(async () => {
         result = logger.time(() => expectedResult, 'hello func %o', 12)
-        await repo.end();
-        [startLine, line] = consoleStream.contents().split(EOL)
+        await repo.end()
+        ;[startLine, line] = consoleStream.contents().split(EOL)
       })
 
       it('should return the original value', () => {
@@ -537,8 +535,8 @@ describe('pino based logger', () => {
 
       beforeEach(async () => {
         result = await logger.time(async () => expectedResult, 'hello func %o', 12)
-        await repo.end();
-        [startLine, line] = consoleStream.contents().split('\n')
+        await repo.end()
+        ;[startLine, line] = consoleStream.contents().split('\n')
       })
 
       it('should return the original value', () => {
@@ -568,8 +566,8 @@ describe('pino based logger', () => {
 
         beforeEach(async () => {
           result = logger.time(() => expectedResult, 'hello func %o', 12)
-          await repo.end();
-          [startLine, line] = consoleStream.contents().split(EOL)
+          await repo.end()
+          ;[startLine, line] = consoleStream.contents().split(EOL)
         })
 
         it('should return the original value', () => {
@@ -593,8 +591,8 @@ describe('pino based logger', () => {
 
         beforeEach(async () => {
           result = await logger.time(async () => expectedResult, 'hello func %o', 12)
-          await repo.end();
-          [startLine, line] = consoleStream.contents().split('\n')
+          await repo.end()
+          ;[startLine, line] = consoleStream.contents().split('\n')
         })
 
         it('should return the original value', () => {
@@ -714,15 +712,15 @@ describe('pino based logger', () => {
 
       beforeEach(() => {
         logger = createLogger()
-        logger.log('warn', error);
-        [line1, line2] = consoleStream.contents().split('\n')
+        logger.log('warn', error)
+        ;[line1, line2] = consoleStream.contents().split('\n')
       })
 
       it('should log the error message and stack in multiple lines', () => {
         expect(line1).toContain('Error: testing 123') // message
         expect(line2).toContain(' at ') // stack
         expect(consoleStream.contents())
-        // custom props
+          // custom props
           .toContain("customProp1: 'customVal1', customProp2: { aNumber: 42 }")
       })
     })
@@ -805,9 +803,7 @@ describe('pino based logger', () => {
         })
       })
       it('should log only the expected properties', async () => {
-        expect(Object.keys(jsonLine).sort()).toEqual([
-          'level', 'message', 'name', 'time',
-        ])
+        expect(Object.keys(jsonLine).sort()).toEqual(['level', 'message', 'name', 'time'])
       })
 
       it('should not colorize the line', () => {
@@ -826,9 +822,9 @@ describe('pino based logger', () => {
           'moo',
           { extra: 'should be in log' },
           true,
-          'string with "bad chars"\t\n'
-        );
-        [line] = consoleStream.contents().split(EOL)
+          'string with "bad chars"\t\n',
+        )
+        ;[line] = consoleStream.contents().split(EOL)
         jsonLine = JSON.parse(line)
         expect(jsonLine).toMatchObject({
           time: expect.stringMatching(TIMESTAMP_REGEX),
@@ -847,8 +843,8 @@ describe('pino based logger', () => {
           'foo',
           { inlineTag1: 'inlineTag1', inlineTag2: 'inlineTag2', inlineTag3: 'so many tags' },
           { extra: 'should be in log' },
-        );
-        [line] = consoleStream.contents().split(EOL)
+        )
+        ;[line] = consoleStream.contents().split(EOL)
         jsonLine = JSON.parse(line)
         expect(jsonLine).toMatchObject({
           time: expect.stringMatching(TIMESTAMP_REGEX),
@@ -862,8 +858,13 @@ describe('pino based logger', () => {
       })
 
       it('verify object was extended with excess args another', async () => {
-        logger.warn('where is mix object %s', 'foo', { moo: 'moo', foo: 'foo', boo: { loo: 'loo' } }, { extra: 'should be in log' });
-        [line] = consoleStream.contents().split(EOL)
+        logger.warn(
+          'where is mix object %s',
+          'foo',
+          { moo: 'moo', foo: 'foo', boo: { loo: 'loo' } },
+          { extra: 'should be in log' },
+        )
+        ;[line] = consoleStream.contents().split(EOL)
         jsonLine = JSON.parse(line)
         expect(jsonLine).toMatchObject({
           time: expect.stringMatching(TIMESTAMP_REGEX),
@@ -885,9 +886,10 @@ describe('pino based logger', () => {
     })
 
     it('should return a Config instance', () => {
-      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonLogChunkSize maxTagsPerLogMessage'
-        .split(' ')
-        .sort()
+      const expectedProperties =
+        'minLevel filename format namespaceFilter colorize globalTags maxJsonLogChunkSize maxTagsPerLogMessage'
+          .split(' ')
+          .sort()
 
       expect(Object.keys(repo.config).sort()).toEqual(expectedProperties)
     })
@@ -897,7 +899,9 @@ describe('pino based logger', () => {
     })
 
     it('should return a frozen object', () => {
-      expect(() => { (repo.config as Config).minLevel = 'info' }).toThrow()
+      expect(() => {
+        ;(repo.config as Config).minLevel = 'info'
+      }).toThrow()
     })
   })
   describe('local logging tags', () => {
@@ -957,10 +961,16 @@ describe('pino based logger', () => {
             logger = createLogger()
             logger.assignTags(logTags)
             logger.log(
-              'error', 'lots of data %s', 'datadata', 'excessArgs',
-              true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined,
-            );
-            [line] = consoleStream.contents().split(EOL)
+              'error',
+              'lots of data %s',
+              'datadata',
+              'excessArgs',
+              true,
+              { someArg: { with: 'data' }, anotherArg: 'much simpler' },
+              'bad\n\t"string',
+              undefined,
+            )
+            ;[line] = consoleStream.contents().split(EOL)
           })
 
           it('should contain parent log tags', () => {
@@ -996,10 +1006,16 @@ describe('pino based logger', () => {
             logger = createLogger()
             logger.assignTags(logTags)
             logger.log(
-              'error', 'lots of data %s', 'datadata', 'excessArgs',
-              true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined,
-            );
-            [line] = consoleStream.contents().split(EOL)
+              'error',
+              'lots of data %s',
+              'datadata',
+              'excessArgs',
+              true,
+              { someArg: { with: 'data' }, anotherArg: 'much simpler' },
+              'bad\n\t"string',
+              undefined,
+            )
+            ;[line] = consoleStream.contents().split(EOL)
           })
           it('should remove the amount of tags and add indication for it', () => {
             expect(line).toMatch(TIMESTAMP_REGEX)
@@ -1053,10 +1069,15 @@ describe('pino based logger', () => {
           initialConfig.globalTags = moreTags
           logger = createLogger()
           logger.assignTags(logTags)
-          logger.log('error', 'lots of data %s', 'datadata',
+          logger.log(
+            'error',
+            'lots of data %s',
+            'datadata',
             { firstExcess: 'simple', secondExcess: { complex: 'data' } },
-            'mixExcessArgs', 'moreExcess');
-          [line] = consoleStream.contents().split(EOL)
+            'mixExcessArgs',
+            'moreExcess',
+          )
+          ;[line] = consoleStream.contents().split(EOL)
         })
         it('should contain parent log tags', () => {
           expect(line).toContain('"number":1')
@@ -1103,7 +1124,10 @@ describe('pino based logger', () => {
           logger = createLogger()
           logger.assignTags(logTags)
           logger.log('warn', LOG_MESSAGE)
-          lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+          lines = consoleStream
+            .contents()
+            .split(EOL)
+            .filter(l => l !== '')
         })
 
         it('should log the full message in chunks', () => {
@@ -1140,7 +1164,10 @@ describe('pino based logger', () => {
           logger = createLogger()
           logger.assignTags(logTags)
           logger.log('warn', 'some log', { one: 1, two: 2, three: 3 })
-          lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+          lines = consoleStream
+            .contents()
+            .split(EOL)
+            .filter(l => l !== '')
         })
 
         it('should remove the amount of tags and add indication for it', () => {

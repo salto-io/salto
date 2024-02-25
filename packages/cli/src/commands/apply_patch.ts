@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
@@ -65,23 +65,26 @@ const applyPatchToWorkspace = async (
     )
   })
   if (conflicts.length > 0) {
-    errorOutputLine(`Failed to update env ${workspace.currentEnv()} because there are ${conflicts.length} conflicting changes`, output)
+    errorOutputLine(
+      `Failed to update env ${workspace.currentEnv()} because there are ${conflicts.length} conflicting changes`,
+      output,
+    )
     return false
   }
   if (fetchErrors.length > 0) {
     // We currently assume all fetchErrors are warnings
     log.debug(`apply-patch had ${fetchErrors.length} warnings`)
-    outputLine(
-      formatFetchWarnings(fetchErrors.map(fetchError => fetchError.message)),
-      output,
-    )
+    outputLine(formatFetchWarnings(fetchErrors.map(fetchError => fetchError.message)), output)
   }
   if (updateState) {
     outputLine(`Updating state for environment ${workspace.currentEnv()}`, output)
     await workspace.state().updateStateFromChanges({ changes: changes.map(change => change.change) })
   }
   outputLine(`Updating NaCl for environment ${workspace.currentEnv()}`, output)
-  await workspace.updateNaclFiles(changes.map(change => change.change), input.mode)
+  await workspace.updateNaclFiles(
+    changes.map(change => change.change),
+    input.mode,
+  )
   const { status, errors } = await validateWorkspace(workspace)
   if (status === 'Error') {
     const formattedErrors = await formatWorkspaceErrors(workspace, errors)
@@ -91,16 +94,9 @@ const applyPatchToWorkspace = async (
   return true
 }
 
-
-export const applyPatchAction: WorkspaceCommandAction<ApplyPatchArgs> = async ({
-  workspace,
-  input,
-  output,
-}) => {
+export const applyPatchAction: WorkspaceCommandAction<ApplyPatchArgs> = async ({ workspace, input, output }) => {
   const targetEnvs = input.targetEnvs ?? workspace.envs()
-  const unknownEnvs = targetEnvs
-    .concat(input.updateStateInEnvs ?? [])
-    .filter(env => !workspace.envs().includes(env))
+  const unknownEnvs = targetEnvs.concat(input.updateStateInEnvs ?? []).filter(env => !workspace.envs().includes(env))
   if (unknownEnvs.length > 0) {
     errorOutputLine(`Unknown environments ${unknownEnvs}`, output)
     return CliExitCode.UserInputError
@@ -131,7 +127,8 @@ const ApplyPatchCmd = createWorkspaceCommand({
       {
         name: 'accountName',
         alias: 't',
-        description: 'The account name for elements, this determines the expected format of the elements in the directories',
+        description:
+          'The account name for elements, this determines the expected format of the elements in the directories',
         type: 'string',
         required: true,
         choices: ['salesforce', 'netsuite'],
@@ -146,7 +143,8 @@ const ApplyPatchCmd = createWorkspaceCommand({
         name: 'updateStateInEnvs',
         alias: 'u',
         type: 'stringsList',
-        description: 'Names for environments in which to update the state as well as the NaCls, indicating that the changes were already deployed',
+        description:
+          'Names for environments in which to update the state as well as the NaCls, indicating that the changes were already deployed',
       },
       UPDATE_MODE_OPTION,
     ],

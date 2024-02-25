@@ -1,19 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  TemplateExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { createEmptyType, getFilterParams } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
@@ -47,39 +55,23 @@ describe('jqlReferencesFilter', () => {
       },
     })
 
-    instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        jql: 'status = Done',
-      }
-    )
+    instance = new InstanceElement('instance', type, {
+      jql: 'status = Done',
+    })
 
-    fieldInstance = new InstanceElement(
-      'field',
-      new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
-      {
-        id: 'status',
-        name: 'Status',
-      }
-    )
+    fieldInstance = new InstanceElement('field', new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }), {
+      id: 'status',
+      name: 'Status',
+    })
 
-    doneInstance = new InstanceElement(
-      'done',
-      new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
-      {
-        id: '1',
-        name: 'Done',
-      }
-    )
-    todoInstance = new InstanceElement(
-      'todo',
-      new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
-      {
-        id: '2',
-        name: 'To Do',
-      }
-    )
+    doneInstance = new InstanceElement('done', new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }), {
+      id: '1',
+      name: 'Done',
+    })
+    todoInstance = new InstanceElement('todo', new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }), {
+      id: '2',
+      name: 'To Do',
+    })
 
     automationInstance = new InstanceElement(
       'automation',
@@ -107,28 +99,22 @@ describe('jqlReferencesFilter', () => {
             ],
           },
         ],
-      }
+      },
     )
-    slaInstance = new InstanceElement(
-      'sla1',
-      createEmptyType('SLA'),
-      {
-        config: {
-          goals: [
-            {
-              jqlQuery: 'status = Done',
-            },
-          ],
-        },
-      }
-    )
+    slaInstance = new InstanceElement('sla1', createEmptyType('SLA'), {
+      config: {
+        goals: [
+          {
+            jqlQuery: 'status = Done',
+          },
+        ],
+      },
+    })
   })
 
   describe('onFetch', () => {
     it('should add the jql dependencies', async () => {
-      await filter.onFetch?.(
-        [instance, fieldInstance, doneInstance, todoInstance, automationInstance, slaInstance]
-      )
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance, automationInstance, slaInstance])
 
       expect(instance.value.jql).toBeInstanceOf(TemplateExpression)
       expect(instance.value.jql.parts).toEqual([
@@ -144,8 +130,7 @@ describe('jqlReferencesFilter', () => {
         new ReferenceExpression(doneInstance.elemID.createNestedID('name'), 'Done'),
       ])
 
-      expect(automationInstance.value.conditions[0].children[0].value.query.value)
-        .toBeInstanceOf(TemplateExpression)
+      expect(automationInstance.value.conditions[0].children[0].value.query.value).toBeInstanceOf(TemplateExpression)
       expect(automationInstance.value.conditions[0].children[0].value.query.value.parts).toEqual([
         new ReferenceExpression(fieldInstance.elemID, fieldInstance),
         ' IN (',
@@ -167,7 +152,6 @@ describe('jqlReferencesFilter', () => {
       await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
       expect(instance.value.jql).toBe('')
     })
-
 
     it('should do nothing if failed to parse jql', async () => {
       instance.value.jql = 'asd { [ < ('

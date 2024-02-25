@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import path from 'path'
 import truncate from 'truncate-utf8-bytes'
 import invert from 'lodash/invert'
@@ -42,8 +42,7 @@ export const normalizeFilePathPart = (name: string): string => {
   }
   const nameHash = hashUtils.toMD5(name)
   let extention = path.extname(name)
-  if (extention.length > MAX_PATH_EXTENSION_LENGTH
-      || Buffer.byteLength(extention) !== extention.length) {
+  if (extention.length > MAX_PATH_EXTENSION_LENGTH || Buffer.byteLength(extention) !== extention.length) {
     // Heurstic guess - a valid extension must be short and ascii
     extention = ''
   }
@@ -76,15 +75,15 @@ const defaultNaclCaseMapping: Record<string, string> = {
   ';': 'q',
   '"': 'r',
   ' ': 's',
-  '\'': 't',
-  '_': 'u',
+  "'": 't',
+  _: 'u',
   '.': 'v',
   '^': 'w',
   '<': 'x',
   '>': 'y',
   '`': 'za',
   '~': 'zb',
-  '$': 'zc',
+  $: 'zc',
   ',': 'zd',
   '+': 'ze',
 }
@@ -92,14 +91,14 @@ const defaultNaclCaseMapping: Record<string, string> = {
 const invertedDefaultNaclCaseMapping = invert(defaultNaclCaseMapping)
 
 const suffixFromList = (specialCharsMappingList: string[]): string => {
-  if (specialCharsMappingList.length === 0
-      // If all the special chars are _ then the suffix is empty
-      || specialCharsMappingList
-        .every(mappedSpecialChar => mappedSpecialChar === defaultNaclCaseMapping._)) {
+  if (
+    specialCharsMappingList.length === 0 ||
+    // If all the special chars are _ then the suffix is empty
+    specialCharsMappingList.every(mappedSpecialChar => mappedSpecialChar === defaultNaclCaseMapping._)
+  ) {
     return ''
   }
-  if (specialCharsMappingList
-    .every(mappedSpecialChar => mappedSpecialChar === specialCharsMappingList[0])) {
+  if (specialCharsMappingList.every(mappedSpecialChar => mappedSpecialChar === specialCharsMappingList[0])) {
     return `${NACL_ESCAPING_SUFFIX_SEPARATOR}${specialCharsMappingList[0]}`
   }
   return `${NACL_ESCAPING_SUFFIX_SEPARATOR}${specialCharsMappingList.join('')}`
@@ -111,9 +110,7 @@ const listFromSuffix = (suffix: string, startIdx = 0): string[] => {
   }
   if (suffix[startIdx] === NACL_CUSTOM_MAPPING_PREFIX) {
     return [
-      String.fromCharCode(
-        Number(suffix.slice(startIdx + 1, startIdx + 6))
-      ),
+      String.fromCharCode(Number(suffix.slice(startIdx + 1, startIdx + 6))),
       ...listFromSuffix(suffix, startIdx + 6),
     ]
   }
@@ -123,12 +120,8 @@ const listFromSuffix = (suffix: string, startIdx = 0): string[] => {
       ...listFromSuffix(suffix, startIdx + 2),
     ]
   }
-  return [
-    invertedDefaultNaclCaseMapping[suffix.slice(startIdx, startIdx + 1)],
-    ...listFromSuffix(suffix, startIdx + 1),
-  ]
+  return [invertedDefaultNaclCaseMapping[suffix.slice(startIdx, startIdx + 1)], ...listFromSuffix(suffix, startIdx + 1)]
 }
-
 
 export const naclCase = (name?: string): string => {
   // replace all special chars with _
@@ -143,7 +136,7 @@ export const naclCase = (name?: string): string => {
   const specialCharsMappingList: string[] = []
   const replaceChar = (char: string): string => {
     specialCharsMappingList.push(
-      defaultNaclCaseMapping[char] ?? `${NACL_CUSTOM_MAPPING_PREFIX}${char.charCodeAt(0).toString().padStart(5, '0')}`
+      defaultNaclCaseMapping[char] ?? `${NACL_CUSTOM_MAPPING_PREFIX}${char.charCodeAt(0).toString().padStart(5, '0')}`,
     )
     return '_'
   }
@@ -161,9 +154,8 @@ export const invertNaclCase = (name: string): string => {
   }
   const specialCharsMappingList = listFromSuffix(suffix)
   return prefix.replace(/_/g, () =>
-    (specialCharsMappingList.length === 1
-      ? specialCharsMappingList[0]
-      : specialCharsMappingList.shift() ?? ''))
+    specialCharsMappingList.length === 1 ? specialCharsMappingList[0] : specialCharsMappingList.shift() ?? '',
+  )
 }
 
 const prettifyWord = (str: string): string[] => {
@@ -182,9 +174,7 @@ const prettifyWord = (str: string): string[] => {
   return result.split(' ')
 }
 
-
 const recapitalize = (str: string): string => str.slice(0, 1).toUpperCase() + str.slice(1)
-
 
 /**
  * name is a single namePart from the elemId

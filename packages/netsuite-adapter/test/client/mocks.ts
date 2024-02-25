@@ -1,20 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import osPath from 'path'
-import { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/sdf_parser'
+import {
+  ATTRIBUTES_FILE_SUFFIX,
+  ATTRIBUTES_FOLDER_NAME,
+  FOLDER_ATTRIBUTES_FILE_SUFFIX,
+} from '../../src/client/sdf_parser'
 
 export const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 export const MOCK_FOLDER_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder`
@@ -23,7 +27,6 @@ export const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail T
 export const MOCK_FILE_WITHOUT_ATTRIBUTES_PATH = `${MOCK_FOLDER_PATH}${osPath.sep}test.js`
 export const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
 export const TIME_DATE_FORMAT = 'YYYY-MM-DD h:mm a'
-
 
 export const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
 <projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
@@ -84,7 +87,8 @@ export const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTC
 </manifest>
 `
 
-export const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
+export const MOCK_FEATURES_XML =
+  '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
 
 export const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
     <configuration>
@@ -102,9 +106,10 @@ export const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
 </deploy>
 `
 
-export const OBJECT_XML_WITH_HTML_CHARS = '<entitycustomfield scriptid="custentity_my_script_id">'
-  + '<label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>'
-  + '</entitycustomfield>'
+export const OBJECT_XML_WITH_HTML_CHARS =
+  '<entitycustomfield scriptid="custentity_my_script_id">' +
+  '<label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>' +
+  '</entitycustomfield>'
 
 export const OBJECTS_DIR_FILES = ['a.xml', 'b.xml', 'a.template.html']
 

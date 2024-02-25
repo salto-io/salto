@@ -1,23 +1,27 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   ChangeError,
-  ChangeValidator, ElemID, getChangeData, isAdditionOrModificationChange,
-  isInstanceChange, Value,
+  ChangeValidator,
+  ElemID,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -49,10 +53,9 @@ type SettingsInstance = {
 }
 
 const isValidSettings = (instance: Value): instance is SettingsInstance =>
-  _.isPlainObject(instance?.value)
-  && _.isPlainObject(instance.value.active_features)
-  && _.isPlainObject(instance.value.tickets)
-
+  _.isPlainObject(instance?.value) &&
+  _.isPlainObject(instance.value.active_features) &&
+  _.isPlainObject(instance.value.tickets)
 
 export const DEFLECTION_ZENDESK_FIELD = 'Autoreply with articles'
 export const CUSTOM_TICKET_STATUS_ZENDESK_FIELD = 'Ticket status'
@@ -74,9 +77,7 @@ const featurePathActionTypeAndField = [
 /**
  * Validates that if an action is added or modified, the environment has the feature for it activated
  */
-export const activeActionFeaturesValidator: ChangeValidator = async (
-  changes, elementSource
-) => {
+export const activeActionFeaturesValidator: ChangeValidator = async (changes, elementSource) => {
   const relevantInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -93,7 +94,7 @@ export const activeActionFeaturesValidator: ChangeValidator = async (
   }
 
   const accountSettings = await elementSource.get(
-    new ElemID(ZENDESK, ACCOUNT_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+    new ElemID(ZENDESK, ACCOUNT_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
   )
 
   if (!isValidSettings(accountSettings)) {
@@ -108,14 +109,17 @@ export const activeActionFeaturesValidator: ChangeValidator = async (
     }
     const featureName = featurePath.slice(-1)[0]
     return relevantInstances
-      .filter(instance => (instance.value.actions ?? [])
-        .some((action: Value) => _.isPlainObject(action) && action.field === actionField))
-      .map((instance): ChangeError => ({
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: `Action requires turning on ${featureName} feature`,
-        detailedMessage: `To enable the configuration of the '${actionField}' field action, which allows for '${actionZendeskField}', please ensure that the ${featureName} feature is turned on. To do so, please update the '${featurePath.join('.')}' setting to 'true' in the account_settings.`,
-      }))
+      .filter(instance =>
+        (instance.value.actions ?? []).some((action: Value) => _.isPlainObject(action) && action.field === actionField),
+      )
+      .map(
+        (instance): ChangeError => ({
+          elemID: instance.elemID,
+          severity: 'Error',
+          message: `Action requires turning on ${featureName} feature`,
+          detailedMessage: `To enable the configuration of the '${actionField}' field action, which allows for '${actionZendeskField}', please ensure that the ${featureName} feature is turned on. To do so, please update the '${featurePath.join('.')}' setting to 'true' in the account_settings.`,
+        }),
+      )
   })
   return errors
 }

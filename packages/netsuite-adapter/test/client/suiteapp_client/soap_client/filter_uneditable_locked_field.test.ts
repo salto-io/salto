@@ -1,29 +1,44 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD }
-  from '../../../../src/client/suiteapp_client/constants'
+import {
+  INSUFFICIENT_PERMISSION_ERROR,
+  PLATFORM_CORE_CUSTOM_FIELD,
+} from '../../../../src/client/suiteapp_client/constants'
 import { WriteResponse, WriteResponseError } from '../../../../src/client/suiteapp_client/soap_client/types'
 import { removeUneditableLockedField } from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
-import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD,
-  ENTITY_CUSTOM_FIELD_PREFIX, ITEM_CUSTOM_FIELD, ITEM_CUSTOM_FIELD_PREFIX, METADATA_TYPE, NETSUITE, OTHER_CUSTOM_FIELD,
-  OTHER_CUSTOM_FIELD_PREFIX, SOAP, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import {
+  CRM_CUSTOM_FIELD,
+  CRM_CUSTOM_FIELD_PREFIX,
+  CUSTOM_FIELD_LIST,
+  CUSTOM_RECORD_TYPE,
+  ENTITY_CUSTOM_FIELD,
+  ENTITY_CUSTOM_FIELD_PREFIX,
+  ITEM_CUSTOM_FIELD,
+  ITEM_CUSTOM_FIELD_PREFIX,
+  METADATA_TYPE,
+  NETSUITE,
+  OTHER_CUSTOM_FIELD,
+  OTHER_CUSTOM_FIELD_PREFIX,
+  SOAP,
+  SOAP_SCRIPT_ID,
+} from '../../../../src/constants'
 
 const { awu } = collections.asynciterable
 
@@ -72,7 +87,7 @@ describe('Filter uneditable locked fields', () => {
   )
   const itemCustomFieldInstance = new InstanceElement(
     itemCustomField.attributes[SOAP_SCRIPT_ID],
-    new ObjectType({ elemID: new ElemID(NETSUITE, ITEM_CUSTOM_FIELD) })
+    new ObjectType({ elemID: new ElemID(NETSUITE, ITEM_CUSTOM_FIELD) }),
   )
   const crmCustomFieldInstance = new InstanceElement(
     crmCustomField.attributes[SOAP_SCRIPT_ID],
@@ -89,27 +104,20 @@ describe('Filter uneditable locked fields', () => {
       statusDetail: [
         {
           code: INSUFFICIENT_PERMISSION_ERROR,
-          message: `You do not have permissions to set a value for element ${fieldName} due to one of the following reasons:`
-              + ' 1) The field is read-only;'
-              + ' 2) An associated feature is disabled;'
-              + ' 3) The field is available either when a record is created or updated, but not in both cases.',
+          message:
+            `You do not have permissions to set a value for element ${fieldName} due to one of the following reasons:` +
+            ' 1) The field is read-only;' +
+            ' 2) An associated feature is disabled;' +
+            ' 3) The field is available either when a record is created or updated, but not in both cases.',
         },
       ],
     },
   })
 
-  const otherError = getWriteResponseError(
-    otherCustomField.attributes[SOAP_SCRIPT_ID]
-  )
-  const entityError = getWriteResponseError(
-    entityCustomField.attributes[SOAP_SCRIPT_ID]
-  )
-  const itemError = getWriteResponseError(
-    itemCustomField.attributes[SOAP_SCRIPT_ID]
-  )
-  const crmError = getWriteResponseError(
-    crmCustomField.attributes[SOAP_SCRIPT_ID]
-  )
+  const otherError = getWriteResponseError(otherCustomField.attributes[SOAP_SCRIPT_ID])
+  const entityError = getWriteResponseError(entityCustomField.attributes[SOAP_SCRIPT_ID])
+  const itemError = getWriteResponseError(itemCustomField.attributes[SOAP_SCRIPT_ID])
+  const crmError = getWriteResponseError(crmCustomField.attributes[SOAP_SCRIPT_ID])
 
   const allErrors = [otherError, entityError, itemError, crmError]
 
@@ -153,16 +161,15 @@ describe('Filter uneditable locked fields', () => {
     allInstances = allInstancesOriginal.map(instance => instance.clone())
   })
 
-  describe('Modify instances that have a locked field that failed with \'INSUFFICIENT_PERMISSION\'', () => {
+  describe("Modify instances that have a locked field that failed with 'INSUFFICIENT_PERMISSION'", () => {
     it('Should remove all locked custom fields of all field types', async () => {
-      const areModified = await awu(allInstances).map((instance, index) =>
-        removeUneditableLockedField(instance, allErrors[index], emptyElementsSource.has)).toArray()
+      const areModified = await awu(allInstances)
+        .map((instance, index) => removeUneditableLockedField(instance, allErrors[index], emptyElementsSource.has))
+        .toArray()
 
       expect(areModified).toEqual([true, true, true, true])
       expect(
-        allInstances
-          .map(modifiedInstance => modifiedInstance.value[CUSTOM_FIELD_LIST])
-          .filter(_.isUndefined)
+        allInstances.map(modifiedInstance => modifiedInstance.value[CUSTOM_FIELD_LIST]).filter(_.isUndefined),
       ).toHaveLength(4)
     })
 
@@ -191,18 +198,14 @@ describe('Filter uneditable locked fields', () => {
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
-    const customRecordInstanceOriginal = new InstanceElement(
-      'customRecordInstance',
-      customRecordType,
-      {
-        attributes: {
-          internalId: '5',
-        },
-        [CUSTOM_FIELD_LIST]: {
-          [PLATFORM_CORE_CUSTOM_FIELD]: [crmCustomField],
-        },
-      }
-    )
+    const customRecordInstanceOriginal = new InstanceElement('customRecordInstance', customRecordType, {
+      attributes: {
+        internalId: '5',
+      },
+      [CUSTOM_FIELD_LIST]: {
+        [PLATFORM_CORE_CUSTOM_FIELD]: [crmCustomField],
+      },
+    })
 
     const customRecordInstance = customRecordInstanceOriginal.clone()
     const isModified = await removeUneditableLockedField(customRecordInstance, crmError, emptyElementsSource.has)
@@ -218,14 +221,15 @@ describe('Filter uneditable locked fields', () => {
       crmCustomFieldInstance,
     ])
 
-    const areModified = await awu(allInstances).map((instance, index) =>
-      removeUneditableLockedField(instance, allErrors[index], elementsSource.has)).toArray()
+    const areModified = await awu(allInstances)
+      .map((instance, index) => removeUneditableLockedField(instance, allErrors[index], elementsSource.has))
+      .toArray()
 
     expect(areModified).toEqual([false, false, false, false])
     expect(allInstances).toEqual(allInstancesOriginal)
   })
 
-  it('Should not modify the instances when the error code is different than \'INSUFFICIENT PERMISSION\'', async () => {
+  it("Should not modify the instances when the error code is different than 'INSUFFICIENT PERMISSION'", async () => {
     const error: WriteResponseError = {
       status: {
         attributes: {
@@ -240,32 +244,31 @@ describe('Filter uneditable locked fields', () => {
       },
     }
 
-    const areModified = await awu(allInstances).map(instance =>
-      removeUneditableLockedField(instance, error, emptyElementsSource.has)).toArray()
+    const areModified = await awu(allInstances)
+      .map(instance => removeUneditableLockedField(instance, error, emptyElementsSource.has))
+      .toArray()
 
     expect(areModified).toEqual([false, false, false, false])
     expect(allInstances).toEqual(allInstancesOriginal)
   })
 
-  it('Should not modify instance with field name that doesn\'t match any known field instance', async () => {
-    const instanceOriginal = new InstanceElement(
-      'testUnknown',
-      testType,
-      {
-        attributes: {
-          internalId: '6',
-        },
-        [CUSTOM_FIELD_LIST]: {
-          [PLATFORM_CORE_CUSTOM_FIELD]: [{
+  it("Should not modify instance with field name that doesn't match any known field instance", async () => {
+    const instanceOriginal = new InstanceElement('testUnknown', testType, {
+      attributes: {
+        internalId: '6',
+      },
+      [CUSTOM_FIELD_LIST]: {
+        [PLATFORM_CORE_CUSTOM_FIELD]: [
+          {
             attributes: {
               [SOAP_SCRIPT_ID]: 'NotARealPrefixTest',
               'xsi:type': 'platformCore:BooleanCustomFieldRef',
               'platformCore:value': true,
             },
-          }],
-        },
-      }
-    )
+          },
+        ],
+      },
+    })
 
     const instance = instanceOriginal.clone()
     const error = getWriteResponseError('NotARealPrefixTest')
@@ -274,7 +277,7 @@ describe('Filter uneditable locked fields', () => {
     expect(instance).toEqual(instanceOriginal)
   })
 
-  it('Should not modify instance that doesn\'t contain the matched field', async () => {
+  it("Should not modify instance that doesn't contain the matched field", async () => {
     const error = getWriteResponseError(`${OTHER_CUSTOM_FIELD_PREFIX}someRandomField`)
 
     const instance = otherInstance.clone()
@@ -284,15 +287,11 @@ describe('Filter uneditable locked fields', () => {
   })
 
   it('Should not modify instance with no custom fields', async () => {
-    const instanceOriginal = new InstanceElement(
-      'testUnknown',
-      testType,
-      {
-        attributes: {
-          internalId: '6',
-        },
-      }
-    )
+    const instanceOriginal = new InstanceElement('testUnknown', testType, {
+      attributes: {
+        internalId: '6',
+      },
+    })
 
     const instance = instanceOriginal.clone()
     const isModified = await removeUneditableLockedField(instance, otherError, emptyElementsSource.has)

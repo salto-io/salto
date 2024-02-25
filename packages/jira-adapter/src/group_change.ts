@@ -1,34 +1,39 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { getChangeData, isModificationChange, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, OBJECT_TYPE_ATTRIBUTE_TYPE, QUEUE_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
+import {
+  FIELD_CONFIGURATION_ITEM_TYPE_NAME,
+  OBJECT_TYPE_ATTRIBUTE_TYPE,
+  QUEUE_TYPE,
+  SCRIPT_FRAGMENT_TYPE,
+  SCRIPT_RUNNER_LISTENER_TYPE,
+  SECURITY_LEVEL_TYPE,
+  WORKFLOW_TYPE_NAME,
+} from './constants'
 
-export const getWorkflowGroup: deployment.ChangeIdFunction = async change => (
-  isModificationChange(change)
-    && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
+export const getWorkflowGroup: deployment.ChangeIdFunction = async change =>
+  isModificationChange(change) && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
     ? 'Workflow Modifications'
     : undefined
-)
 
 export const getSecurityLevelGroup: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
-  if (!isAdditionChange(change)
-    || instance.elemID.typeName !== SECURITY_LEVEL_TYPE) {
+  if (!isAdditionChange(change) || instance.elemID.typeName !== SECURITY_LEVEL_TYPE) {
     return undefined
   }
 
@@ -39,7 +44,6 @@ export const getSecurityLevelGroup: deployment.ChangeIdFunction = async change =
 
   return parents[0].elemID.getFullName()
 }
-
 
 const getFieldConfigItemGroup: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
@@ -53,27 +57,25 @@ const getFieldConfigItemGroup: deployment.ChangeIdFunction = async change => {
 }
 
 const getScriptListenersGroup: deployment.ChangeIdFunction = async change =>
-  (getChangeData(change).elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE
-    ? 'Script Listeners'
-    : undefined)
+  getChangeData(change).elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE ? 'Script Listeners' : undefined
 
 const getScriptedFragmentsGroup: deployment.ChangeIdFunction = async change =>
-  (getChangeData(change).elemID.typeName === SCRIPT_FRAGMENT_TYPE
-    ? 'Scripted Fragments'
-    : undefined)
+  getChangeData(change).elemID.typeName === SCRIPT_FRAGMENT_TYPE ? 'Scripted Fragments' : undefined
 
 const getQueuesAdditionByProjectGroup: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
-  if (!isAdditionChange(change)
-    || instance.elemID.typeName !== QUEUE_TYPE) {
+  if (!isAdditionChange(change) || instance.elemID.typeName !== QUEUE_TYPE) {
     return undefined
   }
   const parent = getParent(instance)
   return `queue addition of ${parent.elemID.getFullName()}`
 }
 const getAttributeAdditionByObjectTypeGroup: deployment.ChangeIdFunction = async change => {
-  if (isAdditionChange(change) && isInstanceChange(change)
-    && getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE) {
+  if (
+    isAdditionChange(change) &&
+    isInstanceChange(change) &&
+    getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE
+  ) {
     const instance = getChangeData(change)
     return `attribute addition of ${instance.value.objectType.elemID.getFullName()}`
   }

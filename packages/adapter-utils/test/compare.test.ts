@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   ObjectType,
@@ -28,14 +28,13 @@ import {
   ReferenceExpression,
   isAdditionChange,
   toChange,
+  Change,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges, getRelevantNamesFromChange } from '../src/compare'
 
 describe('detailedCompare', () => {
-  const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean => (
-    changes.find(change => change.action === action
-            && _.isEqual(change.id, id)) !== undefined
-  )
+  const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean =>
+    changes.find(change => change.action === action && _.isEqual(change.id, id)) !== undefined
   describe('compare instances', () => {
     const instType = new ObjectType({
       elemID: new ElemID('salto', 'obj'),
@@ -51,7 +50,7 @@ describe('detailedCompare', () => {
       {
         [INSTANCE_ANNOTATIONS.HIDDEN]: true,
         [INSTANCE_ANNOTATIONS.SERVICE_URL]: 'before',
-      }
+      },
     )
     const after = new InstanceElement(
       'inst',
@@ -64,45 +63,40 @@ describe('detailedCompare', () => {
       {
         [INSTANCE_ANNOTATIONS.SERVICE_URL]: 'after',
         [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [],
-      }
+      },
     )
     const changes = detailedCompare(before, after)
     it('should create add changes for values that were only present in the after instance', () => {
-      expect(hasChange(changes, 'add', after.elemID.createNestedID('after')))
-        .toBeTruthy()
+      expect(hasChange(changes, 'add', after.elemID.createNestedID('after'))).toBeTruthy()
     })
     it('should create remove changes for values that were only present in the before instance', () => {
-      expect(hasChange(changes, 'remove', before.elemID.createNestedID('before')))
-        .toBeTruthy()
+      expect(hasChange(changes, 'remove', before.elemID.createNestedID('before'))).toBeTruthy()
     })
     it('should create modify changes for values that were only present both instances', () => {
-      expect(hasChange(changes, 'modify', before.elemID.createNestedID('modify')))
-        .toBeTruthy()
+      expect(hasChange(changes, 'modify', before.elemID.createNestedID('modify'))).toBeTruthy()
     })
     it('should create add changes for new annotation values', () => {
       expect(
-        hasChange(changes, 'add', after.elemID.createNestedID(INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES))
+        hasChange(changes, 'add', after.elemID.createNestedID(INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES)),
       ).toBeTruthy()
     })
     it('should create modify changes for changed annotation values', () => {
-      expect(
-        hasChange(changes, 'modify', after.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL))
-      ).toBeTruthy()
+      expect(hasChange(changes, 'modify', after.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL))).toBeTruthy()
     })
     it('should create remove changes for removed annotation values', () => {
-      expect(
-        hasChange(changes, 'remove', before.elemID.createNestedID(INSTANCE_ANNOTATIONS.HIDDEN))
-      ).toBeTruthy()
+      expect(hasChange(changes, 'remove', before.elemID.createNestedID(INSTANCE_ANNOTATIONS.HIDDEN))).toBeTruthy()
     })
     describe('compare lists with compareListItems', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let listID: ElemID
+      let baseChange: Change<InstanceElement>
 
       beforeEach(() => {
         beforeInst = new InstanceElement('inst', instType, { list: [] })
         afterInst = new InstanceElement('inst', instType, { list: [] })
         listID = beforeInst.elemID.createNestedID('list')
+        baseChange = toChange({ before: beforeInst, after: afterInst })
       })
 
       it('should detect removals', () => {
@@ -117,6 +111,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -126,6 +121,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
         ])
       })
@@ -142,6 +138,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -151,6 +148,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
         ])
       })
@@ -167,6 +165,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -175,6 +174,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -184,6 +184,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('0'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('3'),
@@ -193,6 +194,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('4'),
@@ -201,6 +203,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('3'),
             },
+            baseChange,
           },
         ])
       })
@@ -217,6 +220,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -226,6 +230,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('0'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -235,6 +240,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('3'),
@@ -244,6 +250,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('3'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('4'),
@@ -253,6 +260,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('3'),
               after: listID.createNestedID('4'),
             },
+            baseChange,
           },
         ])
       })
@@ -269,6 +277,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -278,6 +287,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -286,6 +296,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('3'),
@@ -294,6 +305,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('3'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('4'),
@@ -303,6 +315,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
         ])
       })
@@ -339,6 +352,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1', 'value2', '0'),
               after: listID.createNestedID('0', 'value2', '0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('0'),
@@ -351,6 +365,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -363,6 +378,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('0'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
         ])
       })
@@ -390,6 +406,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -398,6 +415,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('2'),
             },
+            baseChange,
           },
         ])
       })
@@ -432,41 +450,21 @@ describe('detailedCompare', () => {
     })
 
     const changes = detailedCompare(before, after)
+    it('should add the right baseChange', () => {
+      const baseChange = toChange({ before, after })
+      changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+    })
     it('should create add changes for values that were only present in the after type', () => {
-      expect(hasChange(
-        changes,
-        'add',
-        after.elemID.createNestedID('annotation', 'after')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'add',
-        after.elemID.createNestedID('attr', 'after')
-      )).toBeTruthy()
+      expect(hasChange(changes, 'add', after.elemID.createNestedID('annotation', 'after'))).toBeTruthy()
+      expect(hasChange(changes, 'add', after.elemID.createNestedID('attr', 'after'))).toBeTruthy()
     })
     it('should create remove changes for values that were only present in the before type', () => {
-      expect(hasChange(
-        changes,
-        'remove',
-        after.elemID.createNestedID('annotation', 'before')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'remove',
-        after.elemID.createNestedID('attr', 'before')
-      )).toBeTruthy()
+      expect(hasChange(changes, 'remove', after.elemID.createNestedID('annotation', 'before'))).toBeTruthy()
+      expect(hasChange(changes, 'remove', after.elemID.createNestedID('attr', 'before'))).toBeTruthy()
     })
     it('should create modify changes for values that were only present both types', () => {
-      expect(hasChange(
-        changes,
-        'modify',
-        after.elemID.createNestedID('annotation', 'modify')
-      )).toBeTruthy()
-      expect(hasChange(
-        changes,
-        'modify',
-        after.elemID.createNestedID('attr', 'modify')
-      )).toBeTruthy()
+      expect(hasChange(changes, 'modify', after.elemID.createNestedID('annotation', 'modify'))).toBeTruthy()
+      expect(hasChange(changes, 'modify', after.elemID.createNestedID('attr', 'modify'))).toBeTruthy()
     })
   })
 
@@ -528,61 +526,33 @@ describe('detailedCompare', () => {
 
     describe('without field changes', () => {
       const changes = detailedCompare(before, after)
+      it('should add the right baseChange', () => {
+        const baseChange = toChange({ before, after })
+        changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+      })
       it('should create add changes for values that were only present in the after object', () => {
-        expect(hasChange(
-          changes,
-          'add',
-          after.elemID.createNestedID('annotation', 'after')
-        )).toBeTruthy()
-        expect(hasChange(
-          changes,
-          'add',
-          after.elemID.createNestedID('attr', 'after')
-        )).toBeTruthy()
+        expect(hasChange(changes, 'add', after.elemID.createNestedID('annotation', 'after'))).toBeTruthy()
+        expect(hasChange(changes, 'add', after.elemID.createNestedID('attr', 'after'))).toBeTruthy()
       })
       it('should create remove changes for values that were only present in the before object', () => {
-        expect(hasChange(
-          changes,
-          'remove',
-          after.elemID.createNestedID('annotation', 'before')
-        )).toBeTruthy()
-        expect(hasChange(
-          changes,
-          'remove',
-          after.elemID.createNestedID('attr', 'before')
-        )).toBeTruthy()
+        expect(hasChange(changes, 'remove', after.elemID.createNestedID('annotation', 'before'))).toBeTruthy()
+        expect(hasChange(changes, 'remove', after.elemID.createNestedID('attr', 'before'))).toBeTruthy()
       })
       it('should create modify changes for values that were only present both objects', () => {
-        expect(hasChange(
-          changes,
-          'modify',
-          after.elemID.createNestedID('annotation', 'modify')
-        )).toBeTruthy()
-        expect(hasChange(
-          changes,
-          'modify',
-          after.elemID.createNestedID('attr', 'modify')
-        )).toBeTruthy()
+        expect(hasChange(changes, 'modify', after.elemID.createNestedID('annotation', 'modify'))).toBeTruthy()
+        expect(hasChange(changes, 'modify', after.elemID.createNestedID('attr', 'modify'))).toBeTruthy()
       })
     })
     describe('with field changes', () => {
       const changes = detailedCompare(before, after, { createFieldChanges: true })
+      it('should add the right baseChange', () => {
+        const baseChange = toChange({ before, after })
+        changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+      })
       it('should identify field changes, and create changes with the field id', () => {
-        expect(hasChange(
-          changes,
-          'modify',
-          after.fields.modify.elemID.createNestedID('modify')
-        )).toBeTruthy()
-        expect(hasChange(
-          changes,
-          'add',
-          after.fields.after.elemID
-        )).toBeTruthy()
-        expect(hasChange(
-          changes,
-          'remove',
-          before.fields.before.elemID
-        )).toBeTruthy()
+        expect(hasChange(changes, 'modify', after.fields.modify.elemID.createNestedID('modify'))).toBeTruthy()
+        expect(hasChange(changes, 'add', after.fields.after.elemID)).toBeTruthy()
+        expect(hasChange(changes, 'remove', before.fields.before.elemID)).toBeTruthy()
       })
     })
   })
@@ -598,26 +568,18 @@ describe('detailedCompare', () => {
       modify: 'After',
     })
     const changes = detailedCompare(before, after)
+    it('should add the right baseChange', () => {
+      const baseChange = toChange({ before, after })
+      changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+    })
     it('should create add changes for values that were only present in the after field', () => {
-      expect(hasChange(
-        changes,
-        'add',
-        after.elemID.createNestedID('after')
-      )).toBeTruthy()
+      expect(hasChange(changes, 'add', after.elemID.createNestedID('after'))).toBeTruthy()
     })
     it('should create remove changes for values that were only present in the before field', () => {
-      expect(hasChange(
-        changes,
-        'remove',
-        after.elemID.createNestedID('before')
-      )).toBeTruthy()
+      expect(hasChange(changes, 'remove', after.elemID.createNestedID('before'))).toBeTruthy()
     })
     it('should create modify changes for values that were only present both fields', () => {
-      expect(hasChange(
-        changes,
-        'modify',
-        after.elemID.createNestedID('modify')
-      )).toBeTruthy()
+      expect(hasChange(changes, 'modify', after.elemID.createNestedID('modify'))).toBeTruthy()
     })
   })
 })
@@ -626,11 +588,7 @@ describe('applyDetailedChanges', () => {
   let inst: InstanceElement
   beforeAll(() => {
     const instType = new ObjectType({ elemID: new ElemID('test', 'test') })
-    inst = new InstanceElement(
-      'test',
-      instType,
-      { val: 1, rem: 0, nested: { mod: 1 } },
-    )
+    inst = new InstanceElement('test', instType, { val: 1, rem: 0, nested: { mod: 1 } })
     const changes: DetailedChange[] = [
       {
         id: inst.elemID.createNestedID('nested', 'mod'),
@@ -733,29 +691,21 @@ describe('applyDetailedChanges', () => {
       let outputInst: InstanceElement
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
-        beforeInst = new InstanceElement(
-          'inst',
-          instType,
-          {
-            a: [
-              { a: 2 },
-              { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
-              { a: 2, b: 3 },
-            ],
-          }
-        )
+        beforeInst = new InstanceElement('inst', instType, {
+          a: [
+            { a: 2 },
+            { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
+            { a: 2, b: 3 },
+          ],
+        })
 
-        afterInst = new InstanceElement(
-          'inst',
-          instType,
-          {
-            a: [
-              { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
-              { a: 2, b: 4 },
-              { a: 4 },
-            ],
-          }
-        )
+        afterInst = new InstanceElement('inst', instType, {
+          a: [
+            { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
+            { a: 2, b: 4 },
+            { a: 4 },
+          ],
+        })
         const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
         applyDetailedChanges(outputInst, listChanges)
@@ -771,25 +721,13 @@ describe('applyDetailedChanges', () => {
       let outputInst: InstanceElement
       beforeEach(() => {
         const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
-        beforeInst = new InstanceElement(
-          'inst',
-          instType,
-          {
-            a: [
-              { b: [2, 3] },
-            ],
-          }
-        )
+        beforeInst = new InstanceElement('inst', instType, {
+          a: [{ b: [2, 3] }],
+        })
 
-        afterInst = new InstanceElement(
-          'inst',
-          instType,
-          {
-            a: [
-              { b: [2] },
-            ],
-          }
-        )
+        afterInst = new InstanceElement('inst', instType, {
+          a: [{ b: [2] }],
+        })
         const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
         outputInst = beforeInst.clone()
         applyDetailedChanges(outputInst, listChanges)
@@ -805,28 +743,17 @@ describe('applyDetailedChanges', () => {
     let outputInst: InstanceElement
     beforeEach(() => {
       const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
-      beforeInst = new InstanceElement(
-        'inst',
-        instType,
-        {
-          a: [
-            { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
-            { a: 3 },
-          ],
-        }
-      )
+      beforeInst = new InstanceElement('inst', instType, {
+        a: [{ ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) }, { a: 3 }],
+      })
 
-      afterInst = new InstanceElement(
-        'inst',
-        instType,
-        {
-          a: [
-            { a: 2, b: 5 },
-            { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
-            { a: 2, b: 4 },
-          ],
-        }
-      )
+      afterInst = new InstanceElement('inst', instType, {
+        a: [
+          { a: 2, b: 5 },
+          { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
+          { a: 2, b: 4 },
+        ],
+      })
       const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
       outputInst = beforeInst.clone()
       applyDetailedChanges(outputInst, listChanges)
@@ -842,27 +769,19 @@ describe('applyDetailedChanges', () => {
     let outputInst: InstanceElement
     beforeEach(() => {
       const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
-      beforeInst = new InstanceElement(
-        'inst',
-        instType,
-        {
-          a: {
-            1: 'a',
-            2: 'b',
-          },
-        }
-      )
+      beforeInst = new InstanceElement('inst', instType, {
+        a: {
+          1: 'a',
+          2: 'b',
+        },
+      })
 
-      afterInst = new InstanceElement(
-        'inst',
-        instType,
-        {
-          a: {
-            1: 'b',
-            2: 'a',
-          },
-        }
-      )
+      afterInst = new InstanceElement('inst', instType, {
+        a: {
+          1: 'b',
+          2: 'a',
+        },
+      })
       const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
       outputInst = beforeInst.clone()
       applyDetailedChanges(outputInst, listChanges)
@@ -876,13 +795,9 @@ describe('applyDetailedChanges', () => {
     let beforeInst: InstanceElement
     beforeEach(() => {
       const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
-      beforeInst = new InstanceElement(
-        'inst',
-        instType,
-        {
-          a: _.times(11),
-        }
-      )
+      beforeInst = new InstanceElement('inst', instType, {
+        a: _.times(11),
+      })
 
       const listChanges: DetailedChange[] = [
         {
@@ -918,16 +833,8 @@ describe('applyDetailedChanges', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       beforeEach(() => {
-        beforeInst = new InstanceElement(
-          'name1',
-          new ObjectType({ elemID: new ElemID('test', 'type') }),
-          { val1: '1' },
-        )
-        afterInst = new InstanceElement(
-          'name2',
-          new ObjectType({ elemID: new ElemID('test', 'type') }),
-          { val1: '2' },
-        )
+        beforeInst = new InstanceElement('name1', new ObjectType({ elemID: new ElemID('test', 'type') }), { val1: '1' })
+        afterInst = new InstanceElement('name2', new ObjectType({ elemID: new ElemID('test', 'type') }), { val1: '2' })
       })
       it('should apply the changes', () => {
         const changes = detailedCompare(beforeInst, afterInst)
@@ -985,8 +892,10 @@ describe('getRelevantNamesFromChange', () => {
     expect(getRelevantNamesFromChange(toChange({ after: instType }))).toEqual(['salto.obj'])
   })
   it('should get relevant name for object with fields', () => {
-    expect(getRelevantNamesFromChange(toChange({ before: objectWithFields }))).toEqual(
-      ['test.obj2', 'test.obj2.field.fieldOne', 'test.obj2.field.fieldTwo']
-    )
+    expect(getRelevantNamesFromChange(toChange({ before: objectWithFields }))).toEqual([
+      'test.obj2',
+      'test.obj2.field.fieldOne',
+      'test.obj2.field.fieldTwo',
+    ])
   })
 })

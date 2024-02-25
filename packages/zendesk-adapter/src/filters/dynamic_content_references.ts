@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   Element,
@@ -64,82 +64,79 @@ const transformDynamicContentDependencies = async (
         ZENDESK,
         DYNAMIC_CONTENT_ITEM_TYPE_NAME,
         // matches[1] is the value after the ".", it is caught by the capture group in the regex
-        matches[1]
+        matches[1],
       )
       missingInstance.value.placeholder = `${placeholder[0]}`
-      return [
-        OPEN_BRACKETS,
-        new ReferenceExpression(missingInstance.elemID, missingInstance),
-        CLOSE_BRACKETS,
-      ]
+      return [OPEN_BRACKETS, new ReferenceExpression(missingInstance.elemID, missingInstance), CLOSE_BRACKETS]
     }
-    return [
-      OPEN_BRACKETS,
-      new ReferenceExpression(itemInstance.elemID, itemInstance),
-      CLOSE_BRACKETS,
-    ]
+    return [OPEN_BRACKETS, new ReferenceExpression(itemInstance.elemID, itemInstance), CLOSE_BRACKETS]
   }
-  instance.value = await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    pathID: instance.elemID,
-    transformFunc: ({ value, path }) => {
-      if (path && path.name.startsWith('raw_') && _.isString(value)) {
-        return extractTemplate(value, [PLACEHOLDER_REGEX], partToTemplate)
-      }
-      return value
-    },
-    allowEmpty: true,
-  }) ?? instance.value
+  instance.value =
+    (await transformValues({
+      values: instance.value,
+      type: await instance.getType(),
+      pathID: instance.elemID,
+      transformFunc: ({ value, path }) => {
+        if (path && path.name.startsWith('raw_') && _.isString(value)) {
+          return extractTemplate(value, [PLACEHOLDER_REGEX], partToTemplate)
+        }
+        return value
+      },
+      allowEmpty: true,
+    })) ?? instance.value
 }
 
 const templatePartToApiValue = (allParts: TemplatePart[]): string =>
-  allParts.map(part => {
-    if (isReferenceExpression(part)) {
-      if (!isInstanceElement(part.value)) {
-        return part.value
+  allParts
+    .map(part => {
+      if (isReferenceExpression(part)) {
+        if (!isInstanceElement(part.value)) {
+          return part.value
+        }
+        if (
+          part.value.value.placeholder?.startsWith(OPEN_BRACKETS) &&
+          part.value.value.placeholder?.endsWith(CLOSE_BRACKETS)
+        ) {
+          return part.value.value.placeholder.slice(OPEN_BRACKETS.length, -CLOSE_BRACKETS.length)
+        }
       }
-      if (part.value.value.placeholder?.startsWith(OPEN_BRACKETS)
-        && part.value.value.placeholder?.endsWith(CLOSE_BRACKETS)) {
-        return part.value.value.placeholder.slice(
-          OPEN_BRACKETS.length, -(CLOSE_BRACKETS.length)
-        )
-      }
-    }
-    return part
-  }).join('')
+      return part
+    })
+    .join('')
 
 const returnDynamicContentsToApiValue = async (
   instance: InstanceElement,
   mapping: Record<string, TemplateExpression>,
 ): Promise<void> => {
-  instance.value = await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    pathID: instance.elemID,
-    transformFunc: ({ value, path }) => {
-      if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
-        const transformedValue = templatePartToApiValue(value.parts)
-        mapping[transformedValue] = value
-        return transformedValue
-      }
-      return value
-    },
-    allowEmpty: true,
-  }) ?? instance.value
+  instance.value =
+    (await transformValues({
+      values: instance.value,
+      type: await instance.getType(),
+      pathID: instance.elemID,
+      transformFunc: ({ value, path }) => {
+        if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
+          const transformedValue = templatePartToApiValue(value.parts)
+          mapping[transformedValue] = value
+          return transformedValue
+        }
+        return value
+      },
+      allowEmpty: true,
+    })) ?? instance.value
 }
 
 export const DynamicContentReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
   const instances = elements.filter(isInstanceElement)
-
   const placeholderToItem = _(instances)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
     .keyBy(instance => instance.value.placeholder)
     .value()
 
-  await Promise.all(instances.map(instance =>
-    transformDynamicContentDependencies(instance, placeholderToItem,
-      config[FETCH_CONFIG].enableMissingReferences)))
+  await Promise.all(
+    instances.map(instance =>
+      transformDynamicContentDependencies(instance, placeholderToItem, config[FETCH_CONFIG].enableMissingReferences),
+    ),
+  )
 }
 
 /**
@@ -148,31 +145,32 @@ export const DynamicContentReferencesOnFetch = async (elements: Element[], confi
  */
 const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
-  return ({
+  return {
     name: 'dynamicContentReferencesFilter',
     onFetch: async (elements: Element[]): Promise<void> => DynamicContentReferencesOnFetch(elements, config),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      await Promise.all(changes.map(getChangeData).map(instance =>
-        returnDynamicContentsToApiValue(instance, templateMapping)))
+      await Promise.all(
+        changes.map(getChangeData).map(instance => returnDynamicContentsToApiValue(instance, templateMapping)),
+      )
     },
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> =>
       awu(changes.map(getChangeData)).forEach(async instance => {
-        instance.value = await transformValues({
-          values: instance.value,
-          type: await instance.getType(),
-          pathID: instance.elemID,
-          transformFunc: ({ value, path }) => {
-            if (path && path.name.startsWith('raw_') && _.isString(value)
-              && templateMapping[value]) {
-              return templateMapping[value]
-            }
-            return value
-          },
-          allowEmpty: true,
-          strict: false,
-        }) ?? instance.value
+        instance.value =
+          (await transformValues({
+            values: instance.value,
+            type: await instance.getType(),
+            pathID: instance.elemID,
+            transformFunc: ({ value, path }) => {
+              if (path && path.name.startsWith('raw_') && _.isString(value) && templateMapping[value]) {
+                return templateMapping[value]
+              }
+              return value
+            },
+            allowEmpty: true,
+            strict: false,
+          })) ?? instance.value
       }),
-  })
+  }
 }
 
 export default filterCreator

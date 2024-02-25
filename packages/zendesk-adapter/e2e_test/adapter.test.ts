@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _, { isArray } from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import {
@@ -28,9 +28,13 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceElement,
-  isObjectType, isReferenceExpression, isStaticFile, isTemplateExpression,
+  isObjectType,
+  isReferenceExpression,
+  isStaticFile,
+  isTemplateExpression,
   ListType,
-  ObjectType, ProgressReporter,
+  ObjectType,
+  ProgressReporter,
   ReferenceExpression,
   StaticFile,
   TemplateExpression,
@@ -72,11 +76,13 @@ import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
-  GUIDE, GUIDE_THEME_TYPE_NAME,
+  GUIDE,
+  GUIDE_THEME_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
-  SECTION_TYPE_NAME, THEME_SETTINGS_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -127,15 +133,13 @@ const createInstanceElement = ({
     new ObjectType({ elemID: new ElemID(ZENDESK, type), fields }),
     instValues,
     undefined,
-    parent
-      ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
-      : undefined
+    parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] } : undefined,
   )
 }
 
-
 const deployChanges = async (
-  adapterAttr: Reals, changes: Record<ChangeId, Change<InstanceElement>[]>
+  adapterAttr: Reals,
+  changes: Record<ChangeId, Change<InstanceElement>[]>,
 ): Promise<DeployResult[]> => {
   let planElementById: Record<string, InstanceElement>
   const deployResults = await awu(Object.entries(changes))
@@ -143,7 +147,7 @@ const deployChanges = async (
       planElementById = _.keyBy(group.map(getChangeData), data => data.elemID.getFullName())
       const nullProgressReporter: ProgressReporter = {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        reportProgress: () => { },
+        reportProgress: () => {},
       }
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: id, changes: group },
@@ -154,11 +158,13 @@ const deployChanges = async (
       deployResult.appliedChanges // need to update reference expressions
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
-        .filter(e => [
-          ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
-          PERMISSION_GROUP_TYPE_NAME,
-          ARTICLE_ATTACHMENT_TYPE_NAME,
-        ].includes(e.elemID.typeName))
+        .filter(e =>
+          [
+            ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
+            PERMISSION_GROUP_TYPE_NAME,
+            ARTICLE_ATTACHMENT_TYPE_NAME,
+          ].includes(e.elemID.typeName),
+        )
         .forEach(updatedElement => {
           const planElement = planElementById[updatedElement.elemID.getFullName()]
           if (planElement !== undefined) {
@@ -173,8 +179,7 @@ const deployChanges = async (
 
 const cleanup = async (adapterAttr: Reals): Promise<void> => {
   const fetchResult = await adapterAttr.adapter.fetch({
-    progressReporter:
-      { reportProgress: () => null },
+    progressReporter: { reportProgress: () => null },
   })
   expect(fetchResult.errors).toHaveLength(0)
   const { elements } = fetchResult
@@ -183,10 +188,7 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brand => brand.elemID.name.startsWith('Testbrand'))
   if (e2eBrandInstances.length > 0) {
-    await deployChanges(
-      adapterAttr,
-      { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) }
-    )
+    await deployChanges(adapterAttr, { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) })
   }
 }
 
@@ -194,9 +196,7 @@ const usedConfig = {
   ...DEFAULT_CONFIG,
   [FETCH_CONFIG]: {
     ...DEFAULT_CONFIG[FETCH_CONFIG],
-    include: [
-      { type: '.*' },
-    ],
+    include: [{ type: '.*' }],
     exclude: [],
     guide: {
       brands: ['.*'],
@@ -208,7 +208,6 @@ const usedConfig = {
     supportedTypes: ALL_SUPPORTED_TYPES,
   },
 }
-
 
 describe('Zendesk adapter E2E', () => {
   describe('fetch and deploy', () => {
@@ -230,21 +229,19 @@ describe('Zendesk adapter E2E', () => {
      * this function allows the deploy and fetch multiple times in the e2e, if needed.
      */
     const deployAndFetch = async (instancesToAdd: InstanceElement[], beforeAll: boolean): Promise<void> => {
-      const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
-        .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
-      const groupIdToInstancesTemp = _.groupBy(
-        instancesToAdd,
-        inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
+      const changeGroups = await getChangeGroupIds(
+        new Map<string, Change>(instancesToAdd.map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])),
+      )
+      const groupIdToInstancesTemp = _.groupBy(instancesToAdd, inst =>
+        changeGroups.changeGroupIdMap.get(inst.elemID.getFullName()),
       )
       groupIdToInstances = beforeAll ? groupIdToInstancesTemp : groupIdToInstances
-      const firstGroupChanges = _.mapValues(
-        groupIdToInstancesTemp,
-        instances => instances.map(inst => toChange({ after: inst }))
+      const firstGroupChanges = _.mapValues(groupIdToInstancesTemp, instances =>
+        instances.map(inst => toChange({ after: inst })),
       )
       await deployChanges(adapterAttr, firstGroupChanges)
       const fetchResult = await adapterAttr.adapter.fetch({
-        progressReporter:
-          { reportProgress: () => null },
+        progressReporter: { reportProgress: () => null },
       })
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(0)
@@ -253,24 +250,22 @@ describe('Zendesk adapter E2E', () => {
           credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements(elements),
         },
-        usedConfig
+        usedConfig,
       )
     }
 
     /**
      * returns a record of the elemID.name and the instance from elements that corresponds to the elemID.
      */
-    const getElementsAfterFetch = (originalInstances: InstanceElement[]):
-      Record<string, InstanceElement | undefined> => {
+    const getElementsAfterFetch = (
+      originalInstances: InstanceElement[],
+    ): Record<string, InstanceElement | undefined> => {
       const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.getFullName())
-      return _.mapValues(
-        nameToElemId,
-        instance => {
-          const val = elements.filter(isInstanceElement).find(e => instance.elemID.isEqual(e.elemID))
-          expect(val).toBeDefined()
-          return val
-        }
-      )
+      return _.mapValues(nameToElemId, instance => {
+        const val = elements.filter(isInstanceElement).find(e => instance.elemID.isEqual(e.elemID))
+        expect(val).toBeDefined()
+        return val
+      })
     }
 
     const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
@@ -280,7 +275,9 @@ describe('Zendesk adapter E2E', () => {
     }
 
     const verifyInstanceValues = (
-      fetchInstance: InstanceElement | undefined, orgInstance: InstanceElement, fieldsToCheck: string[]
+      fetchInstance: InstanceElement | undefined,
+      orgInstance: InstanceElement,
+      fieldsToCheck: string[],
     ): void => {
       expect(fetchInstance).toBeDefined()
       if (fetchInstance === undefined) {
@@ -288,27 +285,21 @@ describe('Zendesk adapter E2E', () => {
       }
       const orgInstanceValues = orgInstance.value
       const fetchInstanceValues = _.pick(fetchInstance.value, fieldsToCheck)
-      fieldsToCheck
-        .forEach(field => {
-          if (isReferenceExpression(orgInstanceValues[field]) && isReferenceExpression(fetchInstanceValues[field])) {
-            expect(fetchInstanceValues[field].elemID.getFullName())
-              .toEqual(orgInstanceValues[field].elemID.getFullName())
-          } else if (isArray(orgInstanceValues[field]) && isArray(fetchInstanceValues[field])) {
-            verifyArray(orgInstanceValues[field], fetchInstanceValues[field])
-          } else if (
-            isTemplateExpression(orgInstanceValues[field])
-            && isTemplateExpression(fetchInstanceValues[field])
-          ) {
-            verifyArray(orgInstanceValues[field].parts, fetchInstanceValues[field].parts)
-          } else {
-            expect(fetchInstanceValues[field]).toEqual(orgInstanceValues[field])
-          }
-        })
+      fieldsToCheck.forEach(field => {
+        if (isReferenceExpression(orgInstanceValues[field]) && isReferenceExpression(fetchInstanceValues[field])) {
+          expect(fetchInstanceValues[field].elemID.getFullName()).toEqual(orgInstanceValues[field].elemID.getFullName())
+        } else if (isArray(orgInstanceValues[field]) && isArray(fetchInstanceValues[field])) {
+          verifyArray(orgInstanceValues[field], fetchInstanceValues[field])
+        } else if (isTemplateExpression(orgInstanceValues[field]) && isTemplateExpression(fetchInstanceValues[field])) {
+          verifyArray(orgInstanceValues[field].parts, fetchInstanceValues[field].parts)
+        } else {
+          expect(fetchInstanceValues[field]).toEqual(orgInstanceValues[field])
+        }
+      })
     }
 
-    const createRootForTheme = async (buffer: Buffer, brandName: string, name: string)
-      : Promise<ThemeDirectory> => {
-      const root = await unzipFolderToElements(buffer, brandName, name)
+    const createRootForTheme = async (buffer: Buffer, brandName: string, name: string): Promise<ThemeDirectory> => {
+      const root = await unzipFolderToElements({ buffer, brandName, name, idsToElements: {} })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()
       if (!isStaticFile(content)) {
@@ -335,7 +326,7 @@ describe('Zendesk adapter E2E', () => {
           credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements([]),
         },
-        usedConfig
+        usedConfig,
       )
       const firstFetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
@@ -412,9 +403,7 @@ describe('Zendesk adapter E2E', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-            ticketFieldInstance.elemID, ticketFieldInstance
-          ),
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
         },
       )
       const ticketFieldOption2Name = `ticketFieldOption2${testSuffix}`
@@ -428,9 +417,7 @@ describe('Zendesk adapter E2E', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-            ticketFieldInstance.elemID, ticketFieldInstance
-          ),
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
         },
       )
       ticketFieldInstance.value.custom_field_options = [
@@ -438,7 +425,8 @@ describe('Zendesk adapter E2E', () => {
         new ReferenceExpression(ticketFieldOption2.elemID, ticketFieldOption2),
       ]
       ticketFieldInstance.value.default_custom_field_option = new ReferenceExpression(
-        ticketFieldOption1.elemID, ticketFieldOption1,
+        ticketFieldOption1.elemID,
+        ticketFieldOption1,
       )
       const userFieldName = createName('user_field')
       const userFieldInstance = createInstanceElement({
@@ -459,9 +447,7 @@ describe('Zendesk adapter E2E', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-            userFieldInstance.elemID, userFieldInstance
-          ),
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(userFieldInstance.elemID, userFieldInstance),
         },
       )
       const userFieldOption2Name = `userFieldOption2${testSuffix}`
@@ -475,9 +461,7 @@ describe('Zendesk adapter E2E', () => {
         },
         undefined,
         {
-          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-            userFieldInstance.elemID, userFieldInstance
-          ),
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(userFieldInstance.elemID, userFieldInstance),
         },
       )
       userFieldInstance.value.custom_field_options = [
@@ -635,7 +619,6 @@ describe('Zendesk adapter E2E', () => {
       categoryInstance.value.translations = [
         new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
         new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
-
       ]
 
       const sectionName = createName('section')
@@ -1064,9 +1047,7 @@ describe('Zendesk adapter E2E', () => {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {
             ...DEFAULT_CONFIG[FETCH_CONFIG],
-            include: [
-              { type: '.*' },
-            ],
+            include: [{ type: '.*' }],
             exclude: [],
             guide: {
               brands: ['.*'],
@@ -1077,7 +1058,7 @@ describe('Zendesk adapter E2E', () => {
             ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
             supportedTypes: ALL_SUPPORTED_TYPES,
           },
-        }
+        },
       )
       await cleanup(adapterAttr)
       const instancesToAdd = [
@@ -1106,29 +1087,27 @@ describe('Zendesk adapter E2E', () => {
 
     afterAll(async () => {
       elements = await resolve(elements, buildElementsSourceFromElements(elements))
-      const firstGroupChanges = _.mapValues(
-        groupIdToInstances,
-        instancesToRemove => instancesToRemove.map(inst => {
-          const instanceToRemove = elements.find(e => e.elemID.isEqual(inst.elemID))
-          return instanceToRemove
-            ? toChange({ before: instanceToRemove as InstanceElement })
-            : undefined
-        }).filter(values.isDefined)
+      const firstGroupChanges = _.mapValues(groupIdToInstances, instancesToRemove =>
+        instancesToRemove
+          .map(inst => {
+            const instanceToRemove = elements.find(e => e.elemID.isEqual(inst.elemID))
+            return instanceToRemove ? toChange({ before: instanceToRemove as InstanceElement }) : undefined
+          })
+          .filter(values.isDefined),
       )
       // remove all elements that include article or section since they were removed already when category was removed
       // this is since the deletion does not take dependencies into account
       Object.keys(firstGroupChanges)
-        .filter(type => (type.includes(SECTION_TYPE_NAME) || type.includes(ARTICLE_TYPE_NAME)))
+        .filter(type => type.includes(SECTION_TYPE_NAME) || type.includes(ARTICLE_TYPE_NAME))
         .forEach(key => delete firstGroupChanges[key])
 
       // remove all custom_object_fields and custom_object_field_options
       // since they were removed already when custom_object was removed
       // this is since the deletion does not take dependencies into account
       Object.keys(firstGroupChanges)
-        .filter(type => (
-          type.includes(CUSTOM_OBJECT_FIELD_TYPE_NAME)
-          || type.includes(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME)
-        ))
+        .filter(
+          type => type.includes(CUSTOM_OBJECT_FIELD_TYPE_NAME) || type.includes(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME),
+        )
         .forEach(key => delete firstGroupChanges[key])
 
       await deployChanges(adapterAttr, firstGroupChanges)
@@ -1201,12 +1180,12 @@ describe('Zendesk adapter E2E', () => {
     it('should fetch the newly deployed instances', async () => {
       const instances = Object.values(groupIdToInstances).flat()
       instances
-        .filter(inst => ![
-          'ticket_field',
-          'user_field',
-          ...GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-          GUIDE_THEME_TYPE_NAME,
-        ].includes(inst.elemID.typeName))
+        .filter(
+          inst =>
+            !['ticket_field', 'user_field', ...GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_THEME_TYPE_NAME].includes(
+              inst.elemID.typeName,
+            ),
+        )
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
           expect(instance).toBeDefined()
@@ -1215,14 +1194,17 @@ describe('Zendesk adapter E2E', () => {
           if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(instanceToAdd.elemID.typeName)) {
             const instanceClone = (instance as InstanceElement).clone()
             const instanceToAddClone = instanceToAdd.clone()
-            const fieldToHandle = instanceClone.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME
-              ? `${CUSTOM_OBJECT_FIELD_TYPE_NAME}s`
-              : CUSTOM_FIELD_OPTIONS_FIELD_NAME
+            const fieldToHandle =
+              instanceClone.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME
+                ? `${CUSTOM_OBJECT_FIELD_TYPE_NAME}s`
+                : CUSTOM_FIELD_OPTIONS_FIELD_NAME
 
-            instanceClone.value[fieldToHandle] = (instanceClone.value[fieldToHandle] ?? [])
-              .map((ref: ReferenceExpression) => ref.elemID.getFullName())
-            instanceToAddClone.value[fieldToHandle] = (instanceToAddClone.value[fieldToHandle] ?? [])
-              .map((ref: ReferenceExpression) => ref.elemID.getFullName())
+            instanceClone.value[fieldToHandle] = (instanceClone.value[fieldToHandle] ?? []).map(
+              (ref: ReferenceExpression) => ref.elemID.getFullName(),
+            )
+            instanceToAddClone.value[fieldToHandle] = (instanceToAddClone.value[fieldToHandle] ?? []).map(
+              (ref: ReferenceExpression) => ref.elemID.getFullName(),
+            )
 
             expect(instanceClone.value).toMatchObject(instanceToAddClone.value)
           } else {
@@ -1235,22 +1217,21 @@ describe('Zendesk adapter E2E', () => {
       instances
         .filter(inst => inst.elemID.typeName === 'ticket_field')
         .forEach(instanceToAdd => {
-          const instance = elements
-            .find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
+          const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
           expect(instance).toBeDefined()
-          expect(
-            _.omit(instance.value, ['custom_field_options', 'default_custom_field_option'])
-          ).toMatchObject(
-            _.omit(instanceToAdd.value, ['custom_field_options', 'default_custom_field_option'])
+          expect(_.omit(instance.value, ['custom_field_options', 'default_custom_field_option'])).toMatchObject(
+            _.omit(instanceToAdd.value, ['custom_field_options', 'default_custom_field_option']),
           )
           expect(instance.value.default_custom_field_option).toBeInstanceOf(ReferenceExpression)
-          expect(instance.value.default_custom_field_option.elemID.getFullName())
-            .toEqual(instanceToAdd.value.default_custom_field_option.elemID.getFullName())
-          expect(instance.value.custom_field_options).toHaveLength(2);
-          (instance.value.custom_field_options as Value[]).forEach((option, index) => {
+          expect(instance.value.default_custom_field_option.elemID.getFullName()).toEqual(
+            instanceToAdd.value.default_custom_field_option.elemID.getFullName(),
+          )
+          expect(instance.value.custom_field_options).toHaveLength(2)
+          ;(instance.value.custom_field_options as Value[]).forEach((option, index) => {
             expect(option).toBeInstanceOf(ReferenceExpression)
-            expect(option.elemID.getFullName())
-              .toEqual(instanceToAdd.value.custom_field_options[index].elemID.getFullName())
+            expect(option.elemID.getFullName()).toEqual(
+              instanceToAdd.value.custom_field_options[index].elemID.getFullName(),
+            )
           })
         })
     })
@@ -1259,29 +1240,27 @@ describe('Zendesk adapter E2E', () => {
       instances
         .filter(inst => inst.elemID.typeName === 'user_field')
         .forEach(instanceToAdd => {
-          const instance = elements
-            .find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
+          const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
           expect(instance).toBeDefined()
-          expect(
-            _.omit(instance.value, ['custom_field_options'])
-          ).toMatchObject(
+          expect(_.omit(instance.value, ['custom_field_options'])).toMatchObject(
             // We omit position since we add the user field to the order element
-            _.omit(instanceToAdd.value, ['custom_field_options', 'position'])
+            _.omit(instanceToAdd.value, ['custom_field_options', 'position']),
           )
-          expect(instance.value.custom_field_options).toHaveLength(2);
-          (instance.value.custom_field_options as Value[]).forEach((option, index) => {
+          expect(instance.value.custom_field_options).toHaveLength(2)
+          ;(instance.value.custom_field_options as Value[]).forEach((option, index) => {
             expect(option).toBeInstanceOf(ReferenceExpression)
-            expect(option.elemID.getFullName())
-              .toEqual(instanceToAdd.value.custom_field_options[index].elemID.getFullName())
+            expect(option.elemID.getFullName()).toEqual(
+              instanceToAdd.value.custom_field_options[index].elemID.getFullName(),
+            )
           })
           const userFieldsOrderInstance = elements
             .filter(e => e.elemID.typeName === 'user_field_order')
             .filter(isInstanceElement)
           expect(userFieldsOrderInstance).toHaveLength(1)
           const order = userFieldsOrderInstance[0]
-          expect(order.value.active
-            .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
-            .toContain(instance.elemID.getFullName())
+          expect(order.value.active.map((ref: ReferenceExpression) => ref.elemID.getFullName())).toContain(
+            instance.elemID.getFullName(),
+          )
         })
     })
     it('should fetch Guide instances and types', async () => {
@@ -1296,17 +1275,16 @@ describe('Zendesk adapter E2E', () => {
     })
     it('should handle guide elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch(guideInstances)
-      guideInstances
-        .forEach(
-          elem => verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value))
-        )
+      guideInstances.forEach(elem =>
+        verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value)),
+      )
     })
     it('should handle guide theme elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch([guideThemeInstance])
       verifyInstanceValues(
         fetchedElements[guideThemeInstance.elemID.getFullName()],
         guideThemeInstance,
-        Object.keys(guideThemeInstance.value,)
+        Object.keys(guideThemeInstance.value),
       )
     })
   })

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
   Adapter,
@@ -69,7 +69,6 @@ const mockServiceWithConfigCreator = 'adapterWithConfigCreator'
 
 const { makeArray } = collections.array
 
-
 const ACCOUNTS = [mockService, emptyMockService]
 
 jest.mock('../src/core/fetch', () => ({
@@ -79,42 +78,54 @@ jest.mock('../src/core/fetch', () => ({
 }))
 jest.mock('../src/core/restore', () => ({
   createRestoreChanges: jest.fn((...args) => {
-    const detailedChanges = [{
-      action: 'add',
-      data: { after: 'value' },
-      path: ['path'],
-    }]
-    return args[6] === 'changes'
-      ? [{
+    const detailedChanges = [
+      {
         action: 'add',
         data: { after: 'value' },
-        detailedChanges: () => detailedChanges,
-      }]
+        path: ['path'],
+      },
+    ]
+    return args[6] === 'changes'
+      ? [
+          {
+            action: 'add',
+            data: { after: 'value' },
+            detailedChanges: () => detailedChanges,
+          },
+        ]
       : detailedChanges
   }),
-  createRestorePathChanges: jest.fn().mockResolvedValue([{
-    action: 'add',
-    data: { after: 'value' },
-    detailedChanges: () => [{
+  createRestorePathChanges: jest.fn().mockResolvedValue([
+    {
       action: 'add',
       data: { after: 'value' },
-      path: ['path'],
-    }],
-  }]),
+      detailedChanges: () => [
+        {
+          action: 'add',
+          data: { after: 'value' },
+          path: ['path'],
+        },
+      ],
+    },
+  ]),
 }))
 
 jest.mock('../src/core/diff', () => ({
   createDiffChanges: jest.fn((...args) => {
-    const detailedChanges = [{
-      action: 'add',
-      data: { after: 'value' },
-    }]
-    return args[5] === 'changes'
-      ? [{
+    const detailedChanges = [
+      {
         action: 'add',
         data: { after: 'value' },
-        detailedChanges: () => detailedChanges,
-      }]
+      },
+    ]
+    return args[5] === 'changes'
+      ? [
+          {
+            action: 'add',
+            data: { after: 'value' },
+            detailedChanges: () => detailedChanges,
+          },
+        ]
       : detailedChanges
   }),
 }))
@@ -130,15 +141,15 @@ jest.mock('@salto-io/salesforce-adapter', () => {
   }
 })
 
-const mockLoadElementsFromFolder = (
-  salesforceAdapter.loadElementsFromFolder as jest.MockedFunction<typeof loadElementsFromFolder>
-)
+const mockLoadElementsFromFolder = salesforceAdapter.loadElementsFromFolder as jest.MockedFunction<
+  typeof loadElementsFromFolder
+>
 
 describe('api.ts', () => {
   const mockAdapterOps = {
     fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
-    deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(
-      ({ changeGroup }) => Promise.resolve({ errors: [], appliedChanges: changeGroup.changes })
+    deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(({ changeGroup }) =>
+      Promise.resolve({ errors: [], appliedChanges: changeGroup.changes }),
     ),
     fixElements: mockFunction<FixElementsFunc>().mockResolvedValue({ fixedElements: [], errors: [] }),
   }
@@ -149,7 +160,11 @@ describe('api.ts', () => {
       deployModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
     }),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+      accountId: '',
+      accountType: 'Sandbox',
+      isProduction: false,
+    }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
   }
 
@@ -159,14 +174,24 @@ describe('api.ts', () => {
       validationModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
     }),
     authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+      accountId: '',
+      accountType: 'Sandbox',
+      isProduction: false,
+    }),
   }
   const mockAdapterWithInstall = {
-    authenticationMethods: { basic: {
-      credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
-    } },
+    authenticationMethods: {
+      basic: {
+        credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
+      },
+    },
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+      accountId: '',
+      accountType: 'Sandbox',
+      isProduction: false,
+    }),
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
   }
 
@@ -223,8 +248,12 @@ describe('api.ts', () => {
       let mockGetAdaptersCreatorConfigs: jest.SpyInstance
 
       beforeAll(async () => {
-        const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
-        const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        const workspaceElements = [
+          new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+        ]
+        const stateElements = [
+          new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+        ]
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
         stateUpdateElements = jest.spyOn(ws.state(), 'updateStateFromChanges')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
@@ -248,7 +277,7 @@ describe('api.ts', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
       it('should update the state', async () => {
-        const updateParams = (_.first(stateUpdateElements.mock.calls)[0]) as AsyncIterable<Element>
+        const updateParams = _.first(stateUpdateElements.mock.calls)[0] as AsyncIterable<Element>
         expect(updateParams).toEqual({
           changes: [],
           unmergedElements: fetchedElements,
@@ -335,35 +364,43 @@ describe('api.ts', () => {
     })
     it('should call getPlan with deploy change validators', async () => {
       await api.preview(mockWorkspace({}), ACCOUNTS)
-      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
-        changeValidators: {
-          [mockService]: expect.any(Function),
-        },
-      }))
+      expect(mockedGetPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeValidators: {
+            [mockService]: expect.any(Function),
+          },
+        }),
+      )
     })
     it('should call getPlan with validation change validators', async () => {
       await api.preview(mockWorkspace({}), ACCOUNTS, true)
-      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
-        changeValidators: {
-          [emptyMockService]: expect.any(Function),
-        },
-      }))
+      expect(mockedGetPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeValidators: {
+            [emptyMockService]: expect.any(Function),
+          },
+        }),
+      )
     })
     it('should call getPlan with given topLevelFilters', async () => {
       const topLevelFilters = [() => true]
       await api.preview(mockWorkspace({}), ACCOUNTS, true, false, topLevelFilters)
-      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
-        topLevelFilters: expect.arrayContaining(topLevelFilters),
-        changeValidators: {
-          [emptyMockService]: expect.any(Function),
-        },
-      }))
+      expect(mockedGetPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          topLevelFilters: expect.arrayContaining(topLevelFilters),
+          changeValidators: {
+            [emptyMockService]: expect.any(Function),
+          },
+        }),
+      )
     })
     it('should call getPlan without change validators', async () => {
       await api.preview(mockWorkspace({}), ACCOUNTS, false, true)
-      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
-        changeValidators: {},
-      }))
+      expect(mockedGetPlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeValidators: {},
+        }),
+      )
     })
   })
 
@@ -386,29 +423,32 @@ describe('api.ts', () => {
           stateElements: stateElements.filter(elem => !isEqualElements(elem, addedElem)),
         })
 
-        const actionPlan = mockPlan.createPlan([[
-          { action: 'add', data: { after: addedElem.clone() } },
-          { action: 'remove', data: { before: removedElem.clone() } },
-        ]])
+        const actionPlan = mockPlan.createPlan([
+          [
+            { action: 'add', data: { after: addedElem.clone() } },
+            { action: 'remove', data: { before: removedElem.clone() } },
+          ],
+        ])
 
         // Add annotation to the new element
-        const cloneAndAddAnnotation = <T extends ChangeDataType>(
-          change: AdditionChange<T>
-        ): AdditionChange<T> => {
+        const cloneAndAddAnnotation = <T extends ChangeDataType>(change: AdditionChange<T>): AdditionChange<T> => {
           const cloned = change.data.after.clone() as T
           cloned.annotations.test = 1
           return { action: 'add', data: { after: cloned } }
         }
         mockAdapterOps.deploy.mockClear()
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
-          appliedChanges: changeGroup.changes
-            .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
+          appliedChanges: changeGroup.changes.map(change =>
+            isAdditionChange(change) ? cloneAndAddAnnotation(change) : change,
+          ),
           errors: [],
           extraProperties: {
-            groups: [{
-              artifacts: [{ name: 'test', content: Buffer.from('test') }],
-              url: 'https://test.deploymentUrl.com/123343',
-            }],
+            groups: [
+              {
+                artifacts: [{ name: 'test', content: Buffer.from('test') }],
+                url: 'https://test.deploymentUrl.com/123343',
+              },
+            ],
           },
         }))
         result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
@@ -420,7 +460,7 @@ describe('api.ts', () => {
 
       it('should return updates to existing elements', async () => {
         expect(result.changes).toBeDefined()
-        const changes = [...result.changes ?? []]
+        const changes = [...(result.changes ?? [])]
         expect(changes).toHaveLength(1)
         expect(changes[0].change.action).toEqual('add')
         expect(changes[0].change.id).toEqual(addedElem.elemID.createNestedID('attr', 'test'))
@@ -460,12 +500,12 @@ describe('api.ts', () => {
         const changedField = changedElement.fields[origField.name]
         changedField.annotations.test = 1
         expectedChangedField = changedField
-        const actionPlan = mockPlan.createPlan(
-          [[
+        const actionPlan = mockPlan.createPlan([
+          [
             { action: 'remove', data: { before: removedField } },
             { action: 'modify', data: { before: origField, after: changedField } },
-          ]]
-        )
+          ],
+        ])
 
         ws = mockWorkspace({ elements: [changedElement], stateElements: [origElement] })
         result = await api.deploy(ws, actionPlan, jest.fn())
@@ -480,9 +520,7 @@ describe('api.ts', () => {
         expect(removeAppliedChange?.action).toEqual('remove')
         expect(removeAppliedChange?.data).toEqual({ before: expectedRemovedField })
         expect(modifyAppliedChange?.action).toEqual('modify')
-        expect(modifyAppliedChange?.data).toEqual(
-          { before: expectedOriginalField, after: expectedChangedField }
-        )
+        expect(modifyAppliedChange?.data).toEqual({ before: expectedOriginalField, after: expectedChangedField })
       })
     })
     describe('with partial success from the adapter', () => {
@@ -492,11 +530,7 @@ describe('api.ts', () => {
       beforeAll(async () => {
         const wsElements = mockElements.getAllElements()
         existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
-        newEmployee = new InstanceElement(
-          'new',
-          existingEmployee.refType,
-          existingEmployee.value,
-        )
+        newEmployee = new InstanceElement('new', existingEmployee.refType, existingEmployee.value)
         wsElements.push(newEmployee)
         existingEmployee.value.name = 'updated name'
         const stateElements = mockElements.getAllElements()
@@ -525,9 +559,11 @@ describe('api.ts', () => {
 
       it('should return errors for the failed part', () => {
         expect(result.errors).toHaveLength(2)
-        expect(result.errors[0]).toMatchObject(expect.objectContaining({
-          elemID: newEmployee.elemID,
-        }))
+        expect(result.errors[0]).toMatchObject(
+          expect.objectContaining({
+            elemID: newEmployee.elemID,
+          }),
+        )
       })
       it('should return success false for the overall deploy', () => {
         expect(result.success).toBeFalsy()
@@ -541,20 +577,16 @@ describe('api.ts', () => {
         expect(appliedChange?.data?.after).toEqual(existingEmployee)
       })
       it('should update state with applied change', () => {
-        expect(updateStateFromChangesSpy).toHaveBeenCalledWith(
-          {
-            changes: [
-              expect.objectContaining(
-                {
-                  data: {
-                    before: 'FirstEmployee',
-                    after: 'updated name',
-                  },
-                }
-              ),
-            ],
-          }
-        )
+        expect(updateStateFromChangesSpy).toHaveBeenCalledWith({
+          changes: [
+            expect.objectContaining({
+              data: {
+                before: 'FirstEmployee',
+                after: 'updated name',
+              },
+            }),
+          ],
+        })
       })
     })
     describe('with checkOnly deployment', () => {
@@ -571,23 +603,24 @@ describe('api.ts', () => {
           stateElements: stateElements.filter(elem => !isEqualElements(elem, addedElem)),
         })
 
-        const actionPlan = mockPlan.createPlan([[
-          { action: 'add', data: { after: addedElem.clone() } },
-          { action: 'remove', data: { before: removedElem.clone() } },
-        ]])
+        const actionPlan = mockPlan.createPlan([
+          [
+            { action: 'add', data: { after: addedElem.clone() } },
+            { action: 'remove', data: { before: removedElem.clone() } },
+          ],
+        ])
 
         // Add annotation to the new element
-        const cloneAndAddAnnotation = <T extends ChangeDataType>(
-          change: AdditionChange<T>
-        ): AdditionChange<T> => {
+        const cloneAndAddAnnotation = <T extends ChangeDataType>(change: AdditionChange<T>): AdditionChange<T> => {
           const cloned = change.data.after.clone() as T
           cloned.annotations.test = 1
           return { action: 'add', data: { after: cloned } }
         }
         mockAdapterOps.deploy.mockClear()
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
-          appliedChanges: changeGroup.changes
-            .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
+          appliedChanges: changeGroup.changes.map(change =>
+            isAdditionChange(change) ? cloneAndAddAnnotation(change) : change,
+          ),
           errors: [],
         }))
         executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, true)
@@ -630,15 +663,15 @@ describe('api.ts', () => {
         adapter = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(adapterOps as AdapterOperations),
           authenticationMethods: { basic: { credentialsType: mockConfigType } },
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
         }
         adapterCreators.test = adapter
 
-        instance = new InstanceElement(
-          'inst',
-          new ObjectType({ elemID: new ElemID('test', 'type') }),
-          { name: 'test' }
-        )
+        instance = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('test', 'type') }), { name: 'test' })
 
         const mockWs = mockWorkspace({
           elements: [instance],
@@ -647,21 +680,15 @@ describe('api.ts', () => {
         })
 
         mockWs.accountCredentials = mockFunction<workspace.Workspace['accountCredentials']>().mockResolvedValue({
-          test: new InstanceElement(
-            ElemID.CONFIG_NAME,
-            mockConfigType,
-            {
-              username: 'test@test',
-              password: 'test',
-              token: 'test',
-              sandbox: false,
-            }
-          ),
+          test: new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
+            username: 'test@test',
+            password: 'test',
+            token: 'test',
+            sandbox: false,
+          }),
         })
 
-        const actionPlan = mockPlan.createPlan([
-          [{ action: 'add', data: { after: instance.clone() } }],
-        ])
+        const actionPlan = mockPlan.createPlan([[{ action: 'add', data: { after: instance.clone() } }]])
 
         adapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => {
           const changeInstance = getChangeData(changeGroup.changes[0]).clone() as InstanceElement
@@ -687,7 +714,7 @@ describe('api.ts', () => {
 
       it('should update element source', async () => {
         const elementSource = (adapter.operations as jest.Mock).mock.calls[0][0].elementsSource
-        const instanceFromSource = await elementSource.get(instance.elemID) as InstanceElement
+        const instanceFromSource = (await elementSource.get(instance.elemID)) as InstanceElement
         expect(instanceFromSource.value.id).toBe(1)
       })
     })
@@ -721,10 +748,8 @@ describe('api.ts', () => {
           elemID: new ElemID('unknownAccount'),
           fields: mockConfigType.fields,
         })
-        const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
-          mockConfigInstance.value)
-        return expect(api.verifyCredentials(newConf)).rejects
-          .toThrow('unknown adapter: unknownAccount')
+        const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType, mockConfigInstance.value)
+        return expect(api.verifyCredentials(newConf)).rejects.toThrow('unknown adapter: unknownAccount')
       })
       it('should call validateCredentials of adapterCreator', async () => {
         const newConf = mockConfigInstance.clone()
@@ -744,7 +769,11 @@ describe('api.ts', () => {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
           },
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
         }
       })
 
@@ -886,8 +915,12 @@ describe('api.ts', () => {
       let ows: workspace.Workspace
 
       beforeAll(async () => {
-        const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
-        const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        const workspaceElements = [
+          new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+        ]
+        const stateElements = [
+          new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+        ]
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
         ows = mockWorkspace({})
         mockFetchChangesFromWorkspace.mockClear()
@@ -927,7 +960,6 @@ describe('api.ts', () => {
     describe('default accounts', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
-
 
       beforeAll(async () => {
         ws = mockWorkspace({ accounts: ['salto', 'salesforce'] })
@@ -981,7 +1013,7 @@ describe('api.ts', () => {
       changes
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
-        .map(element => ({ key: element.elemID.getFullName(), value: [['test']] }))
+        .map(element => ({ key: element.elemID.getFullName(), value: [['test']] })),
     )
 
     let patchChanges: FetchChange[]
@@ -1015,106 +1047,138 @@ describe('api.ts', () => {
       expect(patchChanges).toHaveLength(6)
     })
     it('should calculate instance modification (conflict)', () => {
-      expect(patchChanges).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          change: expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
-            data: { before: 'other', after: 'after' },
+      expect(patchChanges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
+              data: { before: 'other', after: 'after' },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
+                data: { before: 'before', after: 'after' },
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
+                data: { before: 'before', after: 'other' },
+              }),
+            ],
           }),
-          serviceChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
-            data: { before: 'before', after: 'after' },
-          })],
-          pendingChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
-            data: { before: 'before', after: 'other' },
-          })],
-        }),
-      ]))
+        ]),
+      )
     })
     it('should calculate instance modification', () => {
-      expect(patchChanges).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          change: expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'modified', 'label'),
-            data: { before: 'before', after: 'after' },
+      expect(patchChanges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'modified', 'label'),
+              data: { before: 'before', after: 'after' },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'modified', 'label'),
+                data: { before: 'before', after: 'after' },
+              }),
+            ],
+            pendingChanges: [],
           }),
-          serviceChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'modified', 'label'),
-            data: { before: 'before', after: 'after' },
-          })],
-          pendingChanges: [],
-        }),
-      ]))
+        ]),
+      )
     })
     it('should calculate non existed instance modification (conflict)', () => {
-      expect(patchChanges).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          change: expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'nonExistModified'),
-            data: { after: expect.objectContaining({ path: ['test'] }) },
+      expect(patchChanges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'nonExistModified'),
+              data: { after: expect.objectContaining({ path: ['test'] }) },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'nonExistModified', 'name'),
+                data: { before: 'before', after: 'after' },
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'nonExistModified'),
+                data: { before: expect.any(InstanceElement) },
+              }),
+            ],
           }),
-          serviceChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'nonExistModified', 'name'),
-            data: { before: 'before', after: 'after' },
-          })],
-          pendingChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'nonExistModified'),
-            data: { before: expect.any(InstanceElement) },
-          })],
-        }),
-      ]))
+        ]),
+      )
     })
     it('should calculate existing instance addition (conflict)', () => {
-      expect(patchChanges).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          change: expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'existingAdded', 'name'),
-            data: { before: 'other', after: 'after' },
+      expect(patchChanges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'existingAdded', 'name'),
+              data: { before: 'other', after: 'after' },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
+                data: { after: expect.any(InstanceElement) },
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
+                data: { after: expect.any(InstanceElement) },
+              }),
+            ],
           }),
-          serviceChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
-            data: { after: expect.any(InstanceElement) },
-          })],
-          pendingChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
-            data: { after: expect.any(InstanceElement) },
-          })],
-        }),
-      ]))
+        ]),
+      )
     })
     it('should calculate instance addition', () => {
-      expect(patchChanges).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          change: expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'added'),
-            data: { after: expect.objectContaining({ path: ['test'] }) },
+      expect(patchChanges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'added'),
+              data: { after: expect.objectContaining({ path: ['test'] }) },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'added'),
+                data: { after: expect.any(InstanceElement) },
+              }),
+            ],
+            pendingChanges: [],
           }),
-          serviceChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'added'),
-            data: { after: expect.any(InstanceElement) },
-          })],
-          pendingChanges: [],
-        }),
-      ]))
+        ]),
+      )
     })
     it('should calculate instance deletion (conflict)', () => {
-      expect(patchChanges).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          change: expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'deleted'),
-            data: { before: expect.any(InstanceElement) },
+      expect(patchChanges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'deleted'),
+              data: { before: expect.any(InstanceElement) },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'deleted'),
+                data: { before: expect.any(InstanceElement) },
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'deleted', 'name'),
+                data: { before: 'before', after: 'other' },
+              }),
+            ],
           }),
-          serviceChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'deleted'),
-            data: { before: expect.any(InstanceElement) },
-          })],
-          pendingChanges: [expect.objectContaining({
-            id: new ElemID('salto', 'type', 'instance', 'deleted', 'name'),
-            data: { before: 'before', after: 'other' },
-          })],
-        }),
-      ]))
+        ]),
+      )
     })
   })
 
@@ -1157,7 +1221,12 @@ describe('api.ts', () => {
         mockLoadElementsFromFolder
           .mockResolvedValueOnce({ elements: beforeElements })
           .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        const res = await api.calculatePatch({
+          workspace: ws,
+          fromDir: 'before',
+          toDir: 'after',
+          accountName: 'salesforce',
+        })
         expect(res.success).toBeTruthy()
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
@@ -1174,7 +1243,12 @@ describe('api.ts', () => {
         mockLoadElementsFromFolder
           .mockResolvedValueOnce({ elements: beforeElements })
           .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        const res = await api.calculatePatch({
+          workspace: ws,
+          fromDir: 'before',
+          toDir: 'after',
+          accountName: 'salesforce',
+        })
         expect(res.success).toBeTruthy()
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
@@ -1190,7 +1264,12 @@ describe('api.ts', () => {
         mockLoadElementsFromFolder
           .mockResolvedValueOnce({ elements: beforeElements })
           .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        const res = await api.calculatePatch({
+          workspace: ws,
+          fromDir: 'before',
+          toDir: 'after',
+          accountName: 'salesforce',
+        })
         expect(res.success).toBeTruthy()
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
@@ -1201,9 +1280,13 @@ describe('api.ts', () => {
     describe('when there is a merge error', () => {
       it('should return with merge error and success false', async () => {
         const beforeElements = [instance, instance]
-        mockLoadElementsFromFolder
-          .mockResolvedValueOnce({ elements: beforeElements })
-        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        mockLoadElementsFromFolder.mockResolvedValueOnce({ elements: beforeElements })
+        const res = await api.calculatePatch({
+          workspace: ws,
+          fromDir: 'before',
+          toDir: 'after',
+          accountName: 'salesforce',
+        })
         expect(res.success).toBeFalsy()
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.changes).toHaveLength(0)
@@ -1220,7 +1303,12 @@ describe('api.ts', () => {
         mockLoadElementsFromFolder
           .mockResolvedValueOnce({ elements: beforeElements })
           .mockResolvedValueOnce({ elements: afterElements, errors: [{ message: 'err', severity: 'Warning' }] })
-        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        const res = await api.calculatePatch({
+          workspace: ws,
+          fromDir: 'before',
+          toDir: 'after',
+          accountName: 'salesforce',
+        })
         expect(res.success).toBeTruthy()
         expect(res.changes).toHaveLength(1)
         expect(res.mergeErrors).toHaveLength(0)
@@ -1239,7 +1327,12 @@ describe('api.ts', () => {
         mockLoadElementsFromFolder
           .mockResolvedValueOnce({ elements: beforeElements })
           .mockResolvedValueOnce({ elements: afterElements })
-        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        const res = await api.calculatePatch({
+          workspace: ws,
+          fromDir: 'before',
+          toDir: 'after',
+          accountName: 'salesforce',
+        })
         expect(res.success).toBeTruthy()
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
@@ -1273,7 +1366,7 @@ describe('api.ts', () => {
           friend: new ReferenceExpression(ElemID.fromFullName('salto.employee.instance.renamed')),
         }),
         sourceElement.path,
-        sourceElement.annotations
+        sourceElement.annotations,
       )
 
       const refElemId = new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'friend')
@@ -1331,16 +1424,20 @@ describe('api.ts', () => {
       change = toChange({ after: new ObjectType({ elemID: new ElemID('salto1', 'test') }) })
     })
     it('should return additional references', async () => {
-      mockAdapter.getAdditionalReferences.mockResolvedValue([{
-        source: ElemID.fromFullName('salto1.test'),
-        target: ElemID.fromFullName('salto1.test2'),
-      }])
+      mockAdapter.getAdditionalReferences.mockResolvedValue([
+        {
+          source: ElemID.fromFullName('salto1.test'),
+          target: ElemID.fromFullName('salto1.test2'),
+        },
+      ])
       const res = await getAdditionalReferences(ws, [change])
 
-      expect(res).toEqual([{
-        source: ElemID.fromFullName('salto1.test'),
-        target: ElemID.fromFullName('salto1.test2'),
-      }])
+      expect(res).toEqual([
+        {
+          source: ElemID.fromFullName('salto1.test'),
+          target: ElemID.fromFullName('salto1.test2'),
+        },
+      ])
 
       expect(mockAdapter.getAdditionalReferences).toHaveBeenCalledWith([change])
     })
@@ -1362,19 +1459,17 @@ describe('api.ts', () => {
           test1: 'test',
         },
         elements: [type],
-      });
-
-      (ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
+      })
+      ;(ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
         test1: mockConfigInstance,
       })
-
 
       mockFixElements = mockFunction<FixElementsFunc>().mockResolvedValue({ errors: [], fixedElements: [] })
 
       const mockTestAdapterOps = {
         fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
-        deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(
-          ({ changeGroup }) => Promise.resolve({ errors: [], appliedChanges: changeGroup.changes })
+        deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(({ changeGroup }) =>
+          Promise.resolve({ errors: [], appliedChanges: changeGroup.changes }),
         ),
         fixElements: mockFixElements,
       }
@@ -1382,7 +1477,11 @@ describe('api.ts', () => {
       const mockTestAdapter = {
         operations: mockFunction<Adapter['operations']>().mockReturnValue(mockTestAdapterOps),
         authenticationMethods: { basic: { credentialsType: mockConfigType } },
-        validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+        validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+          accountId: '',
+          accountType: 'Sandbox',
+          isProduction: false,
+        }),
         getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
       }
       adapterCreators.test = mockTestAdapter
@@ -1421,10 +1520,11 @@ describe('api.ts', () => {
       })
 
       mockFixElements.mockImplementationOnce(async () => ({ fixedElements: [], errors: [] }))
-      const res = await api.fixElements(ws, [
-        workspace.createElementSelector(type.elemID.getFullName()),
-      ])
-
+      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
+      const typeBefore = type.clone()
+      const typeAfter = type.clone()
+      typeAfter.annotate({ a: 1, b: 2 })
+      const baseChange = toChange({ before: typeBefore, after: typeAfter })
       expect(res).toEqual({
         changes: [
           {
@@ -1437,6 +1537,7 @@ describe('api.ts', () => {
               before: new ElemID('test1', 'test', 'attr', 'a'),
               after: new ElemID('test1', 'test', 'attr', 'a'),
             },
+            baseChange,
           },
           {
             action: 'add',
@@ -1448,6 +1549,7 @@ describe('api.ts', () => {
               before: new ElemID('test1', 'test', 'attr', 'b'),
               after: new ElemID('test1', 'test', 'attr', 'b'),
             },
+            baseChange,
           },
         ],
         errors: [
@@ -1466,20 +1568,24 @@ describe('api.ts', () => {
         ],
       })
 
-      expect(mockFixElements).toHaveBeenCalledWith([new ObjectType({
-        elemID: new ElemID('test1', 'test'),
-        annotations: {
-          a: 1,
-          b: 2,
-        },
-      })])
-      expect(mockFixElements).toHaveBeenCalledWith([new ObjectType({
-        elemID: new ElemID('test1', 'test'),
-        annotations: {
-          a: 1,
-          b: 2,
-        },
-      })])
+      expect(mockFixElements).toHaveBeenCalledWith([
+        new ObjectType({
+          elemID: new ElemID('test1', 'test'),
+          annotations: {
+            a: 1,
+            b: 2,
+          },
+        }),
+      ])
+      expect(mockFixElements).toHaveBeenCalledWith([
+        new ObjectType({
+          elemID: new ElemID('test1', 'test'),
+          annotations: {
+            a: 1,
+            b: 2,
+          },
+        }),
+      ])
     })
 
     it('should stop after max 11 times', async () => {
@@ -1495,9 +1601,7 @@ describe('api.ts', () => {
         ],
       }))
 
-      const res = await api.fixElements(ws, [
-        workspace.createElementSelector(type.elemID.getFullName()),
-      ])
+      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
 
       expect(res).toEqual({
         errors: _.range(11).map(() => ({
@@ -1515,30 +1619,26 @@ describe('api.ts', () => {
     it('should return an empty array when failed', async () => {
       mockFixElements.mockRejectedValue(new Error())
 
-      const res = await api.fixElements(ws, [
-        workspace.createElementSelector(type.elemID.getFullName()),
-      ])
+      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
 
       expect(res).toEqual({ changes: [], errors: [] })
       expect(mockFixElements).toHaveBeenCalledTimes(1)
     })
 
     it('should return an empty array when there is not a fixElements function', async () => {
-      delete (adapterCreators.test as { fixElements?: typeof mockAdapterOps['fixElements']}).fixElements
+      delete (adapterCreators.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
 
-      const res = await api.fixElements(ws, [
-        workspace.createElementSelector(type.elemID.getFullName()),
-      ])
+      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
 
       expect(res).toEqual({ changes: [], errors: [] })
     })
 
     it('should throw an error when the selector is not a top level', async () => {
-      delete (adapterCreators.test as { fixElements?: typeof mockAdapterOps['fixElements']}).fixElements
+      delete (adapterCreators.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
 
-      await expect(api.fixElements(ws, [
-        workspace.createElementSelector(type.elemID.createNestedID('attr', 'a').getFullName()),
-      ])).rejects.toThrow()
+      await expect(
+        api.fixElements(ws, [workspace.createElementSelector(type.elemID.createNestedID('attr', 'a').getFullName())]),
+      ).rejects.toThrow()
     })
   })
 })

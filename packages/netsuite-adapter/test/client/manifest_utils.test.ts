@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { WORKFLOW, FILE } from '../../src/constants'
 import { fixManifest } from '../../src/client/manifest_utils'
 import { CustomizationInfo } from '../../src/client/types'
@@ -64,8 +64,7 @@ describe('manifest.xml utils', () => {
     {
       typeName: FILE,
       path: ['SuiteScripts', 'test.js'],
-      values: {
-      },
+      values: {},
     } as CustomizationInfo,
   ]
 
@@ -158,8 +157,7 @@ describe('manifest.xml utils', () => {
   </dependencies>
 </manifest>
 `
-    expect(fixManifest(manifest, [], DEFAULT_ADDITIONAL_DEPS))
-      .toEqual(fixedManifest)
+    expect(fixManifest(manifest, [], DEFAULT_ADDITIONAL_DEPS)).toEqual(fixedManifest)
   })
   it('should add required dependencies to manifest.xml', () => {
     const manifest = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
@@ -223,8 +221,7 @@ describe('manifest.xml utils', () => {
   </dependencies>
 </manifest>
 `
-    expect(fixManifest(manifest, custInfos, DEFAULT_ADDITIONAL_DEPS))
-      .toEqual(fixedManifest)
+    expect(fixManifest(manifest, custInfos, DEFAULT_ADDITIONAL_DEPS)).toEqual(fixedManifest)
   })
   it('should add additional dependencies', () => {
     const manifest = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
@@ -288,15 +285,16 @@ describe('manifest.xml utils', () => {
   </dependencies>
 </manifest>
 `
-    expect(fixManifest(manifest, custInfos, {
-      optionalFeatures: ['EXPREPORTS'],
-      requiredFeatures: ['addedFeature'],
-      excludedFeatures: ['RECEIVABLES'],
-      includedObjects: ['addedObject'],
-      excludedObjects: ['custentity2edited', 'somescriptid', 'secondscriptid'],
-      includedFiles: ['/SuiteScripts/testScript.js'],
-      excludedFiles: ['/SuiteScripts/excludedTestScript.js'],
-    }))
-      .toEqual(fixedManifest)
+    expect(
+      fixManifest(manifest, custInfos, {
+        optionalFeatures: ['EXPREPORTS'],
+        requiredFeatures: ['addedFeature'],
+        excludedFeatures: ['RECEIVABLES'],
+        includedObjects: ['addedObject'],
+        excludedObjects: ['custentity2edited', 'somescriptid', 'secondscriptid'],
+        includedFiles: ['/SuiteScripts/testScript.js'],
+        excludedFiles: ['/SuiteScripts/excludedTestScript.js'],
+      }),
+    ).toEqual(fixedManifest)
   })
 })

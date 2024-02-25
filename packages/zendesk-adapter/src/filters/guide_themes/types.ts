@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 
@@ -59,7 +59,7 @@ const JOB_DATA_SCHEMA = Joi.alternatives().try(
     download: Joi.object({
       url: Joi.string().required(),
     }),
-  })
+  }),
 )
 
 export type PendingJob<JobData> = {
@@ -82,12 +82,15 @@ export type FailedJob = {
 
 export type UploadJob = PendingJob<UploadJobData> | CompletedJob<UploadJobData> | FailedJob
 export type DownloadJob = FailedJob | PendingJob<DownloadJobData> | CompletedJob<DownloadJobData>
-const jobSchema = (statuses = ['pending', 'failed', 'completed']): Joi.ObjectSchema => Joi.object({
-  id: Joi.string().required(),
-  status: Joi.string().valid(...statuses).required(),
-  data: JOB_DATA_SCHEMA.allow(null),
-  errors: Joi.array().items(JOB_ERROR_SCHEMA).allow(null),
-})
+const jobSchema = (statuses = ['pending', 'failed', 'completed']): Joi.ObjectSchema =>
+  Joi.object({
+    id: Joi.string().required(),
+    status: Joi.string()
+      .valid(...statuses)
+      .required(),
+    data: JOB_DATA_SCHEMA.allow(null),
+    errors: Joi.array().items(JOB_ERROR_SCHEMA).allow(null),
+  })
 
 const EXPECTED_PENDING_JOB_RESPONSE_SCHEMA = Joi.object({
   job: jobSchema(['pending']).required(),
@@ -99,9 +102,11 @@ const EXPECTED_JOB_RESPONSE_SCHEMA = Joi.object({
 
 export const isPendingJobResponse = <JobData>(value: unknown): value is { job: PendingJob<JobData> } =>
   createSchemeGuard<{ job: PendingJob<JobData> }>(
-    EXPECTED_PENDING_JOB_RESPONSE_SCHEMA, 'Received an invalid PendingJob response'
+    EXPECTED_PENDING_JOB_RESPONSE_SCHEMA,
+    'Received an invalid PendingJob response',
   )(value)
 
 export const isJobResponse = createSchemeGuard<{ job: UploadJob | DownloadJob }>(
-  EXPECTED_JOB_RESPONSE_SCHEMA, 'Received an invalid FailedJob response'
+  EXPECTED_JOB_RESPONSE_SCHEMA,
+  'Received an invalid FailedJob response',
 )

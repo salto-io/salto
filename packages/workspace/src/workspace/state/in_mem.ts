@@ -1,23 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   DetailedChange,
   Element,
   ElemID,
-  getChangeData, isAdditionChange,
+  getChangeData,
+  isAdditionChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -39,10 +40,7 @@ type InMemoryState = State & {
   setVersion(version: string): Promise<void>
 }
 
-export const buildInMemState = (
-  loadData: () => Promise<StateData>,
-  persistent = true
-): InMemoryState => {
+export const buildInMemState = (loadData: () => Promise<StateData>, persistent = true): InMemoryState => {
   let innerStateData: Promise<StateData>
   const stateData = async (): Promise<StateData> => {
     if (innerStateData === undefined) {
@@ -63,7 +61,7 @@ export const buildInMemState = (
 
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
     const data = await stateData()
-    const newAccounts = accounts ?? await awu(data.accountsUpdateDate.keys()).toArray()
+    const newAccounts = accounts ?? (await awu(data.accountsUpdateDate.keys()).toArray())
     return data.accountsUpdateDate.setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
   }
 
@@ -90,33 +88,33 @@ export const buildInMemState = (
     await Promise.all(files.map(file => staticFilesSource.delete(file)))
   }
 
-  const updateStateElements = async (changes: DetailedChange[]): Promise<void> => log.time(async () => {
-    const state = (await stateData()).elements
-    const changesByTopLevelElement = _.groupBy(
-      changes,
-      change => change.id.createTopLevelParentID().parent.getFullName()
-    )
-    await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
-      const elemID = elemChanges[0].id
-      // If the first change is top level, it means the element was added or removed, and it will include all changes
-      if (elemID.isTopLevel()) {
-        if (isRemovalChange(elemChanges[0])) {
-          await removeId(elemID)
-        } else if (isAdditionChange(elemChanges[0])) {
-          await state.set(getChangeData(elemChanges[0]))
+  const updateStateElements = async (changes: DetailedChange[]): Promise<void> =>
+    log.time(async () => {
+      const state = (await stateData()).elements
+      const changesByTopLevelElement = _.groupBy(changes, change =>
+        change.id.createTopLevelParentID().parent.getFullName(),
+      )
+      await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
+        const elemID = elemChanges[0].id
+        // If the first change is top level, it means the element was added or removed, and it will include all changes
+        if (elemID.isTopLevel()) {
+          if (isRemovalChange(elemChanges[0])) {
+            await removeId(elemID)
+          } else if (isAdditionChange(elemChanges[0])) {
+            await state.set(getChangeData(elemChanges[0]))
+          }
+          return
         }
-        return
-      }
 
-      // If the first change is not top level, it means this is a modification of an existing element
-      // We need to get that element, apply the changes and set it back
-      const elemTopLevel = elemID.createTopLevelParentID().parent
-      const updatedElem = (await state.get(elemTopLevel)).clone()
-      applyDetailedChanges(updatedElem, elemChanges)
-      await state.set(updatedElem)
-    })
-    await deleteRemovedStaticFiles(changes)
-  }, 'updateStateElements')
+        // If the first change is not top level, it means this is a modification of an existing element
+        // We need to get that element, apply the changes and set it back
+        const elemTopLevel = elemID.createTopLevelParentID().parent
+        const updatedElem = (await state.get(elemTopLevel)).clone()
+        applyDetailedChanges(updatedElem, elemChanges)
+        await state.set(updatedElem)
+      })
+      await deleteRemovedStaticFiles(changes)
+    }, 'updateStateElements')
 
   // Sets the element and delete all the static files that no longer exists on it
   // should not be used in case of regenerate salto ids since it looks only at one element
@@ -124,9 +122,8 @@ export const buildInMemState = (
     const state = await stateData()
     const beforeElement = await state.elements.get(element.elemID)
 
-    const filesToDelete = beforeElement !== undefined
-      ? getDanglingStaticFiles(detailedCompare(beforeElement, element))
-      : []
+    const filesToDelete =
+      beforeElement !== undefined ? getDanglingStaticFiles(detailedCompare(beforeElement, element)) : []
 
     await state.elements.set(element)
     await Promise.all(filesToDelete.map(f => state.staticFilesSource.delete(f)))
@@ -140,7 +137,9 @@ export const buildInMemState = (
     delete: removeId,
     deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => {
       await deleteFromFilesSource(
-        await awu(ids).map(async id => (await stateData()).elements.get(id)).toArray()
+        await awu(ids)
+          .map(async id => (await stateData()).elements.get(id))
+          .toArray(),
       )
       return (await stateData()).elements.deleteAll(ids)
     },
@@ -153,12 +152,9 @@ export const buildInMemState = (
       const stateDataVal = await awu((await stateData()).accountsUpdateDate.entries()).toArray()
       return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
     },
-    existingAccounts: async (): Promise<string[]> =>
-      awu((await stateData()).accountsUpdateDate.keys()).toArray(),
-    getPathIndex: async (): Promise<PathIndex> =>
-      (await stateData()).pathIndex,
-    getTopLevelPathIndex: async (): Promise<PathIndex> =>
-      (await stateData()).topLevelPathIndex,
+    existingAccounts: async (): Promise<string[]> => awu((await stateData()).accountsUpdateDate.keys()).toArray(),
+    getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
+    getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {
       const currentStateData = await stateData()
       await currentStateData.elements.clear()
@@ -187,16 +183,13 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
-    updateStateFromChanges: async (
-      { changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
+    updateStateFromChanges: async ({ changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
       await updateStateElements(changes)
       if (!_.isEmpty(fetchAccounts)) {
         await updateAccounts(fetchAccounts)
       }
 
-      const removedElementsFullNames = new Set(changes
-        .filter(isRemovalChange)
-        .map(change => change.id.getFullName()))
+      const removedElementsFullNames = new Set(changes.filter(isRemovalChange).map(change => change.id.getFullName()))
 
       if (unmergedElements.length > 0 || removedElementsFullNames.size > 0) {
         await updateStatePathIndex(unmergedElements, removedElementsFullNames)

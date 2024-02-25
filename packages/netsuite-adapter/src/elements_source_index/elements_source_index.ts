@@ -1,20 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value, ObjectType } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  InstanceElement,
+  isInstanceElement,
+  ReadOnlyElementsSource,
+  ElemID,
+  Element,
+  isObjectType,
+  Value,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
@@ -30,18 +40,14 @@ const log = logger(module)
 const CUSTOM_VALUES = 'customvalues'
 const CUSTOM_VALUE = 'customvalue'
 
-export const getDataInstanceId = (internalId: string, typeNameOrId: string): string =>
-  `${typeNameOrId}-${internalId}`
+export const getDataInstanceId = (internalId: string, typeNameOrId: string): string => `${typeNameOrId}-${internalId}`
 
-export const isCustomListInstance = (instance: InstanceElement): boolean =>
-  instance.elemID.typeName === CUSTOM_LIST
+export const isCustomListInstance = (instance: InstanceElement): boolean => instance.elemID.typeName === CUSTOM_LIST
 
-export const getCustomListValues = (instance: InstanceElement): [Value, string][] => (
+export const getCustomListValues = (instance: InstanceElement): [Value, string][] =>
   _.isPlainObject(instance.value[CUSTOM_VALUES]?.[CUSTOM_VALUE])
-    ? Object.entries(instance.value[CUSTOM_VALUES]?.[CUSTOM_VALUE])
-      .map(([key, value]) => [value, key])
+    ? Object.entries(instance.value[CUSTOM_VALUES]?.[CUSTOM_VALUE]).map(([key, value]) => [value, key])
     : []
-)
 
 const toCustomListValueElemID = (instanceElemId: ElemID, valueKey: string): ElemID =>
   instanceElemId.createNestedID(CUSTOM_VALUES, CUSTOM_VALUE, valueKey)
@@ -49,7 +55,7 @@ const toCustomListValueElemID = (instanceElemId: ElemID, valueKey: string): Elem
 export const assignToInternalIdsIndex = async (
   element: Element,
   internalIdsIndex: Record<string, ElemID>,
-  elementsSource?: ReadOnlyElementsSource
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const values = getElementValueOrAnnotations(element)
   const internalId = values[INTERNAL_ID]
@@ -74,7 +80,8 @@ export const assignToInternalIdsIndex = async (
     }
     if (isCustomListInstance(element)) {
       getCustomListValues(element)
-        .filter(([value]) => value[INTERNAL_ID]).forEach(([value, key]) => {
+        .filter(([value]) => value[INTERNAL_ID])
+        .forEach(([value, key]) => {
           const valueElemId = toCustomListValueElemID(elemID, key)
           internalIdsIndex[getDataInstanceId(value[INTERNAL_ID], internalId)] = valueElemId
         })
@@ -82,10 +89,7 @@ export const assignToInternalIdsIndex = async (
   }
 }
 
-export const assignToCustomFieldsSelectRecordTypeIndex = (
-  element: Element,
-  index: Record<string, unknown>
-): void => {
+export const assignToCustomFieldsSelectRecordTypeIndex = (element: Element, index: Record<string, unknown>): void => {
   if (isInstanceElement(element) && element.value[SELECT_RECORD_TYPE] !== undefined) {
     index[element.elemID.getFullName()] = element.value[SELECT_RECORD_TYPE]
   } else if (isObjectType(element) && isCustomRecordType(element)) {
@@ -97,8 +101,11 @@ export const assignToCustomFieldsSelectRecordTypeIndex = (
   }
 }
 
-const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean, deletedElements: ElemID[]):
-  Promise<ElementsSourceIndexes> => {
+const createIndexes = async (
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean,
+  deletedElements: ElemID[],
+): Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
@@ -112,13 +119,12 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
   }
 
   const updateCustomFieldsIndex = (element: InstanceElement): void => {
-    getFieldInstanceTypes(element)
-      .forEach(type => {
-        if (!(type in customFieldsIndex)) {
-          customFieldsIndex[type] = []
-        }
-        customFieldsIndex[type].push(element)
-      })
+    getFieldInstanceTypes(element).forEach(type => {
+      if (!(type in customFieldsIndex)) {
+        customFieldsIndex[type] = []
+      }
+      customFieldsIndex[type].push(element)
+    })
   }
 
   const updateElemIdToChangedByIndex = (element: Element): void => {
@@ -190,7 +196,10 @@ export const createElementsSourceIndex = (
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial, deletedElements ?? []), 'createIndexes')
+        cachedIndex = await log.time(
+          () => createIndexes(elementsSource, isPartial, deletedElements ?? []),
+          'createIndexes',
+        )
       }
       return cachedIndex
     },

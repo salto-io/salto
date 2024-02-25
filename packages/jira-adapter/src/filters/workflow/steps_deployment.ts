@@ -1,24 +1,24 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import JiraClient from '../../client/client'
-import { WorkflowInstance } from './types'
+import { WorkflowV1Instance } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -36,12 +36,19 @@ type StatusesResponse = {
 const isValidStatusesResponse = (response: unknown): response is StatusesResponse => {
   const { error } = Joi.object({
     layout: Joi.object({
-      statuses: Joi.array().items(Joi.object({
-        stepId: Joi.number().required(),
-        statusId: Joi.number(),
-      }).unknown(true)),
-    }).unknown(true).required(),
-  }).unknown(true).required().validate(response)
+      statuses: Joi.array().items(
+        Joi.object({
+          stepId: Joi.number().required(),
+          statusId: Joi.number(),
+        }).unknown(true),
+      ),
+    })
+      .unknown(true)
+      .required(),
+  })
+    .unknown(true)
+    .required()
+    .validate(response)
 
   if (error !== undefined) {
     log.error(`Received invalid statuses response from Jira: ${error}. ${safeJsonStringify(response)}`)
@@ -50,10 +57,7 @@ const isValidStatusesResponse = (response: unknown): response is StatusesRespons
   return true
 }
 
-const getStatusIdToStepId = async (
-  workflowName: string,
-  client: JiraClient,
-): Promise<Record<string, string>> => {
+const getStatusIdToStepId = async (workflowName: string, client: JiraClient): Promise<Record<string, string>> => {
   const response = await client.getPrivate({
     url: '/rest/workflowDesigner/1.0/workflows',
     queryParams: {
@@ -68,14 +72,11 @@ const getStatusIdToStepId = async (
   return Object.fromEntries(
     response.data.layout.statuses
       .filter(({ statusId }) => statusId !== undefined)
-      .map(status => [status.statusId, status.stepId.toString()])
+      .map(status => [status.statusId, status.stepId.toString()]),
   )
 }
 
-export const deploySteps = async (
-  instance: WorkflowInstance,
-  client: JiraClient
-): Promise<void> => {
+export const deploySteps = async (instance: WorkflowV1Instance, client: JiraClient): Promise<void> => {
   const statuses = instance.value.statuses ?? []
 
   const workflowName = instance.value.name
@@ -87,8 +88,7 @@ export const deploySteps = async (
   const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
 
   await awu(statuses)
-    .filter(status => !isResolvedReferenceExpression(status.id)
-      || status.name !== status.id.value.value.name)
+    .filter(status => !isResolvedReferenceExpression(status.id) || status.name !== status.id.value.value.name)
     .forEach(async status => {
       if (status.name === undefined) {
         throw new Error(`status name is missing in ${instance.elemID.getFullName()}`)

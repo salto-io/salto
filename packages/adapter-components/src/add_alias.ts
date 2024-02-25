@@ -1,20 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, ElemID, INSTANCE_ANNOTATIONS, isReferenceExpression, isInstanceElement, Value, TopLevelElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  INSTANCE_ANNOTATIONS,
+  isReferenceExpression,
+  isInstanceElement,
+  Value,
+  TopLevelElement,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
@@ -33,26 +41,30 @@ export type AliasData<T extends Component[] = Component[]> = {
   separator?: string
 }
 
-
 const isInstanceAnnotation = (field: string): boolean =>
   Object.values(INSTANCE_ANNOTATIONS).includes(field.split(ElemID.NAMESPACE_SEPARATOR)[0])
 
 const isValidAlias = (aliasParts: (string | undefined)[], element: TopLevelElement): boolean =>
   aliasParts.every((val, index) => {
     if (val === undefined) {
-      log.debug(`for element ${element.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
+      log.debug(
+        `for element ${element.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`,
+      )
       return false
     }
     return true
   })
 
-const getFieldValue = (element: TopLevelElement, fieldName: string): Value => (
+const getFieldValue = (element: TopLevelElement, fieldName: string): Value =>
   !isInstanceElement(element) || isInstanceAnnotation(fieldName)
     ? _.get(element.annotations, fieldName)
     : _.get(element.value, fieldName)
-)
 
-const getAliasFromField = ({ element, component, elementsById }:{
+const getAliasFromField = ({
+  element,
+  component,
+  elementsById,
+}: {
   element: TopLevelElement
   component: AliasComponent
   elementsById: Record<string, TopLevelElement>
@@ -77,27 +89,27 @@ const getAliasFromField = ({ element, component, elementsById }:{
   return _.isString(referencedFieldValue) ? referencedFieldValue : undefined
 }
 
-const isConstantComponent = (
-  component: AliasComponent | ConstantComponent
-): component is ConstantComponent => 'constant' in component
+const isConstantComponent = (component: AliasComponent | ConstantComponent): component is ConstantComponent =>
+  'constant' in component
 
-const calculateAlias = ({ element, elementsById, aliasData }: {
+const calculateAlias = ({
+  element,
+  elementsById,
+  aliasData,
+}: {
   element: TopLevelElement
   elementsById: Record<string, TopLevelElement>
   aliasData: AliasData
 }): string | undefined => {
   const { aliasComponents, separator = ' ' } = aliasData
-  const aliasParts = aliasComponents.map(component => (
-    isConstantComponent(component)
-      ? component.constant
-      : getAliasFromField({ element, component, elementsById })
-  ))
+  const aliasParts = aliasComponents.map(component =>
+    isConstantComponent(component) ? component.constant : getAliasFromField({ element, component, elementsById }),
+  )
   if (!isValidAlias(aliasParts, element)) {
     return undefined
   }
   return aliasParts.join(separator)
 }
-
 
 export const addAliasToElements = ({
   elementsMap,
@@ -123,7 +135,7 @@ export const addAliasToElements = ({
   }
   const [firstIterationGroups, secondIterationGroups] = _.partition(
     Object.keys(relevantElementsMap),
-    group => !secondIterationGroupNames.includes(group)
+    group => !secondIterationGroupNames.includes(group),
   )
   // first iteration
   firstIterationGroups.forEach(addAlias)

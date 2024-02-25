@@ -1,22 +1,35 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, MapType, ObjectType } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  InstanceElement,
+  MapType,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
-import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import {
+  JIRA,
+  WORKFLOW_RULES_TYPE_NAME,
+  WORKFLOW_TRANSITION_TYPE_NAME,
+  WORKFLOW_TYPE_NAME,
+} from '../../../src/constants'
 import workflowFilter from '../../../src/filters/workflow/workflow_structure_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { WITH_UNSUPPORTED_POST_FUNCTIONS, WITH_VALIDATORS } from './workflow_values'
@@ -43,8 +56,7 @@ const transitionKeyMap = {
 
 const createEmptyTransition = (tranNum: string): Transition => ({
   name: `tran${tranNum}`,
-  rules: {
-  },
+  rules: {},
 })
 
 describe('workflowStructureFilter', () => {
@@ -64,10 +76,12 @@ describe('workflowStructureFilter', () => {
 
     const { client: cli, paginator } = mockClient()
     client = cli
-    filter = workflowFilter(getFilterParams({
-      client,
-      paginator,
-    })) as typeof filter
+    filter = workflowFilter(
+      getFilterParams({
+        client,
+        paginator,
+      }),
+    ) as typeof filter
   })
 
   describe('onFetch', () => {
@@ -131,7 +145,9 @@ describe('workflowStructureFilter', () => {
       const elements = [workflowRulesType]
       await filter.onFetch?.(elements)
       expect(elements.length).toBeGreaterThan(1)
-      expect((await workflowRulesType.fields.postFunctions.getType()).elemID.getFullName()).toBe('List<jira.PostFunction>')
+      expect((await workflowRulesType.fields.postFunctions.getType()).elemID.getFullName()).toBe(
+        'List<jira.PostFunction>',
+      )
       expect((await workflowRulesType.fields.validators.getType()).elemID.getFullName()).toBe('List<jira.Validator>')
     })
 
@@ -147,7 +163,9 @@ describe('workflowStructureFilter', () => {
       const elements = [workflowConditionType]
       await filter.onFetch?.(elements)
       expect(elements.length).toBeGreaterThan(1)
-      expect((await workflowConditionType.fields.configuration.getType()).elemID.getFullName()).toBe('jira.ConditionConfiguration')
+      expect((await workflowConditionType.fields.configuration.getType()).elemID.getFullName()).toBe(
+        'jira.ConditionConfiguration',
+      )
       expect(workflowConditionType.fields.configuration.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -159,17 +177,13 @@ describe('workflowStructureFilter', () => {
     })
 
     it('should split the id value to entityId and name in Workflow instances', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          id: {
-            entityId: 'id',
-            name: 'name',
-          },
-          transitions: [],
-        }
-      )
+      const instance = new InstanceElement('instance', workflowType, {
+        id: {
+          entityId: 'id',
+          name: 'name',
+        },
+        transitions: [],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value).toEqual({
         entityId: 'id',
@@ -179,32 +193,28 @@ describe('workflowStructureFilter', () => {
     })
 
     it('should remove additionalProperties and issueEditable from statuses', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          statuses: [
-            {
-              properties: {
-                additionalProperties: {
-                  'jira.issue.editable': 'true',
-                  issueEditable: true,
-                },
+      const instance = new InstanceElement('instance', workflowType, {
+        statuses: [
+          {
+            properties: {
+              additionalProperties: {
+                'jira.issue.editable': 'true',
+                issueEditable: true,
               },
             },
-            {
-              properties: {
-                additionalProperties: {
-                  'jira.issue.editable': 'false',
-                  issueEditable: false,
-                },
+          },
+          {
+            properties: {
+              additionalProperties: {
+                'jira.issue.editable': 'false',
+                issueEditable: false,
               },
             },
-            {},
-          ],
-          transitions: [],
-        }
-      )
+          },
+          {},
+        ],
+        transitions: [],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value.statuses).toEqual([
         {
@@ -222,33 +232,29 @@ describe('workflowStructureFilter', () => {
     })
 
     it('should remove additionalProperties and issueEditable from transitions', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: [
-            {
-              name: 'tran1',
-              properties: {
-                additionalProperties: {
-                  'jira.issue.editable': 'true',
-                  issueEditable: true,
-                },
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: [
+          {
+            name: 'tran1',
+            properties: {
+              additionalProperties: {
+                'jira.issue.editable': 'true',
+                issueEditable: true,
               },
             },
-            {
-              name: 'tran2',
-              properties: {
-                additionalProperties: {
-                  'jira.issue.editable': 'false',
-                  issueEditable: false,
-                },
+          },
+          {
+            name: 'tran2',
+            properties: {
+              additionalProperties: {
+                'jira.issue.editable': 'false',
+                issueEditable: false,
               },
             },
-            { name: 'tran3' },
-          ],
-        }
-      )
+          },
+          { name: 'tran3' },
+        ],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value.transitions[transitionKeyMap.tran1].properties).toEqual({
         'jira.issue.editable': 'true',
@@ -259,98 +265,90 @@ describe('workflowStructureFilter', () => {
     })
 
     it('should replace conditionsTree with conditions', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: [
-            {
-              name: 'tran1',
-              rules: {
-                conditionsTree: { type: 'type' },
-              },
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: [
+          {
+            name: 'tran1',
+            rules: {
+              conditionsTree: { type: 'type' },
             },
-          ],
-        }
-      )
+          },
+        ],
+      })
       await filter.onFetch?.([instance])
-      expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual(
-        {
-          conditions: { type: 'type' },
-        }
-      )
+      expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
+        conditions: { type: 'type' },
+      })
     })
 
     it('should remove id if condition type is an extension', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: [
-            {
-              name: 'tran1',
-              rules: {
-                conditionsTree: {
-                  type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-                  configuration: {
-                    id: 'id',
-                  },
-                  conditions: [{
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: [
+          {
+            name: 'tran1',
+            rules: {
+              conditionsTree: {
+                type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                configuration: {
+                  id: 'id',
+                },
+                conditions: [
+                  {
                     type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
                     configuration: {
                       id: 'id',
                     },
-                  }],
-                },
+                  },
+                ],
               },
             },
-          ],
-        }
-      )
+          },
+        ],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
         conditions: {
           type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-          configuration: {
-          },
-          conditions: [{
-            type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
-            configuration: {
+          configuration: {},
+          conditions: [
+            {
+              type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
+              configuration: {},
             },
-          }],
+          ],
         },
       })
     })
 
     it('should remove name values from condition configuration', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: [
-            {
-              name: 'tran1',
-              rules: {
-                conditionsTree: {
-                  type: 'type',
-                  configuration: {
-                    name: 'name',
-                    other: 'other',
-                  },
-                  conditions: [{
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: [
+          {
+            name: 'tran1',
+            rules: {
+              conditionsTree: {
+                type: 'type',
+                configuration: {
+                  name: 'name',
+                  other: 'other',
+                },
+                conditions: [
+                  {
                     type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
                     configuration: {
-                      vals: [{
-                        name: 'name',
-                      }],
+                      vals: [
+                        {
+                          name: 'name',
+                        },
+                      ],
                     },
-                  }],
-                },
+                  },
+                ],
               },
             },
-          ],
-        }
-      )
+          },
+        ],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
         conditions: {
@@ -358,34 +356,31 @@ describe('workflowStructureFilter', () => {
           configuration: {
             other: 'other',
           },
-          conditions: [{
-            type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
-            configuration: {
-              vals: [{
-              }],
+          conditions: [
+            {
+              type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
+              configuration: {
+                vals: [{}],
+              },
             },
-          }],
+          ],
         },
       })
     })
 
     it('should do nothing if there is no configuration in an extension type', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: [
-            {
-              name: 'tran1',
-              rules: {
-                conditionsTree: {
-                  type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-                },
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: [
+          {
+            name: 'tran1',
+            rules: {
+              conditionsTree: {
+                type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
               },
             },
-          ],
-        }
-      )
+          },
+        ],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
         conditions: {
@@ -396,148 +391,130 @@ describe('workflowStructureFilter', () => {
 
     describe('post functions', () => {
       it('should remove name from post functions', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              {
-                name: 'tran1',
-                rules: {
-                  postFunctions: [
-                    {
-                      type: 'FireIssueEventFunction',
-                      configuration: {
-                        event: {
-                          id: '1',
-                          name: 'name',
-                        },
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            {
+              name: 'tran1',
+              rules: {
+                postFunctions: [
+                  {
+                    type: 'FireIssueEventFunction',
+                    configuration: {
+                      event: {
+                        id: '1',
+                        name: 'name',
                       },
                     },
-                    {
-                      type: 'FireIssueEventFunction',
-                      configuration: {
+                  },
+                  {
+                    type: 'FireIssueEventFunction',
+                    configuration: {},
+                  },
+                  {
+                    type: 'FireIssueEventFunction',
+                  },
+                  {
+                    type: 'SetIssueSecurityFromRoleFunction',
+                    configuration: {
+                      projectRole: {
+                        id: '1',
+                        name: 'name',
                       },
                     },
-                    {
-                      type: 'FireIssueEventFunction',
-                    },
-                    {
-                      type: 'SetIssueSecurityFromRoleFunction',
-                      configuration: {
-                        projectRole: {
-                          id: '1',
-                          name: 'name',
-                        },
-                      },
-                    },
-                    {
-                      type: 'SetIssueSecurityFromRoleFunction',
-                      configuration: {
-                      },
-                    },
-                    {
-                      type: 'SetIssueSecurityFromRoleFunction',
-                    },
-                  ],
-                },
+                  },
+                  {
+                    type: 'SetIssueSecurityFromRoleFunction',
+                    configuration: {},
+                  },
+                  {
+                    type: 'SetIssueSecurityFromRoleFunction',
+                  },
+                ],
               },
-            ],
-          }
-        )
+            },
+          ],
+        })
         await filter.onFetch?.([instance])
-        expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual(
-          {
-            postFunctions: [
-              {
-                type: 'FireIssueEventFunction',
-                configuration: {
-                  event: {
-                    id: '1',
-                  },
+        expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
+          postFunctions: [
+            {
+              type: 'FireIssueEventFunction',
+              configuration: {
+                event: {
+                  id: '1',
                 },
               },
-              {
-                type: 'FireIssueEventFunction',
-                configuration: {},
-              },
-              {
-                type: 'FireIssueEventFunction',
-              },
-              {
-                type: 'SetIssueSecurityFromRoleFunction',
-                configuration: {
-                  projectRole: {
-                    id: '1',
-                  },
+            },
+            {
+              type: 'FireIssueEventFunction',
+              configuration: {},
+            },
+            {
+              type: 'FireIssueEventFunction',
+            },
+            {
+              type: 'SetIssueSecurityFromRoleFunction',
+              configuration: {
+                projectRole: {
+                  id: '1',
                 },
               },
-              {
-                type: 'SetIssueSecurityFromRoleFunction',
-                configuration: {
-                },
-              },
-              {
-                type: 'SetIssueSecurityFromRoleFunction',
-              },
-            ],
-          }
-        )
+            },
+            {
+              type: 'SetIssueSecurityFromRoleFunction',
+              configuration: {},
+            },
+            {
+              type: 'SetIssueSecurityFromRoleFunction',
+            },
+          ],
+        })
       })
 
       it('should remove id from post functions with an extension type', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              {
-                name: 'tran1',
-                rules: {
-                  postFunctions: [
-                    {
-                      type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-                      configuration: {
-                        id: '1',
-                      },
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            {
+              name: 'tran1',
+              rules: {
+                postFunctions: [
+                  {
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                    configuration: {
+                      id: '1',
                     },
-                  ],
-                },
+                  },
+                ],
               },
-            ],
-          }
-        )
+            },
+          ],
+        })
         await filter.onFetch?.([instance])
         expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
           postFunctions: [
             {
               type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-              configuration: {
-              },
+              configuration: {},
             },
           ],
         })
       })
 
       it('should do nothing if there is no config in an extension type', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              {
-                name: 'tran1',
-                rules: {
-                  postFunctions: [
-                    {
-                      type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-                    },
-                  ],
-                },
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            {
+              name: 'tran1',
+              rules: {
+                postFunctions: [
+                  {
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                  },
+                ],
               },
-            ],
-          }
-        )
+            },
+          ],
+        })
         await filter.onFetch?.([instance])
         expect(instance.value.transitions[transitionKeyMap.tran1].rules).toEqual({
           postFunctions: [
@@ -549,43 +526,33 @@ describe('workflowStructureFilter', () => {
       })
 
       it('should remove unsupported post functions', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          WITH_UNSUPPORTED_POST_FUNCTIONS
-        )
+        const instance = new InstanceElement('instance', workflowType, WITH_UNSUPPORTED_POST_FUNCTIONS)
         await filter.onFetch?.([instance])
-        expect(instance.value.transitions[transitionKeyMap.tran1Initial].rules.postFunctions).toEqual(
-          [
-            { type: 'AssignToCurrentUserFunction' },
-            { type: 'UpdateIssueStatusFunction' },
-            {},
-          ],
-        )
-        expect(instance.value.transitions[transitionKeyMap.tran2].rules.postFunctions).toEqual(
-          [
-            { type: 'AssignToCurrentUserFunction' },
-            {},
-          ],
-        )
+        expect(instance.value.transitions[transitionKeyMap.tran1Initial].rules.postFunctions).toEqual([
+          { type: 'AssignToCurrentUserFunction' },
+          { type: 'UpdateIssueStatusFunction' },
+          {},
+        ])
+        expect(instance.value.transitions[transitionKeyMap.tran2].rules.postFunctions).toEqual([
+          { type: 'AssignToCurrentUserFunction' },
+          {},
+        ])
       })
     })
 
     describe('validators', () => {
       it('should remove name', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          WITH_VALIDATORS,
-        )
+        const instance = new InstanceElement('instance', workflowType, WITH_VALIDATORS)
         await filter.onFetch?.([instance])
         expect(instance.value.transitions[transitionKeyMap.tran1].rules.validators).toEqual([
           {
             type: 'ParentStatusValidator',
             configuration: {
-              parentStatuses: [{
-                id: '1',
-              }],
+              parentStatuses: [
+                {
+                  id: '1',
+                },
+              ],
             },
           },
           {
@@ -603,60 +570,51 @@ describe('workflowStructureFilter', () => {
       })
 
       it('should remove id from validators with an extension type', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              {
-                name: 'tran1',
-                rules: {
-                  validators: [
-                    {
-                      type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-                      configuration: {
-                        id: '1',
-                      },
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            {
+              name: 'tran1',
+              rules: {
+                validators: [
+                  {
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                    configuration: {
+                      id: '1',
                     },
-                  ],
-                },
+                  },
+                ],
               },
-            ],
-          }
-        )
+            },
+          ],
+        })
         await filter.onFetch?.([instance])
         expect(instance.value.transitions[transitionKeyMap.tran1].rules.validators).toEqual([
           {
             type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
-            configuration: {
-            },
+            configuration: {},
           },
         ])
       })
 
       it('should rename fields to fieldIds', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              {
-                name: 'tran1',
-                rules: {
-                  validators: [
-                    {
-                      type: 'ParentStatusValidator',
-                      configuration: {
-                        fields: ['1'],
-                        field: '1',
-                      },
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            {
+              name: 'tran1',
+              rules: {
+                validators: [
+                  {
+                    type: 'ParentStatusValidator',
+                    configuration: {
+                      fields: ['1'],
+                      field: '1',
                     },
-                  ],
-                },
+                  },
+                ],
               },
-            ],
-          }
-        )
+            },
+          ],
+        })
         await filter.onFetch?.([instance])
         expect(instance.value.transitions[transitionKeyMap.tran1].rules.validators).toEqual([
           {
@@ -670,27 +628,23 @@ describe('workflowStructureFilter', () => {
       })
 
       it('should convert windowsDays to number', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              {
-                name: 'tran1',
-                rules: {
-                  validators: [
-                    {
-                      type: 'ParentStatusValidator',
-                      configuration: {
-                        windowsDays: '1',
-                      },
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            {
+              name: 'tran1',
+              rules: {
+                validators: [
+                  {
+                    type: 'ParentStatusValidator',
+                    configuration: {
+                      windowsDays: '1',
                     },
-                  ],
-                },
+                  },
+                ],
               },
-            ],
-          }
-        )
+            },
+          ],
+        })
         await filter.onFetch?.([instance])
         expect(instance.value.transitions[transitionKeyMap.tran1].rules.validators).toEqual([
           {
@@ -704,16 +658,9 @@ describe('workflowStructureFilter', () => {
     })
     describe('transitions map', () => {
       it('should convert transitions to a map', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-              createEmptyTransition('2'),
-            ],
-          },
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [createEmptyTransition('1'), createEmptyTransition('2')],
+        })
         await filter.onFetch?.([instance])
         expect(instance.value.transitions).toEqual({
           [transitionKeyMap.tran1]: createEmptyTransition('1'),
@@ -721,26 +668,19 @@ describe('workflowStructureFilter', () => {
         })
       })
       it('should add the correct name to the transition', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-              createEmptyTransition('2'),
-            ],
-            statuses: [
-              {
-                id: '1',
-                name: 'status1',
-              },
-              {
-                id: '2',
-                name: 'status2',
-              },
-            ],
-          },
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [createEmptyTransition('1'), createEmptyTransition('2')],
+          statuses: [
+            {
+              id: '1',
+              name: 'status1',
+            },
+            {
+              id: '2',
+              name: 'status2',
+            },
+          ],
+        })
         instance.value.transitions[0].from = ['1']
         instance.value.transitions[1].from = ['2']
 
@@ -749,144 +689,110 @@ describe('workflowStructureFilter', () => {
         expect(instance.value.transitions[naclCase('tran2::From: status2::Directed')].name).toEqual('tran2')
       })
       it('should add all from statuses in the correct order', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-            ],
-            statuses: [
-              {
-                id: '1',
-                name: 'b',
-              },
-              {
-                id: '2',
-                name: 'cc',
-              },
-              {
-                id: '3',
-                name: 'aaa',
-              },
-            ],
-          },
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [createEmptyTransition('1')],
+          statuses: [
+            {
+              id: '1',
+              name: 'b',
+            },
+            {
+              id: '2',
+              name: 'cc',
+            },
+            {
+              id: '3',
+              name: 'aaa',
+            },
+          ],
+        })
         instance.value.transitions[0].from = ['2', '3', '1']
         await filter.onFetch?.([instance])
         expect(Object.keys(instance.value.transitions)).toEqual([naclCase('tran1::From: aaa,b,cc::Directed')])
       })
       it('should add global transition key correctly', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-            ],
-          }
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [createEmptyTransition('1')],
+        })
         instance.value.transitions[0].to = ['1']
         await filter.onFetch?.([instance])
         expect(Object.keys(instance.value.transitions)).toEqual([naclCase('tran1::From: any status::Global')])
       })
       it('should add global circular transition key correctly', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-            ],
-          }
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [createEmptyTransition('1')],
+        })
         await filter.onFetch?.([instance])
         expect(Object.keys(instance.value.transitions)).toEqual([naclCase('tran1::From: any status::Circular')])
       })
       it('should add initial transition key correctly', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-            ],
-          }
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [createEmptyTransition('1')],
+        })
         instance.value.transitions[0].type = 'initial'
         await filter.onFetch?.([instance])
         expect(Object.keys(instance.value.transitions)).toEqual([naclCase('tran1::From: none::Initial')])
       })
       it('should add transition key differentiators correctly', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            transitions: [
-              createEmptyTransition('1'),
-              createEmptyTransition('1'),
-              createEmptyTransition('2'),
-              createEmptyTransition('1'),
-            ],
-          }
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          transitions: [
+            createEmptyTransition('1'),
+            createEmptyTransition('1'),
+            createEmptyTransition('2'),
+            createEmptyTransition('1'),
+          ],
+        })
         await filter.onFetch?.([instance])
         expect(Object.keys(instance.value.transitions)[0]).toEqual(naclCase('tran1::From: any status::Circular::1'))
         expect(Object.keys(instance.value.transitions)[1]).toEqual(naclCase('tran1::From: any status::Circular::2'))
         expect(Object.keys(instance.value.transitions)[3]).toEqual(naclCase('tran1::From: any status::Circular::3'))
       })
       it('should issue a fetch warning when same key transitions', async () => {
-        const instance = new InstanceElement(
-          'instance',
-          workflowType,
-          {
-            id: {
-              name: 'instance',
-            },
-            transitions: [
-              createEmptyTransition('1'),
-              createEmptyTransition('1'),
-              createEmptyTransition('1'),
-              createEmptyTransition('2'),
-              createEmptyTransition('3'),
-              createEmptyTransition('2'),
-            ],
-          }
-        )
+        const instance = new InstanceElement('instance', workflowType, {
+          id: {
+            name: 'instance',
+          },
+          transitions: [
+            createEmptyTransition('1'),
+            createEmptyTransition('1'),
+            createEmptyTransition('1'),
+            createEmptyTransition('2'),
+            createEmptyTransition('3'),
+            createEmptyTransition('2'),
+          ],
+        })
         const fetchResults = await filter.onFetch?.([instance])
         // expect(fetchResults?.errors).toHaveLength(1)
-        expect(fetchResults).toEqual({ errors: [
-          {
-            severity: 'Warning',
-            message: `The following transitions of workflow instance are not unique: tran1, tran2.
+        expect(fetchResults).toEqual({
+          errors: [
+            {
+              severity: 'Warning',
+              message: `The following transitions of workflow instance are not unique: tran1, tran2.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
-          },
-        ] })
+            },
+          ],
+        })
       })
     })
 
     it('should not convert invalid workflow', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          transitions: [
-            {
-              rules: {
-                postFunctions: 'invalid',
-                validators: [
-                  {
-                    type: 'ParentStatusValidator',
-                    configuration: {
-                      windowsDays: '1',
-                    },
+      const instance = new InstanceElement('instance', workflowType, {
+        transitions: [
+          {
+            rules: {
+              postFunctions: 'invalid',
+              validators: [
+                {
+                  type: 'ParentStatusValidator',
+                  configuration: {
+                    windowsDays: '1',
                   },
-                ],
-              },
+                },
+              ],
             },
-          ],
-        }
-      )
+          },
+        ],
+      })
       await filter.onFetch?.([instance])
       expect(instance.value.transitions).toEqual([
         {

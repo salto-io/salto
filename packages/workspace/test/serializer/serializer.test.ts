@@ -1,23 +1,35 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
-  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile, MapType, BuiltinTypes, isObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  ElemID,
+  isInstanceElement,
+  ListType,
+  ObjectType,
+  InstanceElement,
+  TemplateExpression,
+  ReferenceExpression,
+  Variable,
+  VariableExpression,
+  StaticFile,
+  MapType,
+  BuiltinTypes,
+  isObjectType,
   Element,
   isReferenceExpression,
   TypeReference,
@@ -27,19 +39,37 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors, deserializeParsed, deserializeValues } from '../../src/serializer/elements'
+import {
+  serialize,
+  deserialize,
+  SALTO_CLASS_FIELD,
+  deserializeMergeErrors,
+  deserializeValidationErrors,
+  deserializeParsed,
+  deserializeValues,
+} from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { AbsoluteStaticFile, LazyStaticFile } from '../../src/workspace/static_files/source'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { MergeError, DuplicateAnnotationError } from '../../src/merger/internal/common'
 import {
-  ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
-  DuplicateAnnotationTypeError, ConflictingSettingError,
+  ConflictingFieldTypesError,
+  DuplicateAnnotationFieldDefinitionError,
+  DuplicateAnnotationTypeError,
+  ConflictingSettingError,
 } from '../../src/merger/internal/object_types'
 import { DuplicateInstanceKeyError } from '../../src/merger/internal/instances'
 import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
-import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError, InvalidTypeValidationError } from '../../src/validator'
+import {
+  CircularReferenceValidationError,
+  IllegalReferenceValidationError,
+  MissingRequiredFieldValidationError,
+  RegexMismatchValidationError,
+  InvalidValueRangeValidationError,
+  InvalidStaticFileError,
+  InvalidTypeValidationError,
+} from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../../src/workspace/static_files'
 
@@ -108,102 +138,66 @@ describe('State/cache serialization', () => {
     },
   })
 
-  const instance = new InstanceElement(
-    'me',
-    model,
-    { name: 'me', num: 7 },
-    ['path', 'test'],
-    { test: 'annotation' },
-  )
+  const instance = new InstanceElement('me', model, { name: 'me', num: 7 }, ['path', 'test'], { test: 'annotation' })
 
-  class SubInstanceElement extends InstanceElement { }
+  class SubInstanceElement extends InstanceElement {}
 
-  const subInstance = new SubInstanceElement(
-    'sub_me',
-    model,
-    { name: 'me', num: 7 },
-    ['path', 'test'],
-    { test: 'annotation' },
-  )
+  const subInstance = new SubInstanceElement('sub_me', model, { name: 'me', num: 7 }, ['path', 'test'], {
+    test: 'annotation',
+  })
 
-  const refInstance = new InstanceElement(
-    'also_me',
-    model,
-    {
-      num: new ReferenceExpression(instance.elemID.createNestedID('num')),
-      name: new VariableExpression(varElemId),
-    }
-  )
+  const refInstance = new InstanceElement('also_me', model, {
+    num: new ReferenceExpression(instance.elemID.createNestedID('num')),
+    name: new VariableExpression(varElemId),
+  })
 
-  const refInstance2 = new InstanceElement(
-    'another',
-    model,
-    {
-      name: new ReferenceExpression(instance.elemID),
-    }
-  )
+  const refInstance2 = new InstanceElement('another', model, {
+    name: new ReferenceExpression(instance.elemID),
+  })
 
-  const refInstance3 = new InstanceElement(
-    'another3',
-    model,
-    {
-      name: new ReferenceExpression(refInstance2.elemID.createNestedID('name')),
-    }
-  )
+  const refInstance3 = new InstanceElement('another3', model, {
+    name: new ReferenceExpression(refInstance2.elemID.createNestedID('name')),
+  })
 
-  const templateRefInstance = new InstanceElement(
-    'also_me_template',
-    model,
-    {
-      name: new TemplateExpression({
-        parts: [
-          'I am not',
-          new ReferenceExpression(instance.elemID.createNestedID('name')),
-        ],
-      }),
-    }
-  )
+  const templateRefInstance = new InstanceElement('also_me_template', model, {
+    name: new TemplateExpression({
+      parts: ['I am not', new ReferenceExpression(instance.elemID.createNestedID('name'))],
+    }),
+  })
 
-  const functionRefInstance = new InstanceElement(
-    'also_me_function',
-    model,
-    {
-      file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
-      fileWithEncoding: new StaticFile({ filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' }),
-      missingFile: new MissingStaticFile('some/missing/path.txt'),
-      noAccessFile: new AccessDeniedStaticFile('some/privileged/path.txt'),
-      singleparam: new TestFuncImpl('funcadelic', ['aaa']),
-      multipleparams: new TestFuncImpl('george', [false, 321]),
-      withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
-      withobject: new TestFuncImpl('maggot', [{ aa: '312' }]),
-      mixed: new TestFuncImpl('brain', [1, [1, { aa: '312' }], false, 'aaa']),
-      nested: {
-        WAT: new TestFuncImpl('nestalicous', ['a']),
-      },
+  const functionRefInstance = new InstanceElement('also_me_function', model, {
+    file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
+    fileWithEncoding: new StaticFile({ filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' }),
+    missingFile: new MissingStaticFile('some/missing/path.txt'),
+    noAccessFile: new AccessDeniedStaticFile('some/privileged/path.txt'),
+    singleparam: new TestFuncImpl('funcadelic', ['aaa']),
+    multipleparams: new TestFuncImpl('george', [false, 321]),
+    withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
+    withobject: new TestFuncImpl('maggot', [{ aa: '312' }]),
+    mixed: new TestFuncImpl('brain', [1, [1, { aa: '312' }], false, 'aaa']),
+    nested: {
+      WAT: new TestFuncImpl('nestalicous', ['a']),
     },
-  )
+  })
 
-  const config = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    model,
-    { name: 'other', num: 5 },
-  )
+  const config = new InstanceElement(ElemID.CONFIG_NAME, model, { name: 'other', num: 5 })
 
   const settings = new ObjectType({
     elemID: new ElemID('salto', 'settingObj'),
     isSettings: true,
   })
 
-  const innerRefsInstance = new InstanceElement(
-    'innerRefsInstance',
-    model,
-  )
+  const innerRefsInstance = new InstanceElement('innerRefsInstance', model)
 
   innerRefsInstance.value.c = 2
   innerRefsInstance.value.b = {
     b: new ReferenceExpression(innerRefsInstance.elemID.createNestedID('c'), 2, innerRefsInstance),
   }
-  innerRefsInstance.value.a = new ReferenceExpression(innerRefsInstance.elemID.createNestedID('b'), innerRefsInstance.value.b, innerRefsInstance)
+  innerRefsInstance.value.a = new ReferenceExpression(
+    innerRefsInstance.elemID.createNestedID('b'),
+    innerRefsInstance.value.b,
+    innerRefsInstance,
+  )
 
   const standaloneField = new Field(
     new ObjectType({ elemID: new ElemID('salesforce', 'test') }),
@@ -212,9 +206,26 @@ describe('State/cache serialization', () => {
     { anno: 'test' },
   )
 
-  const elements = [strType, numType, boolType, model, strListType, strMapType, variable,
-    instance, subInstance, refInstance, refInstance2, refInstance3, templateRefInstance,
-    functionRefInstance, settings, config, innerRefsInstance, standaloneField]
+  const elements = [
+    strType,
+    numType,
+    boolType,
+    model,
+    strListType,
+    strMapType,
+    variable,
+    instance,
+    subInstance,
+    refInstance,
+    refInstance2,
+    refInstance3,
+    templateRefInstance,
+    functionRefInstance,
+    settings,
+    config,
+    innerRefsInstance,
+    standaloneField,
+  ]
 
   it('should serialize and deserialize without relying on the constructor name', async () => {
     const serialized = await serialize([subInstance])
@@ -237,19 +248,13 @@ describe('State/cache serialization', () => {
   })
 
   it('should not serialize resolved values', async () => {
-    const resolved = await resolve(
-      [model],
-      createInMemoryElementSource(elements)
-    )
+    const resolved = await resolve([model], createInMemoryElementSource(elements))
     const serialized = await serialize(await awu(resolved).toArray(), 'keepRef')
     const deserialized = await deserialize(serialized)
     Object.values(model.fields).forEach(field => {
       field.refType = new TypeReference(field.refType.elemID)
     })
-    model.annotationRefTypes = _.mapValues(
-      model.annotationRefTypes,
-      refType => new TypeReference(refType.elemID)
-    )
+    model.annotationRefTypes = _.mapValues(model.annotationRefTypes, refType => new TypeReference(refType.elemID))
     expect(deserialized[0]).toEqual(model)
   })
 
@@ -257,23 +262,20 @@ describe('State/cache serialization', () => {
   it('should serialize resolved values to state', async () => {
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const serialized = await serialize(
-      await awu(await resolve(
-        elementsToSerialize,
-        createInMemoryElementSource(elementsToSerialize)
-      )).toArray()
+      await awu(await resolve(elementsToSerialize, createInMemoryElementSource(elementsToSerialize))).toArray(),
     )
     const deserialized = await deserialize(serialized)
     const refInst = deserialized.find(
-      e => e.elemID.getFullName() === refInstance.elemID.getFullName()
+      e => e.elemID.getFullName() === refInstance.elemID.getFullName(),
     ) as InstanceElement
     const refInst2 = deserialized.find(
-      e => e.elemID.getFullName() === refInstance2.elemID.getFullName()
+      e => e.elemID.getFullName() === refInstance2.elemID.getFullName(),
     ) as InstanceElement
     const refInst3 = deserialized.find(
-      e => e.elemID.getFullName() === refInstance3.elemID.getFullName()
+      e => e.elemID.getFullName() === refInstance3.elemID.getFullName(),
     ) as InstanceElement
     const innerRefsInst = deserialized.find(
-      e => e.elemID.getFullName() === innerRefsInstance.elemID.getFullName()
+      e => e.elemID.getFullName() === innerRefsInstance.elemID.getFullName(),
     ) as InstanceElement
     expect(refInst.value.name).toEqual('I am a var')
     expect(refInst.value.num).toBeInstanceOf(ReferenceExpression)
@@ -289,8 +291,9 @@ describe('State/cache serialization', () => {
   it('should keep the order of the elements the same', async () => {
     const shuffledElements = _.shuffle(elements)
     const shuffledDeserializedElements = await deserialize(await serialize(shuffledElements))
-    expect(shuffledDeserializedElements.map(e => e.elemID.getFullName()))
-      .toEqual(shuffledElements.map(e => e.elemID.getFullName()))
+    expect(shuffledDeserializedElements.map(e => e.elemID.getFullName())).toEqual(
+      shuffledElements.map(e => e.elemID.getFullName()),
+    )
   })
 
   describe('serialize and deserialize values', () => {
@@ -300,17 +303,17 @@ describe('State/cache serialization', () => {
       expect(deserialized).toEqual(values)
     })
     it('should serialize and deserialize plain objects', async () => {
-      const plainObject = [{
-        name: 'abc',
-        number: 123,
-      }]
+      const plainObject = [
+        {
+          name: 'abc',
+          number: 123,
+        },
+      ]
       const deserialized = await deserializeValues(await serialize(plainObject))
       expect(deserialized).toEqual(plainObject)
     })
     it('should serialize and deserialize arrays', async () => {
-      const arrayValue = [
-        [1, 2, 'a', true, { test: 'false' }],
-      ]
+      const arrayValue = [[1, 2, 'a', true, { test: 'false' }]]
       const deserialized = await deserializeValues(await serialize(arrayValue))
       expect(deserialized).toEqual(arrayValue)
     })
@@ -358,16 +361,15 @@ describe('State/cache serialization', () => {
       deserializedElements = await deserialize(await serialize(elements))
     })
     it('should deserialize type correctly', async () => {
-      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model))
-        .toBeTruthy()
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model)).toBeTruthy()
     })
     it('should deserialize field correctly', async () => {
-      expect(deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField))
-        .toBeTruthy()
+      expect(
+        deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField),
+      ).toBeTruthy()
     })
     it('should deserialize instance correctly', async () => {
-      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance))
-        .toBeTruthy()
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance)).toBeTruthy()
     })
   })
   describe('validate deserialization of parsed json objects', () => {
@@ -376,22 +378,25 @@ describe('State/cache serialization', () => {
       deserializedElements = await deserializeParsed(JSON.parse(await serialize(elements)))
     })
     it('should deserialize type correctly', async () => {
-      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model))
-        .toBeTruthy()
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model)).toBeTruthy()
     })
     it('should deserialize field correctly', async () => {
-      expect(deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField))
-        .toBeTruthy()
+      expect(
+        deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField),
+      ).toBeTruthy()
     })
     it('should deserialize instance correctly', async () => {
-      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance))
-        .toBeTruthy()
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance)).toBeTruthy()
     })
   })
 
   it('should throw error if trying to deserialize a non element object', async () => {
-    await expect(deserialize(safeJsonStringify([{ test }]))).rejects.toThrow('Deserialization failed. At least one element did not deserialize to an Element')
-    await expect(deserializeParsed([{ test }])).rejects.toThrow('Deserialization failed. At least one element did not deserialize to an Element')
+    await expect(deserialize(safeJsonStringify([{ test }]))).rejects.toThrow(
+      'Deserialization failed. At least one element did not deserialize to an Element',
+    )
+    await expect(deserializeParsed([{ test }])).rejects.toThrow(
+      'Deserialization failed. At least one element did not deserialize to an Element',
+    )
   })
   it('should throw error if trying to deserialize a non array', async () => {
     await expect(deserialize(safeJsonStringify({ test }))).rejects.toThrow('got non-array JSON data')
@@ -399,16 +404,14 @@ describe('State/cache serialization', () => {
   })
 
   it('should not serialize redundant values in StaticFile sub classes', async () => {
-    const absInstance = new InstanceElement(
-      'instance',
-      model,
-      {
-        file: new AbsoluteStaticFile({ filepath: 'filepath', content: Buffer.from('content'), absoluteFilePath: 'absolute/filepath' }),
-      },
-    )
-    expect(
-      await serialize([absInstance])
-    ).not.toContain('absolute/filepath')
+    const absInstance = new InstanceElement('instance', model, {
+      file: new AbsoluteStaticFile({
+        filepath: 'filepath',
+        content: Buffer.from('content'),
+        absoluteFilePath: 'absolute/filepath',
+      }),
+    })
+    expect(await serialize([absInstance])).not.toContain('absolute/filepath')
   })
 
   describe('functions', () => {
@@ -443,7 +446,11 @@ describe('State/cache serialization', () => {
       expect(funcElement.value.file).toBeInstanceOf(StaticFile)
     })
     it('file with encoding', () => {
-      expect(funcElement.value).toHaveProperty('fileWithEncoding', { filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' })
+      expect(funcElement.value).toHaveProperty('fileWithEncoding', {
+        filepath: 'some/pathWithEncoding.ext',
+        hash: 'hash',
+        encoding: 'utf-8',
+      })
       expect(funcElement.value.fileWithEncoding).toBeInstanceOf(StaticFile)
     })
     it('missing file', () => {
@@ -469,12 +476,17 @@ describe('State/cache serialization', () => {
     it('should alter static files', async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
       const serialized = await serialize(elementsToSerialize)
-      const funcElement = (await deserialize(
-        serialized,
-        x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG', encoding: 'utf-8' }))
-      ))[0] as InstanceElement
+      const funcElement = (
+        await deserialize(serialized, x =>
+          Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG', encoding: 'utf-8' })),
+        )
+      )[0] as InstanceElement
 
-      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG', encoding: 'utf-8' })
+      expect(funcElement.value).toHaveProperty('file', {
+        filepath: 'some/path.ext',
+        hash: 'ZOMGZOMGZOMG',
+        encoding: 'utf-8',
+      })
       expect(funcElement.value.file).toBeInstanceOf(StaticFile)
     })
   })
@@ -503,15 +515,9 @@ describe('State/cache serialization', () => {
           },
         },
       })
-      const classNameInst = new InstanceElement(
-        'ClsName',
-        typeWithLazyStaticFile,
-        {
-          file: new LazyStaticFile(
-            'some/path.ext', 'hash', 'some/path.ext', async () => Buffer.from('content'),
-          ),
-        },
-      )
+      const classNameInst = new InstanceElement('ClsName', typeWithLazyStaticFile, {
+        file: new LazyStaticFile('some/path.ext', 'hash', 'some/path.ext', async () => Buffer.from('content')),
+      })
       deserialized = (await deserialize(await serialize([classNameInst])))[0] as InstanceElement
     })
     it('should serialize LazyStaticFile to StaticFile', () => {
@@ -533,20 +539,38 @@ describe('State/cache serialization', () => {
     let multiplePrimitiveTypesUnsupportedError: MultiplePrimitiveTypesError
     let duplicateVariableNameError: DuplicateVariableNameError
     beforeAll(async () => {
-      duplicateAnnotationError = new DuplicateAnnotationError({ elemID, key: 'test1', existingValue: 'old', newValue: 'new' })
+      duplicateAnnotationError = new DuplicateAnnotationError({
+        elemID,
+        key: 'test1',
+        existingValue: 'old',
+        newValue: 'new',
+      })
       conflictingFieldTypesError = new ConflictingFieldTypesError({ elemID, definedTypes: ['test', 'test2'] })
-      duplicateAnnotationFieldDefinitionError = new DuplicateAnnotationFieldDefinitionError({ elemID, annotationKey: 'test' })
+      duplicateAnnotationFieldDefinitionError = new DuplicateAnnotationFieldDefinitionError({
+        elemID,
+        annotationKey: 'test',
+      })
       duplicateAnnotationTypeError = new DuplicateAnnotationTypeError({ elemID, key: 'bla' })
       conflictingSettingError = new ConflictingSettingError({ elemID })
-      duplicateInstanceKeyError = new DuplicateInstanceKeyError({ elemID, key: 'test1', existingValue: 'old', newValue: 'new' })
+      duplicateInstanceKeyError = new DuplicateInstanceKeyError({
+        elemID,
+        key: 'test1',
+        existingValue: 'old',
+        newValue: 'new',
+      })
       multiplePrimitiveTypesUnsupportedError = new MultiplePrimitiveTypesError({
-        elemID, duplicates: [BuiltinTypes.BOOLEAN, BuiltinTypes.NUMBER],
+        elemID,
+        duplicates: [BuiltinTypes.BOOLEAN, BuiltinTypes.NUMBER],
       })
       duplicateVariableNameError = new DuplicateVariableNameError({ elemID })
       const mergeErrors: MergeError[] = [
-        duplicateAnnotationError, conflictingFieldTypesError,
-        duplicateAnnotationFieldDefinitionError, duplicateAnnotationTypeError,
-        conflictingSettingError, duplicateInstanceKeyError, multiplePrimitiveTypesUnsupportedError,
+        duplicateAnnotationError,
+        conflictingFieldTypesError,
+        duplicateAnnotationFieldDefinitionError,
+        duplicateAnnotationTypeError,
+        conflictingSettingError,
+        duplicateInstanceKeyError,
+        multiplePrimitiveTypesUnsupportedError,
         duplicateVariableNameError,
       ]
       serialized = await serialize(mergeErrors)
@@ -586,57 +610,56 @@ describe('State/cache serialization', () => {
   })
 
   describe('validation errors', () => {
-    const validationErrors = _.sortBy([
-      new InvalidStaticFileError({
-        elemID: new ElemID('salto', 'InvalidStaticFileError'),
-        error: new MissingStaticFile('invalid').message,
-      }),
-      new CircularReferenceValidationError({
-        elemID: new ElemID('salto', 'CircularReferenceValidationError'),
-        ref: 'ref',
-      }),
-      new IllegalReferenceValidationError({
-        elemID: new ElemID('salto', 'IllegalReferenceValidationError'),
-        reason: 'reason',
-      }),
-      new UnresolvedReferenceValidationError({
-        elemID: new ElemID('salto', 'UnresolvedReferenceValidationError'),
-        target: new ElemID('salto', 'Target'),
-      }),
-      new MissingRequiredFieldValidationError({
-        elemID: new ElemID('salto', 'MissingRequiredFieldValidationError'),
-        fieldName: 'name',
-      }),
-      new RegexMismatchValidationError({
-        elemID: new ElemID('salto', 'RegexMismatchValidationError'),
-        fieldName: 'name',
-        regex: 'regex',
-        value: 'asd',
-      }),
-      new InvalidValueRangeValidationError({
-        elemID: new ElemID('salto', 'InvalidValueRangeValidationError'),
-        fieldName: 'name',
-        value: 12,
-        maxValue: 6,
-        minValue: 4,
-      }),
-      new InvalidTypeValidationError(
-        new ElemID('salto', 'InvalidTypeValidationError'),
-      ),
-    ], err => err.elemID.getFullName())
+    const validationErrors = _.sortBy(
+      [
+        new InvalidStaticFileError({
+          elemID: new ElemID('salto', 'InvalidStaticFileError'),
+          error: new MissingStaticFile('invalid').message,
+        }),
+        new CircularReferenceValidationError({
+          elemID: new ElemID('salto', 'CircularReferenceValidationError'),
+          ref: 'ref',
+        }),
+        new IllegalReferenceValidationError({
+          elemID: new ElemID('salto', 'IllegalReferenceValidationError'),
+          reason: 'reason',
+        }),
+        new UnresolvedReferenceValidationError({
+          elemID: new ElemID('salto', 'UnresolvedReferenceValidationError'),
+          target: new ElemID('salto', 'Target'),
+        }),
+        new MissingRequiredFieldValidationError({
+          elemID: new ElemID('salto', 'MissingRequiredFieldValidationError'),
+          fieldName: 'name',
+        }),
+        new RegexMismatchValidationError({
+          elemID: new ElemID('salto', 'RegexMismatchValidationError'),
+          fieldName: 'name',
+          regex: 'regex',
+          value: 'asd',
+        }),
+        new InvalidValueRangeValidationError({
+          elemID: new ElemID('salto', 'InvalidValueRangeValidationError'),
+          fieldName: 'name',
+          value: 12,
+          maxValue: 6,
+          minValue: 4,
+        }),
+        new InvalidTypeValidationError(new ElemID('salto', 'InvalidTypeValidationError')),
+      ],
+      err => err.elemID.getFullName(),
+    )
 
     it('should serialize and deserialize correctly', async () => {
       const serialized = await serialize(validationErrors)
-      const deserialized = _.sortBy(
-        await deserializeValidationErrors(serialized),
-        err => err.elemID.getFullName()
-      )
+      const deserialized = _.sortBy(await deserializeValidationErrors(serialized), err => err.elemID.getFullName())
       expect(deserialized).toEqual(validationErrors)
     })
   })
 
   describe('backward compatibility', () => {
-    const ser = '[{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{"str":{"elemId":{"adapter":"salto","typeName":"ref","idType":"type","nameParts":[]},"_salto_class":"ReferenceExpression"}},"annotationTypes":{"str":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"}},"fields":{"list":{"elemID":{"adapter":"salto","typeName":"obj","idType":"field","nameParts":["list"]},"annotations":{},"annotationTypes":{},"parent":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"name":"list","type":{"elemID":{"adapter":"","typeName":"list<string>","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"innerType":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"},"_salto_class":"ListType"},"_salto_class":"Field"},"map":{"elemID":{"adapter":"salto","typeName":"obj","idType":"field","nameParts":["map"]},"annotations":{},"annotationTypes":{},"parent":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"name":"map","type":{"elemID":{"adapter":"","typeName":"map<string>","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"innerType":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"},"_salto_class":"MapType"},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"elemID":{"adapter":"salto","typeName":"obj","idType":"instance","nameParts":["inst"]},"annotations":{},"annotationTypes":{},"type":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{},"_salto_class":"InstanceElement"}]'
+    const ser =
+      '[{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{"str":{"elemId":{"adapter":"salto","typeName":"ref","idType":"type","nameParts":[]},"_salto_class":"ReferenceExpression"}},"annotationTypes":{"str":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"}},"fields":{"list":{"elemID":{"adapter":"salto","typeName":"obj","idType":"field","nameParts":["list"]},"annotations":{},"annotationTypes":{},"parent":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"name":"list","type":{"elemID":{"adapter":"","typeName":"list<string>","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"innerType":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"},"_salto_class":"ListType"},"_salto_class":"Field"},"map":{"elemID":{"adapter":"salto","typeName":"obj","idType":"field","nameParts":["map"]},"annotations":{},"annotationTypes":{},"parent":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"name":"map","type":{"elemID":{"adapter":"","typeName":"map<string>","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"innerType":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"},"_salto_class":"MapType"},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"elemID":{"adapter":"salto","typeName":"obj","idType":"instance","nameParts":["inst"]},"annotations":{},"annotationTypes":{},"type":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{},"_salto_class":"InstanceElement"}]'
     let des: Element[]
     let desObj: ObjectType
     let desInst: InstanceElement

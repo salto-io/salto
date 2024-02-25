@@ -1,19 +1,28 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { dependencyChange, isDependentAction, addReferenceDependency, addParentDependency, isFieldChangeEntry, ChangeEntry, isInstanceChangeEntry, isObjectTypeChangeEntry } from '../src/dependency_changer'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  dependencyChange,
+  isDependentAction,
+  addReferenceDependency,
+  addParentDependency,
+  isFieldChangeEntry,
+  ChangeEntry,
+  isInstanceChangeEntry,
+  isObjectTypeChangeEntry,
+} from '../src/dependency_changer'
 import { Change } from '../src/change'
 import { Field, ObjectType, InstanceElement } from '../src/elements'
 import { ElemID } from '../src/element_id'
@@ -36,9 +45,7 @@ describe('Dependency changer utility functions', () => {
     })
     it('should return false for actions that cannot depend on each other', () => {
       const possibleActions: Change['action'][] = ['add', 'remove', 'modify']
-      possibleActions.forEach(
-        action => expect(isDependentAction(action, 'modify')).toBeFalsy()
-      )
+      possibleActions.forEach(action => expect(isDependentAction(action, 'modify')).toBeFalsy())
       expect(isDependentAction('add', 'remove')).toBeFalsy()
       expect(isDependentAction('remove', 'add')).toBeFalsy()
     })
@@ -60,9 +67,7 @@ describe('Dependency changer utility functions', () => {
     const testType = new ObjectType({ elemID: new ElemID('', 'test') })
     const testField = new Field(testType, 'field', testType)
     const testInst = new InstanceElement('inst', testType)
-    const toChangeEntry = <T>(elem: T): ChangeEntry<T> => (
-      [1, { action: 'add', data: { after: elem } }]
-    )
+    const toChangeEntry = <T>(elem: T): ChangeEntry<T> => [1, { action: 'add', data: { after: elem } }]
     describe('isFieldChangeEntry', () => {
       it('should return true for field change entry', () => {
         expect(isFieldChangeEntry(toChangeEntry(testField))).toBeTruthy()

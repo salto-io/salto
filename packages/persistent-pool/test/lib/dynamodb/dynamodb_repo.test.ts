@@ -1,29 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import {
-  ListTablesCommand,
-} from '@aws-sdk/client-dynamodb'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { ListTablesCommand } from '@aws-sdk/client-dynamodb'
 import { retry } from '@salto-io/lowerdash'
+import { repo as makeRepo, DynamoDbInstances } from '../../../src/lib/dynamodb/dynamodb_repo'
 import {
-  repo as makeRepo,
-  DynamoDbInstances,
-} from '../../../src/lib/dynamodb/dynamodb_repo'
-import {
-  Repo, Pool, InstanceId, InstanceIdAlreadyRegistered, Lease,
-  InstanceNotFoundError, InstanceNotLeasedError, LeaseWithStatus,
+  Repo,
+  Pool,
+  InstanceId,
+  InstanceIdAlreadyRegistered,
+  Lease,
+  InstanceNotFoundError,
+  InstanceNotLeasedError,
+  LeaseWithStatus,
 } from '../../../src/types'
 import { testDbUtils as makeTestDbUtils } from './utils'
 import { MyType, myTypeName, myVal } from '../../types'
@@ -41,7 +42,7 @@ describe('dynamoDB repo', () => {
   let dbUtils: ReturnType<typeof makeTestDbUtils>
 
   beforeEach(async () => {
-    ({ dynamo, tableName } = global.dynamoEnv.dynalite)
+    ;({ dynamo, tableName } = global.dynamoEnv.dynalite)
     dbUtils = makeTestDbUtils(dynamo.db)
 
     await dbUtils.deleteTable(tableName)
@@ -98,7 +99,7 @@ describe('dynamoDB repo', () => {
       })
 
       it('should point to the same specified DynamoDB instance', async () => {
-        expect((await pool.lease(timeout) as Lease<MyType>).id).toEqual('myid')
+        expect(((await pool.lease(timeout)) as Lease<MyType>).id).toEqual('myid')
       })
     })
   })
@@ -153,18 +154,14 @@ describe('dynamoDB repo', () => {
             result = pool.register(myVal, specifiedId)
           })
 
-          it(
-            'should throw an InstanceIdAlreadyRegistered error',
-            () => expect(result).rejects.toThrow(InstanceIdAlreadyRegistered)
-          )
+          it('should throw an InstanceIdAlreadyRegistered error', () =>
+            expect(result).rejects.toThrow(InstanceIdAlreadyRegistered))
 
-          it(
-            'should throw an error with the specified id and typeName',
-            () => expect(result).rejects.toMatchObject({
+          it('should throw an error with the specified id and typeName', () =>
+            expect(result).rejects.toMatchObject({
               id: specifiedId,
               typeName: myTypeName,
-            })
-          )
+            }))
         })
       })
     })
@@ -213,7 +210,7 @@ describe('dynamoDB repo', () => {
         beforeEach(async () => {
           await pool.register(myVal, registeredId)
           leaseTime = Date.now()
-          lease = await pool.lease(timeout) as Lease<MyType>
+          lease = (await pool.lease(timeout)) as Lease<MyType>
         })
 
         it('should return a lease', () => {
@@ -231,7 +228,7 @@ describe('dynamoDB repo', () => {
           describe('after the lease times out', () => {
             beforeEach(async () => {
               jest.spyOn(Date, 'now').mockImplementationOnce(() => leaseTime + timeout)
-              lease = await pool.lease(timeout) as Lease<MyType>
+              lease = (await pool.lease(timeout)) as Lease<MyType>
             })
 
             it('should return null', async () => {
@@ -250,25 +247,16 @@ describe('dynamoDB repo', () => {
           result = pool.return(id)
         })
 
-        it(
-          'should throw a InstanceNotFoundError error',
-          () => expect(result).rejects.toThrow(InstanceNotFoundError)
-        )
+        it('should throw a InstanceNotFoundError error', () => expect(result).rejects.toThrow(InstanceNotFoundError))
 
-        it(
-          'should throw an error with the correct message',
-          () => expect(result).rejects.toThrow(
-            new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)
-          )
-        )
+        it('should throw an error with the correct message', () =>
+          expect(result).rejects.toThrow(new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)))
 
-        it(
-          'should throw an error with the specified id and typeName',
-          () => expect(result).rejects.toMatchObject({
+        it('should throw an error with the specified id and typeName', () =>
+          expect(result).rejects.toMatchObject({
             id: 'nosuchid',
             typeName: myTypeName,
-          })
-        )
+          }))
       })
 
       describe('when the instance exists', () => {
@@ -284,28 +272,20 @@ describe('dynamoDB repo', () => {
             result = pool.return(id)
           })
 
-          it(
-            'should throw a InstanceNotLeasedError error',
-            () => expect(result).rejects.toThrow(InstanceNotLeasedError)
-          )
+          it('should throw a InstanceNotLeasedError error', () =>
+            expect(result).rejects.toThrow(InstanceNotLeasedError))
 
-          it(
-            'should throw an error with the correct message',
-            () => expect(result).rejects.toThrow(
-              new RegExp(
-                `Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`
-              )
-            )
-          )
+          it('should throw an error with the correct message', () =>
+            expect(result).rejects.toThrow(
+              new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`),
+            ))
 
-          it(
-            'should throw an error with the specified id and typeName',
-            () => expect(result).rejects.toMatchObject({
+          it('should throw an error with the specified id and typeName', () =>
+            expect(result).rejects.toMatchObject({
               id,
               typeName: myTypeName,
               clientId: CLIENT_ID,
-            })
-          )
+            }))
         })
 
         describe('when the instance is leased by the another client', () => {
@@ -326,28 +306,20 @@ describe('dynamoDB repo', () => {
               result = pool2.return(id)
             })
 
-            it(
-              'should throw a InstanceNotLeasedError error',
-              () => expect(result).rejects.toThrow(InstanceNotLeasedError)
-            )
+            it('should throw a InstanceNotLeasedError error', () =>
+              expect(result).rejects.toThrow(InstanceNotLeasedError))
 
-            it(
-              'should throw an error with the correct message',
-              () => expect(result).rejects.toThrow(
-                new RegExp(
-                  `Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`
-                )
-              )
-            )
+            it('should throw an error with the correct message', () =>
+              expect(result).rejects.toThrow(
+                new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`),
+              ))
 
-            it(
-              'should throw an error with the specified id and typeName',
-              () => expect(result).rejects.toMatchObject({
+            it('should throw an error with the specified id and typeName', () =>
+              expect(result).rejects.toMatchObject({
                 id,
                 typeName: myTypeName,
                 clientId: CLIENT_ID2,
-              })
-            )
+              }))
           })
 
           describe('when validateClientId is false', () => {
@@ -356,7 +328,7 @@ describe('dynamoDB repo', () => {
             })
 
             it('should make the instance available for leasing again', async () => {
-              const lease = await pool.lease(timeout) as Lease<MyType>
+              const lease = (await pool.lease(timeout)) as Lease<MyType>
               expect(lease).not.toBeNull()
               expect(lease.id).toEqual(id)
             })
@@ -370,7 +342,7 @@ describe('dynamoDB repo', () => {
           })
 
           it('should make the instance available for leasing again', async () => {
-            const lease = await pool.lease(timeout) as Lease<MyType>
+            const lease = (await pool.lease(timeout)) as Lease<MyType>
             expect(lease).not.toBeNull()
             expect(lease.id).toEqual(id)
           })
@@ -386,25 +358,16 @@ describe('dynamoDB repo', () => {
           result = pool.updateTimeout(id, timeout)
         })
 
-        it(
-          'should throw a InstanceNotFoundError error',
-          () => expect(result).rejects.toThrow(InstanceNotFoundError)
-        )
+        it('should throw a InstanceNotFoundError error', () => expect(result).rejects.toThrow(InstanceNotFoundError))
 
-        it(
-          'should throw an error with the correct message',
-          () => expect(result).rejects.toThrow(
-            new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)
-          )
-        )
+        it('should throw an error with the correct message', () =>
+          expect(result).rejects.toThrow(new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)))
 
-        it(
-          'should throw an error with the specified id and typeName',
-          () => expect(result).rejects.toMatchObject({
+        it('should throw an error with the specified id and typeName', () =>
+          expect(result).rejects.toMatchObject({
             id: 'nosuchid',
             typeName: myTypeName,
-          })
-        )
+          }))
       })
 
       describe('when the instance exists', () => {
@@ -420,28 +383,20 @@ describe('dynamoDB repo', () => {
             result = pool.updateTimeout(id, timeout)
           })
 
-          it(
-            'should throw a InstanceNotLeasedError error',
-            () => expect(result).rejects.toThrow(InstanceNotLeasedError)
-          )
+          it('should throw a InstanceNotLeasedError error', () =>
+            expect(result).rejects.toThrow(InstanceNotLeasedError))
 
-          it(
-            'should throw an error with the correct message',
-            () => expect(result).rejects.toThrow(
-              new RegExp(
-                `Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`
-              )
-            )
-          )
+          it('should throw an error with the correct message', () =>
+            expect(result).rejects.toThrow(
+              new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`),
+            ))
 
-          it(
-            'should throw an error with the specified id and typeName',
-            () => expect(result).rejects.toMatchObject({
+          it('should throw an error with the specified id and typeName', () =>
+            expect(result).rejects.toMatchObject({
               id,
               typeName: myTypeName,
               clientId: CLIENT_ID,
-            })
-          )
+            }))
         })
 
         describe('when the instance is leased by another client', () => {
@@ -462,28 +417,20 @@ describe('dynamoDB repo', () => {
               result = pool2.updateTimeout(id, timeout)
             })
 
-            it(
-              'should throw a InstanceNotLeasedError error',
-              () => expect(result).rejects.toThrow(InstanceNotLeasedError)
-            )
+            it('should throw a InstanceNotLeasedError error', () =>
+              expect(result).rejects.toThrow(InstanceNotLeasedError))
 
-            it(
-              'should throw an error with the correct message',
-              () => expect(result).rejects.toThrow(
-                new RegExp(
-                  `Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`
-                )
-              )
-            )
+            it('should throw an error with the correct message', () =>
+              expect(result).rejects.toThrow(
+                new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`),
+              ))
 
-            it(
-              'should throw an error with the specified id and typeName',
-              () => expect(result).rejects.toMatchObject({
+            it('should throw an error with the specified id and typeName', () =>
+              expect(result).rejects.toMatchObject({
                 id,
                 typeName: myTypeName,
                 clientId: CLIENT_ID2,
-              })
-            )
+              }))
           })
 
           describe('when validateClientId is false', () => {
@@ -492,7 +439,7 @@ describe('dynamoDB repo', () => {
             })
 
             it('should make the instance leased again', async () => {
-              const lease = await pool.lease(timeout) as Lease<MyType>
+              const lease = (await pool.lease(timeout)) as Lease<MyType>
               expect(lease).toBeNull()
             })
           })
@@ -505,7 +452,7 @@ describe('dynamoDB repo', () => {
           })
 
           it('should make the instance leased again', async () => {
-            const lease = await pool.lease(timeout) as Lease<MyType>
+            const lease = (await pool.lease(timeout)) as Lease<MyType>
             expect(lease).toBeNull()
           })
         })
@@ -520,25 +467,16 @@ describe('dynamoDB repo', () => {
           result = pool.suspend(id, suspensionReason, timeout)
         })
 
-        it(
-          'should throw a InstanceNotFoundError error',
-          () => expect(result).rejects.toThrow(InstanceNotFoundError)
-        )
+        it('should throw a InstanceNotFoundError error', () => expect(result).rejects.toThrow(InstanceNotFoundError))
 
-        it(
-          'should throw an error with the correct message',
-          () => expect(result).rejects.toThrow(
-            new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)
-          )
-        )
+        it('should throw an error with the correct message', () =>
+          expect(result).rejects.toThrow(new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)))
 
-        it(
-          'should throw an error with the specified id and typeName',
-          () => expect(result).rejects.toMatchObject({
+        it('should throw an error with the specified id and typeName', () =>
+          expect(result).rejects.toMatchObject({
             id: 'nosuchid',
             typeName: myTypeName,
-          })
-        )
+          }))
       })
 
       describe('when the instance exists', () => {
@@ -577,28 +515,20 @@ describe('dynamoDB repo', () => {
               result = pool2.suspend(id, suspensionReason, timeout)
             })
 
-            it(
-              'should throw a InstanceNotLeasedError error',
-              () => expect(result).rejects.toThrow(InstanceNotLeasedError)
-            )
+            it('should throw a InstanceNotLeasedError error', () =>
+              expect(result).rejects.toThrow(InstanceNotLeasedError))
 
-            it(
-              'should throw an error with the correct message',
-              () => expect(result).rejects.toThrow(
-                new RegExp(
-                  `Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`
-                )
-              )
-            )
+            it('should throw an error with the correct message', () =>
+              expect(result).rejects.toThrow(
+                new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`),
+              ))
 
-            it(
-              'should throw an error with the specified id and typeName',
-              () => expect(result).rejects.toMatchObject({
+            it('should throw an error with the specified id and typeName', () =>
+              expect(result).rejects.toMatchObject({
                 id,
                 typeName: myTypeName,
                 clientId: CLIENT_ID2,
-              })
-            )
+              }))
           })
 
           describe('when validateClientId is false', () => {
@@ -646,8 +576,8 @@ describe('dynamoDB repo', () => {
 
         beforeEach(async () => {
           id = await pool.register(myVal)
-          listResult = await asyncToArray(pool);
-          [details] = listResult
+          listResult = await asyncToArray(pool)
+          ;[details] = listResult
         })
 
         it('should return the instance details', () => {
@@ -668,8 +598,8 @@ describe('dynamoDB repo', () => {
           id = await pool.register(myVal)
           jest.spyOn(Date, 'now').mockImplementation(() => now)
           expect(await pool.lease(timeout)).not.toBeNull()
-          listResult = await asyncToArray(pool);
-          [details] = listResult
+          listResult = await asyncToArray(pool)
+          ;[details] = listResult
         })
 
         it('should return the instance details', () => {
@@ -693,8 +623,8 @@ describe('dynamoDB repo', () => {
           jest.spyOn(Date, 'now').mockImplementation(() => now)
           expect(await pool.lease(timeout)).not.toBeNull()
           await pool.suspend(id, suspensionReason, timeout)
-          listResult = await asyncToArray(pool);
-          [details] = listResult
+          listResult = await asyncToArray(pool)
+          ;[details] = listResult
         })
 
         it('should return the instance details', () => {

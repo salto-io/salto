@@ -29,6 +29,8 @@
     "generate": "lerna run --parallel generate",
     "lint": "lerna run --parallel lint",
     "lint-fix": "lerna run --parallel lint-fix",
+    "check-format": "lerna run check-format",
+    "format": "lerna run --parallel format",
     "build-ts": "lerna run build-ts",
     "build-all": "lerna run build",
     "clean": "lerna run --parallel clean",

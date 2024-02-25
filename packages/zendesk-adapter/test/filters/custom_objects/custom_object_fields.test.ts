@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   ElemID,
   InstanceElement,
@@ -51,14 +51,11 @@ const missingRef = (type: string, id: string): ReferenceExpression => {
   return new ReferenceExpression(missingInstance.elemID, missingInstance)
 }
 
-const createTrigger = ({ actions = {}, conditions = {} }): InstanceElement => new InstanceElement(
-  'trigger',
-  new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }),
-  {
+const createTrigger = ({ actions = {}, conditions = {} }): InstanceElement =>
+  new InstanceElement('trigger', new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }), {
     actions,
     conditions,
-  }
-)
+  })
 
 describe('customObjectFieldsFilter', () => {
   let customObjectField: InstanceElement
@@ -73,7 +70,7 @@ describe('customObjectFieldsFilter', () => {
       {
         key: 'customObjectFieldKey',
         type: 'lookup',
-      }
+      },
     )
     customObject = new InstanceElement(
       'customObject',
@@ -81,7 +78,7 @@ describe('customObjectFieldsFilter', () => {
       {
         key: 'customObjectKey',
         custom_object_fields: [new ReferenceExpression(customObjectField.elemID, customObjectField)],
-      }
+      },
     )
     ticketField = new InstanceElement(
       'ticketField',
@@ -89,13 +86,11 @@ describe('customObjectFieldsFilter', () => {
       {
         id: 123,
         relationship_target_type: `zen:custom_object:${customObject.value.key}`,
-      }
+      },
     )
-    valueInstance = new InstanceElement(
-      'instance',
-      new ObjectType({ elemID: new ElemID(ZENDESK, 'instance') }),
-      { id: 123123 }
-    )
+    valueInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(ZENDESK, 'instance') }), {
+      id: 123123,
+    })
     lookUpTemplate = new TemplateExpression({
       parts: [
         'lookup:ticket.ticket_field_',
@@ -128,13 +123,15 @@ describe('customObjectFieldsFilter', () => {
         expect(trigger.value.actions[0].value).toMatchObject(lookUpTemplate)
         expect(trigger.value.actions[1].value[0]).toMatchObject(lookUpTemplate)
       })
-      it('should create reference expressions in condition\'s value', async () => {
+      it("should create reference expressions in condition's value", async () => {
         const trigger = createTrigger({
           conditions: {
-            all: [{
-              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
-              operator: 'present',
-            }],
+            all: [
+              {
+                field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+                operator: 'present',
+              },
+            ],
             any: [
               {
                 field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
@@ -151,8 +148,9 @@ describe('customObjectFieldsFilter', () => {
         })
         await customObjectFieldsFilter.onFetch([ticketField, customObjectField, customObject, trigger, valueInstance])
         expect(trigger.value.conditions.all[0].field).toMatchObject(lookUpTemplate)
-        expect(trigger.value.conditions.any[0].value)
-          .toMatchObject(new ReferenceExpression(valueInstance.elemID, valueInstance))
+        expect(trigger.value.conditions.any[0].value).toMatchObject(
+          new ReferenceExpression(valueInstance.elemID, valueInstance),
+        )
         expect(trigger.value.conditions.any[1].value).toBe('User')
       })
       it('should create missing reference', async () => {
@@ -222,27 +220,44 @@ describe('customObjectFieldsFilter', () => {
         })
         await customObjectFieldsFilter.onFetch([
           trigger,
-          ticketField, ticketFieldWithoutObject,
-          customObject, customObjectField,
-          userCustomObjectField, organizationCustomObjectField, ticketFieldCustomObjectField, unknownCustomObjectField,
+          ticketField,
+          ticketFieldWithoutObject,
+          customObject,
+          customObjectField,
+          userCustomObjectField,
+          organizationCustomObjectField,
+          ticketFieldCustomObjectField,
+          unknownCustomObjectField,
         ])
-        expect(trigger.value.actions[0].value).toMatchObject(new TemplateExpression({ parts: [
-          'lookup:ticket.ticket_field_',
-          missingRef(TICKET_FIELD_TYPE_NAME, MISSING_ID),
-          '.custom_fields.key',
-        ] }))
-        expect(trigger.value.actions[1].value).toMatchObject(new TemplateExpression({ parts: [
-          'lookup:ticket.ticket_field_',
-          new ReferenceExpression(ticketFieldWithoutObject.elemID, ticketFieldWithoutObject),
-          '.custom_fields.',
-          missingRef(CUSTOM_OBJECT_TYPE_NAME, 'missing_obj'),
-        ] }))
-        expect(trigger.value.actions[2].value).toMatchObject(new TemplateExpression({ parts: [
-          'lookup:ticket.ticket_field_',
-          new ReferenceExpression(ticketField.elemID, ticketField),
-          '.custom_fields.',
-          missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, `${customObject.value.key}__nonExistingKey`),
-        ] }))
+        expect(trigger.value.actions[0].value).toMatchObject(
+          new TemplateExpression({
+            parts: [
+              'lookup:ticket.ticket_field_',
+              missingRef(TICKET_FIELD_TYPE_NAME, MISSING_ID),
+              '.custom_fields.key',
+            ],
+          }),
+        )
+        expect(trigger.value.actions[1].value).toMatchObject(
+          new TemplateExpression({
+            parts: [
+              'lookup:ticket.ticket_field_',
+              new ReferenceExpression(ticketFieldWithoutObject.elemID, ticketFieldWithoutObject),
+              '.custom_fields.',
+              missingRef(CUSTOM_OBJECT_TYPE_NAME, 'missing_obj'),
+            ],
+          }),
+        )
+        expect(trigger.value.actions[2].value).toMatchObject(
+          new TemplateExpression({
+            parts: [
+              'lookup:ticket.ticket_field_',
+              new ReferenceExpression(ticketField.elemID, ticketField),
+              '.custom_fields.',
+              missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, `${customObject.value.key}__nonExistingKey`),
+            ],
+          }),
+        )
         expect(trigger.value.conditions.all[0].value).toBe('non')
         expect(trigger.value.conditions.all[1].value).toMatchObject(missingRef('organization', 'non'))
         expect(trigger.value.conditions.all[2].value).toMatchObject(missingRef(TICKET_FIELD_TYPE_NAME, 'non'))
@@ -256,35 +271,38 @@ describe('customObjectFieldsFilter', () => {
         customObjectFieldOptions = new InstanceElement(
           'options',
           new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME) }),
-          { id: 123123 }
+          { id: 123123 },
         )
       })
       const createInstance = ({ type = TICKET_FIELD_TYPE_NAME, relationshipFilter = {} }): InstanceElement =>
-        new InstanceElement(
-          type,
-          new ObjectType({ elemID: new ElemID(ZENDESK, type) }),
-          {
-            relationship_filter: { all: relationshipFilter },
-          }
-        )
+        new InstanceElement(type, new ObjectType({ elemID: new ElemID(ZENDESK, type) }), {
+          relationship_filter: { all: relationshipFilter },
+        })
       it('should create reference expressions in ticket_field and custom_object_field relationships', async () => {
-        const relationshipFilter = [{
-          field: `custom_object.${customObject.value.key}.custom_fields.${customObjectField.value.key}`,
-          operator: 'is',
-          value: '123123',
-        }]
+        const relationshipFilter = [
+          {
+            field: `custom_object.${customObject.value.key}.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: '123123',
+          },
+        ]
         const ticketFieldInstance = createInstance({ relationshipFilter })
         const customObjectFieldInstance = createInstance({ type: CUSTOM_OBJECT_FIELD_TYPE_NAME, relationshipFilter })
         await customObjectFieldsFilter.onFetch([
-          customObject, customObjectField, customObjectFieldOptions,
-          ticketFieldInstance, customObjectFieldInstance,
+          customObject,
+          customObjectField,
+          customObjectFieldOptions,
+          ticketFieldInstance,
+          customObjectFieldInstance,
         ])
-        const templateExpression = new TemplateExpression({ parts: [
-          'custom_object.',
-          new ReferenceExpression(customObject.elemID, customObject),
-          '.custom_fields.',
-          new ReferenceExpression(customObjectField.elemID, customObjectField),
-        ] })
+        const templateExpression = new TemplateExpression({
+          parts: [
+            'custom_object.',
+            new ReferenceExpression(customObject.elemID, customObject),
+            '.custom_fields.',
+            new ReferenceExpression(customObjectField.elemID, customObjectField),
+          ],
+        })
 
         expect(ticketFieldInstance.value.relationship_filter.all[0].field).toMatchObject(templateExpression)
         expect(customObjectFieldInstance.value.relationship_filter.all[0].field).toMatchObject(templateExpression)
@@ -314,22 +332,31 @@ describe('customObjectFieldsFilter', () => {
         const ticketFieldInstance = createInstance({ relationshipFilter })
         const customObjectFieldInstance = createInstance({ type: CUSTOM_OBJECT_FIELD_TYPE_NAME, relationshipFilter })
         await customObjectFieldsFilter.onFetch([
-          customObject, customObjectField, customObjectFieldOptions,
-          ticketFieldInstance, customObjectFieldInstance,
+          customObject,
+          customObjectField,
+          customObjectFieldOptions,
+          ticketFieldInstance,
+          customObjectFieldInstance,
         ])
-        expect(ticketFieldInstance.value.relationship_filter.all[0].field)
-          .toMatchObject(new TemplateExpression({ parts: [
-            'custom_object.',
-            missingRef(CUSTOM_OBJECT_TYPE_NAME, 'missing_object'),
-            `.custom_fields.${customObjectField.value.key}`,
-          ] }))
-        expect(customObjectFieldInstance.value.relationship_filter.all[1].field)
-          .toMatchObject(new TemplateExpression({ parts: [
-            'custom_object.',
-            new ReferenceExpression(customObject.elemID, customObject),
-            '.custom_fields.',
-            missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, 'missing_object_field'),
-          ] }))
+        expect(ticketFieldInstance.value.relationship_filter.all[0].field).toMatchObject(
+          new TemplateExpression({
+            parts: [
+              'custom_object.',
+              missingRef(CUSTOM_OBJECT_TYPE_NAME, 'missing_object'),
+              `.custom_fields.${customObjectField.value.key}`,
+            ],
+          }),
+        )
+        expect(customObjectFieldInstance.value.relationship_filter.all[1].field).toMatchObject(
+          new TemplateExpression({
+            parts: [
+              'custom_object.',
+              new ReferenceExpression(customObject.elemID, customObject),
+              '.custom_fields.',
+              missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, 'missing_object_field'),
+            ],
+          }),
+        )
         const missingOptionsRef = missingRef(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, MISSING_ID)
         expect(customObjectFieldInstance.value.relationship_filter.all[2].value).toMatchObject(missingOptionsRef)
       })
@@ -352,12 +379,14 @@ describe('customObjectFieldsFilter', () => {
               value: USER.email,
             },
           ],
-          any: [{
-            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
-            operator: 'is',
-            value: USER.email,
-            is_user_value: true,
-          }],
+          any: [
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'is',
+              value: USER.email,
+              is_user_value: true,
+            },
+          ],
         },
       })
       await customObjectFieldsFilter.preDeploy([toChange({ after: trigger })])
@@ -373,12 +402,14 @@ describe('customObjectFieldsFilter', () => {
       const useFallbackFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
       const trigger = createTrigger({
         conditions: {
-          all: [{
-            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
-            operator: 'is',
-            value: USER.email,
-            is_user_value: true,
-          }],
+          all: [
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'is',
+              value: USER.email,
+              is_user_value: true,
+            },
+          ],
         },
       })
       await useFallbackFilter.preDeploy([toChange({ after: trigger })])

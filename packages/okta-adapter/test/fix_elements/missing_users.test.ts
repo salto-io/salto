@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import OktaClient from '../../src/client/client'
 import * as userUtilsModule from '../../src/user_utils'
@@ -47,12 +47,22 @@ describe('missing_users', () => {
   const EXIST_USER_ID = 'mockId'
   const ALL_MOCK_USERS = [EXIST_USER, EXIST_USER2, NOT_EXIST_USER, NOT_EXIST_USER2, EXIST_USER_ID]
   const mockClient = {} as OktaClient
-  const mockGetUsers = jest.spyOn(userUtilsModule, 'getUsers').mockResolvedValue([createMockUser(EXIST_USER), createMockUser(EXIST_USER2)])
+  const mockGetUsers = jest
+    .spyOn(userUtilsModule, 'getUsers')
+    .mockResolvedValue([createMockUser(EXIST_USER), createMockUser(EXIST_USER2)])
   const accessPolicyType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
   const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
   const pushGroupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_PUSH_TYPE_NAME) })
-  const accessPolicyInstance = new InstanceElement('foo', accessPolicyType, createUsersValue(ALL_MOCK_USERS, [NOT_EXIST_USER, NOT_EXIST_USER]))
-  const groupRuleInstance = new InstanceElement('foo', groupRuleType, createUsersValue(undefined, [NOT_EXIST_USER, EXIST_USER]))
+  const accessPolicyInstance = new InstanceElement(
+    'foo',
+    accessPolicyType,
+    createUsersValue(ALL_MOCK_USERS, [NOT_EXIST_USER, NOT_EXIST_USER]),
+  )
+  const groupRuleInstance = new InstanceElement(
+    'foo',
+    groupRuleType,
+    createUsersValue(undefined, [NOT_EXIST_USER, EXIST_USER]),
+  )
   const groupPushInstance = new InstanceElement('foo', pushGroupType, { notUsersKnownPath: [NOT_EXIST_USER] })
   const missingUsersHandlerInput = [accessPolicyInstance, groupRuleInstance, groupPushInstance]
   beforeEach(() => {
@@ -116,16 +126,26 @@ If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSIN
           value: createUsersValue(undefined, [EXIST_USER]),
         }),
       ])
-      expect(mockGetUsers.mock.calls[0][1]).toEqual({ userIds: expect.arrayContaining(ALL_MOCK_USERS), property: 'profile.login' })
+      expect(mockGetUsers.mock.calls[0][1]).toEqual({
+        userIds: expect.arrayContaining(ALL_MOCK_USERS),
+        property: 'profile.login',
+      })
     })
     describe('when convertUsersId is false', () => {
       it('should call getUsers with the correct parameters', async () => {
-        await omitMissingUsersHandler({ config: { ...mockConfig,
-          [FETCH_CONFIG]: {
-            convertUsersIds: false,
-          } } as OktaConfig,
-        client: mockClient })(missingUsersHandlerInput)
-        expect(mockGetUsers.mock.calls[0][1]).toEqual({ userIds: expect.arrayContaining(ALL_MOCK_USERS), property: 'id' })
+        await omitMissingUsersHandler({
+          config: {
+            ...mockConfig,
+            [FETCH_CONFIG]: {
+              convertUsersIds: false,
+            },
+          } as OktaConfig,
+          client: mockClient,
+        })(missingUsersHandlerInput)
+        expect(mockGetUsers.mock.calls[0][1]).toEqual({
+          userIds: expect.arrayContaining(ALL_MOCK_USERS),
+          property: 'id',
+        })
       })
     })
   })

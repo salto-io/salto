@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -21,7 +21,13 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import dafaultAttributeFilter from '../../../src/filters/assets/label_object_type_attribute'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, JIRA, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE } from '../../../src/constants'
+import {
+  OBJECT_SCHEMA_TYPE,
+  OBJECT_TYPE_TYPE,
+  JIRA,
+  OBJECT_TYPE_ATTRIBUTE_TYPE,
+  OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE,
+} from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
 const createAttributeInstance = (
@@ -29,17 +35,27 @@ const createAttributeInstance = (
   suffix: string,
   objectType: InstanceElement,
   isLabel: boolean,
-): InstanceElement => new InstanceElement(
-  `assetsObjectType${suffix}`,
-  createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
-  {
-    id,
-    name: `assetsObjectType${suffix}`,
-    objectType: new ReferenceExpression(objectType.elemID, objectType),
-    label: isLabel,
-  },
-  [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', 'attributes', `assetsObjectType${suffix}`],
-)
+): InstanceElement =>
+  new InstanceElement(
+    `assetsObjectType${suffix}`,
+    createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
+    {
+      id,
+      name: `assetsObjectType${suffix}`,
+      objectType: new ReferenceExpression(objectType.elemID, objectType),
+      label: isLabel,
+    },
+    [
+      JIRA,
+      elementUtils.RECORDS_PATH,
+      OBJECT_SCHEMA_TYPE,
+      'assetsSchema',
+      'assetsObjectTypes',
+      'parentObjectTypeInstance',
+      'attributes',
+      `assetsObjectType${suffix}`,
+    ],
+  )
 describe('labelObjectTypeAttributeFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
@@ -51,7 +67,15 @@ describe('labelObjectTypeAttributeFilter', () => {
       id: 'p1',
       name: 'AssetsObjectTypeP1',
     },
-    [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', 'parentObjectTypeInstance'],
+    [
+      JIRA,
+      elementUtils.RECORDS_PATH,
+      OBJECT_SCHEMA_TYPE,
+      'assetsSchema',
+      'assetsObjectTypes',
+      'parentObjectTypeInstance',
+      'parentObjectTypeInstance',
+    ],
   )
   const attributeInstanceOne = createAttributeInstance(1, 'One', objectTypeInstance, false)
   const attributeInstanceTwo = createAttributeInstance(2, 'Two', objectTypeInstance, true)
@@ -63,11 +87,7 @@ describe('labelObjectTypeAttributeFilter', () => {
       filter = dafaultAttributeFilter(getFilterParams({ config, client })) as typeof filter
     })
     it('should add labelAttributeInstance and type to the elements', async () => {
-      const elements = [
-        objectTypeInstance,
-        attributeInstanceOne,
-        attributeInstanceTwo,
-      ]
+      const elements = [objectTypeInstance, attributeInstanceOne, attributeInstanceTwo]
       await filter.onFetch(elements)
       expect(elements).toHaveLength(5)
       const labelAttributeInstances = elements
@@ -84,11 +104,7 @@ describe('labelObjectTypeAttributeFilter', () => {
       expect(labelAttributeType).toBeDefined()
     })
     it('should do nothing for instnaces without objectType references', async () => {
-      const elements = [
-        objectTypeInstance,
-        attributeInstanceOne,
-        attributeInstanceTwo,
-      ]
+      const elements = [objectTypeInstance, attributeInstanceOne, attributeInstanceTwo]
       delete attributeInstanceTwo.value.objectType
       await filter.onFetch(elements)
       expect(elements).toHaveLength(4)
@@ -131,9 +147,7 @@ describe('labelObjectTypeAttributeFilter', () => {
       connection.put.mockResolvedValueOnce({ status: 200, data: {} })
     })
     it('should set label in addition change', async () => {
-      const changes = [
-        toChange({ after: labelAttributeInstance }),
-      ]
+      const changes = [toChange({ after: labelAttributeInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -143,11 +157,10 @@ describe('labelObjectTypeAttributeFilter', () => {
     it('should set label in modifictaion change', async () => {
       const labelAttributeInstanceAfter = labelAttributeInstance.clone()
       labelAttributeInstanceAfter.value.labelAttribute = new ReferenceExpression(
-        attributeInstanceOne.elemID, attributeInstanceOne
+        attributeInstanceOne.elemID,
+        attributeInstanceOne,
       )
-      const changes = [
-        toChange({ before: labelAttributeInstance, after: labelAttributeInstanceAfter }),
-      ]
+      const changes = [toChange({ before: labelAttributeInstance, after: labelAttributeInstanceAfter })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -157,18 +170,14 @@ describe('labelObjectTypeAttributeFilter', () => {
     it('should do nothing if labelAttribute is not a referenceExpression', async () => {
       const labelAttributeInstanceAfter = labelAttributeInstance.clone()
       labelAttributeInstanceAfter.value.labelAttribute = 'unexpected string'
-      const changes = [
-        toChange({ before: labelAttributeInstance, after: labelAttributeInstanceAfter }),
-      ]
+      const changes = [toChange({ before: labelAttributeInstance, after: labelAttributeInstanceAfter })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(connection.put).toHaveBeenCalledTimes(0)
     })
     it('should do nothing on removalChange', async () => {
-      const changes = [
-        toChange({ before: labelAttributeInstance }),
-      ]
+      const changes = [toChange({ before: labelAttributeInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -176,14 +185,12 @@ describe('labelObjectTypeAttributeFilter', () => {
     })
     it('should return error when workspaceId is undefined', async () => {
       connection.get.mockResolvedValueOnce({ status: 200, data: {} })
-      const changes = [
-        toChange({ after: labelAttributeInstance }),
-      ]
+      const changes = [toChange({ after: labelAttributeInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'The following changes were not deployed, due to error with the workspaceId: jira.ObjectTypeLabelAttribute.instance.labelAttributeInstance'
+        'The following changes were not deployed, due to error with the workspaceId: jira.ObjectTypeLabelAttribute.instance.labelAttributeInstance',
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(connection.post).toHaveBeenCalledTimes(0)

@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { errors as wsErrors } from '@salto-io/workspace'
 import { SaltoError, ElemID } from '@salto-io/adapter-api'
@@ -38,9 +38,7 @@ describe('groupRelatedErrors', () => {
         target = new ElemID('test', 'target')
         originalErrors = [
           nonGroupedError,
-          ...sources.map(
-            elemID => new wsErrors.UnresolvedReferenceValidationError({ elemID, target })
-          ),
+          ...sources.map(elemID => new wsErrors.UnresolvedReferenceValidationError({ elemID, target })),
         ]
         groupedErrors = groupRelatedErrors(originalErrors)
       })
@@ -54,7 +52,7 @@ describe('groupRelatedErrors', () => {
         let groupError: UnresolvedReferenceGroupError
         beforeEach(() => {
           groupError = groupedErrors.find(
-            err => err instanceof UnresolvedReferenceGroupError
+            err => err instanceof UnresolvedReferenceGroupError,
           ) as UnresolvedReferenceGroupError
         })
         it('should be in the grouped errors', () => {
@@ -74,9 +72,11 @@ describe('groupRelatedErrors', () => {
       beforeEach(() => {
         baseTarget = new ElemID('test', 'target', 'field', 'bla')
         originalErrors = sources.map(
-          (elemID, idx) => new wsErrors.UnresolvedReferenceValidationError(
-            { elemID, target: baseTarget.createNestedID(..._.times(idx, () => 'a')) }
-          )
+          (elemID, idx) =>
+            new wsErrors.UnresolvedReferenceValidationError({
+              elemID,
+              target: baseTarget.createNestedID(..._.times(idx, () => 'a')),
+            }),
         )
         groupedErrors = groupRelatedErrors(originalErrors)
       })
@@ -92,9 +92,7 @@ describe('groupRelatedErrors', () => {
       let target: ElemID
       beforeEach(() => {
         target = new ElemID('test', 'target')
-        originalErrors = [
-          new wsErrors.UnresolvedReferenceValidationError({ elemID: sources[0], target }),
-        ]
+        originalErrors = [new wsErrors.UnresolvedReferenceValidationError({ elemID: sources[0], target })]
         groupedErrors = groupRelatedErrors(originalErrors)
       })
       it('should not create a group error', () => {

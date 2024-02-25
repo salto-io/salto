@@ -1,26 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { elements as elementsUtils, filterUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_statuses'
 import { createFilterCreatorParams } from '../utils'
 import {
   CUSTOM_STATUS_TYPE_NAME,
-  DEFAULT_CUSTOM_STATUSES_TYPE_NAME, HOLD_CATEGORY, OPEN_CATEGORY,
-  PENDING_CATEGORY, SOLVED_CATEGORY,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  HOLD_CATEGORY,
+  OPEN_CATEGORY,
+  PENDING_CATEGORY,
+  SOLVED_CATEGORY,
   ZENDESK,
 } from '../../src/constants'
 import ZendeskClient from '../../src/client/client'
@@ -40,7 +43,6 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-
 describe('custom statuses filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy'>
@@ -49,10 +51,8 @@ describe('custom statuses filter', () => {
 
   const customStatusType = new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_STATUS_TYPE_NAME) })
 
-  const createStatus = (category: string, isDefault: boolean, id: number): InstanceElement => new InstanceElement(
-    `${category} ${isDefault ? 'default' : ''}`,
-    customStatusType,
-    {
+  const createStatus = (category: string, isDefault: boolean, id: number): InstanceElement =>
+    new InstanceElement(`${category} ${isDefault ? 'default' : ''}`, customStatusType, {
       id,
       status_category: category,
       agent_label: `${category} ${isDefault ? 'default' : ''}`,
@@ -65,8 +65,7 @@ describe('custom statuses filter', () => {
       raw_end_user_description: `${category} ${isDefault ? 'default' : ''}`,
       active: true,
       default: isDefault,
-    }
-  )
+    })
 
   const pendingDefault = createStatus('pending', true, 1)
   const pending = createStatus('pending', false, 2)
@@ -77,19 +76,17 @@ describe('custom statuses filter', () => {
   const holdDefault = createStatus('hold', true, 7)
   const hold = createStatus('hold', false, 8)
 
-  const defaultCustomStatusesType = new ObjectType(
-    {
-      elemID: new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME),
-      fields: {
-        [PENDING_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-        [SOLVED_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-        [OPEN_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-        [HOLD_CATEGORY]: { refType: BuiltinTypes.NUMBER },
-      },
-      isSettings: true,
-      path: [ZENDESK, elementsUtils.TYPES_PATH, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
-    }
-  )
+  const defaultCustomStatusesType = new ObjectType({
+    elemID: new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME),
+    fields: {
+      [PENDING_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+      [SOLVED_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+      [OPEN_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+      [HOLD_CATEGORY]: { refType: BuiltinTypes.NUMBER },
+    },
+    isSettings: true,
+    path: [ZENDESK, elementsUtils.TYPES_PATH, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
+  })
   const defaultCustomStatusesInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     defaultCustomStatusesType,
@@ -107,35 +104,30 @@ describe('custom statuses filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator(createFilterCreatorParams({
-      client,
-      config: {
-        ...DEFAULT_CONFIG,
-        [FETCH_CONFIG]: {
-          include: [{
-            type: '.*',
-          }],
-          exclude: [],
-          guide: {
-            brands: ['.*'],
+    filter = filterCreator(
+      createFilterCreatorParams({
+        client,
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            include: [
+              {
+                type: '.*',
+              },
+            ],
+            exclude: [],
+            guide: {
+              brands: ['.*'],
+            },
           },
         },
-      },
-    })) as FilterType
+      }),
+    ) as FilterType
   })
 
   describe('onFetch', () => {
     it('should create default_custom_statuses instance and object', async () => {
-      const elements = [
-        pendingDefault,
-        pending,
-        solvedDefault,
-        solved,
-        openDefault,
-        open,
-        holdDefault,
-        hold,
-      ]
+      const elements = [pendingDefault, pending, solvedDefault, solved, openDefault, open, holdDefault, hold]
       await filter.onFetch(elements)
       expect(elements).toEqual([
         pendingDefault,
@@ -151,19 +143,9 @@ describe('custom statuses filter', () => {
       ])
     })
     it('should do nothing if default does not exist', async () => {
-      const elements = [
-        pending,
-        solved,
-        open,
-        hold,
-      ]
+      const elements = [pending, solved, open, hold]
       await filter.onFetch(elements)
-      expect(elements).toEqual([
-        pending,
-        solved,
-        open,
-        hold,
-      ])
+      expect(elements).toEqual([pending, solved, open, hold])
     })
   })
   describe('preDeploy', () => {
@@ -209,16 +191,13 @@ describe('custom statuses filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: solved } }])
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: solved } }])
     })
     it('should deploy modification of custom_status and modification of default', async () => {
       mockPut = jest.spyOn(client, 'put')
       // For article_attachment UT
       mockPut.mockImplementation(params => {
-        if ([
-          '/api/v2/custom_status/default',
-        ].includes(params.url)) {
+        if (['/api/v2/custom_status/default'].includes(params.url)) {
           return {
             status: 200,
           }
@@ -246,16 +225,17 @@ describe('custom statuses filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          { action: 'modify', data: { before: solved, after: solved } },
-          { action: 'modify', data: { before: defaultCustomStatusesInstance, after: clonedDefault } },
-        ])
+      expect(res.deployResult.appliedChanges).toEqual([
+        { action: 'modify', data: { before: solved, after: solved } },
+        { action: 'modify', data: { before: defaultCustomStatusesInstance, after: clonedDefault } },
+      ])
     })
     it('should not deploy default when there is an http error', async () => {
       mockPut = jest.spyOn(client, 'put')
       // For article_attachment UT
-      mockPut.mockImplementation(() => { throw new Error('Err') })
+      mockPut.mockImplementation(() => {
+        throw new Error('Err')
+      })
       const clonedDefault = defaultCustomStatusesInstance.clone()
       clonedDefault.value.solved = 4
       const res = await filter.deploy([

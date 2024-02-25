@@ -1,19 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType, ReadOnlyElementsSource, ContainerTypeName, TypeElement } from '@salto-io/adapter-api'
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  ElemID,
+  Value,
+  BuiltinTypesByFullName,
+  ListType,
+  MapType,
+  isContainerType,
+  ReadOnlyElementsSource,
+  ContainerTypeName,
+  TypeElement,
+} from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { RemoteMap, InMemoryRemoteMap } from './remote_map'
@@ -39,17 +50,11 @@ export interface ElementsSource {
 
 export function buildContainerType<T extends TypeElement>(
   prefix: ContainerTypeName,
-  innerType: T
+  innerType: T,
 ): MapType<T> | ListType<T>
-export function buildContainerType(
-  prefix: ContainerTypeName,
-  innerType: undefined
-): undefined
+export function buildContainerType(prefix: ContainerTypeName, innerType: undefined): undefined
 
-export function buildContainerType(
-  prefix: ContainerTypeName,
-  innerType?: TypeElement
-): MapType | ListType | undefined {
+export function buildContainerType(prefix: ContainerTypeName, innerType?: TypeElement): MapType | ListType | undefined {
   if (innerType === undefined) {
     return undefined
   }
@@ -84,7 +89,7 @@ export class RemoteElementSource implements ElementsSource {
     if (containerTypeInfo !== undefined) {
       return buildContainerType(
         containerTypeInfo.prefix,
-        await this.get(ElemID.fromFullName(containerTypeInfo.innerTypeName))
+        await this.get(ElemID.fromFullName(containerTypeInfo.innerTypeName)),
       )
     }
     const { parent } = id.createTopLevelParentID()
@@ -110,7 +115,7 @@ export class RemoteElementSource implements ElementsSource {
     await this.elements.setAll(
       awu(elements)
         .filter(element => !isContainerType(element))
-        .map(e => ({ key: e.elemID.getFullName(), value: e }))
+        .map(e => ({ key: e.elemID.getFullName(), value: e })),
     )
   }
 
@@ -141,26 +146,23 @@ export class RemoteElementSource implements ElementsSource {
   }
 }
 
-export const createInMemoryElementSource = (
-  elements: readonly Element[] = []
-): RemoteElementSource => {
-  const inMemMap = new InMemoryRemoteMap(
-    elements.map(e => ({ key: e.elemID.getFullName(), value: e }))
-  )
+export const createInMemoryElementSource = (elements: readonly Element[] = []): RemoteElementSource => {
+  const inMemMap = new InMemoryRemoteMap(elements.map(e => ({ key: e.elemID.getFullName(), value: e })))
   return new RemoteElementSource(inMemMap)
 }
 
 export const mapReadOnlyElementsSource = (
   source: ReadOnlyElementsSource,
-  func: (orig: Element) => Promise<Element>
+  func: (orig: Element) => Promise<Element>,
 ): ReadOnlyElementsSource => ({
   get: async id => {
     const origValue = await source.get(id)
     return origValue !== undefined ? func(origValue) : undefined
   },
-  getAll: async () => awu(await source.getAll())
-    .map(async element => func(element))
-    .filter(values.isDefined),
+  getAll: async () =>
+    awu(await source.getAll())
+      .map(async element => func(element))
+      .filter(values.isDefined),
   has: id => source.has(id),
   list: () => source.list(),
 })

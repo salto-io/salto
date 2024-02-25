@@ -1,26 +1,21 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { retry as retryUtil } from '@salto-io/lowerdash'
-import {
-  repo as makeRepo,
-  DynamoDbInstances,
-} from '../../../src/lib/dynamodb/dynamodb_repo'
-import {
-  Repo, Pool, Lease,
-} from '../../../src/types'
+import { repo as makeRepo, DynamoDbInstances } from '../../../src/lib/dynamodb/dynamodb_repo'
+import { Repo, Pool, Lease } from '../../../src/types'
 import { MyType, myTypeName, myVal } from '../../types'
 import repeat from '../../utils/repeat'
 import asyncToArray from '../../utils/async_to_array'
@@ -61,10 +56,9 @@ describe('when there are existing leases', () => {
     await Promise.all(repeat(NUM_LEASES, () => pool.lease(timeout)))
   }
 
-
   describe('without retries', () => {
     beforeAll(async () => {
-      ({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
+      ;({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       repo = await makeRepo(repoOpts())
       pool = await repo.pool(myTypeName)
 
@@ -76,7 +70,7 @@ describe('when there are existing leases', () => {
 
       beforeEach(async () => {
         await pool.register(myVal)
-        lease = await pool.lease(timeout) as Lease<MyType>
+        lease = (await pool.lease(timeout)) as Lease<MyType>
       })
 
       it('should return a lease', () => {
@@ -97,7 +91,7 @@ describe('when there are existing leases', () => {
 
   describe('retries', () => {
     it('should throw if at limit', async () => {
-      ({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
+      ;({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       const repo2 = await makeRepo({
         ...repoOpts(),
         optimisticLockMaxRetries: 2,

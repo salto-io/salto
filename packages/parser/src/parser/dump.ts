@@ -1,28 +1,38 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
-import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap, TypeReference } from '@salto-io/adapter-api'
+import {
+  Field,
+  isObjectType,
+  PrimitiveTypes,
+  isPrimitiveType,
+  Element,
+  isInstanceElement,
+  Value,
+  INSTANCE_ANNOTATIONS,
+  isReferenceExpression,
+  isField,
+  ElemID,
+  ReferenceMap,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
 import { Keywords } from './language'
-import {
-  getFunctionExpression,
-  Functions,
-  FunctionExpression,
-} from './functions'
+import { getFunctionExpression, Functions, FunctionExpression } from './functions'
 import { ValuePromiseWatcher } from './internal/native/types'
 import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/helpers'
 
@@ -51,27 +61,21 @@ export const dumpElemID = (id: ElemID): string => {
     return id.adapter
   }
   if (id.idType === 'instance') {
-    [id.adapter, id.name]
-      .filter(part => !_.isEmpty(part))
-      .join(Keywords.NAMESPACE_SEPARATOR)
+    ;[id.adapter, id.name].filter(part => !_.isEmpty(part)).join(Keywords.NAMESPACE_SEPARATOR)
   }
   return id.getFullName()
 }
 
-const dumpAttributes = (
-  value: Value,
-  functions: Functions,
-  valuePromiseWatchers: ValuePromiseWatcher[]
-): Value => {
+const dumpAttributes = (value: Value, functions: Functions, valuePromiseWatchers: ValuePromiseWatcher[]): Value => {
   const funcVal = getFunctionExpression(value, functions)
   if (funcVal !== undefined) {
     return funcVal
   }
 
   if (
-    (!_.isArray(value) && !_.isPlainObject(value))
-      || isReferenceExpression(value)
-        || value instanceof FunctionExpression
+    (!_.isArray(value) && !_.isPlainObject(value)) ||
+    isReferenceExpression(value) ||
+    value instanceof FunctionExpression
   ) {
     return value
   }
@@ -95,7 +99,7 @@ const dumpAttributes = (
 const dumpFieldBlock = (
   field: Field,
   functions: Functions,
-  valuePromiseWatchers: ValuePromiseWatcher[]
+  valuePromiseWatchers: ValuePromiseWatcher[],
 ): DumpedHclBlock => ({
   type: dumpElemID(field.refType.elemID),
   labels: [field.elemID.name],
@@ -103,27 +107,29 @@ const dumpFieldBlock = (
   blocks: [],
 })
 
-const dumpAnnotationTypeBlock = (key: string, refType: TypeReference): DumpedHclBlock =>
-  ({
-    type: dumpElemID(refType.elemID),
-    labels: [key],
-    attrs: {},
-    blocks: [],
-  })
+const dumpAnnotationTypeBlock = (key: string, refType: TypeReference): DumpedHclBlock => ({
+  type: dumpElemID(refType.elemID),
+  labels: [key],
+  attrs: {},
+  blocks: [],
+})
 
 const dumpAnnotationTypesBlock = (annotationRefTypes: ReferenceMap): DumpedHclBlock[] =>
-  (_.isEmpty(annotationRefTypes) ? [] : [{
-    type: Keywords.ANNOTATIONS_DEFINITION,
-    labels: [],
-    attrs: {},
-    blocks: Object.entries(annotationRefTypes)
-      .map(([key, ref]) => dumpAnnotationTypeBlock(key, ref)),
-  }])
+  _.isEmpty(annotationRefTypes)
+    ? []
+    : [
+        {
+          type: Keywords.ANNOTATIONS_DEFINITION,
+          labels: [],
+          attrs: {},
+          blocks: Object.entries(annotationRefTypes).map(([key, ref]) => dumpAnnotationTypeBlock(key, ref)),
+        },
+      ]
 
 const dumpElementBlock = (
   elem: Readonly<Element>,
   functions: Functions,
-  valuePromiseWatchers: ValuePromiseWatcher[]
+  valuePromiseWatchers: ValuePromiseWatcher[],
 ): DumpedHclBlock => {
   if (isField(elem)) {
     return dumpFieldBlock(elem, functions, valuePromiseWatchers)
@@ -134,19 +140,14 @@ const dumpElementBlock = (
       labels: [dumpElemID(elem.elemID)],
       attrs: dumpAttributes(elem.annotations, functions, valuePromiseWatchers),
       blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes).concat(
-        Object.values(elem.fields)
-          .map(field => dumpFieldBlock(field, functions, valuePromiseWatchers))
+        Object.values(elem.fields).map(field => dumpFieldBlock(field, functions, valuePromiseWatchers)),
       ),
     }
   }
   if (isPrimitiveType(elem)) {
     return {
       type: Keywords.TYPE_DEFINITION,
-      labels: [
-        dumpElemID(elem.elemID),
-        Keywords.TYPE_INHERITANCE_SEPARATOR,
-        getPrimitiveTypeName(elem.primitive),
-      ],
+      labels: [dumpElemID(elem.elemID), Keywords.TYPE_INHERITANCE_SEPARATOR, getPrimitiveTypeName(elem.primitive)],
       attrs: dumpAttributes(elem.annotations, functions, valuePromiseWatchers),
       blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes),
     }
@@ -154,14 +155,14 @@ const dumpElementBlock = (
   if (isInstanceElement(elem)) {
     return {
       type: dumpElemID(elem.refType.elemID),
-      labels: elem.elemID.isConfigType() || elem.refType.elemID.isConfigType()
-      || elem.elemID.name === '_config' // TODO: should inject the correct type
-        ? []
-        : [elem.elemID.name],
+      labels:
+        elem.elemID.isConfigType() || elem.refType.elemID.isConfigType() || elem.elemID.name === '_config' // TODO: should inject the correct type
+          ? []
+          : [elem.elemID.name],
       attrs: dumpAttributes(
         _.merge({}, elem.value, _.pick(elem.annotations, _.values(INSTANCE_ANNOTATIONS))),
         functions,
-        valuePromiseWatchers
+        valuePromiseWatchers,
       ),
       blocks: [],
     }
@@ -179,31 +180,24 @@ const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
 })
 
 export const dumpElements = async (
-  elements: Readonly<Element>[], functions: Functions = {}, indentationLevel = 0
+  elements: Readonly<Element>[],
+  functions: Functions = {},
+  indentationLevel = 0,
 ): Promise<string> => {
   const valuePromiseWatchers: ValuePromiseWatcher[] = []
 
-  const warpedBlocks = wrapBlocks(
-    elements.map(e => dumpElementBlock(e, functions, valuePromiseWatchers))
-  )
+  const warpedBlocks = wrapBlocks(elements.map(e => dumpElementBlock(e, functions, valuePromiseWatchers)))
   await replaceValuePromises(valuePromiseWatchers)
   return hclDump(warpedBlocks, indentationLevel)
 }
 
-export const dumpSingleAnnotationType = (
-  name: string, refType: TypeReference, indentationLevel = 0
-): string =>
+export const dumpSingleAnnotationType = (name: string, refType: TypeReference, indentationLevel = 0): string =>
   hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, refType)]), indentationLevel)
 
-export const dumpAnnotationTypes = (
-  annotationRefTypes: ReferenceMap,
-  indentationLevel = 0
-): string =>
+export const dumpAnnotationTypes = (annotationRefTypes: ReferenceMap, indentationLevel = 0): string =>
   hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationRefTypes)), indentationLevel)
 
-export const dumpValues = async (
-  value: Value, functions: Functions, indentationLevel = 0
-): Promise<string> => {
+export const dumpValues = async (value: Value, functions: Functions, indentationLevel = 0): Promise<string> => {
   // Note that since this function can receive a primitive / func obj
   // as the value param, we need to create a mock parent for the value
   // promise watchers logic to work
@@ -211,11 +205,7 @@ export const dumpValues = async (
   const defaultKey = 'value'
   const defaultParent: Record<string, Value> = {}
   // Convert potential function values before dumping the value
-  defaultParent[defaultKey] = dumpAttributes(
-    value,
-    functions,
-    valuePromiseWatchers
-  )
+  defaultParent[defaultKey] = dumpAttributes(value, functions, valuePromiseWatchers)
   addValuePromiseWatcher(valuePromiseWatchers, defaultParent, defaultKey)
   await replaceValuePromises(valuePromiseWatchers)
   const valueWithSerializedFunctions = defaultParent[defaultKey]

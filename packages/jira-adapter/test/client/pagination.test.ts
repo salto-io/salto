@@ -56,6 +56,8 @@ describe('pageByOffset', () => {
           { name: 'scoped', scope: {} },
           { name: 'nested scope', nested: [{ name: 'valid' }, { name: 'bad', scope: {} }] },
           { name: 'globalScoped', scope: { type: 'GLOBAL' } },
+          { name: 'typed', type: 'classic' },
+          { name: 'typedSimple', type: 'simple'}
         ])
       const args = { url: 'http://myjira.net/thing' }
       const paginator = createPaginator({
@@ -83,6 +85,17 @@ describe('pageByOffset', () => {
     it('should keep global scoped entities', () => {
       const [page] = responses
       expect(page[2]).toEqual({ name: 'globalScoped', scope: { type: 'GLOBAL' } })
+    })
+    it('should keep non-simple type scopes', () => {
+      const [page] = responses
+      expect(page[3]).toEqual({ name: 'typed', type: 'classic' })
+    })
+    it('should omit the simple types from the response', () => {
+      expect(responses).toHaveLength(1)
+      const [page] = responses
+      expect(page).not.toContainEqual(
+        expect.objectContaining({ type: 'simple' }),
+      )
     })
   })
 

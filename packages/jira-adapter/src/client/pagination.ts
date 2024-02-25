@@ -25,16 +25,28 @@ const ITEM_INDEX_PAGINATION_URLS = [
   '/rest/api/2/priorityschemes',
 ]
 
+// filters out entries of specific project scope as we don't support it,
+// but leaves entries of global scope
+const notTeamScopeObject = (obj: clientUtils.ResponseValue): boolean => (
+  !(_.isPlainObject(obj) && 'scope' in obj && !_.isEqual(obj.scope, { type: 'GLOBAL' }))
+)
+
+// const notTeamProject = (obj: clientUtils.ResponseValue): boolean => (
+//   !(_.isPlainObject(obj) && 'style' in obj && obj.style === 'next-gen')
+// )
+
+const notTeamBoard = (obj: clientUtils.ResponseValue): boolean => (
+  !(_.isPlainObject(obj) && 'type' in obj && obj.type === 'simple')
+)
+
+
 const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(response: T | T[]): T | T[] => {
   if (Array.isArray(response)) {
     return response
-      .filter(
-        item =>
-          // filters out entries of specific project scope as we don't support it,
-          // but leaves entries of global scope
-          !(_.isPlainObject(item) && 'scope' in item && !_.isEqual(item.scope, { type: 'GLOBAL' })),
-      )
-      .flatMap(removeScopedObjectsImpl) as T[]
+    .filter(notTeamScopeObject)
+    // .filter(notTeamProject)
+    .filter(notTeamBoard)
+    .flatMap(removeScopedObjectsImpl) as T[]
   }
   if (_.isObject(response)) {
     return _.mapValues(response, removeScopedObjectsImpl) as T

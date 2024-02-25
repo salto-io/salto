@@ -22,6 +22,7 @@ import { screenValidator } from './screen'
 import JiraClient from '../client/client'
 import { ChangeValidatorName, JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './projects/project_deletion'
+import { teamManagedProjectValidator } from './projects/team_managed_project'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
 import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
@@ -80,6 +81,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     screen: screenValidator,
     issueTypeScheme: issueTypeSchemeValidator,
     issueTypeSchemeDefaultType: issueTypeSchemeDefaultTypeValidator,
+    teamManagedProject: teamManagedProjectValidator(client),
     projectDeletion: projectDeletionValidator(client, config),
     status: statusValidator,
     privateApi: privateApiValidator(config),

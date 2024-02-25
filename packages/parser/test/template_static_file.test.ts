@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType, ElemID, InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  ReferenceExpression,
+  TemplateExpression,
+  StaticFile,
+} from '@salto-io/adapter-api'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { templateExpressionToStaticFile } from '../src/utils'
 import { staticFileToTemplateExpression } from '../src/utils/template_static_file'
@@ -216,6 +223,16 @@ describe('template static file', () => {
     })
     it('should create template correctly for multiLineSpecialChars', async () => {
       await testStaticFileToTemplate(multiLineSpecialChars)
+    })
+    it('should return undefined if isTemplate is not true', async () => {
+      const staticfile = new StaticFile({ isTemplate: false, filepath: 'test', content: Buffer.from('test') })
+      const template = await staticFileToTemplateExpression(staticfile)
+      expect(template).toBeUndefined()
+    })
+    it('should return undefined if content is undefined', async () => {
+      const staticfile = new StaticFile({ isTemplate: true, filepath: 'test', hash: '1' })
+      const template = await staticFileToTemplateExpression(staticfile)
+      expect(template).toBeUndefined()
     })
   })
 })

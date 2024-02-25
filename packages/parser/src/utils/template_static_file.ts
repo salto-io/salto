@@ -21,58 +21,60 @@ import { dumpValue, MULTILINE_STRING_PREFIX, MULTILINE_STRING_SUFFIX } from '../
 import { unescapeMultilineMarker } from '../parser/internal/native/consumers/values'
 import { createReferenceExpresion, unescapeTemplateMarker } from '../parser/internal/native/helpers'
 import { IllegalReference } from '../parser'
+import { REFERENCE_PART } from '../parser/internal/native/lexer'
 
 const log = logger(module)
 
-const isMultilineBuffer = (stringBuffer: string): boolean =>
-  stringBuffer.startsWith(MULTILINE_STRING_PREFIX) && stringBuffer.endsWith(MULTILINE_STRING_SUFFIX)
+type PartWithReferenceIndicator = { isReference: boolean; part: string }
+
+const isMultilineBuffer = (stringToParse: string): boolean =>
+  stringToParse.startsWith(MULTILINE_STRING_PREFIX) && stringToParse.endsWith(MULTILINE_STRING_SUFFIX)
 
 const removeMultilineStringPrefixAndSuffix = (prim: string): string =>
   _.trimStart(_.trimEnd(prim, MULTILINE_STRING_SUFFIX), MULTILINE_STRING_PREFIX)
 
 const returnDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\$\{/g, '\\\\${')
 
-const splitByReferencesMarker = (stringBuffer: string): string[] => {
-  const regex = /(?<!\\)\$\{[^}]+\}/g
-  const parts: string[] = []
+const splitByReferencesMarker = (stringToParse: string): PartWithReferenceIndicator[] => {
+  const regex = new RegExp(`${REFERENCE_PART}`, 'g')
+  const parts: PartWithReferenceIndicator[] = []
   let lastIndex = 0
 
-  stringBuffer.replace(regex, (match, index) => {
+  stringToParse.replace(regex, (match, index) => {
     // Add the part of the string before the match
-    parts.push(stringBuffer.slice(lastIndex, index))
-    parts.push(match)
+    parts.push({ isReference: false, part: stringToParse.slice(lastIndex, index) })
+    parts.push({ isReference: true, part: match })
     lastIndex = index + match.length
     return match
   })
 
   // Add the remaining part of the string if any
-  if (lastIndex < stringBuffer.length) {
-    parts.push(stringBuffer.slice(lastIndex))
+  if (lastIndex < stringToParse.length) {
+    parts.push({ isReference: false, part: stringToParse.slice(lastIndex) })
   }
   return parts
 }
 
-const createReferencesFromStringParts = (parts: string[]): TemplatePart[] =>
+const createReferencesFromStringParts = (parts: PartWithReferenceIndicator[]): TemplatePart[] =>
   parts.map(part => {
-    if (part.startsWith('${') && part.endsWith('}')) {
+    if (part.isReference) {
       // remove the ${ and }
-      const refParts = part.split(/\${|}/)
+      const refParts = part.part.split(/\${|}/)
       if (refParts.length !== 3) {
-        // add log
-        return part
+        log.warn(`refParts is invalid, received ${refParts.toString()}`)
+        return part.part
       }
       const ref = createReferenceExpresion(refParts[1].replace(/\s+/g, ''))
-      return ref instanceof IllegalReference ? part : ref
+      return ref instanceof IllegalReference ? part.part : ref
     }
-    return part
+    return part.part
   })
 
 const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => {
-  const stringBuffer = buffer.toString()
-  const removed = removeMultilineStringPrefixAndSuffix(stringBuffer)
-  const finalString = isMultilineBuffer(stringBuffer)
-    ? unescapeMultilineMarker(removed)
-    : JSON.parse(returnDoubleTemplateMarkerEscaping(stringBuffer))
+  const stringToParse = buffer.toString()
+  const finalString = isMultilineBuffer(stringToParse)
+    ? unescapeMultilineMarker(removeMultilineStringPrefixAndSuffix(stringToParse))
+    : JSON.parse(returnDoubleTemplateMarkerEscaping(stringToParse))
   const parts = createReferencesFromStringParts(splitByReferencesMarker(finalString))
   const unescapedTemplateMarkerParts = parts.map(part =>
     isReferenceExpression(part) ? part : unescapeTemplateMarker(part),
@@ -95,7 +97,7 @@ export const staticFileToTemplateExpression = async (
   const content = await staticFile.getContent()
   if (content === undefined) {
     log.warn(`content is undefined for staticFile with path ${staticFile.filepath}`)
-    return undefined // maybe return an empty template expression
+    return undefined
   }
   return parseBufferToTemplateExpression(content)
 }

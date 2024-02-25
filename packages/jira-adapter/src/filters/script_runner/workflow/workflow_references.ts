@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { restoreValues, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { restoreValues, isResolvedReferenceExpression, resolvePath } from '@salto-io/adapter-utils'
 import {
   isAdditionOrModificationChange,
   getChangeData,

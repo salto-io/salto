@@ -17,7 +17,6 @@ import _ from 'lodash'
 import path from 'path'
 import { inspect } from 'util'
 import { hash as hashUtils } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 // import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
@@ -25,8 +24,6 @@ import { ElemID } from './element_id'
 import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
 
 export type PrimitiveValue = string | boolean | number
-
-const log = logger(module)
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Value = any
@@ -68,8 +65,6 @@ export class StaticFile {
     this.filepath = path.normalize(params.filepath)
     this.encoding = params.encoding ?? DEFAULT_STATIC_FILE_ENCODING
     if (this.isTemplate === true && params.encoding !== 'utf8') {
-      log.warn(`StaticFile at path - ${this.filepath} is templated and has invalid encoding -
-      ${this.encoding}, changing encoding to utf8`)
       this.encoding = 'utf8'
     }
     if (!Buffer.isEncoding(this.encoding)) {

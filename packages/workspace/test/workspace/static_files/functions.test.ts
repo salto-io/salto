@@ -42,6 +42,11 @@ describe('Functions', () => {
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledTimes(1)
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith({ filepath: 'aa', encoding: 'utf-8', isTemplate: false })
   })
+  it('should convert valid function expression to valid static metadata when encoding is template', async () => {
+    await functions.file.parse(['aa', 'template'])
+    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledTimes(1)
+    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa', 'utf8', undefined, true)
+  })
   it('should not persist when dumping static file with no content', async () => {
     const dumped = await functions.file.dump(
       new StaticFile({
@@ -62,6 +67,18 @@ describe('Functions', () => {
     )
     expect(dumped).toHaveProperty('funcName', 'file')
     expect(dumped).toHaveProperty('parameters', ['filepath'])
+    expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(1)
+  })
+  it('should persist when dumping static file with isTemplate true', async () => {
+    const dumped = await functions.file.dump(
+      new StaticFile({
+        filepath: 'filepath',
+        content: Buffer.from('ZOMG'),
+        isTemplate: true,
+      }),
+    )
+    expect(dumped).toHaveProperty('funcName', 'file')
+    expect(dumped).toHaveProperty('parameters', ['filepath', 'template'])
     expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(1)
   })
   it('should not persist when dumping invalid static file', async () => {

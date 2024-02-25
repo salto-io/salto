@@ -44,17 +44,20 @@ describe('status mappings', () => {
   const ERROR_MESSAGE_PREFIX =
     'This workflow change requires a status migration, as some statuses do not exist in the new workflow. In order to resume you can add the following NACL code to this workflow’s code. Make sure to specific, for each project, issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.\n'
 
-  const getStatusMappingsErrorMessageBody = (issueTypeNames: string[]): string => {
+  const getStatusMigrationEntry = (statusName: string): string => `{
+          oldStatusReference = jira.Status.instance.${statusName}
+          newStatusReference = jira.Status.instance.<statusName>
+        },`
+
+  const getStatusMappingsErrorMessageBody = (issueTypeNames: string[], statusNames: string[]): string => {
     const body = issueTypeNames.map(
       issueTypeName =>
         `{
       issueTypeId = jira.IssueType.instance.${issueTypeName}
       projectId = jira.Project.instance.projectInstance
       statusMigrations = [
-        {
-          oldStatusReference = jira.Status.instance.status3
-          newStatusReference = jira.Status.instance.<statusName>
-        },
+        ${statusNames.map(getStatusMigrationEntry).join(`
+        `)}
       ]
     },`,
     )
@@ -156,6 +159,7 @@ describe('status mappings', () => {
   it('should return an error when there is a removed status from an active workflow', async () => {
     const before = workflowInstance.clone()
     workflowInstance.value.statuses.pop()
+    workflowInstance.value.statuses.pop()
     expect(
       await workflowStatusMappingsValidator([toChange({ before, after: workflowInstance })], elementsSource),
     ).toEqual([
@@ -163,7 +167,7 @@ describe('status mappings', () => {
         elemID: workflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2']),
+        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status2', 'status3']),
       },
     ])
   })
@@ -212,7 +216,7 @@ describe('status mappings', () => {
         elemID: defaultWorkflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType3']),
+        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType3'], ['status3']),
       },
     ])
   })
@@ -267,7 +271,7 @@ describe('status mappings', () => {
         elemID: workflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2']),
+        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status3']),
       },
     ])
   })

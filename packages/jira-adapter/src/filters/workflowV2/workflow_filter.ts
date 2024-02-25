@@ -566,9 +566,6 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           const version = isMigrationDone
             ? (await getNewVersionFromService(workflow.name, client)) ?? workflow.version
             : workflow.version
-          if (isMigrationDone) {
-            delete originalInstance.value.statusMappings
-          }
           instance.value = {
             ...originalInstance.value,
             id: workflow.id,

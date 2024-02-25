@@ -100,8 +100,8 @@ const createAssetsObjectTypeOrder = (
     )
     return undefined
   }
-  const name = naclCase(`${invertNaclCase(treeParent.elemID.name)}_order`)
-  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['objectTypes', 'childOrder']
+  const name = naclCase(`${invertNaclCase(treeParent.elemID.name)}_childOrder`)
+  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? [] : ['objectTypes']
   return new InstanceElement(
     name,
     orderType,

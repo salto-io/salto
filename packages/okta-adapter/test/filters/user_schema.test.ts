@@ -55,10 +55,8 @@ describe('userSchemaFilter', () => {
     id: 234,
     name: 'B',
     _links: {
-      additionalProperties: {
-        schema: {
-          href: 'https://okta.com/api/v1/meta/schemas/user/B123',
-        },
+      schema: {
+        href: 'https://okta.com/api/v1/meta/schemas/user/B123',
       },
     },
     default: false,

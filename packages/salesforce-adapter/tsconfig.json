@@ -1,34 +1,30 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "baseUrl": ".",
-        "declaration": true,
-        "resolveJsonModule": true,
-        "paths": {
-            "@salto-io/jsforce": [
-                "../../node_modules/@salto-io/jsforce-types"
-            ]
-        }
-    },
-    "include": [
-        "src/**/*",
-        "src/**/*.json",
-        "test/**/*",
-        "e2e_test/**/*",
-        "index.ts"
-    ],
-    "exclude": [
-        "test/sfdx_parser/test_sfdx_project/**"
-    ],
-    "references": [
-        { "path": "../adapter-api" },
-        { "path": "../adapter-components" },
-        { "path": "../adapter-utils" },
-        { "path": "../e2e-credentials-store" },
-        { "path": "../file" },
-        { "path": "../logging" },
-        { "path": "../lowerdash" },
-        { "path": "../test-utils" },
-    ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@salto-io/jsforce": ["../../node_modules/@salto-io/jsforce-types"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.json",
+    "test/**/*",
+    "e2e_test/**/*",
+    "index.ts"
+  ],
+  "exclude": ["test/sfdx_parser/test_sfdx_project/**"],
+  "references": [
+    { "path": "../adapter-api" },
+    { "path": "../adapter-components" },
+    { "path": "../adapter-utils" },
+    { "path": "../e2e-credentials-store" },
+    { "path": "../file" },
+    { "path": "../logging" },
+    { "path": "../lowerdash" },
+    { "path": "../test-utils" }
+  ]
 }

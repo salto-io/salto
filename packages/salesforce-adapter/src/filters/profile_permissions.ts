@@ -1,42 +1,65 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  ObjectType, Field, getChangeData, CORE_ANNOTATIONS, isAdditionChange,
-  isFieldChange, InstanceElement, ElemID, Change,
+  ObjectType,
+  Field,
+  getChangeData,
+  CORE_ANNOTATIONS,
+  isFieldChange,
+  InstanceElement,
+  ElemID,
+  Change,
+  getAllChangeData,
+  toChange,
+  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
-import { PROFILE_METADATA_TYPE, ADMIN_PROFILE, API_NAME, SALESFORCE } from '../constants'
-import { isCustomObject, apiName, isCustom, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
+import { collections, values } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { PROFILE_METADATA_TYPE, API_NAME, SALESFORCE } from '../constants'
+import {
+  isCustomObject,
+  isCustom,
+  createInstanceElement,
+  metadataAnnotationTypes,
+  MetadataTypeAnnotations,
+} from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
-import { isInstanceOfType, isMasterDetailField } from './utils'
+import {
+  ProfileInfo,
+  FieldPermissions,
+  ObjectPermissions,
+} from '../client/types'
+import {
+  apiNameSync,
+  isInstanceOfTypeChangeSync,
+  isMasterDetailField,
+} from './utils'
 
-const { removeAsync } = promises.array
 const { awu } = collections.asynciterable
+const { isDefined } = values
 
 const log = logger(module)
 
 // We can't set permissions for master detail / required fields / system fields
-const shouldSetDefaultPermissions = (field: Field): boolean => (
-  isCustom(field.annotations[API_NAME])
-  && field.annotations[CORE_ANNOTATIONS.REQUIRED] !== true
-  && !isMasterDetailField(field)
-)
+const shouldSetDefaultPermissions = (field: Field): boolean =>
+  isCustom(field.annotations[API_NAME]) &&
+  field.annotations[CORE_ANNOTATIONS.REQUIRED] !== true &&
+  !isMasterDetailField(field)
 
 const getFieldPermissions = (field: string): FieldPermissions => ({
   field,
@@ -54,87 +77,82 @@ const getObjectPermissions = (object: string): ObjectPermissions => ({
   viewAllRecords: true,
 })
 
-const createAdminProfile = (): InstanceElement => createInstanceElement(
-  {
-    fullName: ADMIN_PROFILE,
-    fieldPermissions: [],
-    objectPermissions: [],
-  } as ProfileInfo,
-  new ObjectType({
-    elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
-    annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
-    annotations: {
-      metadataType: PROFILE_METADATA_TYPE,
-      dirName: 'profiles',
-      suffix: 'profile',
-    } as MetadataTypeAnnotations,
-  })
-)
+const createProfile = (profileName: string): InstanceElement =>
+  createInstanceElement(
+    {
+      fullName: profileName,
+      fieldPermissions: [],
+      objectPermissions: [],
+    } as ProfileInfo,
+    new ObjectType({
+      elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
+      annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
+      annotations: {
+        metadataType: PROFILE_METADATA_TYPE,
+        dirName: 'profiles',
+        suffix: 'profile',
+      } as MetadataTypeAnnotations,
+    }),
+  )
 
-const addMissingPermissions = async (
+const addMissingPermissions = (
   profile: InstanceElement,
   elemType: 'object' | 'field',
   newElements: ReadonlyArray<ObjectType | Field>,
-): Promise<void> => {
+): void => {
   if (newElements.length === 0) {
     return
   }
   const profileValues = profile.value as ProfileInfo
   const existingIds = new Set(
     elemType === 'object'
-      ? profileValues.objectPermissions.map(permission => permission.object)
-      : profileValues.fieldPermissions.map(permission => permission.field)
+      ? profileValues.objectPermissions.map((permission) => permission.object)
+      : profileValues.fieldPermissions.map((permission) => permission.field),
   )
 
-  const missingIds = await awu(newElements)
-    .map(elem => apiName(elem))
-    .filter(id => !existingIds.has(id))
-    .toArray()
+  const missingIds = newElements
+    .map((elem) => apiNameSync(elem))
+    .filter(isDefined)
+    .filter((id) => !existingIds.has(id))
 
   if (missingIds.length === 0) {
     return
   }
 
   log.info(
-    'adding admin read / write permissions to new %ss: %s',
-    elemType, missingIds.join(', ')
+    'adding %s read / write permissions to new %ss: %s',
+    apiNameSync(profile),
+    elemType,
+    missingIds.join(', '),
   )
 
   if (elemType === 'object') {
-    profileValues.objectPermissions.push(...missingIds.map(getObjectPermissions))
+    profileValues.objectPermissions.push(
+      ...missingIds.map(getObjectPermissions),
+    )
   } else {
     profileValues.fieldPermissions.push(...missingIds.map(getFieldPermissions))
   }
 }
 
-const isAdminProfileChange = async (change: Change): Promise<boolean> => {
-  const changeElem = getChangeData(change)
-  return await isInstanceOfType(PROFILE_METADATA_TYPE)(changeElem)
-    && await apiName(changeElem) === ADMIN_PROFILE
-}
-
 /**
- * Profile permissions filter.
- * If any object types were added, add them to the Admin profile's objectPermissions section. Do the same with added
- * fields and fieldPermissions. This ensures that at least one user will have permissions to view/edit the newly created
- * objects/fields.
- * Typically, this also ensures that the next fetch will contain the new objects/fields, because the fetching user is
- * usually an Admin.
+ * If any object types were added, add them to the configured FLS Profiles' objectPermissions section.
+ * Do the same with added fields and fieldPermissions.
  */
-const filterCreator: LocalFilterCreator = () => {
-  let isPartialAdminProfile = false
+const filterCreator: LocalFilterCreator = ({ config }) => {
+  let originalProfileChangesByName: Record<string, Change<InstanceElement>> = {}
   return {
     name: 'profilePermissionsFilter',
-    preDeploy: async changes => {
+    preDeploy: async (changes) => {
       const allAdditions = changes.filter(isAdditionChange)
 
-      const newCustomObjects = await awu(allAdditions)
+      const newCustomObjects = (await awu(allAdditions)
         .map(getChangeData)
         .filter(isCustomObject)
-        .toArray() as ObjectType[]
+        .toArray()) as ObjectType[]
 
       const newFields = [
-        ...newCustomObjects.flatMap(objType => Object.values(objType.fields)),
+        ...newCustomObjects.flatMap((objType) => Object.values(objType.fields)),
         ...allAdditions.filter(isFieldChange).map(getChangeData),
       ].filter(shouldSetDefaultPermissions)
 
@@ -142,29 +160,52 @@ const filterCreator: LocalFilterCreator = () => {
         return
       }
 
-      const adminProfileChange = await awu(changes).find(isAdminProfileChange)
+      const { flsProfiles } = config
 
-      const adminProfile = adminProfileChange !== undefined
-        ? getChangeData(adminProfileChange) as InstanceElement
-        : createAdminProfile()
+      log.debug(
+        'adding FLS permissions to the following Profiles: %s',
+        safeJsonStringify(flsProfiles),
+      )
 
-      await addMissingPermissions(adminProfile, 'object', newCustomObjects)
-      await addMissingPermissions(adminProfile, 'field', newFields)
+      originalProfileChangesByName = _.keyBy(
+        changes.filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE)),
+        (change) => apiNameSync(getChangeData(change)) ?? '',
+      )
 
-      if (adminProfileChange === undefined) {
-        // If we did not originally have a change to the admin profile, we need to create a new one
-        isPartialAdminProfile = true
-        changes.push(
-          { action: 'modify', data: { before: createAdminProfile(), after: adminProfile } }
-        )
-      }
+      flsProfiles.forEach((profileName) => {
+        const profileChange = originalProfileChangesByName[profileName]
+        if (profileChange !== undefined) {
+          _.pull(changes, profileChange)
+        }
+        const [before, after] =
+          profileChange !== undefined
+            ? getAllChangeData(profileChange).map((instance) =>
+                instance.clone(),
+              )
+            : [undefined, createProfile(profileName)]
+        addMissingPermissions(after, 'object', newCustomObjects)
+        addMissingPermissions(after, 'field', newFields)
+        changes.push(toChange({ before, after }))
+      })
     },
-    onDeploy: async changes => {
-      if (isPartialAdminProfile) {
-        // we created a partial admin profile change, we have to remove it here otherwise it will
-        // override the real admin profile
-        await removeAsync(changes, isAdminProfileChange)
-      }
+    onDeploy: async (changes) => {
+      const appliedFLSProfileChanges = changes
+        .filter(isInstanceOfTypeChangeSync(PROFILE_METADATA_TYPE))
+        .filter((profileChange) =>
+          config.flsProfiles.includes(
+            apiNameSync(getChangeData(profileChange)) ?? '',
+          ),
+        )
+      const appliedFLSProfileNames = appliedFLSProfileChanges
+        .map((change) => apiNameSync(getChangeData(change)))
+        .filter(isDefined)
+
+      _.pullAll(changes, appliedFLSProfileChanges)
+      Object.entries(originalProfileChangesByName)
+        .filter(([profileName]) => appliedFLSProfileNames.includes(profileName))
+        .forEach(([, originalChange]) => {
+          changes.push(originalChange)
+        })
     },
   }
 }

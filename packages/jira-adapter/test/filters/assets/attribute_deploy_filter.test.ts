@@ -69,6 +69,7 @@ describe('deployAttributesFilter', () => {
         defaultTypeId: 0,
         description: 'description',
         uniqueAttribute: false,
+        additionalValue: 'additionalValue',
       })
       connection.get.mockImplementation(async url => {
         if (url === '/rest/servicedeskapi/assets/workspace') {
@@ -118,6 +119,18 @@ describe('deployAttributesFilter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledTimes(1)
+      expect(connection.put).toHaveBeenCalledWith(
+        'gateway/api/jsm/assets/workspace/workspaceId/v1/objecttypeattribute/11/configure',
+        {
+          name: 'attributesInstance',
+          type: 0,
+          id: '11',
+          defaultTypeId: 0,
+          description: 'description',
+          uniqueAttribute: false,
+        },
+        undefined,
+      )
     })
     it('should modify attribute when changing values for first api', async () => {
       const attributesInstanceAfter = attributesInstance.clone()
@@ -140,6 +153,18 @@ describe('deployAttributesFilter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(0)
       expect(connection.put).toHaveBeenCalledTimes(2)
+      expect(connection.put).toHaveBeenCalledWith(
+        'gateway/api/jsm/assets/workspace/workspaceId/v1/objecttypeattribute/11/configure',
+        {
+          name: 'attributesInstance',
+          type: 0,
+          id: '11',
+          defaultTypeId: 0,
+          description: 'description',
+          uniqueAttribute: true,
+        },
+        undefined,
+      )
     })
     it('should remove attribute', async () => {
       const changes = [toChange({ before: attributesInstance })]

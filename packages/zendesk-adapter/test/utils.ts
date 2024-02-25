@@ -33,27 +33,25 @@ type FilterCreatorParams = {
   usersPromise: Promise<GetUsersResponse>
 }
 
-export const createFilterCreatorParams =
-  ({
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    }),
-    paginator = clientUtils.createPaginator({
-      client,
-      paginationFuncCreator: paginate,
-    }),
-    config = DEFAULT_CONFIG,
-    fetchQuery = elementUtils.query.createMockQuery(),
-    elementsSource = buildElementsSourceFromElements([]),
-    brandIdToClient = {},
-    usersPromise = Promise.resolve({ users: [], errors: [] }),
-  }: Partial<FilterCreatorParams>): FilterCreatorParams =>
-  ({
+export const createFilterCreatorParams = ({
+  client = new ZendeskClient({
+    credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+  }),
+  paginator = clientUtils.createPaginator({
     client,
-    paginator,
-    config,
-    fetchQuery,
-    elementsSource,
-    brandIdToClient,
-    usersPromise,
-  })
+    paginationFuncCreator: paginate,
+  }),
+  config = DEFAULT_CONFIG,
+  fetchQuery = elementUtils.query.createMockQuery(),
+  elementsSource = buildElementsSourceFromElements([]),
+  brandIdToClient = {},
+  usersPromise = Promise.resolve({ users: [], errors: [] }),
+}: Partial<FilterCreatorParams>): FilterCreatorParams => ({
+  client,
+  paginator,
+  config,
+  fetchQuery,
+  elementsSource,
+  brandIdToClient,
+  usersPromise,
+})

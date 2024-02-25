@@ -131,6 +131,13 @@ describe('assetsObjectTypeOrderFilter', () => {
       ])
       const orderType = elements.filter(isObjectType).find(e => e.elemID.typeName === OBJECT_TYPE_ORDER_TYPE)
       expect(orderType).toBeDefined()
+      expect(orderInstances[0].path).toEqual([
+        JIRA,
+        elementUtils.RECORDS_PATH,
+        'ObjectSchema',
+        'objectTypes',
+        'assetsSchema_childOrder',
+      ])
     })
     it('should do nothing for instnaces without parentObjectTypeId', async () => {
       const elements = [

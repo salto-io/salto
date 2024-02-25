@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
@@ -23,18 +23,9 @@ import Connection from '../src/client/jsforce'
 import SalesforceAdapter from '../index'
 import mockAdapter from './adapter'
 import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
-import {
-  CHANGED_AT_SINGLETON,
-  CUSTOM_FIELD,
-  CUSTOM_OBJECT,
-} from '../src/constants'
+import { CHANGED_AT_SINGLETON, CUSTOM_FIELD, CUSTOM_OBJECT } from '../src/constants'
 import { mockInstances, mockTypes } from './mock_elements'
-import {
-  mockDescribeResult,
-  mockFileProperties,
-  mockRetrieveLocator,
-  mockRetrieveResult,
-} from './connection'
+import { mockDescribeResult, mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import { mockFetchOpts } from './utils'
 import { Types } from '../src/transformers/transformer'
 
@@ -51,8 +42,8 @@ describe('Salesforce Fetch With Changes Detection', () => {
       ...Types.getAllMissingTypes(),
       changedAtSingleton,
     ]
-    const elementsSource = buildElementsSourceFromElements(sourceElements)
-    ;({ connection, adapter } = mockAdapter({
+    const elementsSource = buildElementsSourceFromElements(sourceElements);
+    ({ connection, adapter } = mockAdapter({
       adapterParams: {
         config: {
           fetch: {
@@ -70,12 +61,8 @@ describe('Salesforce Fetch With Changes Detection', () => {
     }))
   })
   describe('fetch with changes detection for types with nested instances', () => {
-    const RELATED_TYPES = [
-      ...CUSTOM_OBJECT_FIELDS,
-      CUSTOM_FIELD,
-      CUSTOM_OBJECT,
-    ] as const
-    type RelatedType = (typeof RELATED_TYPES)[number]
+    const RELATED_TYPES = [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD, CUSTOM_OBJECT] as const
+    type RelatedType = typeof RELATED_TYPES[number]
 
     const UPDATED_OBJECT_NAME = 'Updated__c'
     const NON_UPDATED_OBJECT_NAME = 'NonUpdated__c'
@@ -154,15 +141,11 @@ describe('Salesforce Fetch With Changes Detection', () => {
         WebLink: [],
       }
 
-      connection.metadata.describe.mockResolvedValue(
-        mockDescribeResult(RELATED_TYPES.map((type) => ({ xmlName: type }))),
-      )
-      connection.metadata.list.mockImplementation(async (queries) =>
-        makeArray(queries).flatMap(
-          ({ type }) => filePropByRelatedType[type as RelatedType] ?? [],
-        ),
-      )
-      connection.metadata.retrieve.mockImplementation((request) => {
+      connection.metadata.describe.mockResolvedValue(mockDescribeResult(RELATED_TYPES.map(type => ({ xmlName: type }))))
+      connection.metadata.list.mockImplementation(async queries => (
+        makeArray(queries).flatMap(({ type }) => filePropByRelatedType[type as RelatedType] ?? [])
+      ))
+      connection.metadata.retrieve.mockImplementation(request => {
         retrieveRequest = request
         return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
       })
@@ -174,12 +157,10 @@ describe('Salesforce Fetch With Changes Detection', () => {
     })
     it('should fetch only the updated CustomObject instances', async () => {
       await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
-      expect(retrieveRequest.unpackaged?.types).toIncludeSameMembers([
-        {
-          name: CUSTOM_OBJECT,
-          members: [UPDATED_OBJECT_NAME],
-        },
-      ])
+      expect(retrieveRequest.unpackaged?.types).toIncludeSameMembers([{
+        name: CUSTOM_OBJECT,
+        members: [UPDATED_OBJECT_NAME],
+      }])
     })
   })
 })

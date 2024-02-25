@@ -1,50 +1,35 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { InstanceElement, ReferenceInfo, Values, ObjectType, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
 import {
-  InstanceElement,
-  ReferenceInfo,
-  Values,
-  ObjectType,
-  ElemID,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
-import {
-  APEX_CLASS_METADATA_TYPE,
-  APEX_PAGE_METADATA_TYPE,
-  CUSTOM_APPLICATION_METADATA_TYPE,
-  FLOW_METADATA_TYPE,
+  APEX_CLASS_METADATA_TYPE, APEX_PAGE_METADATA_TYPE, CUSTOM_APPLICATION_METADATA_TYPE, FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
-  RECORD_TYPE_METADATA_TYPE,
-  SALESFORCE,
+  LAYOUT_TYPE_ID_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, SALESFORCE,
 } from '../src/constants'
 import { mockTypes } from './mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from './utils'
 import { getCustomReferences } from '../src/custom_references'
-import {
-  CUSTOM_REFS_CONFIG,
-  DATA_CONFIGURATION,
-  FETCH_CONFIG,
-} from '../src/types'
+import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from '../src/types'
 
 describe('getCustomReferences', () => {
   let refs: ReferenceInfo[]
   let profileInstance: InstanceElement
-  const createTestInstance = (fields: Values): InstanceElement =>
+  const createTestInstance = (fields: Values): InstanceElement => (
     new InstanceElement('test', mockTypes.Profile, fields)
+  )
 
   describe('when profile refs are disabled', () => {
     beforeEach(async () => {
@@ -60,20 +45,19 @@ describe('getCustomReferences', () => {
         elemID: new ElemID('adapter'),
         isSettings: true,
       })
-      const adapterConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        AdapterConfigType,
-        {
-          [FETCH_CONFIG]: {
-            [DATA_CONFIGURATION]: {
-              [CUSTOM_REFS_CONFIG]: {
-                profiles: false,
-              },
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType, {
+        [FETCH_CONFIG]: {
+          [DATA_CONFIGURATION]: {
+            [CUSTOM_REFS_CONFIG]: {
+              profiles: false,
             },
           },
         },
+      })
+      refs = await getCustomReferences(
+        [profileInstance],
+        adapterConfig,
       )
-      refs = await getCustomReferences([profileInstance], adapterConfig)
     })
     it('should not generate references', () => {
       expect(refs).toBeEmpty()
@@ -93,11 +77,11 @@ describe('getCustomReferences', () => {
         elemID: new ElemID('adapter'),
         isSettings: true,
       })
-      const adapterConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        AdapterConfigType,
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
+      refs = await getCustomReferences(
+        [profileInstance],
+        adapterConfig,
       )
-      refs = await getCustomReferences([profileInstance], adapterConfig)
     })
     it('should not generate references', () => {
       expect(refs).toBeEmpty()
@@ -113,7 +97,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance],
+          undefined,
+        )
       })
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
@@ -132,16 +119,9 @@ describe('getCustomReferences', () => {
       })
       it('should create references', async () => {
         const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
-        const expectedTarget = mockTypes.Account.elemID.createNestedID(
-          'field',
-          'testField__c',
-        )
+        const expectedTarget = mockTypes.Account.elemID.createNestedID('field', 'testField__c')
         expect(refs).toEqual([
-          {
-            source: profileInstance.elemID.createNestedID(...expectedSource),
-            target: expectedTarget,
-            type: 'weak',
-          },
+          { source: profileInstance.elemID.createNestedID(...expectedSource), target: expectedTarget, type: 'weak' },
         ])
       })
     })
@@ -191,10 +171,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'applicationVisibilities',
-              'SomeApplication',
-            ),
+            source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
             target: customApp.elemID,
             type: 'weak',
           },
@@ -220,10 +197,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toIncludeAllPartialMembers([
           {
-            source: profileInstance.elemID.createNestedID(
-              'applicationVisibilities',
-              'SomeApplication',
-            ),
+            source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'),
             target: customApp.elemID,
             type: 'weak',
           },
@@ -235,14 +209,7 @@ describe('getCustomReferences', () => {
         profileInstance = createTestInstance({
           applicationVisibilities: {
             SomeApplication: {
-              application: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  CUSTOM_APPLICATION_METADATA_TYPE,
-                  'instance',
-                  'SomeApplication',
-                ),
-              ),
+              application: new ReferenceExpression(new ElemID(SALESFORCE, CUSTOM_APPLICATION_METADATA_TYPE, 'instance', 'SomeApplication')),
               default: false,
               visible: true,
             },
@@ -296,10 +263,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'classAccesses',
-              'SomeApexClass',
-            ),
+            source: profileInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'),
             target: apexClass.elemID,
             type: 'weak',
           },
@@ -311,14 +275,7 @@ describe('getCustomReferences', () => {
         profileInstance = createTestInstance({
           classAccesses: {
             SomeApexClass: {
-              apexClass: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  APEX_CLASS_METADATA_TYPE,
-                  'instance',
-                  'SomeApexClass',
-                ),
-              ),
+              apexClass: new ReferenceExpression(new ElemID(SALESFORCE, APEX_CLASS_METADATA_TYPE, 'instance', 'SomeApexClass')),
               enabled: true,
             },
           },
@@ -331,9 +288,11 @@ describe('getCustomReferences', () => {
     })
   })
   describe('flows', () => {
-    const flow = new InstanceElement('SomeFlow', mockTypes.Flow, {
-      [INSTANCE_FULL_NAME_FIELD]: 'SomeFlow',
-    })
+    const flow = new InstanceElement(
+      'SomeFlow',
+      mockTypes.Flow,
+      { [INSTANCE_FULL_NAME_FIELD]: 'SomeFlow' },
+    )
 
     describe('when disabled', () => {
       beforeEach(async () => {
@@ -366,10 +325,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'flowAccesses',
-              'SomeFlow',
-            ),
+            source: profileInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'),
             target: flow.elemID,
             type: 'weak',
           },
@@ -382,14 +338,7 @@ describe('getCustomReferences', () => {
           flowAccesses: {
             SomeFlow: {
               enabled: true,
-              flow: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  FLOW_METADATA_TYPE,
-                  'instance',
-                  'SomeFlow',
-                ),
-              ),
+              flow: new ReferenceExpression(new ElemID(SALESFORCE, FLOW_METADATA_TYPE, 'instance', 'SomeFlow')),
             },
           },
         })
@@ -423,10 +372,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: layout.elemID,
             type: 'weak',
           },
@@ -435,12 +381,16 @@ describe('getCustomReferences', () => {
     })
     describe('when there is a reference to a recordType', () => {
       const recordTypes = [
-        new InstanceElement('SomeRecordType', mockTypes.RecordType, {
-          [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType',
-        }),
-        new InstanceElement('SomeOtherRecordType', mockTypes.RecordType, {
-          [INSTANCE_FULL_NAME_FIELD]: 'SomeOtherRecordType',
-        }),
+        new InstanceElement(
+          'SomeRecordType',
+          mockTypes.RecordType,
+          { [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType' },
+        ),
+        new InstanceElement(
+          'SomeOtherRecordType',
+          mockTypes.RecordType,
+          { [INSTANCE_FULL_NAME_FIELD]: 'SomeOtherRecordType' },
+        ),
       ]
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -462,26 +412,17 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: layout.elemID,
             type: 'weak',
           },
           {
-            source: profileInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: recordTypes[0].elemID,
             type: 'weak',
           },
           {
-            source: profileInstance.elemID.createNestedID(
-              'layoutAssignments',
-              'Account_Account_Layout@bs',
-            ),
+            source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
             target: recordTypes[1].elemID,
             type: 'weak',
           },
@@ -493,14 +434,7 @@ describe('getCustomReferences', () => {
             layoutAssignments: {
               'Account_Account_Layout@bs': [
                 {
-                  layout: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      LAYOUT_TYPE_ID_METADATA_TYPE,
-                      'instance',
-                      'Account-Account Layout',
-                    ),
-                  ),
+                  layout: new ReferenceExpression(new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, 'instance', 'Account-Account Layout')),
                 },
               ],
             },
@@ -518,25 +452,11 @@ describe('getCustomReferences', () => {
               'Account_Account_Layout@bs': [
                 {
                   layout: 'Account-Account Layout',
-                  recordType: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      RECORD_TYPE_METADATA_TYPE,
-                      'instance',
-                      'SomeRecordType',
-                    ),
-                  ),
+                  recordType: new ReferenceExpression(new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'SomeRecordType')),
                 },
                 {
                   layout: 'Account-Account Layout',
-                  recordType: new ReferenceExpression(
-                    new ElemID(
-                      SALESFORCE,
-                      RECORD_TYPE_METADATA_TYPE,
-                      'instance',
-                      'SomeOtherRecordType',
-                    ),
-                  ),
+                  recordType: new ReferenceExpression(new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'SomeOtherRecordType')),
                 },
               ],
             },
@@ -546,10 +466,7 @@ describe('getCustomReferences', () => {
         it('should only create references to layout', () => {
           expect(refs).toEqual([
             {
-              source: profileInstance.elemID.createNestedID(
-                'layoutAssignments',
-                'Account_Account_Layout@bs',
-              ),
+              source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
               target: layout.elemID,
               type: 'weak',
             },
@@ -607,10 +524,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'objectPermissions',
-              'Account',
-            ),
+            source: profileInstance.elemID.createNestedID('objectPermissions', 'Account'),
             target: customObject.elemID,
             type: 'weak',
           },
@@ -627,9 +541,7 @@ describe('getCustomReferences', () => {
               allowEdit: true,
               allowRead: true,
               modifyAllRecords: false,
-              object: new ReferenceExpression(
-                new ElemID(SALESFORCE, 'Account'),
-              ),
+              object: new ReferenceExpression(new ElemID(SALESFORCE, 'Account')),
               viewAllRecords: false,
             },
           },
@@ -643,9 +555,11 @@ describe('getCustomReferences', () => {
     })
   })
   describe('Apex pages', () => {
-    const apexPage = new InstanceElement('SomeApexPage', mockTypes.ApexPage, {
-      [INSTANCE_FULL_NAME_FIELD]: 'SomeApexPage',
-    })
+    const apexPage = new InstanceElement(
+      'SomeApexPage',
+      mockTypes.ApexPage,
+      { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexPage' },
+    )
 
     describe('when disabled', () => {
       beforeEach(async () => {
@@ -681,10 +595,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'pageAccesses',
-              'SomeApexPage',
-            ),
+            source: profileInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'),
             target: apexPage.elemID,
             type: 'weak',
           },
@@ -696,14 +607,7 @@ describe('getCustomReferences', () => {
         profileInstance = createTestInstance({
           pageAccesses: {
             SomeApexPage: {
-              apexPage: new ReferenceExpression(
-                new ElemID(
-                  SALESFORCE,
-                  APEX_PAGE_METADATA_TYPE,
-                  'instance',
-                  'SomeApexPage',
-                ),
-              ),
+              apexPage: new ReferenceExpression(new ElemID(SALESFORCE, APEX_PAGE_METADATA_TYPE, 'instance', 'SomeApexPage')),
               enabled: true,
             },
           },
@@ -759,11 +663,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'recordTypeVisibilities',
-              'Case',
-              'SomeCaseRecordType',
-            ),
+            source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
             target: recordType.elemID,
             type: 'weak',
           },
@@ -788,11 +688,7 @@ describe('getCustomReferences', () => {
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
-            source: profileInstance.elemID.createNestedID(
-              'recordTypeVisibilities',
-              'Case',
-              'SomeCaseRecordType',
-            ),
+            source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'),
             target: recordType.elemID,
             type: 'weak',
           },
@@ -806,14 +702,7 @@ describe('getCustomReferences', () => {
             Case: {
               SomeCaseRecordType: {
                 default: false,
-                recordType: new ReferenceExpression(
-                  new ElemID(
-                    SALESFORCE,
-                    RECORD_TYPE_METADATA_TYPE,
-                    'instance',
-                    'Case.SomeCaseRecordType',
-                  ),
-                ),
+                recordType: new ReferenceExpression(new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', 'Case.SomeCaseRecordType')),
                 visible: true,
               },
             },

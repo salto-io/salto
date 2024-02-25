@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import { FileProperties } from '@salto-io/jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -22,14 +22,8 @@ import Connection from '../src/client/jsforce'
 import mockClient from './client'
 import { mockFileProperties } from './connection'
 import { getLastChangeDateOfTypesWithNestedInstances } from '../src/last_change_date_of_types_with_nested_instances'
-import {
-  buildFilePropsMetadataQuery,
-  buildMetadataQuery,
-} from '../src/fetch_profile/metadata_query'
-import {
-  LastChangeDateOfTypesWithNestedInstances,
-  MetadataQuery,
-} from '../src/types'
+import { buildFilePropsMetadataQuery, buildMetadataQuery } from '../src/fetch_profile/metadata_query'
+import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from '../src/types'
 
 const { makeArray } = collections.array
 
@@ -44,7 +38,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
   let listedTypes: string[]
   let metadataQuery: MetadataQuery<FileProperties>
   beforeEach(() => {
-    ;({ client, connection } = mockClient())
+    ({ client, connection } = mockClient())
     listedTypes = []
     const filePropByRelatedType: Record<string, FileProperties[]> = {
       // CustomObject props
@@ -153,41 +147,34 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         }),
       ],
     }
-    connection.metadata.list.mockImplementation(async (queries) =>
+    connection.metadata.list.mockImplementation(async queries => (
       makeArray(queries).flatMap(({ type }) => {
         listedTypes.push(type)
         return filePropByRelatedType[type] ?? []
-      }),
-    )
+      })
+    ))
   })
   describe('when all types with nested instances are included', () => {
     let excludedRelatedTypes: string[]
     beforeEach(() => {
       excludedRelatedTypes = ['Index']
-      metadataQuery = buildFilePropsMetadataQuery(
-        buildMetadataQuery({
-          fetchParams: {
-            metadata: {
-              include: [
-                {
-                  metadataType: '.*',
-                  namespace: '',
-                },
-              ],
-              exclude: excludedRelatedTypes.map((type) => ({
-                metadataType: type,
-              })),
-            },
+      metadataQuery = buildFilePropsMetadataQuery(buildMetadataQuery({
+        fetchParams: {
+          metadata: {
+            include: [{
+              metadataType: '.*',
+              namespace: '',
+            }],
+            exclude: excludedRelatedTypes.map(type => ({ metadataType: type })),
           },
-        }),
-      )
+        },
+      }))
     })
     it('should return correct values', async () => {
-      const lastChangeDateOfTypesWithNestedInstances =
-        await getLastChangeDateOfTypesWithNestedInstances({
-          client,
-          metadataQuery,
-        })
+      const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery,
+      })
       const expected: LastChangeDateOfTypesWithNestedInstances = {
         AssignmentRules: {},
         AutoResponseRules: {},

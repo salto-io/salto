@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   Field,
   isElement,
@@ -24,10 +24,7 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import {
-  GetLookupNameFunc,
-  GetLookupNameFuncArgs,
-} from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -87,87 +84,72 @@ export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
 }
 
-const safeApiName = ({
-  ref,
-  path,
-  relative,
-}: {
+const safeApiName = ({ ref, path, relative }: {
   ref: ReferenceExpression
   path?: ElemID
   relative?: boolean
 }): Promise<string | Value> => {
   const { value } = ref
   if (!isElement(value)) {
-    log.warn(
-      'Unexpected non-element value for ref id %s in path %s',
-      ref.elemID.getFullName(),
-      path?.getFullName(),
-    )
+    log.warn('Unexpected non-element value for ref id %s in path %s', ref.elemID.getFullName(), path?.getFullName())
     return value
   }
   return apiName(value, relative)
 }
 
-type ReferenceSerializationStrategyName =
-  | 'absoluteApiName'
-  | 'relativeApiName'
-  | 'configurationAttributeMapping'
-  | 'lookupQueryMapping'
-  | 'scheduleConstraintFieldMapping'
-  | 'mapKey'
-  | 'customLabel'
-  | 'fromDataInstance'
+type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
+ | 'mapKey' | 'customLabel' | 'fromDataInstance'
 const ReferenceSerializationStrategyLookup: Record<
-  ReferenceSerializationStrategyName,
-  ReferenceSerializationStrategy
+  ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
   absoluteApiName: {
     serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
-    lookup: (val) => val,
+    lookup: val => val,
   },
   relativeApiName: {
     serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
-    lookup: (val, context) =>
-      context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val,
+    lookup: (val, context) => (context !== undefined
+      ? [context, val].join(API_NAME_SEPARATOR)
+      : val
+    ),
   },
   configurationAttributeMapping: {
-    serialize: async ({ ref, path }) =>
-      _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[
-        await safeApiName({ ref, path })
-      ] ?? safeApiName({ ref, path }),
-    lookup: (val) =>
-      _.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val,
+    serialize: async ({ ref, path }) => (
+      _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })]
+      ?? safeApiName({ ref, path })
+    ),
+    lookup: val => (_.isString(val) ? (DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   lookupQueryMapping: {
-    serialize: async ({ ref, path }) =>
-      _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ??
-      safeApiName({ ref, path }),
-    lookup: (val) =>
-      _.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val,
+    serialize: async ({ ref, path }) => (
+      _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })]
+      ?? safeApiName({ ref, path })
+    ),
+    lookup: val => (_.isString(val) ? (TEST_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   scheduleConstraintFieldMapping: {
     serialize: async ({ ref, path }) => {
       const relativeApiName = await safeApiName({ ref, path, relative: true })
       return (
-        _.invert(SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ??
-        relativeApiName
+        _.invert(SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING)[relativeApiName]
+          ?? relativeApiName
       )
     },
     lookup: (val, context) => {
       const mappedValue = SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING[val]
-      return context !== undefined
+      return (context !== undefined
         ? [context, mappedValue].join(API_NAME_SEPARATOR)
         : mappedValue
+      )
     },
   },
   mapKey: {
     serialize: async ({ ref }) => ref.elemID.name,
-    lookup: (val) => val,
+    lookup: val => val,
   },
   customLabel: {
-    serialize: async ({ ref, path }) =>
-      `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
-    lookup: (val) => {
+    serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
+    lookup: val => {
       if (val.includes('$Label')) {
         return val.split(API_NAME_SEPARATOR)[1]
       }
@@ -175,35 +157,23 @@ const ReferenceSerializationStrategyLookup: Record<
     },
   },
   fromDataInstance: {
-    serialize: async (args) =>
-      (await isMetadataInstanceElement(args.ref.value))
+    serialize: async args => (
+      await isMetadataInstanceElement(args.ref.value)
         ? instanceInternalId(args.ref.value)
-        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
-    lookup: (val) => val,
+        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args)
+    ),
+    lookup: val => val,
   },
 }
 
-export type ReferenceContextStrategyName =
-  | 'instanceParent'
-  | 'neighborTypeWorkflow'
-  | 'neighborCPQLookup'
-  | 'neighborCPQRuleLookup'
-  | 'neighborLookupValueTypeLookup'
-  | 'neighborObjectLookup'
-  | 'neighborSobjectLookup'
-  | 'neighborPicklistObjectLookup'
-  | 'neighborTypeLookup'
-  | 'neighborActionTypeFlowLookup'
-  | 'neighborActionTypeLookup'
-  | 'parentObjectLookup'
-  | 'parentInputObjectLookup'
-  | 'parentOutputObjectLookup'
-  | 'neighborSharedToTypeLookup'
-  | 'neighborTableLookup'
-  | 'neighborCaseOwnerTypeLookup'
-  | 'neighborAssignedToTypeLookup'
-  | 'neighborRelatedEntityTypeLookup'
+export type ReferenceContextStrategyName = (
+  'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
+  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborSobjectLookup' | 'neighborPicklistObjectLookup'
+  | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
+  | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
+  | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
   | 'parentSObjectTypeLookupTopLevel'
+)
 
 type SourceDef = {
   field: string | RegExp
@@ -226,17 +196,7 @@ export type FieldReferenceDefinition = {
 
 export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: {
-      field: 'field',
-      parentTypes: [
-        WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-        LAYOUT_ITEM_METADATA_TYPE,
-        SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
-        'WorkflowEmailRecipient',
-        'QuickActionLayoutItem',
-        'FieldSetItem',
-      ],
-    },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
@@ -293,69 +253,39 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: 'offsetFromField',
-      parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'],
-    },
+    src: { field: 'offsetFromField', parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'] },
     target: { type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: 'customLink',
-      parentTypes: [
-        LAYOUT_ITEM_METADATA_TYPE,
-        SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
-      ],
-    },
+    src: { field: 'customLink', parentTypes: [LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: WEBLINK_METADATA_TYPE },
   },
-  ...[
-    CUSTOM_FIELD,
-    'FieldSet',
-    'RecordType',
-    'SharingReason',
-    WEBLINK_METADATA_TYPE,
-    'WorkflowTask',
-    VALIDATION_RULES_METADATA_TYPE,
-    'QuickAction',
-  ].map(
+  ...([CUSTOM_FIELD, 'FieldSet', 'RecordType', 'SharingReason', WEBLINK_METADATA_TYPE, 'WorkflowTask', VALIDATION_RULES_METADATA_TYPE, 'QuickAction'].map(
     (targetType): FieldReferenceDefinition => ({
       src: { field: 'name', parentTypes: [`${targetType}Translation`] },
       serializationStrategy: 'relativeApiName',
       target: { parentContext: 'instanceParent', type: targetType },
-    }),
-  ),
+    })
+  )),
   {
-    src: {
-      field: 'name',
-      parentTypes: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE],
-    },
+    src: { field: 'name', parentTypes: [WORKFLOW_ACTION_REFERENCE_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'instanceParent',
-      typeContext: 'neighborTypeWorkflow',
-    },
+    target: { parentContext: 'instanceParent', typeContext: 'neighborTypeWorkflow' },
   },
   {
     src: { field: 'name', parentTypes: ['GlobalQuickActionTranslation'] },
     target: { type: 'QuickAction' },
   },
   {
-    src: {
-      field: 'businessHours',
-      parentTypes: ['EntitlementProcess', 'EntitlementProcessMilestoneItem'],
-    },
+    src: { field: 'businessHours', parentTypes: ['EntitlementProcess', 'EntitlementProcessMilestoneItem'] },
     target: { type: 'BusinessHoursEntry' },
     serializationStrategy: 'mapKey',
   },
   {
     src: { field: 'businessProcess', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'instanceParent',
-      type: BUSINESS_PROCESS_METADATA_TYPE,
-    },
+    target: { parentContext: 'instanceParent', type: BUSINESS_PROCESS_METADATA_TYPE },
   },
   {
     // includes authorizationRequiredPage, bandwidthExceededPage, fileNotFoundPage, ...
@@ -363,14 +293,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
-    src: {
-      field: 'apexClass',
-      parentTypes: [
-        'FlowApexPluginCall',
-        'FlowVariable',
-        'TransactionSecurityPolicy',
-      ],
-    },
+    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'] },
     target: { type: 'ApexClass' },
   },
   {
@@ -378,10 +301,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Role' },
   },
   {
-    src: {
-      field: 'permissionSets',
-      parentTypes: ['PermissionSetGroup', 'DelegateGroup'],
-    },
+    src: { field: 'permissionSets', parentTypes: ['PermissionSetGroup', 'DelegateGroup'] },
     target: { type: 'PermissionSet' },
   },
   {
@@ -406,10 +326,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'QuickAction' },
   },
   {
-    src: {
-      field: 'content',
-      parentTypes: ['AppActionOverride', 'ActionOverride'],
-    },
+    src: { field: 'content', parentTypes: ['AppActionOverride', 'ActionOverride'] },
     target: { type: 'LightningPage' },
   },
   {
@@ -421,18 +338,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: 'object',
-      parentTypes: [
-        'FlowDynamicChoiceSet',
-        'FlowRecordLookup',
-        'FlowRecordUpdate',
-        'FlowRecordCreate',
-        'FlowRecordDelete',
-        'FlowStart',
-        'PermissionSetObjectPermissions',
-      ],
-    },
+    src: { field: 'object', parentTypes: ['FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart', 'PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
@@ -440,10 +346,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: 'targetObject',
-      parentTypes: ['QuickAction', 'AnalyticSnapshot'],
-    },
+    src: { field: 'targetObject', parentTypes: ['QuickAction', 'AnalyticSnapshot'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
@@ -455,10 +358,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: 'matchRuleSObjectType',
-      parentTypes: ['DuplicateRuleMatchRule'],
-    },
+    src: { field: 'matchRuleSObjectType', parentTypes: ['DuplicateRuleMatchRule'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
@@ -494,24 +394,15 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: CPQ_LOOKUP_OBJECT_NAME,
-      parentTypes: [CPQ_PRICE_RULE, CPQ_PRODUCT_RULE],
-    },
+    src: { field: CPQ_LOOKUP_OBJECT_NAME, parentTypes: [CPQ_PRICE_RULE, CPQ_PRODUCT_RULE] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: CPQ_RULE_LOOKUP_OBJECT_FIELD,
-      parentTypes: [CPQ_LOOKUP_QUERY, CPQ_PRICE_ACTION],
-    },
+    src: { field: CPQ_RULE_LOOKUP_OBJECT_FIELD, parentTypes: [CPQ_LOOKUP_QUERY, CPQ_PRICE_ACTION] },
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: CPQ_DEFAULT_OBJECT_FIELD,
-      parentTypes: [CPQ_CONFIGURATION_ATTRIBUTE],
-    },
+    src: { field: CPQ_DEFAULT_OBJECT_FIELD, parentTypes: [CPQ_CONFIGURATION_ATTRIBUTE] },
     serializationStrategy: 'configurationAttributeMapping',
     target: { type: CUSTOM_OBJECT },
   },
@@ -531,10 +422,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['FilterItem'] },
     serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'instanceParent',
-      type: RECORD_TYPE_METADATA_TYPE,
-    },
+    target: { parentContext: 'instanceParent', type: RECORD_TYPE_METADATA_TYPE },
   },
   {
     src: { field: 'sharedTo', parentTypes: ['FolderShare'] },
@@ -553,10 +441,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Group' },
   },
   {
-    src: {
-      field: 'compactLayoutAssignment',
-      parentTypes: [RECORD_TYPE_METADATA_TYPE],
-    },
+    src: { field: 'compactLayoutAssignment', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: 'CompactLayout' },
   },
@@ -587,29 +472,22 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },
     target: { typeContext: 'neighborLookupValueTypeLookup' },
   },
-  ...['displayField', 'sortField', 'valueField'].map(
+  ...(['displayField', 'sortField', 'valueField'].map(
     (fieldName): FieldReferenceDefinition => ({
       src: { field: fieldName, parentTypes: ['FlowDynamicChoiceSet'] },
       serializationStrategy: 'relativeApiName',
       target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
-    }),
-  ),
-  ...['queriedFields', 'sortField'].map(
+    })
+  )),
+  ...(['queriedFields', 'sortField'].map(
     (fieldName): FieldReferenceDefinition => ({
       src: { field: fieldName, parentTypes: ['FlowRecordLookup'] },
       serializationStrategy: 'relativeApiName',
       target: { parentContext: 'neighborObjectLookup', type: CUSTOM_FIELD },
-    }),
-  ),
+    })
+  )),
   {
-    src: {
-      field: 'field',
-      parentTypes: [
-        'FlowRecordFilter',
-        'FlowInputFieldAssignment',
-        'FlowOutputFieldAssignment',
-      ],
-    },
+    src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
   },
@@ -626,10 +504,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'picklistField', parentTypes: ['FlowDynamicChoiceSet'] },
     serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'neighborPicklistObjectLookup',
-      type: CUSTOM_FIELD,
-    },
+    target: { parentContext: 'neighborPicklistObjectLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: CPQ_LOOKUP_FIELD, parentTypes: [CPQ_LOOKUP_QUERY] },
@@ -660,50 +535,32 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Flow' },
   },
   {
-    src: {
-      field: CPQ_LOOKUP_PRODUCT_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
-    },
+    src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: CPQ_LOOKUP_MESSAGE_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
-    },
+    src: { field: CPQ_LOOKUP_MESSAGE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: CPQ_LOOKUP_REQUIRED_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
-    },
+    src: { field: CPQ_LOOKUP_REQUIRED_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: CPQ_LOOKUP_TYPE_FIELD,
-      parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE],
-    },
+    src: { field: CPQ_LOOKUP_TYPE_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: CPQ_CONSUMPTION_RATE_FIELDS,
-      parentTypes: [CPQ_CUSTOM_SCRIPT],
-    },
+    src: { field: CPQ_CONSUMPTION_RATE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
     serializationStrategy: 'relativeApiName',
     target: { parent: 'ConsumptionRate', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: CPQ_CONSUMPTION_SCHEDULE_FIELDS,
-      parentTypes: [CPQ_CUSTOM_SCRIPT],
-    },
+    src: { field: CPQ_CONSUMPTION_SCHEDULE_FIELDS, parentTypes: [CPQ_CUSTOM_SCRIPT] },
     serializationStrategy: 'relativeApiName',
     target: { parent: 'ConsumptionSchedule', type: CUSTOM_FIELD },
   },
@@ -733,10 +590,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parent: CPQ_OBJECT_NAME, type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: CPQ_CONSTRAINT_FIELD,
-      parentTypes: [CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE],
-    },
+    src: { field: CPQ_CONSTRAINT_FIELD, parentTypes: [CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE] },
     serializationStrategy: 'scheduleConstraintFieldMapping',
     target: { parent: CPQ_QUOTE, type: CUSTOM_FIELD },
   },
@@ -752,14 +606,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: 'column',
-      parentTypes: [
-        'ReportFilterItem',
-        'DashboardFilterColumn',
-        'DashboardTableColumn',
-      ],
-    },
+    src: { field: 'column', parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'] },
     target: { type: CUSTOM_FIELD },
   },
   {
@@ -775,10 +622,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { typeContext: 'neighborCaseOwnerTypeLookup' },
   },
   {
-    src: {
-      field: 'assignedTo',
-      parentTypes: ['RuleEntry', 'EscalationAction'],
-    },
+    src: { field: 'assignedTo', parentTypes: ['RuleEntry', 'EscalationAction'] },
     target: { typeContext: 'neighborAssignedToTypeLookup' },
   },
   {
@@ -786,31 +630,19 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'EmailTemplate' },
   },
   {
-    src: {
-      field: 'caseAssignNotificationTemplate',
-      parentTypes: ['CaseSettings'],
-    },
+    src: { field: 'caseAssignNotificationTemplate', parentTypes: ['CaseSettings'] },
     target: { type: 'EmailTemplate' },
   },
   {
-    src: {
-      field: 'caseCloseNotificationTemplate',
-      parentTypes: ['CaseSettings'],
-    },
+    src: { field: 'caseCloseNotificationTemplate', parentTypes: ['CaseSettings'] },
     target: { type: 'EmailTemplate' },
   },
   {
-    src: {
-      field: 'caseCommentNotificationTemplate',
-      parentTypes: ['CaseSettings'],
-    },
+    src: { field: 'caseCommentNotificationTemplate', parentTypes: ['CaseSettings'] },
     target: { type: 'EmailTemplate' },
   },
   {
-    src: {
-      field: 'caseCreateNotificationTemplate',
-      parentTypes: ['CaseSettings'],
-    },
+    src: { field: 'caseCreateNotificationTemplate', parentTypes: ['CaseSettings'] },
     target: { type: 'EmailTemplate' },
   },
   {
@@ -818,15 +650,9 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: {
-      field: 'secondaryRoutingPriorityField',
-      parentTypes: ['ServiceChannel'],
-    },
+    src: { field: 'secondaryRoutingPriorityField', parentTypes: ['ServiceChannel'] },
     serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'neighborRelatedEntityTypeLookup',
-      type: CUSTOM_FIELD,
-    },
+    target: { parentContext: 'neighborRelatedEntityTypeLookup', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
@@ -834,26 +660,17 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     sourceTransformation: 'asCaseInsensitiveString',
   },
   {
-    src: {
-      field: 'elementReference',
-      parentTypes: ['FlowElementReferenceOrValue'],
-    },
+    src: { field: 'elementReference', parentTypes: ['FlowElementReferenceOrValue'] },
     serializationStrategy: 'customLabel',
     target: { type: CUSTOM_LABEL_METADATA_TYPE },
   },
   {
     src: { field: 'name', parentTypes: ['WorkflowActionReference'] },
     serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'parentSObjectTypeLookupTopLevel',
-      typeContext: 'neighborTypeWorkflow',
-    },
+    target: { parentContext: 'parentSObjectTypeLookupTopLevel', typeContext: 'neighborTypeWorkflow' },
   },
   {
-    src: {
-      field: 'milestoneName',
-      parentTypes: ['EntitlementProcessMilestoneItem'],
-    },
+    src: { field: 'milestoneName', parentTypes: ['EntitlementProcessMilestoneItem'] },
     target: { type: 'MilestoneType' },
   },
   {
@@ -887,13 +704,12 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on
-export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] =
-  [
-    {
-      src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
-      target: { type: CUSTOM_FIELD },
-    },
-  ]
+export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
+    target: { type: CUSTOM_FIELD },
+  },
+]
 
 export const referencesFromProfile: FieldReferenceDefinition[] = [
   {
@@ -921,10 +737,7 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
     target: { type: 'RecordType' },
   },
   {
-    src: {
-      field: 'application',
-      parentTypes: ['ProfileApplicationVisibility'],
-    },
+    src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
     target: { type: 'CustomApplication' },
   },
   {
@@ -951,10 +764,9 @@ const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...referencesFromProfile,
 ]
 
-export const getReferenceMappingDefs = (args: {
-  enumFieldPermissions: boolean
-  otherProfileRefs: boolean
-}): FieldReferenceDefinition[] => {
+export const getReferenceMappingDefs = (
+  args: {enumFieldPermissions: boolean; otherProfileRefs: boolean }
+): FieldReferenceDefinition[] => {
   let refDefs = defaultFieldNameToTypeMappingDefs
   if (args.enumFieldPermissions) {
     refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
@@ -965,18 +777,22 @@ export const getReferenceMappingDefs = (args: {
   return refDefs
 }
 
-const matchName = (name: string, matcher: string | RegExp): boolean =>
-  _.isString(matcher) ? matcher === name : matcher.test(name)
+const matchName = (name: string, matcher: string | RegExp): boolean => (
+  _.isString(matcher)
+    ? matcher === name
+    : matcher.test(name)
+)
 
-const matchApiName = async (elem: Element, types: string[]): Promise<boolean> =>
+const matchApiName = async (elem: Element, types: string[]): Promise<boolean> => (
   types.includes(await apiName(elem))
+)
 
 const matchInstanceType = async (
   inst: InstanceElement,
   matchers: (string | RegExp)[],
 ): Promise<boolean> => {
   const typeName = await apiName(await inst.getType())
-  return matchers.some((matcher) => matchName(typeName, matcher))
+  return matchers.some(matcher => matchName(typeName, matcher))
 }
 
 export class FieldReferenceResolver {
@@ -987,14 +803,10 @@ export class FieldReferenceResolver {
 
   constructor(def: FieldReferenceDefinition) {
     this.src = def.src
-    this.serializationStrategy =
-      ReferenceSerializationStrategyLookup[
-        def.serializationStrategy ?? 'absoluteApiName'
-      ]
-    this.sourceTransformation =
-      referenceUtils.ReferenceSourceTransformationLookup[
-        def.sourceTransformation ?? 'asString'
-      ]
+    this.serializationStrategy = ReferenceSerializationStrategyLookup[
+      def.serializationStrategy ?? 'absoluteApiName'
+    ]
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
@@ -1006,11 +818,10 @@ export class FieldReferenceResolver {
 
   async match(field: Field, element: Element): Promise<boolean> {
     return (
-      matchName(field.name, this.src.field) &&
-      (await matchApiName(field.parent, this.src.parentTypes)) &&
-      (this.src.instanceTypes === undefined ||
-        (isInstanceElement(element) &&
-          matchInstanceType(element, this.src.instanceTypes)))
+      matchName(field.name, this.src.field)
+      && await matchApiName(field.parent, this.src.parentTypes)
+      && (this.src.instanceTypes === undefined
+        || (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
     )
   }
 }
@@ -1026,62 +837,45 @@ export type ReferenceResolverFinder = (
 export const generateReferenceResolverFinder = (
   defs: FieldReferenceDefinition[],
 ): ReferenceResolverFinder => {
-  const referenceDefinitions = defs.map((def) =>
-    FieldReferenceResolver.create(def),
+  const referenceDefinitions = defs.map(
+    def => FieldReferenceResolver.create(def)
   )
 
   const matchersByFieldName = _(referenceDefinitions)
-    .filter((def) => _.isString(def.src.field))
-    .groupBy((def) => def.src.field)
+    .filter(def => _.isString(def.src.field))
+    .groupBy(def => def.src.field)
     .value()
   const regexFieldMatchersByParent = _(referenceDefinitions)
-    .filter((def) => _.isRegExp(def.src.field))
-    .flatMap((def) =>
-      def.src.parentTypes.map((parentType) => ({ parentType, def })),
-    )
+    .filter(def => _.isRegExp(def.src.field))
+    .flatMap(def => def.src.parentTypes.map(parentType => ({ parentType, def })))
     .groupBy(({ parentType }) => parentType)
-    .mapValues((items) => items.map((item) => item.def))
+    .mapValues(items => items.map(item => item.def))
     .value()
 
-  return async (field, element) =>
-    awu([
-      ...(matchersByFieldName[field.name] ?? []),
-      ...(regexFieldMatchersByParent[await apiName(field.parent)] || []),
-    ])
-      .filter((resolver) => resolver.match(field, element))
-      .toArray()
+  return (async (field, element) => awu([
+    ...(matchersByFieldName[field.name] ?? []),
+    ...(regexFieldMatchersByParent[await apiName(field.parent)] || []),
+  ]).filter(resolver => resolver.match(field, element)).toArray())
 }
 
-const getLookUpNameImpl = ({
-  defs,
-  resolveToElementFallback,
-  defaultStrategyName,
-}: {
+const getLookUpNameImpl = ({ defs, resolveToElementFallback, defaultStrategyName }: {
   defs: FieldReferenceDefinition[]
   resolveToElementFallback: boolean
   defaultStrategyName: ReferenceSerializationStrategyName
 }): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const determineLookupStrategy = async (
-    args: GetLookupNameFuncArgs,
-  ): Promise<ReferenceSerializationStrategy | undefined> => {
+  const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
+    Promise<ReferenceSerializationStrategy | undefined> => {
     if (args.field === undefined) {
-      log.debug(
-        'could not determine field for path %s',
-        args.path?.getFullName(),
-      )
+      log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
-    const strategies = (await resolverFinder(args.field, args.element)).map(
-      (def) => def.serializationStrategy,
-    )
+    const strategies = (await resolverFinder(args.field, args.element))
+      .map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {
-      log.debug(
-        'could not find matching strategy for field %s',
-        args.field.elemID.getFullName(),
-      )
+      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
       return undefined
     }
 
@@ -1102,18 +896,12 @@ const getLookUpNameImpl = ({
     const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
 
     if (!isInstanceAnnotation) {
-      const strategy = await determineLookupStrategy({
-        ref,
-        path,
-        field,
-        element,
-      })
+      const strategy = await determineLookupStrategy({ ref, path, field, element })
       if (strategy !== undefined) {
         return strategy.serialize({ ref, field, element })
       }
       if (isElement(ref.value)) {
-        const defaultStrategy =
-          ReferenceSerializationStrategyLookup[defaultStrategyName]
+        const defaultStrategy = ReferenceSerializationStrategyLookup[defaultStrategyName]
         const resolvedValue = await defaultStrategy.serialize({ ref, element })
         if (resolvedValue !== undefined) {
           return resolvedValue
@@ -1124,11 +912,7 @@ const getLookUpNameImpl = ({
           // and also for the case of Data Records that reference the same type (and are deployed in the same group)
           return ref.value
         }
-        log.warn(
-          'could not resolve reference to %s in path %s, resolving to undefined',
-          ref.elemID.getFullName(),
-          path?.getFullName(),
-        )
+        log.warn('could not resolve reference to %s in path %s, resolving to undefined', ref.elemID.getFullName(), path?.getFullName())
         return undefined
       }
     }

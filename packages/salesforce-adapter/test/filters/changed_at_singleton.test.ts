@@ -1,24 +1,23 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   CORE_ANNOTATIONS,
   Values,
   Element,
-  isInstanceElement,
-  InstanceElement,
+  isInstanceElement, InstanceElement,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -32,10 +31,7 @@ import {
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
-import {
-  defaultFilterContext,
-  emptyLastChangeDateOfTypesWithNestedInstances,
-} from '../utils'
+import { defaultFilterContext, emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
 import { FilterWith } from './mocks'
 
 describe('createChangedAtSingletonInstanceFilter', () => {
@@ -84,9 +80,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         const filter = filterCreator({
           config: {
             ...defaultFilterContext,
-            elementsSource: buildElementsSourceFromElements([
-              changedAtSingleton,
-            ]),
+            elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
             lastChangeDateOfTypesWithNestedInstances,
           },
         }) as FilterWith<'onFetch'>
@@ -96,23 +90,12 @@ describe('createChangedAtSingletonInstanceFilter', () => {
       it('should only update the info about the changed instances', async () => {
         const changedAtSingleton = fetchedElements
           .filter(isInstanceElement)
-          .find(
-            (e) => e.elemID.typeName === CHANGED_AT_SINGLETON,
-          ) as InstanceElement
+          .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON) as InstanceElement
         expect(changedAtSingleton).toBeDefined()
-        expect(changedAtSingleton.value).not.toEqual(
-          previousChangedAtSingletonValue,
-        )
+        expect(changedAtSingleton.value).not.toEqual(previousChangedAtSingletonValue)
         const expectedValues = _.cloneDeep(previousChangedAtSingletonValue)
-        _.set(
-          expectedValues,
-          [updatedInstanceTypeName, updatedInstanceName],
-          CHANGED_AT,
-        )
-        expect(changedAtSingleton.value).toEqual({
-          ...lastChangeDateOfTypesWithNestedInstances,
-          ...expectedValues,
-        })
+        _.set(expectedValues, [updatedInstanceTypeName, updatedInstanceName], CHANGED_AT)
+        expect(changedAtSingleton.value).toEqual({ ...lastChangeDateOfTypesWithNestedInstances, ...expectedValues })
       })
     })
     describe('when ChangedAtSingleton instance does not exist in the elementsSource', () => {
@@ -122,9 +105,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
 
       beforeEach(async () => {
         const metadataInstance = mockInstances().Profile
-        updatedInstanceTypeName = await apiName(
-          await metadataInstance.getType(),
-        )
+        updatedInstanceTypeName = await apiName(await metadataInstance.getType())
         updatedInstanceName = await apiName(metadataInstance)
         metadataInstance.annotations = {
           ...metadataInstance.annotations,
@@ -133,32 +114,23 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         const customObject = mockTypes.SBQQ__Template__c
         customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT] = CHANGED_AT
 
-        const dataInstance = new InstanceElement(
-          'dataInstance',
-          customObject,
-          {
-            Name: 'TestDataInstance',
-            Id: '13560',
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.CHANGED_AT]: CHANGED_AT,
-          },
-        )
+        const dataInstance = new InstanceElement('dataInstance', customObject, {
+          Name: 'TestDataInstance',
+          Id: '13560',
+        }, undefined, {
+          [CORE_ANNOTATIONS.CHANGED_AT]: CHANGED_AT,
+        })
 
-        const filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            lastChangeDateOfTypesWithNestedInstances,
-          },
-        }) as FilterWith<'onFetch'>
+        const filter = filterCreator(
+          { config: { ...defaultFilterContext, lastChangeDateOfTypesWithNestedInstances } }
+        ) as FilterWith<'onFetch'>
         fetchedElements = [metadataInstance, customObject, dataInstance]
         await filter.onFetch(fetchedElements)
       })
       it('should create the singleton with correct values', async () => {
         const changedAtSingleton = fetchedElements
           .filter(isInstanceElement)
-          .find((e) => e.elemID.typeName === CHANGED_AT_SINGLETON)
+          .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
         expect(changedAtSingleton).toBeDefined()
         expect(changedAtSingleton?.value).toEqual({
           ..._.omit(lastChangeDateOfTypesWithNestedInstances, 'CustomLabels'),

@@ -346,6 +346,11 @@ describe('handle templates filter', () => {
     id: newId(),
     content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}`,
   })
+  const dynamicContentWithEquals = new InstanceElement('dynamicContentWithEquals', dynamicContentItemType, {
+    id: newId(),
+    content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}== true`,
+  })
+
   const appInstallation = new InstanceElement('appInstallation', appInstallationType, {
     id: newId(),
     settings: { uri_templates: `template: {{ticket.ticket_field_${placeholder1.value.id}}}` },
@@ -393,6 +398,7 @@ describe('handle templates filter', () => {
       macroWithDC,
       macroWithHyphenDC,
       dynamicContentRecord,
+      dynamicContentWithEquals,
       hyphenDynamicContentRecord,
       macroComplicated,
       macroDifferentBracket,
@@ -585,6 +591,18 @@ describe('handle templates filter', () => {
             ' | something irrelevant | dynamic content now: ',
             new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
             ' | and done%}',
+          ],
+        }),
+      )
+      const fetchedDynamicContentWithEquals = elements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'dynamicContentWithEquals')
+      expect(fetchedDynamicContentWithEquals?.value.content).toEqual(
+        new TemplateExpression({
+          parts: [
+            `content: {{${TICKET_TICKET_FIELD}_`,
+            new ReferenceExpression(placeholder1.elemID, placeholder1),
+            '}}== true',
           ],
         }),
       )

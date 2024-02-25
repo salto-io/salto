@@ -102,10 +102,10 @@ BRACKETS.forEach(([opener, closer]) => {
 })
 
 // the potential references will start with one of the POTENTIAL_REFERENCE_TYPES, following either '_<number>' or
-// '.<some values that do not include space or '}'> for example:
+// '.<some values that do not include space, '}' or '='> for example:
 // ticket.ticket_field_123 and ticket.organization.custom_fields.name_123.title
 const potentialReferenceTypeRegex = new RegExp(
-  `((?:${POTENTIAL_REFERENCE_TYPES.join('|')})(?:_[\\d]+|\\.[^ \\}]+))`,
+  `((?:${POTENTIAL_REFERENCE_TYPES.join('|')})(?:_[\\d]+|\\.[^ \\}\\=]+))`,
   'g',
 )
 const potentialMacroFields = [

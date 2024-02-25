@@ -38,7 +38,7 @@ describe('userUtils', () => {
     beforeEach(() => {
       jest.isolateModules(() => {
         // eslint-disable-next-line global-require
-        userUtils = require('../src/user_utils')
+        userUtils = require('../src/users/user_utils')
       })
     })
 
@@ -119,7 +119,7 @@ describe('userUtils', () => {
     beforeEach(() => {
       jest.isolateModules(() => {
         // eslint-disable-next-line global-require
-        userUtils = require('../src/user_utils')
+        userUtils = require('../src/users/user_utils')
       })
     })
     it('should return valid id-email record when called', async () => {
@@ -185,7 +185,7 @@ describe('userUtils', () => {
     beforeEach(() => {
       jest.isolateModules(() => {
         // eslint-disable-next-line global-require
-        userUtils = require('../src/user_utils')
+        userUtils = require('../src/users/user_utils')
       })
     })
     it('should return valid id-name record when called', async () => {

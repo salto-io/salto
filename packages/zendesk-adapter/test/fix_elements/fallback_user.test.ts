@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
+import { User } from '../../src/users/types'
 import ZendeskClient from '../../src/client/client'
 import {
   ARTICLE_TYPE_NAME,
@@ -23,13 +24,11 @@ import {
   ZENDESK,
 } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
-import * as userUtils from '../../src/users/user_utils'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { FixElementsArgs } from '../../src/fix_elements/types'
 
 describe('fallbackUsersHandler', () => {
   let client: ZendeskClient
-  const mockGetUsers = jest.spyOn(userUtils, 'getUsers')
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
   const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) })
 
@@ -214,6 +213,7 @@ describe('fallbackUsersHandler', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
       const instances = [macroInstance, articleInstance].map(e => e.clone())
+      const users: User[] = []
       fallbackResponse = await fallbackUsersHandler({
         client,
         config: {
@@ -221,17 +221,12 @@ describe('fallbackUsersHandler', () => {
           [FETCH_CONFIG]: { resolveUserIDs: false },
         },
         usersPromise: Promise.resolve({
-          users: [
-            { id: 1, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-            { id: 3, email: 'a@a.com', role: 'admin', custom_role_id: 1234, name: 'a', locale: 'en-US' },
-            { id: 4, email: 'notDeployer@.com', role: 'admin', custom_role_id: 1234, name: 'a', locale: 'en-US' },
-          ],
+          users,
         }),
       } as FixElementsArgs)(instances)
     })
 
     it('should not replace missing users and should not report errors', () => {
-      console.log(fallbackResponse)
       expect(fallbackResponse.fixedElements).toEqual([])
       expect(fallbackResponse.errors).toEqual([])
     })
@@ -241,7 +236,6 @@ describe('fallbackUsersHandler', () => {
     let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       jest.spyOn(client, 'get').mockImplementation(({ url }) => {
         if (url === '/api/v2/users/me') {

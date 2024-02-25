@@ -362,7 +362,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       recurseInto: [
         {
           type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
-          toField: 'assignedGroups',
+          toField: 'Groups',
           context: [{ name: 'appId', fromField: 'id' }],
         },
         {
@@ -380,7 +380,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: CUSTOM_NAME_FIELD, fieldType: 'string' },
         { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
         { fieldName: 'settings', fieldType: 'unknown' },
-        { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
+        { fieldName: 'Groups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
         { fieldName: 'AppUserSchema', fieldType: 'list<AppUserSchema>' },
@@ -390,7 +390,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: CUSTOM_NAME_FIELD }, { fieldName: 'id' }, { fieldName: '_links' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
-      standaloneFields: [{ fieldName: 'AppUserSchema' }],
+      standaloneFields: [{ fieldName: 'AppUserSchema' }, { fieldName: 'Groups' }],
     },
     deployRequests: {
       add: {
@@ -432,6 +432,42 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     request: {
       url: 'api/v1/apps/{appId}/groups',
       queryParams: { limit: '200' },
+    },
+  },
+  ApplicationGroupAssignment: {
+    transformation: {
+      idFields: ['&id'],
+      extendsParentId: true,
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldTypeOverrides: [{ fieldName: 'profile', fieldType: 'map<unknown>' }],
+      serviceUrl: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-assignments',
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/apps/{appId}/groups/{groupId}',
+        method: 'put',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          groupId: 'id',
+        },
+      },
+      modify: {
+        url: '/api/v1/apps/{appId}/groups/{groupId}',
+        method: 'put',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          groupId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/apps/{appId}/groups/{groupId}',
+        method: 'delete',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          groupId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   AppUserSchema: {

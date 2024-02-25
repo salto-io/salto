@@ -51,6 +51,7 @@ import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
   APPLICATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
@@ -101,10 +102,10 @@ const createInstance = ({
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[typeName].transformation ?? {},
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
   )
-  const instName = getInstanceName(instValues, idFields, typeName)
+  const instName = name ?? getInstanceName(instValues, idFields, typeName)
   const naclName = naclCase(parent ? `${parent.elemID.name}__${instName}` : String(instName))
   return new InstanceElement(
-    name ?? naclName,
+    naclName,
     type,
     instValues,
     undefined,
@@ -239,6 +240,15 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
       profileEnrollment: new ReferenceExpression(profileEnrollment.elemID, profileEnrollment),
     },
   })
+  const appGroupAssignment = createInstance({
+    typeName: APP_GROUP_ASSIGNMENT_TYPE_NAME,
+    types,
+    valuesOverride: {
+      id: new ReferenceExpression(groupInstance.elemID, groupInstance),
+    },
+    parent: app,
+    name: groupInstance.elemID.name,
+  })
   return [
     groupInstance,
     anotherGroupInstance,
@@ -249,6 +259,7 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     profileEnrollment,
     profileEnrollmentRule,
     app,
+    appGroupAssignment,
   ]
 }
 

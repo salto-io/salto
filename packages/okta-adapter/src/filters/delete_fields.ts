@@ -25,7 +25,7 @@ import {
 
 const TYPES_TO_FIELDS: Record<string, string[]> = {
   [GROUP_TYPE_NAME]: ['roles'],
-  [APPLICATION_TYPE_NAME]: ['AppUserSchema'],
+  [APPLICATION_TYPE_NAME]: ['AppUserSchema', 'Groups'],
   [AUTHORIZATION_POLICY]: ['policyRules'],
   [AUTOMATION_TYPE_NAME]: ['policyRules'],
   ...Object.fromEntries(POLICY_TYPE_NAMES.map(typeName => [typeName, ['policyRules']])),

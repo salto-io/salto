@@ -1,25 +1,29 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { toChange, Change, FetchOptions } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import SalesforceAdapter from '../../src/adapter'
 import { LocalFilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
 import { mockDeployResult, mockDeployMessage } from '../connection'
-import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
+import {
+  apiName,
+  createInstanceElement,
+  metadataType,
+} from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { nullProgressReporter } from '../utils'
@@ -27,7 +31,11 @@ import { nullProgressReporter } from '../utils'
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
     let adapter: SalesforceAdapter
-    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'>>
+    let filter: MockInterface<
+      FilterWith<
+        'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'
+      >
+    >
     let filterCreator: jest.MockedFunction<LocalFilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
     const mockFetchOpts: MockInterface<FetchOptions> = {
@@ -38,14 +46,19 @@ describe('SalesforceAdapter filters', () => {
       filter = {
         name: 'salesforceTestFilters',
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
-        preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
+        preDeploy:
+          mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
         deploy: mockFunction<(typeof filter)['deploy']>(),
-        onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue(),
-        onPostFetch: mockFunction<(typeof filter)['onPostFetch']>().mockResolvedValue(),
+        onDeploy:
+          mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue(),
+        onPostFetch:
+          mockFunction<(typeof filter)['onPostFetch']>().mockResolvedValue(),
       }
 
       filterCreator = mockFunction<LocalFilterCreator>().mockReturnValue(filter)
-      const mocks = mockAdapter({ adapterParams: { filterCreators: [filterCreator] } })
+      const mocks = mockAdapter({
+        adapterParams: { filterCreators: [filterCreator] },
+      })
       adapter = mocks.adapter
       connection = mocks.connection
     })
@@ -62,19 +75,25 @@ describe('SalesforceAdapter filters', () => {
       let preDeployInputChanges: Change[]
       beforeEach(async () => {
         const instance = createInstanceElement(
-          { fullName: 'TestLayout' }, mockTypes.Layout,
+          { fullName: 'TestLayout' },
+          mockTypes.Layout,
         )
-        connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
-          componentSuccess: [mockDeployMessage(
-            { fullName: await apiName(instance), componentType: await metadataType(instance) }
-          )],
-        }))
+        connection.metadata.deploy.mockReturnValueOnce(
+          mockDeployResult({
+            componentSuccess: [
+              mockDeployMessage({
+                fullName: await apiName(instance),
+                componentType: await metadataType(instance),
+              }),
+            ],
+          }),
+        )
 
         originalChange = toChange({ after: instance })
         replacementChange = toChange({ before: instance })
         inputChanges = [originalChange]
 
-        filter.preDeploy.mockImplementationOnce(async changes => {
+        filter.preDeploy.mockImplementationOnce(async (changes) => {
           // Copy the input changes before modifying the list
           preDeployInputChanges = [...changes]
           changes.pop()
@@ -103,7 +122,10 @@ describe('SalesforceAdapter filters', () => {
 
       it('should call onDeploy with the changes set by preDeploy', () => {
         expect(filter.onDeploy).toHaveBeenCalledTimes(1)
-        expect(filter.onDeploy).toHaveBeenCalledWith([replacementChange], undefined)
+        expect(filter.onDeploy).toHaveBeenCalledWith(
+          [replacementChange],
+          undefined,
+        )
       })
 
       it('should create the filter only once', () => {

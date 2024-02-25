@@ -1,27 +1,30 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import {
-  Change, ChangeDataType, ElemID,
+  Change,
+  ChangeDataType,
+  ElemID,
   Field,
   getChangeData,
   isFieldChange,
   isModificationChange,
   ModificationChange,
-  ObjectType, ReferenceExpression,
+  ObjectType,
+  ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/centralize_tracking_info'
@@ -32,21 +35,29 @@ import {
   API_NAME,
   FIELD_ANNOTATIONS,
   HISTORY_TRACKED_FIELDS,
-  OBJECT_HISTORY_TRACKING_ENABLED, SALESFORCE,
+  OBJECT_HISTORY_TRACKING_ENABLED,
+  SALESFORCE,
 } from '../../src/constants'
 import { FilterWith } from './mocks'
 
 describe('historyTracking', () => {
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-  const createField = (parentType: ObjectType, fieldName: string, isTracked?: boolean): Field => (
+  const createField = (
+    parentType: ObjectType,
+    fieldName: string,
+    isTracked?: boolean,
+  ): Field =>
     new Field(parentType, fieldName, Types.primitiveDataTypes.Text, {
       [API_NAME]: `${parentType.elemID.typeName}.${fieldName}`,
-      ...(isTracked === undefined ? {} : { [FIELD_ANNOTATIONS.TRACK_HISTORY]: isTracked }),
+      ...(isTracked === undefined
+        ? {}
+        : { [FIELD_ANNOTATIONS.TRACK_HISTORY]: isTracked }),
     })
-  )
 
   beforeEach(() => {
-    filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = filterCreator({ config: defaultFilterContext }) as FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
   })
 
   describe('onFetch', () => {
@@ -64,114 +75,163 @@ describe('historyTracking', () => {
         expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
       })
       it('Should not add field-level annotation', () => {
-        Object.values(inputType.fields)
-          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+        Object.values(inputType.fields).forEach((field) =>
+          expect(field.annotations).not.toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+          ),
+        )
       })
     })
     describe('When fetching an object with history tracking disabled', () => {
       beforeEach(async () => {
         inputType = mockTypes.Account.clone()
         inputType.annotations.enableHistory = false
-        Object.values(inputType.fields)
-          .forEach(fieldDef => { fieldDef.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false })
+        Object.values(inputType.fields).forEach((fieldDef) => {
+          fieldDef.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
+        })
         await filter.onFetch([inputType])
       })
       it('Should keep the existing trackHistory annotation', () => {
-        expect(inputType.annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
+        expect(inputType.annotations).toHaveProperty(
+          OBJECT_HISTORY_TRACKING_ENABLED,
+          false,
+        )
       })
       it('Should not add object-level trackedFields annotation', () => {
         expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
       })
       it('Should remove field-level annotation', () => {
-        Object.values(inputType.fields)
-          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+        Object.values(inputType.fields).forEach((field) =>
+          expect(field.annotations).not.toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+          ),
+        )
       })
     })
     describe('When fetching an object where history tracking is implicitly enabled', () => {
       beforeEach(async () => {
         inputType = createCustomObjectType('Case', {})
-        Object.values(inputType.fields)
-          .forEach(fieldDef => { fieldDef.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false })
+        Object.values(inputType.fields).forEach((fieldDef) => {
+          fieldDef.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
+        })
         await filter.onFetch([inputType])
       })
       it('Should not add a trackHistory annotation', () => {
-        expect(inputType.annotations).not.toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
+        expect(inputType.annotations).not.toHaveProperty(
+          OBJECT_HISTORY_TRACKING_ENABLED,
+          false,
+        )
       })
       it('Should add object-level trackedFields annotation', () => {
         expect(inputType.annotations).toHaveProperty(HISTORY_TRACKED_FIELDS, {})
       })
       it('Should remove field-level annotation', () => {
-        Object.values(inputType.fields)
-          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+        Object.values(inputType.fields).forEach((field) =>
+          expect(field.annotations).not.toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+          ),
+        )
       })
     })
     describe('When fetching an object with history tracking enabled', () => {
-      const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
-        annotations: {
-          [OBJECT_HISTORY_TRACKING_ENABLED]: true,
-        },
-        fields: {
-          fieldWithHistoryTracking: {
-            refType: Types.primitiveDataTypes.Text,
-            annotations: {
-              apiName: 'fieldWithHistoryTracking',
-              [FIELD_ANNOTATIONS.TRACK_HISTORY]: true,
+      const typeWithHistoryTrackedFields = createCustomObjectType(
+        'TypeWithHistoryTracking',
+        {
+          annotations: {
+            [OBJECT_HISTORY_TRACKING_ENABLED]: true,
+          },
+          fields: {
+            fieldWithHistoryTracking: {
+              refType: Types.primitiveDataTypes.Text,
+              annotations: {
+                apiName: 'fieldWithHistoryTracking',
+                [FIELD_ANNOTATIONS.TRACK_HISTORY]: true,
+              },
+            },
+            fieldWithoutHistoryTracking: {
+              refType: Types.primitiveDataTypes.Text,
+              annotations: {
+                apiName: 'fieldWithoutHistoryTracking',
+                [FIELD_ANNOTATIONS.TRACK_HISTORY]: false,
+              },
             },
           },
-          fieldWithoutHistoryTracking: {
-            refType: Types.primitiveDataTypes.Text,
-            annotations: {
-              apiName: 'fieldWithoutHistoryTracking',
-              [FIELD_ANNOTATIONS.TRACK_HISTORY]: false,
-            },
-          },
         },
-      })
-      const referenceForField = (fieldName: string): ReferenceExpression => (
-        new ReferenceExpression(typeWithHistoryTrackedFields.elemID.createNestedID('field', fieldName))
       )
+      const referenceForField = (fieldName: string): ReferenceExpression =>
+        new ReferenceExpression(
+          typeWithHistoryTrackedFields.elemID.createNestedID(
+            'field',
+            fieldName,
+          ),
+        )
       beforeEach(async () => {
         inputType = typeWithHistoryTrackedFields.clone()
         await filter.onFetch([inputType])
       })
       it('Should keep the existing trackHistory annotation', () => {
-        expect(inputType.annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+        expect(inputType.annotations).toHaveProperty(
+          OBJECT_HISTORY_TRACKING_ENABLED,
+          true,
+        )
       })
       it('Should remove field-level annotation', () => {
-        Object.values(inputType.fields)
-          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+        Object.values(inputType.fields).forEach((field) =>
+          expect(field.annotations).not.toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+          ),
+        )
       })
       it('Should aggregate the tracked fields into a single annotation', () => {
         const trackedFieldNames = inputType.annotations[HISTORY_TRACKED_FIELDS]
         expect(trackedFieldNames).toBeDefined()
         expect(trackedFieldNames).toEqual({
-          fieldWithHistoryTracking: referenceForField('fieldWithHistoryTracking'),
+          fieldWithHistoryTracking: referenceForField(
+            'fieldWithHistoryTracking',
+          ),
         })
       })
     })
   })
   describe('preDeploy', () => {
     let inputType: ObjectType
-    const refExprForField = (typeName: string, fieldName: string): ReferenceExpression => (
-      new ReferenceExpression(new ElemID(SALESFORCE, typeName, 'field', fieldName))
-    )
-    const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
-      const fieldApiName = (typeName: string, fieldName: string): string => `${typeName}.${fieldName}`
+    const refExprForField = (
+      typeName: string,
+      fieldName: string,
+    ): ReferenceExpression =>
+      new ReferenceExpression(
+        new ElemID(SALESFORCE, typeName, 'field', fieldName),
+      )
+    const typeForPreDeploy = (
+      trackedFields?: string[],
+      fields: string[] = [],
+    ): ObjectType => {
+      const fieldApiName = (typeName: string, fieldName: string): string =>
+        `${typeName}.${fieldName}`
       const typeName = 'SomeType__c'
       const objectType = createCustomObjectType(typeName, {
         annotations: {
-          [OBJECT_HISTORY_TRACKING_ENABLED]: (trackedFields !== undefined),
+          [OBJECT_HISTORY_TRACKING_ENABLED]: trackedFields !== undefined,
         },
-        fields: Object.fromEntries(fields.map(fieldName => [fieldName, {
-          refType: Types.primitiveDataTypes.Text,
-          annotations: {
-            apiName: fieldApiName(typeName, fieldName),
-          },
-        }])),
+        fields: Object.fromEntries(
+          fields.map((fieldName) => [
+            fieldName,
+            {
+              refType: Types.primitiveDataTypes.Text,
+              annotations: {
+                apiName: fieldApiName(typeName, fieldName),
+              },
+            },
+          ]),
+        ),
       })
       if (trackedFields !== undefined) {
-        objectType.annotations[HISTORY_TRACKED_FIELDS] = Object.fromEntries(trackedFields
-          .map(fieldName => [fieldName, refExprForField(typeName, fieldName)]))
+        objectType.annotations[HISTORY_TRACKED_FIELDS] = Object.fromEntries(
+          trackedFields.map((fieldName) => [
+            fieldName,
+            refExprForField(typeName, fieldName),
+          ]),
+        )
       }
       return objectType
     }
@@ -201,8 +261,11 @@ describe('historyTracking', () => {
         expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
       })
       it('Should not add field-level annotation', () => {
-        Object.values(inputType.fields)
-          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+        Object.values(inputType.fields).forEach((field) =>
+          expect(field.annotations).not.toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+          ),
+        )
       })
     })
 
@@ -236,8 +299,12 @@ describe('historyTracking', () => {
         expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
       })
       it('Should add field-level annotation', () => {
-        Object.values(inputType.fields)
-          .forEach(field => expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, field.name === 'SomeField'))
+        Object.values(inputType.fields).forEach((field) =>
+          expect(field.annotations).toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+            field.name === 'SomeField',
+          ),
+        )
       })
     })
 
@@ -254,8 +321,12 @@ describe('historyTracking', () => {
         })
 
         it('should not crash', async () => {
-          expect(inputType.annotations).not.toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED)
-          expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+          expect(inputType.annotations).not.toHaveProperty(
+            OBJECT_HISTORY_TRACKING_ENABLED,
+          )
+          expect(inputType.annotations).not.toHaveProperty(
+            HISTORY_TRACKED_FIELDS,
+          )
         })
       })
 
@@ -270,8 +341,13 @@ describe('historyTracking', () => {
         })
 
         it('should not crash', async () => {
-          expect(inputType.annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
-          expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+          expect(inputType.annotations).toHaveProperty(
+            OBJECT_HISTORY_TRACKING_ENABLED,
+            false,
+          )
+          expect(inputType.annotations).not.toHaveProperty(
+            HISTORY_TRACKED_FIELDS,
+          )
         })
       })
 
@@ -288,12 +364,21 @@ describe('historyTracking', () => {
         })
 
         it('should not crash', async () => {
-          expect(inputType.annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
-          expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+          expect(inputType.annotations).toHaveProperty(
+            OBJECT_HISTORY_TRACKING_ENABLED,
+            true,
+          )
+          expect(inputType.annotations).not.toHaveProperty(
+            HISTORY_TRACKED_FIELDS,
+          )
         })
         it('should set all field-level annotations to false', () => {
-          Object.values(inputType.fields)
-            .forEach(field => expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, false))
+          Object.values(inputType.fields).forEach((field) =>
+            expect(field.annotations).toHaveProperty(
+              FIELD_ANNOTATIONS.TRACK_HISTORY,
+              false,
+            ),
+          )
         })
       })
     })
@@ -307,150 +392,217 @@ describe('historyTracking', () => {
             inputType = getChangeData(change)
           })
           it('should remove the list of tracked fields', () => {
-            expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+            expect(inputType.annotations).not.toHaveProperty(
+              HISTORY_TRACKED_FIELDS,
+            )
           })
           it('should add the enableHistory annotation', () => {
-            expect(inputType.annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+            expect(inputType.annotations).toHaveProperty(
+              OBJECT_HISTORY_TRACKING_ENABLED,
+              true,
+            )
           })
           it('should set all field-level annotations to false', () => {
-            Object.values(inputType.fields)
-              .forEach(field => expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, false))
+            Object.values(inputType.fields).forEach((field) =>
+              expect(field.annotations).toHaveProperty(
+                FIELD_ANNOTATIONS.TRACK_HISTORY,
+                false,
+              ),
+            )
           })
         })
         describe('when there are tracked fields', () => {
           beforeEach(async () => {
-            const change = toChange({ after: typeForPreDeploy(['SomeField'], ['SomeField', 'UntrackedField']) })
+            const change = toChange({
+              after: typeForPreDeploy(
+                ['SomeField'],
+                ['SomeField', 'UntrackedField'],
+              ),
+            })
             await filter.preDeploy([change])
             inputType = getChangeData(change)
           })
           it('should remove the list of tracked fields', () => {
-            expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+            expect(inputType.annotations).not.toHaveProperty(
+              HISTORY_TRACKED_FIELDS,
+            )
           })
           it('should add the enableHistory annotation', () => {
-            expect(inputType.annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+            expect(inputType.annotations).toHaveProperty(
+              OBJECT_HISTORY_TRACKING_ENABLED,
+              true,
+            )
           })
           it('should set all field-level annotations correctly', () => {
-            expect(inputType.fields.SomeField.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, true)
-            expect(inputType.fields.UntrackedField.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, false)
+            expect(inputType.fields.SomeField.annotations).toHaveProperty(
+              FIELD_ANNOTATIONS.TRACK_HISTORY,
+              true,
+            )
+            expect(inputType.fields.UntrackedField.annotations).toHaveProperty(
+              FIELD_ANNOTATIONS.TRACK_HISTORY,
+              false,
+            )
           })
         })
       })
       describe('when the existing annotation was modified', () => {
-        const isFieldModificationChange = <T extends Change<unknown>>(change: T)
-          : change is T & ModificationChange<Field> => (
-            isFieldChange(change) && isModificationChange(change)
-          )
-        const expectFieldTrackingChange = (change: Change, isRemoval: boolean): void => {
+        const isFieldModificationChange = <T extends Change<unknown>>(
+          change: T,
+        ): change is T & ModificationChange<Field> =>
+          isFieldChange(change) && isModificationChange(change)
+        const expectFieldTrackingChange = (
+          change: Change,
+          isRemoval: boolean,
+        ): void => {
           expect(isFieldModificationChange(change)).toBeTrue()
           if (!isModificationChange(change)) {
             return // just to make the compiler aware
           }
-          expect(change.data.before.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, isRemoval)
-          expect(change.data.after.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, !isRemoval)
+          expect(change.data.before.annotations).toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+            isRemoval,
+          )
+          expect(change.data.after.annotations).toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+            !isRemoval,
+          )
         }
 
         describe('fields are added', () => {
-          const expectFieldTrackingAdditionChange = (change: Change): void => expectFieldTrackingChange(change, false)
+          const expectFieldTrackingAdditionChange = (change: Change): void =>
+            expectFieldTrackingChange(change, false)
 
           describe.each([
-            ['unknown fields',
+            [
+              'unknown fields',
               typeForPreDeploy(),
               typeForPreDeploy(['Garbage']),
               false,
               [],
             ],
-            ['existing field, tracking is unchanged',
+            [
+              'existing field, tracking is unchanged',
               typeForPreDeploy([], ['SomeField']),
               typeForPreDeploy(['SomeField'], ['SomeField']),
               true,
               ['SomeField'],
             ],
-            ['new field, tracking is unchanged',
+            [
+              'new field, tracking is unchanged',
               typeForPreDeploy([], []),
               typeForPreDeploy(['SomeField'], ['SomeField']),
               true,
               ['SomeField'],
             ],
-            ['existing field, tracking is enabled',
+            [
+              'existing field, tracking is enabled',
               typeForPreDeploy(undefined, ['SomeField']),
               typeForPreDeploy(['SomeField'], ['SomeField']),
               true,
               ['SomeField'],
             ],
-            ['new field, tracking is enabled',
+            [
+              'new field, tracking is enabled',
               typeForPreDeploy(undefined, []),
               typeForPreDeploy(['SomeField'], ['SomeField']),
               true,
               ['SomeField'],
             ],
-          ])('%s', (_desc, before, after, shouldAddChanges, trackedFields: string[]) => {
-            let changes: Change<ObjectType>[]
-            beforeEach(async () => {
-              changes = [toChange({ before, after })]
-              await filter.preDeploy(changes)
-            })
-            it('should create new changes if needed', () => {
-              expect(changes).toHaveLength(shouldAddChanges ? 2 : 1)
-              if (shouldAddChanges) {
-                expectFieldTrackingAdditionChange(changes[1])
-              }
-            })
-            it('should remove the list of tracked fields', async () => {
-              const objType = getChangeData(changes[0])
-              expect(objType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
-            })
-            it('should set all field-level annotations correctly', () => {
-              const objType = getChangeData(changes[0])
-              Object.values(objType.fields)
-                .forEach(field => (
-                  expect(field.annotations)
-                    .toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, trackedFields.includes(field.name))
-                ))
-            })
-          })
+          ])(
+            '%s',
+            (
+              _desc,
+              before,
+              after,
+              shouldAddChanges,
+              trackedFields: string[],
+            ) => {
+              let changes: Change<ObjectType>[]
+              beforeEach(async () => {
+                changes = [toChange({ before, after })]
+                await filter.preDeploy(changes)
+              })
+              it('should create new changes if needed', () => {
+                expect(changes).toHaveLength(shouldAddChanges ? 2 : 1)
+                if (shouldAddChanges) {
+                  expectFieldTrackingAdditionChange(changes[1])
+                }
+              })
+              it('should remove the list of tracked fields', async () => {
+                const objType = getChangeData(changes[0])
+                expect(objType.annotations).not.toHaveProperty(
+                  HISTORY_TRACKED_FIELDS,
+                )
+              })
+              it('should set all field-level annotations correctly', () => {
+                const objType = getChangeData(changes[0])
+                Object.values(objType.fields).forEach((field) =>
+                  expect(field.annotations).toHaveProperty(
+                    FIELD_ANNOTATIONS.TRACK_HISTORY,
+                    trackedFields.includes(field.name),
+                  ),
+                )
+              })
+            },
+          )
         })
         describe('fields are removed', () => {
-          const expectFieldTrackingRemovalChange = (change: Change): void => expectFieldTrackingChange(change, true)
+          const expectFieldTrackingRemovalChange = (change: Change): void =>
+            expectFieldTrackingChange(change, true)
           describe.each([
-            ['field remains, tracking is unchanged',
+            [
+              'field remains, tracking is unchanged',
               typeForPreDeploy(['SomeField'], ['SomeField']),
               typeForPreDeploy([], ['SomeField']),
               true,
               [],
             ],
-            ['field is removed, tracking is unchanged',
+            [
+              'field is removed, tracking is unchanged',
               typeForPreDeploy(['SomeField'], ['SomeField']),
               typeForPreDeploy([]),
               false,
               [],
             ],
             //
-          ])('%s', (_desc, before, after, shouldAddChanges, trackedFields: string[]) => {
-            let changes: Change<ObjectType>[]
-            beforeEach(async () => {
-              changes = [toChange({ before, after })]
-              await filter.preDeploy(changes)
-            })
+          ])(
+            '%s',
+            (
+              _desc,
+              before,
+              after,
+              shouldAddChanges,
+              trackedFields: string[],
+            ) => {
+              let changes: Change<ObjectType>[]
+              beforeEach(async () => {
+                changes = [toChange({ before, after })]
+                await filter.preDeploy(changes)
+              })
 
-            it('should not create new changes', () => {
-              expect(changes).toHaveLength(shouldAddChanges ? 2 : 1)
-              if (shouldAddChanges) {
-                expectFieldTrackingRemovalChange(changes[1])
-              }
-            })
-            it('should remove the list of tracked fields', async () => {
-              const objType = getChangeData(changes[0])
-              expect(objType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
-            })
-            it('should set all field-level annotations correctly', () => {
-              const objType = getChangeData(changes[0])
-              Object.values(objType.fields)
-                .forEach(field => (
-                  expect(field.annotations)
-                    .toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, trackedFields.includes(field.name))
-                ))
-            })
-          })
+              it('should not create new changes', () => {
+                expect(changes).toHaveLength(shouldAddChanges ? 2 : 1)
+                if (shouldAddChanges) {
+                  expectFieldTrackingRemovalChange(changes[1])
+                }
+              })
+              it('should remove the list of tracked fields', async () => {
+                const objType = getChangeData(changes[0])
+                expect(objType.annotations).not.toHaveProperty(
+                  HISTORY_TRACKED_FIELDS,
+                )
+              })
+              it('should set all field-level annotations correctly', () => {
+                const objType = getChangeData(changes[0])
+                Object.values(objType.fields).forEach((field) =>
+                  expect(field.annotations).toHaveProperty(
+                    FIELD_ANNOTATIONS.TRACK_HISTORY,
+                    trackedFields.includes(field.name),
+                  ),
+                )
+              })
+            },
+          )
         })
       })
     })
@@ -459,14 +611,12 @@ describe('historyTracking', () => {
       describe('parent has history tracking disabled', () => {
         const parentType = typeForPreDeploy()
         describe.each([
-          ['field was modified',
+          [
+            'field was modified',
             createField(parentType, 'SomeField'),
             createField(parentType, 'SomeField'),
           ],
-          ['field was added',
-            undefined,
-            createField(parentType, 'SomeField'),
-          ],
+          ['field was added', undefined, createField(parentType, 'SomeField')],
         ])('%s', (_desc, before, after) => {
           let field: Field
           beforeEach(async () => {
@@ -474,8 +624,11 @@ describe('historyTracking', () => {
             await filter.preDeploy(changes)
             field = getChangeData(changes[0])
           })
-          it('should add \'trackHistory=false\'', async () => {
-            expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, false)
+          it("should add 'trackHistory=false'", async () => {
+            expect(field.annotations).toHaveProperty(
+              FIELD_ANNOTATIONS.TRACK_HISTORY,
+              false,
+            )
           })
         })
       })
@@ -483,22 +636,26 @@ describe('historyTracking', () => {
       describe('parent has history tracking enabled', () => {
         const parentType = typeForPreDeploy(['SomeField'])
         describe.each([
-          ['untracked field was modified',
+          [
+            'untracked field was modified',
             createField(parentType, 'NotSomeField'),
             createField(parentType, 'NotSomeField'),
             false,
           ],
-          ['untracked field was added',
+          [
+            'untracked field was added',
             undefined,
             createField(parentType, 'NotSomeField'),
             false,
           ],
-          ['tracked field was modified',
+          [
+            'tracked field was modified',
             createField(parentType, 'SomeField'),
             createField(parentType, 'SomeField'),
             true,
           ],
-          ['tracked field was added',
+          [
+            'tracked field was added',
             undefined,
             createField(parentType, 'SomeField'),
             true,
@@ -511,7 +668,10 @@ describe('historyTracking', () => {
             field = getChangeData(changes[0])
           })
           it('should set the trackHistory annotation correctly', async () => {
-            expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, isTracked)
+            expect(field.annotations).toHaveProperty(
+              FIELD_ANNOTATIONS.TRACK_HISTORY,
+              isTracked,
+            )
           })
         })
       })
@@ -532,39 +692,45 @@ describe('historyTracking', () => {
       })
       it('should not effect unrelated changes', () => {
         expect(changes).toHaveLength(3)
-        changes.forEach(change => (
-          expect(getChangeData(change).annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY)
-        ))
+        changes.forEach((change) =>
+          expect(getChangeData(change).annotations).not.toHaveProperty(
+            FIELD_ANNOTATIONS.TRACK_HISTORY,
+          ),
+        )
       })
     })
   })
   describe('End to end', () => {
-    const resolveRefs = (refs: Record<string, ReferenceExpression>): Record<string, string> => (
+    const resolveRefs = (
+      refs: Record<string, ReferenceExpression>,
+    ): Record<string, string> =>
       _(refs)
-        .mapValues(ref => `${ref.elemID.typeName}.${ref.elemID.name}`)
+        .mapValues((ref) => `${ref.elemID.typeName}.${ref.elemID.name}`)
         .value()
+    const typeWithHistoryTrackedFields = createCustomObjectType(
+      'TypeWithHistoryTracking__c',
+      {
+        annotations: {
+          [OBJECT_HISTORY_TRACKING_ENABLED]: true,
+        },
+        fields: {
+          fieldWithHistoryTracking: {
+            refType: Types.primitiveDataTypes.Text,
+            annotations: {
+              [API_NAME]: 'TypeWithHistoryTracking.FieldWithHistoryTracking',
+              [FIELD_ANNOTATIONS.TRACK_HISTORY]: true,
+            },
+          },
+          fieldWithoutHistoryTracking: {
+            refType: Types.primitiveDataTypes.Text,
+            annotations: {
+              [API_NAME]: 'TypeWithHistoryTracking.FieldWithoutHistoryTracking',
+              [FIELD_ANNOTATIONS.TRACK_HISTORY]: false,
+            },
+          },
+        },
+      },
     )
-    const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking__c', {
-      annotations: {
-        [OBJECT_HISTORY_TRACKING_ENABLED]: true,
-      },
-      fields: {
-        fieldWithHistoryTracking: {
-          refType: Types.primitiveDataTypes.Text,
-          annotations: {
-            [API_NAME]: 'TypeWithHistoryTracking.FieldWithHistoryTracking',
-            [FIELD_ANNOTATIONS.TRACK_HISTORY]: true,
-          },
-        },
-        fieldWithoutHistoryTracking: {
-          refType: Types.primitiveDataTypes.Text,
-          annotations: {
-            [API_NAME]: 'TypeWithHistoryTracking.FieldWithoutHistoryTracking',
-            [FIELD_ANNOTATIONS.TRACK_HISTORY]: false,
-          },
-        },
-      },
-    })
     describe('onFetch vs. preDeploy=>onDeploy', () => {
       describe('when adding an object', () => {
         let beforePreDeploy: ChangeDataType[]
@@ -576,7 +742,9 @@ describe('historyTracking', () => {
 
           afterOnDeploy = [toChange({ after: elements[0].clone() })]
           const objectType = getChangeData(afterOnDeploy[0])
-          objectType.annotations[HISTORY_TRACKED_FIELDS] = resolveRefs(objectType.annotations[HISTORY_TRACKED_FIELDS])
+          objectType.annotations[HISTORY_TRACKED_FIELDS] = resolveRefs(
+            objectType.annotations[HISTORY_TRACKED_FIELDS],
+          )
 
           await filter.preDeploy(afterOnDeploy)
           await filter.onDeploy(afterOnDeploy)
@@ -595,8 +763,11 @@ describe('historyTracking', () => {
 
           const after = elements[0].clone()
           beforePreDeploy = [after]
-          after.annotations[HISTORY_TRACKED_FIELDS].fieldWithoutHistoryTracking = (
-            new ReferenceExpression(after.fields.fieldWithoutHistoryTracking.elemID))
+          after.annotations[
+            HISTORY_TRACKED_FIELDS
+          ].fieldWithoutHistoryTracking = new ReferenceExpression(
+            after.fields.fieldWithoutHistoryTracking.elemID,
+          )
           const changes = [toChange({ before: elements[0], after })]
           await filter.preDeploy(changes)
           expect(changes).toHaveLength(2)
@@ -655,13 +826,17 @@ describe('historyTracking', () => {
         beforeEach(async () => {
           const type = typeWithHistoryTrackedFields.clone()
           type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = false
-          type.fields.fieldWithHistoryTracking.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
+          type.fields.fieldWithHistoryTracking.annotations[
+            FIELD_ANNOTATIONS.TRACK_HISTORY
+          ] = false
           const elements = [type]
           await filter.onFetch(elements)
 
           const after = elements[0].clone()
           after.annotations[HISTORY_TRACKED_FIELDS] = {
-            fieldWithoutHistoryTracking: new ReferenceExpression(type.fields.fieldWithoutHistoryTracking.elemID),
+            fieldWithoutHistoryTracking: new ReferenceExpression(
+              type.fields.fieldWithoutHistoryTracking.elemID,
+            ),
           }
 
           beforePreDeploy = [after]

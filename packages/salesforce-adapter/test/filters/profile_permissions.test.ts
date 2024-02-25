@@ -46,6 +46,7 @@ import {
 
 describe('Profile Permissions filter', () => {
   const TEST_PROFILE = 'Test Profile'
+  const REMOVED_PROFILE = 'Removed Profile'
 
   const createField = (
     parent: string,
@@ -105,11 +106,11 @@ describe('Profile Permissions filter', () => {
 
   describe('with new object, new fields and no permission change', () => {
     let changes: Change[]
-    beforeAll(() => {
+    beforeEach(() => {
       filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
     describe('preDeploy', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
         const objWithNewField = mockObject('Test2__c')
         changes = [
           toChange({ after: mockObject('Test__c') }),
@@ -122,7 +123,7 @@ describe('Profile Permissions filter', () => {
       })
       describe('admin profile change', () => {
         let adminProfile: InstanceElement
-        beforeAll(() => {
+        beforeEach(() => {
           adminProfile = getChangeData(changes[2]) as InstanceElement
         })
         it('should be a profile instance', async () => {
@@ -175,7 +176,7 @@ describe('Profile Permissions filter', () => {
       })
     })
     describe('onDeploy', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
         await filter.onDeploy(changes)
       })
       it('should remove the admin profile change', () => {
@@ -200,16 +201,16 @@ describe('Profile Permissions filter', () => {
       readable: true,
       editable: false,
     }
-    beforeAll(() => {
+    beforeEach(() => {
       filter = filterCreator({
         config: {
           ...defaultFilterContext,
-          flsProfiles: [constants.ADMIN_PROFILE, TEST_PROFILE],
+          flsProfiles: [constants.ADMIN_PROFILE, TEST_PROFILE, REMOVED_PROFILE],
         },
       }) as typeof filter
     })
-    describe('preDeploy', () => {
-      beforeAll(async () => {
+    describe('preDeploy & onDeploy', () => {
+      beforeEach(() => {
         const objWithNewField = mockObject('Test2__c')
         const updatedProfile = mockFLSProfile(
           [presetObjectPermission],
@@ -219,53 +220,24 @@ describe('Profile Permissions filter', () => {
           toChange({ after: mockObject('Test__c') }),
           toChange({ after: objWithNewField.fields.desc__c }),
           toChange({ before: mockFLSProfile([], []), after: updatedProfile }),
+          toChange({ before: mockFLSProfile([], [], REMOVED_PROFILE) }),
         ]
-        await filter.preDeploy(changes)
       })
-      it('should use the existing change for the admin profile and add new change for Test Profile', () => {
-        expect(changes).toHaveLength(4)
+      it('should have correct changes pre & on deploy', async () => {
+        await filter.preDeploy(changes)
+        expect(changes).toHaveLength(5)
+        // Make sure we have a change per FLS Profile on preDeploy
         expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
           constants.ADMIN_PROFILE,
           TEST_PROFILE,
+          REMOVED_PROFILE,
         ])
-      })
-      describe('admin profile change', () => {
-        let adminProfile: InstanceElement
-        beforeAll(() => {
-          adminProfile = getChangeData(changes[2]) as InstanceElement
-        })
-        it('should be a profile instance', async () => {
-          expect(adminProfile).toBeInstanceOf(InstanceElement)
-          expect(await metadataType(adminProfile)).toEqual(
-            constants.PROFILE_METADATA_TYPE,
-          )
-          expect(await apiName(adminProfile)).toEqual(constants.ADMIN_PROFILE)
-        })
-        it('should not change permissions that already exist in the updated profile', () => {
-          expect(adminProfile.value.objectPermissions).toContainEqual(
-            presetObjectPermission,
-          )
-          expect(adminProfile.value.fieldPermissions).toContainEqual(
-            presetFieldPermission,
-          )
-        })
-        it('should add field permissions for new fields that are missing in the profile', () => {
-          expect(adminProfile.value.fieldPermissions).toContainEqual({
-            field: 'Test__c.desc__c',
-            readable: true,
-            editable: true,
-          })
-        })
-      })
-    })
-    describe('onDeploy', () => {
-      beforeAll(async () => {
+
+        // Make sure we remove the custom changes we've created on onDeploy (Test Profile)
         await filter.onDeploy(changes)
-      })
-      it('should not remove the admin profile change and remove the Test Profile change', () => {
-        expect(changes).toHaveLength(3)
-        expect(getChangeProfilesNames(changes)).toEqual([
+        expect(getChangeProfilesNames(changes)).toIncludeSameMembers([
           constants.ADMIN_PROFILE,
+          REMOVED_PROFILE,
         ])
       })
     })

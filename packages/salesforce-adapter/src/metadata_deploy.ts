@@ -311,8 +311,6 @@ const processDeployResponse = (
     makeArray(detail.componentSuccesses),
   )
 
-  log.info('deletionsPackageName = %s', deletionsPackageName)
-
   const failedComponentErrors = allFailureMessages
     .filter((failure) => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
@@ -322,13 +320,9 @@ const processDeployResponse = (
       severity: 'Error' as SeverityLevel,
     }))
 
-  const successfulComponentWarnings = allSuccessMessages
+  const successfulComponentProblems = allSuccessMessages
     .filter((message) => message.problem)
     .filter((message) => !isUnFoundDelete(message, deletionsPackageName))
-    .filter((message) => {
-      log.info('fullName: %s', message.fullName)
-      return true
-    })
     .map((message) => ({
       elemID: getElemIdForDeployError(message),
       message: message.problem,
@@ -336,7 +330,7 @@ const processDeployResponse = (
     }))
 
   const componentErrors = failedComponentErrors.concat(
-    successfulComponentWarnings,
+    successfulComponentProblems,
   )
 
   const testFailures = makeArray(result.details).flatMap((detail) =>

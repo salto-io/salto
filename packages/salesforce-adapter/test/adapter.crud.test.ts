@@ -1162,7 +1162,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.appliedChanges).toBeEmpty()
         })
       })
-      describe('when the successful element has warnings', () => {
+      describe('when the successful element has a problem', () => {
         let result: DeployResult
         beforeEach(async () => {
           const deployResultParams = {
@@ -1194,7 +1194,7 @@ describe('SalesforceAdapter CRUD', () => {
             progressReporter: nullProgressReporter,
           })
         })
-        it('Should return the warnings from successful components', () => {
+        it('Should return the problem from successful components', () => {
           expect(result.errors).toSatisfyAny(
             (error) =>
               error.elemID.isEqual(successElement.elemID) &&

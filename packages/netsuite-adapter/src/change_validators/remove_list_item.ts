@@ -79,7 +79,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
       elemID,
       severity: 'Warning',
       message: 'Inner Element Removal Not Supported',
-      detailedMessage: getMessageByElementNameAndListItems('element', removedListItems)
+      detailedMessage: getMessageByElementNameAndListItems('element', removedListItems),
     }))
     .toArray() as Promise<ChangeError[]>
 }

@@ -27,17 +27,10 @@ const addBeforeValuesToAfter = (instanceChange: ModificationChange<InstanceEleme
   }
   const listPath = getters.getListPath()
   if (_.get(after.value, listPath) === undefined) {
-    setPath(
-      after,
-      after.elemID.createNestedID(...listPath),
-      _.get(before.value, listPath)
-    )
+    setPath(after, after.elemID.createNestedID(...listPath), _.get(before.value, listPath))
   } else {
     const removedItems = getRemovedItemsRecord(instanceChange, getters)
-    Object.assign(
-      _.get(after.value, listPath),
-      removedItems
-    )
+    Object.assign(_.get(after.value, listPath), removedItems)
   }
 }
 

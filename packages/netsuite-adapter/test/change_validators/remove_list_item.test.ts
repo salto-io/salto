@@ -75,23 +75,27 @@ describe('remove item from customlist change validator', () => {
 })
 
 describe('removing inner items from customtypes', () => {
-  const origInstance = new InstanceElement('instance', clientscriptType().type, {
-    scriptdeployments: {
-      scriptdeployment: {
-        customdeploy1: {
-          scriptid: 'customdeploy_1',
-          status: 'Test',
-        },
-        customdeploy2: {
-          scriptid: 'customdeploy_2',
-          status: 'Test',
-        },
-        customdeploy3: {
-          scriptid: 'customdeploy_3',
-          status: 'Test',
+  const origInstance = new InstanceElement(
+    'instance',
+    clientscriptType().type,
+    {
+      scriptdeployments: {
+        scriptdeployment: {
+          customdeploy1: {
+            scriptid: 'customdeploy_1',
+            status: 'Test',
+          },
+          customdeploy2: {
+            scriptid: 'customdeploy_2',
+            status: 'Test',
+          },
+          customdeploy3: {
+            scriptid: 'customdeploy_3',
+            status: 'Test',
+          },
         },
       },
-    }},
+    },
     undefined,
     {
       [CORE_ANNOTATIONS.CREATED_BY]: 'hello',

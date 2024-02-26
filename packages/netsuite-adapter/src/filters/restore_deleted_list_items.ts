@@ -22,10 +22,8 @@ import { SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const getScriptIdsUnderLists = (
-  instance: InstanceElement
-): Map<string, { elemID: ElemID; val: Value}> => {
-  const pathToScriptIds = new Map<string, { elemID: ElemID; val: Value}>()
+const getScriptIdsUnderLists = (instance: InstanceElement): Map<string, { elemID: ElemID; val: Value }> => {
+  const pathToScriptIds = new Map<string, { elemID: ElemID; val: Value }>()
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {

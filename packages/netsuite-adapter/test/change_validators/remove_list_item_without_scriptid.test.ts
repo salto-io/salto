@@ -19,7 +19,6 @@ import { roleType } from '../../src/autogen/types/standard_types/role'
 import { CUSTOM_RECORD_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 
-
 describe('remove item without scriptis from inner list change validator', () => {
   const customRecordInstance = new ObjectType({
     elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -31,80 +30,59 @@ describe('remove item without scriptis from inner list change validator', () => 
       [SCRIPT_ID]: 'customrecord1',
     },
   })
-  const originRoleInstance = new InstanceElement(
-    'role_test',
-    roleType().type,
-    {
-      [SCRIPT_ID]: 'role_test',
-      permissions: {
-        permission: {
-          TRAN_PAYMENTAUDIT: {
-            permkey: 'TRAN_PAYMENTAUDIT',
-            permlevel: 'EDIT',
-          },
-          customrecord1: {
-            permkey: new ReferenceExpression(
-              customRecordInstance.elemID.createNestedID('attr', SCRIPT_ID),
-              customRecordInstance.annotations[SCRIPT_ID],
-              customRecordInstance,
-            ),
-            permlevel: 'EDIT',
-            restriction: 'no',
-          },
+  const originRoleInstance = new InstanceElement('role_test', roleType().type, {
+    [SCRIPT_ID]: 'role_test',
+    permissions: {
+      permission: {
+        TRAN_PAYMENTAUDIT: {
+          permkey: 'TRAN_PAYMENTAUDIT',
+          permlevel: 'EDIT',
+        },
+        customrecord1: {
+          permkey: new ReferenceExpression(
+            customRecordInstance.elemID.createNestedID('attr', SCRIPT_ID),
+            customRecordInstance.annotations[SCRIPT_ID],
+            customRecordInstance,
+          ),
+          permlevel: 'EDIT',
+          restriction: 'no',
         },
       },
-    }
-  )
+    },
+  })
 
-  const originRoleWithoutPermissions = new InstanceElement(
-    'role_without_permissions_test',
-    roleType().type,
-    {
-      [SCRIPT_ID]: 'role_without_permissions_test',
-    }
-  )
+  const originRoleWithoutPermissions = new InstanceElement('role_without_permissions_test', roleType().type, {
+    [SCRIPT_ID]: 'role_without_permissions_test',
+  })
 
-  const originNonRelevantInstance = new InstanceElement(
-    'non-relevant',
-    workflowType().type,
-    {
-      [SCRIPT_ID]: 'non-relevant',
-      name: 'name1',
-    }
-  )
+  const originNonRelevantInstance = new InstanceElement('non-relevant', workflowType().type, {
+    [SCRIPT_ID]: 'non-relevant',
+    name: 'name1',
+  })
 
-  const originRoleWithArrayPermissions = new InstanceElement(
-    'role_with_array_permission_test',
-    roleType().type,
-    {
-      [SCRIPT_ID]: 'role_with_array_permission_test',
-      permissions: {
-        permission: [
-          {
-            permkey: 'TRAN_PAYMENTAUDIT',
-            permlevel: 'EDIT',
-          },
-        ],
-      },
-    }
-  )
+  const originRoleWithArrayPermissions = new InstanceElement('role_with_array_permission_test', roleType().type, {
+    [SCRIPT_ID]: 'role_with_array_permission_test',
+    permissions: {
+      permission: [
+        {
+          permkey: 'TRAN_PAYMENTAUDIT',
+          permlevel: 'EDIT',
+        },
+      ],
+    },
+  })
 
-  const originRoleWithOddPermission = new InstanceElement(
-    'role_with_odd_permission_test',
-    roleType().type,
-    {
-      [SCRIPT_ID]: 'role_with_odd_permission_test',
-      permissions: {
-        permission: {
-          TRAN_PAYMENTAUDIT: {
-            strangeKey: 'TRAN_PAYMENTAUDIT',
-            permlevel: 'EDIT',
-          },
+  const originRoleWithOddPermission = new InstanceElement('role_with_odd_permission_test', roleType().type, {
+    [SCRIPT_ID]: 'role_with_odd_permission_test',
+    permissions: {
+      permission: {
+        TRAN_PAYMENTAUDIT: {
+          strangeKey: 'TRAN_PAYMENTAUDIT',
+          permlevel: 'EDIT',
         },
       },
-    }
-  )
-
+    },
+  })
 
   let roleInstance: InstanceElement
   let roleWithoutPermissionsInstance: InstanceElement
@@ -162,22 +140,22 @@ describe('remove item without scriptis from inner list change validator', () => 
     it('should have change error when removing a permission from the role', async () => {
       const after = roleInstance.clone()
       delete after.value.permissions.permission.TRAN_PAYMENTAUDIT
-      const firstChangeErrors = await removeListItemValidator(
-        [toChange({ before: roleInstance, after })]
-      )
+      const firstChangeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
       expect(firstChangeErrors).toHaveLength(1)
       expect(firstChangeErrors[0].severity).toEqual('Warning')
       expect(firstChangeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(firstChangeErrors[0].detailedMessage).toEqual("Netsuite doesn't support the removal of inner permission TRAN_PAYMENTAUDIT via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it")
+      expect(firstChangeErrors[0].detailedMessage).toEqual(
+        "Netsuite doesn't support the removal of inner permission TRAN_PAYMENTAUDIT via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
+      )
 
       delete after.value.permissions.permission.customrecord1
-      const secondChangeErrors = await removeListItemValidator(
-        [toChange({ before: roleInstance, after })]
-      )
+      const secondChangeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
       expect(secondChangeErrors).toHaveLength(1)
       expect(secondChangeErrors[0].severity).toEqual('Warning')
       expect(secondChangeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(secondChangeErrors[0].detailedMessage).toEqual("Netsuite doesn't support the removal of inner permissions TRAN_PAYMENTAUDIT, customrecord1 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them")
+      expect(secondChangeErrors[0].detailedMessage).toEqual(
+        "Netsuite doesn't support the removal of inner permissions TRAN_PAYMENTAUDIT, customrecord1 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them",
+      )
     })
 
     it('should not have a change error when modifiying a permission from the role', async () => {
@@ -194,21 +172,19 @@ describe('remove item without scriptis from inner list change validator', () => 
         ),
         permlevel: 'FULL',
       }
-      const changeErrors = await removeListItemValidator(
-        [toChange({ before: roleInstance, after })]
-      )
+      const changeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
       expect(changeErrors).toHaveLength(0)
     })
     it('should have a change error when deleting the whole permissions field from the role', async () => {
       const after = roleInstance.clone()
       delete after.value.permissions.permission
-      const changeErrors = await removeListItemValidator(
-        [toChange({ before: roleInstance, after })]
-      )
+      const changeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(changeErrors[0].detailedMessage).toEqual("Netsuite doesn't support the removal of inner permissions TRAN_PAYMENTAUDIT, customrecord1 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them")
+      expect(changeErrors[0].detailedMessage).toEqual(
+        "Netsuite doesn't support the removal of inner permissions TRAN_PAYMENTAUDIT, customrecord1 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them",
+      )
     })
     it('should have no change errors when dealing with odd permission in role', async () => {
       const afterWithArray = roleWithArrayPermissionsInstance.clone()

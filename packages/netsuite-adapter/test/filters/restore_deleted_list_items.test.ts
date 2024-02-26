@@ -20,7 +20,6 @@ import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../ut
 import filterCreator from '../../src/filters/restore_deleted_list_items'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 
-
 describe('restore deleted list items with scriptid filter', () => {
   let fetchOpts: LocalFilterOpts
   let instance: InstanceElement
@@ -54,7 +53,7 @@ describe('restore deleted list items with scriptid filter', () => {
     undefined,
     {
       [CORE_ANNOTATIONS.CREATED_BY]: 'hello',
-    }
+    },
   )
   beforeEach(async () => {
     instance = origInstance.clone()
@@ -75,7 +74,7 @@ describe('restore deleted list items with scriptid filter', () => {
     await filterCreator(fetchOpts).onDeploy?.([change], {
       appliedChanges: [],
       errors: [],
-    },)
+    })
     expect(change.data.after.value.otherField.val1).toBeUndefined()
   })
   it('should add the deleted field with scriptid', async () => {
@@ -85,8 +84,9 @@ describe('restore deleted list items with scriptid filter', () => {
     await filterCreator(fetchOpts).onDeploy?.([change], {
       appliedChanges: [],
       errors: [],
-    },)
-    expect(change.data.after.value.customvalues.customvalue.val1)
-      .toEqual(change.data.before.value.customvalues.customvalue.val1)
+    })
+    expect(change.data.after.value.customvalues.customvalue.val1).toEqual(
+      change.data.before.value.customvalues.customvalue.val1,
+    )
   })
 })

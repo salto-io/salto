@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { isModificationChange, InstanceElement, isInstanceChange, ReferenceExpression, ModificationChange, ChangeError, isReferenceExpression } from '@salto-io/adapter-api'
+import {
+  isModificationChange,
+  InstanceElement,
+  isInstanceChange,
+  ReferenceExpression,
+  ModificationChange,
+  ChangeError,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
@@ -38,13 +46,13 @@ type GetListPath = () => string[]
 type GetMessage = (removedListItems: string[]) => string
 
 export const getMessageByElementNameAndListItems = (elemName: string, removedListItems: string[]): string =>
-  (removedListItems.length > 1)
-  ? `Netsuite doesn't support the removal of inner ${elemName}s ${removedListItems.join(', ')} via API; `
-    + 'Salto will ignore these changes for this deployment. '
-    + 'Please use Netuiste\'s UI to remove them'
-  : `Netsuite doesn't support the removal of inner ${elemName} ${removedListItems[0]} via API; `
-    + 'Salto will ignore this change for this deployment. '
-    + 'Please use Netuiste\'s UI to remove it'
+  removedListItems.length > 1
+    ? `Netsuite doesn't support the removal of inner ${elemName}s ${removedListItems.join(', ')} via API; ` +
+      'Salto will ignore these changes for this deployment. ' +
+      "Please use Netuiste's UI to remove them"
+    : `Netsuite doesn't support the removal of inner ${elemName} ${removedListItems[0]} via API; ` +
+      'Salto will ignore this change for this deployment. ' +
+      "Please use Netuiste's UI to remove it"
 
 export type ItemListGetters = {
   getItemList: GetItemList
@@ -54,38 +62,35 @@ export type ItemListGetters = {
 }
 
 const isRolePermissionObject = (obj: unknown): obj is RolePermissionObject => {
-  const returnVal = (
-    values.isPlainRecord(obj)
-    && (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey))
-    && typeof obj.permlevel === 'string'
-    && (typeof obj.restriction === 'string' || obj.restriction === undefined)
-  )
+  const returnVal =
+    values.isPlainRecord(obj) &&
+    (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey)) &&
+    typeof obj.permlevel === 'string' &&
+    (typeof obj.restriction === 'string' || obj.restriction === undefined)
   if (!returnVal) {
     log.warn('There is a role permission with a different shape: %o', obj)
   }
   return returnVal
 }
 
-const getRoleListPath: GetListPath = () => [
-  PERMISSIONS,
-  PERMISSION,
-]
+const getRoleListPath: GetListPath = () => [PERMISSIONS, PERMISSION]
 
 const getRolePermissionList: GetItemList = instance => {
   const listPathValue = _.get(instance.value, getRoleListPath())
   if (_.isPlainObject(listPathValue)) {
-    return Object.values(listPathValue)
-      .filter(isRolePermissionObject)
+    return Object.values(listPathValue).filter(isRolePermissionObject)
   }
   if (listPathValue !== undefined) {
-    log.warn("Role permissions in %s wasn't a plain object under permissions.permission: %o", instance.elemID.getFullName(), listPathValue)
+    log.warn(
+      "Role permissions in %s wasn't a plain object under permissions.permission: %o",
+      instance.elemID.getFullName(),
+      listPathValue,
+    )
   }
   return []
 }
 
-const getRolePermkey: GetItemString = (
-  permission: RolePermissionObject
-): string => {
+const getRolePermkey: GetItemString = (permission: RolePermissionObject): string => {
   const { permkey } = permission
   if (_.isString(permkey)) {
     return permkey
@@ -103,22 +108,16 @@ const roleGetters: ItemListGetters = {
   getDetailedMessage: getRoleMessage,
 }
 
-export const getGettersByType = (
-  typeName: string,
-): ItemListGetters | undefined => {
+export const getGettersByType = (typeName: string): ItemListGetters | undefined => {
   if (typeName === ROLE) {
     return roleGetters
   }
   return undefined
 }
 
-const getIdentifierItemMap = (
-  instance: InstanceElement,
-  getters: ItemListGetters,
-): Record<string, ItemInList> => {
+const getIdentifierItemMap = (instance: InstanceElement, getters: ItemListGetters): Record<string, ItemInList> => {
   const itemRecord: Record<string, ItemInList> = Object.fromEntries(
-    getters.getItemList(instance)
-      .map(item => [getters.getItemString(item), item])
+    getters.getItemList(instance).map(item => [getters.getItemString(item), item]),
   )
   return itemRecord
 }
@@ -133,9 +132,7 @@ export const getRemovedItemsRecord = (
   return _.omit(beforeItemList, Object.keys(afterItemSet))
 }
 
-const getChangeError = (
-  instanceChange: ModificationChange<InstanceElement>,
-): ChangeError | undefined => {
+const getChangeError = (instanceChange: ModificationChange<InstanceElement>): ChangeError | undefined => {
   const { before } = instanceChange.data
   const { elemID } = before
   const getters = getGettersByType(elemID.typeName)
@@ -145,22 +142,20 @@ const getChangeError = (
 
   const removedListItems = Object.keys(getRemovedItemsRecord(instanceChange, getters))
 
-  return (removedListItems.length > 0) ? {
-    elemID,
-    severity: 'Warning',
-    message: 'Inner Element Removal Not Supported',
-    detailedMessage: getters.getDetailedMessage(removedListItems),
-  } : undefined
+  return removedListItems.length > 0
+    ? {
+        elemID,
+        severity: 'Warning',
+        message: 'Inner Element Removal Not Supported',
+        detailedMessage: getters.getDetailedMessage(removedListItems),
+      }
+    : undefined
 }
 
 const changeValidator: NetsuiteChangeValidator = async changes => {
-  const instanceChanges = changes
-    .filter(isModificationChange)
-    .filter(isInstanceChange)
+  const instanceChanges = changes.filter(isModificationChange).filter(isInstanceChange)
 
-  return instanceChanges
-    .map(getChangeError)
-    .filter(values.isDefined)
+  return instanceChanges.map(getChangeError).filter(values.isDefined)
 }
 
 export default changeValidator

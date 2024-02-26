@@ -86,7 +86,14 @@ import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_cust
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
 import alignFieldNamesFilter from './filters/align_field_names'
-import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
+import {
+  Filter,
+  LocalFilterCreator,
+  LocalFilterCreatorDefinition,
+  RemoteFilterCreator,
+  RemoteFilterCreatorDefinition,
+  RemoteFilterOpts,
+} from './filter'
 import restoreDeletedListItemsWithoutScriptId from './filters/restore_deleted_list_items_without_scriptid'
 import restoreDeletedListItems from './filters/restore_deleted_list_items'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'

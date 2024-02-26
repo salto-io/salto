@@ -94,6 +94,8 @@ import {
   RemoteFilterCreatorDefinition,
   RemoteFilterOpts,
 } from './filter'
+import restoreDeletedListItemsWithoutScriptId from './filters/restore_deleted_list_items_without_scriptid'
+import restoreDeletedListItems from './filters/restore_deleted_list_items'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -137,6 +139,14 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded types.
+  { creator: excludeCustomRecordTypes },
+  { creator: restoreDeletedListItems },
+  { creator: restoreDeletedListItemsWithoutScriptId },
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded types.
+  { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },
   { creator: dataInstancesIdentifiers },

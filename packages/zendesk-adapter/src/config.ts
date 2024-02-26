@@ -2633,6 +2633,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   custom_object_field__custom_field_options: {
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      extendsParentId: true,
     },
   },
   themes: {

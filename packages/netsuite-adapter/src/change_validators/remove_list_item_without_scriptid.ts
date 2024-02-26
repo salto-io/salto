@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import _ from 'lodash'
 import { isModificationChange, InstanceElement, isInstanceChange, ReferenceExpression, ModificationChange, ChangeError, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -37,10 +37,14 @@ type GetItemString = (item: ItemInList) => string
 type GetListPath = () => string[]
 type GetMessage = (removedListItems: string[]) => string
 
-const getMessageByElementNameAndListItems = (elemName: string, removedListItems: string[]): string =>
-  `Netsuite doesn't support the removal of inner ${elemName}${(removedListItems.length > 1) ? 's' : ''} via API; `
-  + `Salto will ignore ${(removedListItems.length > 1) ? 'these changes' : 'this change'} for this deployment. `
-  + `Please use Netuiste's UI to remove ${(removedListItems.length > 1) ? 'it' : 'them'}`
+export const getMessageByElementNameAndListItems = (elemName: string, removedListItems: string[]): string =>
+  (removedListItems.length > 1)
+  ? `Netsuite doesn't support the removal of inner ${elemName}s ${removedListItems.join(', ')} via API; `
+    + 'Salto will ignore these changes for this deployment. '
+    + 'Please use Netuiste\'s UI to remove them'
+  : `Netsuite doesn't support the removal of inner ${elemName} ${removedListItems[0]} via API; `
+    + 'Salto will ignore this change for this deployment. '
+    + 'Please use Netuiste\'s UI to remove it'
 
 export type ItemListGetters = {
   getItemList: GetItemList
@@ -144,7 +148,7 @@ const getChangeError = (
   return (removedListItems.length > 0) ? {
     elemID,
     severity: 'Warning',
-    message: 'Can\'t remove inner elements',
+    message: 'Inner Element Removal Not Supported',
     detailedMessage: getters.getDetailedMessage(removedListItems),
   } : undefined
 }

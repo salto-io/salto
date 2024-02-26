@@ -87,8 +87,8 @@ import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
 import alignFieldNamesFilter from './filters/align_field_names'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
-import restoreDeletedListItems from './filters/restore_deleted_list_items_without_scriptid'
-import restoreDeletedListItemsWithScriptId from './filters/restore_deleted_list_items'
+import restoreDeletedListItemsWithoutScriptId from './filters/restore_deleted_list_items_without_scriptid'
+import restoreDeletedListItems from './filters/restore_deleted_list_items'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -135,8 +135,8 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // excludeCustomRecordTypes should run before customRecordTypesType,
   // because otherwise there will be broken references to excluded types.
   { creator: excludeCustomRecordTypes },
-  { creator: restoreDeletedListItemsWithScriptId },
   { creator: restoreDeletedListItems },
+  { creator: restoreDeletedListItemsWithoutScriptId },
   // excludeCustomRecordTypes should run before customRecordTypesType,
   // because otherwise there will be broken references to excluded types.
   { creator: excludeCustomRecordTypes },
@@ -193,10 +193,6 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addAliasFilter },
   { creator: addImportantValuesFilter },
   { creator: fixOrderProblemsInWorkbooks },
-  { creator: restoreDeletedListItems }, // does it matter where it is?
-  { creator: restoreDeletedListItemsWithScriptId }, // does it matter where it is?
-  { creator: restoreDeletedListItems }, // does it matter where it is?
-  { creator: restoreDeletedListItemsWithScriptId }, // does it matter where it is?
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
   { creator: addBundleReferences },

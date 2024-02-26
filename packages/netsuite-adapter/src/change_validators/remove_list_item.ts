@@ -28,6 +28,7 @@ import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID } from '../constants'
 import { NetsuiteChangeValidator } from './types'
+import { getMessageByElementNameAndListItems } from './remove_list_item_without_scriptid'
 
 const { awu } = collections.asynciterable
 
@@ -78,9 +79,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
       elemID,
       severity: 'Warning',
       message: 'Inner Element Removal Not Supported',
-      detailedMessage: `Netsuite doesn't support the removal of inner element${(removedListItems.length > 1) ? 's' : ''} via API; `
-        + `Salto will ignore ${(removedListItems.length > 1) ? 'these changes' : 'this change'} for this deployment. `
-        + `Please use Netuiste's UI to remove ${(removedListItems.length > 1) ? 'it' : 'them'}`,
+      detailedMessage: getMessageByElementNameAndListItems('element', removedListItems)
     }))
     .toArray() as Promise<ChangeError[]>
 }

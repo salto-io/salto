@@ -61,12 +61,8 @@ describe('remove item from customlist change validator', () => {
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
       expect(changeErrors[0].detailedMessage).toEqual(
-        "Can't remove the inner element val_1. NetSuite supports the removal of inner elements only from their UI.",
+        "Netsuite doesn't support the removal of inner element val_1 via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
       )
-      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from their UI.')
-      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from its UI.')
-      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from its UI.')
-      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore this removal.')
     })
 
     it('should not have change errors when modifiying a customvalue', async () => {
@@ -115,12 +111,8 @@ describe('removing inner items from customtypes', () => {
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
-      "Can't remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.",
+      "Netsuite doesn't support the removal of inner element customdeploy_2 via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
     )
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore this removal.')
   })
 
   it('should have an Error when removing few customdeploys', async () => {
@@ -133,12 +125,8 @@ describe('removing inner items from customtypes', () => {
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
-      "Can't remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from their UI.",
+      "Netsuite doesn't support the removal of inner elements customdeploy_2, customdeploy_3 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them",
     )
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from their UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from its UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from its UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore these removals.')
   })
 
   it('sohuld have an Error when removing scriptid from a customdeploy', async () => {
@@ -150,11 +138,7 @@ describe('removing inner items from customtypes', () => {
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
-      "Can't remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.",
+      "Netsuite doesn't support the removal of inner element customdeploy_2 via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
     )
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI.')
-    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore this removal.')
   })
 })

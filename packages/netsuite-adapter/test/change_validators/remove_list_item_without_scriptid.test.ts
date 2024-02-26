@@ -1,18 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import removeListItemValidator from '../../src/change_validators/remove_list_item_without_scriptid'
 import { roleType } from '../../src/autogen/types/standard_types/role'
@@ -168,7 +168,7 @@ describe('remove item without scriptis from inner list change validator', () => 
       expect(firstChangeErrors).toHaveLength(1)
       expect(firstChangeErrors[0].severity).toEqual('Warning')
       expect(firstChangeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(firstChangeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permission TRAN_PAYMENTAUDIT. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore this removal.')
+      expect(firstChangeErrors[0].detailedMessage).toEqual("Netsuite doesn't support the removal of inner permission TRAN_PAYMENTAUDIT via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it")
 
       delete after.value.permissions.permission.customrecord1
       const secondChangeErrors = await removeListItemValidator(
@@ -177,7 +177,7 @@ describe('remove item without scriptis from inner list change validator', () => 
       expect(secondChangeErrors).toHaveLength(1)
       expect(secondChangeErrors[0].severity).toEqual('Warning')
       expect(secondChangeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(secondChangeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permissions TRAN_PAYMENTAUDIT, customrecord1. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore these removals.')
+      expect(secondChangeErrors[0].detailedMessage).toEqual("Netsuite doesn't support the removal of inner permissions TRAN_PAYMENTAUDIT, customrecord1 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them")
     })
 
     it('should not have a change error when modifiying a permission from the role', async () => {
@@ -208,7 +208,7 @@ describe('remove item without scriptis from inner list change validator', () => 
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permissions TRAN_PAYMENTAUDIT, customrecord1. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore these removals.')
+      expect(changeErrors[0].detailedMessage).toEqual("Netsuite doesn't support the removal of inner permissions TRAN_PAYMENTAUDIT, customrecord1 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them")
     })
     it('should have no change errors when dealing with odd permission in role', async () => {
       const afterWithArray = roleWithArrayPermissionsInstance.clone()

@@ -60,8 +60,11 @@ const BRACKETS = [
   ['{{', '}}'],
   ['{%', '%}'],
 ]
-const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
+const REFERENCE_MARKER_REGEX = /\$\{({{.+?}})\}/
+// const DYNAMIC_CONTENT_NAME_REGEX = /(dc\.[\w-]+)/g
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
+const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /({{dc\.[\w-]+}})/g
+// const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /{{(dc\.[\w-]+)}}/g
 const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\\d]+))'
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
@@ -242,7 +245,12 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
     // The replace flags the pattern with a reference-like string to avoid the later code from
     // detecting ids in numbers that are not marked as ids.
     // eslint-disable-next-line no-template-curly-in-string
-    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$1$${$2}$3')
+    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$${$1$2$3}')
+    if (formula.includes('dc')) {
+      // console.log('\n\nFORMULA:\n\n', formula)
+      // console.log('\n\nREGEX:\n\n', regex)
+      // console.log('\n\nRES:\n\n', formulaWithDetectedParts)
+    }
   })
   return formulaWithDetectedParts
 }
@@ -297,27 +305,36 @@ const formulaToTemplate = ({
     return [`${type}_`, new ReferenceExpression(missingInstance.elemID, missingInstance)]
   }
 
-  const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
+  const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray): TemplatePart | TemplatePart[] => {
     const dcPlaceholder = ref.pop() ?? ''
     const elem = (instancesByType[DYNAMIC_CONTENT_ITEM_TYPE_NAME] ?? []).find(
-      instance => instance.value.placeholder === `{{${dcPlaceholder}}}`,
+      instance => instance.value.placeholder === dcPlaceholder,
     )
+    console.log('working with placeholder: ', dcPlaceholder)
     if (elem) {
-      return new ReferenceExpression(elem.elemID, elem)
+      console.log('returning: ', ['{{', new ReferenceExpression(elem.elemID, elem), '}}'].join(''))
+      return ['{{', new ReferenceExpression(elem.elemID, elem), '}}']
     }
+
+    const placeholderNoBrackets = dcPlaceholder.substring(1, dcPlaceholder.length - 1)
     if (!_.isEmpty(dcPlaceholder) && enableMissingReferences) {
       const missingInstance = createMissingInstance(
         ZENDESK,
         DYNAMIC_CONTENT_ITEM_TYPE_NAME,
-        dcPlaceholder.startsWith('dc.') ? dcPlaceholder.slice(3) : dcPlaceholder,
+        placeholderNoBrackets.startsWith('dc.') ? placeholderNoBrackets.slice(3) : placeholderNoBrackets,
       )
-      missingInstance.value.placeholder = `{{${dcPlaceholder}}}`
-      return new ReferenceExpression(missingInstance.elemID, missingInstance)
+      missingInstance.value.placeholder = dcPlaceholder
+      console.log(
+        'returning: ',
+        ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}'].join(''),
+      )
+      return ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}']
     }
+    console.log('returning: ', expression)
     return expression
   }
 
-  const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX]
+  const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX_WITH_BRACKETS]
   if (extractReferencesFromFreeText) {
     potentialRegexes.push(...ELEMENTS_REGEXES.map(s => s.urlRegex))
   }
@@ -327,15 +344,15 @@ const formulaToTemplate = ({
   // we continuously split the expression to find all kinds of potential references
   return extractTemplate(seekAndMarkPotentialReferences(formula), potentialRegexes, expression => {
     const zendeskReference = expression.match(potentialReferenceTypeRegex)
-    if (expression.includes('dc')) {
-      console.log(formula, expression, zendeskReference)
-    }
     if (zendeskReference) {
       return handleZendeskReference(expression, zendeskReference)
     }
-    const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX)
+    if (expression.includes('dc')) {
+      // console.log('im in there')
+    }
+
+    const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX_WITH_BRACKETS)
     if (dynamicContentReference) {
-      console.log('do i get here? ', dynamicContentReference)
       return handleDynamicContentReference(expression, dynamicContentReference)
     }
     if (extractReferencesFromFreeText) {
@@ -461,6 +478,7 @@ const replaceFormulasWithTemplates = ({
 
   try {
     getContainers(instances).forEach(container => {
+      // console.log(container)
       const { fieldName } = container
       container.values.forEach(value => {
         // Has to be first because it needs to receive the whole string, not a template expression
@@ -492,6 +510,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME && _.isString(part.value.value.placeholder)) {
     const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
+    console.log('in Prepref: ', placeholder)
     return placeholder?.pop() ?? part
   }
   if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {

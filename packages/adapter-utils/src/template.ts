@@ -125,7 +125,7 @@ export const extractTemplate = (
   const a = continuousSplit(formula, regexes)
   if (formula.includes('dc')) {
     // console.log('formula: ', formula)
-    console.log('split into: ', a)
+    // console.log('split into: ', a)
   }
 
   const templateParts = a.flatMap(extractionFunc).filter(v => !_.isEmpty(v))

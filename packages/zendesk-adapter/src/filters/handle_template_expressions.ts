@@ -310,13 +310,14 @@ const formulaToTemplate = ({
     const elem = (instancesByType[DYNAMIC_CONTENT_ITEM_TYPE_NAME] ?? []).find(
       instance => instance.value.placeholder === dcPlaceholder,
     )
-    console.log('working with placeholder: ', dcPlaceholder)
+    const placeholderNoBrackets = dcPlaceholder.substring(2, dcPlaceholder.length - 2)
+
+    console.log('working with placeholder: ', placeholderNoBrackets)
     if (elem) {
-      console.log('returning: ', ['{{', new ReferenceExpression(elem.elemID, elem), '}}'].join(''))
+      console.log('returning: ', elem.elemID)
       return ['{{', new ReferenceExpression(elem.elemID, elem), '}}']
     }
 
-    const placeholderNoBrackets = dcPlaceholder.substring(1, dcPlaceholder.length - 1)
     if (!_.isEmpty(dcPlaceholder) && enableMissingReferences) {
       const missingInstance = createMissingInstance(
         ZENDESK,
@@ -324,10 +325,7 @@ const formulaToTemplate = ({
         placeholderNoBrackets.startsWith('dc.') ? placeholderNoBrackets.slice(3) : placeholderNoBrackets,
       )
       missingInstance.value.placeholder = dcPlaceholder
-      console.log(
-        'returning: ',
-        ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}'].join(''),
-      )
+      console.log('returning: ', missingInstance.elemID)
       return ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}']
     }
     console.log('returning: ', expression)

@@ -28,6 +28,7 @@ import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID } from '../constants'
 import { NetsuiteChangeValidator } from './types'
+import { getMessageByElementNameAndListItems } from './remove_list_item_without_scriptid'
 
 const { awu } = collections.asynciterable
 
@@ -41,7 +42,7 @@ const getScriptIdsUnderLists = async (
       if (path.isAttrID()) {
         return WALK_NEXT_STEP.SKIP
       }
-      if (_.isPlainObject(value) && SCRIPT_ID in value) {
+      if (_.isPlainObject(value) && SCRIPT_ID in value && !path.isTopLevel()) {
         pathToScriptIds.get(path.getFullName()).add(value.scriptid)
       }
       return WALK_NEXT_STEP.RECURSE
@@ -76,9 +77,9 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .filter(({ removedListItems }: { removedListItems: string[] }) => !_.isEmpty(removedListItems))
     .map(({ elemID, removedListItems }: { removedListItems: string[]; elemID: ElemID }) => ({
       elemID,
-      severity: 'Error',
-      message: "Can't remove inner elements",
-      detailedMessage: `Can't remove the inner element${removedListItems.length > 1 ? 's' : ''} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from their UI.`,
+      severity: 'Warning',
+      message: 'Inner Element Removal Not Supported',
+      detailedMessage: getMessageByElementNameAndListItems('element', removedListItems),
     }))
     .toArray() as Promise<ChangeError[]>
 }

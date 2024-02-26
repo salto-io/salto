@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { clientscriptType } from '../../src/autogen/types/standard_types/clientscript'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
@@ -58,10 +58,10 @@ describe('remove item from customlist change validator', () => {
       delete after.value.customvalues.customvalue.val1
       const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
       expect(changeErrors[0].detailedMessage).toEqual(
-        "Can't remove the inner element val_1. NetSuite supports the removal of inner elements only from their UI.",
+        "Netsuite doesn't support the removal of inner element val_1 via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
       )
     })
 
@@ -75,24 +75,32 @@ describe('remove item from customlist change validator', () => {
 })
 
 describe('removing inner items from customtypes', () => {
-  const origInstance = new InstanceElement('instance', clientscriptType().type, {
-    scriptdeployments: {
-      scriptdeployment: {
-        customdeploy1: {
-          scriptid: 'customdeploy_1',
-          status: 'Test',
-        },
-        customdeploy2: {
-          scriptid: 'customdeploy_2',
-          status: 'Test',
-        },
-        customdeploy3: {
-          scriptid: 'customdeploy_3',
-          status: 'Test',
+  const origInstance = new InstanceElement(
+    'instance',
+    clientscriptType().type,
+    {
+      scriptdeployments: {
+        scriptdeployment: {
+          customdeploy1: {
+            scriptid: 'customdeploy_1',
+            status: 'Test',
+          },
+          customdeploy2: {
+            scriptid: 'customdeploy_2',
+            status: 'Test',
+          },
+          customdeploy3: {
+            scriptid: 'customdeploy_3',
+            status: 'Test',
+          },
         },
       },
     },
-  })
+    undefined,
+    {
+      [CORE_ANNOTATIONS.CREATED_BY]: 'hello',
+    },
+  )
   let instance: InstanceElement
   beforeEach(() => {
     instance = origInstance.clone()
@@ -104,10 +112,10 @@ describe('removing inner items from customtypes', () => {
 
     const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
-      "Can't remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.",
+      "Netsuite doesn't support the removal of inner element customdeploy_2 via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
     )
   })
 
@@ -118,10 +126,10 @@ describe('removing inner items from customtypes', () => {
 
     const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
-      "Can't remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from their UI.",
+      "Netsuite doesn't support the removal of inner elements customdeploy_2, customdeploy_3 via API; Salto will ignore these changes for this deployment. Please use Netuiste's UI to remove them",
     )
   })
 
@@ -131,10 +139,10 @@ describe('removing inner items from customtypes', () => {
 
     const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
-      "Can't remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.",
+      "Netsuite doesn't support the removal of inner element customdeploy_2 via API; Salto will ignore this change for this deployment. Please use Netuiste's UI to remove it",
     )
   })
 })

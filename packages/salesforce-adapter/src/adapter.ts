@@ -132,6 +132,7 @@ import {
 import {
   addDefaults,
   apiNameSync,
+  getFullName,
   isCustomObjectSync,
   isCustomType,
   isMetadataInstanceElementSync,
@@ -491,8 +492,8 @@ export default class SalesforceAdapter implements AdapterOperations {
                     .forEach((props, typeName) => {
                       const listedInstances =
                         this.listedInstancesByType.get(typeName)
-                      props.forEach(({ fullName }) =>
-                        listedInstances.add(fullName),
+                      props.forEach((prop) =>
+                        listedInstances.add(getFullName(prop)),
                       )
                     })
                   return listMetadataObjectsResult

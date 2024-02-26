@@ -15,6 +15,7 @@
  */
 export const OKTA = 'okta'
 export const APPLICATION_TYPE_NAME = 'Application'
+export const APP_GROUP_ASSIGNMENT_TYPE_NAME = 'ApplicationGroupAssignment'
 export const GROUP_TYPE_NAME = 'Group'
 export const GROUP_RULE_TYPE_NAME = 'GroupRule'
 export const IDENTITY_PROVIDER_TYPE_NAME = 'IdentityProvider'

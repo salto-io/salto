@@ -143,6 +143,7 @@ export const getLogo = async ({
   contentType,
   logoName,
   link,
+  nestedPath = [],
 }: {
   client: OktaClient
   parents: InstanceElement[]
@@ -150,6 +151,7 @@ export const getLogo = async ({
   contentType: string
   logoName: string
   link: string
+  nestedPath?: string[]
 }): Promise<InstanceElement | Error> => {
   const logoContent = await getLogoContent(link, client)
   if (logoContent instanceof Error) {
@@ -172,7 +174,7 @@ export const getLogo = async ({
         content: logoContent,
       }),
     },
-    [OKTA, RECORDS_PATH, logoType.elemID.typeName, pathName],
+    [OKTA, RECORDS_PATH, ...nestedPath, logoType.elemID.typeName, pathName],
     {
       [CORE_ANNOTATIONS.PARENT]: refParents,
     },

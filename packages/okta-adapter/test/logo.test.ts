@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { TYPES_PATH, SUBTYPES_PATH } from '@salto-io/adapter-components/src/elements'
+import { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } from '@salto-io/adapter-components/src/elements'
 import OktaClient from '../src/client/client'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../src/constants'
 import { createFileType, deployLogo, getLogo } from '../src/logo'
@@ -37,19 +37,24 @@ describe('logo filter', () => {
   let mockGet: jest.SpyInstance
   let client: OktaClient
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-  const appInstance = new InstanceElement('app1', appType, {
-    id: '11',
-    label: 'app1',
-    [LINKS_FIELD]: {
-      logo: [
-        {
-          name: 'fileName',
-          href: 'https://ok12static.oktacdn.com/fs/bco/4/111',
-          type: 'image/png',
-        },
-      ],
+  const appInstance = new InstanceElement(
+    'app1',
+    appType,
+    {
+      id: '11',
+      label: 'app1',
+      [LINKS_FIELD]: {
+        logo: [
+          {
+            name: 'fileName',
+            href: 'https://ok12static.oktacdn.com/fs/bco/4/111',
+            type: 'image/png',
+          },
+        ],
+      },
     },
-  })
+    [OKTA, RECORDS_PATH, APPLICATION_TYPE_NAME, 'app1', 'app1'],
+  )
   const contentType = 'png'
   const fileName = 'app1'
   const link = 'https://ok12static.oktacdn.com/fs/bco/4/111'
@@ -113,6 +118,19 @@ describe('logo filter', () => {
       expect(logo?.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(appInstance.elemID, appInstance),
       )
+      expect(logo?.path).toEqual([OKTA, RECORDS_PATH, 'AppLogo', fileName])
+    })
+    it('should return logo with nested path', async () => {
+      const logo = (await getLogo({
+        client,
+        parents: [appInstance],
+        logoType: appLogoType,
+        contentType,
+        logoName: fileName,
+        link,
+        nestedPath: appInstance.path?.slice(2, appInstance.path?.length - 1) ?? [],
+      })) as InstanceElement
+      expect(logo.path).toEqual([OKTA, RECORDS_PATH, 'Application', 'app1', 'AppLogo', fileName])
     })
     it('should return error when content is not buffer', async () => {
       mockGet.mockImplementationOnce(() => {

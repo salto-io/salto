@@ -17,12 +17,14 @@ import { DependencyChanger } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { changeDependenciesFromAppUserSchemaToApp } from './replace_app_user_schema_and_app'
+import { addAppGroupToAppDependency } from './app_group_assignment_to_app'
 
 const { awu } = collections.asynciterable
 
 const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   deployment.dependency.removeStandaloneFieldDependency,
   changeDependenciesFromAppUserSchemaToApp,
+  addAppGroupToAppDependency,
 ]
 
 export const dependencyChanger: DependencyChanger = async (changes, deps) =>

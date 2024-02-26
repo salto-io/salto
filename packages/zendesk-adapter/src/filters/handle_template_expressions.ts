@@ -61,10 +61,8 @@ const BRACKETS = [
   ['{%', '%}'],
 ]
 const REFERENCE_MARKER_REGEX = /\$\{({{.+?}})\}/
-// const DYNAMIC_CONTENT_NAME_REGEX = /(dc\.[\w-]+)/g
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
 const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /({{dc\.[\w-]+}})/g
-// const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /{{(dc\.[\w-]+)}}/g
 const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\\d]+))'
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
@@ -240,26 +238,12 @@ const potentialTemplates: PotentialTemplateField[] = [
 
 const seekAndMarkPotentialReferences = (formula: string): string => {
   let formulaWithDetectedParts = formula
-  if (formula.includes('irrelevancies')) {
-    console.log(typeSearchRegexes)
-  }
   typeSearchRegexes.forEach(regex => {
     // The first part of the regex identifies ids, with the pattern {some_id_field_1234}
     // The replace flags the pattern with a reference-like string to avoid the later code from
     // detecting ids in numbers that are not marked as ids.
     // eslint-disable-next-line no-template-curly-in-string
     formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '${$1$2$3}')
-
-    if (formula.includes('irrelevancies')) {
-      console.log('re:', regex)
-      console.log('r:', formulaWithDetectedParts)
-    }
-
-    if (formula.includes('dc')) {
-      // console.log('\n\nFORMULA:\n\n', formula)
-      // console.log('\n\nREGEX:\n\n', regex)
-      // console.log('\n\nRES:\n\n', formulaWithDetectedParts)
-    }
   })
   return formulaWithDetectedParts
 }
@@ -285,7 +269,6 @@ const formulaToTemplate = ({
     const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, or TYPE.name.title so should contain exactly 2 or 3 parts
     if (splitReference.length !== 2 && splitReference.length !== 3) {
-      // console.log('=============1=============')
       return [expression]
     }
     const [type, innerId, title] = splitReference
@@ -293,51 +276,27 @@ const formulaToTemplate = ({
       instance =>
         instance.value[ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]]]?.toString() === innerId,
     )
-    // console.log(splitReference)
     if (elem) {
       if (KEY_FIELDS.includes(type)) {
-        // console.log('=============2=============')
-        return [
-          // '{{',
-          `${type}.`,
-          new ReferenceExpression(elem.elemID, elem),
-          title !== undefined ? `.${title}` : '',
-          // '}}',
-        ]
+        return [`${type}.`, new ReferenceExpression(elem.elemID, elem), title !== undefined ? `.${title}` : '']
       }
-      // console.log('=============3=============')
-      return [
-        // '{{',
-        `${type}_`,
-        new ReferenceExpression(elem.elemID, elem),
-        // '}}'
-      ]
+      return [`${type}_`, new ReferenceExpression(elem.elemID, elem)]
     }
     // if no id was detected we return the original expression.
     if (!enableMissingReferences) {
-      // console.log('=============4=============')
       return [expression]
     }
     // if no id was detected and enableMissingReferences we return a missing reference expression.
     const missingInstance = createMissingInstance(ZENDESK, ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type], innerId)
     missingInstance.value[ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]]] = innerId
     if (KEY_FIELDS.includes(type)) {
-      // console.log('=============5=============')
       return [
-        // '{{',
         `${type}.`,
         new ReferenceExpression(missingInstance.elemID, missingInstance),
         title !== undefined ? `.${title}` : '',
-        // '}}',
       ]
     }
-    // console.log('=============6=============')
-    return [
-      // '{{',
-      `${type}_`,
-      new ReferenceExpression(missingInstance.elemID, missingInstance),
-      //  '}}'
-    ]
+    return [`${type}_`, new ReferenceExpression(missingInstance.elemID, missingInstance)]
   }
 
   const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray): TemplatePart | TemplatePart[] => {
@@ -347,9 +306,7 @@ const formulaToTemplate = ({
     )
     const placeholderNoBrackets = dcPlaceholder.substring(2, dcPlaceholder.length - 2)
 
-    // console.log('working with placeholder: ', placeholderNoBrackets)
     if (elem) {
-      // console.log('returning: ', elem.elemID)
       return ['{{', new ReferenceExpression(elem.elemID, elem), '}}']
     }
 
@@ -360,7 +317,6 @@ const formulaToTemplate = ({
         placeholderNoBrackets.startsWith('dc.') ? placeholderNoBrackets.slice(3) : placeholderNoBrackets,
       )
       missingInstance.value.placeholder = dcPlaceholder
-      // console.log('returning: ', missingInstance.elemID)
       return ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}']
     }
     return expression
@@ -379,9 +335,6 @@ const formulaToTemplate = ({
     if (zendeskReference) {
       return handleZendeskReference(expression, zendeskReference)
     }
-    // if (expression.includes('dc')) {
-    // console.log('im in there', expression)
-    // }
 
     const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX_WITH_BRACKETS)
     if (dynamicContentReference) {
@@ -510,7 +463,6 @@ const replaceFormulasWithTemplates = ({
 
   try {
     getContainers(instances).forEach(container => {
-      // console.log(container)
       const { fieldName } = container
       container.values.forEach(value => {
         // Has to be first because it needs to receive the whole string, not a template expression
@@ -542,7 +494,6 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME && _.isString(part.value.value.placeholder)) {
     const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
-    // console.log('in Prepref: ', placeholder)
     return placeholder?.pop() ?? part
   }
   if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {

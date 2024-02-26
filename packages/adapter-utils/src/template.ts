@@ -122,13 +122,9 @@ export const extractTemplate = (
   // with ReferenceExpression in the loop code.
   // we continuously split the expression to find all kinds of potential references
 
-  const a = continuousSplit(formula, regexes)
-  if (formula.includes('irrelevancies')) {
-    console.log('formula:', formula)
-    console.log('split into:', a)
-  }
-
-  const templateParts = a.flatMap(extractionFunc).filter(v => !_.isEmpty(v))
+  const templateParts = continuousSplit(formula, regexes)
+    .flatMap(extractionFunc)
+    .filter(v => !_.isEmpty(v))
   if (templateParts.every(_.isString)) {
     return templateParts.join('')
   }

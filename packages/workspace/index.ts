@@ -30,6 +30,7 @@ import {
   FromSourceWithEnv,
   COMMON_ENV_PREFIX,
   UpdateNaclFilesResult,
+  listElementsDependenciesInWorkspace,
 } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
@@ -135,4 +136,5 @@ export {
   createPathIndexForElement,
   buildStaticFilesCache,
   parser,
+  listElementsDependenciesInWorkspace,
 }

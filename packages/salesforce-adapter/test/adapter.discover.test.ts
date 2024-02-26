@@ -242,6 +242,7 @@ describe('SalesforceAdapter fetch', () => {
       const UPDATED_PROFILE_FULL_NAME = 'updatedProfile'
       const NON_UPDATED_PROFILE_FULL_NAME = 'nonUpdatedProfile'
       const APEX_CLASS_FULL_NAME = 'apexClass'
+      const ANOTHER_APEX_CLASS_FULL_NAME = 'anotherApexClass'
 
       const testData = {
         [UPDATED_PROFILE_FULL_NAME]: {
@@ -261,9 +262,16 @@ describe('SalesforceAdapter fetch', () => {
         [APEX_CLASS_FULL_NAME]: {
           zipFileName: `apexClass/${APEX_CLASS_FULL_NAME}.apex_class`,
           zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
-                          <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+                          <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
                               <apiVersion>58.0</apiVersion>
-                          </Profile>`,
+                          </ApexClass>`,
+        },
+        [ANOTHER_APEX_CLASS_FULL_NAME]: {
+          zipFileName: `apexClass/${ANOTHER_APEX_CLASS_FULL_NAME}.apex_class`,
+          zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
+                          <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <apiVersion>58.0</apiVersion>
+                          </ApexClass>`,
         },
       } as const
 
@@ -302,6 +310,13 @@ describe('SalesforceAdapter fetch', () => {
                   lastModifiedDate:
                     mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
                   fileName: testData.apexClass.zipFileName,
+                }),
+                // Make sure we don't attempt to retrieve the non-changed apex class
+                mockFileProperties({
+                  type: APEX_CLASS_METADATA_TYPE,
+                  fullName: ANOTHER_APEX_CLASS_FULL_NAME,
+                  lastModifiedDate: DATE,
+                  fileName: testData.anotherApexClass.zipFileName,
                 }),
               ]
             }
@@ -346,6 +361,16 @@ describe('SalesforceAdapter fetch', () => {
               content: testData.apexClass.zipFileContent,
             })
           }
+          if (
+            fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(
+              ANOTHER_APEX_CLASS_FULL_NAME,
+            )
+          ) {
+            zipFiles.push({
+              path: `unpackaged/${testData.anotherApexClass.zipFileName}-meta.xml`,
+              content: testData.anotherApexClass.zipFileContent,
+            })
+          }
           return mockRetrieveLocator({ zipFiles })
         })
       }
@@ -372,6 +397,13 @@ describe('SalesforceAdapter fetch', () => {
           },
           mockTypes.ApexClass,
         )
+        const anotherApexClassInstance = createInstanceElement(
+          {
+            fullName: ANOTHER_APEX_CLASS_FULL_NAME,
+            apiVersion: '57.0',
+          },
+          mockTypes.ApexClass,
+        )
 
         changedAtSingleton.value = {
           [PROFILE_METADATA_TYPE]: {
@@ -380,12 +412,14 @@ describe('SalesforceAdapter fetch', () => {
           },
           [APEX_CLASS_METADATA_TYPE]: {
             [APEX_CLASS_FULL_NAME]: DATE,
+            [ANOTHER_APEX_CLASS_FULL_NAME]: DATE,
           },
         }
         const elementsSource = buildElementsSourceFromElements([
           mockTypes.ApexClass,
           mockTypes.Profile,
           apexClassInstance,
+          anotherApexClassInstance,
           updatedProfileInstance,
           nonUpdatedProfileInstance,
           changedAtSingleton,
@@ -463,6 +497,13 @@ describe('SalesforceAdapter fetch', () => {
             fullName: NON_UPDATED_PROFILE_FULL_NAME,
             apiVersion: 58,
           })
+          const fetchedApexClasses = fetchedInstances.filter(
+            isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE),
+          )
+          expect(fetchedApexClasses).toHaveLength(1)
+          expect(fetchedApexClasses[0]).toSatisfy(
+            (instance) => apiNameSync(instance) === APEX_CLASS_FULL_NAME,
+          )
         })
       })
     })

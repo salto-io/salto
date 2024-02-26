@@ -245,7 +245,7 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
     // The replace flags the pattern with a reference-like string to avoid the later code from
     // detecting ids in numbers that are not marked as ids.
     // eslint-disable-next-line no-template-curly-in-string
-    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$${$1$2$3}')
+    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$1${$2}$3')
     if (formula.includes('dc')) {
       // console.log('\n\nFORMULA:\n\n', formula)
       // console.log('\n\nREGEX:\n\n', regex)
@@ -271,10 +271,12 @@ const formulaToTemplate = ({
   extractReferencesFromFreeText?: boolean
 }): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
-    const reference = ref.pop() ?? ''
+    const rawReference = ref.pop() ?? ''
+    const reference = rawReference.startsWith('{{') ? rawReference.substring(2, rawReference.length - 2) : rawReference
     const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, or TYPE.name.title so should contain exactly 2 or 3 parts
     if (splitReference.length !== 2 && splitReference.length !== 3) {
+      // console.log('=============1=============')
       return [expression]
     }
     const [type, innerId, title] = splitReference
@@ -282,27 +284,51 @@ const formulaToTemplate = ({
       instance =>
         instance.value[ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]]]?.toString() === innerId,
     )
+    // console.log(splitReference)
     if (elem) {
       if (KEY_FIELDS.includes(type)) {
-        return [`${type}.`, new ReferenceExpression(elem.elemID, elem), title !== undefined ? `.${title}` : '']
+        // console.log('=============2=============')
+        return [
+          // '{{',
+          `${type}.`,
+          new ReferenceExpression(elem.elemID, elem),
+          title !== undefined ? `.${title}` : '',
+          // '}}',
+        ]
       }
-      return [`${type}_`, new ReferenceExpression(elem.elemID, elem)]
+      // console.log('=============3=============')
+      return [
+        // '{{',
+        `${type}_`,
+        new ReferenceExpression(elem.elemID, elem),
+        // '}}'
+      ]
     }
     // if no id was detected we return the original expression.
     if (!enableMissingReferences) {
+      // console.log('=============4=============')
       return [expression]
     }
     // if no id was detected and enableMissingReferences we return a missing reference expression.
     const missingInstance = createMissingInstance(ZENDESK, ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type], innerId)
     missingInstance.value[ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]]] = innerId
     if (KEY_FIELDS.includes(type)) {
+      // console.log('=============5=============')
       return [
+        // '{{',
         `${type}.`,
         new ReferenceExpression(missingInstance.elemID, missingInstance),
         title !== undefined ? `.${title}` : '',
+        // '}}',
       ]
     }
-    return [`${type}_`, new ReferenceExpression(missingInstance.elemID, missingInstance)]
+    // console.log('=============6=============')
+    return [
+      // '{{',
+      `${type}_`,
+      new ReferenceExpression(missingInstance.elemID, missingInstance),
+      //  '}}'
+    ]
   }
 
   const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray): TemplatePart | TemplatePart[] => {
@@ -328,7 +354,6 @@ const formulaToTemplate = ({
       console.log('returning: ', missingInstance.elemID)
       return ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}']
     }
-    console.log('returning: ', expression)
     return expression
   }
 
@@ -345,9 +370,9 @@ const formulaToTemplate = ({
     if (zendeskReference) {
       return handleZendeskReference(expression, zendeskReference)
     }
-    if (expression.includes('dc')) {
-      // console.log('im in there')
-    }
+    // if (expression.includes('dc')) {
+    console.log('im in there', expression)
+    // }
 
     const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX_WITH_BRACKETS)
     if (dynamicContentReference) {

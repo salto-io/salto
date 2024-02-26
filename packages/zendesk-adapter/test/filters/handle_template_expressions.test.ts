@@ -574,9 +574,7 @@ describe('handle templates filter', () => {
           parts: [
             `{{some other irrelevancies-${TICKET_TICKET_FIELD}_`,
             new ReferenceExpression(placeholder1.elemID, placeholder1),
-            ' | something irrelevant | dynamic content now: ',
-            new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-            ' | and done}}',
+            ' | something irrelevant | dynamic content now: dc.dynamic_content_test | and done}}',
           ],
         }),
       )
@@ -588,9 +586,7 @@ describe('handle templates filter', () => {
           parts: [
             `{%some other irrelevancies-${TICKET_TICKET_FIELD}_`,
             new ReferenceExpression(placeholder1.elemID, placeholder1),
-            ' | something irrelevant | dynamic content now: ',
-            new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-            ' | and done%}',
+            ' | something irrelevant | dynamic content now: dc.dynamic_content_test | and done%}',
           ],
         }),
       )

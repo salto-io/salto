@@ -335,7 +335,6 @@ const formulaToTemplate = ({
     if (zendeskReference) {
       return handleZendeskReference(expression, zendeskReference)
     }
-
     const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX_WITH_BRACKETS)
     if (dynamicContentReference) {
       return handleDynamicContentReference(expression, dynamicContentReference)

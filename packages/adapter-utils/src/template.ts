@@ -121,7 +121,6 @@ export const extractTemplate = (
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
   // we continuously split the expression to find all kinds of potential references
-
   const templateParts = continuousSplit(formula, regexes)
     .flatMap(extractionFunc)
     .filter(v => !_.isEmpty(v))

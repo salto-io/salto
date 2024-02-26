@@ -98,10 +98,10 @@ const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TY
 const typeSearchRegexes: RegExp[] = []
 BRACKETS.forEach(([opener, closer]) => {
   POTENTIAL_REFERENCE_TYPES.forEach(type => {
-    typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*${type}_[\\d]+[^}]*)(${closer})`, 'g'))
+    typeSearchRegexes.push(new RegExp(`(?<!\\$})(${opener})([\\w]*${type}_[\\d]+[^}]*)(${closer})`, 'g'))
   })
   // dynamic content references look different, but can still be part of template
-  typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
+  typeSearchRegexes.push(new RegExp(`(?<!\\$})(${opener})([\\w]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
 })
 
 // the potential references will start with one of the POTENTIAL_REFERENCE_TYPES, following either '_<number>' or
@@ -240,12 +240,21 @@ const potentialTemplates: PotentialTemplateField[] = [
 
 const seekAndMarkPotentialReferences = (formula: string): string => {
   let formulaWithDetectedParts = formula
+  if (formula.includes('irrelevancies')) {
+    console.log(typeSearchRegexes)
+  }
   typeSearchRegexes.forEach(regex => {
     // The first part of the regex identifies ids, with the pattern {some_id_field_1234}
     // The replace flags the pattern with a reference-like string to avoid the later code from
     // detecting ids in numbers that are not marked as ids.
     // eslint-disable-next-line no-template-curly-in-string
-    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$1${$2}$3')
+    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '${$1$2$3}')
+
+    if (formula.includes('irrelevancies')) {
+      console.log('re:', regex)
+      console.log('r:', formulaWithDetectedParts)
+    }
+
     if (formula.includes('dc')) {
       // console.log('\n\nFORMULA:\n\n', formula)
       // console.log('\n\nREGEX:\n\n', regex)
@@ -338,9 +347,9 @@ const formulaToTemplate = ({
     )
     const placeholderNoBrackets = dcPlaceholder.substring(2, dcPlaceholder.length - 2)
 
-    console.log('working with placeholder: ', placeholderNoBrackets)
+    // console.log('working with placeholder: ', placeholderNoBrackets)
     if (elem) {
-      console.log('returning: ', elem.elemID)
+      // console.log('returning: ', elem.elemID)
       return ['{{', new ReferenceExpression(elem.elemID, elem), '}}']
     }
 
@@ -351,7 +360,7 @@ const formulaToTemplate = ({
         placeholderNoBrackets.startsWith('dc.') ? placeholderNoBrackets.slice(3) : placeholderNoBrackets,
       )
       missingInstance.value.placeholder = dcPlaceholder
-      console.log('returning: ', missingInstance.elemID)
+      // console.log('returning: ', missingInstance.elemID)
       return ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}']
     }
     return expression
@@ -371,7 +380,7 @@ const formulaToTemplate = ({
       return handleZendeskReference(expression, zendeskReference)
     }
     // if (expression.includes('dc')) {
-    console.log('im in there', expression)
+    // console.log('im in there', expression)
     // }
 
     const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX_WITH_BRACKETS)
@@ -533,7 +542,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME && _.isString(part.value.value.placeholder)) {
     const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
-    console.log('in Prepref: ', placeholder)
+    // console.log('in Prepref: ', placeholder)
     return placeholder?.pop() ?? part
   }
   if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {

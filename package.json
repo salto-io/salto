@@ -25,7 +25,7 @@
     "preinstall": "./build_utils/find_conflicting_versions.js",
     "verify": "./build_utils/verify_tsconfig_references.js",
     "pre-build": "yarn verify && yarn generate",
-    "build": "yarn pre-build && yarn build-ts && yarn lint",
+    "build": "yarn pre-build && yarn format && yarn build-ts && yarn lint",
     "generate": "lerna run --parallel generate",
     "lint": "lerna run --parallel lint",
     "lint-fix": "lerna run --parallel lint-fix",

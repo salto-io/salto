@@ -837,15 +837,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: 'style' },
-      ],
-      fieldsToOmit: [
-        { fieldName: 'isPrivate' },
-        { fieldName: 'expand' },
-        { fieldName: 'archived' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'style' }],
+      fieldsToOmit: [{ fieldName: 'isPrivate' }, { fieldName: 'expand' }, { fieldName: 'archived' }],
       standaloneFields: [
         {
           fieldName: 'components',

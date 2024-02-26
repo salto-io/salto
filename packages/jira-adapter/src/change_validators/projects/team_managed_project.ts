@@ -39,7 +39,6 @@ export const teamManagedProjectValidator: (client: JiraClient) => ChangeValidato
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: "Can't deploy a team-managed project",
-      detailedMessage:
-        'Currently team-managed projects are not supported. The project will not be deployed.',
+      detailedMessage: 'Currently team-managed projects are not supported. The project will not be deployed.',
     }))
 }

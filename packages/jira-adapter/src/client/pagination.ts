@@ -27,21 +27,16 @@ const ITEM_INDEX_PAGINATION_URLS = [
 
 // filters out entries of specific project scope as we don't support it,
 // but leaves entries of global scope
-const notTeamScopeObject = (obj: clientUtils.ResponseValue): boolean => (
+const notTeamScopeObject = (obj: clientUtils.ResponseValue): boolean =>
   !(_.isPlainObject(obj) && 'scope' in obj && !_.isEqual(obj.scope, { type: 'GLOBAL' }))
-)
 
 // filters out boards located in team managed projects
-const notTeamBoard = (obj: clientUtils.ResponseValue): boolean => (
+const notTeamBoard = (obj: clientUtils.ResponseValue): boolean =>
   !(_.isPlainObject(obj) && 'type' in obj && obj.type === 'simple')
-)
 
 const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(response: T | T[]): T | T[] => {
   if (Array.isArray(response)) {
-    return response
-    .filter(notTeamScopeObject)
-    .filter(notTeamBoard)
-    .flatMap(removeScopedObjectsImpl) as T[]
+    return response.filter(notTeamScopeObject).filter(notTeamBoard).flatMap(removeScopedObjectsImpl) as T[]
   }
   if (_.isObject(response)) {
     return _.mapValues(response, removeScopedObjectsImpl) as T

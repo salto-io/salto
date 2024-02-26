@@ -13,16 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  toChange,
-  ObjectType,
-  InstanceElement,
-  ChangeValidator,
-} from '@salto-io/adapter-api'
+import { toChange, ObjectType, InstanceElement, ChangeValidator } from '@salto-io/adapter-api'
 import { createEmptyType, mockClient } from '../../utils'
 import { teamManagedProjectValidator } from '../../../src/change_validators/projects/team_managed_project'
 import { PROJECT_TYPE } from '../../../src/constants'
-
 
 describe('teamManagedProjectValidator', () => {
   let projectType: ObjectType
@@ -51,8 +45,7 @@ describe('teamManagedProjectValidator', () => {
         elemID: projectInstance.elemID,
         severity: 'Error',
         message: "Can't deploy a team-managed project",
-        detailedMessage:
-         'Currently team-managed projects are not supported. The project will not be deployed.',
+        detailedMessage: 'Currently team-managed projects are not supported. The project will not be deployed.',
       },
     ])
     expect(
@@ -67,8 +60,7 @@ describe('teamManagedProjectValidator', () => {
         elemID: projectInstance.elemID,
         severity: 'Error',
         message: "Can't deploy a team-managed project",
-        detailedMessage:
-         'Currently team-managed projects are not supported. The project will not be deployed.',
+        detailedMessage: 'Currently team-managed projects are not supported. The project will not be deployed.',
       },
     ])
   })

@@ -57,7 +57,7 @@ describe('pageByOffset', () => {
           { name: 'nested scope', nested: [{ name: 'valid' }, { name: 'bad', scope: {} }] },
           { name: 'globalScoped', scope: { type: 'GLOBAL' } },
           { name: 'typed', type: 'classic' },
-          { name: 'typedSimple', type: 'simple'}
+          { name: 'typedSimple', type: 'simple' },
         ])
       const args = { url: 'http://myjira.net/thing' }
       const paginator = createPaginator({
@@ -93,9 +93,7 @@ describe('pageByOffset', () => {
     it('should omit the simple types from the response', () => {
       expect(responses).toHaveLength(1)
       const [page] = responses
-      expect(page).not.toContainEqual(
-        expect.objectContaining({ type: 'simple' }),
-      )
+      expect(page).not.toContainEqual(expect.objectContaining({ type: 'simple' }))
     })
   })
 

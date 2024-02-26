@@ -32,11 +32,13 @@ import {
   ObjectType,
   TypeElement,
   ChangeDataType,
+  FixElementsFunc,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter, logDuration } from '@salto-io/adapter-utils'
+import { combineElementFixers } from '@salto-io/adapter-components'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
 import { BUNDLE } from './constants'
@@ -132,6 +134,7 @@ import {
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 import { buildNetsuiteBundlesQuery } from './config/bundle_query'
+import { customReferenceHandlers } from './custom_references'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -244,6 +247,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
+  private fixElementsFunc: FixElementsFunc
   private readonly fetchInclude: QueryParams
   private readonly fetchExclude: QueryParams
   private readonly lockedElements?: QueryParams
@@ -335,6 +339,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       }
       return filter.filtersRunner(getFilterOpts(), filtersCreators)
     }
+
+    this.fixElementsFunc = combineElementFixers(
+      Object.values(customReferenceHandlers).map(handler => handler.removeWeakReferences({ elementsSource })),
+    )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -655,4 +663,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dependencyChanger,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

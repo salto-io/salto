@@ -403,6 +403,7 @@ export const listElementsDependenciesInWorkspace = async ({
         .filter(currentId => !visited.has(currentId.getFullName()))
       currentLevelIds.forEach(currentId => visited.add(currentId.getFullName()))
 
+      log.trace('Proccessing %d elements references', currentLevelIds.length)
       // eslint-disable-next-line no-await-in-loop
       const currentLevelResult = await Promise.all(
         currentLevelIds.map(async currentId => {
@@ -419,13 +420,14 @@ export const listElementsDependenciesInWorkspace = async ({
           return { foundElemIDs, missingElemIDs }
         }),
       )
-
       currentLevelResult.flatMap(entry => entry.missingElemIDs).forEach(id => missingIds.push(id))
 
       _(currentLevelResult)
         .flatMap(entry => entry.foundElemIDs)
         .uniqBy(id => id.getFullName())
         .forEach(id => elemIDsToProcess.push(id))
+
+      log.trace('Done proccessing references for %d elements', currentLevelIds.length)
     }
 
     return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
@@ -1184,7 +1186,7 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  const ws: Workspace = {
+  const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
     elements: elementsImpl,
@@ -1545,9 +1547,9 @@ export const loadWorkspace = async (
       }
 
       const { dependencies, missing } = await listElementsDependenciesInWorkspace({
-        workspace: ws,
+        workspace,
         elemIDsToFind: unresolvedElemIDs,
-        elemIDsToSkip: (await ws.getSearchableNames()).map(ElemID.fromFullName),
+        elemIDsToSkip: (await workspace.getSearchableNames()).map(ElemID.fromFullName),
         envToListFrom: completeFromEnv,
       })
       const completedElemIds = _.uniq(
@@ -1572,7 +1574,7 @@ export const loadWorkspace = async (
     getAliases,
     isChangedAtIndexEmpty,
   }
-  return ws
+  return workspace
 }
 
 export const initWorkspace = async (

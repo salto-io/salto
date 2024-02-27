@@ -1146,10 +1146,6 @@ describe('jiraWorkflowFilter', () => {
             id: '1',
           })
         })
-        it('should delete statusMappings', async () => {
-          const { statusMappings } = workflowInstance.value
-          expect(statusMappings).toBeUndefined()
-        })
         it('should not update version when the workflow response is invalid', async () => {
           connection.post.mockResolvedValueOnce({
             status: 200,

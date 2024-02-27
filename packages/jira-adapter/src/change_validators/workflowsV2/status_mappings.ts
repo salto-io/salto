@@ -158,7 +158,8 @@ const createStatusMappingStructure = (statusMappings: StatusMapping): string =>
       issueTypeId = ${statusMappings.issueTypeId.elemID.getFullName()}
       projectId = ${statusMappings.projectId.elemID.getFullName()}
       statusMigrations = [
-        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(',\n')}
+        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(`
+        `)}
       ]
     },`
 

@@ -214,5 +214,42 @@ describe('adapter creator', () => {
         ).not.toThrow()
       })
     })
+
+    describe('with invalid credentials instance', () => {
+      it('should fail if provided baseUrl is invalid', () => {
+        expect(() =>
+          adapter.operations({
+            elementsSource,
+            credentials: createCredentialsInstance({ baseUrl: 'https://a.mydomain.com', token: 't' }),
+            config: createConfigInstance(DEFAULT_CONFIG),
+          }),
+        ).toThrow("a.mydomain.com' is not a valid okta account url")
+      })
+    })
+
+    describe('with valid credentials instance', () => {
+      it('should not fail for valid domains', () => {
+          const preview = adapter.operations({
+            elementsSource,
+            credentials: createCredentialsInstance({ baseUrl: 'https://a-b.oktapreview.com', token: 't' }),
+            config: createConfigInstance(DEFAULT_CONFIG),
+          })
+          expect(preview).toBeDefined()
+
+          const okta = adapter.operations({
+            elementsSource,
+            credentials: createCredentialsInstance({ baseUrl: 'https://a-b.okta.com', token: 't' }),
+            config: createConfigInstance(DEFAULT_CONFIG),
+          })
+          expect(okta).toBeDefined()
+
+          const trexcloud = adapter.operations({
+            elementsSource,
+            credentials: createCredentialsInstance({ baseUrl: 'https://a-b.trexcloud.com', token: 't' }),
+            config: createConfigInstance(DEFAULT_CONFIG),
+          })
+          expect(trexcloud).toBeDefined()
+      })
+    })
   })
 })

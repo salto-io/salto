@@ -59,7 +59,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   const { value } = config
   const { baseUrl } = value
   const hostName = new URL(baseUrl).hostname
-  if (!hostName.includes(OKTA)) {
+  if (!hostName.includes(OKTA) && !hostName.includes('trexcloud')) {
     throw new Error(`'${hostName}' is not a valid okta account url`)
   }
   return isOAuthConfigCredentials(value)

@@ -22,11 +22,10 @@ import {
   isObjectTypeChange,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { apiNameSync, isCustomObjectSync } from '../filters/utils'
-import { API_NAME, METADATA_TYPE } from '../constants'
+import { apiNameSync, metadataTypeSync } from '../filters/utils'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
 
@@ -52,7 +51,7 @@ const getAffectedType = (change: Change): ObjectType | undefined => {
 
 const isMetadataType = (objectType: ObjectType): boolean =>
   objectType.annotations[METADATA_TYPE] !== undefined && // this is how we identify artificial types
-  (!isCustomObjectSync(objectType) ||
+  (metadataTypeSync(objectType) !== CUSTOM_OBJECT ||
     objectType.annotations[API_NAME] === undefined) // the original "CustomObject" type from salesforce will not have an API_NAME
 
 const changeValidator: ChangeValidator = async (changes) =>
@@ -61,7 +60,11 @@ const changeValidator: ChangeValidator = async (changes) =>
     .filter(isDefined)
     .filter(isMetadataType)
     .filter((objectType) => {
-      log.info('Invalid object type %s', safeJsonStringify(objectType))
+      log.info('Invalid object type %o', {
+        elemID: objectType.elemID.getFullName(),
+        metadataType: objectType.annotations[METADATA_TYPE],
+        apiName: objectType.annotations[API_NAME],
+      })
       return true
     })
     .map(createNonDeployableTypeError)

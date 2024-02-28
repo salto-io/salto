@@ -245,7 +245,6 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
           }
         }
         metadataType = "CustomObject"
-        apiName = "NewObjectName"
         nameField = {
           label = "Name"
           type = "Text"
@@ -567,9 +566,6 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
           maxConcurrentApiRequests = {
             retrieve = 3
           }
-        }
-        deploy = {
-          standardFieldOrObjectAdditionsOrDeletions = false
         }
       }`,
         )

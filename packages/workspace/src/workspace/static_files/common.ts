@@ -26,7 +26,11 @@ export abstract class InvalidStaticFile {
 export type StaticFilesSource = {
   // Load is optional for backwards compatibility
   load?(): Promise<string[]>
-  getStaticFile: (filepath: string, encoding: BufferEncoding, hash?: string) => Promise<StaticFile | InvalidStaticFile>
+  getStaticFile: (
+    args: string | { filepath: string; encoding: BufferEncoding; hash?: string },
+    encoding?: BufferEncoding,
+    hash?: string,
+  ) => Promise<StaticFile | InvalidStaticFile>
   getContent: (filepath: string) => Promise<Buffer>
   persistStaticFile: (staticFile: StaticFile) => Promise<void>
   flush: () => Promise<void>

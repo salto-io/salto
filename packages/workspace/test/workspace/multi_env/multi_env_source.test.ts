@@ -1161,21 +1161,25 @@ describe('multi env source', () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
-      expect(await src.getStaticFile(staticFile.filepath, staticFile.encoding, activePrefix)).toEqual(staticFile)
+      expect(
+        await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
+      ).toEqual(staticFile)
     })
     it('should return the file it is present in the env source and the hashes match', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
       const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
-      expect(await src.getStaticFile(staticFile.filepath, staticFile.encoding, activePrefix)).toEqual(staticFile)
+      expect(
+        await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
+      ).toEqual(staticFile)
     })
     it('should return missingStaticFile if the file is not present in any of the sources', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
-      expect(await src.getStaticFile(staticFile.filepath, staticFile.encoding, activePrefix)).toEqual(
-        new MissingStaticFile(staticFile.filepath),
-      )
+      expect(
+        await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
+      ).toEqual(new MissingStaticFile(staticFile.filepath))
     })
   })
 

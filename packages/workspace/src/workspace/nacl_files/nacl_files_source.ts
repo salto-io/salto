@@ -117,7 +117,10 @@ export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
-  getStaticFile: (filePath: string, encoding: BufferEncoding) => Promise<StaticFile | undefined>
+  getStaticFile: (
+    args: string | { filePath: string; encoding: BufferEncoding },
+    encoding?: BufferEncoding,
+  ) => Promise<StaticFile | undefined>
   isPathIncluded: (filePath: string) => { included: boolean; isNacl?: boolean }
 }
 
@@ -309,7 +312,9 @@ const createNaclFilesState = async (
       namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: async element => serialize([element], 'keepRef'),
       deserialize: async data =>
-        deserializeSingleElement(data, async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)),
+        deserializeSingleElement(data, async sf =>
+          staticFilesSource.getStaticFile({ filepath: sf.filepath, encoding: sf.encoding }),
+        ),
       persistent,
     }),
   ),
@@ -1089,8 +1094,22 @@ const buildNaclFilesSource = (
     },
     getSearchableNames: async (): Promise<string[]> =>
       awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray(),
-    getStaticFile: async (filePath, encoding) => {
-      const staticFile = await staticFilesSource.getStaticFile(filePath, encoding)
+    getStaticFile: async (args, encoding) => {
+      let filePath: string
+      let fileEncoding: BufferEncoding
+
+      // Check if args is a string or an object and assign values accordingly
+      if (_.isString(args)) {
+        if (encoding === undefined) {
+          throw new Error("When 'args' is a string, 'encoding' must be provided")
+        }
+        filePath = args
+        fileEncoding = encoding
+      } else {
+        filePath = args.filePath
+        fileEncoding = args.encoding
+      }
+      const staticFile = await staticFilesSource.getStaticFile({ filepath: filePath, encoding: fileEncoding })
       if (isStaticFile(staticFile)) {
         return staticFile
       }

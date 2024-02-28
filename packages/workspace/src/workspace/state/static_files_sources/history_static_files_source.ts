@@ -15,6 +15,7 @@
  */
 import { getStaticFileUniqueName, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import { LazyStaticFile } from '../../static_files/source'
 import { StateStaticFilesSource, StateStaticFilesStore } from '../../static_files/common'
 
@@ -53,16 +54,33 @@ export const buildHistoryStateStaticFilesSource = (dirStore: StateStaticFilesSto
       })
       existingFiles.add(getStaticFileUniqueName(file))
     },
-    getStaticFile: async (filepath, encoding, hash) => {
-      if (hash === undefined) {
+    getStaticFile: async (args, encoding, hash) => {
+      let filepath: string
+      let fileEncoding: BufferEncoding
+      let fileHash: string | undefined
+
+      // Check if args is a string or an object and assign values accordingly
+      if (_.isString(args)) {
+        if (encoding === undefined) {
+          throw new Error("When 'args' is a string, 'encoding' must be provided")
+        }
+        filepath = args
+        fileEncoding = encoding
+        fileHash = hash
+      } else {
+        filepath = args.filepath
+        fileEncoding = args.encoding
+        fileHash = args.hash
+      }
+      if (fileHash === undefined) {
         throw new Error(`path ${filepath} was passed without a hash to getStaticFile`)
       }
       return new LazyStaticFile(
         filepath,
-        hash,
+        fileHash,
         dirStore.getFullPath(filepath),
-        async () => (await dirStore.get(getStaticFileUniqueName({ filepath, hash })))?.buffer,
-        encoding,
+        async () => (await dirStore.get(getStaticFileUniqueName({ filepath, hash: fileHash as string })))?.buffer,
+        fileEncoding,
       )
     },
 

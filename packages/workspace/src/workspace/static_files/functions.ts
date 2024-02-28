@@ -22,7 +22,7 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): p
   file: {
     parse: (parameters): Promise<StaticFile | InvalidStaticFile> => {
       const [filepath, encoding] = parameters
-      return staticFilesSource.getStaticFile(filepath, encoding)
+      return staticFilesSource.getStaticFile({ filepath, encoding })
     },
     dump: async (val: Value): Promise<parser.FunctionExpression> => {
       if (isInvalidStaticFile(val)) {

@@ -148,7 +148,7 @@ import requestTypeLayoutsFilter from './filters/layouts/request_type_request_for
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
-import accountInfoFilter, { isJsmEnabledInService } from './filters/account_info'
+import accountInfoFilter, { hasJsmPremium, isJsmEnabledInService } from './filters/account_info'
 import requestTypeFilter from './filters/request_type'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow/workflow_filter'
@@ -564,7 +564,8 @@ export default class JiraAdapter implements AdapterOperations {
       this.client === undefined ||
       jsmApiDefinitions === undefined ||
       !this.userConfig.fetch.enableJSM ||
-      !this.userConfig.fetch.enableJsmExperimental
+      !this.userConfig.fetch.enableJsmExperimental ||
+      !(await hasJsmPremium(this.client))
     ) {
       return { elements: [] }
     }

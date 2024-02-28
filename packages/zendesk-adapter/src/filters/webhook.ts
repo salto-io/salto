@@ -53,7 +53,20 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         } else if (instance.value.authentication === undefined) {
           instance.value.authentication = null
         }
+
+        // Only verify the absence of custom headers if after webhook contains custom headers and have difference
+        // We can not set null for all the custom headers when after webhook custom_headers is undefined since
+        // the existing HTTP method is PATCH which is a merge behaviour which relies on explicit null value to remove.
+        if (!_.isEqual(clonedChange.data.before.value.custom_headers, instance.value.custom_headers) && !_.isNil(instance.value.custom_headers)) {
+          // Remove any custom headers which no longer needed in after webhook by setting value as null
+          _.forEach(_.keys(clonedChange.data.before.value.custom_headers), key => {
+            if (!_.has(instance.value.custom_headers, key)) {
+              instance.value.custom_headers[key] = null
+            }
+          })
+        }
       }
+
       if (instance.value.authentication) {
         const placeholder = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[instance.value.authentication.type]
         if (placeholder === undefined) {

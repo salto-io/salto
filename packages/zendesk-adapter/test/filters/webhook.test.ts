@@ -134,6 +134,30 @@ describe('webhook filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedWebhook } }])
     })
+    it('should pass the correct params to deployChange on create - with custom_headers', async () => {
+      const id = 2
+      const clonedWebhook = webhook.clone()
+      clonedWebhook.value.custom_headers = {
+        h1: 'v1',
+      }
+      const deployedWebhook = clonedWebhook.clone()
+      deployedWebhook.value.authentication.data =
+        AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[deployedWebhook.value.authentication.type]
+      deployedWebhook.value.id = id
+      mockDeployChange.mockImplementation(async () => ({ webhook: { id } }))
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedWebhook } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([{ action: 'add', data: { after: clonedWebhook } }])
+    })
 
     it('should pass the correct params to deployChange on update - changed auth', async () => {
       const id = 2
@@ -196,7 +220,6 @@ describe('webhook filter', () => {
         },
       ])
     })
-
     it('should pass the correct params to deployChange on update - auth was deleted', async () => {
       const id = 2
       const clonedWebhookBefore = webhook.clone()
@@ -224,6 +247,166 @@ describe('webhook filter', () => {
         {
           action: 'modify',
           data: { before: clonedWebhookBefore, after: deployedWebhookAfter },
+        },
+      ])
+    })
+    it('should pass the correct params to deployChange on update - custom headers were changed', async () => {
+      const id = 2
+      const clonedWebhookBefore = webhook.clone()
+      clonedWebhookBefore.value.custom_headers = {
+        h1: 'v1',
+        h2: 'v2',
+        h4: 'v4'
+      }
+      const clonedWebhookAfter = webhook.clone()
+      clonedWebhookBefore.value.id = id
+      clonedWebhookAfter.value.id = id
+      clonedWebhookAfter.value.custom_headers = {
+        h2: 'v2_changed',
+        h3: 'v3',
+        h4: 'v4'
+      }
+      const deployedWebhookAfter = clonedWebhookAfter.clone()
+      delete deployedWebhookAfter.value.authentication
+      deployedWebhookAfter.value.custom_headers = {
+        h1: null,
+        h2: 'v2_changed',
+        h3: 'v3',
+        h4: 'v4'
+      }
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
+        },
+      ])
+    })
+    it('should pass the correct params to deployChange on update - custom headers no changes', async () => {
+      const id = 2
+      const clonedWebhookBefore = webhook.clone()
+      clonedWebhookBefore.value.custom_headers = {
+        h1: 'v1',
+        h2: 'v2',
+        h4: 'v3'
+      }
+      const clonedWebhookAfter = webhook.clone()
+      clonedWebhookBefore.value.id = id
+      clonedWebhookAfter.value.id = id
+      clonedWebhookAfter.value.custom_headers = {
+        h1: 'v1',
+        h2: 'v2',
+        h4: 'v3'
+      }
+      const deployedWebhookAfter = clonedWebhookAfter.clone()
+      delete deployedWebhookAfter.value.authentication
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
+        },
+      ])
+    })
+    it('should pass the correct params to deployChange on update - delete all custom headers', async () => {
+      const id = 2
+      const clonedWebhookBefore = webhook.clone()
+      clonedWebhookBefore.value.custom_headers = {
+        h2: 'v1',
+        h3: 'v2',
+        h4: 'v3'
+      }
+      const clonedWebhookAfter = webhook.clone()
+      clonedWebhookBefore.value.id = id
+      clonedWebhookAfter.value.id = id
+      clonedWebhookAfter.value.custom_headers = {}
+      const deployedWebhookAfter = clonedWebhookAfter.clone()
+      delete deployedWebhookAfter.value.authentication
+      deployedWebhookAfter.value.custom_headers = {
+        h2: null,
+        h3: null,
+        h4: null
+      }
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
+        },
+      ])
+    })
+    it('should pass the correct params to deployChange on update - delete custom headers field', async () => {
+      const id = 2
+      const clonedWebhookBefore = webhook.clone()
+      clonedWebhookBefore.value.custom_headers = {
+        h2: 'v1',
+        h3: 'v2',
+        h4: 'v3'
+      }
+      const clonedWebhookAfter = webhook.clone()
+      clonedWebhookBefore.value.id = id
+      clonedWebhookAfter.value.id = id
+      clonedWebhookAfter.value.custom_headers = null
+      const deployedWebhookAfter = clonedWebhookAfter.clone()
+      delete deployedWebhookAfter.value.authentication
+      deployedWebhookAfter.value.custom_headers = null
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
         },
       ])
     })

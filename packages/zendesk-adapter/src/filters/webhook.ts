@@ -19,6 +19,7 @@ import {
   createSaltoElementError,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isAdditionOrModificationChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
@@ -31,6 +32,19 @@ export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
   bearer_token: { token: '123456' },
   basic_auth: { username: 'user@name.com', password: 'password' },
   api_key: { name: 'tempHeader', value: 'tempValue' },
+}
+
+const applyAuthenticationPlaceholder = (instance: InstanceElement, change: Change<InstanceElement>): void => {
+  const placeholder = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[instance.value.authentication.type]
+  if (placeholder === undefined) {
+    throw createSaltoElementError({
+      // caught by deployChanges
+      message: `Unknown auth type was found for webhook: ${instance.value.authentication.type}`,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    })
+  }
+  instance.value.authentication.data = placeholder
 }
 
 /**
@@ -49,23 +63,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const instance = getChangeData(clonedChange)
       if (isModificationChange(clonedChange)) {
         if (_.isEqual(clonedChange.data.before.value.authentication, clonedChange.data.after.value.authentication)) {
-          delete instance.value.authentication
-        } else if (instance.value.authentication === undefined) {
-          instance.value.authentication = null
+          delete instance.value.authentication?.data
+        } else if (instance.value.authentication !== undefined) {
+          applyAuthenticationPlaceholder(instance, change)
         }
       }
-      if (instance.value.authentication) {
-        const placeholder = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[instance.value.authentication.type]
-        if (placeholder === undefined) {
-          throw createSaltoElementError({
-            // caught by deployChanges
-            message: `Unknown auth type was found for webhook: ${instance.value.authentication.type}`,
-            severity: 'Error',
-            elemID: getChangeData(change).elemID,
-          })
-        }
-        instance.value.authentication.data = placeholder
+      if (isAdditionChange(clonedChange) && instance.value.authentication) {
+        applyAuthenticationPlaceholder(instance, change)
       }
+
       // Ignore external_source because it is impossible to deploy, the user was warned at externalSourceWebhook.ts
       await deployChange(clonedChange, client, config.apiDefinitions, ['external_source'])
       getChangeData(change).value.id = getChangeData(clonedChange).value.id

@@ -171,10 +171,24 @@ describe('webhook filter', () => {
       const clonedWebhookBefore = webhook.clone()
       const clonedWebhookAfter = webhook.clone()
       clonedWebhookBefore.value.id = id
+      clonedWebhookBefore.value.authentication.data = {
+        type: 'basic_auth',
+        data: {
+          username: 'john'
+        },
+        add_position: 'header'
+      }
       clonedWebhookAfter.value.id = id
       clonedWebhookAfter.value.description = 'edited'
+      clonedWebhookAfter.value.authentication.data = {
+        type: 'basic_auth',
+        data: {
+          username: 'john'
+        },
+        add_position: 'header'
+      }
       const deployedWebhookAfter = clonedWebhookAfter.clone()
-      delete deployedWebhookAfter.value.authentication
+      delete deployedWebhookAfter.value.authentication.data
       mockDeployChange.mockImplementation(async () => ({}))
       const res = await filter.deploy([
         { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
@@ -196,7 +210,37 @@ describe('webhook filter', () => {
         },
       ])
     })
-
+    it('should pass the correct params to deployChange on update - no auth', async () => {
+      const id = 2
+      const clonedWebhookBefore = webhook.clone()
+      const clonedWebhookAfter = webhook.clone()
+      clonedWebhookBefore.value.id = id
+      delete clonedWebhookBefore.value.authentication
+      clonedWebhookAfter.value.id = id
+      clonedWebhookAfter.value.description = 'edited'
+      delete clonedWebhookAfter.value.authentication
+      const deployedWebhookAfter = clonedWebhookAfter.clone()
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toEqual([
+        {
+          action: 'modify',
+          data: { before: clonedWebhookBefore, after: clonedWebhookAfter },
+        },
+      ])
+    })
     it('should pass the correct params to deployChange on update - auth was deleted', async () => {
       const id = 2
       const clonedWebhookBefore = webhook.clone()
@@ -205,7 +249,6 @@ describe('webhook filter', () => {
       clonedWebhookAfter.value.id = id
       delete clonedWebhookAfter.value.authentication
       const deployedWebhookAfter = clonedWebhookAfter.clone()
-      deployedWebhookAfter.value.authentication = null
       mockDeployChange.mockImplementation(async () => ({}))
       const res = await filter.deploy([
         { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },

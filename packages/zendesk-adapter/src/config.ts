@@ -1836,7 +1836,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
       modify: {
         url: '/api/v2/webhooks/{webhookId}',
-        method: 'patch',
+        method: 'put',
         deployAsField: 'webhook',
         urlParamsToFields: {
           webhookId: 'id',

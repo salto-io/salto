@@ -49,11 +49,21 @@ const getAffectedType = (change: Change): ObjectType | undefined => {
   return undefined
 }
 
-const isMetadataType = (objectType: ObjectType): boolean =>
-  objectType.annotations[METADATA_TYPE] !== undefined && // this is how we identify artificial types
-  (metadataTypeSync(objectType) !== CUSTOM_OBJECT ||
-    objectType.annotations[API_NAME] === undefined) // the original "CustomObject" type from salesforce will not have an API_NAME
-
+const isMetadataType = (objectType: ObjectType): boolean => {
+  if (objectType.annotations[METADATA_TYPE] === undefined) {
+    return false // this is an artificial type
+  }
+  if (metadataTypeSync(objectType) === CUSTOM_OBJECT) {
+    if (
+      objectType.elemID.typeName === CUSTOM_OBJECT &&
+      objectType.annotations[API_NAME] === undefined
+    ) {
+      return true // the original "CustomObject" type from salesforce will not have an API_NAME
+    }
+    return false
+  }
+  return true
+}
 const changeValidator: ChangeValidator = async (changes) =>
   changes
     .map((change) => getAffectedType(change))

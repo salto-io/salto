@@ -26,7 +26,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
-import { API_NAME } from '../constants'
+import { API_NAME, METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
 
@@ -51,8 +51,9 @@ const getAffectedType = (change: Change): ObjectType | undefined => {
 }
 
 const isMetadataType = (objectType: ObjectType): boolean =>
-  !isCustomObjectSync(objectType) ||
-  objectType.annotations[API_NAME] === undefined // the original "CustomObject" type from salesforce will not have an API_NAME
+  objectType.annotations[METADATA_TYPE] !== undefined && // this is how we identify artificial types
+  (!isCustomObjectSync(objectType) ||
+    objectType.annotations[API_NAME] === undefined) // the original "CustomObject" type from salesforce will not have an API_NAME
 
 const changeValidator: ChangeValidator = async (changes) =>
   changes

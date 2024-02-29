@@ -2499,7 +2499,7 @@ const SUPPORTED_TYPES = {
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
   IssueLayout: [],
-  JiraWorkflow: [],
+  WorkflowConfiguration: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

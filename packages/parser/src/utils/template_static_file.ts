@@ -16,9 +16,9 @@
 import { isReferenceExpression, StaticFile, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
-import _ from 'lodash'
-import { dumpValue, MULTILINE_STRING_PREFIX, MULTILINE_STRING_SUFFIX } from '../parser/internal/dump'
-import { unescapeMultilineMarker } from '../parser/internal/native/consumers/values'
+import {
+  escapeTemplateMarker,
+} from '../parser/internal/dump'
 import { createReferenceExpresion, unescapeTemplateMarker } from '../parser/internal/native/helpers'
 import { IllegalReference } from '../parser'
 import { REFERENCE_PART } from '../parser/internal/native/lexer'
@@ -26,14 +26,6 @@ import { REFERENCE_PART } from '../parser/internal/native/lexer'
 const log = logger(module)
 
 type PartWithReferenceIndicator = { isReference: boolean; part: string }
-
-const isMultilineBuffer = (stringToParse: string): boolean =>
-  stringToParse.startsWith(MULTILINE_STRING_PREFIX) && stringToParse.endsWith(MULTILINE_STRING_SUFFIX)
-
-const removeMultilineStringPrefixAndSuffix = (prim: string): string =>
-  _.trimStart(_.trimEnd(prim, MULTILINE_STRING_SUFFIX), MULTILINE_STRING_PREFIX)
-
-const returnDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\$\{/g, '\\\\${')
 
 const splitByReferencesMarker = (stringToParse: string): PartWithReferenceIndicator[] => {
   const regex = new RegExp(`${REFERENCE_PART}`, 'g')
@@ -71,11 +63,7 @@ const createReferencesFromStringParts = (parts: PartWithReferenceIndicator[]): T
   })
 
 const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => {
-  const stringToParse = buffer.toString()
-  const finalString = isMultilineBuffer(stringToParse)
-    ? unescapeMultilineMarker(removeMultilineStringPrefixAndSuffix(stringToParse))
-    : JSON.parse(returnDoubleTemplateMarkerEscaping(stringToParse))
-  const parts = createReferencesFromStringParts(splitByReferencesMarker(finalString))
+  const parts = createReferencesFromStringParts(splitByReferencesMarker(buffer.toString()))
   const unescapedTemplateMarkerParts = parts.map(part =>
     isReferenceExpression(part) ? part : unescapeTemplateMarker(part),
   )
@@ -84,7 +72,9 @@ const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => 
 }
 
 export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
-  const string = dumpValue(expression).toString()
+  const string = expression.parts
+      .map(part => (isReferenceExpression(part) ? `\${ ${[part.elemID.getFullName()]} }` : escapeTemplateMarker(part)))
+      .join('')
   return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true, encoding: 'utf8' })
 }
 

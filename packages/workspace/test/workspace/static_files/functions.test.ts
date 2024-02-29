@@ -49,7 +49,11 @@ describe('Functions', () => {
   it('should convert valid function expression to valid static metadata when encoding is template', async () => {
     await functions.file.parse(['aa', 'template'])
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledTimes(1)
-    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa', 'utf8', undefined, true)
+    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith({
+      filepath: 'aa',
+      encoding: 'utf8',
+      isTemplate: true,
+    })
   })
   it('should not persist when dumping static file with no content', async () => {
     const dumped = await functions.file.dump(

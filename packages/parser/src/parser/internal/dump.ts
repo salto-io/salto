@@ -50,7 +50,7 @@ const separateByCommas = (items: string[][]): string[][] => {
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
 
-const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
+export const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
 
 // Double escaping happens when we stringify after escaping.
 const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')

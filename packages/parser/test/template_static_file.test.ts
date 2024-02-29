@@ -46,7 +46,7 @@ describe('template static file', () => {
 
   const singleLineWithTemplateMarkerTemplate = createTemplateExpression({
     parts: [
-      '/hc/test${/test/articles/',
+      '/hc/test\\${/test/articles/',
       new ReferenceExpression(article.elemID),
       // eslint-disable-next-line no-template-curly-in-string
       '/test ${hc/test/test/articles/}',
@@ -141,56 +141,56 @@ describe('template static file', () => {
       await testTemplateExpressionToStaticFile(
         singleLineTemplate,
         // eslint-disable-next-line no-template-curly-in-string
-        '"/hc/test/test/articles/${ zendesk.article.instance.article }/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test"',
+        '/hc/test/test/articles/${ zendesk.article.instance.article }/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test',
       )
     })
     it('should create static files correctly for singleLineWithTemplateMarkerTemplate', async () => {
       await testTemplateExpressionToStaticFile(
         singleLineWithTemplateMarkerTemplate,
         // eslint-disable-next-line no-template-curly-in-string
-        '"/hc/test\\${/test/articles/${ zendesk.article.instance.article }/test \\${hc/test/test/articles/}${ zendesk.macro.instance.macro1 }/test}"',
+        '/hc/test\\\\${/test/articles/${ zendesk.article.instance.article }/test \\${hc/test/test/articles/}${ zendesk.macro.instance.macro1 }/test}',
       )
     })
     it('should create static files correctly for singleLineRefAtBeginningAndEnd', async () => {
       await testTemplateExpressionToStaticFile(
         singleLineRefAtBeginningAndEnd,
         // eslint-disable-next-line no-template-curly-in-string
-        '"${ zendesk.article.instance.article }/hc/test/test/articles/${ zendesk.article.instance.article }/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test${ zendesk.macro.instance.macro1 }"',
+        '${ zendesk.article.instance.article }/hc/test/test/articles/${ zendesk.article.instance.article }/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test${ zendesk.macro.instance.macro1 }',
       )
     })
     it('should create static files correctly for singleLineSpecialChars', async () => {
       await testTemplateExpressionToStaticFile(
         singleLineSpecialChars,
         // eslint-disable-next-line no-template-curly-in-string
-        '"/hc/test/test/articles/${ zendesk.article.instance.article }He \\${said, \\"Hello, World!\\"\\tThis is a backslash: \\\\ \ud83d\ude04${ zendesk.macro.instance.macro1 }/test"',
+        '/hc/test/test/articles/${ zendesk.article.instance.article }He \\${said, "Hello, World!"\tThis is a backslash: \\ 😄${ zendesk.macro.instance.macro1 }/test',
       )
     })
     it('should create static files correctly for multiLineTemplate', async () => {
       await testTemplateExpressionToStaticFile(
         multiLineTemplate,
         // eslint-disable-next-line no-template-curly-in-string
-        "'''\n/hc/test/test/articles/${ zendesk.article.instance.article }\n/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test\n'''",
+        '/hc/test/test/articles/${ zendesk.article.instance.article }\n/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test',
       )
     })
     it('should create static files correctly for multiLineWithTemplateMarkerTemplate', async () => {
       await testTemplateExpressionToStaticFile(
         multiLineWithTemplateMarkerTemplate,
         // eslint-disable-next-line no-template-curly-in-string
-        "'''\n/hc/test\\${/test/articles/${ zendesk.article.instance.article }\n/test \\${hc/test/test/articles/}${ zendesk.macro.instance.macro1 }/test}\n'''",
+        '/hc/test\\${/test/articles/${ zendesk.article.instance.article }\n/test \\${hc/test/test/articles/}${ zendesk.macro.instance.macro1 }/test}',
       )
     })
     it('should create static files correctly for multiLineRefAtBeginningAndEnd', async () => {
       await testTemplateExpressionToStaticFile(
         multiLineRefAtBeginningAndEnd,
         // eslint-disable-next-line no-template-curly-in-string
-        "'''\n${ zendesk.article.instance.article }/hc/test/test/articles/${ zendesk.article.instance.article }\n/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test${ zendesk.macro.instance.macro1 }\n'''",
+        '${ zendesk.article.instance.article }/hc/test/test/articles/${ zendesk.article.instance.article }\n/test hc/test/test/articles/${ zendesk.macro.instance.macro1 }/test${ zendesk.macro.instance.macro1 }',
       )
     })
     it('should create static files correctly for multiLineSpecialChars', async () => {
       await testTemplateExpressionToStaticFile(
         multiLineSpecialChars,
         // eslint-disable-next-line no-template-curly-in-string
-        "'''\n/hc/test/test/articles/${ zendesk.article.instance.article }\nHe \\${said, \\''' \"Hello, World!\"\tThis is a backslash: \\ 😄${ zendesk.macro.instance.macro1 }/test\n'''",
+        '/hc/test/test/articles/${ zendesk.article.instance.article }\nHe \\${said, \'\'\' "Hello, World!"\tThis is a backslash: \\ 😄${ zendesk.macro.instance.macro1 }/test',
       )
     })
   })

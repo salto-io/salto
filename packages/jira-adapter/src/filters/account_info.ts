@@ -112,7 +112,7 @@ export const isJsmEnabledInService = async (client: JiraClient): Promise<boolean
   return accountLicense.applications?.some((app: Value) => app.id === 'jira-servicedesk')
 }
 
-export const hasJsmPremium = async (client: JiraClient): Promise<boolean> => {
+export const isJsmPremiumEnabledInService = async (client: JiraClient): Promise<boolean> => {
   // Currently, JSM is supported only in cloud. TODO: add support for DC when it will be available
   const accountLicense = await getCloudLicense(client)
   return accountLicense.applications?.some((app: Value) => app.id === 'jira-servicedesk' && app.plan !== JIRA_FREE_PLAN)

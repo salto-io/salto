@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-import { InstanceElement, toChange, DependencyChange, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  toChange,
+  DependencyChange,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { createEmptyType } from '../utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../src/constants'
@@ -30,18 +36,25 @@ describe('rootObjectTypeToObjectSchemaDependencyChanger', () => {
         id: '0',
         name: 'objectSchemaInstanceName',
       })
-      objectTypeInstance = new InstanceElement('objectTypeInstance', createEmptyType(OBJECT_TYPE_TYPE), {
-        id: '1',
-        name: 'objectTypeInstanceName',
-        parentObjectTypeId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
-      })
+      objectTypeInstance = new InstanceElement(
+        'objectTypeInstance',
+        createEmptyType(OBJECT_TYPE_TYPE),
+        {
+          id: '1',
+          name: 'objectTypeInstanceName',
+          parentObjectTypeId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
+        },
+      )
     })
     it('should remove dependencies from root objectType to objectSchema when they are both removal change', async () => {
-      objectTypeInstance.value.parentObjectTypeId = new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)
+      objectTypeInstance.value.parentObjectTypeId = new ReferenceExpression(
+        objectSchemaInstance.elemID,
+        objectSchemaInstance,
+      )
       const inputChanges = new Map([
         [0, toChange({ before: objectTypeInstance })],
         [1, toChange({ before: objectSchemaInstance })],
@@ -77,9 +90,12 @@ describe('rootObjectTypeToObjectSchemaDependencyChanger', () => {
     })
     it('should not remove dependencies from objectType to objectSchema when objectType is not root', async () => {
       const childObjectTtpyeInstance = objectTypeInstance.clone()
-      childObjectTtpyeInstance.value.parentObjectTypeId = new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance)
+      childObjectTtpyeInstance.value.parentObjectTypeId = new ReferenceExpression(
+        objectTypeInstance.elemID,
+        objectTypeInstance,
+      )
       const inputChanges = new Map([
-        [0, toChange({ before: childObjectTtpyeInstance  })],
+        [0, toChange({ before: childObjectTtpyeInstance })],
         [1, toChange({ before: objectSchemaInstance })],
         [2, toChange({ before: objectTypeInstance })],
       ])
@@ -97,15 +113,19 @@ describe('rootObjectTypeToObjectSchemaDependencyChanger', () => {
         id: '0',
         name: 'objectSchemaInstanceName',
       })
-      objectTypeInstance = new InstanceElement('objectTypeInstance', createEmptyType(OBJECT_TYPE_TYPE), {
-        id: '1',
-        name: 'objectTypeInstanceName',
-        parentObjectTypeId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
-      })
+      objectTypeInstance = new InstanceElement(
+        'objectTypeInstance',
+        createEmptyType(OBJECT_TYPE_TYPE),
+        {
+          id: '1',
+          name: 'objectTypeInstanceName',
+          parentObjectTypeId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
+        },
+      )
     })
     it('should not remove dependencies from root objectType to objectSchema when no parentObjectTypeId is defined', async () => {
       delete objectTypeInstance.value.parentObjectTypeId

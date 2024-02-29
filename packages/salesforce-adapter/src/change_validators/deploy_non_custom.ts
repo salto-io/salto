@@ -23,13 +23,10 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import { apiNameSync, metadataTypeSync } from '../filters/utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
-
-const log = logger(module)
 
 const createNonDeployableTypeError = (objectType: ObjectType): ChangeError => ({
   elemID: objectType.elemID,
@@ -54,13 +51,10 @@ const isMetadataType = (objectType: ObjectType): boolean => {
     return false // this is an artificial type
   }
   if (metadataTypeSync(objectType) === CUSTOM_OBJECT) {
-    if (
+    return (
       objectType.elemID.typeName === CUSTOM_OBJECT &&
-      objectType.annotations[API_NAME] === undefined
-    ) {
-      return true // the original "CustomObject" type from salesforce will not have an API_NAME
-    }
-    return false
+      objectType.annotations[API_NAME] === undefined // this would be the 'CustomObject' metadata type
+    )
   }
   return true
 }
@@ -69,14 +63,6 @@ const changeValidator: ChangeValidator = async (changes) =>
     .map((change) => getAffectedType(change))
     .filter(isDefined)
     .filter(isMetadataType)
-    .filter((objectType) => {
-      log.info('Invalid object type %o', {
-        elemID: objectType.elemID.getFullName(),
-        metadataType: objectType.annotations[METADATA_TYPE],
-        apiName: objectType.annotations[API_NAME],
-      })
-      return true
-    })
     .map(createNonDeployableTypeError)
 
 export default changeValidator

@@ -68,6 +68,7 @@ import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
+import { deleteIssueTypeIconValidator } from './delete_issue_type_icon'
 
 const { deployTypesNotSupportedValidator, createChangeValidator } = deployment.changeValidators
 
@@ -127,6 +128,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
+    deleteIssueTypeIcon: deleteIssueTypeIconValidator,
   }
 
   return createChangeValidator({

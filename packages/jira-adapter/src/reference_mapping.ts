@@ -77,6 +77,7 @@ import {
   WORKFLOW_CONFIGURATION_TYPE,
   DELETE_LINK_TYPES,
   OBJECT_SCHEMA_TYPE,
+  ISSUE_TYPE_ICON_NAME,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -1339,6 +1340,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'schemaId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: OBJECT_SCHEMA_TYPE },
+  },
+  {
+    src: { field: 'avatarId', parentTypes: [ISSUE_TYPE_NAME] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: ISSUE_TYPE_ICON_NAME },
   },
 ]
 

@@ -1431,7 +1431,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       dataField: '.',
       fieldTypeOverrides: [{ fieldName: 'untranslatedName', fieldType: 'string' }],
-      fieldsToOmit: [{ fieldName: 'avatarId' }, { fieldName: 'iconUrl' }],
+      fieldsToOmit: [{ fieldName: 'iconUrl' }],
       fieldsToHide: [
         {
           fieldName: 'id',

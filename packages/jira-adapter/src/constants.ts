@@ -141,6 +141,7 @@ export const OBJECT_SCHMEA_REFERENCE_TYPE_TYPE = 'ObjectSchemaReferenceType'
 export const OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE = 'ObjectSchemaDefaultReferenceType'
 export const OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE = 'ObjectTypeLabelAttribute'
 export const DELETE_LINK_TYPES = 'DeleteLinkTypes'
+export const ISSUE_TYPE_ICON_NAME = 'IssueTypeIcon'
 // almost constant functions
 export const fetchFailedWarnings = (name: string): string =>
   `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`

@@ -505,8 +505,11 @@ export const loadWorkspace = async (
                     deserializeSingleElement(
                       s,
                       async staticFile =>
-                        (await naclFilesSource.getStaticFile(staticFile.filepath, staticFile.encoding, envName)) ??
-                        staticFile,
+                        (await naclFilesSource.getStaticFile({
+                          filePath: staticFile.filepath,
+                          encoding: staticFile.encoding,
+                          env: envName,
+                        })) ?? staticFile,
                     ),
                   persistent,
                 }),
@@ -1567,7 +1570,7 @@ export const loadWorkspace = async (
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
     getStaticFile: async ({ filepath, encoding, env }) =>
-      naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv()),
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv() }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,

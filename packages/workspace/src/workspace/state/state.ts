@@ -73,7 +73,11 @@ export const buildStateData = async (
       serialize: elem => serialize([elem], 'replaceRefWithValue', file => staticFilesSource.persistStaticFile(file)),
       deserialize: elem =>
         deserializeSingleElement(elem, staticFile =>
-          staticFilesSource.getStaticFile(staticFile.filepath, staticFile.encoding, staticFile.hash),
+          staticFilesSource.getStaticFile({
+            filepath: staticFile.filepath,
+            encoding: staticFile.encoding,
+            hash: staticFile.hash,
+          }),
         ),
       persistent,
     }),

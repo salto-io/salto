@@ -52,7 +52,11 @@ describe('buildOverrideStateStaticFilesSource', () => {
         filename: 'path',
         buffer: Buffer.from('content'),
       })
-      const file = (await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content'))) as StaticFile
+      const file = (await staticFilesSource.getStaticFile({
+        filepath: 'path',
+        encoding: 'binary',
+        hash: hash.toMD5('content'),
+      })) as StaticFile
       expect(directoryStore.get).not.toHaveBeenCalled()
 
       expect(await file.getContent()).toEqual(Buffer.from('content'))
@@ -67,7 +71,11 @@ describe('buildOverrideStateStaticFilesSource', () => {
         filename: 'path',
         buffer: Buffer.from('content'),
       })
-      const file = (await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content2'))) as StaticFile
+      const file = (await staticFilesSource.getStaticFile({
+        filepath: 'path',
+        encoding: 'binary',
+        hash: hash.toMD5('content2'),
+      })) as StaticFile
       expect(directoryStore.get).not.toHaveBeenCalled()
 
       expect(await file.getContent()).toBeUndefined()
@@ -76,7 +84,11 @@ describe('buildOverrideStateStaticFilesSource', () => {
 
     it('get should return a static file without content if not found in dir store', async () => {
       directoryStore.get.mockResolvedValue(undefined)
-      const file = (await staticFilesSource.getStaticFile('path', 'binary', hash.toMD5('content'))) as StaticFile
+      const file = (await staticFilesSource.getStaticFile({
+        filepath: 'path',
+        encoding: 'binary',
+        hash: hash.toMD5('content'),
+      })) as StaticFile
       expect(directoryStore.get).not.toHaveBeenCalled()
 
       expect(await file.getContent()).toBeUndefined()
@@ -88,7 +100,7 @@ describe('buildOverrideStateStaticFilesSource', () => {
 
     it('should throw when hash is not passed', async () => {
       directoryStore.get.mockResolvedValue(undefined)
-      await expect(staticFilesSource.getStaticFile('path', 'binary')).rejects.toThrow()
+      await expect(staticFilesSource.getStaticFile({ filepath: 'path', encoding: 'binary' })).rejects.toThrow()
     })
   })
 

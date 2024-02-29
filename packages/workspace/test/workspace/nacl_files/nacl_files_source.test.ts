@@ -653,7 +653,9 @@ describe('Nacl Files Source', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
         false,
       )
-      expect(await src.getStaticFile(staticFile.filepath, staticFile.encoding)).toEqual(staticFile)
+      expect(await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding })).toEqual(
+        staticFile,
+      )
     })
   })
 

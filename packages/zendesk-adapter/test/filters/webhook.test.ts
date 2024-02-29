@@ -256,7 +256,7 @@ describe('webhook filter', () => {
       clonedWebhookBefore.value.custom_headers = {
         h1: 'v1',
         h2: 'v2',
-        h4: 'v4'
+        h4: 'v4',
       }
       const clonedWebhookAfter = webhook.clone()
       clonedWebhookBefore.value.id = id
@@ -264,7 +264,7 @@ describe('webhook filter', () => {
       clonedWebhookAfter.value.custom_headers = {
         h2: 'v2_changed',
         h3: 'v3',
-        h4: 'v4'
+        h4: 'v4',
       }
       const deployedWebhookAfter = clonedWebhookAfter.clone()
       delete deployedWebhookAfter.value.authentication
@@ -272,7 +272,7 @@ describe('webhook filter', () => {
         h1: null,
         h2: 'v2_changed',
         h3: 'v3',
-        h4: 'v4'
+        h4: 'v4',
       }
       mockDeployChange.mockImplementation(async () => ({}))
       const res = await filter.deploy([
@@ -301,7 +301,7 @@ describe('webhook filter', () => {
       clonedWebhookBefore.value.custom_headers = {
         h1: 'v1',
         h2: 'v2',
-        h4: 'v3'
+        h4: 'v3',
       }
       const clonedWebhookAfter = webhook.clone()
       clonedWebhookBefore.value.id = id
@@ -309,7 +309,7 @@ describe('webhook filter', () => {
       clonedWebhookAfter.value.custom_headers = {
         h1: 'v1',
         h2: 'v2',
-        h4: 'v3'
+        h4: 'v3',
       }
       const deployedWebhookAfter = clonedWebhookAfter.clone()
       delete deployedWebhookAfter.value.authentication
@@ -340,7 +340,7 @@ describe('webhook filter', () => {
       clonedWebhookBefore.value.custom_headers = {
         h2: 'v1',
         h3: 'v2',
-        h4: 'v3'
+        h4: 'v3',
       }
       const clonedWebhookAfter = webhook.clone()
       clonedWebhookBefore.value.id = id
@@ -351,7 +351,7 @@ describe('webhook filter', () => {
       deployedWebhookAfter.value.custom_headers = {
         h2: null,
         h3: null,
-        h4: null
+        h4: null,
       }
       mockDeployChange.mockImplementation(async () => ({}))
       const res = await filter.deploy([
@@ -380,7 +380,7 @@ describe('webhook filter', () => {
       clonedWebhookBefore.value.custom_headers = {
         h2: 'v1',
         h3: 'v2',
-        h4: 'v3'
+        h4: 'v3',
       }
       const clonedWebhookAfter = webhook.clone()
       clonedWebhookBefore.value.id = id
@@ -388,7 +388,11 @@ describe('webhook filter', () => {
       clonedWebhookAfter.value.custom_headers = null
       const deployedWebhookAfter = clonedWebhookAfter.clone()
       delete deployedWebhookAfter.value.authentication
-      deployedWebhookAfter.value.custom_headers = null
+      deployedWebhookAfter.value.custom_headers = {
+        h2: null,
+        h3: null,
+        h4: null,
+      }
       mockDeployChange.mockImplementation(async () => ({}))
       const res = await filter.deploy([
         { action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } },

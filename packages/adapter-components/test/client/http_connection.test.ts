@@ -15,6 +15,7 @@
  */
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
+import { AccountInfo } from '@salto-io/adapter-api'
 import { RetryOptions } from '../../src/client/http_connection'
 import { validateCredentials, axiosConnection, UnauthorizedError, createRetryOptions } from '../../src/client'
 import { createConnection, BASE_URL } from './common'
@@ -30,34 +31,46 @@ describe('client_http_connection', () => {
   })
 
   describe('validateCredentials with axiosConnection', () => {
-    it('should login', async () => {
-      mockAxiosAdapter
-        .onGet(
-          '/users/me',
-          undefined,
-          expect.objectContaining({
-            customheader1: 'user123',
-          }),
+    describe('successful login', () => {
+      let validateRes: Promise<AccountInfo>
+      beforeEach(() => {
+        mockAxiosAdapter
+          .onGet(
+            '/users/me',
+            undefined,
+            expect.objectContaining({
+              customheader1: 'user123',
+            }),
+          )
+          .reply(200, {
+            accountId: 'ACCOUNT_ID',
+          })
+        validateRes = validateCredentials(
+          { username: 'user123', password: 'pass' },
+          { validStatuses: [404], createConnection },
         )
-        .reply(200, {
-          accountId: 'ACCOUNT_ID',
-        })
-      const validateRes = validateCredentials(
-        { username: 'user123', password: 'pass' },
-        { validStatuses: [404], createConnection },
-      )
-      expect(await validateRes).toEqual({
-        accountId: 'ACCOUNT_ID:user123',
-        accountType: 'Sandbox',
-        isProduction: false,
       })
-      expect(mockAxiosAdapter.history.get.length).toBe(1)
-      const req = mockAxiosAdapter.history.get[0]
-      expect(req.url).toEqual('/users/me')
-      expect(req.auth).toEqual({ username: 'user123', password: 'pass' })
-      expect(req.validateStatus(404)).toBeTruthy()
-      // already verified the customheader1 header in the onGet header matcher
+      it('should login', async () => {
+        expect(await validateRes).toEqual({
+          accountId: 'ACCOUNT_ID:user123',
+          accountType: 'Sandbox',
+          isProduction: false,
+        })
+        expect(mockAxiosAdapter.history.get.length).toBe(1)
+        const req = mockAxiosAdapter.history.get[0]
+        expect(req.url).toEqual('/users/me')
+        expect(req.auth).toEqual({ username: 'user123', password: 'pass' })
+        // already verified the customheader1 header in the onGet header matcher
+      })
+      it('should use the provided validStatuses', async () => {
+        const req = mockAxiosAdapter.history.get[0]
+        expect(req.validateStatus).toBeDefined()
+        if (req.validateStatus) {
+          expect(req.validateStatus(404)).toBeTruthy()
+        }
+      })
     })
+
     it('should throw Unauthorized on UnauthorizedError', async () => {
       await expect(() =>
         validateCredentials(

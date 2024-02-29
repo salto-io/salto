@@ -27,7 +27,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
 import { WorkflowV1Instance, isWorkflowV1Instance } from '../../workflow/types'
 import {
@@ -49,7 +49,7 @@ const getTransitionIdToKeyMap = (workflowInstance: WorkflowV1Instance | Workflow
 const WALK_OVER_TRANSITION_IDS_FUNCS: Record<string, (transition: Value, func: (scriptRunner: Value) => void) => void> =
   {
     [WORKFLOW_TYPE_NAME]: walkOverTransitionIds,
-    [JIRA_WORKFLOW_TYPE]: walkOverTransitionIdsV2,
+    [WORKFLOW_CONFIGURATION_TYPE]: walkOverTransitionIdsV2,
   }
 
 const addTransitionReferences = (
@@ -151,7 +151,7 @@ const filter: FilterCreator = ({ config, client }) => {
       await awu(workflows)
         .filter(
           instance =>
-            instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === JIRA_WORKFLOW_TYPE,
+            instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE,
         )
         .forEach(async instance => {
           instance.value.transitions = (

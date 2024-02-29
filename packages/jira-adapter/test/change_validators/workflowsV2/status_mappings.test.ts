@@ -19,7 +19,7 @@ import { InstanceElement, ReadOnlyElementsSource, ReferenceExpression, toChange 
 import {
   ISSUE_TYPE_NAME,
   ISSUE_TYPE_SCHEMA_NAME,
-  JIRA_WORKFLOW_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   PROJECT_TYPE,
   STATUS_TYPE_NAME,
 } from '../../../src/constants'
@@ -80,7 +80,7 @@ describe('status mappings', () => {
     issueType2 = new InstanceElement('issueType2', createEmptyType(ISSUE_TYPE_NAME))
     issueType3 = new InstanceElement('issueType3', createEmptyType(ISSUE_TYPE_NAME))
     issueType4 = new InstanceElement('issueType4', createEmptyType(ISSUE_TYPE_NAME))
-    workflowInstance = new InstanceElement('workflowInstance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+    workflowInstance = new InstanceElement('workflowInstance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
       name: 'workflowInstance',
       statuses: [
         {
@@ -94,35 +94,43 @@ describe('status mappings', () => {
         },
       ],
     })
-    defaultWorkflowInstance = new InstanceElement('defaultWorkflowInstance', createEmptyType(JIRA_WORKFLOW_TYPE), {
-      name: 'defaultWorkflowInstance',
-      statuses: [
-        {
-          statusReference: new ReferenceExpression(status1.elemID, status1),
-        },
-        {
-          statusReference: new ReferenceExpression(status3.elemID, status3),
-        },
-      ],
-    })
-    workflowSchemeInstance = new InstanceElement('workflowSchemeInstance', createEmptyType(JIRA_WORKFLOW_TYPE), {
-      name: 'workflowSchemeInstance',
-      defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
-      items: [
-        {
-          workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
-          issueType: new ReferenceExpression(issueType1.elemID, issueType1),
-        },
-        {
-          workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
-          issueType: new ReferenceExpression(issueType2.elemID, issueType2),
-        },
-        {
-          workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
-          issueType: new ReferenceExpression(issueType4.elemID, issueType4),
-        },
-      ],
-    })
+    defaultWorkflowInstance = new InstanceElement(
+      'defaultWorkflowInstance',
+      createEmptyType(WORKFLOW_CONFIGURATION_TYPE),
+      {
+        name: 'defaultWorkflowInstance',
+        statuses: [
+          {
+            statusReference: new ReferenceExpression(status1.elemID, status1),
+          },
+          {
+            statusReference: new ReferenceExpression(status3.elemID, status3),
+          },
+        ],
+      },
+    )
+    workflowSchemeInstance = new InstanceElement(
+      'workflowSchemeInstance',
+      createEmptyType(WORKFLOW_CONFIGURATION_TYPE),
+      {
+        name: 'workflowSchemeInstance',
+        defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
+        items: [
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType1.elemID, issueType1),
+          },
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType2.elemID, issueType2),
+          },
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType4.elemID, issueType4),
+          },
+        ],
+      },
+    )
     issueTypeSchemeInstance = new InstanceElement('issueTypeSchemeInstance', createEmptyType(ISSUE_TYPE_SCHEMA_NAME), {
       issueTypeIds: [
         new ReferenceExpression(issueType1.elemID, issueType1),

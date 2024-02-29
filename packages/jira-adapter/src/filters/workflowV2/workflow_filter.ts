@@ -70,7 +70,7 @@ import {
   WorkflowStatus,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { JIRA_WORKFLOW_TYPE } from '../../constants'
+import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -482,10 +482,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
-      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
+      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(WORKFLOW_CONFIGURATION_TYPE)) {
         return { errors: [] }
       }
-      const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
+      const jiraWorkflow = findObject(elements, WORKFLOW_CONFIGURATION_TYPE)
       if (jiraWorkflow === undefined) {
         log.error('JiraWorkflow type was not found')
         return {

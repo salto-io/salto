@@ -74,7 +74,7 @@ import {
   WEBHOOK_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
-  JIRA_WORKFLOW_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   DELETE_LINK_TYPES,
   OBJECT_SCHEMA_TYPE,
 } from './constants'
@@ -664,12 +664,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'workflow', parentTypes: ['WorkflowSchemeItem'] },
     serializationStrategy: 'name',
-    target: { type: JIRA_WORKFLOW_TYPE },
+    target: { type: WORKFLOW_CONFIGURATION_TYPE },
   },
   {
     src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
     serializationStrategy: 'name',
-    target: { type: JIRA_WORKFLOW_TYPE },
+    target: { type: WORKFLOW_CONFIGURATION_TYPE },
   },
   {
     src: { field: 'issueType', parentTypes: ['WorkflowSchemeItem'] },

@@ -35,7 +35,7 @@ import workflowFilter from '../../../src/filters/workflowV2/workflow_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import {
-  JIRA_WORKFLOW_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   ISSUE_TYPE_NAME,
   JIRA,
   PROJECT_TYPE,
@@ -83,7 +83,7 @@ describe('jiraWorkflowFilter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    workflowType = createEmptyType(JIRA_WORKFLOW_TYPE)
+    workflowType = createEmptyType(WORKFLOW_CONFIGURATION_TYPE)
     workflowRuleConfigurationParametersType = createEmptyType('WorkflowRuleConfiguration_parameters')
     elements = [workflowType, workflowRuleConfigurationParametersType]
   })
@@ -715,7 +715,7 @@ describe('jiraWorkflowFilter', () => {
         },
       })
       workflowType = new ObjectType({
-        elemID: new ElemID(JIRA, JIRA_WORKFLOW_TYPE),
+        elemID: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE),
         fields: {
           statuses: { refType: workflowReferenceStatusType },
           transitions: { refType: new MapType(transitionType) },

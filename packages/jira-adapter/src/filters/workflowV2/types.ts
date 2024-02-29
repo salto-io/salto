@@ -24,7 +24,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { JIRA_WORKFLOW_TYPE } from '../../constants'
+import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import { WorkflowV1Instance, isWorkflowV1Instance } from '../workflow/types'
 
 export const CHUNK_SIZE = 25
@@ -134,7 +134,7 @@ const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<stri
 )
 
 export const isWorkflowV2Instance = (instance: InstanceElement): instance is WorkflowV2Instance =>
-  instance.elemID.typeName === JIRA_WORKFLOW_TYPE && isWorkflowValues(instance.value)
+  instance.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE && isWorkflowValues(instance.value)
 
 export const isWorkflowInstance = (instance: InstanceElement): instance is WorkflowV1Instance | WorkflowV2Instance =>
   isWorkflowV1Instance(instance) || isWorkflowV2Instance(instance)
@@ -160,7 +160,7 @@ export const isAdditionOrModificationWorkflowChange = (
 ): change is AdditionChange<InstanceElement> | ModificationChange<InstanceElement> =>
   isInstanceChange(change) &&
   isAdditionOrModificationChange(change) &&
-  change.data.after.elemID.typeName === JIRA_WORKFLOW_TYPE
+  change.data.after.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE
 
 const TASK_RESPONSE_SCHEMA = Joi.object({
   status: Joi.string().required(),

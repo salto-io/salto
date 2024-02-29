@@ -30,6 +30,7 @@ describe('instance element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
+        customNameMapping: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(0)
@@ -43,7 +44,8 @@ describe('instance element', () => {
           adapterName: 'myAdapter',
           entries: [],
           typeName: 'myType',
-          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({ customizations: {} }),
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string><{}>({ customizations: {} }),
+          customNameMapping: {},
         }),
       ).toThrow('type myAdapter:myType is not defined as top-level, cannot create instances')
     })
@@ -59,6 +61,7 @@ describe('instance element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
+        customNameMapping: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(2)
@@ -92,7 +95,7 @@ describe('instance element', () => {
       ).toBeTruthy()
     })
     it('should create instances and matching type based on defined customizations', () => {
-      const res = generateInstancesWithInitialTypes({
+      const res = generateInstancesWithInitialTypes<{ customNameMappingOptions: 'customTest' }>({
         adapterName: 'myAdapter',
         entries: [
           { str: 'A', num: 2, arr: [{ st: 'X', unknown: true }] },
@@ -109,13 +112,16 @@ describe('instance element', () => {
                 topLevel: {
                   isTopLevel: true,
                   elemID: {
-                    parts: [{ fieldName: 'str' }],
+                    parts: [{ fieldName: 'str', mapping: 'customTest' }],
                   },
                 },
               },
             },
           },
         }),
+        customNameMapping: {
+          customTest: name => `custom_${name}`,
+        },
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(2)
@@ -132,8 +138,8 @@ describe('instance element', () => {
         unknown: 'unknown',
       })
       expect(res.instances.map(e => e.elemID.getFullName()).sort()).toEqual([
-        'myAdapter.myType.instance.A',
-        'myAdapter.myType.instance.CCC',
+        'myAdapter.myType.instance.custom_A',
+        'myAdapter.myType.instance.custom_CCC',
       ])
     })
     it('should omit nulls and undefined values from instances and nacl-case field names', () => {
@@ -146,6 +152,7 @@ describe('instance element', () => {
             myType: { element: { topLevel: { isTopLevel: true } } },
           },
         }),
+        customNameMapping: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(1)

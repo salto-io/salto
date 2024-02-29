@@ -24,7 +24,6 @@ import {
 } from '@salto-io/adapter-api'
 import { getElementGenerator } from '../../../src/fetch/element/element'
 import { queryWithDefault } from '../../../src/definitions'
-import { createMockQuery } from '../../../src/fetch/query'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
 
 describe('element', () => {
@@ -36,7 +35,7 @@ describe('element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
-        fetchQuery: createMockQuery(),
+        customNameMapping: {},
       })
       generator.pushEntries({
         entries: [],
@@ -53,7 +52,7 @@ describe('element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
-        fetchQuery: createMockQuery(),
+        customNameMapping: {},
       })
       generator.pushEntries({
         entries: [],
@@ -72,9 +71,17 @@ describe('element', () => {
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
-          customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
+         
+          customizations: {
+            myType: {
+              element: {
+                topLevel: { isTopLevel: true },
+              },
+            },
+          },
+       ,
         }),
-        fetchQuery: createMockQuery(),
+        customNameMapping: {},
       })
       generator.pushEntries({
         entries,
@@ -120,7 +127,7 @@ describe('element', () => {
         { str: 'A', num: 2, arr: [{ st: 'X', unknown: true }] },
         { str: 'CCC', arr: [{ unknown: 'text' }] },
       ]
-      const generator = getElementGenerator({
+      const generator = getElementGenerator<{ customNameMappingOptions: 'customTest' }>({
         adapterName: 'myAdapter',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: {
@@ -133,7 +140,7 @@ describe('element', () => {
                 topLevel: {
                   isTopLevel: true,
                   elemID: {
-                    parts: [{ fieldName: 'str' }],
+                    parts: [{ fieldName: 'str', mapping: 'customTest' }],
                   },
                 },
               },
@@ -149,7 +156,9 @@ describe('element', () => {
             },
           },
         }),
-        fetchQuery: createMockQuery(),
+        customNameMapping: {
+          customTest: name => `${name}CustomTest`,
+        },
       })
       generator.pushEntries({
         entries,
@@ -160,8 +169,8 @@ describe('element', () => {
       expect(res.elements).toHaveLength(4)
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'myAdapter.myType',
-        'myAdapter.myType.instance.A',
-        'myAdapter.myType.instance.CCC',
+        'myAdapter.myType.instance.ACustomTest',
+        'myAdapter.myType.instance.CCCCustomTest',
         'myAdapter.myType__arr',
       ])
       const objType = res.elements
@@ -179,14 +188,14 @@ describe('element', () => {
       })
       expect(
         isEqualElements(
-          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'A'),
-          new InstanceElement('A', objType, entries[0], []),
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'ACustomTest'),
+          new InstanceElement('ACustomTest', objType, entries[0], []),
         ),
       ).toBeTruthy()
       expect(
         isEqualElements(
-          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'CCC'),
-          new InstanceElement('CCC', objType, entries[1], []),
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'CCCCustomTest'),
+          new InstanceElement('CCCCustomTest', objType, entries[1], []),
         ),
       ).toBeTruthy()
     })

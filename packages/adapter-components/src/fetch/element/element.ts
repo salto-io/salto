@@ -18,12 +18,13 @@ import { ElemIdGetter, Element, ObjectType, SeverityLevel, Values } from '@salto
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { ElementQuery } from '../query'
 import { FetchElements } from '../types'
 import { generateInstancesWithInitialTypes } from './instance_element'
 import { adjustFieldTypes } from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from '../../config/shared' // TODO move
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
+import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 
 const log = logger(module)
 
@@ -39,15 +40,16 @@ export type ElementGenerator = {
   generate: () => FetchElements
 }
 
-export const getElementGenerator = ({
+export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>({
   adapterName,
   defQuery,
   predefinedTypes,
+  customNameMapping,
   getElemIdFunc,
 }: {
   adapterName: string
-  fetchQuery: ElementQuery
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
+  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
 }): ElementGenerator => {
@@ -82,6 +84,7 @@ export const getElementGenerator = ({
           typeName,
           definedTypes: predefinedTypes,
           getElemIdFunc,
+          customNameMapping,
         })
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5427)

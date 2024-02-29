@@ -16,16 +16,21 @@
 import { ElemIdGetter, ObjectType, Values } from '@salto-io/adapter-api'
 import { DefQuery } from '../utils'
 // eslint-disable-next-line import/no-cycle
-import { InstanceFetchApiDefinitions } from './fetch'
+import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from './fetch'
+import { NameMappingFunctionMap } from '../shared'
+import { ResolveCustomNameMappingOptionsType } from '../api'
 
-export type ElementAndResourceDefFinder = DefQuery<Pick<InstanceFetchApiDefinitions, 'element' | 'resource'>>
+export type ElementAndResourceDefFinder<Options extends FetchApiDefinitionsOptions = {}> = DefQuery<
+  Pick<InstanceFetchApiDefinitions<Options>, 'element' | 'resource'>
+>
 
-export type GenerateTypeArgs = {
+export type GenerateTypeArgs<Options extends FetchApiDefinitionsOptions = {}> = {
   adapterName: string
   typeName: string
   parentName?: string
   entries: Values[]
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
+  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   typeNameOverrides?: Record<string, string>
   isUnknownEntry?: (value: unknown) => boolean
   definedTypes?: Record<string, ObjectType>

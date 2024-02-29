@@ -21,6 +21,11 @@ export const DATA_FIELD_ENTIRE_OBJECT = '.'
 
 export type NameMappingOptions = 'lowercase' | 'uppercase'
 
+export type NameMappingFunctionMap<TCustomOptions extends string = never> = Record<
+  Exclude<TCustomOptions, NameMappingOptions>,
+  (name: string) => string
+>
+
 export type ContextParams = Record<string, unknown>
 
 export type GeneratedItem<TContext = ContextParams, TVal = unknown> = {

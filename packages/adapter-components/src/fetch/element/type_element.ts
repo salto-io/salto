@@ -34,11 +34,12 @@ import { SUBTYPES_PATH, TYPES_PATH } from '../../elements/constants'
 import { ARRAY_ITEMS_FIELD } from '../../elements/swagger/type_elements/swagger_parser'
 import { computeTypesToRename, toNestedTypeName, NESTING_SEPARATOR } from './type_utils'
 import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 
 const log = logger(module)
 
-const generateNestedType = (
-  args: lowerdashTypes.PickyRequired<GenerateTypeArgs, 'parentName'>,
+const generateNestedType = <Options extends FetchApiDefinitionsOptions>(
+  args: lowerdashTypes.PickyRequired<GenerateTypeArgs<Options>, 'parentName'>,
 ): NestedTypeWithNestedTypes => {
   const { typeName, parentName, entries, isUnknownEntry, isMapWithDynamicType } = args
 
@@ -148,8 +149,8 @@ const normalizeType = (type: ObjectType): ObjectType => {
  *
  * Note: field customizations should be applied separately, once all types have been created
  */
-export const generateType = (
-  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType'>,
+export const generateType = <Options extends FetchApiDefinitionsOptions>(
+  args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType'>,
 ): ObjectTypeWithNestedTypes => {
   const {
     adapterName,

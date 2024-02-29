@@ -242,7 +242,8 @@ describe('system definitions utils', () => {
   })
 
   describe('mergeWithUserElemIDDefinitions', () => {
-    let mergedDef: FetchApiDefinitions<'main'>
+    // TODO SVH: add types here etc
+    let mergedDef: FetchApiDefinitions
 
     beforeAll(() => {
       mergedDef = mergeWithUserElemIDDefinitions({

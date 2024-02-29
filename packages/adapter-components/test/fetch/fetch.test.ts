@@ -191,6 +191,7 @@ describe('fetch', () => {
           },
         },
         fetchQuery: createMockQuery(),
+        customNameMapping: {},
       })
       expect(res.errors).toEqual([])
       expect(res.configChanges).toHaveLength(0)

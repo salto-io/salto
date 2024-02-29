@@ -38,6 +38,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 
 const { isDefined } = lowerdashValues
 const log = logger(module)
@@ -53,11 +54,11 @@ export const toNestedTypeName = (parentName: string, nestedTypeName: string): st
  * - when extracting a standalone field, the provided typename will be used as the extracted instances' type
  *   (and the referring field's type as well)
  */
-export const computeTypesToRename = ({
+export const computeTypesToRename = <Options extends FetchApiDefinitionsOptions>({
   defQuery,
   typeNameOverrides,
 }: {
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
   typeNameOverrides?: Record<string, string>
 }): Record<string, string> =>
   typeNameOverrides ??
@@ -221,13 +222,13 @@ export const markServiceIdField = (
 /**
  * Adjust field definitions based on the defined customization.
  */
-export const adjustFieldTypes = ({
+export const adjustFieldTypes = <Options extends FetchApiDefinitionsOptions>({
   definedTypes,
   defQuery,
   finalTypeNames,
 }: {
   definedTypes: Record<string, ObjectType>
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
   finalTypeNames?: Set<string>
 }): void => {
   Object.entries(definedTypes).forEach(([typeName, type]) => {

@@ -24,8 +24,8 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFuncSync, invertNaclCase, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
-import { DefQuery } from '../../definitions'
+import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
+import { DefQuery, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 
@@ -46,7 +46,9 @@ const recursiveNaclCase = (value: Values, invert = false): Values => {
  * - omit null values
  */
 const omitValues =
-  <ClientOptions extends string>(defQuery: DefQuery<InstanceFetchApiDefinitions<ClientOptions>>): TransformFuncSync =>
+  <Options extends FetchApiDefinitionsOptions>(
+    defQuery: DefQuery<InstanceFetchApiDefinitions<Options>>,
+  ): TransformFuncSync =>
   ({ value, field }) => {
     if (value === null) {
       return undefined
@@ -68,13 +70,13 @@ const omitValues =
  *
  * Note: standalone fields' values with referenceFromParent=false should be omitted separately
  */
-export const toInstanceValue = ({
+export const toInstanceValue = <Options extends FetchApiDefinitionsOptions>({
   value,
   defQuery,
   type,
 }: {
   value: Values
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
   type: ObjectType
 }): Values =>
   transformValuesSync({
@@ -99,14 +101,16 @@ export type InstanceCreationParams = {
  * Generate an instance for a single entry returned for a given type, and set its elem id and path.
  * Assuming the entry is already in its final structure (after running toInstanceValue).
  */
-export const getInstanceCreationFunctions = ({
+export const getInstanceCreationFunctions = <Options extends FetchApiDefinitionsOptions>({
   defQuery,
   type,
   getElemIdFunc,
+  customNameMapping,
 }: {
   type: ObjectType
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
   getElemIdFunc?: ElemIdGetter
+  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
 }): {
   toElemName: ElemIDCreator
   toPath: PartsCreator
@@ -132,12 +136,14 @@ export const getInstanceCreationFunctions = ({
     getElemIdFunc,
     serviceIDDef: resourceDef?.serviceIDFields,
     typeID: type.elemID,
+    customNameMapping,
   })
   const toPath = getElemPath({
     def: elementDef.topLevel.path,
     singleton,
     elemIDCreator: toElemName,
     typeID: type.elemID,
+    customNameMapping,
   })
 
   return { toElemName, toPath }

@@ -19,24 +19,28 @@ import { createClientConfigType, ClientBaseConfig, ClientRateLimitConfig } from 
 import { UserFetchConfig, createUserFetchConfigType } from './fetch_config'
 import { UserDeployConfig, createChangeValidatorConfigType, createUserDeployConfigType } from './deploy_config'
 
-export type UserConfig = {
+export type UserConfig<TCustomNameMappingOptions extends string> = {
   client: ClientBaseConfig<ClientRateLimitConfig>
-  fetch: UserFetchConfig
+  fetch: UserFetchConfig<{ customNameMappingOptions: TCustomNameMappingOptions }>
   deploy?: UserDeployConfig
 }
 
-export type ConfigTypeCreator = (args: {
+type ConfigTypeCreatorParams<TCustomNameMappingOptions extends string> = {
   adapterName: string
-  defaultConfig?: Partial<UserConfig>
+  defaultConfig?: Partial<UserConfig<TCustomNameMappingOptions>>
   additionalFields?: Record<string, FieldDefinition>
   additionalFetchFields?: Record<string, FieldDefinition>
   additionalDeployFields?: Record<string, FieldDefinition>
   additionalClientFields?: Record<string, FieldDefinition>
   changeValidatorNames?: string[]
   omitElemID?: boolean
-}) => ObjectType
+}
 
-export const createUserConfigType: ConfigTypeCreator = ({
+export type ConfigTypeCreator<TCustomNameMappingOptions extends string> = (
+  args: ConfigTypeCreatorParams<TCustomNameMappingOptions>,
+) => ObjectType
+
+export const createUserConfigType = <TCustomNameMappingOptions extends string>({
   adapterName,
   defaultConfig,
   changeValidatorNames = [],
@@ -45,8 +49,8 @@ export const createUserConfigType: ConfigTypeCreator = ({
   additionalDeployFields,
   additionalClientFields,
   omitElemID,
-}) =>
-  createMatchingObjectType<Partial<UserConfig>>({
+}: ConfigTypeCreatorParams<TCustomNameMappingOptions>): ObjectType =>
+  createMatchingObjectType<Partial<UserConfig<TCustomNameMappingOptions>>>({
     elemID: new ElemID(adapterName),
     fields: {
       client: {

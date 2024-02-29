@@ -171,9 +171,7 @@ const typeAdder = ({
         // fallback type name when no name is provided in the swagger def
         `${objName}_${ADDITIONAL_PROPERTIES_FIELD}`,
       )
-      Object.assign(type.annotations, {
-        [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: { refType: additionalPropertiesType },
-      })
+      type.annotate({ [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: { refType: additionalPropertiesType } })
     }
 
     if (endpoints !== undefined && endpoints.length > 0) {

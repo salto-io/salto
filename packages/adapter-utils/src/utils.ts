@@ -1120,7 +1120,7 @@ export const getSubtypes = async (types: ObjectType[], validateUniqueness = fals
   const findSubtypes = async (type: ObjectType): Promise<void> => {
     const fieldsTypes = await Promise.all(Object.values(type.fields).map(field => field.getType()))
     const additionalPropertiesRefType = type.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType
-    await awu(additionalPropertiesRefType ? [...fieldsTypes, additionalPropertiesRefType] : fieldsTypes).forEach(
+    await awu(additionalPropertiesRefType !== undefined ? [...fieldsTypes, additionalPropertiesRefType] : fieldsTypes).forEach(
       async refType => {
         const fieldType = isContainerType(refType) ? await refType.getInnerType() : refType
 

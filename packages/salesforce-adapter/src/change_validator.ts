@@ -49,7 +49,7 @@ import instanceWithUnknownType from './change_validators/instance_with_unknown_t
 import artificialTypes from './change_validators/artifical_types'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
-import deployNonDeployableTypes from './change_validators/deploy_non_custom'
+import metadataTypes from './change_validators/metadata_types'
 
 const { createChangeValidator, getDefaultChangeValidators } =
   deployment.changeValidators
@@ -103,7 +103,7 @@ export const changeValidators: Record<
   deletedNonQueryableFields: () => deletedNonQueryableFields,
   instanceWithUnknownType: () => instanceWithUnknownType,
   artificialTypes: () => artificialTypes,
-  deployNonDeployableTypes: () => deployNonDeployableTypes,
+  metadataTypes: () => metadataTypes,
   ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
 }
 

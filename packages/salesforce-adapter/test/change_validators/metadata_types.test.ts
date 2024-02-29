@@ -21,7 +21,7 @@ import {
   ObjectType,
   ElemID,
 } from '@salto-io/adapter-api'
-import deployNonDeployableTypes from '../../src/change_validators/deploy_non_custom'
+import deployNonDeployableTypes from '../../src/change_validators/metadata_types'
 import { createMetadataObjectType } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'

@@ -61,7 +61,11 @@ export interface Connection<TCredentials> {
   login: LoginFunc<TCredentials>
 }
 
-export type ConnectionCreator<TCredentials> = (retryOptions: RetryOptions, timeout?: number) => Connection<TCredentials>
+export type ConnectionCreator<TCredentials> = (
+  retryOptions: RetryOptions,
+  timeout?: number,
+  validStatuses?: number[],
+) => Connection<TCredentials>
 
 const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
   // Although the standard is 'Retry-After' is seems that some servers
@@ -148,6 +152,7 @@ type ConnectionParams<TCredentials> = {
   connection?: Connection<TCredentials>
   retryOptions?: RetryOptions
   timeout?: number
+  validStatuses?: number[]
   createConnection: ConnectionCreator<TCredentials>
 }
 
@@ -155,10 +160,15 @@ export const createClientConnection = <TCredentials>({
   connection,
   retryOptions,
   timeout = DEFAULT_TIMEOUT_OPTS.maxDuration,
+  validStatuses = [],
   createConnection,
 }: ConnectionParams<TCredentials>): Connection<TCredentials> =>
   connection ??
-  createConnection(_.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS)), timeout)
+  createConnection(
+    _.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS)),
+    timeout,
+    validStatuses,
+  )
 
 export const validateCredentials = async <TCredentials>(
   creds: TCredentials,
@@ -186,6 +196,7 @@ type AxiosConnectionParams<TCredentials> = {
     connection: APIConnection
   }) => Promise<AccountInfo>
   timeout?: number
+  validStatuses?: number[]
 }
 
 export const axiosConnection = <TCredentials>({
@@ -194,13 +205,17 @@ export const axiosConnection = <TCredentials>({
   baseURLFunc,
   credValidateFunc,
   timeout = 0,
+  validStatuses = [],
 }: AxiosConnectionParams<TCredentials>): Connection<TCredentials> => {
   const login = async (creds: TCredentials): Promise<AuthenticatedAPIConnection> => {
+    const validateStatus = (status: number): boolean =>
+      (status >= 200 && status < 300) || validStatuses.includes(status)
     const httpClient = axios.create({
       baseURL: await baseURLFunc(creds),
       ...(await authParamsFunc(creds)),
       maxBodyLength: Infinity,
       timeout,
+      validateStatus,
     })
     axiosRetry(httpClient, retryOptions)
 

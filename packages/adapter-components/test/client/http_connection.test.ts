@@ -42,7 +42,10 @@ describe('client_http_connection', () => {
         .reply(200, {
           accountId: 'ACCOUNT_ID',
         })
-      const validateRes = validateCredentials({ username: 'user123', password: 'pass' }, { createConnection })
+      const validateRes = validateCredentials(
+        { username: 'user123', password: 'pass' },
+        { validStatuses: [404], createConnection },
+      )
       expect(await validateRes).toEqual({
         accountId: 'ACCOUNT_ID:user123',
         accountType: 'Sandbox',
@@ -52,6 +55,7 @@ describe('client_http_connection', () => {
       const req = mockAxiosAdapter.history.get[0]
       expect(req.url).toEqual('/users/me')
       expect(req.auth).toEqual({ username: 'user123', password: 'pass' })
+      expect(req.validateStatus(404)).toBeTruthy()
       // already verified the customheader1 header in the onGet header matcher
     })
     it('should throw Unauthorized on UnauthorizedError', async () => {

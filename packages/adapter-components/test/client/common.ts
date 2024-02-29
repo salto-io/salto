@@ -35,7 +35,7 @@ export const validateCreds = async ({
   }
 }
 
-export const createConnection: ConnectionCreator<Credentials> = (retryOptions, timeout) =>
+export const createConnection: ConnectionCreator<Credentials> = (retryOptions, timeout, validStatuses) =>
   axiosConnection({
     retryOptions,
     authParamsFunc: async ({ username, password }: Credentials) => ({
@@ -50,4 +50,5 @@ export const createConnection: ConnectionCreator<Credentials> = (retryOptions, t
     baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCreds,
     timeout,
+    validStatuses,
   })

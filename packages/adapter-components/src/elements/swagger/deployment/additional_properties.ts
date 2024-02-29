@@ -58,7 +58,6 @@ const removeAdditionalPropertiesFlat = async (
   }
 }
 
-
 // TODO remove this
 // https://salto-io.atlassian.net/browse/SALTO-5332
 /**

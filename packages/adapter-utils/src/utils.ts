@@ -1120,24 +1120,24 @@ export const getSubtypes = async (types: ObjectType[], validateUniqueness = fals
   const findSubtypes = async (type: ObjectType): Promise<void> => {
     const fieldsTypes = await Promise.all(Object.values(type.fields).map(field => field.getType()))
     const additionalPropertiesRefType = type.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType
-    await awu(additionalPropertiesRefType !== undefined ? [...fieldsTypes, additionalPropertiesRefType] : fieldsTypes).forEach(
-      async refType => {
-        const fieldType = isContainerType(refType) ? await refType.getInnerType() : refType
+    await awu(
+      additionalPropertiesRefType !== undefined ? [...fieldsTypes, additionalPropertiesRefType] : fieldsTypes,
+    ).forEach(async refType => {
+      const fieldType = isContainerType(refType) ? await refType.getInnerType() : refType
 
-        if (!isObjectType(fieldType) || types.includes(fieldType)) {
-          return
+      if (!isObjectType(fieldType) || types.includes(fieldType)) {
+        return
+      }
+      if (fieldType.elemID.getFullName() in subtypes) {
+        if (validateUniqueness && !subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
+          log.warn(`duplicate ElemIDs of subtypes found. The duplicate is ${fieldType.elemID.getFullName()}`)
         }
-        if (fieldType.elemID.getFullName() in subtypes) {
-          if (validateUniqueness && !subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
-            log.warn(`duplicate ElemIDs of subtypes found. The duplicate is ${fieldType.elemID.getFullName()}`)
-          }
-          return
-        }
+        return
+      }
 
-        subtypes[fieldType.elemID.getFullName()] = fieldType
-        await findSubtypes(fieldType)
-      },
-    )
+      subtypes[fieldType.elemID.getFullName()] = fieldType
+      await findSubtypes(fieldType)
+    })
   }
 
   await awu(types).forEach(findSubtypes)

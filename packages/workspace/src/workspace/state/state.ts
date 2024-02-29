@@ -77,7 +77,7 @@ export const buildStateData = async (
             filepath: staticFile.filepath,
             encoding: staticFile.encoding,
             hash: staticFile.hash,
-            isTemplate: staticFile.isTemplate
+            isTemplate: staticFile.isTemplate,
           }),
         ),
       persistent,

@@ -121,7 +121,7 @@ export type MultiEnvSource = {
   load: (args: SourceLoadParams) => Promise<EnvsChanges>
   getSearchableNames(env: string): Promise<string[]>
   getStaticFile: (
-    args: string | { filePath: string; encoding: BufferEncoding; env: string, isTemplate?: boolean },
+    args: string | { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
     encoding?: BufferEncoding,
     env?: string,
   ) => Promise<StaticFile | undefined>
@@ -192,7 +192,11 @@ const buildMultiEnvSource = (
     const sourcesFiles = (
       await Promise.all(
         Object.values(getActiveSources(environmentName)).map(src =>
-          src.getStaticFile({ filePath, encoding: fileEncoding, isTemplate: args.isTemplate }),
+          src.getStaticFile({
+            filePath,
+            encoding: fileEncoding,
+            isTemplate: _.isObject(args) ? args.isTemplate : undefined,
+          }),
         ),
       )
     ).filter(values.isDefined)
@@ -211,8 +215,12 @@ const buildMultiEnvSource = (
           deserializeSingleElement(
             s,
             async staticFile =>
-              (await getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: envName, isTemplate: staticFile.filepath })) ??
-              staticFile,
+              (await getStaticFile({
+                filePath: staticFile.filepath,
+                encoding: staticFile.encoding,
+                env: envName,
+                isTemplate: staticFile.isTemplate,
+              })) ?? staticFile,
           ),
         persistent,
       }),

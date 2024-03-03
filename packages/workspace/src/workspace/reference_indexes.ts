@@ -88,9 +88,10 @@ const getReferences = async (element: Element, customReferences: ReferenceInfo[]
   customReferences.forEach(refInfo => {
     references[getReferenceDetailsIdentifier(refInfo)] = refInfo
   })
-  await awu(templateStaticFiles).forEach(async fileObj => {
+  await awu(templateStaticFiles).map(async (fileObj) => {
     const expression = await parserUtils.staticFileToTemplateExpression(fileObj.value)
-    getReferencesFromTemplateExpression(fileObj.source, expression)
+    return {expression, source: fileObj.source}}).forEach((fileObj) => {
+    getReferencesFromTemplateExpression(fileObj.source, fileObj.expression)
   })
 
   return Object.values(references)

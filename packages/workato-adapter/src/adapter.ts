@@ -21,10 +21,15 @@ import {
   DeployModifiers,
   FetchOptions,
   ElemIdGetter,
+  DeployOptions,
+  isInstanceChange,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import { getParent, logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import WorkatoClient from './client/client'
 import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -35,15 +40,20 @@ import jiraProjectIssueTypeFilter from './filters/cross_service/jira/project_iss
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import commonFilters from './filters/common'
-import { WORKATO } from './constants'
+import { DEPLOY_USING_RLM_GROUP, RECIPE_CODE_TYPE, WORKATO } from './constants'
 import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
+import { workatoLookUpName } from './reference_mapping'
+import { resolveValuesCheckRecipeFunc as resolveValuesRecipeCodeWrapper, RLMDeploy } from './rlm'
+import { isChangeFromType } from './utils'
+import { getChangeGroupIds } from './group_change'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
 const { returnFullEntry } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 const { simpleGetArgs } = fetchUtils.resource
+const { awu } = collections.asynciterable
 
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
@@ -139,14 +149,56 @@ export default class WorkatoAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   // eslint-disable-next-line class-methods-use-this
-  async deploy(): Promise<DeployResult> {
-    throw new Error('Not implemented.')
+  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    if (changeGroup.groupID !== DEPLOY_USING_RLM_GROUP) {
+      throw new Error('not implemented')
+    }
+
+    // resolving workato references
+    const resolvedChanges = await awu(changeGroup.changes)
+      .map(async change => resolveChangeElement(change, workatoLookUpName, resolveValuesRecipeCodeWrapper))
+      .toArray()
+
+    const runner = this.createFiltersRunner()
+    await runner.preDeploy(resolvedChanges)
+
+    const [instanceChanges, nonInstanceChanges] = _.partition(resolvedChanges, isInstanceChange)
+    if (nonInstanceChanges.length > 0) {
+      log.warn(
+        `We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges
+          .map(elem => getChangeData(elem).elemID.getFullName())
+          .join(', ')}`,
+      )
+    }
+
+    const deployResult = await RLMDeploy(instanceChanges, this.client)
+
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
+    await runner.onDeploy(appliedChangesBeforeRestore)
+
+    const appliedChangeIDsBeforeRestore = new Set(
+      appliedChangesBeforeRestore.map(change => getChangeData(change).elemID.getFullName()),
+    )
+    const appliedChanges = changeGroup.changes.filter(change => {
+      const changeData = getChangeData(change)
+      return appliedChangeIDsBeforeRestore.has(
+        isInstanceChange(change) && isChangeFromType([RECIPE_CODE_TYPE])(change)
+          ? getParent(changeData).elemID.getFullName() // TODO getParent could thorw error. change
+          : changeData.elemID.getFullName(),
+      )
+    })
+
+    return {
+      appliedChanges,
+      errors: deployResult.errors,
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator,
+      changeValidator: changeValidator(this.userConfig),
+      getChangeGroupIds,
     }
   }
 }

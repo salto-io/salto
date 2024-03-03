@@ -13,15 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { ChangeValidatorName } from './config'
+import { ChangeValidatorName, DEPLOY_CONFIG, WorkatoConfig } from './config'
+import notSupportedTypesValidator from './change_validators/types_not_supported'
+import notSupportedRemovalValidator from './change_validators/actions_not_supported'
 
-const { deployNotSupportedValidator, getDefaultChangeValidators, createChangeValidator } = deployment.changeValidators
+const { deployTypesNotSupportedValidator, getDefaultChangeValidators, createChangeValidator } =
+  deployment.changeValidators
 
 const validators: Record<ChangeValidatorName, ChangeValidator> = {
   ...getDefaultChangeValidators(),
-  deployNotSupported: deployNotSupportedValidator,
+  deployTypesNotSupported: deployTypesNotSupportedValidator,
+  notSupportedTypes: notSupportedTypesValidator,
+  notSupportedRemoval: notSupportedRemovalValidator,
 }
 
-export default createChangeValidator({ validators })
+export default (config: WorkatoConfig): ChangeValidator =>
+  createChangeValidator({
+    validators,
+    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
+  })

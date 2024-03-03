@@ -15,3 +15,4 @@
  */
 
 export { adapter } from './src/adapter_creator'
+export { validateOktaBaseUrl } from './src/utils'

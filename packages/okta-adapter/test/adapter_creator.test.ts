@@ -62,7 +62,7 @@ describe('adapter creator', () => {
       beforeEach(async () => {
         mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' })
         ;({ accountId } = await adapter.validateCredentials(
-          createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' }),
+          createCredentialsInstance({ baseUrl: 'https://my-account.okta.com', token: 't' }),
         ))
       })
       it('should make an authenticated rest call', () => {
@@ -77,7 +77,9 @@ describe('adapter creator', () => {
       let result: Promise<AccountInfo>
       beforeEach(() => {
         mockAxiosAdapter.onGet().reply(403)
-        result = adapter.validateCredentials(createCredentialsInstance({ baseUrl: 'http://my.net', token: 't' }))
+        result = adapter.validateCredentials(
+          createCredentialsInstance({ baseUrl: 'https://my-account.okta.com', token: 't' }),
+        )
       })
       it('should fail', async () => {
         await expect(result).rejects.toThrow()
@@ -110,7 +112,7 @@ describe('adapter creator', () => {
       })
       it('when using production account', async () => {
         const { accountType, isProduction } = await adapter.validateCredentials(
-          createCredentialsInstance({ baseUrl: 'https://my-account.okta.net', token: 't' }),
+          createCredentialsInstance({ baseUrl: 'https://my-account.okta.com', token: 't' }),
         )
         expect(accountType).toEqual('Production')
         expect(isProduction).toEqual(true)
@@ -212,6 +214,43 @@ describe('adapter creator', () => {
             } as unknown as OktaConfig),
           }),
         ).not.toThrow()
+      })
+    })
+
+    describe('with invalid credentials instance', () => {
+      it('should fail if provided baseUrl is invalid', () => {
+        expect(() =>
+          adapter.operations({
+            elementsSource,
+            credentials: createCredentialsInstance({ baseUrl: 'https://a.mydomain.com', token: 't' }),
+            config: createConfigInstance(DEFAULT_CONFIG),
+          }),
+        ).toThrow('baseUrl is invalid')
+      })
+    })
+
+    describe('with valid credentials instance', () => {
+      it('should not fail for valid domains', () => {
+        const preview = adapter.operations({
+          elementsSource,
+          credentials: createCredentialsInstance({ baseUrl: 'https://a-b.oktapreview.com', token: 't' }),
+          config: createConfigInstance(DEFAULT_CONFIG),
+        })
+        expect(preview).toBeDefined()
+
+        const okta = adapter.operations({
+          elementsSource,
+          credentials: createCredentialsInstance({ baseUrl: 'https://a-b.okta.com', token: 't' }),
+          config: createConfigInstance(DEFAULT_CONFIG),
+        })
+        expect(okta).toBeDefined()
+
+        const trexcloud = adapter.operations({
+          elementsSource,
+          credentials: createCredentialsInstance({ baseUrl: 'https://a-b.trexcloud.com', token: 't' }),
+          config: createConfigInstance(DEFAULT_CONFIG),
+        })
+        expect(trexcloud).toBeDefined()
       })
     })
   })

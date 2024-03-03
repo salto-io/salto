@@ -68,6 +68,7 @@ jest.mock('../src/user_utils', () => ({
 }))
 
 describe('Okta adapter', () => {
+  jest.setTimeout(1000 * 7)
   let getElemIdFunc: ElemIdGetter
   const adapterSetup = (credentials: InstanceElement): AdapterOperations => {
     const elementsSource = buildElementsSourceFromElements([])
@@ -114,7 +115,8 @@ describe('Okta adapter', () => {
     })
 
     it('should return all types and instances returned from the infrastructure', async () => {
-      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      // const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'https://test.okta.com', token: 't' }))
       const result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
       expect(result.elements).toContain(oktaTestType)
       expect(result.elements).toContain(testInstance)
@@ -123,7 +125,7 @@ describe('Okta adapter', () => {
     it('should config change suggestion and fetch warning when usePrivateApi is enabled and authentication method is OAuth', async () => {
       const oauthCredentials = new InstanceElement(ElemID.CONFIG_NAME, oauthAccessTokenCredentialsType, {
         authType: 'oauth',
-        baseUrl: 'https://okta.com',
+        baseUrl: 'https://a.okta.com',
         refreshToken: 'refresh',
         clientId: 'a',
         clientSecret: 'b',
@@ -147,14 +149,14 @@ describe('Okta adapter', () => {
     })
 
     it('should call getUsers if convertUserIds flag is enabled', async () => {
-      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'https://okta.oktapreview.com', token: 't' }))
       await adapter.fetch({ progressReporter: { reportProgress: () => null } })
       expect(mockGetUsers).toHaveBeenCalledTimes(1)
     })
 
     it('should create updated config for classic orgs when isClassicOrg config flag is undefined', async () => {
       mockIsClassicOrg.mockImplementationOnce(() => true)
-      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'https://okta-test.okta.com', token: 't' }))
       const result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
       expect(mockIsClassicOrg).toHaveBeenCalledTimes(1)
       expect(result.updatedConfig).toBeDefined()

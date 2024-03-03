@@ -93,7 +93,13 @@ describe('workflow filter', () => {
     beforeEach(() => {
       mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
         yield [
-          { id: { entityId: '1' }, statuses: [{ id: '11', name: 'Create'}, { id: '2', name: 'another one'}] },
+          {
+            id: { entityId: '1' },
+            statuses: [
+              { id: '11', name: 'Create' },
+              { id: '2', name: 'another one' },
+            ],
+          },
           { id: { entityId: '2' }, statuses: [{ id: '22', name: 'Quack Quack' }] },
         ]
       })
@@ -137,13 +143,15 @@ describe('workflow filter', () => {
                 {
                   type: 'DIRECTED',
                   name: 'ToStatus2',
-                  from: [{
-                    statusReference: '11',
-                  }],
-                  to : {
+                  from: [
+                    {
+                      statusReference: '11',
+                    },
+                  ],
+                  to: {
                     statusReference: '2',
                   },
-                }
+                },
               ],
               statuses: [
                 {
@@ -221,10 +229,12 @@ describe('workflow filter', () => {
           [TRANSITION_NAME_TO_KEY.ToStatus2]: {
             type: 'DIRECTED',
             name: 'ToStatus2',
-            from: [{
-              statusReference: '11',
-            }],
-            to : {
+            from: [
+              {
+                statusReference: '11',
+              },
+            ],
+            to: {
               statusReference: '2',
             },
           },

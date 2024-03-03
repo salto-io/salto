@@ -17,6 +17,7 @@ import {
   Change,
   DeployResult,
   ElemID,
+  Element,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -28,10 +29,11 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import _, { remove } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { FETCH_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
@@ -154,12 +156,46 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   return clonedInst
 }
 
+const removeCustomTicketStatusFromTicketFieldIDsField = (
+  instance: InstanceElement,
+  customTicketElementID: string,
+): void => {
+  const ticketFieldIDs: string[] = instance.value.ticket_field_ids || []
+  if (ticketFieldIDs.includes(customTicketElementID)) {
+    const index = ticketFieldIDs.indexOf(customTicketElementID)
+    ticketFieldIDs.splice(index, 1)
+  }
+}
+
 /**
  * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
  * required_on_statuses then it removes the statuses field.
  */
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'ticketFormDeploy',
+  onFetch: async (elements: Element[]): Promise<void> => {
+    if (config[FETCH_CONFIG].omitCustomTicketStatus !== true) {
+      return
+    }
+    const customTicketElement = elements
+      .filter(isInstanceElement)
+      .find(instance => instance.elemID.name.includes('Ticket_status_custom_status'))
+    const customTicketElementID = customTicketElement?.value.id
+
+    // eslint-disable-next-line no-console
+    console.log(customTicketElement)
+    elements
+      .filter(isInstanceElement)
+      .filter(element => element.elemID.typeName === TICKET_FORM_TYPE_NAME)
+      .map(instance => removeCustomTicketStatusFromTicketFieldIDsField(instance, customTicketElementID))
+
+    // eslint-disable-next-line no-console
+    console.log(customTicketElement)
+    remove(
+      elements,
+      element => customTicketElement?.value.elemID && element.elemID.isEqual(customTicketElement?.value.elemID),
+    )
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [ticketFormChanges, leftoverChanges] = _.partition(
       changes,

@@ -48,13 +48,6 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
 } from '../constants'
 
-const SECOND_ITERATION_TYPES = [
-  USER_SCHEMA_TYPE_NAME,
-  PROFILE_MAPPING_TYPE_NAME,
-  GROUP_PUSH_TYPE_NAME,
-  APP_GROUP_ASSIGNMENT_TYPE_NAME,
-]
-
 const DEFAULT_ALIAS_TYPES = [
   ...POLICY_RULE_TYPE_NAMES,
   ...POLICY_TYPE_NAMES,
@@ -162,7 +155,6 @@ const filterCreator: FilterCreator = () => ({
     addAliasToElements({
       elementsMap,
       aliasMap,
-      secondIterationGroupNames: SECOND_ITERATION_TYPES,
     })
   },
 })

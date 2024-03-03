@@ -24,6 +24,7 @@ import {
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { DAG } from '@salto-io/dag'
 
 const log = logger(module)
 export type AliasComponent = {
@@ -111,14 +112,42 @@ const calculateAlias = ({
   return aliasParts.join(separator)
 }
 
+const createAliasDependenciesGraph = (
+  aliasMap: Record<string, AliasData>,
+  elementsMap: Record<string, TopLevelElement[]>,
+): DAG<undefined> => {
+  const graph = new DAG<undefined>()
+  Object.keys(aliasMap).forEach(typeName => {
+    const aliasData = aliasMap[typeName]
+    aliasData.aliasComponents.forEach(aliasComponent => {
+      const dependencies = new Set<string>()
+      if (isConstantComponent(aliasComponent)) {
+        return
+      }
+      const { fieldName, referenceFieldName } = aliasComponent
+      if (referenceFieldName === CORE_ANNOTATIONS.ALIAS) {
+        const instances = elementsMap[typeName]
+        instances.forEach(element => {
+          const fieldValue = getFieldValue(element, fieldName)
+          if (!isReferenceExpression(fieldValue)) {
+            log.error(`${fieldName} is treated as a reference expression but it is not`)
+            return
+          }
+          dependencies.add(fieldValue.elemID.typeName)
+        })
+      }
+      graph.addNode(typeName, dependencies, undefined)
+    })
+  })
+  return graph
+}
+
 export const addAliasToElements = ({
   elementsMap,
   aliasMap,
-  secondIterationGroupNames = [],
 }: {
   elementsMap: Record<string, TopLevelElement[]>
   aliasMap: Record<string, AliasData>
-  secondIterationGroupNames?: string[]
 }): void => {
   const allElements = Object.values(elementsMap).flat()
   const elementsById = _.keyBy(allElements, elem => elem.elemID.getFullName())
@@ -133,13 +162,6 @@ export const addAliasToElements = ({
       }
     })
   }
-  const [firstIterationGroups, secondIterationGroups] = _.partition(
-    Object.keys(relevantElementsMap),
-    group => !secondIterationGroupNames.includes(group),
-  )
-  // first iteration
-  firstIterationGroups.forEach(addAlias)
-
-  // second iteration
-  secondIterationGroups.forEach(addAlias)
+  const graph = createAliasDependenciesGraph(aliasMap, relevantElementsMap)
+  graph.walkSync(group => addAlias(group as string)) // TODO_F is the casing ok here?
 }

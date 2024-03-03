@@ -23,3 +23,4 @@ export { referencedInstanceNamesFilterCreator } from './referenced_instance_name
 export { queryFilterCreator, createParentChildGraph } from './query'
 export { hideTypesFilterCreator } from './hide_types'
 export { defaultDeployFilterCreator } from './default_deploy'
+export { addAliasFilterCreator } from './add_alias'

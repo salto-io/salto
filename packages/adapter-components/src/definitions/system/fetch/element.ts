@@ -23,12 +23,14 @@ import {
   SaltoError,
   Values,
 } from '@salto-io/adapter-api'
+import { ImportantValues } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion } from '../../../config' // TODO move
 import { ArgsWithCustomizer } from '../shared/types'
 // eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'
 import { ResolveCustomNameMappingOptionsType } from '../api'
 import { NameMappingFunctionMap, NameMappingOptions } from '../shared'
+import { AliasData } from '../../../add_alias'
 
 export type FieldIDPart<TCustomNameMappingOptions extends string = never> = ArgsWithCustomizer<
   string | undefined,
@@ -157,8 +159,9 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
   // when missing, we validate that this is a plain object
   valueGuard?: (val: unknown) => val is ResolveValueType<Options>
 
-  // TODO add:
-  // alias, important attributes
+  alias?: AliasData
+
+  importantValues?: ImportantValues
 }
 
 export type ElementFetchDefinition<Options extends ElementFetchDefinitionOptions = {}> = {

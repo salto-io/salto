@@ -113,6 +113,7 @@ describe('empty validator workflow', () => {
           tran1: {
             name: 'tran1',
             id: 'id',
+            type: 'Directed',
             validators: [
               {
                 parameters: {

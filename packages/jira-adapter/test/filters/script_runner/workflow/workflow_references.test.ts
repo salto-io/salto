@@ -52,6 +52,7 @@ const resolvedWorkflowV2Instance = new InstanceElement('instance', createEmptyTy
   transitions: {
     [TRANSITION_KEY]: {
       name: 'tran1',
+      type: 'DIRECTED',
       actions: [
         {
           parameters: {
@@ -92,6 +93,7 @@ const restoredWorkflowV2Instance = new InstanceElement('instance', createEmptyTy
   transitions: {
     [TRANSITION_KEY]: {
       name: 'tran1',
+      type: 'DIRECTED',
       actions: [
         {
           parameters: {
@@ -242,6 +244,7 @@ describe('Scriptrunner references', () => {
     const transitionV2 = {
       name: 'tran1',
       id: '11',
+      type: 'DIRECTED',
       actions: [
         {
           ruleKey: 'rule1',
@@ -329,6 +332,7 @@ describe('Scriptrunner references', () => {
           tran1: {
             id: '11',
             name: 'tran1',
+            type: 'DIRECTED',
             actions: [
               {
                 ruleKey: 'rule1',
@@ -353,6 +357,7 @@ describe('Scriptrunner references', () => {
           tran2: {
             id: '21',
             name: 'tran2',
+            type: 'DIRECTED',
             actions: [
               {
                 ruleKey: 'rule1',
@@ -495,6 +500,7 @@ describe('Scriptrunner references', () => {
           tran1: {
             id: '11',
             name: 'tran1',
+            type: 'DIRECTED',
             actions: [
               {
                 ruleKey: 'rule1',

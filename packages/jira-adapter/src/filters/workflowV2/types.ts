@@ -24,8 +24,11 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import { WorkflowV1Instance, isWorkflowV1Instance } from '../workflow/types'
+
+const log = logger(module)
 
 export const CHUNK_SIZE = 25
 export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
@@ -59,8 +62,17 @@ export type WorkflowStatus = {
   name: string
 }
 
+export type WorkflowStatusAndPort = {
+  statusReference: string
+  port?: number
+}
+
 export type WorkflowTransitionV2 = {
   id?: string
+  type: string
+  name: string
+  from?: WorkflowStatusAndPort[]
+  to?: WorkflowStatusAndPort
   actions?: Values[]
   conditions?: Values
   validators?: Values[]
@@ -88,7 +100,7 @@ export type Workflow = {
   version?: WorkflowVersion
   scope: WorkflowScope
   id?: string
-  transitions: Values[]
+  transitions: WorkflowTransitionV2[]
   statuses: Values[]
 }
 
@@ -96,6 +108,27 @@ export type WorkflowV2Instance = InstanceElement & {
   value: InstanceElement['value'] &
     Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowTransitionV2> }
 }
+
+const TRANSITION_SCHEME = Joi.object({
+  id: Joi.string(),
+  actions: Joi.array().items(Joi.object()),
+  type: Joi.string().required(),
+  name: Joi.string().required(),
+  from: Joi.array().items(
+    Joi.object({
+      statusReference: Joi.string().required(),
+      port: Joi.number(),
+    }),
+  ),
+  to: Joi.object({
+    statusReference: Joi.string().required(),
+    port: Joi.number(),
+  }),
+  conditions: Joi.object(),
+  validators: Joi.array().items(Joi.object()),
+})
+  .unknown(true)
+  .required()
 
 const WORKFLOW_SCHEMA = Joi.object({
   name: Joi.string().required(),
@@ -110,19 +143,7 @@ const WORKFLOW_SCHEMA = Joi.object({
     .unknown(true)
     .required(),
   id: Joi.string(),
-  transitions: Joi.object()
-    .pattern(
-      Joi.string(),
-      Joi.object({
-        id: Joi.string(),
-        actions: Joi.array().items(Joi.object()),
-        conditions: Joi.object(),
-        validators: Joi.array().items(Joi.object()),
-      })
-        .unknown(true)
-        .required(),
-    )
-    .required(),
+  transitions: Joi.object().pattern(Joi.string(), TRANSITION_SCHEME).required(),
   statuses: Joi.array().items(Joi.object()).required(),
 })
   .unknown(true)
@@ -212,7 +233,7 @@ const WORKFLOW_RESPONSE_SCHEME = Joi.object({
           .unknown(true)
           .required(),
         statuses: Joi.array().items(Joi.object().unknown(true)).required(),
-        transitions: Joi.array().items(Joi.object().unknown(true)).required(),
+        transitions: Joi.array().items(TRANSITION_SCHEME).required(),
       }).unknown(true),
     )
     .required(),
@@ -220,6 +241,15 @@ const WORKFLOW_RESPONSE_SCHEME = Joi.object({
 })
   .unknown(true)
   .required()
+
+export const isWorkflowV2Transition = (value: unknown): value is WorkflowTransitionV2 => {
+  const { error } = TRANSITION_SCHEME.validate(value)
+  if (error !== undefined) {
+    log.warn(`Received an invalid workflowV2 transition: ${error.message}`)
+    return false
+  }
+  return true
+}
 
 export const isWorkflowDataResponse = createSchemeGuard<WorkflowDataResponse[]>(
   WORKFLOW_DATA_RESPONSE_SCHEMA,

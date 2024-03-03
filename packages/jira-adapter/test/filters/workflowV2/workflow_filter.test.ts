@@ -981,7 +981,12 @@ describe('workflow filter', () => {
                   type: 'global',
                 },
                 statuses: [],
-                transitions: [],
+                transitions: [
+                  {
+                    name: 'Create',
+                    type: 'INITIAL',
+                  },
+                ],
               },
             ],
             taskId: '1',
@@ -1115,7 +1120,12 @@ describe('workflow filter', () => {
                     type: 'global',
                   },
                   statuses: [],
-                  transitions: [],
+                  transitions: [
+                    {
+                      type: 'INITIAL',
+                      name: 'Create',
+                    },
+                  ],
                 },
               ],
             },

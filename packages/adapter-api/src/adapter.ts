@@ -79,6 +79,7 @@ export type FetchOptions = {
 export type DeployOptions = {
   progressReporter: ProgressReporter
   changeGroup: ChangeGroup
+  accountToServiceNameMap?: Record<string, string>
 }
 
 export type PostFetchOptions = {

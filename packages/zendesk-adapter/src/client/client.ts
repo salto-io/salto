@@ -54,7 +54,8 @@ export type AttachmentRes = {
   }
 }
 
-const getSchema = (field: string): Joi.AnySchema => Joi.object({
+const getSchema = (field: string): Joi.AnySchema =>
+  Joi.object({
     data: Joi.object({
       [field]: Joi.array().items(Joi.object().unknown(true)).required(),
     })
@@ -67,6 +68,41 @@ const getSchema = (field: string): Joi.AnySchema => Joi.object({
 const isHolidayResponse = createSchemeGuard<HolidayRes>(getSchema('holidays'))
 const isSupportAddressResponse = createSchemeGuard<SupportAddressRes>(getSchema('recipient_addresses'))
 const isAttachmentResponse = createSchemeGuard<AttachmentRes>(getSchema('article_attachments'))
+
+const getClientResponseAdjuster = (): ((
+  url: string,
+  response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
+) => clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>) => {
+  let holidayCounter = 0
+  let usernameCounter = 0
+  let attachmentCounter = 0
+  return (
+    url: string,
+    response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
+  ): clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> => {
+    // for endpoint /api/v2/business_hours/schedules/{scheduleId}/holidays
+    if (url.includes('holidays') && isHolidayResponse(response)) {
+      response.data.holidays.forEach(day => {
+        day.start_year = holidayCounter
+        day.end_year = holidayCounter
+        holidayCounter += 1
+      })
+      // for endpoint /api/v2/recipient_addresses
+    } else if (url.includes('recipient_addresses') && isSupportAddressResponse(response)) {
+      response.data.recipient_addresses.forEach(email => {
+        email.username = usernameCounter
+        usernameCounter += 1
+      })
+      // for endpoint /api/v2/help_center/articles/{article_id}/attachments
+    } else if (url.includes('attachments') && url.includes('articles') && isAttachmentResponse(response)) {
+      response.data.article_attachments.forEach(attachment => {
+        attachment.hash = attachmentCounter
+        attachmentCounter += 1
+      })
+    }
+    return response
+  }
+}
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -94,9 +130,10 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   private logsFilterConfig: LogsFilterConfig
-  private holidayCounter: number
-  private usernameCounter: number
-  private attachmentCounter: number
+  private adjuster: (
+    url: string,
+    response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
+  ) => clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
 
   constructor(clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & LogsFilterConfig) {
     super(ZENDESK, clientOpts, createConnection, {
@@ -107,9 +144,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
-    this.holidayCounter = 0
-    this.usernameCounter = 0
-    this.attachmentCounter = 0
+    this.adjuster = getClientResponseAdjuster()
     this.resourceConn = clientUtils.createClientConnection({
       retryOptions: clientUtils.createRetryOptions(
         _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS),
@@ -130,24 +165,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     try {
       // will be deleted once we move to new infra
       const response = await super.get(args)
-      if (args.url.includes('holidays') && isHolidayResponse(response)) {
-        response.data.holidays.forEach(day => {
-          day.start_year = this.holidayCounter
-          day.end_year = this.holidayCounter
-          this.holidayCounter += 1
-        })
-      } else if (args.url.includes('recipient_addresses') && isSupportAddressResponse(response)) {
-      response.data.recipient_addresses.forEach(email => {
-        email.username = this.usernameCounter
-        this.usernameCounter += 1
-      })
-    } else if (args.url.includes('attachments') && args.url.includes('articles') && isAttachmentResponse(response)) {
-      response.data.article_attachments.forEach(attachment => {
-        attachment.hash = this.attachmentCounter
-        this.attachmentCounter += 1
-      })
-    }
-      return response
+      return this.adjuster(args.url, response)
     } catch (e) {
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)

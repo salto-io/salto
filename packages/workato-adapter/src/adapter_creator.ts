@@ -24,7 +24,7 @@ import {
   CLIENT_CONFIG,
   validateFetchConfig,
   FETCH_CONFIG,
-  DEFAULT_CONFIG,
+  getDefaultConfig,
   WorkatoFetchConfig,
 } from './config'
 import WorkatoClient from './client/client'
@@ -41,13 +41,13 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
   const configValue = config?.value ?? {}
-
+  const defaultConfig = getDefaultConfig(configValue.fetch?.enableFetchSturctureV2)
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG.apiDefinitions,
+    defaultConfig.apiDefinitions,
     config?.value.apiDefinitions,
   ) as configUtils.AdapterDuckTypeApiConfig
 
-  const fetch = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as WorkatoFetchConfig
+  const fetch = configUtils.mergeWithDefaultConfig(defaultConfig.fetch, config?.value.fetch) as WorkatoFetchConfig
 
   const adapterConfig: { [K in keyof Required<WorkatoConfig>]: WorkatoConfig[K] } = {
     client: configValue.client,
@@ -71,7 +71,7 @@ export const adapter: Adapter = {
     const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
       // Creating new instance is required because the type is not resolved in context.config
       new InstanceElement(ElemID.CONFIG_NAME, configType, context.config?.value),
-      DEFAULT_CONFIG,
+      getDefaultConfig(context.config?.value.fetch?.enableFetchSturctureV2),
     )
 
     const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)

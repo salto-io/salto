@@ -30,6 +30,8 @@ import {
 } from '@salto-io/adapter-api'
 import { WeakReferencesHandler } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import _ from 'lodash'
 import { CUSTOM_RECORD_TYPE, PERMISSIONS, ROLE, SCRIPT_ID } from '../../constants'
 import { isCustomRecordType } from '../../types'
@@ -52,23 +54,25 @@ type permissionObject = RolePermissionObject | CustomRecordPermissionObject
 
 type RoleOrCustomRecord = 'role' | 'customrecordtype'
 
-export const isRolePermissionObject = (obj: unknown): obj is RolePermissionObject => {
-  const returnVal =
-    values.isPlainRecord(obj) &&
-    (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey)) &&
-    typeof obj.permlevel === 'string' &&
-    (typeof obj.restriction === 'string' || obj.restriction === undefined)
-  return returnVal
-}
+const ROLE_PERMISSION_SCHEME = Joi.object({
+  permkey: Joi.required(),
+  permlevel: Joi.string().required(),
+  restriction: Joi.string().optional(),
+})
 
-const isCustomRecordPermissionObject = (obj: unknown): obj is CustomRecordPermissionObject => {
-  const returnVal =
-    values.isPlainRecord(obj) &&
-    (typeof obj.permittedrole === 'string' || isReferenceExpression(obj.permittedrole)) &&
-    typeof obj.permittedlevel === 'string' &&
-    (typeof obj.restriction === 'string' || obj.restriction === undefined)
-  return returnVal
-}
+export const isRolePermissionObject = (val: Value): val is RolePermissionObject =>
+  createSchemeGuard<RolePermissionObject>(ROLE_PERMISSION_SCHEME)(val) &&
+  (isReferenceExpression(val.permkey) || _.isString(val.permkey))
+
+const CUSTOM_RECORD_PERMISSION_SCHEME = Joi.object({
+  permittedrole: Joi.required(),
+  permittedlevel: Joi.string().required(),
+  restriction: Joi.string().optional(),
+})
+
+const isCustomRecordPermissionObject = (val: Value): val is CustomRecordPermissionObject =>
+  createSchemeGuard<CustomRecordPermissionObject>(CUSTOM_RECORD_PERMISSION_SCHEME)(val) &&
+  (isReferenceExpression(val.permittedrole) || _.isString(val.permittedrole))
 
 const isPermissionObject = (obj: unknown, permissionType: RoleOrCustomRecord): obj is permissionObject =>
   permissionType === ROLE ? isRolePermissionObject(obj) : isCustomRecordPermissionObject(obj)
@@ -111,9 +115,6 @@ const isRoleOrCustomRecordElement = (element: Value): element is InstanceElement
   (isInstanceElement(element) && element.elemID.typeName === ROLE) ||
   (isObjectType(element) && isCustomRecordType(element))
 
-/**
- * Marks each element reference in an order type as a weak reference.
- */
 const getPermissionsReferences: GetCustomReferencesFunc = async elements =>
   elements.filter(isRoleOrCustomRecordElement).flatMap(getWeakElementReferences)
 
@@ -191,10 +192,7 @@ const getMessageByPathAndElemTypeName = (
   detailedMessage: `This ${fullPath} is attached to some ${elementTypeName} that do not exist in the target environment. It will be deployed without referencing these ${elementTypeName}.`,
 })
 
-/**
- * Remove invalid references (not references or missing references) from order types.
- */
-const removeMissingOrderElements: WeakReferencesHandler<{
+const removeUnresolvedPermissionElements: WeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
 }>['removeWeakReferences'] =
   ({ elementsSource }): FixElementsFunc =>
@@ -218,7 +216,6 @@ const removeMissingOrderElements: WeakReferencesHandler<{
       .map(custRecord => getFixedElementsAndUpdatedPaths(custRecord, elementsSource, CUSTOM_RECORD_TYPE))
       .filter(values.isDefined)
       .toArray()
-
     const customRecordErrors: ChangeError[] = fixedCustomRecords.map(custRecord => {
       const fullPath = `${custRecord.annotations.scriptid}.annotations.${getPermissionsListPath().join('.')}`
       const elementTypeName = `${ROLE}s`
@@ -232,5 +229,5 @@ export const permissionsHandler: WeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
 }> = {
   findWeakReferences: getPermissionsReferences,
-  removeWeakReferences: removeMissingOrderElements,
+  removeWeakReferences: removeUnresolvedPermissionElements,
 }

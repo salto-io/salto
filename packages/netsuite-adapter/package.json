@@ -57,7 +57,8 @@
     "shell-quote": "^1.7.3",
     "uuid": "^8.3.0",
     "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "xml-js": "^1.6.11",
+    "joi": "^17.4.0"
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.54",

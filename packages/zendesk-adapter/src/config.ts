@@ -1595,6 +1595,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       sourceTypeName: 'business_hours_schedule__holidays',
+      extendsParentId: true,
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'start_year', fieldType: 'string' },

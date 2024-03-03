@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
+import Joi from 'joi'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
@@ -34,6 +35,38 @@ const OMIT_REPLACEMENT = '<OMITTED>'
 type LogsFilterConfig = {
   allowOrganizationNames?: boolean
 }
+
+export type HolidayRes = {
+  data: {
+    holidays: Values[]
+  }
+}
+export type SupportAddressRes = {
+  data: {
+    // eslint-disable-next-line camelcase
+    recipient_addresses: Values[]
+  }
+}
+export type AttachmentRes = {
+  data: {
+    // eslint-disable-next-line camelcase
+    article_attachments: Values[]
+  }
+}
+
+const getSchema = (field: string): Joi.AnySchema => Joi.object({
+    data: Joi.object({
+      [field]: Joi.array().items(Joi.object().unknown(true)).required(),
+    })
+      .unknown(true)
+      .required(),
+  })
+    .unknown(true)
+    .required()
+
+const isHolidayResponse = createSchemeGuard<HolidayRes>(getSchema('holidays'))
+const isSupportAddressResponse = createSchemeGuard<SupportAddressRes>(getSchema('recipient_addresses'))
+const isAttachmentResponse = createSchemeGuard<AttachmentRes>(getSchema('article_attachments'))
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -61,6 +94,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   private logsFilterConfig: LogsFilterConfig
+  private holidayCounter: number
+  private usernameCounter: number
+  private attachmentCounter: number
 
   constructor(clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & LogsFilterConfig) {
     super(ZENDESK, clientOpts, createConnection, {
@@ -71,6 +107,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
+    this.holidayCounter = 0
+    this.usernameCounter = 0
+    this.attachmentCounter = 0
     this.resourceConn = clientUtils.createClientConnection({
       retryOptions: clientUtils.createRetryOptions(
         _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS),
@@ -89,7 +128,26 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      return await super.get(args)
+      // will be deleted once we move to new infra
+      const response = await super.get(args)
+      if (args.url.includes('holidays') && isHolidayResponse(response)) {
+        response.data.holidays.forEach(day => {
+          day.start_year = this.holidayCounter
+          day.end_year = this.holidayCounter
+          this.holidayCounter += 1
+        })
+      } else if (args.url.includes('recipient_addresses') && isSupportAddressResponse(response)) {
+      response.data.recipient_addresses.forEach(email => {
+        email.username = this.usernameCounter
+        this.usernameCounter += 1
+      })
+    } else if (args.url.includes('attachments') && args.url.includes('articles') && isAttachmentResponse(response)) {
+      response.data.article_attachments.forEach(attachment => {
+        attachment.hash = this.attachmentCounter
+        this.attachmentCounter += 1
+      })
+    }
+      return response
     } catch (e) {
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)

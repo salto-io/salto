@@ -58,6 +58,8 @@ export const getAllReferencedIds = async (element: Element, onlyAnnotations = fa
     return WALK_NEXT_STEP.RECURSE
   }
   walkOnElement({ element, func })
-  await awu(templateStaticFiles).map(async file => parserUtils.staticFileToTemplateExpression(file)).forEach(getReferencesFromTemplateExpression)
+  await awu(templateStaticFiles)
+    .map(async file => parserUtils.staticFileToTemplateExpression(file))
+    .forEach(getReferencesFromTemplateExpression)
   return allReferencedIds
 }

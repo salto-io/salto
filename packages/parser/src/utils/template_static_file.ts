@@ -16,9 +16,7 @@
 import { isReferenceExpression, StaticFile, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
-import {
-  escapeTemplateMarker,
-} from '../parser/internal/dump'
+import { escapeTemplateMarker } from '../parser/internal/dump'
 import { createReferenceExpresion, unescapeTemplateMarker } from '../parser/internal/native/helpers'
 import { IllegalReference } from '../parser'
 import { REFERENCE_PART } from '../parser/internal/native/lexer'
@@ -73,8 +71,8 @@ const parseBufferToTemplateExpression = (buffer: Buffer): TemplateExpression => 
 
 export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
   const string = expression.parts
-      .map(part => (isReferenceExpression(part) ? `\${ ${[part.elemID.getFullName()]} }` : escapeTemplateMarker(part)))
-      .join('')
+    .map(part => (isReferenceExpression(part) ? `\${ ${[part.elemID.getFullName()]} }` : escapeTemplateMarker(part)))
+    .join('')
   return new StaticFile({ filepath, content: Buffer.from(string), isTemplate: true, encoding: 'utf8' })
 }
 

@@ -190,7 +190,7 @@ describe('template static file', () => {
       await testTemplateExpressionToStaticFile(
         multiLineSpecialChars,
         // eslint-disable-next-line no-template-curly-in-string
-        '/hc/test/test/articles/${ zendesk.article.instance.article }\nHe \\${said, \'\'\' "Hello, World!"\tThis is a backslash: \\ 😄${ zendesk.macro.instance.macro1 }/test',
+        "/hc/test/test/articles/${ zendesk.article.instance.article }\nHe \\${said, ''' \"Hello, World!\"\tThis is a backslash: \\ 😄${ zendesk.macro.instance.macro1 }/test",
       )
     })
   })

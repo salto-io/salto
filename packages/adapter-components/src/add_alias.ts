@@ -152,6 +152,7 @@ export const addAliasToElements = ({
   const allElements = Object.values(elementsMap).flat()
   const elementsById = _.keyBy(allElements, elem => elem.elemID.getFullName())
   const relevantElementsMap = _.pick(elementsMap, Object.keys(aliasMap))
+  const relevantAliasMap = _.pick(aliasMap, Object.keys(relevantElementsMap))
 
   const addAlias = (group: string): void => {
     const aliasData = aliasMap[group]
@@ -162,6 +163,6 @@ export const addAliasToElements = ({
       }
     })
   }
-  const graph = createAliasDependenciesGraph(aliasMap, relevantElementsMap)
+  const graph = createAliasDependenciesGraph(relevantAliasMap, relevantElementsMap)
   graph.walkSync(group => addAlias(group as string)) // TODO_F is the casing ok here?
 }

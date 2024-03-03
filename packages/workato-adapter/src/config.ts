@@ -38,11 +38,28 @@ const { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig } = conf
 
 export const DEFAULT_SERVICE_ID_FIELD = 'id'
 export const DEFAULT_ID_FIELDS = ['name']
-export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+export const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
   { fieldName: 'extended_input_schema' },
   { fieldName: 'extended_output_schema' },
+]
+export const FETCH_V2_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'created_at', fieldType: 'string' },
+  { fieldName: 'updated_at', fieldType: 'string' },
+  { fieldName: 'dynamicPickListSelection' },
+  { fieldName: 'visible_config_fields' },
+]
+export const RECIPE_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'last_run_at' },
+  { fieldName: 'job_succeeded_count' },
+  { fieldName: 'job_failed_count' },
+  { fieldName: 'copy_count' },
+  { fieldName: 'lifetime_task_count' },
+]
+export const CONNECTION_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'authorized_at', fieldType: 'string' },
+  { fieldName: 'authorization_status', fieldType: 'string' },
 ]
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = []
 
@@ -55,6 +72,7 @@ export type WorkatoClientConfig = definitions.ClientBaseConfig<definitions.Clien
 
 export type WorkatoFetchConfig = definitions.UserFetchConfig & {
   serviceConnectionNames?: Record<string, string[]>
+  enableFetchSturctureV2?: boolean
 }
 export type WorkatoApiConfig = configUtils.AdapterDuckTypeApiConfig
 
@@ -84,11 +102,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }],
-      fieldsToOmit: [
-        ...FIELDS_TO_OMIT,
-        { fieldName: 'authorized_at', fieldType: 'string' },
-        { fieldName: 'authorization_status', fieldType: 'string' },
-      ],
+      fieldsToOmit: [...DEFAULT_FIELDS_TO_OMIT, ...CONNECTION_FIELDS_TO_OMIT],
     },
   },
   [RECIPE_TYPE]: {
@@ -99,14 +113,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       idFields: ['name', '&folder_id'],
       fieldsToHide: [...FIELDS_TO_HIDE, { fieldName: 'id' }, { fieldName: 'user_id' }],
-      fieldsToOmit: [
-        ...FIELDS_TO_OMIT,
-        { fieldName: 'last_run_at' },
-        { fieldName: 'job_succeeded_count' },
-        { fieldName: 'job_failed_count' },
-        { fieldName: 'copy_count' },
-        { fieldName: 'lifetime_task_count' },
-      ],
+      fieldsToOmit: [...DEFAULT_FIELDS_TO_OMIT, ...RECIPE_FIELDS_TO_OMIT],
       standaloneFields: [{ fieldName: 'code', parseJSON: true }],
     },
   },
@@ -189,6 +196,21 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
 }
 
+export const getDefaultTypes = (
+  fieldsToOmit: configUtils.FieldToOmitType[] = DEFAULT_FIELDS_TO_OMIT,
+): Record<string, configUtils.TypeDuckTypeConfig> => {
+  const defaultTypes = _.cloneDeep(DEFAULT_TYPES)
+  const connectionTransformation = defaultTypes[CONNECTION_TYPE].transformation
+  if (connectionTransformation !== undefined) {
+    connectionTransformation.fieldsToOmit = [...fieldsToOmit, ...CONNECTION_FIELDS_TO_OMIT]
+  }
+  const recipeTransformation = defaultTypes[RECIPE_TYPE].transformation
+  if (recipeTransformation !== undefined) {
+    recipeTransformation.fieldsToOmit = [...fieldsToOmit, ...RECIPE_FIELDS_TO_OMIT]
+  }
+  return defaultTypes
+}
+
 export const DEFAULT_CONFIG: WorkatoConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
@@ -198,7 +220,7 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
     typeDefaults: {
       transformation: {
         idFields: DEFAULT_ID_FIELDS,
-        fieldsToOmit: FIELDS_TO_OMIT,
+        fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
         // TODO: change this to true for SALTO-3884.
         nestStandaloneInstances: false,
@@ -207,6 +229,22 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
     types: DEFAULT_TYPES,
     supportedTypes: SUPPORTED_TYPES,
   },
+}
+
+export const getDefaultConfig = (DeploySupported = false): WorkatoConfig => {
+  if (DeploySupported) {
+    const defaultConfig = _.cloneDeep(DEFAULT_CONFIG)
+    defaultConfig[FETCH_CONFIG].enableFetchSturctureV2 = true
+    if (defaultConfig[API_DEFINITIONS_CONFIG].typeDefaults.transformation !== undefined) {
+      defaultConfig[API_DEFINITIONS_CONFIG].typeDefaults.transformation.fieldsToOmit =
+        FETCH_V2_FIELDS_TO_OMIT
+    }
+    if (defaultConfig[API_DEFINITIONS_CONFIG].types !== undefined) {
+      defaultConfig[API_DEFINITIONS_CONFIG].types = getDefaultTypes(FETCH_V2_FIELDS_TO_OMIT)
+    }
+    return defaultConfig
+  }
+  return DEFAULT_CONFIG
 }
 
 export type ChangeValidatorName = 'deployNotSupported'
@@ -236,6 +274,7 @@ export const configType = new ObjectType({
           serviceConnectionNames: {
             refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },
+          enableDeploySupport: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -248,7 +287,7 @@ export const configType = new ObjectType({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(getDefaultConfig(), API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

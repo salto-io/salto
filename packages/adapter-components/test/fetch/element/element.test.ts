@@ -35,7 +35,7 @@ describe('element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       generator.pushEntries({
         entries: [],
@@ -52,7 +52,7 @@ describe('element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       generator.pushEntries({
         entries: [],
@@ -81,7 +81,7 @@ describe('element', () => {
           },
        ,
         }),
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       generator.pushEntries({
         entries,
@@ -124,10 +124,10 @@ describe('element', () => {
     })
     it('should create instances and matching type based on defined customizations', () => {
       const entries = [
-        { str: 'A', num: 2, arr: [{ st: 'X', unknown: true }] },
-        { str: 'CCC', arr: [{ unknown: 'text' }] },
+        { str: 'A', otherField: 'B', num: 2, arr: [{ st: 'X', unknown: true }] },
+        { str: 'CCC', otherField: 'DDD', arr: [{ unknown: 'text' }] },
       ]
-      const generator = getElementGenerator<{ customNameMappingOptions: 'customTest' }>({
+      const generator = getElementGenerator<{ customNameMappingOptions: 'firstCustom' | 'secondCustom' }>({
         adapterName: 'myAdapter',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: {
@@ -140,7 +140,10 @@ describe('element', () => {
                 topLevel: {
                   isTopLevel: true,
                   elemID: {
-                    parts: [{ fieldName: 'str', mapping: 'customTest' }],
+                    parts: [
+                      { fieldName: 'str', mapping: 'firstCustom' },
+                      { fieldName: 'otherField', mapping: 'secondCustom' },
+                    ],
                   },
                 },
               },
@@ -156,8 +159,9 @@ describe('element', () => {
             },
           },
         }),
-        customNameMapping: {
-          customTest: name => `${name}CustomTest`,
+        customNameMappingFunctions: {
+          firstCustom: name => `${name}CustomTest`,
+          secondCustom: name => `Second${name}`,
         },
       })
       generator.pushEntries({
@@ -169,8 +173,8 @@ describe('element', () => {
       expect(res.elements).toHaveLength(4)
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'myAdapter.myType',
-        'myAdapter.myType.instance.ACustomTest',
-        'myAdapter.myType.instance.CCCCustomTest',
+        'myAdapter.myType.instance.ACustomTest_SecondB',
+        'myAdapter.myType.instance.CCCCustomTest_SecondDDD',
         'myAdapter.myType__arr',
       ])
       const objType = res.elements
@@ -180,6 +184,7 @@ describe('element', () => {
       expect(_.mapValues(objType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
         str: 'serviceid',
         num: 'number',
+        otherField: 'string',
         arr: 'List<myAdapter.myType__arr>',
       })
       expect(_.mapValues(subType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
@@ -188,14 +193,14 @@ describe('element', () => {
       })
       expect(
         isEqualElements(
-          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'ACustomTest'),
-          new InstanceElement('ACustomTest', objType, entries[0], []),
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'ACustomTest_SecondB'),
+          new InstanceElement('ACustomTest_SecondB', objType, entries[0], []),
         ),
       ).toBeTruthy()
       expect(
         isEqualElements(
-          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'CCCCustomTest'),
-          new InstanceElement('CCCCustomTest', objType, entries[1], []),
+          res.elements.filter(isInstanceElement).find(e => e.elemID.name === 'CCCCustomTest_SecondDDD'),
+          new InstanceElement('CCCCustomTest_SecondDDD', objType, entries[1], []),
         ),
       ).toBeTruthy()
     })

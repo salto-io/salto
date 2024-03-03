@@ -27,6 +27,7 @@ export * from './requests'
 export {
   DATA_FIELD_ENTIRE_OBJECT,
   NameMappingOptions,
+  NameMappingFunction,
   NameMappingFunctionMap,
   DefaultWithCustomizations,
   ArgsWithCustomizer,

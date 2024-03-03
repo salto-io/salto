@@ -18,6 +18,8 @@ import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { DefaultWithCustomizations } from './shared/types'
 import { UserFetchConfig } from '../user'
 import { FetchApiDefinitions, FetchApiDefinitionsOptions } from './fetch'
+import { NameMappingFunctionMap } from './shared'
+import { ResolveCustomNameMappingOptionsType } from './api'
 
 /**
  * merge a single custom definition with a default, assuming they came from a DefaultWithCustomizations definition.
@@ -119,7 +121,12 @@ export const mergeWithUserElemIDDefinitions = <Options extends FetchApiDefinitio
   fetchConfig?: FetchApiDefinitions<Options>
 }): FetchApiDefinitions<Options> => {
   if (userElemID === undefined) {
-    return fetchConfig ?? { instances: { customizations: {} } }
+    return (
+      fetchConfig ?? {
+        instances: { customizations: {} },
+        customNameMappingFunctions: {} as NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>,
+      }
+    )
   }
   return _.merge({}, fetchConfig, {
     instances: {

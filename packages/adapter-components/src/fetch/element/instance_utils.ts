@@ -105,12 +105,12 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   defQuery,
   type,
   getElemIdFunc,
-  customNameMapping,
+  customNameMappingFunctions,
 }: {
   type: ObjectType
   defQuery: ElementAndResourceDefFinder<Options>
   getElemIdFunc?: ElemIdGetter
-  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
 }): {
   toElemName: ElemIDCreator
   toPath: PartsCreator
@@ -136,14 +136,14 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
     getElemIdFunc,
     serviceIDDef: resourceDef?.serviceIDFields,
     typeID: type.elemID,
-    customNameMapping,
+    customNameMappingFunctions,
   })
   const toPath = getElemPath({
     def: elementDef.topLevel.path,
     singleton,
     elemIDCreator: toElemName,
     typeID: type.elemID,
-    customNameMapping,
+    customNameMappingFunctions,
   })
 
   return { toElemName, toPath }

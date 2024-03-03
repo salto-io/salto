@@ -67,7 +67,7 @@ describe('fetch', () => {
     })
     // TODO split into multiple tests per component and add cases
     it('should generate elements correctly', async () => {
-      const res = await getElements({
+      const res = await getElements<{ customNameMappingOptions: 'custom' }>({
         adapterName: 'myAdapter',
         definitions: {
           clients: {
@@ -97,7 +97,7 @@ describe('fetch', () => {
                 element: {
                   topLevel: {
                     elemID: {
-                      parts: [{ fieldName: 'name' }],
+                      parts: [{ fieldName: 'name', mapping: 'custom' }],
                     },
                   },
                 },
@@ -188,21 +188,23 @@ describe('fetch', () => {
                 },
               },
             },
+            customNameMappingFunctions: {
+              custom: name => `${name}Custom`,
+            },
           },
         },
         fetchQuery: createMockQuery(),
-        customNameMapping: {},
       })
       expect(res.errors).toEqual([])
       expect(res.configChanges).toHaveLength(0)
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'myAdapter.field',
-        'myAdapter.field.instance.field1',
+        'myAdapter.field.instance.field1Custom',
         'myAdapter.group',
-        'myAdapter.group.instance.group1',
+        'myAdapter.group.instance.group1Custom',
         'myAdapter.option',
-        'myAdapter.option.instance.opt1',
-        'myAdapter.option.instance.opt2',
+        'myAdapter.option.instance.opt1Custom',
+        'myAdapter.option.instance.opt2Custom',
       ])
       // TODO continue
     })

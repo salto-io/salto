@@ -32,7 +32,7 @@ const log = logger(module)
 export const generateInstancesWithInitialTypes = <Options extends FetchApiDefinitionsOptions>(
   args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
 ): ElementsAndErrors => {
-  const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMapping } = args
+  const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions } = args
   const { element: elementDef } = defQuery.query(typeName) ?? {}
   if (elementDef === undefined) {
     log.error('could not find any element definitions for type %s:%s', adapterName, typeName)
@@ -56,7 +56,12 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
   // create a temporary type recursively so we can correctly extract standalone instances
   // note that all types should be re-generated at the end once instance values have been finalized
   const { type, nestedTypes } = generateType(args)
-  const { toElemName, toPath } = getInstanceCreationFunctions({ defQuery, type, getElemIdFunc, customNameMapping })
+  const { toElemName, toPath } = getInstanceCreationFunctions({
+    defQuery,
+    type,
+    getElemIdFunc,
+    customNameMappingFunctions,
+  })
   // TODO should also nacl-case field names on predefined fields similarly (SALTO-5422)
   const instances = entries
     .map(value => toInstanceValue({ value, type, defQuery }))
@@ -77,7 +82,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
     instances,
     defQuery,
     getElemIdFunc,
-    customNameMapping,
+    customNameMappingFunctions,
   })
 
   return { types: [type, ...nestedTypes], instances: instancesWithStandalone }

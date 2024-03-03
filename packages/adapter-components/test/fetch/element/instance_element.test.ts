@@ -30,7 +30,7 @@ describe('instance element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(0)
@@ -45,7 +45,7 @@ describe('instance element', () => {
           entries: [],
           typeName: 'myType',
           defQuery: queryWithDefault<InstanceFetchApiDefinitions, string><{}>({ customizations: {} }),
-          customNameMapping: {},
+          customNameMappingFunctions: {},
         }),
       ).toThrow('type myAdapter:myType is not defined as top-level, cannot create instances')
     })
@@ -61,7 +61,7 @@ describe('instance element', () => {
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(2)
@@ -95,7 +95,7 @@ describe('instance element', () => {
       ).toBeTruthy()
     })
     it('should create instances and matching type based on defined customizations', () => {
-      const res = generateInstancesWithInitialTypes<{ customNameMappingOptions: 'customTest' }>({
+      const res = generateInstancesWithInitialTypes<{ customNameMappingOptions: 'customTest' | 'Uri' }>({
         adapterName: 'myAdapter',
         entries: [
           { str: 'A', num: 2, arr: [{ st: 'X', unknown: true }] },
@@ -119,8 +119,9 @@ describe('instance element', () => {
             },
           },
         }),
-        customNameMapping: {
+        customNameMappingFunctions: {
           customTest: name => `custom_${name}`,
+          Uri: name => `uri_${name}`,
         },
       })
       expect(res.errors).toBeUndefined()
@@ -152,7 +153,7 @@ describe('instance element', () => {
             myType: { element: { topLevel: { isTopLevel: true } } },
           },
         }),
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(1)

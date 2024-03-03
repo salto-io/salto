@@ -88,7 +88,7 @@ describe('id utils', () => {
             parts: [{ fieldName: 'a' }],
           },
           typeID,
-          customNameMapping: {},
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('A')
       const func2 = createElemIDFunc({
@@ -101,7 +101,7 @@ describe('id utils', () => {
           delimiter: '-',
         },
         typeID,
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       expect(func2({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' })).toEqual('A')
       expect(func2({ entry: { a: 'A', c: 'C', d: 123 }, defaultName: 'unnamed' })).toEqual('A_C@b')
@@ -116,7 +116,7 @@ describe('id utils', () => {
           typeID,
           getElemIdFunc: () => new ElemID('a', 'b', 'instance', 'NAME'),
           serviceIDDef: ['a'],
-          customNameMapping: {},
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('NAME')
     })
@@ -125,14 +125,14 @@ describe('id utils', () => {
         createElemIDFunc({
           elemIDDef: {},
           typeID,
-          customNameMapping: {},
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('unnamed')
       expect(
         createElemIDFunc({
           elemIDDef: { parts: [{ fieldName: 'nonexistent' }] },
           typeID,
-          customNameMapping: {},
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('unnamed')
     })
@@ -143,7 +143,7 @@ describe('id utils', () => {
           extendsParent: true,
         },
         typeID,
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       const parent = new InstanceElement('parent:b', new ObjectType({ elemID: typeID }))
       expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b__A@fuu')
@@ -158,7 +158,7 @@ describe('id utils', () => {
         },
         singleton: true,
         typeID,
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' })).toEqual(ElemID.CONFIG_NAME)
     })
@@ -168,7 +168,7 @@ describe('id utils', () => {
           parts: [{ fieldName: 'a' }, { custom: () => () => 'CUSTOM', fieldName: 'ignore' }],
         },
         typeID,
-        customNameMapping: {},
+        customNameMappingFunctions: {},
       })
       expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' })).toEqual('A_CUSTOM')
     })
@@ -191,9 +191,9 @@ describe('id utils', () => {
               parts: [{ fieldName: 'a' }],
             },
             typeID,
-            customNameMapping: {},
+            customNameMappingFunctions: {},
           }),
-          customNameMapping: {
+          customNameMappingFunctions: {
             customTest: () => 'thisIsACuteCustomName',
           },
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
@@ -212,9 +212,9 @@ describe('id utils', () => {
               parts: [{ fieldName: 'a' }],
             },
             typeID,
-            customNameMapping: {},
+            customNameMappingFunctions: {},
           }),
-          customNameMapping: {},
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual(['myAdapter', 'Records', 'Settings', 'myType'])
     })
@@ -227,7 +227,7 @@ describe('id utils', () => {
           getNameMapping({
             name: 'name',
             nameMapping: undefined,
-            customNameMapping: {},
+            customNameMappingFunctions: {},
           }),
         ).toEqual('name')
       })
@@ -240,7 +240,7 @@ describe('id utils', () => {
             getNameMapping({
               name: 'NAME',
               nameMapping: 'lowercase',
-              customNameMapping: {},
+              customNameMappingFunctions: {},
             }),
           ).toEqual('name')
         })
@@ -252,7 +252,7 @@ describe('id utils', () => {
             getNameMapping({
               name: 'name',
               nameMapping: 'uppercase',
-              customNameMapping: {},
+              customNameMappingFunctions: {},
             }),
           ).toEqual('NAME')
         })
@@ -264,7 +264,7 @@ describe('id utils', () => {
             getNameMapping({
               name: 'name',
               nameMapping: 'test',
-              customNameMapping: {
+              customNameMappingFunctions: {
                 test: () => 'test',
               },
             }),

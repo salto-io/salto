@@ -18,7 +18,8 @@ import { FetchResourceDefinition } from './resource'
 import { ElementFetchDefinition, ElementFetchDefinitionOptions } from './element'
 import { DefaultWithCustomizations } from '../shared/types'
 import { FetchRequestDefinition } from './request'
-import { APIDefinitionsOptions, ResolveClientOptionsType } from '../api'
+import { APIDefinitionsOptions, ResolveClientOptionsType, ResolveCustomNameMappingOptionsType } from '../api'
+import { NameMappingFunctionMap } from '../shared'
 
 export type FetchApiDefinitionsOptions = Pick<APIDefinitionsOptions, 'clientOptions' | 'customNameMappingOptions'> &
   Pick<ElementFetchDefinitionOptions, 'values'>
@@ -49,4 +50,5 @@ export type InstanceFetchApiDefinitions<Options extends FetchApiDefinitionsOptio
 
 export type FetchApiDefinitions<Options extends FetchApiDefinitionsOptions = {}> = {
   instances: DefaultWithCustomizations<InstanceFetchApiDefinitions<Options>>
+  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
 }

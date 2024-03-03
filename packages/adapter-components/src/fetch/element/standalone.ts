@@ -34,13 +34,13 @@ const extractStandaloneInstancesFromField =
     instanceOutput,
     getElemIdFunc,
     parent,
-    customNameMapping,
+    customNameMappingFunctions,
   }: {
     defQuery: ElementAndResourceDefFinder<Options>
     instanceOutput: InstanceElement[]
     getElemIdFunc?: ElemIdGetter
     parent: InstanceElement
-    customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+    customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   }): TransformFuncSync =>
   ({ value, field }) => {
     if (field === undefined || isReferenceExpression(value)) {
@@ -66,7 +66,7 @@ const extractStandaloneInstancesFromField =
       defQuery,
       type: fieldType,
       getElemIdFunc,
-      customNameMapping,
+      customNameMappingFunctions,
     })
     const newInstances = collections.array.makeArray(value).map((entry, index) =>
       createInstance({
@@ -103,12 +103,12 @@ const extractStandaloneInstancesFromField =
 export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOptions>({
   instances,
   defQuery,
-  customNameMapping,
+  customNameMappingFunctions,
   getElemIdFunc,
 }: {
   instances: InstanceElement[]
   defQuery: ElementAndResourceDefFinder<Options>
-  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   getElemIdFunc?: ElemIdGetter
 }): InstanceElement[] => {
   const instancesToProcess: InstanceElement[] = []
@@ -132,7 +132,7 @@ export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOp
         instanceOutput: instancesToProcess,
         getElemIdFunc,
         parent: inst,
-        customNameMapping,
+        customNameMappingFunctions,
       }),
     })
     if (value !== undefined) {

@@ -44,12 +44,12 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   adapterName,
   defQuery,
   predefinedTypes,
-  customNameMapping,
+  customNameMappingFunctions,
   getElemIdFunc,
 }: {
   adapterName: string
   defQuery: ElementAndResourceDefFinder<Options>
-  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
 }): ElementGenerator => {
@@ -84,7 +84,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
           typeName,
           definedTypes: predefinedTypes,
           getElemIdFunc,
-          customNameMapping,
+          customNameMappingFunctions,
         })
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5427)

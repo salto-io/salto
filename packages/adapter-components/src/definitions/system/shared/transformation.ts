@@ -21,9 +21,13 @@ export const DATA_FIELD_ENTIRE_OBJECT = '.'
 
 export type NameMappingOptions = 'lowercase' | 'uppercase'
 
+export type NameMappingFunction = (name: unknown) => string
+
 export type NameMappingFunctionMap<TCustomOptions extends string = never> = Record<
-  Exclude<TCustomOptions, NameMappingOptions>,
-  (name: string) => string
+  Exclude<TCustomOptions, NameMappingOptions>, // We need this exclusion for 2 reasons:
+  // 1. In case TCustomOptions are not defined and fallback to the default options (NameMappingOptions), we don't want TS to enforce us to define their mapping
+  // 2. We don't want to allow the default options logic to be overridden by a custom one
+  NameMappingFunction
 >
 
 export type ContextParams = Record<string, unknown>

@@ -69,7 +69,6 @@ const createExtractor = <ClientOptions extends string>(
     )
 }
 
-// TODO SVH: double-check it it's okay that ClientOptions are now optional
 export const getRequester = <Options extends APIDefinitionsOptions>({
   adapterName,
   clients,

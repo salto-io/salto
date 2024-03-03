@@ -26,7 +26,7 @@ import {
 import { invertNaclCase, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { NameMappingFunctionMap, NameMappingOptions } from '../../definitions'
+import { NameMappingFunction, NameMappingFunctionMap, NameMappingOptions } from '../../definitions'
 import { ElemIDCreatorArgs, ElemIDDefinition, PathDefinition } from '../../definitions/system/fetch/element'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from '../../elements/constants'
 
@@ -37,6 +37,11 @@ export type PartsCreator = (args: { entry: Values; defaultName: string; parent?:
 const ID_SEPARATOR = '_'
 
 const log = logger(module)
+
+const DEFAULT_NAME_MAPPING_FUNCTIONS: Record<NameMappingOptions, NameMappingFunction> = {
+  lowercase: name => String(name).toLowerCase(),
+  uppercase: name => String(name).toUpperCase(),
+}
 
 export const createServiceIDs = ({
   entry,
@@ -69,37 +74,39 @@ export const serviceIDKeyCreator =
   entry =>
     safeJsonStringify(createServiceIDs({ entry, serviceIDFields, typeID }))
 
-const isCustomNameMappingOption = <TCustomNameMappingOptions extends string>(
-  nameMapping: string,
-): nameMapping is Exclude<TCustomNameMappingOptions, NameMappingOptions> => {
-  const customNameMappingOptions: NameMappingOptions[] = ['lowercase', 'uppercase']
-  return !(customNameMappingOptions as string[]).includes(nameMapping)
-}
-
+/**
+ * Returns the name part of an elemId based on the provided name mapping options, which can be
+ * either a built-in name mapping option or a custom name mapping option.
+ * If the name mapping option or the relevant custom mapping is not provided,
+ * the function returns the name as is, after converting it to a string.
+ */
 export const getNameMapping = <TCustomNameMappingOptions extends string>({
   name,
-  customNameMapping,
+  customNameMappingFunctions,
   nameMapping,
 }: {
-  name: string
-  customNameMapping: NameMappingFunctionMap<TCustomNameMappingOptions>
+  name: unknown
+  customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>
   nameMapping?: TCustomNameMappingOptions | NameMappingOptions
 }): string => {
   if (!nameMapping) {
-    return name
+    return String(name)
   }
 
-  if (isCustomNameMappingOption<TCustomNameMappingOptions>(nameMapping)) {
-    return customNameMapping[nameMapping]?.(name) ?? name
-  }
-
-  return nameMapping === 'lowercase' ? name.toLowerCase() : name.toUpperCase()
+  const nameMappingFunctions = {
+    ...DEFAULT_NAME_MAPPING_FUNCTIONS,
+    ...customNameMappingFunctions,
+  } as Record<NameMappingOptions | TCustomNameMappingOptions, NameMappingFunction>
+  // Unfortunately, TypeScript doesn't recognize that a union of NameMappingOptions and
+  // Exclude<TCustomNameMappingOptions, NameMappingOptions> is equivalent to
+  // NameMappingOptions | TCustomNameMappingOptions. Therefore, explicit casting is necessary :(
+  return nameMappingFunctions[nameMapping]?.(name) ?? String(name)
 }
 
 const computeElemIDPartsFunc =
   <TCustomNameMappingOptions extends string>(
     elemIDDef: ElemIDDefinition<TCustomNameMappingOptions>,
-    customNameMapping: NameMappingFunctionMap<TCustomNameMappingOptions>,
+    customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>,
   ): PartsCreator =>
   ({ entry, parent }) => {
     const parts = (elemIDDef.parts ?? [])
@@ -109,9 +116,9 @@ const computeElemIDPartsFunc =
           return part.custom(part)(entry)
         }
         return getNameMapping({
-          name: String(_.get(entry, part.fieldName) ?? ''),
+          name: _.get(entry, part.fieldName) ?? '',
           nameMapping: part.mapping,
-          customNameMapping,
+          customNameMappingFunctions,
         })
       })
     const nonEmptyParts = parts.filter(lowerdashValues.isDefined).filter(part => part.length > 0)
@@ -141,7 +148,7 @@ export const createElemIDFunc =
     serviceIDDef,
     typeID,
     singleton,
-    customNameMapping,
+    customNameMappingFunctions,
   }: ElemIDCreatorArgs<TCustomNameMappingOptions>): ElemIDCreator =>
   args => {
     if (singleton) {
@@ -150,7 +157,7 @@ export const createElemIDFunc =
 
     // if the calculated name is empty ,fallback to the provided default name
     const computedName = naclCase(
-      computeElemIDPartsFunc(elemIDDef, customNameMapping)(args).join(elemIDDef.delimiter ?? ID_SEPARATOR) ||
+      computeElemIDPartsFunc(elemIDDef, customNameMappingFunctions)(args).join(elemIDDef.delimiter ?? ID_SEPARATOR) ||
         args.defaultName,
     )
     if (getElemIdFunc && serviceIDDef !== undefined) {
@@ -172,14 +179,14 @@ export const getElemPath =
     typeID,
     singleton,
     nestUnderPath,
-    customNameMapping,
+    customNameMappingFunctions,
   }: {
     def: PathDefinition<TCustomNameMappingOptions> | undefined
     elemIDCreator: ElemIDCreator
     typeID: ElemID
     singleton?: boolean
     nestUnderPath?: string[]
-    customNameMapping: NameMappingFunctionMap<TCustomNameMappingOptions>
+    customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>
   }): PartsCreator =>
   ({ entry, parent, defaultName }) => {
     if (singleton) {
@@ -189,7 +196,7 @@ export const getElemPath =
       ?.map(part =>
         computeElemIDPartsFunc(
           part,
-          customNameMapping,
+          customNameMappingFunctions,
         )({ entry, parent, defaultName }).join(part.delimiter ?? ID_SEPARATOR),
       )
       .map(naclCase) ?? [elemIDCreator({ entry, parent, defaultName })]

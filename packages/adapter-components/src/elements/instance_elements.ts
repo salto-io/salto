@@ -103,7 +103,7 @@ export const getInstanceFilePath = ({
   const fileName = fileNameParts?.every(p => _.isString(p) || _.isNumber(p)) ? fileNameParts.join('_') : undefined
   const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
   const mappedNaclCaseFileName = nameMapping
-    ? getNameMapping({ name: naclCaseFileName, nameMapping, customNameMapping: {} })
+    ? getNameMapping({ name: naclCaseFileName, nameMapping, customNameMappingFunctions: {} })
     : naclCaseFileName
   return isSettingType
     ? [adapterName, RECORDS_PATH, SETTINGS_NESTED_PATH, pathNaclCase(typeName)]
@@ -128,7 +128,7 @@ export const generateInstanceNameFromConfig = (
   )
   const instanceName = getInstanceName(values, idFields, typeName)
   return instanceName !== undefined
-    ? getNameMapping({ name: instanceName, nameMapping, customNameMapping: {} })
+    ? getNameMapping({ name: instanceName, nameMapping, customNameMappingFunctions: {} })
     : instanceName
 }
 
@@ -167,7 +167,9 @@ export const getInstanceNaclName = ({
   const newName = parentName ? `${parentName}${nameWithSeparator}` : String(name)
   const naclName = naclCase(newName)
 
-  const desiredName = nameMapping ? getNameMapping({ name: naclName, nameMapping, customNameMapping: {} }) : naclName
+  const desiredName = nameMapping
+    ? getNameMapping({ name: naclName, nameMapping, customNameMappingFunctions: {} })
+    : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
         adapterName,

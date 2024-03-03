@@ -30,7 +30,7 @@ export type GenerateTypeArgs<Options extends FetchApiDefinitionsOptions = {}> = 
   parentName?: string
   entries: Values[]
   defQuery: ElementAndResourceDefFinder<Options>
-  customNameMapping: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   typeNameOverrides?: Record<string, string>
   isUnknownEntry?: (value: unknown) => boolean
   definedTypes?: Record<string, ObjectType>

@@ -23,7 +23,8 @@ import {
   isObjectType,
 } from '@salto-io/adapter-api'
 import { isCustom } from '../transformers/transformer'
-import { apiNameSync } from '../filters/utils'
+import { apiNameSync, getFLSProfiles } from '../filters/utils'
+import { SalesforceConfig } from '../types'
 
 const createFLSInfo = (
   element: Element,
@@ -32,18 +33,20 @@ const createFLSInfo = (
   const typeOrField = isField(element) ? 'CustomField' : 'CustomObject'
   return {
     message: `${typeOrField} visibility in Profiles.`,
-    detailedMessage: `Deploying this new ${typeOrField} will add access to it in the following Profiles: ${flsProfiles.join(', ')}.`,
+    detailedMessage: `Deploying this new ${typeOrField} will add access to it in the following Profiles: [${flsProfiles.join(', ')}].`,
     severity: 'Info',
     elemID: element.elemID,
   }
 }
 
-const changeValidator: ChangeValidator = async (changes) =>
-  changes
+const changeValidator = (config: SalesforceConfig): ChangeValidator => async (changes) => {
+  const flsProfiles = getFLSProfiles(config)
+  return changes
     .filter(isAdditionChange)
     .map((change) => getChangeData(change))
     .filter((element) => isObjectType(element) || isField(element))
     .filter((element) => isCustom(apiNameSync(element)))
-    .map((element) => createFLSInfo(element, []))
+    .map((element) => createFLSInfo(element, flsProfiles))
+}
 
 export default changeValidator

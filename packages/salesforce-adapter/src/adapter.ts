@@ -132,6 +132,7 @@ import {
 import {
   addDefaults,
   apiNameSync,
+  getFLSProfiles,
   getFullName,
   isCustomObjectSync,
   isCustomType,
@@ -521,9 +522,7 @@ export default class SalesforceAdapter implements AdapterOperations {
             elementsSource,
             separateFieldToFiles:
               config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
-            flsProfiles: config.client?.deploy?.flsProfiles ?? [
-              constants.ADMIN_PROFILE,
-            ],
+            flsProfiles: getFLSProfiles(config),
             ...contextOverrides,
           },
         },

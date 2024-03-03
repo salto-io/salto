@@ -103,7 +103,7 @@ export const changeValidators: Record<
   deletedNonQueryableFields: () => deletedNonQueryableFields,
   instanceWithUnknownType: () => instanceWithUnknownType,
   artificialTypes: () => artificialTypes,
-  newFieldsAndObjectsFLS: () => newFieldsAndObjectsFLS,
+  newFieldsAndObjectsFLS: (config) => newFieldsAndObjectsFLS(config),
   ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
 }
 

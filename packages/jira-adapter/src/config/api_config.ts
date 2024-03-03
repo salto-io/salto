@@ -2142,6 +2142,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
+  SLA__config__goals__subGoals: {
+    transformation: {
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: [{ fieldName: 'goalId' }],
+    },
+  },
   SLA__config__definition__pause: {
     transformation: {
       fieldsToOmit: [{ fieldName: 'type' }, { fieldName: 'missing' }],

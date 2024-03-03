@@ -35,7 +35,7 @@ import workflowFilter from '../../../src/filters/workflowV2/workflow_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import {
-  JIRA_WORKFLOW_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   ISSUE_TYPE_NAME,
   JIRA,
   PROJECT_TYPE,
@@ -67,7 +67,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('jiraWorkflowFilter', () => {
+describe('workflow filter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy', FilterResult>
   let workflowType: ObjectType
   let workflowRuleConfigurationParametersType: ObjectType
@@ -83,7 +83,7 @@ describe('jiraWorkflowFilter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    workflowType = createEmptyType(JIRA_WORKFLOW_TYPE)
+    workflowType = createEmptyType(WORKFLOW_CONFIGURATION_TYPE)
     workflowRuleConfigurationParametersType = createEmptyType('WorkflowRuleConfiguration_parameters')
     elements = [workflowType, workflowRuleConfigurationParametersType]
   })
@@ -252,7 +252,7 @@ describe('jiraWorkflowFilter', () => {
         ],
       })
     })
-    it('should add workflows deployment annotations to JiraWorkflow type', async () => {
+    it('should add workflows deployment annotations to WorkflowConfiguration type', async () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(4)
       expect(elements[0].annotations).toEqual({
@@ -306,7 +306,7 @@ describe('jiraWorkflowFilter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(2)
     })
-    it('should fail when JiraWorkflow type is not found', async () => {
+    it('should fail when WorkflowConfiguration type is not found', async () => {
       const filterResult = (await filter.onFetch([])) as FilterResult
       const errors = filterResult.errors ?? []
       expect(errors).toBeDefined()
@@ -715,7 +715,7 @@ describe('jiraWorkflowFilter', () => {
         },
       })
       workflowType = new ObjectType({
-        elemID: new ElemID(JIRA, JIRA_WORKFLOW_TYPE),
+        elemID: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE),
         fields: {
           statuses: { refType: workflowReferenceStatusType },
           transitions: { refType: new MapType(transitionType) },

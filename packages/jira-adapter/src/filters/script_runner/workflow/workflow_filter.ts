@@ -36,7 +36,7 @@ import {
   CONDITION_CONFIGURATION,
   DIRECTED_LINK_TYPE,
   JIRA,
-  JIRA_WORKFLOW_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   MAIL_LIST_TYPE_NAME,
   POST_FUNCTION_CONFIGURATION,
   WORKFLOW_TYPE_NAME,
@@ -133,7 +133,8 @@ const filter: FilterCreator = ({ client, config }) => ({
     elements
       .filter(isInstanceElement)
       .filter(
-        instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === JIRA_WORKFLOW_TYPE,
+        instance =>
+          instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE,
       )
       .forEach(instance => {
         walkOnValue({
@@ -154,7 +155,8 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(
-        instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === JIRA_WORKFLOW_TYPE,
+        instance =>
+          instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE,
       )
       .forEach(instance => {
         walkOnValue({
@@ -173,7 +175,8 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(
-        instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === JIRA_WORKFLOW_TYPE,
+        instance =>
+          instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE,
       )
       .forEach(instance => {
         walkOnValue({

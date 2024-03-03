@@ -70,7 +70,7 @@ import {
   WorkflowStatus,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { JIRA_WORKFLOW_TYPE } from '../../constants'
+import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -154,12 +154,12 @@ export const convertParametersFieldsToList = (parameters: Values, listFields: Se
 const createWorkflowInstances = async ({
   client,
   workflowIds,
-  jiraWorkflowType,
+  workflowConfigurationType,
   workflowIdToStatuses,
 }: {
   client: JiraClient
   workflowIds: string[]
-  jiraWorkflowType: ObjectType
+  workflowConfigurationType: ObjectType
   workflowIdToStatuses: Record<string, WorkflowStatus[]>
 }): Promise<WorkflowInstancesOrFilterResult> => {
   try {
@@ -194,7 +194,7 @@ const createWorkflowInstances = async ({
           }
           return toBasicInstance({
             entry: workflow,
-            type: jiraWorkflowType,
+            type: workflowConfigurationType,
             transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
             transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
             defaultName: workflow.name,
@@ -482,20 +482,20 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
-      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
+      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(WORKFLOW_CONFIGURATION_TYPE)) {
         return { errors: [] }
       }
-      const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
-      if (jiraWorkflow === undefined) {
-        log.error('JiraWorkflow type was not found')
+      const workflowConfiguration = findObject(elements, WORKFLOW_CONFIGURATION_TYPE)
+      if (workflowConfiguration === undefined) {
+        log.error('WorkflowConfiguration type was not found')
         return {
           errors: [workflowFetchError()],
         }
       }
-      setTypeDeploymentAnnotations(jiraWorkflow)
-      await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
-      await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.UPDATABLE)
-      await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
+      setTypeDeploymentAnnotations(workflowConfiguration)
+      await addAnnotationRecursively(workflowConfiguration, CORE_ANNOTATIONS.CREATABLE)
+      await addAnnotationRecursively(workflowConfiguration, CORE_ANNOTATIONS.UPDATABLE)
+      await addAnnotationRecursively(workflowConfiguration, CORE_ANNOTATIONS.DELETABLE)
 
       const workflowRuleConfigurationParameters = findObject(elements, 'WorkflowRuleConfiguration_parameters')
       if (workflowRuleConfigurationParameters !== undefined) {
@@ -516,7 +516,7 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
         const { workflowInstances, errors: createWorkflowInstancesErrors } = await createWorkflowInstances({
           client,
           workflowIds: chunk,
-          jiraWorkflowType: jiraWorkflow,
+          workflowConfigurationType: workflowConfiguration,
           workflowIdToStatuses,
         })
         errors.push(...(createWorkflowInstancesErrors ?? []))

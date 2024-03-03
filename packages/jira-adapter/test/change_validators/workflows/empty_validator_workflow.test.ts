@@ -15,7 +15,7 @@
  */
 import { toChange, InstanceElement, ChangeDataType, Change } from '@salto-io/adapter-api'
 import { emptyValidatorWorkflowChangeValidator } from '../../../src/change_validators/workflows/empty_validator_workflow'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 
 describe('workflowPropertiesValidator', () => {
@@ -109,7 +109,7 @@ describe('workflowPropertiesValidator', () => {
   describe('workflowV2', () => {
     let workflowV2Instance: InstanceElement
     beforeEach(() => {
-      workflowV2Instance = new InstanceElement('workflowV2Instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+      workflowV2Instance = new InstanceElement('workflowV2Instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
         name: 'workflowV2Instance',
         version: {
           versionNumber: 1,

@@ -30,7 +30,7 @@ import { roleType } from '../../../src/autogen/types/standard_types/role'
 import { NETSUITE, PERMISSIONS, ROLE, SCRIPT_ID } from '../../../src/constants'
 import { isCustomRecordType } from '../../../src/types'
 
-describe('order_elements', () => {
+describe('permissions_references', () => {
   let role1: InstanceElement
   let role2: InstanceElement
   let role3: InstanceElement

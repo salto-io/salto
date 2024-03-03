@@ -75,6 +75,7 @@ describe('workflowPropertiesValidator', () => {
           tran1: {
             name: 'tran1',
             id: 'id',
+            type: 'DIRECTED',
             properties: [
               {
                 key: 'key',

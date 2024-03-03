@@ -18,7 +18,7 @@ import { emptyValidatorWorkflowChangeValidator } from '../../../src/change_valid
 import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 
-describe('workflowPropertiesValidator', () => {
+describe('emptyValidatorWorkflow', () => {
   let changes: ReadonlyArray<Change<ChangeDataType>>
   describe('workflowV1', () => {
     let instance: InstanceElement
@@ -125,6 +125,7 @@ describe('workflowPropertiesValidator', () => {
           tran1: {
             name: 'tran1',
             id: 'id',
+            type: 'DIRECTED',
             validators: [
               {
                 parameters: {

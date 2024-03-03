@@ -93,7 +93,7 @@ describe('workflow filter', () => {
     beforeEach(() => {
       mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
         yield [
-          { id: { entityId: '1' }, statuses: [{ id: '11', name: 'Quack' }] },
+          { id: { entityId: '1' }, statuses: [{ id: '11', name: 'Create'}, { id: '2', name: 'another one'}] },
           { id: { entityId: '2' }, statuses: [{ id: '22', name: 'Quack Quack' }] },
         ]
       })
@@ -134,6 +134,16 @@ describe('workflow filter', () => {
                     statusReference: '11',
                   },
                 },
+                {
+                  type: 'DIRECTED',
+                  name: 'ToStatus2',
+                  from: [{
+                    statusReference: '11',
+                  }],
+                  to : {
+                    statusReference: '2',
+                  },
+                }
               ],
               statuses: [
                 {
@@ -141,6 +151,9 @@ describe('workflow filter', () => {
                   properties: {
                     'jira.issue.editable': 'true',
                   },
+                },
+                {
+                  id: '2',
                 },
               ],
             },
@@ -205,6 +218,16 @@ describe('workflow filter', () => {
               statusReference: '11',
             },
           },
+          [TRANSITION_NAME_TO_KEY.ToStatus2]: {
+            type: 'DIRECTED',
+            name: 'ToStatus2',
+            from: [{
+              statusReference: '11',
+            }],
+            to : {
+              statusReference: '2',
+            },
+          },
         },
         statuses: [
           {
@@ -215,6 +238,9 @@ describe('workflow filter', () => {
                 value: 'true',
               },
             ],
+          },
+          {
+            id: '2',
           },
         ],
       })
@@ -981,7 +1007,12 @@ describe('workflow filter', () => {
                   type: 'global',
                 },
                 statuses: [],
-                transitions: [],
+                transitions: [
+                  {
+                    name: 'Create',
+                    type: 'INITIAL',
+                  },
+                ],
               },
             ],
             taskId: '1',
@@ -1115,7 +1146,12 @@ describe('workflow filter', () => {
                     type: 'global',
                   },
                   statuses: [],
-                  transitions: [],
+                  transitions: [
+                    {
+                      type: 'INITIAL',
+                      name: 'Create',
+                    },
+                  ],
                 },
               ],
             },

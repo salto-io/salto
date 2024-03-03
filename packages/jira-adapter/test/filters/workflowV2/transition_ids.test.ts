@@ -32,9 +32,18 @@ describe('transition ids filter', () => {
       },
       statuses: [],
       transitions: {
-        transition1: {},
-        transition2: {},
-        transition3: {},
+        transition1: {
+          type: 'DIRECTED',
+          name: 'transition1',
+        },
+        transition2: {
+          type: 'DIRECTED',
+          name: 'transition2',
+        },
+        transition3: {
+          type: 'DIRECTED',
+          name: 'transition3',
+        },
       },
     })
   })

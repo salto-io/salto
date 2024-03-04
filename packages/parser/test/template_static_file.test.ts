@@ -234,5 +234,10 @@ describe('template static file', () => {
       const template = await staticFileToTemplateExpression(staticfile)
       expect(template).toBeUndefined()
     })
+    it('should not fail if there is no reference', async () => {
+      const staticfile = new StaticFile({ isTemplate: true, filepath: 'test', content: Buffer.from('test') })
+      const template = await staticFileToTemplateExpression(staticfile)
+      expect(template).toEqual(createTemplateExpression({ parts: ['test'] }))
+    })
   })
 })

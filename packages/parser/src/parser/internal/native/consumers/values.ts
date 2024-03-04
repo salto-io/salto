@@ -256,7 +256,7 @@ const consumeArrayItems = (context: ParseContext, closingTokenType: string, idPr
   return items
 }
 
-export const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g, "'''")
+const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g, "'''")
 
 const unescapeMultilineString = (text: string): string => unescapeMultilineMarker(unescapeTemplateMarker(text))
 

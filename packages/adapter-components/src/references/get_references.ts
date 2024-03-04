@@ -23,10 +23,7 @@ import {
   TemplateExpression,
   StaticFile,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { parserUtils } from '@salto-io/parser'
-
-const { awu } = collections.asynciterable
 
 export const getAllReferencedIds = async (element: Element, onlyAnnotations = false): Promise<Set<string>> => {
   const allReferencedIds = new Set<string>()
@@ -58,8 +55,9 @@ export const getAllReferencedIds = async (element: Element, onlyAnnotations = fa
     return WALK_NEXT_STEP.RECURSE
   }
   walkOnElement({ element, func })
-  await awu(templateStaticFiles)
-    .map(async file => parserUtils.staticFileToTemplateExpression(file))
-    .forEach(getReferencesFromTemplateExpression)
+  const templateExpressions = await Promise.all(
+    templateStaticFiles.map(async file => parserUtils.staticFileToTemplateExpression(file)),
+  )
+  templateExpressions.forEach(getReferencesFromTemplateExpression)
   return allReferencedIds
 }

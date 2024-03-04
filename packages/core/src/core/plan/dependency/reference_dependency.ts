@@ -35,8 +35,9 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, resolvePath } from '@salto-io/adapter-utils'
 import { getAllReferencedIds } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 
-const { awu } = collections.asynciterable
+const log = logger(module)
 
 const getParentIds = (elem: ChangeDataType): Set<string> =>
   new Set(
@@ -58,8 +59,9 @@ const isReferenceValueChanged = (change: Change<ChangeDataType>, refElemId: Elem
   })
 }
 
-export const addReferencesDependency: DependencyChanger = async changes => {
-  const changesById = collections.iterable.groupBy(changes, ([_id, change]) => getChangeElemId(change))
+export const addReferencesDependency: DependencyChanger = async changes =>
+  log.time(async () => {
+    const changesById = collections.iterable.groupBy(changes, ([_id, change]) => getChangeElemId(change))
 
   const addChangeDependency = async ([id, change]: ChangeEntry): Promise<Iterable<DependencyChange>> => {
     const elem = getChangeData(change)
@@ -98,5 +100,11 @@ export const addReferencesDependency: DependencyChanger = async changes => {
       .filter(values.isDefined)
   }
 
-  return awu(changes).flatMap(addChangeDependency).toArray()
-}
+    const result = await Promise.all(
+      Array.from(changes.entries()).flatMap(async entry => {
+        const changeDependency = await addChangeDependency(entry)
+        return [...changeDependency]
+      }),
+    )
+    return result.flat()
+  }, 'addReferencesDependency')

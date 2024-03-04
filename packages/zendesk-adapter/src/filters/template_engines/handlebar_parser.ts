@@ -43,6 +43,16 @@ const extractHelper = (node: MustacheStatement['path'] | BlockStatement['path'])
   return undefined // When node is a Literal
 }
 
+const extractPotentialIds = (node: Node): NumberLiteral[] | undefined => {
+  if (isMustacheStatement(node) || isBlockStatement(node)) {
+    const helper = extractHelper(node.path)
+    if (helper && RELEVANT_HELPERS.includes(helper)) {
+      return node.params.filter(isNumberLiteral)
+    }
+  }
+  return undefined
+}
+
 /**
  * Extracts all the number literals from a handlebar template that are used as arguments in relevant helper functions
  * @example parseHandlebarPotentialReferences('Hello {{#is id 12345}}good name{{else}}bad name{{/is}}')
@@ -50,16 +60,6 @@ const extractHelper = (node: MustacheStatement['path'] | BlockStatement['path'])
  */
 export const parseHandlebarPotentialReferences = (content: string): NumberLiteral[] => {
   const ast = parse(content)
-  return ast.body
-    .map(node => {
-      if (isMustacheStatement(node) || isBlockStatement(node)) {
-        const helper = extractHelper(node.path)
-        if (helper && RELEVANT_HELPERS.includes(helper)) {
-          return node.params.filter(isNumberLiteral)
-        }
-      }
-      return undefined
-    })
-    .filter(values.isDefined)
-    .flat()
+  const potentialIds = ast.body.map(extractPotentialIds).filter(values.isDefined).flat()
+  return potentialIds
 }

@@ -64,7 +64,7 @@ describe('teamManagedProjectValidator', () => {
       },
     ])
   })
-  it('should do nothing a company managed project', async () => {
+  it('should not issue an error for a company managed project', async () => {
     projectInstance.value.style = 'classic'
     expect(
       await changeValidator([

@@ -35,7 +35,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
-import JSZip, { file } from 'jszip'
+import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'

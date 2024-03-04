@@ -74,7 +74,6 @@ describe('teamManagedProjectValidator', () => {
       ]),
     ).toEqual([])
 
-    projectInstance.value.projectCategory = undefined
     expect(
       await changeValidator([
         toChange({

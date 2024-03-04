@@ -18,6 +18,7 @@ import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../../src/consta
 import {
   parseUrlPotentialReferencesFromString,
   parseTagsFromHtml,
+  parseHtmlPotentialReferences,
 } from '../../../src/filters/template_engines/html_parser'
 
 describe('parseTagsFromHtml', () => {
@@ -160,5 +161,93 @@ describe('parseUrlPotentialReferencesFromString', () => {
     expect(result).toEqual(
       'This is a string with a missing URL reference: {{help_center.url}}/hc/en-us/articles/360001234568',
     )
+  })
+})
+
+describe('parseHtmlPotentialReferences', () => {
+  let urlBrandInstance: InstanceElement
+  let article: InstanceElement
+  let instancesById: Record<string, InstanceElement>
+  beforeEach(() => {
+    urlBrandInstance = new InstanceElement('brand', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
+      id: 1,
+      name: 'brand',
+    })
+    article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
+      id: 222552,
+    })
+    instancesById = {
+      [urlBrandInstance.value.id]: urlBrandInstance,
+      [article.value.id]: article,
+    }
+  })
+
+  it('should extract URL references from HTML content', () => {
+    const htmlContent = `
+      <a href="{{help_center.url}}/hc/en-us/articles/222552">Link 1</a>
+      <img src="{{help_center.url}}/image.jpg" alt="Image">
+      <link href="{{help_center.url}}/styles.css" rel="stylesheet">
+    `
+    const result = parseHtmlPotentialReferences(htmlContent, { urlBrandInstance, instancesById })
+    expect(result.urls).toEqual([
+      {
+        value: {
+          parts: ['{{help_center.url}}/hc/en-us/articles/', new ReferenceExpression(article.elemID, article)],
+        },
+        loc: { start: 7, end: 71 },
+      },
+      {
+        value: '{{help_center.url}}/image.jpg',
+        loc: { start: 79, end: 131 },
+      },
+      {
+        value: '{{help_center.url}}/styles.css',
+        loc: { start: 139, end: 199 },
+      },
+    ])
+  })
+
+  it('should handle missing references when enableMissingReferences is true', () => {
+    const htmlContent = `
+      <a href="{{help_center.url}}/hc/en-us/articles/360001234568">Link 1</a>
+    `
+    const missingArticle = new InstanceElement(
+      'missing_brand_360001234568',
+      new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+      { id: '360001234568' },
+      undefined,
+      { salto_missing_ref: true },
+    )
+    const result = parseHtmlPotentialReferences(htmlContent, {
+      urlBrandInstance,
+      instancesById,
+      enableMissingReferences: true,
+    })
+    expect(result.urls).toEqual([
+      {
+        value: {
+          parts: [
+            '{{help_center.url}}/hc/en-us/articles/',
+            new ReferenceExpression(missingArticle.elemID, missingArticle),
+          ],
+        },
+        loc: { start: 7, end: 77 },
+      },
+    ])
+  })
+
+  it('should extract string content from script tags', () => {
+    const htmlContent = `
+      <script>
+        const someVar = 'some value';
+      </script>
+    `
+    const result = parseHtmlPotentialReferences(htmlContent, { urlBrandInstance, instancesById })
+    expect(result.scripts).toEqual([
+      {
+        value: expect.stringMatching(/\s+const someVar = 'some value';\s+/),
+        loc: { start: 15, end: 59 },
+      },
+    ])
   })
 })

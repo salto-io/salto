@@ -89,7 +89,7 @@ const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
   onFetch: async (elements: Element[]) => {
     if (
       !config.fetch.enableJSM ||
-      !config.fetch.enableJsmExperimental ||
+      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
       !fetchQuery.isTypeMatch(OBJECT_TYPE_ATTRIBUTE_TYPE)
     ) {
       return
@@ -129,7 +129,11 @@ const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
   },
   deploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental || jsmApiDefinitions === undefined) {
+    if (
+      !config.fetch.enableJSM ||
+      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
+      jsmApiDefinitions === undefined
+    ) {
       return {
         deployResult: { appliedChanges: [], errors: [] },
         leftoverChanges: changes,

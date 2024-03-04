@@ -33,7 +33,7 @@ const { awu } = collections.asynciterable
  */
 export const deleteLabelAtttributeValidator: (config: JiraConfig) => ChangeValidator =
   config => async (changes, elementsSource) => {
-    if (elementsSource === undefined || !config.fetch.enableJsmExperimental) {
+    if (elementsSource === undefined || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
       return []
     }
     const objectTypeAttributeRemovalChanges = await awu(changes)

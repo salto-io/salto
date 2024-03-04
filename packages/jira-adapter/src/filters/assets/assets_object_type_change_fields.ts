@@ -23,7 +23,7 @@ import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypeChangeFields',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
       return
     }
     elements

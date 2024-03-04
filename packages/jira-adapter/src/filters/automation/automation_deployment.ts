@@ -436,7 +436,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     setTypeDeploymentAnnotations(automationType)
   },
   preDeploy: async changes => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
       return
     }
 
@@ -472,7 +472,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
   },
   onDeploy: async changes => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
       return
     }
 

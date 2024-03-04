@@ -25,15 +25,6 @@ describe('custom record empty permission list validator', () => {
       metadataType: 'customrecordtype',
       [SCRIPT_ID]: 'customrecord_test',
       accesstype: 'USEPERMISSIONLIST',
-      permissions: {
-        permission: {
-          SYSTEM_ADMINISTRATOR: {
-            permittedlevel: 'CREATE',
-            permittedrole: 'SYSTEM_ADMINISTRATOR',
-            restriction: 'EDIT',
-          },
-        },
-      },
     },
   })
 
@@ -41,7 +32,6 @@ describe('custom record empty permission list validator', () => {
     customRecord = custRecordObject.clone()
   })
   it('should return an error when there is a custom record without permissions and with accesstype USEPERMISSIONLIST', async () => {
-    delete customRecord.annotations.permissions.permission
     const errors = await customRecordEmptyPermissionList([toChange({ after: customRecord })])
     expect(errors.length).toBe(1)
     expect(errors[0]).toEqual({
@@ -54,11 +44,19 @@ describe('custom record empty permission list validator', () => {
     })
   })
   it('should not return an error when there are permissions', async () => {
+    customRecord.annotations.permissions = {
+      permission: {
+        SYSTEM_ADMINISTRATOR: {
+          permittedlevel: 'CREATE',
+          permittedrole: 'SYSTEM_ADMINISTRATOR',
+          restriction: 'EDIT',
+        },
+      },
+    }
     const errors = await customRecordEmptyPermissionList([toChange({ after: customRecord })])
     expect(errors.length).toBe(0)
   })
   it('should not return an error when the accesstype is different than USEPERMISSIONLIST', async () => {
-    delete customRecord.annotations.permissions.permission
     customRecord.annotations.accesstype = 'CUSTRECORDENTRYPERM'
     const errors = await customRecordEmptyPermissionList([toChange({ after: customRecord })])
     expect(errors.length).toBe(0)

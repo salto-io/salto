@@ -158,12 +158,22 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
 
 const removeCustomTicketStatusFromTicketFieldIDsField = (
   instance: InstanceElement,
-  customTicketElementID: string,
+  customTicketElement: InstanceElement,
 ): void => {
-  const ticketFieldIDs: string[] = instance.value.ticket_field_ids || []
-  if (ticketFieldIDs.includes(customTicketElementID)) {
-    const index = ticketFieldIDs.indexOf(customTicketElementID)
-    ticketFieldIDs.splice(index, 1)
+  const ticketFieldIDs: Array<string | ReferenceExpression> = instance.value.ticket_field_ids || []
+
+  if (ticketFieldIDs.includes(customTicketElement.value.id)) {
+    // found the string ID of the custom ticket
+    ticketFieldIDs.splice(ticketFieldIDs.indexOf(customTicketElement.value.id), 1)
+    return
+  }
+
+  const foundCustomTicketField = ticketFieldIDs.find(id =>
+    id instanceof ReferenceExpression ? id.elemID === customTicketElement.elemID : false,
+  )
+  if (foundCustomTicketField !== undefined) {
+    // found a ReferenceExpression pointing to the custom ticket
+    ticketFieldIDs.splice(ticketFieldIDs.indexOf(foundCustomTicketField), 1)
   }
 }
 
@@ -180,21 +190,15 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     const customTicketElement = elements
       .filter(isInstanceElement)
       .find(instance => instance.elemID.name.includes('Ticket_status_custom_status'))
-    const customTicketElementID = customTicketElement?.value.id
-
-    // eslint-disable-next-line no-console
-    console.log(customTicketElement)
+    if (customTicketElement === undefined) {
+      return
+    }
     elements
       .filter(isInstanceElement)
       .filter(element => element.elemID.typeName === TICKET_FORM_TYPE_NAME)
-      .map(instance => removeCustomTicketStatusFromTicketFieldIDsField(instance, customTicketElementID))
+      .map(instance => removeCustomTicketStatusFromTicketFieldIDsField(instance, customTicketElement))
 
-    // eslint-disable-next-line no-console
-    console.log(customTicketElement)
-    remove(
-      elements,
-      element => customTicketElement?.value.elemID && element.elemID.isEqual(customTicketElement?.value.elemID),
-    )
+    remove(elements, element => customTicketElement.elemID && element.elemID.isEqual(customTicketElement.elemID))
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [ticketFormChanges, leftoverChanges] = _.partition(

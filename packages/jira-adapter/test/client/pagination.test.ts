@@ -94,12 +94,16 @@ describe('pageByOffset', () => {
     })
     it('should keep simple type scopes with non board self', () => {
       const [page] = responses
-      expect(page).toContainEqual(expect.objectContaining({ type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/2.0/board/1' }))
+      expect(page).toContainEqual(
+        expect.objectContaining({ type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/2.0/board/1' }),
+      )
     })
     it('should omit team boards from the response', () => {
       expect(responses).toHaveLength(1)
       const [page] = responses
-      expect(page).not.toContainEqual(expect.objectContaining({ type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/1.0/board/1' }))
+      expect(page).not.toContainEqual(
+        expect.objectContaining({ type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/1.0/board/1' }),
+      )
     })
   })
 

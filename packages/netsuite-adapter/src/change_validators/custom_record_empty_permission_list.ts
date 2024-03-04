@@ -18,12 +18,16 @@ import { values } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
 import { isCustomRecordType } from '../types'
 
+const USE_PERMISSION_LIST = 'USEPERMISSIONLIST'
+const REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION = 'CUSTRECORDENTRYPERM'
+const NO_PERMISSION_REQUIRED = 'NONENEEDED'
+
 const hasPermissions = (customRecord: ObjectType): boolean =>
-  values.isPlainRecord(customRecord.annotations.permissions.permission) &&
+  values.isPlainRecord(customRecord.annotations.permissions?.permission) &&
   Object.keys(customRecord.annotations.permissions.permission).length > 0
 
-const usesPermissionListWithEmptyList = (customRecord: ObjectType): boolean =>
-  customRecord.annotations.accesstype === 'USEPERMISSIONLIST' && !hasPermissions(customRecord)
+const usePermissionOnListWithEmptyList = (customRecord: ObjectType): boolean =>
+  customRecord.annotations.accesstype === USE_PERMISSION_LIST && !hasPermissions(customRecord)
 
 const changeValidator: NetsuiteChangeValidator = async changes =>
   changes
@@ -31,14 +35,14 @@ const changeValidator: NetsuiteChangeValidator = async changes =>
     .map(getChangeData)
     .filter(isObjectType)
     .filter(isCustomRecordType)
-    .filter(usesPermissionListWithEmptyList)
+    .filter(usePermissionOnListWithEmptyList)
     .map(customRecord => ({
       elemID: customRecord.elemID,
       severity: 'Error',
       message: 'Access type is permission list with no permissions specified',
       detailedMessage:
-        "Cannot deploy a Custom Record Type without permissions when the access type is set to 'USEPERMISSIONLIST'." +
-        "To deploy this Custom Record Type, either add permissions or change the access type to 'CUSTRECORDENTRYPERM' or 'NONENEEDED'.",
+        `Cannot deploy a Custom Record Type without permissions when the access type is set to '${USE_PERMISSION_LIST}'.` +
+        `To deploy this Custom Record Type, either add permissions or change the access type to '${REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION}' or '${NO_PERMISSION_REQUIRED}'.`,
     }))
 
 export default changeValidator

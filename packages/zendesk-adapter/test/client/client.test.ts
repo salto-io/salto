@@ -45,16 +45,20 @@ describe('client', () => {
 
     it('should return a holiday response with start_year and end_year', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(200, {
-        holidays: [
-          {
-            id: 1
-          },
-          {
-            id: 2
-          },
-        ]
-      })
+      mockAxios
+        .onGet()
+        .replyOnce(200)
+        .onGet()
+        .replyOnce(200, {
+          holidays: [
+            {
+              id: 1,
+            },
+            {
+              id: 2,
+            },
+          ],
+        })
       const res = await client.get({ url: '/api/v2/business_hours/schedules/123/holidays' })
       expect(res.data).toEqual({
         holidays: [
@@ -68,22 +72,26 @@ describe('client', () => {
             start_year: 1,
             end_year: 1,
           },
-        ]
+        ],
       })
       expect(res.status).toEqual(200)
     })
     it('should return a support address response with username', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(200, {
-        recipient_addresses: [
-          {
-            id: 1
-          },
-          {
-            id: 2
-          },
-        ]
-      })
+      mockAxios
+        .onGet()
+        .replyOnce(200)
+        .onGet()
+        .replyOnce(200, {
+          recipient_addresses: [
+            {
+              id: 1,
+            },
+            {
+              id: 2,
+            },
+          ],
+        })
       const res = await client.get({ url: '/api/v2/recipient_addresses' })
       expect(res.data).toEqual({
         recipient_addresses: [
@@ -95,22 +103,26 @@ describe('client', () => {
             id: 2,
             username: 1,
           },
-        ]
+        ],
       })
       expect(res.status).toEqual(200)
     })
     it('should return a article attachment response with hash', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(200, {
-        article_attachments: [
-          {
-            id: 1
-          },
-          {
-            id: 2
-          },
-        ]
-      })
+      mockAxios
+        .onGet()
+        .replyOnce(200)
+        .onGet()
+        .replyOnce(200, {
+          article_attachments: [
+            {
+              id: 1,
+            },
+            {
+              id: 2,
+            },
+          ],
+        })
       const res = await client.get({ url: '/api/v2/help_center/articles/123/attachments' })
       expect(res.data).toEqual({
         article_attachments: [
@@ -122,7 +134,7 @@ describe('client', () => {
             id: 2,
             hash: 1,
           },
-        ]
+        ],
       })
       expect(res.status).toEqual(200)
     })

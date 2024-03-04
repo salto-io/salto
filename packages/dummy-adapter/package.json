@@ -17,7 +17,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "yarn generate && yarn lint && yarn format && yarn build-ts",
+    "build": "yarn generate && yarn lint && yarn build-ts",
     "test": "jest",
     "clean": "rm -rf ./dist .eslintcache",
     "clean-ts": "../../build_utils/clean-old-ts.sh",

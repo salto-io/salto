@@ -432,7 +432,7 @@ export const retrieveMetadataInstances = async ({
       namespace: change.value.namespace ?? '',
       changedAt: undefined,
     }
-    if (fetchProfile.metadataQuery.isInstanceIncluded(metadataInstance)) {
+    if (!fetchProfile.metadataQuery.isInstanceIncluded(metadataInstance)) {
       log.debug(
         'Would have ignored config change %o because the instance is already excluded',
         change,

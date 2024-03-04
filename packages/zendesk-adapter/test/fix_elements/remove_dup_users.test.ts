@@ -26,7 +26,7 @@ describe('removeDupUsersHandler', () => {
   const userSegmentWithDuplicatesInstance = new InstanceElement('test', userSegmentType, {
     title: 'test',
     author_id: 'a@a.com',
-    added_user_ids: ['hi@hi.com', 'bye@bye.com', 'hi@hi.com', 'a@a.com', 'hi@hi.com'],
+    added_user_ids: ['hi@hi.com', 'bye@bye.com', 'hi@hi.com', 'a@a.com', 'hi@hi.com', 123, 456, 123],
   })
   const userSegmentInstance = new InstanceElement('test', userSegmentType, {
     title: 'test',
@@ -53,7 +53,7 @@ describe('removeDupUsersHandler', () => {
     })
     it('Duplicates are removed', () => {
       const handledUserSegment = userSegmentWithDuplicatesInstance.clone()
-      handledUserSegment.value.added_user_ids = ['hi@hi.com', 'bye@bye.com', 'a@a.com']
+      handledUserSegment.value.added_user_ids = ['hi@hi.com', 'bye@bye.com', 'a@a.com', 123, 456]
       expect(handlerResponse.fixedElements).toEqual([handledUserSegment])
     })
 
@@ -61,10 +61,10 @@ describe('removeDupUsersHandler', () => {
       expect(handlerResponse.errors).toEqual([
         {
           elemID: userSegmentWithDuplicatesInstance.elemID,
-          message: 'Duplicate appearances of 1 username in instance fields',
+          message: 'Duplicate appearances of 2 usernames in instance fields',
           severity: 'Warning',
           detailedMessage:
-            'The following usernames appear multiple times in an instance field: hi@hi.com.\n' +
+            'The following usernames appear multiple times: hi@hi.com, 123.\n' +
             'If you continue, the duplicate entries will be removed from the list.\n',
         },
       ])

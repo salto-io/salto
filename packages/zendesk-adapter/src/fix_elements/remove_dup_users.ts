@@ -21,19 +21,19 @@ import _ from 'lodash'
 import { FixElementsHandler } from './types'
 import { USER_SEGMENT_TYPE_NAME } from '../constants'
 
-type UsersList = string[] | number[]
+type UsersList = Array<string | number>
 type FixedElementResponse = { fixedInstance: InstanceElement; dupUsers: UsersList }
 
 const dupUsersRemovalWarning = (fixedElem: FixedElementResponse): ChangeError => ({
   elemID: fixedElem.fixedInstance.elemID,
   severity: 'Warning',
   message: `Duplicate appearances of ${fixedElem.dupUsers.length} username${fixedElem.dupUsers.length > 1 ? 's' : ''} in instance fields`,
-  detailedMessage: `The following usernames appear multiple times in an instance field: ${fixedElem.dupUsers.join(', ')}.\nIf you continue, the duplicate entries will be removed from the list.\n`,
+  detailedMessage: `The following usernames appear multiple times: ${fixedElem.dupUsers.join(', ')}.\nIf you continue, the duplicate entries will be removed from the list.\n`,
 })
 
 const removeDupUsersFromUserSegment = (instance: InstanceElement): FixedElementResponse | undefined => {
-  const users: string[] = instance.value.added_user_ids || []
-  const dupUsers = _.uniq(users.filter((item: string, index) => users.indexOf(item) !== index))
+  const users: Array<string | number> = instance.value.added_user_ids || []
+  const dupUsers = _.uniq(users.filter((item: string | number, index) => users.indexOf(item) !== index))
 
   if (_.isEmpty(dupUsers)) {
     return undefined

@@ -513,6 +513,7 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should remove excluded folder before creating the file cabinet query', async () => {
       query.isFileMatch.mockImplementation(path => !path.includes('folder4'))
+      query.isParentFolderMatch.mockImplementation(path => !path.includes('folder4'))
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(
         query,
         maxFileCabinetSizeInGB,
@@ -552,11 +553,36 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should return file that was matched by query (works only if query matches also direct parent folder of the file)', async () => {
       query.isFileMatch.mockImplementation(path => path === '/folder5/folder3/file1' || path === '/folder5/folder3/')
+      query.isParentFolderMatch.mockImplementation(path => path === '/folder3' || path === '/folder5')
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(
         query,
         maxFileCabinetSizeInGB,
       )
       expect(elements).toEqual([expectedResults[1], expectedResults[3]])
+    })
+
+    it('should only query folder if a file in that folder is matched by the query', async () => {
+      query.isFileMatch.mockImplementation(path => path === '/folder5/folder3/file1')
+      query.isParentFolderMatch.mockImplementationOnce(() => true).mockImplementation(path => !path.includes('folder4'))
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(
+        query,
+        maxFileCabinetSizeInGB,
+      )
+      const testWhereQuery = "hideinbundle = 'F' AND folder IN (5, 3)"
+      const suiteQlQuery =
+        'SELECT name, id, filesize, isinactive, isonline,' +
+        ' addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle' +
+        ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
+      expect(elements).toEqual([expectedResults[0], expectedResults[1], expectedResults[3]])
+    })
+
+    it('should not query folder if no file in that folder is matched by the query', async () => {
+      query.isParentFolderMatch.mockImplementationOnce(() => true).mockImplementation(() => false)
+      query.isFileMatch.mockImplementation(path => path === '/folder6/file21')
+      await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query, maxFileCabinetSizeInGB)
+      // no folder should match, queryFiles shouldn't be called
+      expect(suiteAppClient.runSuiteQL).toHaveBeenCalledTimes(2)
     })
 
     it("should remove 'bundleable' from query and try again if SuiteBundles ins't enabled", async () => {

@@ -41,7 +41,6 @@ import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NA
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
 const log = logger(module)
-const GENERIC_CUSTOM_TICKET_FIELD_NAME = 'Ticket_status_custom_status'
 
 type Child = {
   // eslint-disable-next-line camelcase
@@ -161,15 +160,15 @@ const removeCustomTicketStatusFromTicketFieldIDsField = (
   instance: InstanceElement,
   customTicketElement: InstanceElement,
 ): void => {
-  const ticketFieldIDs: Array<string | ReferenceExpression> = instance.value.ticket_field_ids || []
+  const ticketFieldIDs: Array<number | ReferenceExpression> = instance.value.ticket_field_ids || []
   if (ticketFieldIDs.includes(customTicketElement.value.id)) {
-    // found the string ID of the custom ticket
+    // found the ID of the custom ticket
     ticketFieldIDs.splice(ticketFieldIDs.indexOf(customTicketElement.value.id), 1)
     return
   }
 
   const foundCustomTicketField = ticketFieldIDs.find(id =>
-    id instanceof ReferenceExpression ? id.elemID === customTicketElement.elemID : false,
+    id instanceof ReferenceExpression ? id.elemID.isEqual(customTicketElement.elemID) : false,
   )
   if (foundCustomTicketField !== undefined) {
     // found a ReferenceExpression pointing to the custom ticket
@@ -189,7 +188,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     }
     const genericCustomTicketElement = elements
       .filter(isInstanceElement)
-      .find(instance => instance.elemID.name.includes(GENERIC_CUSTOM_TICKET_FIELD_NAME))
+      .find(instance => instance.value.type === 'custom_status')
     if (genericCustomTicketElement === undefined) {
       return
     }

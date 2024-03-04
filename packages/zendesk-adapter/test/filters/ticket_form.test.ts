@@ -111,10 +111,11 @@ describe('ticket form filter', () => {
   })
   describe('fetch', () => {
     const genericCustomTicketStatusField = new InstanceElement(
-      'Ticket_status_custom_status',
+      'custom_status',
       new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
       {
         type: 'custom_status',
+        id: 123,
       },
     )
     const otherField = new InstanceElement(
@@ -158,6 +159,22 @@ describe('ticket form filter', () => {
       await filter.onFetch(elements)
       expect(elementSourceForm.value.ticket_field_ids).toEqual([123456, otherTicketFieldRef])
       expect(elements).toEqual([elementSourceForm, otherField])
+    })
+    it('should remove the generic custom ticket on fetch when flag is on and there is no ref', async () => {
+      const elementSourceFormWithID = new InstanceElement('elementSourceFormWithID', ticketFormType, {
+        ticket_field_ids: [123, 123456, otherTicketFieldRef],
+      })
+      const elements = [elementSourceFormWithID, otherField, genericCustomTicketStatusField]
+
+      const config = { ...DEFAULT_CONFIG }
+      config[FETCH_CONFIG].omitCustomTicketStatus = true
+      filter = filterCreator(
+        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
+      ) as FilterType
+
+      await filter.onFetch(elements)
+      expect(elementSourceFormWithID.value.ticket_field_ids).toEqual([123456, otherTicketFieldRef])
+      expect(elements).toEqual([elementSourceFormWithID, otherField])
     })
   })
 

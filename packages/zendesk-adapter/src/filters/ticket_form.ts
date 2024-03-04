@@ -183,7 +183,7 @@ const removeCustomTicketStatusFromTicketFieldIDsField = (
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'ticketFormDeploy',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config[FETCH_CONFIG].omitCustomTicketStatus !== true) {
+    if (config[FETCH_CONFIG].omitTicketStatusTicketField !== true) {
       return
     }
     const genericCustomTicketElement = elements

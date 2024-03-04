@@ -97,7 +97,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig & {
   extractReferencesFromFreeText?: boolean
   convertJsonIdsToReferences?: boolean
   omitInactive?: OmitInactiveConfig
-  omitCustomTicketStatus?: boolean
+  omitTicketStatusTicketField?: boolean
 }
 
 export type ZendeskDeployConfig = definitions.UserDeployConfig &
@@ -2784,6 +2784,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
       default: true,
       customizations: {},
     },
+    omitTicketStatusTicketField: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -3048,7 +3049,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           extractReferencesFromFreeText: { refType: BuiltinTypes.BOOLEAN },
           convertJsonIdsToReferences: { refType: BuiltinTypes.BOOLEAN },
           omitInactive: { refType: OmitInactiveType },
-          omitCustomTicketStatus: { refType: BuiltinTypes.BOOLEAN },
+          omitTicketStatusTicketField: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -3081,7 +3082,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.extractReferencesFromFreeText`,
       `${FETCH_CONFIG}.convertJsonIdsToReferences`,
       `${FETCH_CONFIG}.omitInactive.customizations`,
-      `${FETCH_CONFIG}.omitCustomTicketStatus`,
+      `${FETCH_CONFIG}.omitTicketStatusTicketField`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

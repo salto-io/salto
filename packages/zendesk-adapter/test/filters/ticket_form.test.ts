@@ -151,7 +151,7 @@ describe('ticket form filter', () => {
     it('should remove the generic custom ticket on fetch when flag is on', async () => {
       const elements = [elementSourceForm, otherField, genericCustomTicketStatusField]
       const config = { ...DEFAULT_CONFIG }
-      config[FETCH_CONFIG].omitCustomTicketStatus = true
+      config[FETCH_CONFIG].omitTicketStatusTicketField = true
       filter = filterCreator(
         createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
       ) as FilterType
@@ -167,7 +167,7 @@ describe('ticket form filter', () => {
       const elements = [elementSourceFormWithID, otherField, genericCustomTicketStatusField]
 
       const config = { ...DEFAULT_CONFIG }
-      config[FETCH_CONFIG].omitCustomTicketStatus = true
+      config[FETCH_CONFIG].omitTicketStatusTicketField = true
       filter = filterCreator(
         createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
       ) as FilterType

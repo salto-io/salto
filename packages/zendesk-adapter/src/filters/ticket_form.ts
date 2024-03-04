@@ -41,6 +41,7 @@ import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NA
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
 const log = logger(module)
+const GENERIC_CUSTOM_TICKET_FIELD_NAME = 'Ticket_status_custom_status'
 
 type Child = {
   // eslint-disable-next-line camelcase
@@ -161,7 +162,6 @@ const removeCustomTicketStatusFromTicketFieldIDsField = (
   customTicketElement: InstanceElement,
 ): void => {
   const ticketFieldIDs: Array<string | ReferenceExpression> = instance.value.ticket_field_ids || []
-
   if (ticketFieldIDs.includes(customTicketElement.value.id)) {
     // found the string ID of the custom ticket
     ticketFieldIDs.splice(ticketFieldIDs.indexOf(customTicketElement.value.id), 1)
@@ -187,18 +187,22 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     if (config[FETCH_CONFIG].omitCustomTicketStatus !== true) {
       return
     }
-    const customTicketElement = elements
+    const genericCustomTicketElement = elements
       .filter(isInstanceElement)
-      .find(instance => instance.elemID.name.includes('Ticket_status_custom_status'))
-    if (customTicketElement === undefined) {
+      .find(instance => instance.elemID.name.includes(GENERIC_CUSTOM_TICKET_FIELD_NAME))
+    if (genericCustomTicketElement === undefined) {
       return
     }
+
     elements
       .filter(isInstanceElement)
       .filter(element => element.elemID.typeName === TICKET_FORM_TYPE_NAME)
-      .map(instance => removeCustomTicketStatusFromTicketFieldIDsField(instance, customTicketElement))
+      .map(instance => removeCustomTicketStatusFromTicketFieldIDsField(instance, genericCustomTicketElement))
 
-    remove(elements, element => customTicketElement.elemID && element.elemID.isEqual(customTicketElement.elemID))
+    remove(
+      elements,
+      element => genericCustomTicketElement.elemID && element.elemID.isEqual(genericCustomTicketElement.elemID),
+    )
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [ticketFormChanges, leftoverChanges] = _.partition(

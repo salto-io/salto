@@ -43,12 +43,17 @@ import {
 describe('getCustomReferences', () => {
   let refs: ReferenceInfo[]
   let profileInstance: InstanceElement
-  const createTestInstance = (fields: Values): InstanceElement =>
-    new InstanceElement('test', mockTypes.Profile, fields)
+  let permissionSetInstance: InstanceElement
+  const createTestInstances = (
+    fields: Values,
+  ): [InstanceElement, InstanceElement] => [
+    new InstanceElement('test', mockTypes.Profile, fields),
+    new InstanceElement('test', mockTypes.PermissionSet, fields),
+  ]
 
   describe('when profile refs are disabled', () => {
     beforeEach(async () => {
-      profileInstance = createTestInstance({
+      ;[permissionSetInstance, profileInstance] = createTestInstances({
         fieldPermissions: {
           Account: {
             testField__c: 'ReadWrite',
@@ -73,7 +78,10 @@ describe('getCustomReferences', () => {
           },
         },
       )
-      refs = await getCustomReferences([profileInstance], adapterConfig)
+      refs = await getCustomReferences(
+        [profileInstance, permissionSetInstance],
+        adapterConfig,
+      )
     })
     it('should not generate references', () => {
       expect(refs).toBeEmpty()
@@ -81,7 +89,7 @@ describe('getCustomReferences', () => {
   })
   describe('when profile custom refs config is not set', () => {
     beforeEach(async () => {
-      profileInstance = createTestInstance({
+      ;[permissionSetInstance, profileInstance] = createTestInstances({
         fieldPermissions: {
           Account: {
             testField__c: 'ReadWrite',
@@ -97,7 +105,10 @@ describe('getCustomReferences', () => {
         ElemID.CONFIG_NAME,
         AdapterConfigType,
       )
-      refs = await getCustomReferences([profileInstance], adapterConfig)
+      refs = await getCustomReferences(
+        [profileInstance, permissionSetInstance],
+        adapterConfig,
+      )
     })
     it('should not generate references', () => {
       expect(refs).toBeEmpty()
@@ -106,14 +117,17 @@ describe('getCustomReferences', () => {
   describe('fields', () => {
     describe('when the fields are inaccessible', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           fieldPermissions: {
             Account: {
               testField__c: 'NoAccess',
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
@@ -121,14 +135,17 @@ describe('getCustomReferences', () => {
     })
     describe('when the fields are accessible', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           fieldPermissions: {
             Account: {
               testField__c: 'ReadWrite',
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should create references', async () => {
         const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
@@ -139,6 +156,13 @@ describe('getCustomReferences', () => {
         expect(refs).toEqual([
           {
             source: profileInstance.elemID.createNestedID(...expectedSource),
+            target: expectedTarget,
+            type: 'weak',
+          },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              ...expectedSource,
+            ),
             target: expectedTarget,
             type: 'weak',
           },
@@ -155,7 +179,7 @@ describe('getCustomReferences', () => {
 
     describe('if neither default or visible', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           applicationVisibilities: {
             SomeApplication: {
               application: 'SomeApplication',
@@ -165,7 +189,10 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should not create a reference', () => {
@@ -175,7 +202,7 @@ describe('getCustomReferences', () => {
 
     describe('if default', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           applicationVisibilities: {
             SomeApplication: {
               application: 'SomeApplication',
@@ -185,7 +212,10 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should create a reference', () => {
@@ -198,13 +228,21 @@ describe('getCustomReferences', () => {
             target: customApp.elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'applicationVisibilities',
+              'SomeApplication',
+            ),
+            target: customApp.elemID,
+            type: 'weak',
+          },
         ])
       })
     })
 
     describe('if visible', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           applicationVisibilities: {
             SomeApplication: {
               application: 'SomeApplication',
@@ -214,11 +252,22 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should create a reference', () => {
         expect(refs).toIncludeAllPartialMembers([
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'applicationVisibilities',
+              'SomeApplication',
+            ),
+            target: customApp.elemID,
+            type: 'weak',
+          },
           {
             source: profileInstance.elemID.createNestedID(
               'applicationVisibilities',
@@ -232,7 +281,7 @@ describe('getCustomReferences', () => {
     })
     describe('if a reference already exists', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           applicationVisibilities: {
             SomeApplication: {
               application: new ReferenceExpression(
@@ -248,7 +297,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
@@ -264,7 +316,7 @@ describe('getCustomReferences', () => {
 
     describe('when disabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           classAccesses: {
             SomeApexClass: {
               apexClass: 'SomeApexClass',
@@ -272,7 +324,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should not create a reference', () => {
@@ -282,7 +337,7 @@ describe('getCustomReferences', () => {
 
     describe('when enabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           classAccesses: {
             SomeApexClass: {
               apexClass: 'SomeApexClass',
@@ -290,7 +345,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should create a reference', () => {
@@ -303,12 +361,20 @@ describe('getCustomReferences', () => {
             target: apexClass.elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'classAccesses',
+              'SomeApexClass',
+            ),
+            target: apexClass.elemID,
+            type: 'weak',
+          },
         ])
       })
     })
     describe('if a reference already exists', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           classAccesses: {
             SomeApexClass: {
               apexClass: new ReferenceExpression(
@@ -323,7 +389,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
@@ -337,7 +406,7 @@ describe('getCustomReferences', () => {
 
     describe('when disabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           flowAccesses: {
             SomeFlow: {
               enabled: false,
@@ -345,7 +414,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
@@ -353,7 +425,7 @@ describe('getCustomReferences', () => {
     })
     describe('when enabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           flowAccesses: {
             SomeFlow: {
               enabled: true,
@@ -361,7 +433,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -373,12 +448,20 @@ describe('getCustomReferences', () => {
             target: flow.elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'flowAccesses',
+              'SomeFlow',
+            ),
+            target: flow.elemID,
+            type: 'weak',
+          },
         ])
       })
     })
     describe('if a reference already exists', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           flowAccesses: {
             SomeFlow: {
               enabled: true,
@@ -393,7 +476,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
@@ -409,7 +495,7 @@ describe('getCustomReferences', () => {
 
     describe('when there is a reference to a layout', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           layoutAssignments: {
             'Account_Account_Layout@bs': [
               {
@@ -418,12 +504,23 @@ describe('getCustomReferences', () => {
             ],
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
             source: profileInstance.elemID.createNestedID(
+              'layoutAssignments',
+              'Account_Account_Layout@bs',
+            ),
+            target: layout.elemID,
+            type: 'weak',
+          },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
               'layoutAssignments',
               'Account_Account_Layout@bs',
             ),
@@ -443,7 +540,7 @@ describe('getCustomReferences', () => {
         }),
       ]
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           layoutAssignments: {
             'Account_Account_Layout@bs': [
               {
@@ -457,7 +554,10 @@ describe('getCustomReferences', () => {
             ],
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -485,11 +585,35 @@ describe('getCustomReferences', () => {
             target: recordTypes[1].elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'layoutAssignments',
+              'Account_Account_Layout@bs',
+            ),
+            target: layout.elemID,
+            type: 'weak',
+          },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'layoutAssignments',
+              'Account_Account_Layout@bs',
+            ),
+            target: recordTypes[0].elemID,
+            type: 'weak',
+          },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'layoutAssignments',
+              'Account_Account_Layout@bs',
+            ),
+            target: recordTypes[1].elemID,
+            type: 'weak',
+          },
         ])
       })
       describe('if a reference already exists to a layout', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[permissionSetInstance, profileInstance] = createTestInstances({
             layoutAssignments: {
               'Account_Account_Layout@bs': [
                 {
@@ -505,7 +629,10 @@ describe('getCustomReferences', () => {
               ],
             },
           })
-          refs = await getCustomReferences([profileInstance], undefined)
+          refs = await getCustomReferences(
+            [profileInstance, permissionSetInstance],
+            undefined,
+          )
         })
         it('should not create references', async () => {
           expect(refs).toBeEmpty()
@@ -513,7 +640,7 @@ describe('getCustomReferences', () => {
       })
       describe('if a reference already exists to a recordType', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[permissionSetInstance, profileInstance] = createTestInstances({
             layoutAssignments: {
               'Account_Account_Layout@bs': [
                 {
@@ -541,12 +668,23 @@ describe('getCustomReferences', () => {
               ],
             },
           })
-          refs = await getCustomReferences([profileInstance], undefined)
+          refs = await getCustomReferences(
+            [profileInstance, permissionSetInstance],
+            undefined,
+          )
         })
         it('should only create references to layout', () => {
           expect(refs).toEqual([
             {
               source: profileInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: layout.elemID,
+              type: 'weak',
+            },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
                 'layoutAssignments',
                 'Account_Account_Layout@bs',
               ),
@@ -563,7 +701,7 @@ describe('getCustomReferences', () => {
 
     describe('when all permissions are disabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           objectPermissions: {
             Account: {
               allowCreate: false,
@@ -577,7 +715,10 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should not create references', () => {
@@ -587,7 +728,7 @@ describe('getCustomReferences', () => {
 
     describe('when some permissions are enabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           objectPermissions: {
             Account: {
               allowCreate: true,
@@ -601,7 +742,10 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should create a reference', () => {
@@ -614,12 +758,20 @@ describe('getCustomReferences', () => {
             target: customObject.elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'objectPermissions',
+              'Account',
+            ),
+            target: customObject.elemID,
+            type: 'weak',
+          },
         ])
       })
     })
     describe('when a reference already exists', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           objectPermissions: {
             Account: {
               allowCreate: true,
@@ -635,7 +787,10 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
@@ -649,7 +804,7 @@ describe('getCustomReferences', () => {
 
     describe('when disabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           pageAccesses: {
             SomeApexPage: {
               apexPage: 'SomeApexPage',
@@ -657,7 +812,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should not create a reference', () => {
@@ -667,7 +825,7 @@ describe('getCustomReferences', () => {
 
     describe('when enabled', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           pageAccesses: {
             SomeApexPage: {
               apexPage: 'SomeApexPage',
@@ -675,7 +833,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should create a reference', () => {
@@ -688,12 +849,20 @@ describe('getCustomReferences', () => {
             target: apexPage.elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'pageAccesses',
+              'SomeApexPage',
+            ),
+            target: apexPage.elemID,
+            type: 'weak',
+          },
         ])
       })
     })
     describe('when a reference already exists', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           pageAccesses: {
             SomeApexPage: {
               apexPage: new ReferenceExpression(
@@ -708,7 +877,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
 
       it('should not create a reference', () => {
@@ -724,7 +896,7 @@ describe('getCustomReferences', () => {
     )
     describe('when neither default nor visible', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           recordTypeVisibilities: {
             Case: {
               SomeCaseRecordType: {
@@ -735,7 +907,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
@@ -743,7 +918,7 @@ describe('getCustomReferences', () => {
     })
     describe('when default', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           recordTypeVisibilities: {
             Case: {
               SomeCaseRecordType: {
@@ -754,12 +929,24 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
             source: profileInstance.elemID.createNestedID(
+              'recordTypeVisibilities',
+              'Case',
+              'SomeCaseRecordType',
+            ),
+            target: recordType.elemID,
+            type: 'weak',
+          },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
               'recordTypeVisibilities',
               'Case',
               'SomeCaseRecordType',
@@ -772,7 +959,7 @@ describe('getCustomReferences', () => {
     })
     describe('when visible', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           recordTypeVisibilities: {
             Case: {
               SomeCaseRecordType: {
@@ -783,7 +970,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -796,12 +986,21 @@ describe('getCustomReferences', () => {
             target: recordType.elemID,
             type: 'weak',
           },
+          {
+            source: permissionSetInstance.elemID.createNestedID(
+              'recordTypeVisibilities',
+              'Case',
+              'SomeCaseRecordType',
+            ),
+            target: recordType.elemID,
+            type: 'weak',
+          },
         ])
       })
     })
     describe('when visible and a reference already exists', () => {
       beforeEach(async () => {
-        profileInstance = createTestInstance({
+        ;[permissionSetInstance, profileInstance] = createTestInstances({
           recordTypeVisibilities: {
             Case: {
               SomeCaseRecordType: {
@@ -819,7 +1018,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await getCustomReferences(
+          [profileInstance, permissionSetInstance],
+          undefined,
+        )
       })
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()

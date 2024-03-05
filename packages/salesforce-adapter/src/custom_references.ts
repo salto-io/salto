@@ -37,6 +37,7 @@ import {
   LAYOUT_TYPE_ID_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
 } from './constants'
 import { Types } from './transformers/transformer'
 import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from './types'
@@ -299,7 +300,11 @@ const getProfilesCustomReferences = async (
   // have to figure out the type name the hard way.
   const profilesAndPermissionSets = elements
     .filter(isInstanceElement)
-    .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+    .filter((instance) =>
+      [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE].includes(
+        instance.elemID.typeName,
+      ),
+    )
   const refs = log.time(
     () => profilesAndPermissionSets.flatMap(referencesFromProfile),
     `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets`,

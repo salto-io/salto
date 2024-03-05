@@ -270,7 +270,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
-      parentTypes: ['ReportColumn', 'PermissionSetFieldPermissions'],
+      parentTypes: ['ReportColumn'],
     },
     target: { type: CUSTOM_FIELD },
   },
@@ -430,7 +430,6 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
         'FlowRecordCreate',
         'FlowRecordDelete',
         'FlowStart',
-        'PermissionSetObjectPermissions',
       ],
     },
     target: { type: CUSTOM_OBJECT },
@@ -934,6 +933,23 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
   },
 ]
 
+export const referencesFromPermissionSets = [
+  {
+    src: {
+      field: 'field',
+      parentTypes: ['PermissionSetFieldPermissions'],
+    },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'object',
+      parentTypes: ['PermissionSetObjectPermissions'],
+    },
+    target: { type: CUSTOM_OBJECT },
+  },
+]
+
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
@@ -949,6 +965,7 @@ const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...defaultFieldNameToTypeMappingDefs,
   ...fieldPermissionEnumDisabledExtraMappingDefs,
   ...referencesFromProfile,
+  ...referencesFromPermissionSets,
 ]
 
 export const getReferenceMappingDefs = (args: {
@@ -960,7 +977,9 @@ export const getReferenceMappingDefs = (args: {
     refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
   }
   if (args.otherProfileRefs) {
-    refDefs = refDefs.concat(referencesFromProfile)
+    refDefs = refDefs
+      .concat(referencesFromProfile)
+      .concat(referencesFromPermissionSets)
   }
   return refDefs
 }

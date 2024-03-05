@@ -641,7 +641,7 @@ describe('automationFetchFilter', () => {
       const { paginator } = mockClient()
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = false
-      config.fetch.enableJsmExperimental = false
+      config.fetch.enableJSMPremium = false
       filter = automationFetchFilter(
         getFilterParams({
           client,
@@ -700,7 +700,7 @@ describe('automationFetchFilter', () => {
     it('should fetch automations with assets support from the service when enableJsm is true', async () => {
       const { paginator } = mockClient()
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
+      config.fetch.enableJSMPremium = true
       filter = automationFetchFilter(
         getFilterParams({
           client,
@@ -811,7 +811,7 @@ describe('automationFetchFilter', () => {
       })
       const { paginator } = mockClient()
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
+      config.fetch.enableJSMPremium = true
       filter = automationFetchFilter(
         getFilterParams({
           client,

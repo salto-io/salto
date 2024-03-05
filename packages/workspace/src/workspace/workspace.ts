@@ -235,6 +235,7 @@ export type Workspace = {
   ) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
+  getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
@@ -1189,6 +1190,9 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
+  const getSearchableNamesOfEnv = async (env?: string): Promise<string[]> =>
+    (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv())
+
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1294,6 +1298,11 @@ export const loadWorkspace = async (
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
       }
       return (await (await getWorkspaceState()).states[envName].authorInformation.get(id.getFullName())) ?? {}
+    },
+    getElementsAuthorsById: async (envName = currentEnv()) => {
+      const authorInformationMap = (await getWorkspaceState()).states[envName].authorInformation
+      const entries = await awu(authorInformationMap.entries()).toArray()
+      return Object.fromEntries(entries.map(entry => [entry.key, entry.value]))
     },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,
@@ -1534,8 +1543,7 @@ export const loadWorkspace = async (
     getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (await elements(env)).get(id),
     getSearchableNames: async (): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNames(currentEnv()),
-    getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
-      (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
+    getSearchableNamesOfEnv,
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
       const getUnresolvedElemIDsFromErrors = (validationErrors: readonly ValidationError[]): ElemID[] => {
         const workspaceErrors = validationErrors.filter(isUnresolvedRefError).map(e => e.target.createBaseID().parent)

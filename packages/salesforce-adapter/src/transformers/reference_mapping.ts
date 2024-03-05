@@ -972,7 +972,9 @@ export const getReferenceMappingDefs = (args: {
     refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
   }
   if (args.otherProfileRefs) {
-    refDefs = refDefs.concat(referencesFromProfile)
+    refDefs = refDefs
+      .concat(referencesFromProfile)
+      .concat(referencesFromPermissionSets)
   }
   if (args.permissionsSetRefs) {
     refDefs = refDefs.concat(referencesFromPermissionSets)

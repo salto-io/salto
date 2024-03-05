@@ -41,20 +41,28 @@ describe('profiles', () => {
   describe('weak references handler', () => {
     let refs: ReferenceInfo[]
     let profileInstance: InstanceElement
-    const createTestInstance = (fields: Values): InstanceElement =>
-      new InstanceElement('test', mockTypes.Profile, fields)
+    let permissionSetInstance: InstanceElement
+    const createTestInstances = (
+      fields: Values,
+    ): [InstanceElement, InstanceElement] => [
+      new InstanceElement('test', mockTypes.Profile, fields),
+      new InstanceElement('test', mockTypes.PermissionSet, fields),
+    ]
 
     describe('fields', () => {
       describe('when the fields are inaccessible', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             fieldPermissions: {
               Account: {
                 testField__c: 'NoAccess',
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create references', async () => {
@@ -64,14 +72,17 @@ describe('profiles', () => {
 
       describe('when the fields are accessible', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             fieldPermissions: {
               Account: {
                 testField__c: 'ReadWrite',
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create references', async () => {
@@ -83,6 +94,13 @@ describe('profiles', () => {
           expect(refs).toEqual([
             {
               source: profileInstance.elemID.createNestedID(...expectedSource),
+              target: expectedTarget,
+              type: 'weak',
+            },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                ...expectedSource,
+              ),
               target: expectedTarget,
               type: 'weak',
             },
@@ -100,7 +118,7 @@ describe('profiles', () => {
 
       describe('if neither default or visible', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             applicationVisibilities: {
               SomeApplication: {
                 application: 'SomeApplication',
@@ -110,7 +128,10 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -120,7 +141,7 @@ describe('profiles', () => {
 
       describe('if default', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             applicationVisibilities: {
               SomeApplication: {
                 application: 'SomeApplication',
@@ -130,7 +151,10 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -143,13 +167,21 @@ describe('profiles', () => {
               target: customApp.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'applicationVisibilities',
+                'SomeApplication',
+              ),
+              target: customApp.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('if visible', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             applicationVisibilities: {
               SomeApplication: {
                 application: 'SomeApplication',
@@ -159,7 +191,10 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -172,13 +207,21 @@ describe('profiles', () => {
               target: customApp.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'applicationVisibilities',
+                'SomeApplication',
+              ),
+              target: customApp.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('if a reference already exists', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             applicationVisibilities: {
               SomeApplication: {
                 application: new ReferenceExpression(
@@ -194,7 +237,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create references', async () => {
@@ -212,7 +258,7 @@ describe('profiles', () => {
 
       describe('when disabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             classAccesses: {
               SomeApexClass: {
                 apexClass: 'SomeApexClass',
@@ -220,7 +266,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -230,7 +279,7 @@ describe('profiles', () => {
 
       describe('when enabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             classAccesses: {
               SomeApexClass: {
                 apexClass: 'SomeApexClass',
@@ -238,7 +287,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -251,13 +303,21 @@ describe('profiles', () => {
               target: apexClass.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'classAccesses',
+                'SomeApexClass',
+              ),
+              target: apexClass.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('if a reference already exists', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             classAccesses: {
               SomeApexClass: {
                 apexClass: new ReferenceExpression(
@@ -272,7 +332,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create references', async () => {
@@ -288,7 +351,7 @@ describe('profiles', () => {
 
       describe('when disabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             flowAccesses: {
               SomeFlow: {
                 enabled: false,
@@ -296,7 +359,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -306,7 +372,7 @@ describe('profiles', () => {
 
       describe('when enabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             flowAccesses: {
               SomeFlow: {
                 enabled: true,
@@ -314,7 +380,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -327,13 +396,21 @@ describe('profiles', () => {
               target: flow.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'flowAccesses',
+                'SomeFlow',
+              ),
+              target: flow.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('if a reference already exists', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             flowAccesses: {
               SomeFlow: {
                 enabled: true,
@@ -348,7 +425,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create references', async () => {
@@ -366,7 +446,7 @@ describe('profiles', () => {
 
       describe('when there is a reference to a layout', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             layoutAssignments: {
               'Account_Account_Layout@bs': [
                 {
@@ -375,13 +455,24 @@ describe('profiles', () => {
               ],
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
               source: profileInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: layout.elemID,
+              type: 'weak',
+            },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
                 'layoutAssignments',
                 'Account_Account_Layout@bs',
               ),
@@ -403,7 +494,7 @@ describe('profiles', () => {
         ]
 
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             layoutAssignments: {
               'Account_Account_Layout@bs': [
                 {
@@ -417,7 +508,10 @@ describe('profiles', () => {
               ],
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -446,12 +540,36 @@ describe('profiles', () => {
               target: recordTypes[1].elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: layout.elemID,
+              type: 'weak',
+            },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: recordTypes[0].elemID,
+              type: 'weak',
+            },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'layoutAssignments',
+                'Account_Account_Layout@bs',
+              ),
+              target: recordTypes[1].elemID,
+              type: 'weak',
+            },
           ])
         })
 
         describe('if a reference already exists to a layout', () => {
           beforeEach(async () => {
-            profileInstance = createTestInstance({
+            ;[profileInstance, permissionSetInstance] = createTestInstances({
               layoutAssignments: {
                 'Account_Account_Layout@bs': [
                   {
@@ -468,7 +586,7 @@ describe('profiles', () => {
               },
             })
             refs = await profilesHandler.findWeakReferences(
-              [profileInstance],
+              [profileInstance, permissionSetInstance],
               undefined,
             )
           })
@@ -480,7 +598,7 @@ describe('profiles', () => {
 
         describe('if a reference already exists to a recordType', () => {
           beforeEach(async () => {
-            profileInstance = createTestInstance({
+            ;[profileInstance, permissionSetInstance] = createTestInstances({
               layoutAssignments: {
                 'Account_Account_Layout@bs': [
                   {
@@ -509,7 +627,7 @@ describe('profiles', () => {
               },
             })
             refs = await profilesHandler.findWeakReferences(
-              [profileInstance],
+              [profileInstance, permissionSetInstance],
               undefined,
             )
           })
@@ -518,6 +636,14 @@ describe('profiles', () => {
             expect(refs).toEqual([
               {
                 source: profileInstance.elemID.createNestedID(
+                  'layoutAssignments',
+                  'Account_Account_Layout@bs',
+                ),
+                target: layout.elemID,
+                type: 'weak',
+              },
+              {
+                source: permissionSetInstance.elemID.createNestedID(
                   'layoutAssignments',
                   'Account_Account_Layout@bs',
                 ),
@@ -535,7 +661,7 @@ describe('profiles', () => {
 
       describe('when all permissions are disabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             objectPermissions: {
               Account: {
                 allowCreate: false,
@@ -549,7 +675,10 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create references', () => {
@@ -559,7 +688,7 @@ describe('profiles', () => {
 
       describe('when some permissions are enabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             objectPermissions: {
               Account: {
                 allowCreate: true,
@@ -573,7 +702,10 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -586,13 +718,21 @@ describe('profiles', () => {
               target: customObject.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'objectPermissions',
+                'Account',
+              ),
+              target: customObject.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('when a reference already exists', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             objectPermissions: {
               Account: {
                 allowCreate: true,
@@ -608,7 +748,10 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -624,7 +767,7 @@ describe('profiles', () => {
 
       describe('when disabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             pageAccesses: {
               SomeApexPage: {
                 apexPage: 'SomeApexPage',
@@ -632,7 +775,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -642,7 +788,7 @@ describe('profiles', () => {
 
       describe('when enabled', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             pageAccesses: {
               SomeApexPage: {
                 apexPage: 'SomeApexPage',
@@ -650,7 +796,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -663,13 +812,21 @@ describe('profiles', () => {
               target: apexPage.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'pageAccesses',
+                'SomeApexPage',
+              ),
+              target: apexPage.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('when a reference already exists', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             pageAccesses: {
               SomeApexPage: {
                 apexPage: new ReferenceExpression(
@@ -684,7 +841,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -702,7 +862,7 @@ describe('profiles', () => {
 
       describe('when neither default nor visible', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             recordTypeVisibilities: {
               Case: {
                 SomeCaseRecordType: {
@@ -713,7 +873,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -723,7 +886,7 @@ describe('profiles', () => {
 
       describe('when default', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             recordTypeVisibilities: {
               Case: {
                 SomeCaseRecordType: {
@@ -734,13 +897,25 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
           expect(refs).toEqual([
             {
               source: profileInstance.elemID.createNestedID(
+                'recordTypeVisibilities',
+                'Case',
+                'SomeCaseRecordType',
+              ),
+              target: recordType.elemID,
+              type: 'weak',
+            },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
                 'recordTypeVisibilities',
                 'Case',
                 'SomeCaseRecordType',
@@ -754,7 +929,7 @@ describe('profiles', () => {
 
       describe('when visible', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             recordTypeVisibilities: {
               Case: {
                 SomeCaseRecordType: {
@@ -765,7 +940,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should create a reference', () => {
@@ -779,13 +957,22 @@ describe('profiles', () => {
               target: recordType.elemID,
               type: 'weak',
             },
+            {
+              source: permissionSetInstance.elemID.createNestedID(
+                'recordTypeVisibilities',
+                'Case',
+                'SomeCaseRecordType',
+              ),
+              target: recordType.elemID,
+              type: 'weak',
+            },
           ])
         })
       })
 
       describe('when visible and a reference already exists', () => {
         beforeEach(async () => {
-          profileInstance = createTestInstance({
+          ;[profileInstance, permissionSetInstance] = createTestInstances({
             recordTypeVisibilities: {
               Case: {
                 SomeCaseRecordType: {
@@ -803,7 +990,10 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesHandler.findWeakReferences([
+            profileInstance,
+            permissionSetInstance,
+          ])
         })
 
         it('should not create a reference', () => {
@@ -907,9 +1097,10 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Dropping profile fields which reference missing types',
+            message:
+              'Dropping profile/permission set fields which reference missing types',
             detailedMessage:
-              'The profile has 8 fields which reference types which are not available in the workspace.',
+              'The profile/permission set has 8 fields which reference types which are not available in the workspace.',
           },
         ])
       })
@@ -1029,9 +1220,10 @@ describe('profiles', () => {
           {
             elemID: profileInstance.elemID,
             severity: 'Info',
-            message: 'Dropping profile fields which reference missing types',
+            message:
+              'Dropping profile/permission set fields which reference missing types',
             detailedMessage:
-              'The profile has 4 fields which reference types which are not available in the workspace.',
+              'The profile/permission set has 4 fields which reference types which are not available in the workspace.',
           },
         ])
       })

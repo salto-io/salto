@@ -21,6 +21,7 @@ import {
   Element,
   ElemID,
   InstanceElement,
+  isInstanceElement,
   ReferenceInfo,
   Values,
 } from '@salto-io/adapter-api'
@@ -35,9 +36,9 @@ import {
   LAYOUT_TYPE_ID_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { isInstanceOfTypeSync } from '../filters/utils'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -76,18 +77,18 @@ type ReferenceFromSectionParams = {
 }
 
 const mapSectionEntries = <T>(
-  profile: InstanceElement,
+  profileOrPermissionSet: InstanceElement,
   sectionName: section,
   { filter = () => true, targetsGetter }: ReferenceFromSectionParams,
   f: (sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
 ): T[] => {
-  const sectionValue = profile.value[sectionName]
+  const sectionValue = profileOrPermissionSet.value[sectionName]
   if (!_.isPlainObject(sectionValue)) {
     if (sectionValue !== undefined) {
       log.warn(
         'Section %s of %s is not an object, skipping.',
         sectionName,
-        profile.elemID,
+        profileOrPermissionSet.elemID,
       )
     }
     return []
@@ -258,7 +259,7 @@ const sectionsReferenceParams: Record<section, ReferenceFromSectionParams> = {
 }
 
 export const mapProfileOrPermissionSetSections = <T>(
-  profile: InstanceElement,
+  profileOrPermissionSet: InstanceElement,
   f: (
     sectionName: string,
     sectionEntryKey: string,
@@ -268,18 +269,20 @@ export const mapProfileOrPermissionSetSections = <T>(
 ): T[] =>
   Object.entries(sectionsReferenceParams).flatMap(([sectionName, params]) =>
     mapSectionEntries(
-      profile,
+      profileOrPermissionSet,
       sectionName as section,
       params,
       _.curry(f)(sectionName),
     ),
   )
 
-const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
+const referencesFromProfileOrPermissionSet = (
+  profileOrPermissionSet: InstanceElement,
+): ReferenceInfo[] =>
   mapProfileOrPermissionSetSections(
-    profile,
+    profileOrPermissionSet,
     (sectionName, sectionEntryKey, target, sourceField) => ({
-      source: profile.elemID.createNestedID(
+      source: profileOrPermissionSet.elemID.createNestedID(
         sectionName,
         sectionEntryKey,
         ...makeArray(sourceField),
@@ -289,13 +292,27 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
     }),
   )
 
+// At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
+// have to figure out the type name the hard way.
+const filterProfilesAndPermissionSets = (
+  elements: Element[],
+): InstanceElement[] =>
+  elements
+    .filter(isInstanceElement)
+    .filter(
+      (instance) =>
+        instance.elemID.typeName === PROFILE_METADATA_TYPE ||
+        instance.elemID.typeName === PERMISSION_SET_METADATA_TYPE,
+    )
+
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const profiles = elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+  const profilesAndPermissionSets = filterProfilesAndPermissionSets(elements)
   const refs = log.timeDebug(
-    () => profiles.flatMap(referencesFromProfile),
-    `Generating references from ${profiles.length} profiles.`,
+    () =>
+      profilesAndPermissionSets.flatMap(referencesFromProfileOrPermissionSet),
+    `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets.`,
   )
   log.debug(
     'Generated %d references for %d elements.',
@@ -305,10 +322,12 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   return refs
 }
 
-const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
+const profileOrPermissionSetEntriesTargets = (
+  profileOrPermissionSet: InstanceElement,
+): Dictionary<ElemID> =>
   _(
     mapProfileOrPermissionSetSections(
-      profile,
+      profileOrPermissionSet,
       (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
         [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
         target,
@@ -321,12 +340,10 @@ const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async (elements) => {
-    const profiles = elements.filter(
-      isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
-    )
+    const profilesAndPermissionSets = filterProfilesAndPermissionSets(elements)
     const entriesTargets: Dictionary<ElemID> = _.merge(
       {},
-      ...profiles.map(profileEntriesTargets),
+      ...profilesAndPermissionSets.map(profileOrPermissionSetEntriesTargets),
     )
     const elementNames = new Set(
       await awu(await elementsSource.list())
@@ -339,33 +356,41 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
         async (target) => !elementNames.has(target.getFullName()),
       ),
     )
-    const profilesWithBrokenReferences = profiles.filter((profile) =>
-      brokenReferenceFields.some((field) => _(profile.value).has(field)),
+    const profilesWithBrokenReferences = profilesAndPermissionSets.filter(
+      (profileOrPermissionSet) =>
+        brokenReferenceFields.some((field) =>
+          _(profileOrPermissionSet.value).has(field),
+        ),
     )
-    const fixedElements = profilesWithBrokenReferences.map((profile) => {
-      const fixed = profile.clone()
-      fixed.value = _.omit(fixed.value, brokenReferenceFields)
-      return fixed
-    })
-    const errors = profilesWithBrokenReferences.map((profile) => {
-      const profileBrokenReferenceFields = brokenReferenceFields
-        .filter((field) => _(profile.value).has(field))
-        .map((field) => entriesTargets[field].getFullName())
-        .sort()
+    const fixedElements = profilesWithBrokenReferences.map(
+      (profileOrPermissionSet) => {
+        const fixed = profileOrPermissionSet.clone()
+        fixed.value = _.omit(fixed.value, brokenReferenceFields)
+        return fixed
+      },
+    )
+    const errors = profilesWithBrokenReferences.map(
+      (profileOrPermissionSet) => {
+        const profileBrokenReferenceFields = brokenReferenceFields
+          .filter((field) => _(profileOrPermissionSet.value).has(field))
+          .map((field) => entriesTargets[field].getFullName())
+          .sort()
 
-      log.trace(
-        `Removing ${profileBrokenReferenceFields.length} broken references from ${profile.elemID.getFullName()}: ${profileBrokenReferenceFields.join(
-          ', ',
-        )}`,
-      )
+        log.trace(
+          `Removing ${profileBrokenReferenceFields.length} broken references from ${profileOrPermissionSet.elemID.getFullName()}: ${profileBrokenReferenceFields.join(
+            ', ',
+          )}`,
+        )
 
-      return {
-        elemID: profile.elemID,
-        severity: 'Info' as const,
-        message: 'Dropping profile fields which reference missing types',
-        detailedMessage: `The profile has ${profileBrokenReferenceFields.length} fields which reference types which are not available in the workspace.`,
-      }
-    })
+        return {
+          elemID: profileOrPermissionSet.elemID,
+          severity: 'Info' as const,
+          message:
+            'Dropping profile/permission set fields which reference missing types',
+          detailedMessage: `The profile/permission set has ${profileBrokenReferenceFields.length} fields which reference types which are not available in the workspace.`,
+        }
+      },
+    )
 
     return { fixedElements, errors }
   }

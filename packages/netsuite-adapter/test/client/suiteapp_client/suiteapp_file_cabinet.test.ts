@@ -577,17 +577,22 @@ describe('suiteapp_file_cabinet', () => {
       expect(elements).toEqual([expectedResults[0], expectedResults[1], expectedResults[3]])
     })
 
-    it.only('should query all folders if the fetch target is .*ts', async () => {
-			const allTSFilesRegex = ['.', ',*', '.*t', '.*ts'].map(matcher => new RegExp(`^${matcher}$`))
-			query.isParentFolderMatch.mockImplementationOnce(() => true).mockImplementation(path => allTSFilesRegex.some(fileMatcher => fileMatcher.test(path)))
-      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query, maxFileCabinetSizeInGB)
-			const testWhereQuery = "hideinbundle = 'F' AND folder IN (5, 3, 4)"
+    it('should query all folders if the fetch target is .*ts', async () => {
+      const allTSFilesRegex = ['.', ',*', '.*t', '.*ts'].map(matcher => new RegExp(`^${matcher}$`))
+      query.isParentFolderMatch
+        .mockImplementationOnce(() => true)
+        .mockImplementation(path => allTSFilesRegex.some(fileMatcher => fileMatcher.test(path)))
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(
+        query,
+        maxFileCabinetSizeInGB,
+      )
+      const testWhereQuery = "hideinbundle = 'F' AND folder IN (5, 3, 4)"
       const suiteQlQuery =
         'SELECT name, id, filesize, isinactive, isonline,' +
         ' addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle' +
         ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
-			expect(elements).toEqual(expectedResults)
+      expect(elements).toEqual(expectedResults)
     })
 
     it('should not query folder if no file in that folder is matched by the query', async () => {

@@ -235,6 +235,7 @@ export type Workspace = {
   ) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
+  getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
@@ -1294,6 +1295,11 @@ export const loadWorkspace = async (
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
       }
       return (await (await getWorkspaceState()).states[envName].authorInformation.get(id.getFullName())) ?? {}
+    },
+    getElementsAuthorsById: async (envName = currentEnv()) => {
+      const authorInformationMap = (await getWorkspaceState()).states[envName].authorInformation
+      const entries = await awu(authorInformationMap.entries()).toArray()
+      return Object.fromEntries(entries.map(entry => [entry.key, entry.value]))
     },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,

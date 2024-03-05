@@ -1190,9 +1190,6 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  const getSearchableNamesOfEnv = async (env?: string): Promise<string[]> =>
-    (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv())
-
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1543,7 +1540,8 @@ export const loadWorkspace = async (
     getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (await elements(env)).get(id),
     getSearchableNames: async (): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNames(currentEnv()),
-    getSearchableNamesOfEnv,
+    getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
+      (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
       const getUnresolvedElemIDsFromErrors = (validationErrors: readonly ValidationError[]): ElemID[] => {
         const workspaceErrors = validationErrors.filter(isUnresolvedRefError).map(e => e.target.createBaseID().parent)

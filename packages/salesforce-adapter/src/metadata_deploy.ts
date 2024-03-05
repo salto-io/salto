@@ -329,6 +329,15 @@ const processDeployResponse = (
       severity: problemTypeToSeverity(message.problemType),
     }))
 
+  if (successfulComponentProblems.length > 0) {
+    log.debug(
+      'Some components that deployed successfully had problems: %s',
+      successfulComponentProblems
+        .map(({ elemID, message }) => `[${elemID}] "${message}"`)
+        .join(', '),
+    )
+  }
+
   const componentErrors = failedComponentErrors.concat(
     successfulComponentProblems,
   )

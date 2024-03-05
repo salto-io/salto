@@ -225,7 +225,7 @@ describe('pagination', () => {
       })
     })
 
-    it('should fail gracefully on HTTP errors', async () => {
+    it('should fail gracefully on HTTP errors that their status is in the additionalValidStatuses param', async () => {
       client.get
         .mockResolvedValueOnce(
           Promise.resolve({

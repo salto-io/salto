@@ -79,7 +79,8 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
     endpoints: queryWithDefault(endpoints),
     ...def,
   }))
-
+  // const a = clientDefs['main'].endpoints.customizations['get'].additionalValidStatuses
+  // const a = clientDefs['main'].query('get')
   const getMergedRequestDefinition = (
     requestDef: FetchRequestDefinition<ClientOptions>,
   ): {
@@ -142,6 +143,7 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
       endpointIdentifier: mergedRequestDef.endpoint,
       contexts,
       callArgs,
+      additionalValidStatuses: mergedEndpointDef.additionalValidStatuses,
     })
 
     const itemsWithContext = pagesWithContext

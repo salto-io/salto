@@ -334,8 +334,8 @@ export default class SdfClient {
     commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutor,
   ): Promise<ActionResult> {
-    const actionResult = await this.globalLimiter.schedule(() =>
-      this.sdfCallsLimiter.schedule(() =>
+    const actionResult = await this.sdfCallsLimiter.schedule(() =>
+      this.globalLimiter.schedule(() =>
         projectCommandActionExecutor.executeAction({
           commandName,
           runInInteractiveMode: false,

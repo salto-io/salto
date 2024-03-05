@@ -295,11 +295,23 @@ const processDeployResponse = (
     return rawElemId
   }
 
+  const problemTypeToSeverity = (messageType: string): SeverityLevel => {
+    if (['Info', 'Warning', 'Error'].includes(messageType)) {
+      return messageType as SeverityLevel
+    }
+    log.warn('unknown messageType %s', messageType)
+    return 'Warning'
+  }
+
   const allFailureMessages = makeArray(result.details).flatMap((detail) =>
     makeArray(detail.componentFailures),
   )
 
-  const componentErrors = allFailureMessages
+  const allSuccessMessages = makeArray(result.details).flatMap((detail) =>
+    makeArray(detail.componentSuccesses),
+  )
+
+  const failedComponentErrors = allFailureMessages
     .filter((failure) => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
     .map((failure) => ({
@@ -307,6 +319,28 @@ const processDeployResponse = (
       message: failure.problem,
       severity: 'Error' as SeverityLevel,
     }))
+
+  const successfulComponentProblems = allSuccessMessages
+    .filter((message) => message.problem)
+    .filter((message) => !isUnFoundDelete(message, deletionsPackageName))
+    .map((message) => ({
+      elemID: getElemIdForDeployError(message),
+      message: message.problem,
+      severity: problemTypeToSeverity(message.problemType),
+    }))
+
+  if (successfulComponentProblems.length > 0) {
+    log.debug(
+      'Some components that deployed successfully had problems: %s',
+      successfulComponentProblems
+        .map(({ elemID, message }) => `[${elemID}] "${message}"`)
+        .join(', '),
+    )
+  }
+
+  const componentErrors = failedComponentErrors.concat(
+    successfulComponentProblems,
+  )
 
   const testFailures = makeArray(result.details).flatMap((detail) =>
     makeArray((detail.runTestResult as RunTestsResult)?.failures),
@@ -367,10 +401,6 @@ const processDeployResponse = (
     // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }
   }
-
-  const allSuccessMessages = makeArray(result.details).flatMap((detail) =>
-    makeArray(detail.componentSuccesses),
-  )
 
   // We want to treat deletes for things we haven't found as success
   // Note that if we deploy with ignoreWarnings, these might show up in the success list

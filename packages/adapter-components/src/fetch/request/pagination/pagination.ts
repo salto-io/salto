@@ -74,7 +74,7 @@ export const traversePages = async <ClientOptions extends string>({
           const status = e.response?.status
           if (additionalValidStatuses.includes(status)) {
             log.debug('Suppressing %d error %o', status, e)
-            return { data: [], status }
+            return { data: {}, status }
           }
           throw e
         }

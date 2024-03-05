@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../../src/client'
+import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../../src/client'
 import { PaginationFunction } from '../../../../src/definitions'
 import { PaginationFuncCreator } from '../../../../src/definitions/system/requests/pagination'
 import { traversePages } from '../../../../src/fetch/request/pagination'
@@ -240,11 +240,10 @@ describe('pagination', () => {
             statusText: 'OK',
           }),
         )
-        .mockResolvedValueOnce(
-          Promise.resolve({
+        .mockRejectedValueOnce(
+          new HTTPError('Not Found', {
             data: {},
             status: 404,
-            statusText: 'Not Found',
           }),
         )
       paginationFunc.mockReturnValueOnce([{ queryParams: { offset: '20' } }])
@@ -258,6 +257,7 @@ describe('pagination', () => {
         },
         callArgs: {},
         contexts: [],
+        additionalValidStatuses: [404],
       })
       expect(result).toEqual([{ context: {}, pages: [{ items: [{ a: 'a1' }] }] }])
       expect(client.get).toHaveBeenCalledTimes(2)
@@ -293,8 +293,18 @@ describe('pagination', () => {
             statusText: 'OK',
           }),
         )
-        .mockRejectedValueOnce(new Error('Something went wrong'))
-        .mockRejectedValueOnce(new Error('Something else went wrong'))
+        .mockRejectedValueOnce(
+          new HTTPError('Something went wrong', {
+            data: {},
+            status: 400,
+          }),
+        )
+        .mockRejectedValueOnce(
+          new HTTPError('Something else went wrong', {
+            data: {},
+            status: 404,
+          }),
+        )
       paginationFunc.mockReturnValueOnce([{ queryParams: { offset: '20' } }, { queryParams: { offset: '40' } }])
       await expect(() =>
         traversePages({

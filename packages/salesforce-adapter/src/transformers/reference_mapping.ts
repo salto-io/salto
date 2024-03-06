@@ -892,9 +892,17 @@ export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefiniti
       src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
       target: { type: CUSTOM_FIELD },
     },
+    {
+      src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
+      target: { type: CUSTOM_FIELD },
+    },
   ]
 
-const referencesFromProfile: FieldReferenceDefinition[] = [
+const referencesFromProfileOrPermissionSet: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
+    target: { type: CUSTOM_OBJECT },
+  },
   {
     src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
@@ -933,23 +941,6 @@ const referencesFromProfile: FieldReferenceDefinition[] = [
   },
 ]
 
-const referencesFromPermissionSets = [
-  {
-    src: {
-      field: 'field',
-      parentTypes: ['PermissionSetFieldPermissions'],
-    },
-    target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: {
-      field: 'object',
-      parentTypes: ['PermissionSetObjectPermissions'],
-    },
-    target: { type: CUSTOM_OBJECT },
-  },
-]
-
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
@@ -964,8 +955,7 @@ const referencesFromPermissionSets = [
 const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...defaultFieldNameToTypeMappingDefs,
   ...fieldPermissionEnumDisabledExtraMappingDefs,
-  ...referencesFromProfile,
-  ...referencesFromPermissionSets,
+  ...referencesFromProfileOrPermissionSet,
 ]
 
 export const getReferenceMappingDefs = (args: {
@@ -977,9 +967,7 @@ export const getReferenceMappingDefs = (args: {
     refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
   }
   if (args.otherProfileRefs) {
-    refDefs = refDefs
-      .concat(referencesFromProfile)
-      .concat(referencesFromPermissionSets)
+    refDefs = refDefs.concat(referencesFromProfileOrPermissionSet)
   }
   return refDefs
 }

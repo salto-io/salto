@@ -894,7 +894,7 @@ export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefiniti
     },
   ]
 
-export const referencesFromProfile: FieldReferenceDefinition[] = [
+const referencesFromProfile: FieldReferenceDefinition[] = [
   {
     src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
@@ -933,7 +933,7 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
   },
 ]
 
-export const referencesFromPermissionSets: FieldReferenceDefinition[] = [
+const referencesFromPermissionSets: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
     target: { type: CUSTOM_FIELD },

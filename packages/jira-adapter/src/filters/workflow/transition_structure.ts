@@ -90,9 +90,9 @@ export const getTransitionKey = (
     type === 'Directed'
       ? (isWorkflowV2Transition(transition)
           ? makeArray(transition.from).map(from => from.statusReference)
-          : makeArray(transition.from).map(from => (typeof from === 'string' ? from : from.id ?? ''))
+          : makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
         )
-          .map(from => statusesMap.get(from) ?? from)
+          .map(from => (_.isString(from) && statusesMap.get(from) !== undefined ? statusesMap.get(from) : from))
           .sort()
           .join(',')
       : TYPE_TO_FROM_MAP[type]

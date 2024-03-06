@@ -22,7 +22,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "clean-ts": "../../build_utils/clean-old-ts.sh",
-    "build": "yarn generate && yarn lint && && yarn format && yarn build-ts",
+    "build": "yarn generate && yarn lint && && yarn build-ts",
     "test": "jest",
     "build-ts": "tsc -b && yarn clean-ts",
     "watch-ts": "tsc -b -w",

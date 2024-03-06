@@ -234,6 +234,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     }
 
     const { url, queryParams, headers, responseType } = params
+    const data = isMethodWithData(params) ? params.data : undefined
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logResponse = (res: Response<any>): void => {
@@ -248,6 +249,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
           ? `<omitted buffer of length ${res.data.length}>`
           : this.clearValuesFromResponseData(res.data, url),
         headers: this.extractHeaders(res.headers),
+        data: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
       })
 
       log.debug('Response size for %s on %s is %d', method.toUpperCase(), url, responseText.length)

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element,CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE, TYPES_PATH } from '../constants'
 import { LocalFilterCreator } from '../filter'
-
 
 const isElementWithinTypesFolder = (element: Element): boolean => {
   const elementPath = element.path ?? []
@@ -24,14 +23,13 @@ const isElementWithinTypesFolder = (element: Element): boolean => {
     return false
   }
   return elementPath[0] === SALESFORCE && elementPath[1] === TYPES_PATH
-
 }
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'hideTypesFolder',
   onFetch: async (elements) => {
-    elements.filter(isElementWithinTypesFolder).forEach(element => {
-      element.annotations[CORE_ANNOTATIONS.HIDDEN] = true 
+    elements.filter(isElementWithinTypesFolder).forEach((element) => {
+      element.annotations[CORE_ANNOTATIONS.HIDDEN] = true
     })
   },
 })

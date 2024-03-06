@@ -23,22 +23,36 @@ describe('hideTypesFolder filter', () => {
   let filter: Required<ReturnType<typeof filterCreator>>
 
   beforeEach(() => {
-    filter = filterCreator({config: defaultFilterContext}) as typeof filter
+    filter = filterCreator({ config: defaultFilterContext }) as typeof filter
   })
   describe('onFetch', () => {
     let elementWithinTypesFolder: ObjectType
     let elementNestedWithinTypesFolder: ObjectType
     let elementOutsideTypesFolder: ObjectType
 
-    const toBeHidden = (element: ObjectType): boolean => element.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
+    const toBeHidden = (element: ObjectType): boolean =>
+      element.annotations?.[CORE_ANNOTATIONS.HIDDEN] === true
 
     beforeEach(() => {
-      elementWithinTypesFolder = new ObjectType({elemID: new ElemID(SALESFORCE, 'First'), path: [SALESFORCE, TYPES_PATH, 'First']})
-      elementNestedWithinTypesFolder = new ObjectType({elemID: new ElemID(SALESFORCE, 'Second'), path: [SALESFORCE, TYPES_PATH, 'NestedDir', 'Second']})
-      elementOutsideTypesFolder = new ObjectType({elemID: new ElemID(SALESFORCE, 'Third'), path: [SALESFORCE, 'OtherDir', 'Third']})
+      elementWithinTypesFolder = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'First'),
+        path: [SALESFORCE, TYPES_PATH, 'First'],
+      })
+      elementNestedWithinTypesFolder = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'Second'),
+        path: [SALESFORCE, TYPES_PATH, 'NestedDir', 'Second'],
+      })
+      elementOutsideTypesFolder = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'Third'),
+        path: [SALESFORCE, 'OtherDir', 'Third'],
+      })
     })
     it('should hide elements within the Types folder', async () => {
-      await filter.onFetch([elementWithinTypesFolder, elementNestedWithinTypesFolder, elementOutsideTypesFolder])
+      await filter.onFetch([
+        elementWithinTypesFolder,
+        elementNestedWithinTypesFolder,
+        elementOutsideTypesFolder,
+      ])
       expect(elementWithinTypesFolder).toSatisfy(toBeHidden)
       expect(elementNestedWithinTypesFolder).toSatisfy(toBeHidden)
       expect(elementOutsideTypesFolder).not.toSatisfy(toBeHidden)

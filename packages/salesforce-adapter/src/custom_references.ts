@@ -69,25 +69,25 @@ type RefTargetsGetter = (
 ) => ReferenceInSection[]
 
 type ReferenceFromSectionParams = {
-  profile: InstanceElement
+  profileOrPermissionSet: InstanceElement
   sectionName: string
   filter?: (sectionEntry: Values) => boolean
   targetsGetter: RefTargetsGetter
 }
 
 const referencesFromSection = ({
-  profile,
+  profileOrPermissionSet,
   sectionName,
   filter = () => true,
   targetsGetter,
 }: ReferenceFromSectionParams): ReferenceInfo[] => {
-  const sectionValue = profile.value[sectionName]
+  const sectionValue = profileOrPermissionSet.value[sectionName]
   if (!_.isPlainObject(sectionValue)) {
     if (sectionValue !== undefined) {
       log.warn(
         'Section %s of %s is not an object. References will not be extracted.',
         sectionName,
-        profile.elemID,
+        profileOrPermissionSet.elemID,
       )
     }
     return []
@@ -97,7 +97,7 @@ const referencesFromSection = ({
     .flatMap(([sectionEntryKey, sectionEntry]): ReferenceInfo[] => {
       const refTargets = targetsGetter(sectionEntry, sectionEntryKey)
       return refTargets.map(({ target, sourceField }) => ({
-        source: profile.elemID.createNestedID(
+        source: profileOrPermissionSet.elemID.createNestedID(
           sectionName,
           sectionEntryKey,
           ...makeArray(sourceField),
@@ -226,9 +226,11 @@ const recordTypeReferences: RefTargetsGetter = (sectionEntry) =>
       sourceField: recordTypeVisibilityKey,
     }))
 
-const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
+const referencesFromProfileOrPermissionSet = (
+  profileOrPermissionSet: InstanceElement,
+): ReferenceInfo[] => {
   const appVisibilityRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: APP_VISIBILITY_SECTION,
     filter: (appVisibilityEntry) =>
       appVisibilityEntry.default || appVisibilityEntry.visible,
@@ -238,47 +240,47 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
     ),
   })
   const apexClassRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: APEX_CLASS_SECTION,
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexClass', APEX_CLASS_METADATA_TYPE),
   })
   const flowRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: FLOW_SECTION,
     filter: isEnabled,
     targetsGetter: referenceToInstance('flow', FLOW_METADATA_TYPE),
   })
 
   const apexPageRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: APEX_PAGE_SECTION,
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
   })
 
   const objectRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: OBJECT_SECTION,
     filter: isAnyAccessEnabledForObject,
     targetsGetter: referenceToType('object'),
   })
 
   const fieldPermissionsRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: FIELD_PERMISSIONS,
     filter: isAnyAccessEnabledForField,
     targetsGetter: referencesToFields,
   })
 
   const layoutAssignmentRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: LAYOUTS_SECTION,
     targetsGetter: layoutReferences,
   })
 
   const recordTypeRefs = referencesFromSection({
-    profile,
+    profileOrPermissionSet,
     sectionName: RECORD_TYPE_SECTION,
     targetsGetter: recordTypeReferences,
   })
@@ -293,7 +295,7 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
     .concat(recordTypeRefs)
 }
 
-const getProfilesCustomReferences = async (
+const getProfilesAndPermissionSetsCustomReferences = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
   // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
@@ -306,7 +308,8 @@ const getProfilesCustomReferences = async (
       ),
     )
   const refs = log.time(
-    () => profilesAndPermissionSets.flatMap(referencesFromProfile),
+    () =>
+      profilesAndPermissionSets.flatMap(referencesFromProfileOrPermissionSet),
     `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets`,
   )
   log.debug('generated %d references', refs.length)
@@ -320,7 +323,7 @@ type CustomRefsHandlersConfig = {
 
 const customReferencesHandlers: Record<string, CustomRefsHandlersConfig> = {
   profiles: {
-    handler: getProfilesCustomReferences,
+    handler: getProfilesAndPermissionSetsCustomReferences,
     isEnabledByDefault: false,
   },
 }

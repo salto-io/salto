@@ -102,6 +102,7 @@ import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import flowsFilter from './filters/flows_filter'
+import hideTypesFolder from './filters/hide_types_folder'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
@@ -263,6 +264,7 @@ export const allFilters: Array<
   { creator: removeUnixTimeZeroFilter },
   { creator: metadataInstancesAliasesFilter },
   { creator: importantValuesFilter },
+  { creator: hideTypesFolder },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]

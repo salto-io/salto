@@ -933,13 +933,19 @@ const referencesFromProfile: FieldReferenceDefinition[] = [
   },
 ]
 
-const referencesFromPermissionSets: FieldReferenceDefinition[] = [
+const referencesFromPermissionSets = [
   {
-    src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
+    src: {
+      field: 'field',
+      parentTypes: ['PermissionSetFieldPermissions'],
+    },
     target: { type: CUSTOM_FIELD },
   },
   {
-    src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
+    src: {
+      field: 'object',
+      parentTypes: ['PermissionSetObjectPermissions'],
+    },
     target: { type: CUSTOM_OBJECT },
   },
 ]

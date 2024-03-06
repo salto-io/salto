@@ -25,6 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DAG } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
 
 const log = logger(module)
 export type AliasComponent = {
@@ -157,7 +158,7 @@ export const addAliasToElements = ({
   const relevantElementsMap = _.pick(elementsMap, Object.keys(aliasMap))
   const relevantAliasMap = _.pick(aliasMap, Object.keys(relevantElementsMap))
 
-  const addAlias = (group: string): void => {
+  const addAlias = (group: collections.set.SetId): void => {
     const aliasData = aliasMap[group]
     relevantElementsMap[group].forEach(element => {
       const alias = calculateAlias({ element, elementsById, aliasData })
@@ -167,5 +168,5 @@ export const addAliasToElements = ({
     })
   }
   const graph = createAliasDependenciesGraph(relevantAliasMap, relevantElementsMap)
-  graph.walkSync(group => addAlias(group as string)) // TODO_F is the casing ok here?
+  graph.walkSync(group => addAlias(group))
 }

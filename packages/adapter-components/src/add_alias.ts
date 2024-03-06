@@ -117,11 +117,11 @@ const createAliasDependenciesGraph = (
   elementsMap: Record<string, TopLevelElement[]>,
 ): DAG<undefined> => {
   const graph = new DAG<undefined>()
-  Object.keys(aliasMap).forEach(typeName => {
-    const aliasData = aliasMap[typeName]
+  Object.entries(aliasMap).forEach(([typeName, aliasData]) => {
     aliasData.aliasComponents.forEach(aliasComponent => {
       const dependencies = new Set<string>()
       if (isConstantComponent(aliasComponent)) {
+        graph.addNode(typeName, dependencies, undefined)
         return
       }
       const { fieldName, referenceFieldName } = aliasComponent
@@ -133,7 +133,10 @@ const createAliasDependenciesGraph = (
             log.error(`${fieldName} is treated as a reference expression but it is not`)
             return
           }
-          dependencies.add(fieldValue.elemID.typeName)
+          const dependencyTypeName = fieldValue.elemID.typeName
+          if (aliasMap[dependencyTypeName] !== undefined && elementsMap[dependencyTypeName] !== undefined) {
+            dependencies.add(fieldValue.elemID.typeName)
+          }
         })
       }
       graph.addNode(typeName, dependencies, undefined)

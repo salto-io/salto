@@ -9,6 +9,7 @@
 ### How to run the script?
 
 From the scripts folder run:
+
 ```bash
 python3 bundle_components_generator.py <ACCOUNT_ID> <USERNAME> <PASSWORD> <2FA CODE>
 ```
@@ -19,8 +20,10 @@ python3 bundle_components_generator.py <ACCOUNT_ID> <USERNAME> <PASSWORD> <2FA C
 2. Export the output to csv
 3. Copy the csv file to /scripts/bundle_components_generator folder
 4. Run bundle_csv_parser.py in the above folder:
+
 ```bash
     python3 bundle_csv_parser.py <CSV_FILE_PATH>
 ```
+
 5. Add the output of the script to BUNDLES_INFO in bundle_components_generator.py and run the script.
-6. Cleanup - delete the csv file from the folder 
+6. Cleanup - delete the csv file from the folder

@@ -1079,11 +1079,10 @@ describe('filter utils', () => {
     })
 
     it('should return the FLS profiles defined in the config', () => {
-      const flsProfiles = [
-        'Admin Copy',
-        'Test Profile'
-      ]
-      expect(getFLSProfiles({client: {deploy: {flsProfiles}}})).toEqual(flsProfiles)
+      const flsProfiles = ['Admin Copy', 'Test Profile']
+      expect(getFLSProfiles({ client: { deploy: { flsProfiles } } })).toEqual(
+        flsProfiles,
+      )
     })
   })
 })

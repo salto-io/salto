@@ -39,14 +39,16 @@ const createFLSInfo = (
   }
 }
 
-const changeValidator = (config: SalesforceConfig): ChangeValidator => async (changes) => {
-  const flsProfiles = getFLSProfiles(config)
-  return changes
-    .filter(isAdditionChange)
-    .map((change) => getChangeData(change))
-    .filter((element) => isObjectType(element) || isField(element))
-    .filter((element) => isCustom(apiNameSync(element)))
-    .map((element) => createFLSInfo(element, flsProfiles))
-}
+const changeValidator =
+  (config: SalesforceConfig): ChangeValidator =>
+  async (changes) => {
+    const flsProfiles = getFLSProfiles(config)
+    return changes
+      .filter(isAdditionChange)
+      .map((change) => getChangeData(change))
+      .filter((element) => isObjectType(element) || isField(element))
+      .filter((element) => isCustom(apiNameSync(element)))
+      .map((element) => createFLSInfo(element, flsProfiles))
+  }
 
 export default changeValidator

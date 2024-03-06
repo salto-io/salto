@@ -26,7 +26,7 @@ import {
   UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
-import filterCreator, { prepRef } from '../../../src/filters/article/article_body'
+import filterCreator from '../../../src/filters/article/article_body'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_TYPE_NAME,
@@ -38,6 +38,7 @@ import {
 import { createFilterCreatorParams } from '../../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
 import { FilterResult } from '../../../src/filter'
+import { prepRef } from '../../../src/filters/article/utils'
 
 const { createMissingInstance } = referencesUtils
 

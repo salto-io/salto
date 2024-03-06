@@ -32,6 +32,9 @@ import {
   ChangeGroup,
   getChangeData,
   ProgressReporter,
+  SaltoError,
+  SaltoElementError,
+  isSaltoElementError,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
@@ -116,6 +119,10 @@ const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
+
+const errorToString = (error: SaltoError | SaltoElementError): string =>
+  `[${error.severity}] ${error.message}${isSaltoElementError(error) ? error.elemID.getFullName() : ''}`
+
 export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
   elements: T[],
@@ -126,8 +133,8 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
     changes: elements.map(e => ({ action: 'add', data: { after: e } })),
   }
   const deployResult = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
-  if (deployResult.errors.length > 0) {
-    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
+  if (deployResult.errors.filter(error => error.severity === 'Error').length > 0) {
+    throw new Error(`Failed to add elements with: ${deployResult.errors.map(errorToString).join('\n')}`)
   }
   const updatedElements = deployResult.appliedChanges.map(getChangeData)
   return updatedElements as T[]
@@ -143,7 +150,7 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
     changes: elements.map(e => ({ action: 'remove', data: { before: e } })),
   }
   const deployResult = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
-  if (deployResult.errors.length > 0) {
-    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
+  if (deployResult.errors.filter(error => error.severity === 'Error').length > 0) {
+    throw new Error(`Failed to remove elements with: ${deployResult.errors.map(errorToString).join('\n')}`)
   }
 }

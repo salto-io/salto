@@ -159,6 +159,7 @@ export type ChangeValidatorName =
   | 'deletedNonQueryableFields'
   | 'instanceWithUnknownType'
   | 'artificialTypes'
+  | 'metadataTypes'
   | 'newFieldsAndObjectsFLS'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -875,6 +876,7 @@ const changeValidatorConfigType =
       deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
       instanceWithUnknownType: { refType: BuiltinTypes.BOOLEAN },
       artificialTypes: { refType: BuiltinTypes.BOOLEAN },
+      metadataTypes: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

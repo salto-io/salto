@@ -235,6 +235,7 @@ export type Workspace = {
   ) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
+  getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
@@ -505,8 +506,11 @@ export const loadWorkspace = async (
                     deserializeSingleElement(
                       s,
                       async staticFile =>
-                        (await naclFilesSource.getStaticFile(staticFile.filepath, staticFile.encoding, envName)) ??
-                        staticFile,
+                        (await naclFilesSource.getStaticFile({
+                          filePath: staticFile.filepath,
+                          encoding: staticFile.encoding,
+                          env: envName,
+                        })) ?? staticFile,
                     ),
                   persistent,
                 }),
@@ -1292,6 +1296,11 @@ export const loadWorkspace = async (
       }
       return (await (await getWorkspaceState()).states[envName].authorInformation.get(id.getFullName())) ?? {}
     },
+    getElementsAuthorsById: async (envName = currentEnv()) => {
+      const authorInformationMap = (await getWorkspaceState()).states[envName].authorInformation
+      const entries = await awu(authorInformationMap.entries()).toArray()
+      return Object.fromEntries(entries.map(entry => [entry.key, entry.value]))
+    },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,
     getElementNaclFiles: async id => (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id),
@@ -1567,7 +1576,7 @@ export const loadWorkspace = async (
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
     getStaticFile: async ({ filepath, encoding, env }) =>
-      naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv()),
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv() }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,

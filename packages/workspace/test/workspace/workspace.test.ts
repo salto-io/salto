@@ -3487,6 +3487,89 @@ describe('workspace', () => {
     })
   })
 
+  describe('getElementsAuthorsById', () => {
+    const CHANGED_BY = 'Test User'
+    const CHANGED_AT = '2024-01-01T00:00:00Z'
+    let workspace: Workspace
+    const testFile = `
+      type test.ChangedByOnly {
+        annotations {
+          string _changed_by {
+          }
+          string _changed_at {
+
+          }
+        }
+        _changed_by = "${CHANGED_BY}"
+      }
+      type test.ChangedAtOnly {
+        annotations {
+          string _changed_by {
+          }
+          string _changed_at {
+            
+          }
+        }
+        _changed_at = "${CHANGED_AT}"
+      }
+
+      type test.Both {
+        annotations {
+          string _changed_by {
+          }
+          string _changed_at {
+            
+          }
+        }
+        _changed_by = "${CHANGED_BY}"
+        _changed_at = "${CHANGED_AT}"
+      }
+
+      type test.MissingAuthor {
+        annotations {
+          string _changed_by {
+          }
+          string _changed_at {
+          }
+        }
+      }
+    `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'testFile.nacl': testFile,
+    })
+    beforeEach(async () => {
+      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+        },
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+          state: createState([]),
+        },
+      })
+    })
+    it('should return correct AuthorInformations for all the Elements in the workspace', async () => {
+      expect(await workspace.getElementsAuthorsById()).toEqual({
+        'test.ChangedByOnly': {
+          changedBy: CHANGED_BY,
+        },
+        'test.ChangedAtOnly': {
+          changedAt: CHANGED_AT,
+        },
+        'test.Both': {
+          changedBy: CHANGED_BY,
+          changedAt: CHANGED_AT,
+        },
+      })
+    })
+  })
+
   describe('hasElementsInEnv', () => {
     let workspace: Workspace
     beforeEach(async () => {

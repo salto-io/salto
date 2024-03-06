@@ -411,7 +411,7 @@ describe('adapter', () => {
       })
     })
   })
-  describe('JSM', () => {
+  describe('JSM FREE PLAN', () => {
     let srAdapter: AdapterOperations
     let projectTestType: ObjectType
     let serviceDeskProjectInstance: InstanceElement
@@ -550,6 +550,114 @@ describe('adapter', () => {
         ])
       })
     })
+    describe('fetch with no jsm in service', () => {
+      let progressReporter: ProgressReporter
+      let result: FetchResult
+      let platformTestType: ObjectType
+      let jiraTestType: ObjectType
+      let testInstance2: InstanceElement
+      let mockAxiosAdapter: MockAdapter
+      beforeEach(async () => {
+        progressReporter = {
+          reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
+        }
+        platformTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'platform'),
+        })
+        jiraTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'jira'),
+        })
+        testInstance2 = new InstanceElement('test2', jiraTestType)
+        ;(generateTypes as jest.MockedFunction<typeof generateTypes>)
+          .mockResolvedValueOnce({
+            allTypes: { PlatformTest: platformTestType },
+            parsedConfigs: { PlatformTest: { request: { url: 'platform' } } },
+          })
+          .mockResolvedValueOnce({
+            allTypes: { projectTest: projectTestType },
+            parsedConfigs: { projectTest: { request: { url: 'project' } } },
+          })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [],
+          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+        })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [testInstance2],
+          errors: [{ message: 'jsmError', severity: 'Error' }],
+        })
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
+        ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
+          elements: [serviceDeskProjectInstance],
+          errors: [{ message: 'some error', severity: 'Error' }],
+        })
+        ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
+          document: {},
+          parser: {},
+        } as elements.swagger.LoadedSwagger)
+        mockAxiosAdapter = new MockAdapter(axios)
+        mockAxiosAdapter
+          // first three requests are for login assertion
+          .onGet('/rest/api/3/configuration')
+          .replyOnce(200)
+          .onGet('/rest/api/3/serverInfo')
+          .replyOnce(200, { baseUrl: 'a' })
+          .onGet('/rest/api/3/instance/license')
+          .reply(200, { applications: [{ id: 'jira-software', plan: 'FREE' }] })
+          .onGet('/rest/servicedeskapi/servicedesk')
+          .replyOnce(200, {
+            size: 1,
+            start: 0,
+            limit: 50,
+            isLastPage: true,
+            _links: {},
+            values: [
+              {
+                id: '10',
+                projectId: '10000',
+                projectKey: 'SD',
+                projectName: 'Service Desk',
+              },
+            ],
+          })
+        // mock as we call getCloudId in the forms filter.
+        mockAxiosAdapter.onPost().reply(200, {
+          unparsedData: {
+            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+              tenantId: 'cloudId',
+            }),
+          },
+        })
+        result = await srAdapter.fetch({ progressReporter })
+      })
+      afterEach(() => {
+        mockAxiosAdapter.restore()
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
+      })
+      it('should call getAllElements only for scriptRunner', () => {
+        expect(getAllElements).toHaveBeenCalledTimes(1)
+      })
+      it('should call addRemainingTypes', () => {
+        expect(addRemainingTypes).toHaveBeenCalledTimes(1)
+      })
+      it('should return error', async () => {
+        expect(result.errors).toEqual([
+          {
+            message: 'some error',
+            severity: 'Error',
+          },
+          {
+            message: 'scriptRunnerError',
+            severity: 'Error',
+          },
+          {
+            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            severity: 'Warning',
+          },
+        ])
+      })
+    })
     describe('jiraJSMEntriesFunc', () => {
       let paginator: clientUtils.Paginator
       let responseValue: clientUtils.ResponseValue[]
@@ -615,6 +723,274 @@ describe('adapter', () => {
         expect(result[0]).toEqual({
           id: '1',
         })
+      })
+    })
+  })
+  describe('JSM PAID PLAN', () => {
+    let srAdapter: AdapterOperations
+    let projectTestType: ObjectType
+    let serviceDeskProjectInstance: InstanceElement
+    beforeEach(() => {
+      const elementsSource = buildElementsSourceFromElements([])
+      const config = createConfigInstance(getDefaultConfig({ isDataCenter: false }))
+      config.value.client.usePrivateAPI = false
+      config.value.fetch.convertUsersIds = false
+      config.value.fetch.enableScriptRunnerAddon = true
+      config.value.fetch.enableJSM = true
+      config.value.fetch.enableJSMPremium = true
+
+      srAdapter = adapterCreator.operations({
+        elementsSource,
+        credentials: createCredentialsInstance({ baseUrl: 'http:/jira.net', user: 'u', token: 't' }),
+        config,
+        getElemIdFunc,
+      })
+      projectTestType = createEmptyType(PROJECT_TYPE)
+      serviceDeskProjectInstance = new InstanceElement('serviceDeskProject', projectTestType, {
+        id: '10000',
+        key: 'SD',
+        name: 'Service Desk',
+        projectTypeKey: SERVICE_DESK,
+      })
+    })
+    describe('fetch', () => {
+      let progressReporter: ProgressReporter
+      let result: FetchResult
+      let platformTestType: ObjectType
+      let jiraTestType: ObjectType
+      let testInstance2: InstanceElement
+      let mockAxiosAdapter: MockAdapter
+      beforeEach(async () => {
+        progressReporter = {
+          reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
+        }
+        platformTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'platform'),
+        })
+        jiraTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'jira'),
+        })
+        testInstance2 = new InstanceElement('test2', jiraTestType)
+        ;(generateTypes as jest.MockedFunction<typeof generateTypes>)
+          .mockResolvedValueOnce({
+            allTypes: { PlatformTest: platformTestType },
+            parsedConfigs: { PlatformTest: { request: { url: 'platform' } } },
+          })
+          .mockResolvedValueOnce({
+            allTypes: { projectTest: projectTestType },
+            parsedConfigs: { projectTest: { request: { url: 'project' } } },
+          })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [],
+          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+        })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [testInstance2],
+          errors: [{ message: 'jsmError', severity: 'Error' }],
+        })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [],
+          errors: [{ message: 'jsmAssetsError', severity: 'Error' }],
+        })
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
+        ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
+          elements: [serviceDeskProjectInstance],
+          errors: [{ message: 'some error', severity: 'Error' }],
+        })
+        ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
+          document: {},
+          parser: {},
+        } as elements.swagger.LoadedSwagger)
+        mockAxiosAdapter = new MockAdapter(axios)
+        mockAxiosAdapter
+          // first three requests are for login assertion
+          .onGet('/rest/api/3/configuration')
+          .replyOnce(200)
+          .onGet('/rest/api/3/serverInfo')
+          .replyOnce(200, { baseUrl: 'a' })
+          .onGet('/rest/api/3/instance/license')
+          .reply(200, { applications: [{ id: 'jira-servicedesk', plan: 'PAID' }] })
+          .onGet('/rest/servicedeskapi/assets/workspace')
+          .replyOnce(200, {
+            values: [
+              {
+                workspaceId: 'workspaceId',
+              },
+            ],
+          })
+          .onGet('/rest/servicedeskapi/servicedesk')
+          .replyOnce(200, {
+            size: 1,
+            start: 0,
+            limit: 50,
+            isLastPage: true,
+            _links: {},
+            values: [
+              {
+                id: '10',
+                projectId: '10000',
+                projectKey: 'SD',
+                projectName: 'Service Desk',
+              },
+            ],
+          })
+        // mock as we call getCloudId in the forms filter.
+        mockAxiosAdapter.onPost().reply(200, {
+          unparsedData: {
+            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+              tenantId: 'cloudId',
+            }),
+          },
+        })
+        result = await srAdapter.fetch({ progressReporter })
+      })
+      afterEach(() => {
+        mockAxiosAdapter.restore()
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
+      })
+      it('should call getAllElements', () => {
+        expect(getAllElements).toHaveBeenCalledTimes(3)
+      })
+      it('should call addRemainingTypes', () => {
+        expect(addRemainingTypes).toHaveBeenCalledTimes(1)
+      })
+      it('should return error', async () => {
+        expect(result.errors).toEqual([
+          {
+            message: 'some error',
+            severity: 'Error',
+          },
+          {
+            message: 'scriptRunnerError',
+            severity: 'Error',
+          },
+          {
+            message: 'jsmError',
+            severity: 'Error',
+          },
+          {
+            message: 'jsmAssetsError',
+            severity: 'Error',
+          },
+        ])
+      })
+    })
+    describe('fetch with no workspaceId', () => {
+      let progressReporter: ProgressReporter
+      let result: FetchResult
+      let platformTestType: ObjectType
+      let jiraTestType: ObjectType
+      let testInstance2: InstanceElement
+      let mockAxiosAdapter: MockAdapter
+      beforeEach(async () => {
+        progressReporter = {
+          reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
+        }
+        platformTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'platform'),
+        })
+        jiraTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'jira'),
+        })
+        testInstance2 = new InstanceElement('test2', jiraTestType)
+        ;(generateTypes as jest.MockedFunction<typeof generateTypes>)
+          .mockResolvedValueOnce({
+            allTypes: { PlatformTest: platformTestType },
+            parsedConfigs: { PlatformTest: { request: { url: 'platform' } } },
+          })
+          .mockResolvedValueOnce({
+            allTypes: { projectTest: projectTestType },
+            parsedConfigs: { projectTest: { request: { url: 'project' } } },
+          })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [],
+          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+        })
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
+          elements: [testInstance2],
+          errors: [{ message: 'jsmError', severity: 'Error' }],
+        })
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
+        ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
+          elements: [serviceDeskProjectInstance],
+          errors: [{ message: 'some error', severity: 'Error' }],
+        })
+        ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
+          document: {},
+          parser: {},
+        } as elements.swagger.LoadedSwagger)
+        mockAxiosAdapter = new MockAdapter(axios)
+        mockAxiosAdapter
+          // first three requests are for login assertion
+          .onGet('/rest/api/3/configuration')
+          .replyOnce(200)
+          .onGet('/rest/api/3/serverInfo')
+          .replyOnce(200, { baseUrl: 'a' })
+          .onGet('/rest/api/3/instance/license')
+          .reply(200, { applications: [{ id: 'jira-servicedesk', plan: 'PAID' }] })
+          .onGet('/rest/servicedeskapi/assets/workspace')
+          .replyOnce(200, {
+            values: [
+              {
+                someKey: 'someValue',
+              },
+            ],
+          })
+          .onGet('/rest/servicedeskapi/servicedesk')
+          .replyOnce(200, {
+            size: 1,
+            start: 0,
+            limit: 50,
+            isLastPage: true,
+            _links: {},
+            values: [
+              {
+                id: '10',
+                projectId: '10000',
+                projectKey: 'SD',
+                projectName: 'Service Desk',
+              },
+            ],
+          })
+        // mock as we call getCloudId in the forms filter.
+        mockAxiosAdapter.onPost().reply(200, {
+          unparsedData: {
+            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+              tenantId: 'cloudId',
+            }),
+          },
+        })
+        result = await srAdapter.fetch({ progressReporter })
+      })
+      afterEach(() => {
+        mockAxiosAdapter.restore()
+        ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+        ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockClear()
+      })
+      it('should call getAllElements', () => {
+        expect(getAllElements).toHaveBeenCalledTimes(2)
+      })
+      it('should call addRemainingTypes', () => {
+        expect(addRemainingTypes).toHaveBeenCalledTimes(1)
+      })
+      it('should return error', async () => {
+        expect(result.errors).toEqual([
+          {
+            message: 'some error',
+            severity: 'Error',
+          },
+          {
+            message: 'jsmError',
+            severity: 'Error',
+          },
+          {
+            message: 'scriptRunnerError',
+            severity: 'Error',
+          },
+        ])
       })
     })
     describe('jiraJSMAssetsEntriesFunc', () => {

@@ -18,23 +18,32 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { FilterResult } from '../../../src/filter'
 import transitionIdsFilter from '../../../src/filters/workflowV2/transition_ids'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { JIRA_WORKFLOW_TYPE } from '../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE } from '../../../src/constants'
 
 describe('transition ids filter', () => {
   let filter: filterUtils.FilterWith<'preDeploy', FilterResult>
   let instance: InstanceElement
   beforeEach(() => {
     filter = transitionIdsFilter(getFilterParams()) as filterUtils.FilterWith<'preDeploy', FilterResult>
-    instance = new InstanceElement('instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+    instance = new InstanceElement('instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
       name: 'name',
       scope: {
         type: 'global',
       },
       statuses: [],
       transitions: {
-        transition1: {},
-        transition2: {},
-        transition3: {},
+        transition1: {
+          type: 'DIRECTED',
+          name: 'transition1',
+        },
+        transition2: {
+          type: 'DIRECTED',
+          name: 'transition2',
+        },
+        transition3: {
+          type: 'DIRECTED',
+          name: 'transition3',
+        },
       },
     })
   })

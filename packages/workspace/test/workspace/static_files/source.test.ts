@@ -71,19 +71,19 @@ describe('Static Files', () => {
     describe('Get By Value', () => {
       describe('file finding logic', () => {
         it('not find when no matching', async () => {
-          const result = await staticFilesSource.getStaticFile('aa', 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: 'aa', encoding: 'binary' })
           expect(result).toBeInstanceOf(InvalidStaticFile)
           expect(result).toBeInstanceOf(MissingStaticFile)
         })
 
         it('return without content when hash requested and not matching', async () => {
-          const result = await staticFilesSource.getStaticFile('aa', 'binary', 'hash')
+          const result = await staticFilesSource.getStaticFile({ filepath: 'aa', encoding: 'binary', hash: 'hash' })
           expect(result).toBeInstanceOf(StaticFile)
           return expect(await (result as StaticFile).getContent()).toBeUndefined()
         })
         it('blow up if invalid file', async () => {
           mockDirStore.mtimestamp = jest.fn().mockRejectedValue('whatevz')
-          const result = await staticFilesSource.getStaticFile('/aa', 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: '/aa', encoding: 'binary' })
           expect(result).toBeInstanceOf(InvalidStaticFile)
           expect(result).toBeInstanceOf(AccessDeniedStaticFile)
         })
@@ -99,7 +99,7 @@ describe('Static Files', () => {
             modified: 100,
             hash: 'aaa',
           })
-          const result = await staticFilesSource.getStaticFile(filepathFromCache, 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: filepathFromCache, encoding: 'binary' })
 
           expect(mockDirStore.mtimestamp).toHaveBeenCalledWith(filepathFromCache)
           expect(result).toHaveProperty('hash', hashedContent)
@@ -119,7 +119,11 @@ describe('Static Files', () => {
             modified: 100,
             hash: 'aaa',
           })
-          const result = await staticFilesSource.getStaticFile(filepathFromCache, 'binary', 'bbb')
+          const result = await staticFilesSource.getStaticFile({
+            filepath: filepathFromCache,
+            encoding: 'binary',
+            hash: 'bbb',
+          })
 
           expect(result).toBeInstanceOf(StaticFile)
           expect(await (result as StaticFile).getContent()).toBeUndefined()
@@ -138,7 +142,7 @@ describe('Static Files', () => {
             modified: 1000,
             hash: 'aaa',
           })
-          const result = await staticFilesSource.getStaticFile('bb', 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
           expect(mockDirStore.get).toHaveBeenCalledTimes(0)
           expect(result).toHaveProperty('hash', 'aaa')
           expect(mockDirStore.get).not.toHaveBeenCalled()
@@ -158,7 +162,7 @@ describe('Static Files', () => {
             modified: 100,
             hash: 'aaa',
           })
-          const result = await staticFilesSource.getStaticFile('bb', 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
           expect(mockDirStore.get).toHaveBeenCalledTimes(1)
           return expect(result).toHaveProperty('hash', hashedContent)
         })
@@ -169,7 +173,7 @@ describe('Static Files', () => {
               Promise.resolve(filepath.endsWith('bb') ? 1000 : undefined),
           )
           mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
-          const result = await staticFilesSource.getStaticFile('bb', 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
           expect(mockDirStore.get).toHaveBeenCalledTimes(1)
           return expect(result).toHaveProperty('hash', hashedContent)
         })
@@ -178,7 +182,7 @@ describe('Static Files', () => {
           mockDirStore.mtimestamp = jest.fn().mockResolvedValue(Promise.resolve(42))
           mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
 
-          const result = await staticFilesSource.getStaticFile('bb', 'binary')
+          const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
           return expect(result).toBeInstanceOf(InvalidStaticFile)
         })
       })
@@ -363,10 +367,10 @@ describe('Static Files', () => {
       it('should allow persisting and reading back a file', async () => {
         const file = new StaticFile({ filepath: 'asd', hash: 'aaa' })
         await source.persistStaticFile(file)
-        expect(await source.getStaticFile(file.filepath, file.encoding)).toEqual(file)
+        expect(await source.getStaticFile({ filepath: file.filepath, encoding: file.encoding })).toEqual(file)
       })
       it('should return missing file for files that are not in the map', async () => {
-        expect(await source.getStaticFile('asd', 'utf-8')).toBeInstanceOf(MissingStaticFile)
+        expect(await source.getStaticFile({ filepath: 'asd', encoding: 'utf-8' })).toBeInstanceOf(MissingStaticFile)
       })
       it('should get file content if there is a content', async () => {
         const file = new StaticFile({ filepath: 'asd', content: Buffer.from('bla') })
@@ -399,18 +403,22 @@ describe('Static Files', () => {
       })
       it('should not return a file after it is deleted', async () => {
         await source.delete(file)
-        expect(await source.getStaticFile(file.filepath, file.encoding)).toBeInstanceOf(MissingStaticFile)
+        expect(await source.getStaticFile({ filepath: file.filepath, encoding: file.encoding })).toBeInstanceOf(
+          MissingStaticFile,
+        )
       })
       it('should not return a file after it is cleared', async () => {
         await source.clear()
-        expect(await source.getStaticFile(file.filepath, file.encoding)).toBeInstanceOf(MissingStaticFile)
+        expect(await source.getStaticFile({ filepath: file.filepath, encoding: file.encoding })).toBeInstanceOf(
+          MissingStaticFile,
+        )
       })
       it('should clone to a new source with the same files', async () => {
         const cloned = source.clone()
         // Make sure the cloned source is decoupled by deleting the file in the original source
         // and checking it is not deleted from the clone
         await source.delete(file)
-        expect(await cloned.getStaticFile(file.filepath, file.encoding)).toEqual(file)
+        expect(await cloned.getStaticFile({ filepath: file.filepath, encoding: file.encoding })).toEqual(file)
       })
     })
   })

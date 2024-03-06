@@ -20,7 +20,8 @@ export const mockStaticFilesSource = (files: StaticFile[] = []): staticFiles.Sta
   getStaticFile: jest
     .fn()
     .mockImplementation(
-      (filepath: string, _encoding: BufferEncoding) => files.find(sf => sf.filepath === filepath) ?? undefined,
+      (args: { filepath: string; encoding: BufferEncoding }) =>
+        files.find(sf => sf.filepath === args.filepath) ?? undefined,
     ),
   getContent: jest
     .fn()

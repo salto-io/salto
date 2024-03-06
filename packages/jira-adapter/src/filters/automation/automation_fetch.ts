@@ -199,7 +199,7 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       automations.forEach(automation =>
         elements.push(createInstance(automation, automationType, idToProject, config, getElemIdFunc)),
       )
-      if (config.fetch.enableJSM && config.fetch.enableJsmExperimental) {
+      if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
         elements
           .filter(isInstanceElement)
           .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)

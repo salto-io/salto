@@ -40,7 +40,7 @@ describe('Functions', () => {
   it('should convert valid function expression to valid static metadata', async () => {
     await functions.file.parse(['aa', 'utf-8'])
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledTimes(1)
-    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa', 'utf-8')
+    expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith({ filepath: 'aa', encoding: 'utf-8' })
   })
   it('should not persist when dumping static file with no content', async () => {
     const dumped = await functions.file.dump(

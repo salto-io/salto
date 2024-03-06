@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { SourceLocation } from '@handlebars/parser/types/ast'
+import { TemplateExpression } from '@salto-io/adapter-api'
 
-export { adapter } from './src/adapter_creator'
-export { validateOktaBaseUrl } from './src/utils'
+export type PotentialReference<T extends string | TemplateExpression> = {
+  value: T
+  loc: SourceLocation | { start: number | null; end: number | null }
+}

@@ -298,8 +298,12 @@ describe('Zendesk adapter E2E', () => {
       })
     }
 
-    const createRootForTheme = async (buffer: Buffer, brandName: string, name: string): Promise<ThemeDirectory> => {
-      const root = await unzipFolderToElements({ buffer, brandName, name, idsToElements: {} })
+    const createRootForTheme = async (
+      buffer: Buffer,
+      brand: InstanceElement,
+      name: string,
+    ): Promise<ThemeDirectory> => {
+      const root = await unzipFolderToElements({ buffer, brand, name, idsToElements: {} })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()
       if (!isStaticFile(content)) {
@@ -312,7 +316,7 @@ describe('Zendesk adapter E2E', () => {
       }
       const stringManifest = manifestBuffer.toString()
       root.files['manifest_json@v'].content = new StaticFile({
-        filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/manifest.json`,
+        filepath: `${ZENDESK}/themes/brands/${brand.value.name}/${name}/manifest.json`,
         content: Buffer.from(stringManifest.replace('Copenhagen', name)),
       })
       return root
@@ -988,7 +992,7 @@ describe('Zendesk adapter E2E', () => {
           name: guideThemeName,
           root: await createRootForTheme(
             fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/theme_zip/Copenhagen.zip`)),
-            HELP_CENTER_BRAND_NAME,
+            brandInstanceE2eHelpCenter,
             guideThemeName,
           ),
           brand_id: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),

@@ -65,7 +65,7 @@ describe('automationsToAssetsValidator', () => {
   })
   it('should not return a warning when its addition change and automation has workspaceId and enableJSM is true', async () => {
     config.fetch.enableJSM = true
-    config.fetch.enableJsmExperimental = true
+    config.fetch.enableJSMPremium = true
     const validator = automationToAssetsValidator(config)
     expect(await validator([toChange({ after: automationInstance })])).toEqual([])
   })

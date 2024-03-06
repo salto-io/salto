@@ -88,6 +88,7 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflowV2/workflow_filter'
+import workflowV1RemovalFilter from './filters/workflowV2/workflowV1_removal'
 import workflowTransitionIdsFilter from './filters/workflowV2/transition_ids'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
@@ -228,6 +229,7 @@ export const DEFAULT_FILTERS = [
   fieldNameFilter,
   workflowStructureFilter,
   workflowFilter,
+  workflowV1RemovalFilter,
   queryFilter,
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,

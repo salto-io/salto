@@ -18,8 +18,8 @@ import { ElemID, Values, Element, TemplateExpression } from '@salto-io/adapter-a
 import { createReference } from '../../../utils'
 import { JIRA } from '../../../../src/constants'
 
-export const createSLAValues = (name: string, allElements: Element[]): Values => ({
-  name,
+export const createSLAValues = (allElements: Element[]): Values => ({
+  name: 'Lemon',
   config: {
     definition: {
       start: [

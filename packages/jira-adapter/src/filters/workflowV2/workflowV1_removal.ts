@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { isInstanceElement, Element } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const filter: FilterCreator = ({ config }) => ({
   name: 'workflowV1RemovalFilter',
   onFetch: async (elements: Element[]) => {
-    const { enableNewWorkflowAPI } = config.fetch
-    if (enableNewWorkflowAPI) {
-      _.remove(elements, element => isInstanceElement(element) && element.elemID.typeName === WORKFLOW_TYPE_NAME)
+    if (config.fetch.enableNewWorkflowAPI) {
+      _.remove(elements, element => element.elemID.typeName === WORKFLOW_TYPE_NAME)
     }
   },
 })

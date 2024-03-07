@@ -227,9 +227,9 @@ export const DEFAULT_FILTERS = [
   webhookFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
-  workflowStructureFilter,
   workflowFilter,
   workflowV1RemovalFilter,
+  workflowStructureFilter,
   queryFilter,
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,

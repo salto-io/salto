@@ -119,10 +119,9 @@ const createAliasDependenciesGraph = (
 ): DAG<undefined> => {
   const graph = new DAG<undefined>()
   Object.entries(aliasMap).forEach(([typeName, aliasData]) => {
+    const dependencies = new Set<string>()
     aliasData.aliasComponents.forEach(aliasComponent => {
-      const dependencies = new Set<string>()
       if (isConstantComponent(aliasComponent)) {
-        graph.addNode(typeName, dependencies, undefined)
         return
       }
       const { fieldName, referenceFieldName } = aliasComponent
@@ -140,8 +139,8 @@ const createAliasDependenciesGraph = (
           }
         })
       }
-      graph.addNode(typeName, dependencies, undefined)
     })
+    graph.addNode(typeName, dependencies, undefined)
   })
   return graph
 }

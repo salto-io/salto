@@ -44,7 +44,7 @@ export const profileMappingAndAppValidator: ChangeValidator = async changes => {
             return !removedAppNames.has(getParent(profileMapping).elemID.getFullName())
         } catch(e) {
             log.error(
-                'Could not run profileMappingValidator validator for instance ' + 
+                'Could not run profileMappingAndAppValidator validator for instance ' + 
                 `${profileMapping.elemID.getFullName}: ${e}`,
             )
             return false

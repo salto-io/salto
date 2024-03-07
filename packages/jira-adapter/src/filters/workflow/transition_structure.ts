@@ -16,10 +16,13 @@
 
 import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { Status, Transition, WorkflowV1Instance } from './types'
+import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { WorkflowTransitionV2 } from '../workflowV2/types'
+import { isWorkflowV2Transition, WorkflowTransitionV2 } from '../workflowV2/types'
+
+const { makeArray } = collections.array
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -36,7 +39,7 @@ const getTransitionTypeFromKey = (key: string): string => {
   return type === 'Circular' ? 'Global' : type
 }
 
-const getTransitionType = (transition: Transition): TransitionType => {
+const getTransitionType = (transition: WorkflowTransitionV1 | WorkflowTransitionV2): TransitionType => {
   if (transition.type?.toLowerCase() === 'initial') {
     return 'Initial'
   }
@@ -78,12 +81,18 @@ export const createStatusMap = (statuses: Status[]): Map<string, string> =>
       .map(status => [status.id, status.name]),
   )
 
-export const getTransitionKey = (transition: Transition, statusesMap: Map<string, string>): string => {
+export const getTransitionKey = (
+  transition: WorkflowTransitionV1 | WorkflowTransitionV2,
+  statusesMap: Map<string, string>,
+): string => {
   const type = getTransitionType(transition)
   const fromSorted =
     type === 'Directed'
-      ? (transition.from?.map(from => (typeof from === 'string' ? from : from.id ?? '')) ?? [])
-          .map(from => statusesMap.get(from) ?? from)
+      ? (isWorkflowV2Transition(transition)
+          ? makeArray(transition.from).map(from => from.statusReference)
+          : makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
+        )
+          .map(from => (_.isString(from) && statusesMap.get(from) !== undefined ? statusesMap.get(from) : from))
           .sort()
           .join(',')
       : TYPE_TO_FROM_MAP[type]
@@ -127,7 +136,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       ]
 }
 
-export const walkOverTransitionIds = (transition: Transition, func: (value: Value) => void): void => {
+export const walkOverTransitionIds = (transition: WorkflowTransitionV1, func: (value: Value) => void): void => {
   transition.rules?.postFunctions
     ?.filter(postFunction => postFunction.type === SCRIPT_RUNNER_POST_FUNCTION_TYPE)
     .forEach(postFunction => {
@@ -155,7 +164,7 @@ export const expectedToActualTransitionIds = ({
   expectedTransitionIds,
   statusesMap,
 }: {
-  transitions: Transition[]
+  transitions: WorkflowTransitionV1[]
   expectedTransitionIds: Map<string, string>
   statusesMap: Map<string, string>
 }): Record<string, string> =>

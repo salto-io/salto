@@ -16,7 +16,7 @@
 import { Change, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import emptyValidatorFilter from '../../../src/filters/workflow/empty_validator_workflow'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 
@@ -97,7 +97,7 @@ describe('empty validator workflow', () => {
   describe('workflowV2', () => {
     let workflowV2Instance: InstanceElement
     beforeEach(() => {
-      workflowV2Instance = new InstanceElement('workflowV2Instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+      workflowV2Instance = new InstanceElement('workflowV2Instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
         name: 'workflowV2Instance',
         version: {
           versionNumber: 1,
@@ -113,6 +113,7 @@ describe('empty validator workflow', () => {
           tran1: {
             name: 'tran1',
             id: 'id',
+            type: 'Directed',
             validators: [
               {
                 parameters: {

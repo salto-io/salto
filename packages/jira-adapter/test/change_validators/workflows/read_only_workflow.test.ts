@@ -15,7 +15,7 @@
  */
 import { toChange, InstanceElement } from '@salto-io/adapter-api'
 import { readOnlyWorkflowValidator } from '../../../src/change_validators/workflows/read_only_workflow'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 
 describe('workflowValidator', () => {
@@ -59,7 +59,7 @@ describe('workflowValidator', () => {
   })
   describe('workflowV2', () => {
     beforeEach(() => {
-      instance = new InstanceElement('instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+      instance = new InstanceElement('instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
         isEditable: false,
       })
     })

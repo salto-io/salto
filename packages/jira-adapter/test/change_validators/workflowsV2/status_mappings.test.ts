@@ -19,7 +19,7 @@ import { InstanceElement, ReadOnlyElementsSource, ReferenceExpression, toChange 
 import {
   ISSUE_TYPE_NAME,
   ISSUE_TYPE_SCHEMA_NAME,
-  JIRA_WORKFLOW_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   PROJECT_TYPE,
   STATUS_TYPE_NAME,
 } from '../../../src/constants'
@@ -44,17 +44,20 @@ describe('status mappings', () => {
   const ERROR_MESSAGE_PREFIX =
     'This workflow change requires a status migration, as some statuses do not exist in the new workflow. In order to resume you can add the following NACL code to this workflow’s code. Make sure to specific, for each project, issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.\n'
 
-  const getStatusMappingsErrorMessageBody = (issueTypeNames: string[]): string => {
+  const getStatusMigrationEntry = (statusName: string): string => `{
+          oldStatusReference = jira.Status.instance.${statusName}
+          newStatusReference = jira.Status.instance.<statusName>
+        },`
+
+  const getStatusMappingsErrorMessageBody = (issueTypeNames: string[], statusNames: string[]): string => {
     const body = issueTypeNames.map(
       issueTypeName =>
         `{
       issueTypeId = jira.IssueType.instance.${issueTypeName}
       projectId = jira.Project.instance.projectInstance
       statusMigrations = [
-        {
-          oldStatusReference = jira.Status.instance.status3
-          newStatusReference = jira.Status.instance.<statusName>
-        },
+        ${statusNames.map(getStatusMigrationEntry).join(`
+        `)}
       ]
     },`,
     )
@@ -77,7 +80,7 @@ describe('status mappings', () => {
     issueType2 = new InstanceElement('issueType2', createEmptyType(ISSUE_TYPE_NAME))
     issueType3 = new InstanceElement('issueType3', createEmptyType(ISSUE_TYPE_NAME))
     issueType4 = new InstanceElement('issueType4', createEmptyType(ISSUE_TYPE_NAME))
-    workflowInstance = new InstanceElement('workflowInstance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+    workflowInstance = new InstanceElement('workflowInstance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
       name: 'workflowInstance',
       statuses: [
         {
@@ -91,35 +94,43 @@ describe('status mappings', () => {
         },
       ],
     })
-    defaultWorkflowInstance = new InstanceElement('defaultWorkflowInstance', createEmptyType(JIRA_WORKFLOW_TYPE), {
-      name: 'defaultWorkflowInstance',
-      statuses: [
-        {
-          statusReference: new ReferenceExpression(status1.elemID, status1),
-        },
-        {
-          statusReference: new ReferenceExpression(status3.elemID, status3),
-        },
-      ],
-    })
-    workflowSchemeInstance = new InstanceElement('workflowSchemeInstance', createEmptyType(JIRA_WORKFLOW_TYPE), {
-      name: 'workflowSchemeInstance',
-      defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
-      items: [
-        {
-          workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
-          issueType: new ReferenceExpression(issueType1.elemID, issueType1),
-        },
-        {
-          workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
-          issueType: new ReferenceExpression(issueType2.elemID, issueType2),
-        },
-        {
-          workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
-          issueType: new ReferenceExpression(issueType4.elemID, issueType4),
-        },
-      ],
-    })
+    defaultWorkflowInstance = new InstanceElement(
+      'defaultWorkflowInstance',
+      createEmptyType(WORKFLOW_CONFIGURATION_TYPE),
+      {
+        name: 'defaultWorkflowInstance',
+        statuses: [
+          {
+            statusReference: new ReferenceExpression(status1.elemID, status1),
+          },
+          {
+            statusReference: new ReferenceExpression(status3.elemID, status3),
+          },
+        ],
+      },
+    )
+    workflowSchemeInstance = new InstanceElement(
+      'workflowSchemeInstance',
+      createEmptyType(WORKFLOW_CONFIGURATION_TYPE),
+      {
+        name: 'workflowSchemeInstance',
+        defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
+        items: [
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType1.elemID, issueType1),
+          },
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType2.elemID, issueType2),
+          },
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType4.elemID, issueType4),
+          },
+        ],
+      },
+    )
     issueTypeSchemeInstance = new InstanceElement('issueTypeSchemeInstance', createEmptyType(ISSUE_TYPE_SCHEMA_NAME), {
       issueTypeIds: [
         new ReferenceExpression(issueType1.elemID, issueType1),
@@ -156,6 +167,7 @@ describe('status mappings', () => {
   it('should return an error when there is a removed status from an active workflow', async () => {
     const before = workflowInstance.clone()
     workflowInstance.value.statuses.pop()
+    workflowInstance.value.statuses.pop()
     expect(
       await workflowStatusMappingsValidator([toChange({ before, after: workflowInstance })], elementsSource),
     ).toEqual([
@@ -163,7 +175,9 @@ describe('status mappings', () => {
         elemID: workflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2']),
+        detailedMessage:
+          ERROR_MESSAGE_PREFIX +
+          getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status2', 'status3']),
       },
     ])
   })
@@ -212,7 +226,7 @@ describe('status mappings', () => {
         elemID: defaultWorkflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType3']),
+        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType3'], ['status3']),
       },
     ])
   })
@@ -267,7 +281,8 @@ describe('status mappings', () => {
         elemID: workflowInstance.elemID,
         severity: 'Error',
         message: 'Workflow change requires status migration',
-        detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2']),
+        detailedMessage:
+          ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2'], ['status3']),
       },
     ])
   })

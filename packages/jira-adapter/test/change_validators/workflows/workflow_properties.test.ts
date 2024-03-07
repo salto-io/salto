@@ -15,7 +15,7 @@
  */
 import { toChange, InstanceElement, Change } from '@salto-io/adapter-api'
 import { workflowPropertiesValidator } from '../../../src/change_validators/workflows/workflow_properties'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 
 const WORKFLOW_V1 = 'workflowV1'
@@ -50,7 +50,7 @@ describe('workflowPropertiesValidator', () => {
         ],
       })
     } else if (workflowVersion === WORKFLOW_V2) {
-      instance = new InstanceElement('workflowV2Instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+      instance = new InstanceElement('workflowV2Instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
         name: 'workflowV2Instance',
         version: {
           versionNumber: 1,
@@ -75,6 +75,7 @@ describe('workflowPropertiesValidator', () => {
           tran1: {
             name: 'tran1',
             id: 'id',
+            type: 'DIRECTED',
             properties: [
               {
                 key: 'key',

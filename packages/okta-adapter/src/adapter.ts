@@ -63,7 +63,6 @@ import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import commonFilters from './filters/common'
-import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
@@ -90,6 +89,7 @@ import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
+import groupPushPathFilter from './filters/group_push_path'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
@@ -115,8 +115,6 @@ const DEFAULT_FILTERS = [
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
-  // should run before fieldReferencesFilter
-  replaceObjectWithIdFilter,
   userFilter,
   groupMembersFilter,
   groupPushFilter,
@@ -138,6 +136,8 @@ const DEFAULT_FILTERS = [
   profileMappingAdditionFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
+  // should run after commonFilters,
+  groupPushPathFilter,
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,

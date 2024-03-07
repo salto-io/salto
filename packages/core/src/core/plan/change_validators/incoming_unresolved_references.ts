@@ -19,8 +19,6 @@ import {
   ModificationChange,
   RemovalChange,
   SaltoError,
-  SaltoErrorType,
-  UnresolvedReferenceError,
   getChangeData,
   isModificationChange,
   isRemovalOrModificationChange,
@@ -33,7 +31,7 @@ const getChangeType = <T>(change: ModificationChange<T> | RemovalChange<T>): str
   isModificationChange(change) ? 'modified' : 'deleted'
 
 export const incomingUnresolvedReferencesValidator =
-  (validationErrors: ReadonlyArray<SaltoError>): ChangeValidator<UnresolvedReferenceError> =>
+  (validationErrors: ReadonlyArray<SaltoError>): ChangeValidator =>
   async changes => {
     const unresolvedErrors = validationErrors.filter(isUnresolvedRefError)
     return changes
@@ -53,8 +51,6 @@ export const incomingUnresolvedReferencesValidator =
           detailedMessage:
             `${group.length} other elements contain references to this ${changeType} element, which are no longer valid.` +
             ' You may continue with deploying this change, but the deployment might fail.',
-          unresolvedElemIds: [elemID],
-          type: 'unresolvedReferences' as SaltoErrorType,
         }
       })
   }

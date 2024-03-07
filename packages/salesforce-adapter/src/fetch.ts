@@ -27,8 +27,10 @@ import {
   ConfigChangeSuggestion,
   FetchElements,
   FetchProfile,
+  isMetadataConfigSuggestions,
   MAX_INSTANCES_PER_TYPE,
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  MetadataInstance,
   MetadataQuery,
 } from './types'
 import {
@@ -410,6 +412,35 @@ export const retrieveMetadataInstances = async ({
     return result
   }
 
+  const configChangeAlreadyExists = (
+    change: ConfigChangeSuggestion,
+  ): boolean => {
+    if (!isMetadataConfigSuggestions(change)) {
+      return false
+    }
+    if (
+      change.value.metadataType === undefined ||
+      change.value.name === undefined
+    ) {
+      return false
+    }
+    // Note: we assume metadata exclusion config changes refer to a single instance and do not include regexes.
+    const metadataInstance: MetadataInstance = {
+      isFolderType: false,
+      metadataType: change.value.metadataType,
+      name: change.value.name,
+      namespace: change.value.namespace ?? '',
+      changedAt: undefined,
+    }
+    if (!fetchProfile.metadataQuery.isInstanceIncluded(metadataInstance)) {
+      log.debug(
+        'Would have ignored config change %o because the instance is already excluded',
+        change,
+      )
+    }
+    return false
+  }
+
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
@@ -480,7 +511,10 @@ export const retrieveMetadataInstances = async ({
       ).flat()
     }
 
-    configChanges.push(...createRetrieveConfigChange(result))
+    const newConfigChanges = createRetrieveConfigChange(result).filter(
+      (change) => !configChangeAlreadyExists(change),
+    )
+    configChanges.push(...newConfigChanges)
     // if we get an error then result.zipFile will be a single 'nil' XML element, which will be parsed as an object by
     // our XML->json parser. Since we only deal with RETRIEVE_SIZE_LIMIT_ERROR above, here is where we handle all other
     // errors.
@@ -551,7 +585,6 @@ export const retrieveMetadataInstances = async ({
     ),
   )
   const filesToRetrieve = getFilesToRetrieve(allProps)
-
   const [profileFiles, nonProfileFiles] = _.partition(
     filesToRetrieve,
     (file) => file.type === PROFILE_METADATA_TYPE,

@@ -55,3 +55,16 @@ export const extractIdFromUrl = (url: string): string | undefined => {
   log.warn(`Failed to extract id from url: ${url}`)
   return undefined
 }
+
+export const validateOktaBaseUrl = (baseUrl: string): void => {
+  // Okta's org url must be from one of the following formats:
+  //   - Standard domain: companyname.okta.com
+  //   - EMEA domain: companyname.okta-emea.com
+  //   - Sandbox subdomain: companyname.oktapreview.com
+  //   Source: https://developer.okta.com/docs/concepts/okta-organizations/
+  //   Customized domains also works with the Okta domain (https://developer.okta.com/docs/guides/custom-url-domain/main/#about-okta-domain-customizations)
+  if (!/^https:\/\/([a-zA-Z0-9.-]+\.(okta\.com|oktapreview\.com|okta-emea\.com|trexcloud\.com))(\/)?$/.test(baseUrl)) {
+    log.error(`${baseUrl} is not a valid account url`)
+    throw new Error('baseUrl is invalid')
+  }
+}

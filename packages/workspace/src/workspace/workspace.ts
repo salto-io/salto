@@ -40,7 +40,7 @@ import {
   TypeReference,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, inspectValue, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, inspectValue, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
@@ -228,9 +228,14 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<{ id: ElemID; type: ReferenceType }[]>
+  getElementOutgoingReferences: (
+    id: ElemID,
+    envName?: string,
+    includeWeakReferences?: boolean,
+  ) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
+  getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
@@ -366,6 +371,69 @@ export const deserializeReferenceTree = async (data: string): Promise<ReferenceT
   return new collections.treeMap.TreeMap(elemIdsEntries)
 }
 
+/*
+ * List dependecies for a given list of elemIDs within a workspace in envToListFrom.
+ * Filters out weak references and any elemIDs from elemIDsToSkip.
+ */
+export const listElementsDependenciesInWorkspace = async ({
+  workspace,
+  elemIDsToFind,
+  elemIDsToSkip = [],
+  envToListFrom,
+}: {
+  workspace: Workspace
+  elemIDsToFind: ElemID[]
+  elemIDsToSkip?: ElemID[]
+  envToListFrom?: string
+}): Promise<{ dependencies: Record<string, ElemID[]>; missing: ElemID[] }> =>
+  log.time(async () => {
+    const workspaceBaseLevelIds = await log.time(
+      async () => new Set(await workspace.getSearchableNamesOfEnv(envToListFrom)),
+      `getSearchableNames for env: ${envToListFrom}`,
+    )
+    const elemIdsToSkipSet = new Set(elemIDsToSkip.map(id => id.getFullName()))
+    const baseLevelIds = elemIDsToFind.map(id => id.createBaseID().parent)
+    const [foundIds, missingIds] = _.partition(baseLevelIds, elemID => workspaceBaseLevelIds.has(elemID.getFullName()))
+
+    const result: Record<string, ElemID[]> = {}
+    const elemIDsToProcess = [...foundIds]
+    const visited: Set<string> = new Set()
+    while (elemIDsToProcess.length > 0) {
+      const currentLevelIds = elemIDsToProcess
+        .splice(0, elemIDsToProcess.length)
+        .filter(currentId => !visited.has(currentId.getFullName()))
+      currentLevelIds.forEach(currentId => visited.add(currentId.getFullName()))
+
+      log.trace('Proccessing %d elements references', currentLevelIds.length)
+      // eslint-disable-next-line no-await-in-loop
+      const currentLevelResult = await Promise.all(
+        currentLevelIds.map(async currentId => {
+          // eslint-disable-next-line no-await-in-loop
+          const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
+          const relevantElemIds = references
+            .map(ref => ref.id.createBaseID().parent)
+            .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName()))
+
+          const [foundElemIDs, missingElemIDs] = _.partition(relevantElemIds, elemID =>
+            workspaceBaseLevelIds.has(elemID.getFullName()),
+          )
+          result[currentId.getFullName()] = foundElemIDs
+          return { foundElemIDs, missingElemIDs }
+        }),
+      )
+      currentLevelResult.flatMap(entry => entry.missingElemIDs).forEach(id => missingIds.push(id))
+
+      _(currentLevelResult)
+        .flatMap(entry => entry.foundElemIDs)
+        .uniqBy(id => id.getFullName())
+        .forEach(id => elemIDsToProcess.push(id))
+
+      log.trace('Done proccessing references for %d elements', currentLevelIds.length)
+    }
+
+    return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
+  }, 'List dependencies in workspace')
+
 type GetCustomReferencesFunc = (
   elements: Element[],
   accountToServiceName: Record<string, string>,
@@ -438,8 +506,11 @@ export const loadWorkspace = async (
                     deserializeSingleElement(
                       s,
                       async staticFile =>
-                        (await naclFilesSource.getStaticFile(staticFile.filepath, staticFile.encoding, envName)) ??
-                        staticFile,
+                        (await naclFilesSource.getStaticFile({
+                          filePath: staticFile.filepath,
+                          encoding: staticFile.encoding,
+                          env: envName,
+                        })) ?? staticFile,
                     ),
                   persistent,
                 }),
@@ -1119,7 +1190,7 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  return {
+  const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
     elements: elementsImpl,
@@ -1194,7 +1265,7 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id),
     getReferenceSourcesIndex: async (envName = currentEnv()) =>
       (await getWorkspaceState()).states[envName].referenceSources,
-    getElementOutgoingReferences: async (id, envName = currentEnv()) => {
+    getElementOutgoingReferences: async (id, envName = currentEnv(), includeWeakReferences = true) => {
       const baseId = id.createBaseID().parent.getFullName()
       const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
 
@@ -1203,13 +1274,15 @@ export const loadWorkspace = async (
       }
 
       const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      const references =
+      const references = Array.from(
         idPath === ''
           ? // Empty idPath means we are requesting the base level element, which includes all references
             referencesTree.values()
-          : referencesTree.valuesWithPrefix(idPath)
+          : referencesTree.valuesWithPrefix(idPath),
+      ).flat()
 
-      return _.uniqBy(Array.from(references).flat(), ref => ref.id.getFullName())
+      const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
+      return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
@@ -1222,6 +1295,11 @@ export const loadWorkspace = async (
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
       }
       return (await (await getWorkspaceState()).states[envName].authorInformation.get(id.getFullName())) ?? {}
+    },
+    getElementsAuthorsById: async (envName = currentEnv()) => {
+      const authorInformationMap = (await getWorkspaceState()).states[envName].authorInformation
+      const entries = await awu(authorInformationMap.entries()).toArray()
+      return Object.fromEntries(entries.map(entry => [entry.key, entry.value]))
     },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,
@@ -1469,8 +1547,6 @@ export const loadWorkspace = async (
         const workspaceErrors = validationErrors.filter(isUnresolvedRefError).map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
-      const getUnresolvedElemIDs = async (elementsArray: Element[]): Promise<ElemID[]> =>
-        getUnresolvedElemIDsFromErrors(await validateElements(elementsArray, await elements()))
       const unresolvedElemIDs = getUnresolvedElemIDsFromErrors((await errors()).validation)
       if (completeFromEnv === undefined) {
         return {
@@ -1478,60 +1554,36 @@ export const loadWorkspace = async (
           missing: compact(_.sortBy(unresolvedElemIDs, id => id.getFullName())),
         }
       }
-      const addAndValidate = async (
-        ids: ElemID[],
-        visitedIds: Set<string>,
-        elementsArray: Element[] = [],
-      ): Promise<{ completed: string[]; missing: string[] }> => {
-        const newIds = ids.filter(id => !visitedIds.has(id.getFullName()))
 
-        if (newIds.length === 0) {
-          return { completed: [], missing: [] }
-        }
-
-        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
-
-        const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
-          const rootElem = await (await elementsImpl(true, completeFromEnv)).get(id.createTopLevelParentID().parent)
-          if (!rootElem) {
-            return undefined
-          }
-          // Using the createBaseID method in getUnresolvedElemIDsFromErrors function let us know
-          // the returned unresolved element is in fact a type, an instance or a field,
-          // so it's unnecessary to verify is the resolved path is an element
-          return resolvePath(rootElem, id)
-        }
-        const completionRes = Object.fromEntries(
-          await awu(newIds)
-            .map(async id => [id.getFullName(), await getCompletionElem(id)])
-            .toArray(),
-        ) as Record<string, Element | undefined>
-        const [completed, missing] = _.partition(Object.keys(completionRes), id => values.isDefined(completionRes[id]))
-        const resolvedElements = Object.values(completionRes).filter(values.isDefined)
-        const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements)
-        const innerRes = await addAndValidate(unresolvedIDs, visitedIds, [...elementsArray, ...resolvedElements])
-        return {
-          completed: [...completed, ...innerRes.completed],
-          missing: [...missing, ...innerRes.missing],
-        }
-      }
-      const { completed, missing } = await addAndValidate(unresolvedElemIDs, new Set())
+      const { dependencies, missing } = await listElementsDependenciesInWorkspace({
+        workspace,
+        elemIDsToFind: unresolvedElemIDs,
+        elemIDsToSkip: (await workspace.getSearchableNames()).map(ElemID.fromFullName),
+        envToListFrom: completeFromEnv,
+      })
+      const completedElemIds = _.uniq(
+        Object.values(dependencies)
+          .flat()
+          .map(elemId => elemId.getFullName())
+          .concat(Object.keys(dependencies)),
+      )
       return {
-        found: compact(completed.sort().map(ElemID.fromFullName)),
-        missing: compact(missing.sort().map(ElemID.fromFullName)),
+        found: compact(completedElemIds.sort().map(ElemID.fromFullName)),
+        missing: compact(_.sortBy(missing, id => id.getFullName())),
       }
     },
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
     getStaticFile: async ({ filepath, encoding, env }) =>
-      naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv()),
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv() }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,
     getAliases,
     isChangedAtIndexEmpty,
   }
+  return workspace
 }
 
 export const initWorkspace = async (

@@ -18,6 +18,7 @@ import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   APPLICATION_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
   NETWORK_ZONE_TYPE_NAME,
@@ -120,6 +121,9 @@ export const mockDefaultValues: Record<string, Values> = {
     objectClass: ['okta:user_group'],
     type: 'OKTA_GROUP',
     profile: { name: 'Employees', description: 'all employees' },
+  },
+  [APP_GROUP_ASSIGNMENT_TYPE_NAME]: {
+    priority: 0,
   },
   [GROUP_RULE_TYPE_NAME]: {
     type: 'group_rule',

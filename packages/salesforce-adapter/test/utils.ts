@@ -19,6 +19,7 @@ import {
   CORE_ANNOTATIONS,
   Element,
   ElemID,
+  FetchOptions,
   Field,
   ListType,
   MapType,
@@ -34,6 +35,7 @@ import {
   findElements as findElementsByID,
 } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
+import { MockInterface } from '@salto-io/test-utils'
 import * as constants from '../src/constants'
 import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
 import {
@@ -43,6 +45,7 @@ import {
 } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { LastChangeDateOfTypesWithNestedInstances } from '../src/types'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -443,6 +446,21 @@ export const defaultFilterContext: FilterContext = {
   enumFieldPermissions: false,
   flsProfiles: [constants.ADMIN_PROFILE],
 }
+
+export const mockFetchOpts: MockInterface<FetchOptions> = {
+  progressReporter: { reportProgress: jest.fn() },
+}
+
+export const emptyLastChangeDateOfTypesWithNestedInstances =
+  (): LastChangeDateOfTypesWithNestedInstances => ({
+    AssignmentRules: {},
+    AutoResponseRules: {},
+    CustomObject: {},
+    EscalationRules: {},
+    SharingRules: {},
+    Workflow: {},
+    CustomLabels: '2023-11-06T00:00:00.000Z',
+  })
 
 export const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function

@@ -17,6 +17,7 @@ import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salt
 
 import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { StaticFilesCache, StaticFilesData } from './cache'
 import { DirectoryStore } from '../dir_store'
 
@@ -144,54 +145,71 @@ export const buildStaticFilesSource = (
       return [...newFiles, ...deletedFiles, ...modifiedFilesSet.keys()]
     },
     getStaticFile: async (
-      filepath: string,
-      encoding: BufferEncoding,
+      args: string | { filepath: string; encoding: BufferEncoding; hash?: string },
+      encoding?: BufferEncoding,
       hash?: string,
     ): Promise<StaticFile | InvalidStaticFile> => {
+      let filePath: string
+      let fileEncoding: BufferEncoding
+      let fileHash: string | undefined
+
+      // Check if args is a string or an object and assign values accordingly
+      if (_.isString(args)) {
+        if (encoding === undefined) {
+          throw new Error("When 'args' is a string, 'encoding' must be provided")
+        }
+        filePath = args
+        fileEncoding = encoding
+        fileHash = hash
+      } else {
+        filePath = args.filepath
+        fileEncoding = args.encoding
+        fileHash = args.hash
+      }
       try {
-        const staticFileData = await getStaticFileData(filepath)
-        if (hash !== undefined && staticFileData.hash !== hash) {
+        const staticFileData = await getStaticFileData(filePath)
+        if (fileHash !== undefined && staticFileData.hash !== fileHash) {
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was modified since the cache was written,
           // as the latter should not be represented in the element that is returned from
           // the cache as MissingStaticFile
-          return new StaticFile({ filepath, encoding, hash })
+          return new StaticFile({ filepath: filePath, encoding: fileEncoding, hash: fileHash })
         }
 
         if (staticFileData.buffer !== undefined) {
           const staticFileWithHashAndContent = new AbsoluteStaticFile({
-            filepath,
+            filepath: filePath,
             content: staticFileData.buffer,
-            encoding,
-            absoluteFilePath: staticFilesDirStore.getFullPath(filepath),
+            encoding: fileEncoding,
+            absoluteFilePath: staticFilesDirStore.getFullPath(filePath),
           })
           return staticFileWithHashAndContent
         }
         return new LazyStaticFile(
-          filepath,
+          filePath,
           staticFileData.hash,
-          staticFilesDirStore.getFullPath(filepath),
+          staticFilesDirStore.getFullPath(filePath),
           // We use ignoreDeletionsCache to make sure that if the file was requested and then the content
           // was deleted, we will still lbe able to access the content
-          async () => (await staticFilesDirStore.get(filepath, { ignoreDeletionsCache: true }))?.buffer,
-          encoding,
+          async () => (await staticFilesDirStore.get(filePath, { ignoreDeletionsCache: true }))?.buffer,
+          fileEncoding,
         )
       } catch (e) {
-        if (hash !== undefined) {
+        if (fileHash !== undefined) {
           // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
           // in the elements cache between a file that was really missing when the cache was
           // written, and a file that existed but was removed since the cache was written,
           // as the latter should not be represented in the element that is returned from
           // the cache as MissingStaticFile
-          return new StaticFile({ filepath, encoding, hash })
+          return new StaticFile({ filepath: filePath, encoding: fileEncoding, hash: fileHash })
         }
 
         if (e instanceof MissingStaticFileError) {
-          return new MissingStaticFile(filepath)
+          return new MissingStaticFile(filePath)
         }
         if (e instanceof StaticFileAccessDeniedError) {
-          return new AccessDeniedStaticFile(filepath)
+          return new AccessDeniedStaticFile(filePath)
         }
         throw e
       }
@@ -233,7 +251,10 @@ export const buildStaticFilesSource = (
 
 export const buildInMemStaticFilesSource = (files: Map<string, StaticFile> = new Map()): StaticFilesSource => ({
   load: async () => [],
-  getStaticFile: async filepath => files.get(filepath) ?? new MissingStaticFile(filepath),
+  getStaticFile: async args => {
+    const filepath = _.isString(args) ? args : args.filepath
+    return files.get(filepath) ?? new MissingStaticFile(filepath)
+  },
   persistStaticFile: async file => {
     files.set(file.filepath, file)
   },

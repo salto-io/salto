@@ -19,7 +19,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { createEmptyType, getFilterParams, mockClient } from '../../../utils'
 import referencesFilter from '../../../../src/filters/script_runner/workflow/workflow_references'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../../src/constants'
 import { getDefaultConfig } from '../../../../src/config/config'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../../../../src/filters/script_runner/workflow/workflow_cloud'
 
@@ -48,10 +48,11 @@ const resolvedInstance = new InstanceElement('instance', createEmptyType(WORKFLO
   },
 })
 
-const resolvedWorkflowV2Instance = new InstanceElement('instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+const resolvedWorkflowV2Instance = new InstanceElement('instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
   transitions: {
     [TRANSITION_KEY]: {
       name: 'tran1',
+      type: 'DIRECTED',
       actions: [
         {
           parameters: {
@@ -88,10 +89,11 @@ const restoredInstance = new InstanceElement('instance', createEmptyType(WORKFLO
   },
 })
 
-const restoredWorkflowV2Instance = new InstanceElement('instance', createEmptyType(JIRA_WORKFLOW_TYPE), {
+const restoredWorkflowV2Instance = new InstanceElement('instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
   transitions: {
     [TRANSITION_KEY]: {
       name: 'tran1',
+      type: 'DIRECTED',
       actions: [
         {
           parameters: {
@@ -113,7 +115,7 @@ jest.mock('@salto-io/adapter-utils', () => ({
     if (args[0].elemID.typeName === WORKFLOW_TYPE_NAME) {
       return resolvedInstance
     }
-    if (args[0].elemID.typeName === JIRA_WORKFLOW_TYPE) {
+    if (args[0].elemID.typeName === WORKFLOW_CONFIGURATION_TYPE) {
       return resolvedWorkflowV2Instance
     }
     return undefined
@@ -122,7 +124,7 @@ jest.mock('@salto-io/adapter-utils', () => ({
     if (args[1].elemID.typeName === WORKFLOW_TYPE_NAME) {
       return restoredInstance
     }
-    if (args[1].elemID.typeName === JIRA_WORKFLOW_TYPE) {
+    if (args[1].elemID.typeName === WORKFLOW_CONFIGURATION_TYPE) {
       return restoredWorkflowV2Instance
     }
     return undefined
@@ -141,7 +143,7 @@ describe('Scriptrunner references', () => {
   let transitionV2Reference: ReferenceExpression
   let changes: Change[]
   const workflowType = createEmptyType(WORKFLOW_TYPE_NAME)
-  const workflowV2Type = createEmptyType(JIRA_WORKFLOW_TYPE)
+  const workflowV2Type = createEmptyType(WORKFLOW_CONFIGURATION_TYPE)
 
   const getScriptRunnerField = ({
     workflowVersion,
@@ -242,6 +244,7 @@ describe('Scriptrunner references', () => {
     const transitionV2 = {
       name: 'tran1',
       id: '11',
+      type: 'DIRECTED',
       actions: [
         {
           ruleKey: 'rule1',
@@ -329,6 +332,7 @@ describe('Scriptrunner references', () => {
           tran1: {
             id: '11',
             name: 'tran1',
+            type: 'DIRECTED',
             actions: [
               {
                 ruleKey: 'rule1',
@@ -353,6 +357,7 @@ describe('Scriptrunner references', () => {
           tran2: {
             id: '21',
             name: 'tran2',
+            type: 'DIRECTED',
             actions: [
               {
                 ruleKey: 'rule1',
@@ -495,6 +500,7 @@ describe('Scriptrunner references', () => {
           tran1: {
             id: '11',
             name: 'tran1',
+            type: 'DIRECTED',
             actions: [
               {
                 ruleKey: 'rule1',

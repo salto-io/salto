@@ -378,7 +378,10 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
           ...folder,
         })),
         // remove excluded folders before creating the query
-        folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
+        folder => {
+          const fileCabinetFullPath = `${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`
+          return query.isFileMatch(fileCabinetFullPath) || query.isParentFolderMatch(fileCabinetFullPath)
+        },
       )
       log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
       const filesResults =

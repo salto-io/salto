@@ -25,11 +25,8 @@ import {
   isInstanceElement,
   isReferenceExpression,
   isTemplateExpression,
-  ReferenceExpression,
   SaltoError,
   TemplateExpression,
-  TemplatePart,
-  UnresolvedReference,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -39,20 +36,18 @@ import {
   getParent,
   replaceTemplatesWithValues,
   resolveTemplates,
-  safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME, BRAND_TYPE_NAME } from '../../constants'
 import { FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
-import { ELEMENTS_REGEXES, getBrandsForGuide, transformReferenceUrls } from '../utils'
+import { getBrandsForGuide } from '../utils'
+import { DOMAIN_REGEX, extractTemplateFromUrl, prepRef, URL_REGEX } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
-const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
-const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 type missingBrandInfo = {
   brandName: string
@@ -114,22 +109,7 @@ const updateArticleTranslationBody = ({
             })
             return url
           }
-
-          // Extract the referenced instances inside
-          const urlParts = extractTemplate(url, [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)], urlPart => {
-            const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
-            // We already made sure that the brand exists, so we can just return it
-            if (urlSubdomain !== undefined) {
-              return [new ReferenceExpression(urlBrandInstance.elemID, urlBrandInstance)]
-            }
-            return transformReferenceUrls({
-              urlPart,
-              instancesById,
-              enableMissingReferences,
-              brandOfInstance: urlBrandInstance,
-            })
-          })
-          return _.isString(urlParts) ? urlParts : urlParts.parts
+          return extractTemplateFromUrl({ url, instancesById, enableMissingReferences, urlBrandInstance })
         }),
   )
 
@@ -138,38 +118,6 @@ const updateArticleTranslationBody = ({
   })
   translationInstance.value.body = compactTemplate(processedTranslationBody)
   return _.isEmpty(missingBrands) ? [] : _.unionBy(missingBrands, obj => obj.brandName)
-}
-
-/**
- * Process template Expression references by the id type
- */
-export const prepRef = (part: ReferenceExpression): TemplatePart => {
-  // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
-  // .after values are always resolved because unresolved references are dropped by unresolved_references validator
-  // we should add a generic solution since we have seen this repeating (SALTO-5074)
-  // This fix is enough since the .before value is not used in the deployment process
-  if (part.value instanceof UnresolvedReference) {
-    log.trace(
-      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
-      part.elemID.getFullName(),
-    )
-    return ''
-  }
-  if (part.elemID.typeName === BRAND_TYPE_NAME) {
-    // The value used to be a string, but now it's an instance element
-    // we need to support versions both until all customers fetch the new version
-    return _.isString(part.value) ? part.value : part.value.value.brand_url
-  }
-  if (part.elemID.isTopLevel()) {
-    return part.value.value.id.toString()
-  }
-  if (!_.isString(part.value)) {
-    // caught in try catch block
-    throw new Error(
-      `Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`,
-    )
-  }
-  return part.value
 }
 
 const getWarningsForMissingBrands = (missingBrandsForWarning: missingBrandInfo[]): SaltoError[] => {

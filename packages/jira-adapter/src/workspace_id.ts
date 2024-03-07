@@ -47,7 +47,7 @@ const isWorkspaceResponse = createSchemeGuard<WorkspaceResponse>(
 
 export const getWorkspaceId = async (client: JiraClient, config: JiraConfig): Promise<string | undefined> => {
   try {
-    if (!config.fetch.enableJsmExperimental) {
+    if (!(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
       return undefined
     }
     const response = await client.get({

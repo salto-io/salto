@@ -28,6 +28,7 @@ type ConfigOptionsType = {
   enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
 }
+
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
@@ -55,6 +56,7 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
     }
     if (options.value.enableJSM) {
       defaultConf.value.fetch.enableJSM = true
+      defaultConf.value.fetch.enableJSMPremium = true
     }
   }
   return defaultConf

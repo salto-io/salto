@@ -23,6 +23,7 @@ import {
   NOTIFICATION_EVENT_TYPE_NAME,
   NOTIFICATION_SCHEME_TYPE_NAME,
   PROJECT_ROLE_TYPE,
+  WORKFLOW_CONFIGURATION_TYPE,
   WORKFLOW_RULES_TYPE_NAME,
   WORKFLOW_STATUS_TYPE_NAME,
   WORKFLOW_TRANSITION_TYPE_NAME,
@@ -67,6 +68,9 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   [WORKFLOW_TYPE_NAME]: {
     statuses: ['id.elemID.name'],
+  },
+  [WORKFLOW_CONFIGURATION_TYPE]: {
+    statuses: ['statusReference.elemID.name'],
   },
   [NOTIFICATION_EVENT_TYPE_NAME]: {
     notifications: ['type', 'parameter.elemID.name', 'parameter'],

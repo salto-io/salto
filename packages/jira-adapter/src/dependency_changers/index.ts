@@ -25,6 +25,7 @@ import { workflowDependencyChanger } from './workflow'
 import { fieldContextDependencyChanger } from './field_contexts'
 import { fieldConfigurationDependencyChanger } from './field_configuration'
 import { jsmProjectToJsmFieldDependencyChanger } from './jsm_project_to_jsm_field'
+import { rootObjectTypeToObjectSchemaDependencyChanger } from './root_object_type_to_schema'
 
 const { awu } = collections.asynciterable
 
@@ -33,6 +34,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   projectDependencyChanger,
   workflowDependencyChanger,
   dashboardGadgetsDependencyChanger,
+  rootObjectTypeToObjectSchemaDependencyChanger, // Must run before removalsDependencyChanger
   removalsDependencyChanger,
   globalFieldContextsDependencyChanger,
   projectContextsDependencyChanger,

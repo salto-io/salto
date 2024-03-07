@@ -123,7 +123,7 @@ describe('assetsObjectTypeOrderFilter', () => {
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === OBJECT_TYPE_ORDER_TYPE)
       expect(orderInstances[1]).toBeDefined()
-      expect(orderInstances[1].elemID.name).toEqual('parent_Object_Type_Instance_order')
+      expect(orderInstances[1].elemID.name).toEqual('parent_Object_Type_Instance_childOrder')
       expect(orderInstances[1].value.objectTypes).toEqual([
         new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
@@ -131,6 +131,13 @@ describe('assetsObjectTypeOrderFilter', () => {
       ])
       const orderType = elements.filter(isObjectType).find(e => e.elemID.typeName === OBJECT_TYPE_ORDER_TYPE)
       expect(orderType).toBeDefined()
+      expect(orderInstances[0].path).toEqual([
+        JIRA,
+        elementUtils.RECORDS_PATH,
+        'ObjectSchema',
+        'objectTypes',
+        'assetsSchema_childOrder',
+      ])
     })
     it('should do nothing for instnaces without parentObjectTypeId', async () => {
       const elements = [
@@ -150,7 +157,7 @@ describe('assetsObjectTypeOrderFilter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
+      config.fetch.enableJSMPremium = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn

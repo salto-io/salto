@@ -34,18 +34,18 @@ const log = logger(module)
 const { isDefined } = values
 const { awu } = collections.asynciterable
 const BUNDLE = 'bundle'
-const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
+export const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 
-const getServiceIdsOfVersion = (bundleVersions: Record<string, Set<string>>, bundle: InstanceElement): Set<string> => {
-  const serviceIdsInBundle = bundleVersions[bundle.value.version]
-  if (serviceIdsInBundle) {
-    return serviceIdsInBundle
+export const getServiceIdsOfVersion = (bundleId: string, bundleVersion: string | undefined): Set<string> => {
+  const bundleVersions = BUNDLE_ID_TO_COMPONENTS[bundleId]
+  if (bundleVersion === undefined || !(bundleVersion in bundleVersions)) {
+    log.debug(
+      `Version ${`${bundleVersion ?? ''} `} of bundle %s is missing or not supported in the record, use a union of all existing versions`,
+      bundleId,
+    )
+    return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
   }
-  log.debug(
-    `Version ${`${bundle.value.version} ` ?? ''} of bundle %s is missing or not supported in the record, use a union of all existing versions`,
-    bundle.value.id,
-  )
-  return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
+  return bundleVersions[bundleVersion]
 }
 
 const addBundleToFileCabinet = (
@@ -69,8 +69,7 @@ const isStandardInstanceOrCustomRecord = async (element: Element): Promise<boole
   (isInstanceElement(element) && isCustomRecordType(await element.getType()))
 
 const addBundleToRecords = (scriptIdToElem: Record<string, Element>, bundleInstance: InstanceElement): void => {
-  const bundleVersions = BUNDLE_ID_TO_COMPONENTS[bundleInstance.value.id]
-  const bundleElementsServiceIds = getServiceIdsOfVersion(bundleVersions, bundleInstance)
+  const bundleElementsServiceIds = getServiceIdsOfVersion(bundleInstance.value.id, bundleInstance.value.version)
   bundleElementsServiceIds.forEach(serviceId => {
     const currentElement = scriptIdToElem[serviceId]
     if (currentElement) {

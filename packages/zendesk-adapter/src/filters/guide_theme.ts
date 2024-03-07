@@ -31,6 +31,7 @@ import {
   Field,
   MapType,
   CORE_ANNOTATIONS,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
@@ -53,6 +54,7 @@ import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes } from './utils'
 import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
+import { parseHtmlPotentialReferences } from './template_engines/html_parser'
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
@@ -66,15 +68,49 @@ export type ThemeDirectory = {
   folders: Record<string, ThemeDirectory>
 }
 
-const createTemplateParts = (filePath: string, content: string, idsToElements: Record<string, Element>): void => {
+const createTemplateParts = ({
+  filePath,
+  content,
+  idsToElements,
+  brand,
+}: {
+  filePath: string
+  content: string
+  idsToElements: Record<string, InstanceElement>
+  brand: InstanceElement
+}): void => {
   if (filePath.endsWith('.hbs')) {
     try {
       const potentialReferences = parseHandlebarPotentialReferences(content)
-      const templateParts = potentialReferences.map(ref =>
-        idsToElements[ref.value] !== undefined ? { value: idsToElements[ref.value], loc: ref.loc } : ref,
+      const handlebarReferences = potentialReferences.map(ref =>
+        idsToElements[ref.value] !== undefined
+          ? { value: new ReferenceExpression(idsToElements[ref.value].elemID, idsToElements[ref.value]), loc: ref.loc }
+          : ref,
       )
-      if (templateParts.length > 0) {
-        log.info('Found the following references in the theme: %o', templateParts)
+      if (handlebarReferences.length > 0) {
+        log.info('Found the following references in file %s in the theme: %o', filePath, handlebarReferences)
+      }
+      const { urls } = parseHtmlPotentialReferences(content, {
+        urlBrandInstance: brand,
+        instancesById: idsToElements,
+        enableMissingReferences: false,
+      })
+      if (urls.length > 0 && urls.filter(url => typeof url.value !== 'string').length > 0) {
+        log.info('Found the following URLs file %s in the theme: %o', filePath, urls)
+      }
+    } catch (e) {
+      log.warn('Error parsing references in file %s, %o', filePath, e)
+    }
+  }
+  if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
+    try {
+      const { urls } = parseHtmlPotentialReferences(content, {
+        urlBrandInstance: brand,
+        instancesById: idsToElements,
+        enableMissingReferences: false,
+      })
+      if (urls.length > 0 && urls.filter(url => typeof url.value !== 'string').length > 0) {
+        log.info('Found the following URLs file %s in the theme: %o', filePath, urls)
       }
     } catch (e) {
       log.warn('Error parsing references in file %s, %o', filePath, e)
@@ -84,14 +120,14 @@ const createTemplateParts = (filePath: string, content: string, idsToElements: R
 
 export const unzipFolderToElements = async ({
   buffer,
-  brandName,
+  brand,
   name,
   idsToElements,
 }: {
   buffer: Buffer
-  brandName: string
+  brand: InstanceElement
   name: string
-  idsToElements: Record<string, Element>
+  idsToElements: Record<string, InstanceElement>
 }): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
@@ -112,9 +148,9 @@ export const unzipFolderToElements = async ({
 
     if (pathParts.length === 1) {
       // It's a file
-      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}/${fullPath}`
+      const filepath = `${ZENDESK}/themes/brands/${brand.value.name}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
-      createTemplateParts(fullPath, content.toString(), idsToElements) // Only logging for now
+      createTemplateParts({ filePath: fullPath, content: content.toString(), idsToElements, brand }) // Only logging for now
       currentDir.files[naclCase(firstPart)] = {
         filename: fullPath,
         content: new StaticFile({ filepath, content }),
@@ -271,32 +307,36 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     const instances = elements.filter(isInstanceElement)
     const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
     const brands = getBrandsForGuideThemes(instances, config[FETCH_CONFIG])
-    const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
-    const getBrandName = (theme: InstanceElement): string | undefined => {
+    const fullNameByNameBrand = _.keyBy(brands, getFullName)
+    const getBrand = (theme: InstanceElement): InstanceElement | undefined => {
       if (!isReferenceExpression(theme.value.brand_id)) {
         log.info('brand_id is not a reference expression for instance %s.', theme.elemID.getFullName())
         return undefined
       }
       const brandElemId = theme.value.brand_id?.elemID.getFullName()
-      const brandName = fullNameByNameBrand[brandElemId]
-      if (brandName === undefined) {
-        log.info('brandName was not found for instance %s.', theme.elemID.getFullName())
+      const brand = fullNameByNameBrand[brandElemId]
+      if (brand === undefined) {
+        log.info('brand was not found for instance %s.', theme.elemID.getFullName())
         return undefined
       }
-      return brandName
+      if (brand.value.name === undefined) {
+        log.info('brand name was not found for instance %s.', theme.elemID.getFullName())
+        return undefined
+      }
+      return brand
     }
     const idsToElements = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
       .filter(element => element.value.id !== undefined)
-      .reduce<Record<string, Element>>((acc, elem) => {
+      .reduce<Record<string, InstanceElement>>((acc, elem) => {
         acc[elem.value.id] = elem
         return acc
       }, {})
 
     const processedThemes = await Promise.all(
       guideThemes.map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
-        const brandName = getBrandName(theme)
-        if (brandName === undefined) {
+        const brand = getBrand(theme)
+        if (brand === undefined) {
           // a log is written in the getBrandName func
           remove(elements, element => element.elemID.isEqual(theme.elemID))
           return { errors: [] }
@@ -309,7 +349,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         try {
           const themeElements = await unzipFolderToElements({
             buffer: themeZip,
-            brandName,
+            brand,
             name: theme.value.name,
             idsToElements,
           })

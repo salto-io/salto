@@ -15,6 +15,7 @@
  */
 import { hash as lowerdashHash } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import { DirectoryStore } from '../../dir_store'
 import { StateStaticFilesSource } from '../../static_files/common'
 import { LazyStaticFile } from '../../static_files/source'
@@ -37,19 +38,36 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
       filename: file.filepath,
     })
   },
-  getStaticFile: async (path, encoding, hash) => {
-    if (hash === undefined) {
-      throw new Error(`path ${path} was passed without a hash to getStaticFile`)
+  getStaticFile: async (args, encoding, hash) => {
+    let filePath: string
+    let fileEncoding: BufferEncoding
+    let fileHash: string | undefined
+
+    // Check if args is a string or an object and assign values accordingly
+    if (_.isString(args)) {
+      if (encoding === undefined) {
+        throw new Error("When 'args' is a string, 'encoding' must be provided")
+      }
+      filePath = args
+      fileEncoding = encoding
+      fileHash = hash
+    } else {
+      filePath = args.filepath
+      fileEncoding = args.encoding
+      fileHash = args.hash
+    }
+    if (fileHash === undefined) {
+      throw new Error(`path ${filePath} was passed without a hash to getStaticFile`)
     }
     return new LazyStaticFile(
-      path,
-      hash,
-      dirStore.getFullPath(path),
+      filePath,
+      fileHash,
+      dirStore.getFullPath(filePath),
       async () => {
-        const content = (await dirStore.get(path))?.buffer
-        return content !== undefined && lowerdashHash.toMD5(content) === hash ? content : undefined
+        const content = (await dirStore.get(filePath))?.buffer
+        return content !== undefined && lowerdashHash.toMD5(content) === fileHash ? content : undefined
       },
-      encoding,
+      fileEncoding,
     )
   },
 

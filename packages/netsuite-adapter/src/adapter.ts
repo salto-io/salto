@@ -94,6 +94,8 @@ import {
   RemoteFilterCreatorDefinition,
   RemoteFilterOpts,
 } from './filter'
+import restoreDeletedListItemsWithoutScriptId from './filters/restore_deleted_list_items_without_scriptid'
+import restoreDeletedListItems from './filters/restore_deleted_list_items'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -129,6 +131,7 @@ import {
 } from './config/query'
 import { getConfigFromConfigChanges } from './config/suggestions'
 import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
+import { buildNetsuiteBundlesQuery } from './config/bundle_query'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -136,6 +139,14 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded types.
+  { creator: excludeCustomRecordTypes },
+  { creator: restoreDeletedListItems },
+  { creator: restoreDeletedListItemsWithoutScriptId },
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded types.
+  { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },
   { creator: dataInstancesIdentifiers },
@@ -332,14 +343,23 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean,
   ): Promise<FetchByQueryReturnType> => {
-    const configRecords = await this.client.getConfigRecords()
+    const [configRecords, installedBundles] = await Promise.all([
+      this.client.getConfigRecords(),
+      this.client.getInstalledBundles(),
+    ])
+    const { query: netsuiteBundlesQuery, bundlesToInclude } = buildNetsuiteBundlesQuery(
+      installedBundles,
+      this.userConfig.excludeBundles ?? [],
+    )
+    const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const { changedObjectsQuery, serverTime } = await this.runSuiteAppOperations(
-      fetchQuery,
+      fetchQueryWithBundles,
       useChangesDetection,
       timeZoneAndFormat,
     )
-    const updatedFetchQuery = changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQuery) : fetchQuery
+    const updatedFetchQuery =
+      changedObjectsQuery !== undefined ? andQuery(changedObjectsQuery, fetchQueryWithBundles) : fetchQueryWithBundles
 
     const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
       progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
@@ -362,16 +382,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const [
         { elements: fileCabinetContent, failedPaths: failedFilePaths },
         { elements: customObjects, instancesIds, failedToFetchAllAtOnce, failedTypes },
-        bundlesList,
       ] = await Promise.all([
         importFileCabinetContent(),
         this.client.getCustomObjects(getStandardTypesNames(), {
           updatedFetchQuery,
-          originFetchQuery: fetchQuery,
+          originFetchQuery: fetchQueryWithBundles,
         }),
-        this.client.getInstalledBundles(),
       ])
-      const bundlesCustomInfo = bundlesList.map(bundle => ({
+      const bundlesCustomInfo = bundlesToInclude.map(bundle => ({
         typeName: BUNDLE,
         values: { ...bundle, id: bundle.id.toString() },
       }))
@@ -387,7 +405,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
         this.client,
         customRecordTypes,
-        fetchQuery,
+        fetchQueryWithBundles,
         this.getElemIdFunc,
       )
       return {
@@ -406,7 +424,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       { elements: suiteQLTableElements, largeSuiteQLTables },
     ] = await Promise.all([
       getStandardAndCustomElements(),
-      getDataElements(this.client, fetchQuery, this.getElemIdFunc),
+      getDataElements(this.client, fetchQueryWithBundles, this.getElemIdFunc),
       getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
     ])
 
@@ -414,7 +432,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     failures.failedTypes.excludedTypes = failures.failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
-      ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
+      ? toConfigElements(configRecords, fetchQueryWithBundles).concat(getConfigTypes())
       : []
 
     // we calculate deleted elements only in partial-fetch mode
@@ -423,7 +441,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ? await getDeletedElements({
             client: this.client,
             elementsSource: this.elementsSource,
-            fetchQuery,
+            fetchQuery: fetchQueryWithBundles,
             serviceInstanceIds: instancesIds,
             requestedCustomRecordTypes: customRecordTypes,
             serviceCustomRecords: customRecords,

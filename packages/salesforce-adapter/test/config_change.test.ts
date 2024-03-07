@@ -188,7 +188,7 @@ describe('Config Changes', () => {
       newConfig = getConfigFromConfigChanges(suggestions, currentConfig)
         ?.config[0]
     })
-    it('should add new exlcuded type', () => {
+    it('should add new excluded type', () => {
       expect(newConfig?.value?.fetch?.metadata?.exclude).toEqual([
         { metadataType: 'Type1' },
         { metadataType: 'ExcludedType' },

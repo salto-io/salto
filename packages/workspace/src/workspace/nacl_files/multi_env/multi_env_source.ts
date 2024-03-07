@@ -120,7 +120,11 @@ export type MultiEnvSource = {
   clear(args?: { nacl?: boolean; staticResources?: boolean; cache?: boolean }): Promise<void>
   load: (args: SourceLoadParams) => Promise<EnvsChanges>
   getSearchableNames(env: string): Promise<string[]>
-  getStaticFile: (filePath: string, encoding: BufferEncoding, env: string) => Promise<StaticFile | undefined>
+  getStaticFile: (
+    args: string | { filePath: string; encoding: BufferEncoding; env: string },
+    encoding?: BufferEncoding,
+    env?: string,
+  ) => Promise<StaticFile | undefined>
   getAll: (env: string) => Promise<AsyncIterable<Element>>
   promote: (env: string, idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>) => Promise<EnvsChanges>
   getElementIdsBySelectors: (
@@ -163,9 +167,34 @@ const buildMultiEnvSource = (
 
   const getActiveSources = (env: string): Record<string, NaclFilesSource> => _.pick(sources, [commonSourceName, env])
 
-  const getStaticFile = async (filePath: string, encoding: BufferEncoding, envName: string): Promise<StaticFile> => {
+  const getStaticFile = async (
+    args: string | { filePath: string; encoding: BufferEncoding; env: string },
+    encoding?: BufferEncoding,
+    envName?: string,
+  ): Promise<StaticFile> => {
+    let filePath: string
+    let fileEncoding: BufferEncoding
+    let environmentName: string
+
+    // Check if args is a string or an object and assign values accordingly
+    if (_.isString(args)) {
+      if (encoding === undefined || envName === undefined) {
+        throw new Error("When 'args' is a string, 'encoding' and 'envName' must be provided")
+      }
+      filePath = args
+      fileEncoding = encoding
+      environmentName = envName
+    } else {
+      filePath = args.filePath
+      fileEncoding = args.encoding
+      environmentName = args.env
+    }
     const sourcesFiles = (
-      await Promise.all(Object.values(getActiveSources(envName)).map(src => src.getStaticFile(filePath, encoding)))
+      await Promise.all(
+        Object.values(getActiveSources(environmentName)).map(src =>
+          src.getStaticFile({ filePath, encoding: fileEncoding }),
+        ),
+      )
     ).filter(values.isDefined)
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
       log.warn(`Found different hashes for static file ${filePath}`)
@@ -181,7 +210,9 @@ const buildMultiEnvSource = (
         deserialize: s =>
           deserializeSingleElement(
             s,
-            async staticFile => (await getStaticFile(staticFile.filepath, staticFile.encoding, envName)) ?? staticFile,
+            async staticFile =>
+              (await getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: envName })) ??
+              staticFile,
           ),
         persistent,
       }),

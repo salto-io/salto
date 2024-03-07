@@ -33,7 +33,6 @@ import { definitions } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
 
 type UserDeployConfig = definitions.UserDeployConfig
 
@@ -159,6 +158,8 @@ export type ChangeValidatorName =
   | 'standardFieldOrObjectAdditionsOrDeletions'
   | 'deletedNonQueryableFields'
   | 'instanceWithUnknownType'
+  | 'artificialTypes'
+  | 'metadataTypes'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -872,6 +873,8 @@ const changeValidatorConfigType =
       },
       deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
       instanceWithUnknownType: { refType: BuiltinTypes.BOOLEAN },
+      artificialTypes: { refType: BuiltinTypes.BOOLEAN },
+      metadataTypes: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -959,7 +962,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
-          [MAX_INSTANCES_PER_TYPE]: DEFAULT_MAX_INSTANCES_PER_TYPE,
+          [MAX_INSTANCES_PER_TYPE]: constants.DEFAULT_MAX_INSTANCES_PER_TYPE,
         },
       },
     },
@@ -982,7 +985,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     },
     [DEPLOY_CONFIG]: {
       refType: definitions.createUserDeployConfigType(
-        SALESFORCE,
+        constants.SALESFORCE,
         changeValidatorConfigType,
       ),
     },
@@ -1027,4 +1030,14 @@ export type FetchProfile = {
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
   readonly importantValues: ImportantValues
+}
+
+export type TypeWithNestedInstances =
+  (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]
+export type TypeWithNestedInstancesPerParent =
+  (typeof constants.TYPES_WITH_NESTED_INSTANCES_PER_PARENT)[number]
+export type LastChangeDateOfTypesWithNestedInstances = {
+  [key in TypeWithNestedInstancesPerParent]: Record<string, string>
+} & {
+  [key in TypeWithNestedInstances]: string | undefined
 }

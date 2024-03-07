@@ -41,7 +41,7 @@ import {
   OktaDeployConfig,
 } from './config'
 import { createConnection } from './client/connection'
-import { OKTA } from './constants'
+import { validateOktaBaseUrl } from './utils'
 import { getAdminUrl } from './client/admin'
 
 const log = logger(module)
@@ -58,10 +58,7 @@ const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   const { value } = config
   const { baseUrl } = value
-  const hostName = new URL(baseUrl).hostname
-  if (!hostName.includes(OKTA)) {
-    throw new Error(`'${hostName}' is not a valid okta account url`)
-  }
+  validateOktaBaseUrl(baseUrl)
   return isOAuthConfigCredentials(value)
     ? {
         baseUrl,

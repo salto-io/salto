@@ -34,7 +34,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
 import { isWorkflowSchemeItem, projectHasWorkflowSchemeReference } from '../workflow_scheme_migration'
-import { ISSUE_TYPE_NAME, JIRA_WORKFLOW_TYPE, PROJECT_TYPE } from '../../constants'
+import { ISSUE_TYPE_NAME, WORKFLOW_CONFIGURATION_TYPE, PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -81,7 +81,7 @@ const getRelevantChanges = (changes: ReadonlyArray<Change<ChangeDataType>>): Mod
   changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === JIRA_WORKFLOW_TYPE)
+    .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_CONFIGURATION_TYPE)
 
 const getRemovedStatuses = (change: ModificationChange<InstanceElement>): ReferenceExpression[] => {
   const beforeStatuses = makeArray(change.data.before.value.statuses)
@@ -158,7 +158,8 @@ const createStatusMappingStructure = (statusMappings: StatusMapping): string =>
       issueTypeId = ${statusMappings.issueTypeId.elemID.getFullName()}
       projectId = ${statusMappings.projectId.elemID.getFullName()}
       statusMigrations = [
-        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(',\n')}
+        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(`
+        `)}
       ]
     },`
 

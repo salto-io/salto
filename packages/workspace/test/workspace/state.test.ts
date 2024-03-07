@@ -96,7 +96,11 @@ describe('state', () => {
       expect(elementsDeserialize).toBeDefined()
 
       await elementsDeserialize?.(await serialize([newElem]))
-      expect(stateStaticFilesSource.getStaticFile).toHaveBeenCalledWith(staticFile.filepath, 'utf8', staticFile.hash)
+      expect(stateStaticFilesSource.getStaticFile).toHaveBeenCalledWith({
+        filepath: staticFile.filepath,
+        encoding: 'utf8',
+        hash: staticFile.hash,
+      })
     })
 
     it('should call staticFilesSource get when serializing elements', async () => {

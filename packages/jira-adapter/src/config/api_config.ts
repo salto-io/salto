@@ -1179,13 +1179,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
-  JiraWorkflow: {
+  WorkflowConfiguration: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'name', fieldType: 'string' },
         // JiraWorkflow fieldType exists in the swagger but not as a get response
         // this line creates the type despite that
         { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
+        { fieldName: 'tempWorkflowTypeRename', fieldType: 'WorkflowConfiguration' },
         { fieldName: 'statusMappings', fieldType: 'List<StatusMappingDTO>' },
         { fieldName: 'transitions', fieldType: 'Map<WorkflowTransitions>' },
       ],
@@ -2138,7 +2139,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   SLA__config__goals: {
     transformation: {
-      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: [{ fieldName: 'id' }],
+    },
+  },
+  SLA__config__goals__subGoals: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'goalId' }, { fieldName: 'id' }],
     },
   },
   SLA__config__definition__pause: {
@@ -2498,13 +2504,17 @@ const SUPPORTED_TYPES = {
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
   IssueLayout: [],
-  JiraWorkflow: [],
+  WorkflowConfiguration: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
     url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
     typeNameOverrides: [
+      {
+        originalName: 'JiraWorkflow',
+        newName: 'WorkflowConfiguration',
+      },
       {
         originalName: 'FilterDetails',
         newName: 'Filter',

@@ -35,6 +35,7 @@ import {
   BRAND_TYPE_NAME,
   GROUP_PUSH_TYPE_NAME,
   GROUP_PUSH_RULE_TYPE_NAME,
+  APP_GROUP_ASSIGNMENT_TYPE_NAME,
 } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
@@ -120,9 +121,8 @@ export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceRes
 
 export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
-    src: { field: 'assignedGroups', parentTypes: [APPLICATION_TYPE_NAME] },
+    src: { field: 'id', parentTypes: [APP_GROUP_ASSIGNMENT_TYPE_NAME] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {

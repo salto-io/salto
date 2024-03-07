@@ -19,7 +19,6 @@ import {
   CORE_ANNOTATIONS,
   Element,
   ElemID,
-  FetchOptions,
   FetchResult,
   getRestriction,
   InstanceElement,
@@ -40,11 +39,15 @@ import Connection from '../src/client/jsforce'
 import {
   apiName,
   createInstanceElement,
-  isMetadataObjectType,
   MetadataObjectType,
   Types,
 } from '../src/transformers/transformer'
-import { findElements, ZipFile } from './utils'
+import {
+  createCustomObjectType,
+  findElements,
+  mockFetchOpts,
+  ZipFile,
+} from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -58,7 +61,11 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import {
+  ConfigChangeSuggestion,
+  FetchElements,
+  MAX_ITEMS_IN_RETRIEVE_REQUEST,
+} from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -109,10 +116,6 @@ describe('SalesforceAdapter fetch', () => {
   ]
 
   const testMaxItemsInRetrieveRequest = 20
-
-  const mockFetchOpts: MockInterface<FetchOptions> = {
-    progressReporter: { reportProgress: jest.fn() },
-  }
 
   const mockGetElemIdFunc = (
     adapterName: string,
@@ -517,15 +520,11 @@ describe('SalesforceAdapter fetch', () => {
           mockInstances().ChangedAtSingleton,
           mockTypes.Layout,
           mockTypes.ApexClass,
+          mockTypes.CustomObject,
           createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
           createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
           createInstanceElement(
             { fullName: 'DeletedLayout' },
-            mockTypes.Layout,
-          ),
-          // Make sure we don't delete Layouts with incorrect fullName during list
-          createInstanceElement(
-            { fullName: 'namespace__Layout-namespace__Test Layout' },
             mockTypes.Layout,
           ),
           createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
@@ -534,6 +533,8 @@ describe('SalesforceAdapter fetch', () => {
             { fullName: 'DeletedApex' },
             mockTypes.ApexClass,
           ),
+          createCustomObjectType('Account', {}),
+          createCustomObjectType('Deleted__c', {}),
         ]
         const elementsSource = buildElementsSourceFromElements(existingElements)
         ;({ connection: testConnection, adapter: testAdapter } = mockAdapter({
@@ -562,17 +563,20 @@ describe('SalesforceAdapter fetch', () => {
               return [
                 mockFileProperties({ type: 'Layout', fullName: 'Layout1' }),
                 mockFileProperties({ type: 'Layout', fullName: 'Layout2' }),
-                mockFileProperties({
-                  type: 'Layout',
-                  fullName: 'namespace__Layout-Test Layout',
-                  namespacePrefix: 'namespace',
-                }),
               ]
             }
             if (query.type === 'ApexClass') {
               return [
                 mockFileProperties({ type: 'ApexClass', fullName: 'Apex1' }),
                 mockFileProperties({ type: 'ApexClass', fullName: 'Apex2' }),
+              ]
+            }
+            if (query.type === 'CustomObject') {
+              return [
+                mockFileProperties({
+                  type: 'CustomObject',
+                  fullName: 'Account',
+                }),
               ]
             }
             return []
@@ -591,6 +595,7 @@ describe('SalesforceAdapter fetch', () => {
         ).toEqual([
           'salesforce.Layout.instance.DeletedLayout',
           'salesforce.ApexClass.instance.DeletedApex',
+          'salesforce.Deleted__c',
         ])
       })
     })
@@ -2683,54 +2688,6 @@ public class LargeClass${index} {
       })
     })
   })
-
-  describe('fetchWithChangesDetection', () => {
-    let elementsSourceGetSpy: jest.SpyInstance
-    beforeEach(() => {
-      const elementsSource = buildElementsSourceFromElements([
-        mockTypes.ApexClass,
-        // These types should not return as metadata types
-        mockTypes.AccountSettings,
-        mockTypes.SBQQ__Template__c,
-        mockTypes.Account,
-        mockTypes.CustomMetadataRecordType,
-        changedAtSingleton,
-      ])
-      ;({ connection, adapter } = mockAdapter({
-        adapterParams: {
-          getElemIdFunc: mockGetElemIdFunc,
-          config: {
-            fetch: {
-              metadata: {
-                exclude: metadataExclude,
-              },
-            },
-            maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
-            client: {
-              readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
-            },
-          },
-          elementsSource,
-        },
-      }))
-      elementsSourceGetSpy = jest.spyOn(elementsSource, 'get')
-    })
-    it('should get the correct metadata types from the elements source', async () => {
-      const { elements } = await adapter.fetch({
-        ...mockFetchOpts,
-        withChangesDetection: true,
-      })
-      expect(
-        elements.filter(isMetadataObjectType).map((type) => apiNameSync(type)),
-      ).toEqual(['ApexClass'])
-    })
-    it('should get the ChangedAtSingleton from the ElementsSource when fetchWithChangesDetection is true', async () => {
-      await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
-      expect(elementsSourceGetSpy).toHaveBeenCalledWith(
-        changedAtSingleton.elemID,
-      )
-    })
-  })
 })
 
 describe('Fetch via retrieve API', () => {
@@ -2740,6 +2697,7 @@ describe('Fetch via retrieve API', () => {
   type MockInstanceDef = {
     type: MetadataObjectType
     instanceName: string
+    failRetrieve?: boolean
   }
 
   const updateProfileZipFileContents = (
@@ -2802,7 +2760,8 @@ describe('Fetch via retrieve API', () => {
   }
 
   const setupMocks = async (mockDefs: MockInstanceDef[]): Promise<void> => {
-    const { fileProps, zipFiles } = generateMockData(mockDefs)
+    const successfulMockDefs = mockDefs.filter((def) => !def.failRetrieve)
+    const { fileProps, zipFiles } = generateMockData(successfulMockDefs)
     connection.metadata.list.mockImplementation(async (inputQueries) => {
       const queries = Array.isArray(inputQueries)
         ? inputQueries
@@ -2818,7 +2777,23 @@ describe('Fetch via retrieve API', () => {
       .filter((zipFile) => zipFile.content.includes('</Profile>'))
       .forEach((zipFile) => updateProfileZipFileContents(zipFile, fileProps))
     connection.metadata.retrieve.mockReturnValue(
-      mockRetrieveLocator(mockRetrieveResult({ zipFiles })),
+      mockRetrieveLocator(
+        mockRetrieveResult({
+          messages: mockDefs
+            .filter((def) => def.failRetrieve)
+            .map((def) =>
+              mockFileProperties({
+                type: def.type.elemID.typeName,
+                fullName: def.instanceName,
+              }),
+            )
+            .map(({ fileName, fullName, type }) => ({
+              fileName,
+              problem: `Load of metadata from db failed for metadata of type:${type} and file name:${fullName}.`,
+            })),
+          zipFiles,
+        }),
+      ),
     )
   }
 
@@ -3009,6 +2984,90 @@ describe('Fetch via retrieve API', () => {
           .sortBy()
           .value()
         expect(referencedTypes).toEqual(['Account', 'Case'])
+      })
+    })
+  })
+
+  describe('Config changes', () => {
+    let configChanges: ConfigChangeSuggestion[]
+
+    beforeEach(async () => {
+      await setupMocks([
+        {
+          type: mockTypes.ApexClass,
+          instanceName: 'SomeApexClass',
+        },
+        {
+          type: mockTypes.ApexClass,
+          instanceName: 'ExcludedApexClass',
+          failRetrieve: true,
+        },
+      ])
+    })
+
+    describe('When retrieve fails', () => {
+      beforeEach(async () => {
+        const fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+          },
+        })
+
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+      it('Should create a config change for exclusion', () => {
+        expect(configChanges).toEqual([
+          expect.objectContaining({
+            type: 'metadataExclude',
+            value: {
+              metadataType: 'ApexClass',
+              name: 'ExcludedApexClass',
+            },
+          }),
+        ])
+      })
+    })
+    describe('When retrieve fails for an excluded instance', () => {
+      beforeEach(async () => {
+        const fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [
+                {
+                  metadataType: 'ApexClass',
+                  name: 'ExcludedApexClass',
+                },
+              ],
+            },
+          },
+        })
+
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+      it('Should not create a config change', () => {
+        // TODO change this to expect no config changes once configChangeAlreadyExists is changed
+        expect(configChanges).toEqual([
+          expect.objectContaining({
+            type: 'metadataExclude',
+            value: {
+              metadataType: 'ApexClass',
+              name: 'ExcludedApexClass',
+            },
+          }),
+        ])
       })
     })
   })

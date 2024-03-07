@@ -69,6 +69,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<JiraFetchFilters> & {
   enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
   enableJsmExperimental?: boolean
+  enableJSMPremium?: boolean
   removeDuplicateProjectRoles?: boolean
   addAlias?: boolean
   splitFieldConfiguration?: boolean
@@ -327,6 +328,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
     enableJSM: { refType: BuiltinTypes.BOOLEAN },
     enableJsmExperimental: { refType: BuiltinTypes.BOOLEAN },
+    enableJSMPremium: { refType: BuiltinTypes.BOOLEAN },
     removeDuplicateProjectRoles: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },

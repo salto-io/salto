@@ -21,7 +21,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { getFilterParams } from '../../../utils'
 import { isCompressedObject } from '../../../../src/filters/script_runner/workflow/workflow_cloud'
 import workflowFilter from '../../../../src/filters/script_runner/workflow/workflow_filter'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../../src/constants'
 import { getDefaultConfig } from '../../../../src/config/config'
 import { renameKey } from '../../../../src/utils'
 
@@ -61,7 +61,7 @@ describe('ScriptRunner cloud Workflow', () => {
     elemID: new ElemID('jira', WORKFLOW_TYPE_NAME),
   })
   const workflowV2Type = new ObjectType({
-    elemID: new ElemID('jira', JIRA_WORKFLOW_TYPE),
+    elemID: new ElemID('jira', WORKFLOW_CONFIGURATION_TYPE),
   })
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))

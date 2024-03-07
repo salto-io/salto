@@ -127,7 +127,6 @@ const returnDynamicContentsToApiValue = async (
 
 export const DynamicContentReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
   const instances = elements.filter(isInstanceElement)
-
   const placeholderToItem = _(instances)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
     .keyBy(instance => instance.value.placeholder)

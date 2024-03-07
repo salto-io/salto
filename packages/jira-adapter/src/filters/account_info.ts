@@ -28,7 +28,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { ACCOUNT_INFO_TYPE, JIRA, LICENSED_APPLICATION_TYPE, LICENSE_TYPE } from '../constants'
+import { ACCOUNT_INFO_TYPE, JIRA, JIRA_FREE_PLAN, LICENSED_APPLICATION_TYPE, LICENSE_TYPE } from '../constants'
 import JiraClient from '../client/client'
 
 const log = logger(module)
@@ -110,6 +110,12 @@ export const isJsmEnabledInService = async (client: JiraClient): Promise<boolean
   // Currently, JSM is supported only in cloud. TODO: add support for DC when it will be available
   const accountLicense = await getCloudLicense(client)
   return accountLicense.applications?.some((app: Value) => app.id === 'jira-servicedesk')
+}
+
+export const isJsmPremiumEnabledInService = async (client: JiraClient): Promise<boolean> => {
+  // Currently, JSM is supported only in cloud. TODO: add support for DC when it will be available
+  const accountLicense = await getCloudLicense(client)
+  return accountLicense.applications?.some((app: Value) => app.id === 'jira-servicedesk' && app.plan !== JIRA_FREE_PLAN)
 }
 
 const getDCLicense = async (client: JiraClient): Promise<Value> => {

@@ -99,6 +99,7 @@ const getAppLogo = async ({
 }): Promise<InstanceElement | Error> => {
   const appLogo = app.value[LINKS_FIELD].logo[0]
   const logoLink = appLogo.href
+
   const idFields = configUtils.getTypeTransformationConfig(
     APPLICATION_TYPE_NAME,
     config.apiDefinitions.types,
@@ -110,7 +111,15 @@ const getAppLogo = async ({
   if (contentType === undefined) {
     return new Error(`Failed to find content type for ${app.elemID.name}`)
   }
-  return getLogo({ client, parents: [app], logoType: appLogoType, contentType, logoName: name, link: logoLink })
+  return getLogo({
+    client,
+    parents: [app],
+    logoType: appLogoType,
+    contentType,
+    logoName: name,
+    link: logoLink,
+    nestedPath: app.path?.slice(2, app.path?.length - 1) ?? [],
+  })
 }
 
 /**

@@ -24,6 +24,7 @@ import {
   safeJsonStringify,
   inspectValue,
   isResolvedReferenceExpression,
+  extractTemplate,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -35,13 +36,15 @@ import {
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
+  TemplatePart,
+  UnresolvedReference,
   Values,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../client/client'
-import { ZENDESK } from '../../constants'
+import { BRAND_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
-import { prepRef } from './article_body'
+import { ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
 
 const { isDefined } = lowerDashValues
 
@@ -262,6 +265,38 @@ export const deleteArticleAttachment = async (
   }
 }
 
+/**
+ * Process template Expression references by the id type
+ */
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
+  // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
+  // .after values are always resolved because unresolved references are dropped by unresolved_references validator
+  // we should add a generic solution since we have seen this repeating (SALTO-5074)
+  // This fix is enough since the .before value is not used in the deployment process
+  if (part.value instanceof UnresolvedReference) {
+    log.trace(
+      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
+      part.elemID.getFullName(),
+    )
+    return ''
+  }
+  if (part.elemID.typeName === BRAND_TYPE_NAME) {
+    // The value used to be a string, but now it's an instance element
+    // we need to support versions both until all customers fetch the new version
+    return _.isString(part.value) ? part.value : part.value.value.brand_url
+  }
+  if (part.elemID.isTopLevel()) {
+    return part.value.value.id.toString()
+  }
+  if (!_.isString(part.value)) {
+    // caught in try catch block
+    throw new Error(
+      `Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`,
+    )
+  }
+  return part.value
+}
+
 export const updateArticleTranslationBody = async ({
   client,
   articleValues,
@@ -313,4 +348,34 @@ export const updateArticleTranslationBody = async ({
         data: { translation: { body: translationInstance.value.body } },
       })
     })
+}
+
+export const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
+export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
+
+export const extractTemplateFromUrl = ({
+  url,
+  urlBrandInstance,
+  instancesById,
+  enableMissingReferences,
+}: {
+  url: string
+  urlBrandInstance: InstanceElement
+  instancesById: Record<string, InstanceElement>
+  enableMissingReferences?: boolean
+}): string | TemplatePart[] => {
+  const urlParts = extractTemplate(url, [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)], urlPart => {
+    const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
+    // We already made sure that the brand exists, so we can just return it
+    if (urlSubdomain !== undefined) {
+      return [new ReferenceExpression(urlBrandInstance.elemID, urlBrandInstance)]
+    }
+    return transformReferenceUrls({
+      urlPart,
+      instancesById,
+      enableMissingReferences,
+      brandOfInstance: urlBrandInstance,
+    })
+  })
+  return _.isString(urlParts) ? urlParts : urlParts.parts
 }

@@ -24,13 +24,13 @@ import {
   validateMetadataParams,
 } from '../../src/fetch_profile/metadata_query'
 import {
-  CUSTOM_METADATA,
   CUSTOM_OBJECT,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../../src/constants'
 import { MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
 import { mockFileProperties } from '../connection'
+import { emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -654,6 +654,7 @@ describe('buildMetadataQuery', () => {
   describe('buildMetadataQueryForFetchWithChangesDetection', () => {
     const INCLUDED_TYPE = 'Role'
     const EXCLUDED_TYPE = 'CustomLabels'
+
     let changedAtSingleton: InstanceElement
     let metadataQuery: MetadataQuery
     beforeEach(async () => {
@@ -673,6 +674,8 @@ describe('buildMetadataQuery', () => {
           },
         },
         elementsSource,
+        lastChangeDateOfTypesWithNestedInstances:
+          emptyLastChangeDateOfTypesWithNestedInstances(),
       })
     })
     describe('when is first fetch', () => {
@@ -691,6 +694,8 @@ describe('buildMetadataQuery', () => {
             },
             // In first fetch, the ChangedAtSingleton won't be defined
             elementsSource: buildElementsSourceFromElements([]),
+            lastChangeDateOfTypesWithNestedInstances:
+              emptyLastChangeDateOfTypesWithNestedInstances(),
           }),
         ).rejects.toThrow()
       })
@@ -718,6 +723,8 @@ describe('buildMetadataQuery', () => {
             elementsSource: buildElementsSourceFromElements([
               changedAtSingleton,
             ]),
+            lastChangeDateOfTypesWithNestedInstances:
+              emptyLastChangeDateOfTypesWithNestedInstances(),
           })
         })
         it('should return true', () => {
@@ -731,9 +738,6 @@ describe('buildMetadataQuery', () => {
       })
       it('should return false for excluded type', () => {
         expect(metadataQuery.isTypeMatch(EXCLUDED_TYPE)).toBeFalse()
-      })
-      it('should return false for unsupported fetch with changes detection type', () => {
-        expect(metadataQuery.isTypeMatch(CUSTOM_METADATA)).toBeFalse()
       })
     })
     describe('isInstanceIncluded & isInstanceMatch', () => {

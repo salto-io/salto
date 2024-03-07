@@ -100,8 +100,8 @@ const createAssetsObjectTypeOrder = (
     )
     return undefined
   }
-  const name = naclCase(`${invertNaclCase(treeParent.elemID.name)}_order`)
-  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['objectTypes', 'childOrder']
+  const name = naclCase(`${invertNaclCase(treeParent.elemID.name)}_childOrder`)
+  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? [] : ['objectTypes']
   return new InstanceElement(
     name,
     orderType,
@@ -124,7 +124,11 @@ const createAssetsObjectTypeOrder = (
 const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'assetsObjectTypeOrderFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental || !fetchQuery.isTypeMatch(OBJECT_TYPE_TYPE)) {
+    if (
+      !config.fetch.enableJSM ||
+      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
+      !fetchQuery.isTypeMatch(OBJECT_TYPE_TYPE)
+    ) {
       return
     }
 
@@ -165,7 +169,11 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
   },
   deploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental || jsmApiDefinitions === undefined) {
+    if (
+      !config.fetch.enableJSM ||
+      !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) ||
+      jsmApiDefinitions === undefined
+    ) {
       return {
         deployResult: { appliedChanges: [], errors: [] },
         leftoverChanges: changes,

@@ -70,7 +70,7 @@ import {
   isCustomObjectSync,
   SoqlQuery,
   buildElementsSourceForFetch,
-  getChangedAtSingleton,
+  getChangedAtSingletonInstance,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -787,7 +787,8 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     // parameter but there may be instances that changed even though their types remained the same. So we must iterate
     // over all the object types in the elements source.
     const elementsSource = buildElementsSourceForFetch(elements, config)
-    const changedAtSingleton = await getChangedAtSingleton(elementsSource)
+    const changedAtSingleton =
+      await getChangedAtSingletonInstance(elementsSource)
 
     const customObjects = await awu(await elementsSource.getAll())
       .filter(isCustomObjectSync)

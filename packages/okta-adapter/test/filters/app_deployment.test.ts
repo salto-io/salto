@@ -144,7 +144,6 @@ describe('appDeploymentFilter', () => {
         },
         profileEnrollment: 'profileEnrollment1',
         accessPolicy: 'accessPolicyId',
-        assignedGroups: ['group1'],
         _links: {
           val: 'val',
         },
@@ -152,11 +151,10 @@ describe('appDeploymentFilter', () => {
       const appToDeployAfter = appToDeploy.clone()
       _.set(appToDeployAfter, ['value', 'label'], 'new label')
       _.set(appToDeployAfter, ['value', 'profileEnrollment'], 'profileEnrollment2')
-      _.set(appToDeployAfter, ['value', 'assignedGroups'], ['group2'])
       mockConnection.put.mockResolvedValue({ status: 200, data: {} })
       mockConnection.delete.mockResolvedValue({ status: 200, data: {} })
       const res = await filter.deploy([toChange({ before: appToDeploy, after: appToDeployAfter })])
-      expect(mockConnection.put).toHaveBeenCalledTimes(3)
+      expect(mockConnection.put).toHaveBeenCalledTimes(2)
       expect(mockConnection.put).toHaveBeenNthCalledWith(
         1,
         '/api/v1/apps/appId',
@@ -172,15 +170,12 @@ describe('appDeploymentFilter', () => {
         },
         undefined,
       )
-      expect(mockConnection.put).toHaveBeenNthCalledWith(2, '/api/v1/apps/appId/groups/group2', {}, undefined)
       expect(mockConnection.put).toHaveBeenNthCalledWith(
-        3,
+        2,
         '/api/v1/apps/appId/policies/profileEnrollment2',
         {},
         undefined,
       )
-      expect(mockConnection.delete).toHaveBeenCalledTimes(1)
-      expect(mockConnection.delete).toHaveBeenCalledWith('/api/v1/apps/appId/groups/group1', { data: {} })
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       const createdApp = res.deployResult.appliedChanges
         .map(getChangeData)
@@ -198,7 +193,6 @@ describe('appDeploymentFilter', () => {
         },
         profileEnrollment: 'profileEnrollment2',
         accessPolicy: 'accessPolicyId',
-        assignedGroups: ['group2'],
         _links: {
           val: 'val',
         },

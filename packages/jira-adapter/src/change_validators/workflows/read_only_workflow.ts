@@ -21,7 +21,7 @@ import {
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
 
@@ -31,7 +31,8 @@ export const readOnlyWorkflowValidator: ChangeValidator = async changes =>
     .filter(isRemovalOrModificationChange)
     .map(getChangeData)
     .filter(
-      instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === JIRA_WORKFLOW_TYPE,
+      instance =>
+        instance.elemID.typeName === WORKFLOW_TYPE_NAME || instance.elemID.typeName === WORKFLOW_CONFIGURATION_TYPE,
     )
     .filter(instance => instance.value.operations?.canEdit === false || instance.value.isEditable === false)
     .map(async instance => ({

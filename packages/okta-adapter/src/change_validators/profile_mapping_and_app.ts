@@ -25,7 +25,7 @@ const log = logger(module)
 /**
  * When removing a Profile Mapping, validate that the parent app is also removed.
  */
-export const profileMappingValidator: ChangeValidator = async changes => {
+export const profileMappingAndAppValidator: ChangeValidator = async changes => {
     const removeInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
 
     const removedProfileMappingInstances = removeInstanceChanges.filter(

@@ -1,4 +1,3 @@
-
 /*
  *                      Copyright 2024 Salto Labs Ltd.
  *
@@ -26,34 +25,34 @@ const log = logger(module)
  * When removing a Profile Mapping, validate that the parent app is also removed.
  */
 export const profileMappingAndAppValidator: ChangeValidator = async changes => {
-    const removeInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
+  const removeInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
 
-    const removedProfileMappingInstances = removeInstanceChanges.filter(
-        instance => instance.elemID.typeName === PROFILE_MAPPING_TYPE_NAME,
-    )
+  const removedProfileMappingInstances = removeInstanceChanges.filter(
+    instance => instance.elemID.typeName === PROFILE_MAPPING_TYPE_NAME,
+  )
 
-    const removedAppNames = new Set(
-        removeInstanceChanges
-        .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-        .map(instance => instance.elemID.getFullName()),
-    )
+  const removedAppNames = new Set(
+    removeInstanceChanges
+      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
+      .map(instance => instance.elemID.getFullName()),
+  )
 
-    return removedProfileMappingInstances
+  return removedProfileMappingInstances
     .filter(profileMapping => {
-        try {
-            return !removedAppNames.has(getParent(profileMapping).elemID.getFullName())
-        } catch(e) {
-            log.error(
-                'Could not run profileMappingAndAppValidator validator for instance ' + 
-                `${profileMapping.elemID.getFullName}: ${e}`,
-            )
-            return false
-        }
+      try {
+        return !removedAppNames.has(getParent(profileMapping).elemID.getFullName())
+      } catch (e) {
+        log.error(
+          'Could not run profileMappingAndAppValidator validator for instance ' +
+            `${profileMapping.elemID.getFullName}: ${e}`,
+        )
+        return false
+      }
     })
     .map(profileMapping => ({
-        elemID: profileMapping.elemID,
-        severity: 'Error',
-        message: 'Cannot remove profile mapping without its parent application',
-        detailedMessage: `In order to remove ${profileMapping.elemID.name}, the instance ${getParent(profileMapping).elemID.name} of type ${APPLICATION_TYPE_NAME} must be removed as well.`,
+      elemID: profileMapping.elemID,
+      severity: 'Error',
+      message: 'Cannot remove profile mapping without its parent application',
+      detailedMessage: `In order to remove ${profileMapping.elemID.name}, the instance ${getParent(profileMapping).elemID.name} of type ${APPLICATION_TYPE_NAME} must be removed as well.`,
     }))
 }

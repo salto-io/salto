@@ -29,12 +29,24 @@ describe('appAndmappingValidator', () => {
   const profileMappingType = new ObjectType({ elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME) })
   const appA = new InstanceElement('appA', appType, { name: 'A', default: false })
   const appB = new InstanceElement('appB', appType, { name: 'B', default: false })
-  const profileMappingA = new InstanceElement('mappingA', profileMappingType, { name: 'A', definitions: {} }, undefined, {
-    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appA.elemID, appA)],
-  })
-  const profileMappingB = new InstanceElement('mappingB', profileMappingType, { name: 'B', definitions: {} }, undefined, {
-    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appB.elemID, appB)],
-  })
+  const profileMappingA = new InstanceElement(
+    'mappingA',
+    profileMappingType,
+    { name: 'A', definitions: {} },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appA.elemID, appA)],
+    },
+  )
+  const profileMappingB = new InstanceElement(
+    'mappingB',
+    profileMappingType,
+    { name: 'B', definitions: {} },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appB.elemID, appB)],
+    },
+  )
 
   it('should return an error when ProfileMapping is deleted without its parent Application', async () => {
     const changeErrors = await profileMappingAndAppValidator([

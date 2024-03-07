@@ -35,8 +35,8 @@ import filterCreator from '../../../src/filters/custom_objects/custom_object_fie
 import { createFilterCreatorParams } from '../../utils'
 import { DEFAULT_CONFIG, DEPLOY_CONFIG } from '../../../src/config'
 
-const USER = { id: 111, email: 'User', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' }
-const DEFAULT_USER = { id: 222, email: 'DefaultUser', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' }
+const USER = { id: 111, email: 'User' }
+const DEFAULT_USER = { id: 222, email: 'DefaultUser' }
 jest.mock('../../../src/users/user_utils', () => ({
   ...jest.requireActual<{}>('../../../src/users/user_utils'),
   getIdByEmail: () => ({ [USER.id]: USER.email }),

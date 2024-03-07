@@ -182,11 +182,30 @@ describe('workspace filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
   })
-  it('should return error when client returns with status 200 and errors', async () => {
+  it('should return error when client returns with status 200 and errors in an array', async () => {
     const clonedWSAfter = workspace.clone()
     delete clonedWSAfter.value.title
 
     mockDeployChange.mockImplementation(async () => ({ errors: ['zendesk error'], status: 200 }))
+
+    const res = await filter.deploy([{ action: 'add', data: { after: clonedWSAfter } }])
+    expect(mockDeployChange).toHaveBeenCalledTimes(1)
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedWSAfter } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['selected_macros'],
+    })
+
+    expect(res.leftoverChanges).toHaveLength(0)
+    expect(res.deployResult.errors).toHaveLength(1)
+    expect(res.deployResult.appliedChanges).toHaveLength(0)
+  })
+  it('should return error when client returns with status 200 and errors as string', async () => {
+    const clonedWSAfter = workspace.clone()
+    delete clonedWSAfter.value.title
+
+    mockDeployChange.mockImplementation(async () => ({ errors: 'zendesk error', status: 200 }))
 
     const res = await filter.deploy([{ action: 'add', data: { after: clonedWSAfter } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)

@@ -16,7 +16,7 @@
 
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 
-export const changeValidator: ChangeValidator = async changes =>
+export const removalNotSupportedValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isRemovalChange)
@@ -27,5 +27,3 @@ export const changeValidator: ChangeValidator = async changes =>
       message: `Removing element of type '${element.elemID.typeName}' is not supported`,
       detailedMessage: `Removing element of type '${element.elemID.typeName}' is not supported`,
     }))
-
-export default changeValidator

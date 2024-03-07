@@ -24,25 +24,22 @@ import {
   DeployResult,
   ElemID,
   getChangeData,
-  Element,
   InstanceElement,
   isInstanceElement,
-  ReadOnlyElementsSource,
   Values,
   SaltoError,
+  Value,
 } from '@salto-io/adapter-api'
 import {
   createSchemeGuard,
   createSchemeGuardForInstance,
-  GetLookupNameFunc,
   getParent,
-  resolveValues,
   ResolveValuesFunc,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import WorkatoClient from './client/client'
 import { CONNECTION_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE } from './constants'
 import { isChangeFromType, isInstanceFromType } from './utils'
@@ -51,10 +48,16 @@ const { withRetry } = retry
 const { intervals } = retry.retryStrategies
 const log = logger(module)
 
-const MAX_RETRIES = 60
-const INTERVAL_TIME = 2000
-const RESTART_RECIPES_QUERY_PARAMS: Record<string, string> = { restart_recipes: 'true' }
+// MAX_RETRIES and INTERVAL_TIME are used for polling the import status.
+// We might want to change these values to adjust the polling behavior.
+const MAX_RETRIES = 10
+const INTERVAL_TIME = 1000
 const IMPORT_HEADER = { 'Content-Type': 'application/octet-type' }
+
+// using RESTART_RECIPES_QUERY_PARAMS to restart recipes after import.
+// this is guarantee that the recipes will be restarted after the import.
+// otherwise, we will get an error while trying to deploy running recipe.
+const RESTART_RECIPES_QUERY_PARAMS: Record<string, string> = { restart_recipes: 'true' }
 
 type JsonRecipeConfigAccountID = {
   // eslint-disable-next-line camelcase
@@ -179,28 +182,31 @@ export const isRecipe = createSchemeGuardForInstance<JsonRecipe & InstanceElemen
   RECIPE_SCHEMA.required(),
   'Received an invalid value for recipe',
 )
+
 /**
- * Hook for treating recipe__code as recipe item while resolving.
+ * Resolve the values of the given change data.
+ * For recipe and recipe code types, we resolve the values of the recipe and the code separately.
+ * We then merge the code values into the recipe values.
  */
-export const resolveValuesCheckRecipeFunc: ResolveValuesFunc = async <T extends Element>(
-  changeData: T,
-  getLookUpNameFunc: GetLookupNameFunc,
-  elementSource?: ReadOnlyElementsSource,
-): Promise<T> => {
-  if (isInstanceElement(changeData) && isInstanceFromType([RECIPE_CODE_TYPE, RECIPE_TYPE])(changeData)) {
-    const codeData = isInstanceFromType([RECIPE_CODE_TYPE])(changeData) ? changeData : changeData.value.code.value
-    const recipeData = isInstanceFromType([RECIPE_TYPE])(changeData) ? changeData : getParent(changeData)
+export const resolveWorkatoValues: ResolveValuesFunc = async (
+  element,
+  getLookUpNameFunc,
+  elementSource,
+): Promise<Value> => {
+  if (isInstanceElement(element) && isInstanceFromType([RECIPE_CODE_TYPE, RECIPE_TYPE])(element)) {
+    const codeData = isInstanceFromType([RECIPE_CODE_TYPE])(element) ? element : element.value.code.value
+    const recipeData = isInstanceFromType([RECIPE_TYPE])(element) ? element : getParent(element)
     const resolvedCodeData = await resolveValues(codeData, getLookUpNameFunc, elementSource)
     const resolvedRecipeData = await resolveValues(recipeData, getLookUpNameFunc, elementSource)
     if (isInstanceElement(resolvedRecipeData) && isInstanceFromType([RECIPE_TYPE])(resolvedRecipeData)) {
       resolvedRecipeData.value.code = resolvedCodeData.value
-      return resolvedRecipeData as unknown as T
+      return resolvedRecipeData
     }
   }
-  return resolveValues(changeData, getLookUpNameFunc, elementSource)
+  return resolveValues(element, getLookUpNameFunc, elementSource)
 }
 
-const checkRLMImportStatus = async (client: WorkatoClient, jobId: number): Promise<boolean> => {
+const checkRLMImportStatus = async (client: WorkatoClient, jobId: number): Promise<boolean> => { // TODO log.errors
   const res = await client.get({ url: `/packages/${jobId}` })
 
   if (res.status !== 200 || !isStatusResponse(res.data)) {
@@ -325,18 +331,18 @@ const convertChangesToRLMFormat = (changes: Change<InstanceElement>[]): [JSZip, 
   )
 
   if (otherChanges.length !== 0) {
+    const errorsComment = otherChanges
+      .map(change => getChangeData(change))
+      .map(data => `\t${data.elemID.name} from type ${data.elemID.typeName}`)
+
+    log.error('unknwon Types for RLM', errorsComment)
     return [
       zip,
       {
         appliedChanges: [],
         errors: [
           {
-            message: [
-              'unknwon Types for RLM',
-              ...otherChanges
-                .map(change => getChangeData(change))
-                .map(data => `\t${data.elemID.name} from type ${data.elemID.typeName}`),
-            ].join(EOL),
+            message: ['unknwon Types for RLM', ...errorsComment].join(EOL),
             severity: 'Error',
           },
         ],
@@ -369,6 +375,21 @@ const convertChangesToRLMFormat = (changes: Change<InstanceElement>[]): [JSZip, 
   ]
 }
 
+/**
+ * We use the Recipe Lifecycle Management (RLM) API to deploy recipes to Workato.
+ * The RLM API give us the ability to "import" a zip file containing the recipes we want to deploy.
+ * The zip file should contain the recipes and connections in a specific format and folder structure.
+ *
+ * @param zip - The zip file containing the recipes and connections we want to deploy.
+ * @param client - The Workato client to use for the deployment.
+ * @param rootId - The root folder id to deploy the recipes to.
+ * @param elemList - The list of elements to deploy.
+ *
+ * @throws {Error} - If the deployment fails.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the deployment is complete.
+ *
+ */
 const RLMImportZip = async ({
   zip,
   client,
@@ -411,22 +432,27 @@ const RLMImportZip = async ({
 }
 
 export const RLMDeploy = async (changes: Change<InstanceElement>[], client: WorkatoClient): Promise<DeployResult> => {
-  const [zip, deployResult] = convertChangesToRLMFormat(changes)
+  const [zip, deployOptionalResult] = convertChangesToRLMFormat(changes) // TODO remove deployResult
 
-  if (!_.isEmpty(deployResult.appliedChanges)) {
+  if (!_.isEmpty(deployOptionalResult.appliedChanges)) {
     try {
+      const someFolder = getChangeData(changes[0]).value.folder_id
+      if (someFolder === undefined || someFolder.rootId === undefined) {
+        throw new Error('folder_id or rootId is undefined') // TODO change to SaltoError
+      }
+
       await RLMImportZip({
         zip,
         client,
-        rootId: getChangeData(changes[0]).value.folder_id.rootId,
+        rootId: someFolder.rootId,
         elemList: changes.map(change => getChangeData(change).elemID),
       })
     } catch (e) {
       return {
         appliedChanges: [],
-        errors: [e, ...deployResult.errors],
+        errors: [e, ...deployOptionalResult.errors],
       }
     }
   }
-  return deployResult
+  return deployOptionalResult
 }

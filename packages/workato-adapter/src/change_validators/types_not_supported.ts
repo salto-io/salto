@@ -18,7 +18,7 @@ import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adap
 import { isInstanceFromType } from '../utils'
 import { RLM_DEPLOY_SUPPORTED_TYPES } from '../constants'
 
-export const changeValidator: ChangeValidator = async changes =>
+export const typesNotSupportedValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .map(getChangeData)
@@ -29,5 +29,3 @@ export const changeValidator: ChangeValidator = async changes =>
       message: `Deploying element of type '${element.elemID.typeName}' is not supported`,
       detailedMessage: `Deploying element of type '${element.elemID.typeName}' is not supported`,
     }))
-
-export default changeValidator

@@ -263,8 +263,6 @@ describe('adapter', () => {
           // eslint-disable-next-line camelcase
           hidden_config_fields: ['field_list'],
           block: expect.anything(),
-          extended_input_schema: expect.anything(),
-          extended_output_schema: expect.anything(),
           uuid: '12345678-1234-1234-1234-1234567890ab',
         })
       })
@@ -547,10 +545,7 @@ describe('adapter', () => {
 
       operations = adapter.operations({
         credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
-        config: new InstanceElement('config', configType, {
-          include: [...Object.keys(DEFAULT_TYPES)].sort().map(type => ({ type })),
-          exclude: [],
-        }),
+        config: new InstanceElement('config', configType, getDefaultConfig(true)),
         elementsSource: buildElementsSourceFromElements([]),
       })
       rootFolder = new InstanceElement('rootFolder', folderType, { id: 98 })

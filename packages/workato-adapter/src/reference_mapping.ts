@@ -15,18 +15,19 @@
  */
 
 import { cloneDeepWithoutRefs, isInstanceElement } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, resolveValues } from '@salto-io/adapter-utils'
-import { references as referenceUtils } from '@salto-io/adapter-components'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { fetch as fetchUtils, references as referenceUtils, resolveValues } from '@salto-io/adapter-components'
 import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, WORKATO } from './constants'
 import { getFolderPath, getRootFolderID } from './utils'
-import { fieldNameToTypeMappingDefs } from './filters/field_references'
 
 type WorkatoReferenceSerializationStrategyName = 'serializeInner' | 'folderPath'
 type WorkatoFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
   WorkatoSerializationStrategy?: WorkatoReferenceSerializationStrategyName
 }
 
-let localWorkatoLookUpName: GetLookupNameFunc
+const { toNestedTypeName } = fetchUtils.element
+
+let localWorkatoLookUpName: GetLookupNameFunc // add default raise error funciton
 
 const WorkatoReferenceSerializationStrategyLookup: Record<
   WorkatoReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -61,6 +62,44 @@ export class WorkatoFieldReferenceResolver extends referenceUtils.FieldReference
     this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
   }
 }
+
+export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
+  {
+    src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
+    serializationStrategy: 'id',
+    target: { type: 'api_client' },
+  },
+  {
+    src: { field: 'api_collection_ids', parentTypes: ['api_access_profile'] },
+    serializationStrategy: 'id',
+    target: { type: 'api_collection' },
+  },
+  {
+    src: { field: 'api_collection_id', parentTypes: ['api_endpoint'] },
+    serializationStrategy: 'id',
+    target: { type: 'api_collection' },
+  },
+  {
+    src: { field: 'flow_id', parentTypes: ['api_endpoint'] },
+    serializationStrategy: 'id',
+    target: { type: 'recipe' },
+  },
+  {
+    src: { field: 'parent_id', parentTypes: ['folder'] },
+    serializationStrategy: 'id',
+    target: { type: 'folder' },
+  },
+  {
+    src: { field: 'account_id', parentTypes: [toNestedTypeName('recipe', 'config')] },
+    serializationStrategy: 'id',
+    target: { type: 'connection' },
+  },
+  {
+    src: { field: 'folder_id', parentTypes: ['recipe', 'connection'] },
+    serializationStrategy: 'id',
+    target: { type: 'folder' },
+  },
+]
 
 export const referencesRules: WorkatoFieldReferenceDefinition[] = [
   {

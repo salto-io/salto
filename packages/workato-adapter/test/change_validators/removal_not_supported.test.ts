@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import notSupportedRemovalValidator from '../../src/change_validators/actions_not_supported'
+import { removalNotSupportedValidator } from '../../src/change_validators/removal_not_supported'
 import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE, ROLE_TYPE, WORKATO } from '../../src/constants'
 
 describe('not supported validators', () => {
@@ -26,9 +26,9 @@ describe('not supported validators', () => {
   const roleType = new ObjectType({ elemID: new ElemID(WORKATO, ROLE_TYPE) })
   const folderType = new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) })
 
-  describe('notSupportedRemovalValidator', () => {
+  describe('removalNotSupportedValidator', () => {
     it('should not have ChangeError when deploying a new change', async () => {
-      const changeErrors = await notSupportedRemovalValidator([
+      const changeErrors = await removalNotSupportedValidator([
         toChange({
           after: new InstanceElement('roleInstanceName', roleType),
         }),
@@ -36,7 +36,7 @@ describe('not supported validators', () => {
       expect(changeErrors).toHaveLength(0)
     })
     it('should not have ChangeError when deploying a non deletion changes', async () => {
-      const changeErrors = await notSupportedRemovalValidator([
+      const changeErrors = await removalNotSupportedValidator([
         toChange({
           before: new InstanceElement('recipeCodeInstanceName', recipeCodeType),
           after: new InstanceElement('recipeCodeInstanceName', recipeCodeType),
@@ -50,7 +50,7 @@ describe('not supported validators', () => {
 
     it('should have Error ChangeError when deploying a deletion change', async () => {
       const folderInstance = new InstanceElement('folderInstanceName', folderType)
-      const changeErrors = await notSupportedRemovalValidator([
+      const changeErrors = await removalNotSupportedValidator([
         toChange({
           before: folderInstance,
         }),
@@ -64,7 +64,7 @@ describe('not supported validators', () => {
       const recipe1Instance = new InstanceElement('recipe1InstanceName', recipeType)
       const recipe2Instance = new InstanceElement('recipe2InstanceName', recipeType)
       const recipe3Instance = new InstanceElement('recipe3InstanceName', recipeType)
-      const changeErrors = await notSupportedRemovalValidator([
+      const changeErrors = await removalNotSupportedValidator([
         toChange({
           after: recipe1Instance,
         }),

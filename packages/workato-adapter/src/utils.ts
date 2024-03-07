@@ -26,12 +26,8 @@ export const isChangeFromType =
   (change: Change<InstanceElement>): boolean =>
     type.includes(getChangeData(change).elemID.typeName)
 
-export const getRootFolderID = (folder: InstanceElement): number => {
-  if (folder.value.parent_id === undefined) return folder.value.id
-  return getRootFolderID(folder.value.parent_id.value)
-}
+export const getRootFolderID = (folder: InstanceElement): number =>
+  folder.value.parent_id !== undefined ? getRootFolderID(folder.value.parent_id.value) : folder.value.id
 
-export const getFolderPath = (folder: InstanceElement): string[] => {
-  if (folder.value.parent_id === undefined) return []
-  return [...getFolderPath(folder.value.parent_id.value), folder.value.name]
-}
+export const getFolderPath = (folder: InstanceElement): string[] =>
+  folder.value.parent_id !== undefined ? [...getFolderPath(folder.value.parent_id.value), folder.value.name] : []

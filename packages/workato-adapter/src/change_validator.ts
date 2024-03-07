@@ -16,22 +16,33 @@
 
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { ChangeValidatorName, DEPLOY_CONFIG, WorkatoConfig } from './config'
-import notSupportedTypesValidator from './change_validators/types_not_supported'
-import notSupportedRemovalValidator from './change_validators/actions_not_supported'
+import { ChangeValidatorName, DEPLOY_CONFIG, ENABLE_DEPLOY_SUPPORT_FLAG, WorkatoConfig } from './config'
+import { typesNotSupportedValidator } from './change_validators/types_not_supported'
+import { removalNotSupportedValidator } from './change_validators/removal_not_supported'
 
-const { deployTypesNotSupportedValidator, getDefaultChangeValidators, createChangeValidator } =
-  deployment.changeValidators
+const {
+  deployTypesNotSupportedValidator,
+  getDefaultChangeValidators,
+  createChangeValidator,
+  deployNotSupportedValidator,
+} = deployment.changeValidators
 
-const validators: Record<ChangeValidatorName, ChangeValidator> = {
+const validatorsWithDeploy: Partial<Record<ChangeValidatorName, ChangeValidator>> = {
   ...getDefaultChangeValidators(),
   deployTypesNotSupported: deployTypesNotSupportedValidator,
-  notSupportedTypes: notSupportedTypesValidator,
-  notSupportedRemoval: notSupportedRemovalValidator,
+  notSupportedTypes: typesNotSupportedValidator,
+  notSupportedRemoval: removalNotSupportedValidator,
 }
 
-export default (config: WorkatoConfig): ChangeValidator =>
-  createChangeValidator({
+const validatorsWithoutDeploy: Partial<Record<ChangeValidatorName, ChangeValidator>> = {
+  ...getDefaultChangeValidators(),
+  deployNotSupported: deployNotSupportedValidator,
+}
+
+export default (config: WorkatoConfig): ChangeValidator => {
+  const validators = config[ENABLE_DEPLOY_SUPPORT_FLAG] === true ? validatorsWithDeploy : validatorsWithoutDeploy
+  return createChangeValidator({
     validators,
     validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
   })
+}

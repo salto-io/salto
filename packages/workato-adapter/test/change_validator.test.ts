@@ -14,53 +14,88 @@
  * limitations under the License.
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG } from '../src/config'
+import { getDefaultConfig } from '../src/config'
 import changeValidator from '../src/change_validator'
 import { RLM_DEPLOY_SUPPORTED_TYPES, WORKATO } from '../src/constants'
 
 describe('change validator creator', () => {
-  describe('notSupportedTypesValidator', () => {
-    const nonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM') })
-    const anotherNonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM1') })
+  describe('withDeploySupport', () => {
+    describe('notSupportedTypesValidator', () => {
+      const nonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM') })
+      const anotherNonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM1') })
 
-    it('should not fail if there are no deploy changes', async () => {
-      expect(await changeValidator(DEFAULT_CONFIG)([])).toEqual([])
+      it('should not fail if there are no deploy changes', async () => {
+        expect(await changeValidator(getDefaultConfig(true))([])).toEqual([])
+      })
+
+      it('both should fail', async () => {
+        expect(
+          await changeValidator(getDefaultConfig(true))([
+            toChange({ after: new InstanceElement('inst1', nonInFolderType) }),
+            toChange({
+              before: new InstanceElement('inst1', anotherNonInFolderType),
+              after: new InstanceElement('inst1', anotherNonInFolderType),
+            }),
+          ]),
+        ).toMatchObject([
+          {
+            severity: 'Error',
+            message: expect.stringContaining('not supported'), // TODO check after chagne to SaltoError X all places X all fiels (here, actions_not_supported, recipe_overwritten_values, types_not_supported, cross_services_not_supported)
+          },
+          {
+            // TODO add tests to cross_services_not_supported
+            severity: 'Error',
+            message: expect.stringContaining('not supported'),
+          },
+        ])
+      })
     })
 
-    it('both should fail', async () => {
-      expect(
-        await changeValidator(DEFAULT_CONFIG)([
-          toChange({ after: new InstanceElement('inst1', nonInFolderType) }),
-          toChange({
-            before: new InstanceElement('inst1', anotherNonInFolderType),
-            after: new InstanceElement('inst1', anotherNonInFolderType),
-          }),
-        ]),
-      ).toMatchObject([
-        {
-          severity: 'Error',
-          message: expect.stringContaining('not supported'), // TODO check after chagne to SaltoError X all places X all fiels (here, actions_not_supported, recipe_overwritten_values, types_not_supported, cross_services_not_supported)
-        },
-        {
-          // TODO add tests to cross_services_not_supported
-          severity: 'Error',
-          message: expect.stringContaining('not supported'),
-        },
-      ])
+    describe('notSupportedRemovalValidator', () => {
+      const InFolderType = new ObjectType({ elemID: new ElemID(WORKATO, RLM_DEPLOY_SUPPORTED_TYPES[0]) })
+      it('should fail', async () => {
+        expect(
+          await changeValidator(getDefaultConfig(true))([
+            toChange({ before: new InstanceElement('inst1', InFolderType) }),
+          ]),
+        ).toMatchObject([
+          {
+            severity: 'Error',
+            message: expect.stringContaining('not supported'),
+          },
+        ])
+      })
     })
   })
+  describe('withoutDeploySupport', () => {
+    describe('deployNotSupportedValidator', () => {
+      it('should not fail if there are no deploy changes', async () => {
+        expect(await changeValidator(getDefaultConfig())([])).toEqual([])
+      })
 
-  describe('notSupportedRemovalValidator', () => {
-    const InFolderType = new ObjectType({ elemID: new ElemID(WORKATO, RLM_DEPLOY_SUPPORTED_TYPES[0]) })
-    it('should fail', async () => {
-      expect(
-        await changeValidator(DEFAULT_CONFIG)([toChange({ before: new InstanceElement('inst1', InFolderType) })]),
-      ).toMatchObject([
-        {
-          severity: 'Error',
-          message: expect.stringContaining('not supported'),
-        },
-      ])
+      it('should fail each change individually', async () => {
+        expect(
+          await changeValidator(getDefaultConfig())([
+            toChange({ after: new ObjectType({ elemID: new ElemID(WORKATO, 'obj') }) }),
+            toChange({ before: new ObjectType({ elemID: new ElemID(WORKATO, 'obj2') }) }),
+          ]),
+        ).toEqual([
+          {
+            elemID: new ElemID(WORKATO, 'obj'),
+            severity: 'Error',
+            message: 'Salto does not support workato deployments.',
+            detailedMessage:
+              'Salto does not support workato deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.',
+          },
+          {
+            elemID: new ElemID(WORKATO, 'obj2'),
+            severity: 'Error',
+            message: 'Salto does not support workato deployments.',
+            detailedMessage:
+              'Salto does not support workato deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.',
+          },
+        ])
+      })
     })
   })
 })

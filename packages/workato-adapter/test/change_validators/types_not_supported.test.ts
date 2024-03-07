@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import notSupportedTypesValidator from '../../src/change_validators/types_not_supported'
+import { typesNotSupportedValidator } from '../../src/change_validators/types_not_supported'
 import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE, ROLE_TYPE, WORKATO } from '../../src/constants'
 
 describe('not supported validators', () => {
@@ -26,9 +26,9 @@ describe('not supported validators', () => {
   const roleType = new ObjectType({ elemID: new ElemID(WORKATO, ROLE_TYPE) })
   const folderType = new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) })
 
-  describe('notSupportedTypesValidator', () => {
+  describe('typesNotSupportedValidator', () => {
     it('should not have ChangeError when deploying a RLM deployable new change', async () => {
-      const changeErrors = await notSupportedTypesValidator([
+      const changeErrors = await typesNotSupportedValidator([
         toChange({
           after: new InstanceElement('recipeInstanceName', recipeType),
         }),
@@ -36,7 +36,7 @@ describe('not supported validators', () => {
       expect(changeErrors).toHaveLength(0)
     })
     it('should not have ChangeError when deploying a RLM deployable deletion and modification changes', async () => {
-      const changeErrors = await notSupportedTypesValidator([
+      const changeErrors = await typesNotSupportedValidator([
         toChange({
           before: new InstanceElement('recipeCodeInstanceName', recipeCodeType),
           after: new InstanceElement('recipeCodeInstanceName', recipeCodeType),
@@ -50,7 +50,7 @@ describe('not supported validators', () => {
 
     it('should have Error ChangeError when deploying a non deployable new change', async () => {
       const roleInstance = new InstanceElement('roleInstanceName', roleType)
-      const changeErrors = await notSupportedTypesValidator([
+      const changeErrors = await typesNotSupportedValidator([
         toChange({
           after: roleInstance,
         }),
@@ -63,7 +63,7 @@ describe('not supported validators', () => {
     it('should have Error ChangeErrors only on non deployable changes', async () => {
       const roleInstance = new InstanceElement('roleInstanceName', roleType)
       const folderInstance = new InstanceElement('folderInstanceName', folderType)
-      const changeErrors = await notSupportedTypesValidator([
+      const changeErrors = await typesNotSupportedValidator([
         toChange({
           after: roleInstance,
         }),

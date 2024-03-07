@@ -26,6 +26,7 @@ import {
   isInstanceElement,
   isPrimitiveType,
   isReferenceExpression,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
@@ -62,7 +63,6 @@ import {
   queryClient,
   buildSelectQueries,
   getFieldNamesForQuery,
-  safeApiName,
   apiNameSync,
   isQueryableField,
   isHiddenField,
@@ -77,7 +77,7 @@ import { ConfigChangeSuggestion, DataManagement } from '../types'
 const { mapValuesAsync, pickAsync } = promises.object
 const { isDefined } = values
 const { makeArray } = collections.array
-const { keyByAsync, awu } = collections.asynciterable
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -735,11 +735,11 @@ const getInaccessibleCustomFields = (objectType: ObjectType): string[] =>
     .map((field) => apiNameSync(field))
     .filter(isDefined)
 
-const createInvalidAliasFieldFetchWarning = async ({
+const createInvalidAliasFieldFetchWarning = ({
   objectType,
   invalidAliasFields,
-}: CustomObjectFetchSetting): Promise<SaltoError> => ({
-  message: `Invalid alias fields for type ${await safeApiName(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`,
+}: CustomObjectFetchSetting): SaltoError => ({
+  message: `Invalid alias fields for type ${apiNameSync(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`,
   severity: 'Warning',
 })
 
@@ -778,6 +778,80 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    const getAllCustomObjects = async (
+      elementsSource: ReadOnlyElementsSource,
+    ): Promise<ObjectType[]> => {
+      const customObjects = await awu(await elementsSource.getAll())
+        .filter(isCustomObjectSync)
+        .toArray()
+
+      // Resolve referenceTo fields from Elements Source for partial fetch
+      await awu(customObjects)
+        .flatMap((customObject) => Object.values(customObject.fields))
+        .filter(isReferenceField)
+        .flatMap((field) =>
+          makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]),
+        )
+        .filter(isReferenceExpression)
+        .forEach(async (reference) => {
+          reference.value = await reference.getResolvedValue(elementsSource)
+        })
+      return customObjects
+    }
+
+    const validateFetchSettings = (
+      customObjectFetchSetting: CustomObjectFetchSetting[],
+    ): {
+      validFetchSettings: CustomObjectFetchSetting[]
+      invalidFetchSettings: CustomObjectFetchSetting[]
+      warnings: SaltoError[]
+      fatalErrors: SaltoError[]
+    } => {
+      const [validFetchSettings, invalidFetchSettings] = _.partition(
+        customObjectFetchSetting,
+        (setting) =>
+          setting.invalidIdFields.length === 0 &&
+          setting.invalidManagedBySaltoField === undefined,
+      )
+
+      const fatalErrors: SaltoError[] = []
+      if (
+        validFetchSettings.length === 0 &&
+        invalidFetchSettings.length > 0 &&
+        invalidFetchSettings.every(
+          (setting) => setting.invalidManagedBySaltoField !== undefined,
+        )
+      ) {
+        fatalErrors.push({
+          message:
+            'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.',
+          severity: 'Warning',
+        })
+      }
+
+      const invalidAliasFieldWarnings = customObjectFetchSetting
+        .filter((setting) => setting.invalidAliasFields.length > 0)
+        .map(createInvalidAliasFieldFetchWarning)
+
+      const invalidManagedBySaltoFieldWarnings = invalidFetchSettings
+        .filter((setting) => setting.invalidManagedBySaltoField !== undefined)
+        .map((settings) => ({
+          type: settings.objectType,
+          field: settings.invalidManagedBySaltoField as Field,
+        }))
+        .map(({ type, field }) =>
+          createInvalidManagedBySaltoFieldFetchWarning(type, field),
+        )
+      return {
+        validFetchSettings,
+        invalidFetchSettings,
+        warnings: invalidAliasFieldWarnings.concat(
+          invalidManagedBySaltoFieldWarnings,
+        ),
+        fatalErrors,
+      }
+    }
+
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {
       return {}
@@ -790,54 +864,29 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const changedAtSingleton =
       await getChangedAtSingletonInstance(elementsSource)
 
-    const customObjects = await awu(await elementsSource.getAll())
-      .filter(isCustomObjectSync)
-      .toArray()
-
-    // Resolve referenceTo fields from Elements Source for partial fetch
-    await awu(customObjects)
-      .flatMap((customObject) => Object.values(customObject.fields))
-      .filter(isReferenceField)
-      .flatMap((field) =>
-        makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]),
-      )
-      .filter(isReferenceExpression)
-      .forEach(async (reference) => {
-        reference.value = await reference.getResolvedValue(elementsSource)
-      })
+    const customObjects = await getAllCustomObjects(elementsSource)
     const customObjectFetchSetting = await getCustomObjectsFetchSettings(
       customObjects,
       dataManagement,
       changedAtSingleton,
     )
-    const [validFetchSettings, invalidFetchSettings] = _.partition(
-      customObjectFetchSetting,
-      (setting) =>
-        setting.invalidIdFields.length === 0 &&
-        setting.invalidManagedBySaltoField === undefined,
-    )
 
-    if (
-      validFetchSettings.length === 0 &&
-      invalidFetchSettings.length > 0 &&
-      invalidFetchSettings.every(
-        (setting) => setting.invalidManagedBySaltoField !== undefined,
-      )
-    ) {
+    const {
+      validFetchSettings,
+      invalidFetchSettings,
+      warnings: fetchSettingsWarnings,
+      fatalErrors: fetchSettingsErrors,
+    } = validateFetchSettings(customObjectFetchSetting)
+
+    if (fetchSettingsErrors.length > 0) {
       return {
-        errors: [
-          {
-            message:
-              'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.',
-            severity: 'Warning',
-          },
-        ],
+        errors: fetchSettingsErrors,
       }
     }
 
-    const validChangesFetchSettings = await keyByAsync(
+    const validChangesFetchSettings = _.keyBy(
       validFetchSettings,
-      (setting) => apiName(setting.objectType),
+      (setting) => apiNameSync(setting.objectType) ?? '',
     )
 
     const { filteredChangesFetchSettings, heavyTypesSuggestions } =
@@ -862,20 +911,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ),
       )
       .toArray()
-
-    const invalidAliasFieldWarnings = awu(customObjectFetchSetting)
-      .filter((setting) => setting.invalidAliasFields.length > 0)
-      .map(createInvalidAliasFieldFetchWarning)
-
-    const invalidManagedBySaltoFieldWarnings = invalidFetchSettings
-      .filter((setting) => setting.invalidManagedBySaltoField !== undefined)
-      .map((settings) => ({
-        type: settings.objectType,
-        field: settings.invalidManagedBySaltoField as Field,
-      }))
-      .map(({ type, field }) =>
-        createInvalidManagedBySaltoFieldFetchWarning(type, field),
-      )
 
     const typesOfFetchedInstances = new Set(
       elements
@@ -907,10 +942,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ...heavyTypesSuggestions,
         ...configChangeSuggestions,
       ],
-      errors: await invalidAliasFieldWarnings
-        .concat(invalidManagedBySaltoFieldWarnings)
-        .concat(invalidPermissionsWarnings)
-        .toArray(),
+      errors: fetchSettingsWarnings.concat(invalidPermissionsWarnings),
     }
   },
 })

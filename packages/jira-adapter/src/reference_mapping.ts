@@ -937,7 +937,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     jiraSerializationStrategy: 'groupStrategyById',
-    target: { typeContext: 'workflowStatusPropertiesContext' }
+    target: { typeContext: 'workflowStatusPropertiesContext' },
   },
   {
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
@@ -948,10 +948,21 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowReferenceStatus_properties'] },
     jiraSerializationStrategy: 'groupStrategyById',
-    target: { typeContext: 'workflowStatusPropertiesContext' }
+    target: { typeContext: 'workflowStatusPropertiesContext' },
   },
   {
     src: { field: 'value', parentTypes: ['WorkflowReferenceStatus_properties'] },
+    jiraSerializationStrategy: 'groupStrategyByOriginalName',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { typeContext: 'workflowStatusPropertiesContext' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['WorkflowTransitions_properties'] },
+    jiraSerializationStrategy: 'groupStrategyById',
+    target: { typeContext: 'workflowStatusPropertiesContext' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['WorkflowTransitions_properties'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'workflowStatusPropertiesContext' },

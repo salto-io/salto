@@ -35,7 +35,7 @@ import { appWithGroupPushValidator } from './app_with_group_push'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
 import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
-import { profileMappingAndAppValidator } from './profile_mapping_removal'
+import { profileMappingRemovalValidator } from './profile_mapping_removal'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -73,7 +73,7 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
     appGroupAssignment: appGroupAssignmentValidator,
     appUrls: appUrlsValidator,
-    profileMappingAndApp: profileMappingAndAppValidator,
+    profileMappingRemoval: profileMappingRemovalValidator,
   }
 
   return createChangeValidator({

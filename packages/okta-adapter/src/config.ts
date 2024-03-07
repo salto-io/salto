@@ -1867,7 +1867,7 @@ export type ChangeValidatorName =
   | 'groupPushToApplicationUniqueness'
   | 'appGroupAssignment'
   | 'appUrls'
-  | 'profileMappingAndApp'
+  | 'profileMappingRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1894,7 +1894,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     groupPushToApplicationUniqueness: { refType: BuiltinTypes.BOOLEAN },
     appGroupAssignment: { refType: BuiltinTypes.BOOLEAN },
     appUrls: { refType: BuiltinTypes.BOOLEAN },
-    profileMappingAndApp: { refType: BuiltinTypes.BOOLEAN },
+    profileMappingRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -30,7 +30,7 @@ import { DetailedDependency } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/cross_service/recipe_references'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES, DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { DEFAULT_ID_FIELDS, SUPPORTED_TYPES, getDefaultConfig, FETCH_CONFIG, DEFAULT_TYPES } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
 /* eslint-disable camelcase */
@@ -57,7 +57,7 @@ describe('Recipe references filter', () => {
       }),
       config: {
         fetch: {
-          ...DEFAULT_CONFIG[FETCH_CONFIG],
+          ...getDefaultConfig()[FETCH_CONFIG],
           serviceConnectionNames: {
             salesforce: ['salesforce sandbox 1'],
             netsuite: ['netsuite sbx 123'],
@@ -1542,7 +1542,7 @@ describe('Recipe references filter', () => {
         }),
         config: {
           fetch: {
-            ...DEFAULT_CONFIG[FETCH_CONFIG],
+            ...getDefaultConfig()[FETCH_CONFIG],
             serviceConnectionNames: {
               salesforce: ['salesforce sandbox 1'],
               netsuite: ['netsuite sbx 123'],
@@ -2336,7 +2336,7 @@ describe('Recipe references filter', () => {
           paginationFuncCreator: paginate,
         }),
         config: {
-          fetch: _.omit(DEFAULT_CONFIG[FETCH_CONFIG], 'serviceConnectionNames'),
+          fetch: _.omit(getDefaultConfig()[FETCH_CONFIG], 'serviceConnectionNames'),
           apiDefinitions: {
             typeDefaults: {
               transformation: {
@@ -2378,7 +2378,7 @@ describe('Recipe references filter', () => {
         }),
         config: {
           fetch: {
-            ...DEFAULT_CONFIG[FETCH_CONFIG],
+            ...getDefaultConfig()[FETCH_CONFIG],
             serviceConnectionNames: {
               salesforce: ['salesforce sandbox 1 unresolved'],
               netsuite: ['netsuite sbx 123'],
@@ -2484,7 +2484,7 @@ describe('Recipe references filter', () => {
         }),
         config: {
           fetch: {
-            ...DEFAULT_CONFIG[FETCH_CONFIG],
+            ...getDefaultConfig()[FETCH_CONFIG],
             serviceConnectionNames: {
               salesforce: ['secondary salesforce', 'salesforce sandbox 1'],
               netsuite: ['secondary netsuite'],

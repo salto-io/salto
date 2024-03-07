@@ -27,7 +27,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import filterCreator from '../../src/filters/field_references'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
 describe('Field references filter', () => {
@@ -45,7 +45,7 @@ describe('Field references filter', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig(),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })

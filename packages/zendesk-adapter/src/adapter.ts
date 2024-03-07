@@ -165,6 +165,8 @@ import customObjectFieldsOrderFilter from './filters/custom_objects/custom_objec
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
+import guideCategoryFilter from './filters/guide_category'
+import guideSectionFilter from './filters/guide_section'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -227,6 +229,8 @@ export const DEFAULT_FILTERS = [
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegmentFilter needs to be before articleFilter
   everyoneUserSegmentFilter,
+  guideSectionFilter,
+  guideCategoryFilter,
   articleFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,

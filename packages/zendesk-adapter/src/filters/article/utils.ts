@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* eslint-disable no-console */
+
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
@@ -28,8 +31,11 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
+  Change,
   createSaltoElementError,
+  getChangeData,
   InstanceElement,
+  isModificationChange,
   isStaticFile,
   isTemplateExpression,
   ObjectType,
@@ -377,4 +383,47 @@ export const extractTemplateFromUrl = ({
     })
   })
   return _.isString(urlParts) ? urlParts : urlParts.parts
+}
+
+/**
+ * Modifying the source_locale is done through a different endpoint.
+ * This function checks whether there are changes to the source_locale, and if there are - sends a put request to
+ * the correct endpoint before any of the other changes get deployed.
+ * Object can be a section, article or category
+ */
+export const maybeModifySourceLocaleInGuideObject = async (
+  change: Change<InstanceElement>,
+  client: ZendeskClient,
+  object: 'articles' | 'sections' | 'categories',
+): Promise<boolean> => {
+  if (!isModificationChange(change)) {
+    console.log('bolting early1')
+    return true
+  }
+  const changeData = getChangeData(change)
+  if (
+    change.data.before.value.source_locale === changeData.value.source_locale ||
+    changeData.value.source_locale === undefined
+  ) {
+    console.log('bolting early2')
+    return true
+  }
+  // eslint-disable-next-line camelcase
+  const data: { category_locale?: string; section_locale?: string; article_locale?: string } = {}
+  if (object === 'articles') {
+    data.article_locale = changeData.value.source_locale
+  } else if (object === 'categories') {
+    data.category_locale = changeData.value.source_locale
+  } else {
+    data.section_locale = changeData.value.source_locale
+  }
+  // eslint-disable-next-line no-console
+  console.log(data)
+  // eslint-disable-next-line no-console
+  console.log(`/api/v2/help_center/${object}/${changeData.value.id}/source_locale`)
+  const res = await client.put({
+    url: `/api/v2/help_center/${object}/${changeData.value.id}/source_locale`,
+    data,
+  })
+  return res.status !== 200
 }

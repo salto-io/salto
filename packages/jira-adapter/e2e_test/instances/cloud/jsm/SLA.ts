@@ -37,12 +37,6 @@ export const createSLAValues = (name: string, allElements: Element[]): Values =>
           conditionId: 'comment-for-reporter-hit-condition',
           name: 'Comment: For Customers',
         },
-        {
-          pluginKey: 'com.atlassian.servicedesk',
-          factoryKey: 'resolution-sla-condition-factory',
-          conditionId: 'resolution-set-hit-condition',
-          name: 'Resolution: Set',
-        },
       ],
       pause: [
         {
@@ -62,7 +56,7 @@ export const createSLAValues = (name: string, allElements: Element[]): Values =>
             createReference(new ElemID(JIRA, 'Priority', 'instance', 'Highest'), allElements, ['name']),
           ],
         }),
-        duration: 7200000,
+        duration: 14400000,
         calendarId: createReference(
           new ElemID(JIRA, 'Calendar', 'instance', 'Sample_9_5_Calendar_SUP@sbsu'),
           allElements,
@@ -72,7 +66,7 @@ export const createSLAValues = (name: string, allElements: Element[]): Values =>
       },
       {
         jqlQuery: '',
-        duration: 28800000,
+        duration: 57600000,
         calendarId: createReference(
           new ElemID(JIRA, 'Calendar', 'instance', 'Sample_9_5_Calendar_SUP@sbsu'),
           allElements,

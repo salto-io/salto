@@ -41,8 +41,8 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME, BRAND_TYPE_NAME } from '../../constants'
 import { FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
-import { getBrandsForGuide } from '../utils'
-import { DOMAIN_REGEX, extractTemplateFromUrl, prepRef, URL_REGEX } from './utils'
+import { getBrandsForGuide, matchBrand } from '../utils'
+import { extractTemplateFromUrl, prepRef, URL_REGEX } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -53,15 +53,6 @@ type missingBrandInfo = {
   brandName: string
   brandSubdomain: string
   articleName: string
-}
-
-const matchBrand = (url: string, brands: Record<string, InstanceElement>): InstanceElement | undefined => {
-  const urlSubdomain = url.match(DOMAIN_REGEX)?.pop()
-  const urlBrand = urlSubdomain ? brands[urlSubdomain] : undefined
-  if (urlBrand !== undefined) {
-    return urlBrand
-  }
-  return undefined
 }
 
 const updateArticleTranslationBody = ({

@@ -70,6 +70,7 @@ export type SubjectCondition = {
 }
 
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
+export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
@@ -164,6 +165,15 @@ export const getBrandsForGuideThemes = (
   elements: InstanceElement[],
   fetchConfig: ZendeskFetchConfig,
 ): InstanceElement[] => getBrandsForFilter(elements, fetchConfig, 'themesForBrands')
+
+export const matchBrand = (url: string, brands: Record<string, InstanceElement>): InstanceElement | undefined => {
+  const urlSubdomain = url.match(DOMAIN_REGEX)?.pop()
+  const urlBrand = urlSubdomain ? brands[urlSubdomain] : undefined
+  if (urlBrand !== undefined) {
+    return urlBrand
+  }
+  return undefined
+}
 
 type CustomFieldOption = {
   // eslint-disable-next-line camelcase

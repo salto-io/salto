@@ -27,7 +27,6 @@ import { values } from '@salto-io/lowerdash'
 // These are the helper functions that may have potential references in their arguments:
 // https://developer.zendesk.com/api-reference/help_center/help-center-templates/helpers/
 const RELEVANT_HELPERS = ['is', 'isnt']
-const isMustacheStatement = (node: Node): node is MustacheStatement => node.type === 'MustacheStatement'
 const isBlockStatement = (node: Node): node is BlockStatement => node.type === 'BlockStatement'
 const isSubExpression = (node: Node): node is SubExpression => node.type === 'SubExpression'
 const isPathExpression = (node: Node): node is PathExpression => node.type === 'PathExpression'
@@ -44,11 +43,16 @@ const extractHelper = (node: MustacheStatement['path'] | BlockStatement['path'])
 }
 
 const extractPotentialIds = (node: Node): NumberLiteral[] | undefined => {
-  if (isMustacheStatement(node) || isBlockStatement(node)) {
+  // The current relevant helpers are only used in block statements.
+  // if this changes, we should also check for MustacheStatement
+  if (isBlockStatement(node)) {
+    const idsFromBlockBody = node.program.body.map(extractPotentialIds)
+    const idsFromBlockElse = node.inverse?.body.map(extractPotentialIds)
+    const nestedIds = idsFromBlockBody.concat(idsFromBlockElse).filter(values.isDefined).flat()
     const helper = extractHelper(node.path)
-    if (helper && RELEVANT_HELPERS.includes(helper)) {
-      return node.params.filter(isNumberLiteral)
-    }
+    return helper && RELEVANT_HELPERS.includes(helper)
+      ? nestedIds.concat(node.params.filter(isNumberLiteral))
+      : nestedIds
   }
   return undefined
 }

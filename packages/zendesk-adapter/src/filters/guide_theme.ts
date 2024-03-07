@@ -41,6 +41,7 @@ import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
+  BRAND_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
   THEME_FILE_TYPE_NAME,
   THEME_FOLDER_TYPE_NAME,
@@ -52,7 +53,7 @@ import { create } from './guide_themes/create'
 import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
-import { getBrandsForGuideThemes } from './utils'
+import { getBrandsForGuide, getBrandsForGuideThemes, matchBrand } from './utils'
 import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
 import { parseHtmlPotentialReferences } from './template_engines/html_parser'
 
@@ -72,12 +73,12 @@ const createTemplateParts = ({
   filePath,
   content,
   idsToElements,
-  brand,
+  matchBrandSubdomain,
 }: {
   filePath: string
   content: string
   idsToElements: Record<string, InstanceElement>
-  brand: InstanceElement
+  matchBrandSubdomain: (url: string) => InstanceElement | undefined
 }): void => {
   if (filePath.endsWith('.hbs')) {
     try {
@@ -91,7 +92,7 @@ const createTemplateParts = ({
         log.info('Found the following references in file %s in the theme: %o', filePath, handlebarReferences)
       }
       const { urls } = parseHtmlPotentialReferences(content, {
-        urlBrandInstance: brand,
+        matchBrandSubdomain,
         instancesById: idsToElements,
         enableMissingReferences: false,
       })
@@ -105,7 +106,7 @@ const createTemplateParts = ({
   if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
     try {
       const { urls } = parseHtmlPotentialReferences(content, {
-        urlBrandInstance: brand,
+        matchBrandSubdomain,
         instancesById: idsToElements,
         enableMissingReferences: false,
       })
@@ -120,14 +121,16 @@ const createTemplateParts = ({
 
 export const unzipFolderToElements = async ({
   buffer,
-  brand,
+  brandName,
   name,
   idsToElements,
+  matchBrandSubdomain,
 }: {
   buffer: Buffer
-  brand: InstanceElement
+  brandName: string
   name: string
   idsToElements: Record<string, InstanceElement>
+  matchBrandSubdomain: (url: string) => InstanceElement | undefined
 }): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
@@ -148,9 +151,9 @@ export const unzipFolderToElements = async ({
 
     if (pathParts.length === 1) {
       // It's a file
-      const filepath = `${ZENDESK}/themes/brands/${brand.value.name}/${name}/${fullPath}`
+      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
-      createTemplateParts({ filePath: fullPath, content: content.toString(), idsToElements, brand }) // Only logging for now
+      createTemplateParts({ filePath: fullPath, content: content.toString(), idsToElements, matchBrandSubdomain }) // Only logging for now
       currentDir.files[naclCase(firstPart)] = {
         filename: fullPath,
         content: new StaticFile({ filepath, content }),
@@ -307,23 +310,38 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     const instances = elements.filter(isInstanceElement)
     const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
     const brands = getBrandsForGuideThemes(instances, config[FETCH_CONFIG])
-    const fullNameByNameBrand = _.keyBy(brands, getFullName)
-    const getBrand = (theme: InstanceElement): InstanceElement | undefined => {
+    const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
+    const getBrandName = (theme: InstanceElement): string | undefined => {
       if (!isReferenceExpression(theme.value.brand_id)) {
         log.info('brand_id is not a reference expression for instance %s.', theme.elemID.getFullName())
         return undefined
       }
       const brandElemId = theme.value.brand_id?.elemID.getFullName()
-      const brand = fullNameByNameBrand[brandElemId]
-      if (brand === undefined) {
-        log.info('brand was not found for instance %s.', theme.elemID.getFullName())
-        return undefined
-      }
-      if (brand.value.name === undefined) {
+      const brandName = fullNameByNameBrand[brandElemId]
+      if (brandName === undefined) {
         log.info('brand name was not found for instance %s.', theme.elemID.getFullName())
         return undefined
       }
-      return brand
+      return brandName
+    }
+    const matchBrandSubdomain = (): ((url: string) => InstanceElement | undefined) => {
+      const brandsByUrl = _.keyBy(
+        instances.filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME),
+        i => _.toString(i.value.brand_url),
+      )
+
+      const brandsIncludingGuide = getBrandsForGuide(instances, config[FETCH_CONFIG])
+      return (url: string) => {
+        const urlBrandInstance = matchBrand(url, brandsByUrl)
+        if (urlBrandInstance === undefined) {
+          return undefined
+        }
+        if (!brandsIncludingGuide.includes(urlBrandInstance)) {
+          log.info('Brand is excluded in found url %o, not creating references. %o', url, urlBrandInstance)
+          return undefined
+        }
+        return urlBrandInstance
+      }
     }
     const idsToElements = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
@@ -335,8 +353,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
 
     const processedThemes = await Promise.all(
       guideThemes.map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
-        const brand = getBrand(theme)
-        if (brand === undefined) {
+        const brandName = getBrandName(theme)
+        if (brandName === undefined) {
           // a log is written in the getBrandName func
           remove(elements, element => element.elemID.isEqual(theme.elemID))
           return { errors: [] }
@@ -349,9 +367,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         try {
           const themeElements = await unzipFolderToElements({
             buffer: themeZip,
-            brand,
+            brandName,
             name: theme.value.name,
             idsToElements,
+            matchBrandSubdomain: matchBrandSubdomain(),
           })
           theme.value.root = themeElements
         } catch (e) {

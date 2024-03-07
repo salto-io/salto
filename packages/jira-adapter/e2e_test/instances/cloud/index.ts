@@ -46,7 +46,7 @@ import {
   SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE,
   SECURITY_SCHEME_TYPE,
-  SLA_TYPE_NAME,
+  // SLA_TYPE_NAME,
   WORKFLOW_TYPE_NAME,
 } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
@@ -70,7 +70,7 @@ import { createPortalSettingsValues } from './jsm/portal_settings'
 import { createPortalGroupValues } from './jsm/portal_groups'
 import { createQueueValues } from './jsm/queue'
 import { createCalendarValues } from './jsm/calendar'
-import { createSLAValues } from './jsm/SLA'
+// import { createSLAValues } from './jsm/SLA'
 import { createrequestTypeValues } from './jsm/request_type'
 import { createFormValues } from './jsm/form'
 import { createObjectSchmaValues } from './jsm/objectSchema'
@@ -236,13 +236,13 @@ export const createInstances = (
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
-  const SLA = new InstanceElement(
-    `${randomString}_SUP`,
-    findType(SLA_TYPE_NAME, fetchedElements),
-    createSLAValues(randomString, fetchedElements),
-    undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
-  )
+  // const SLA = new InstanceElement(
+  //   `${randomString}_SUP`,
+  //   findType(SLA_TYPE_NAME, fetchedElements),
+  //   createSLAValues(randomString, fetchedElements),
+  //   undefined,
+  //   { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
+  // )
 
   const requestType = new InstanceElement(
     `${randomString}_SUP`,
@@ -314,7 +314,7 @@ export const createInstances = (
     [portalGroup],
     [queue],
     [calendar],
-    [SLA],
+    // [SLA],
     [requestType],
     [form],
     [objectSchema],

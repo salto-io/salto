@@ -77,6 +77,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       customSettingsMap,
+      config,
     )
     elements.push(...instances)
     return {

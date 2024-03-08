@@ -27,6 +27,7 @@ import {
   isPrimitiveType,
   isReferenceExpression,
   ReadOnlyElementsSource,
+  Values,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
@@ -48,7 +49,7 @@ import {
   LAST_MODIFIED_DATE,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterContext, FilterResult, RemoteFilterCreator } from '../filter'
 import {
   apiName,
   Types,
@@ -71,6 +72,7 @@ import {
   SoqlQuery,
   buildElementsSourceForFetch,
   getChangedAtSingletonInstance,
+  isInstanceOfCustomObjectSync,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -159,11 +161,11 @@ const getRecords = async ({
     changedSince,
   },
   ids,
-}: GetRecordsParams): Promise<RecordById> => {
+}: GetRecordsParams): Promise<SalesforceRecord[]> => {
   const typeName = apiNameSync(objectType)
   if (!typeName) {
     log.warn('Object %s has no API name', objectType.elemID.getFullName())
-    return {}
+    return []
   }
 
   const queryableFields = getQueryableFields(objectType).filter(
@@ -188,7 +190,7 @@ const getRecords = async ({
   log.debug('Queries: %o', queries)
   const records = await queryClient(client, queries)
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
-  return _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD])
+  return records
 }
 
 type recordToInstanceParams = {
@@ -505,13 +507,14 @@ const getReferencedRecords = async (
     const typeToMissingIds = getMissingReferencedIds(currentLevelRecords)
     const newReferencedRecords = await mapValuesAsync(
       typeToMissingIds,
-      (ids, typeName) => {
+      async (ids, typeName) => {
         const fetchSettings = customObjectFetchSetting[typeName]
-        return getRecords({
+        const records = await getRecords({
           client,
           customObjectFetchSettings: fetchSettings,
           ids,
         })
+        return _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD])
       },
     )
     if (_.isEmpty(newReferencedRecords)) {
@@ -527,6 +530,7 @@ const getReferencedRecords = async (
 export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
+  config: FilterContext,
 ): Promise<{
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
@@ -536,19 +540,70 @@ export const getAllInstances = async (
     (setting) => setting.isBase,
   )
   log.debug('Base types: %o', _.keys(baseTypesSettings))
-  const baseRecordByTypeAndId = await mapValuesAsync(
+  const fetchedBaseRecordsByType = await mapValuesAsync(
     baseTypesSettings,
     (setting) => getRecords({ client, customObjectFetchSettings: setting }),
   )
-  // Get reference to records
-  const referencedRecordsByTypeAndId = await getReferencedRecords(
-    client,
-    customObjectFetchSetting,
-    baseRecordByTypeAndId,
+
+  const elementSourceRecordsByType: Record<string, Values> = {}
+  if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+    const fetchedRecordIds = new Set(
+      Object.values(fetchedBaseRecordsByType)
+        .flat()
+        .map((record) => record[CUSTOM_OBJECT_ID_FIELD]),
+    )
+    const elementsSource = buildElementsSourceForFetch([], config)
+    const baseTypes = Object.keys(baseTypesSettings)
+    const elementSourceInstancesByType = await awu(
+      await elementsSource.getAll(),
+    )
+      .filter(isInstanceOfCustomObjectSync)
+      .filter((instance) =>
+        baseTypes.includes(apiNameSync(instance.getTypeSync()) ?? ''),
+      )
+      .filter(
+        (instance) =>
+          !fetchedRecordIds.has(instance.value[CUSTOM_OBJECT_ID_FIELD]),
+      )
+      .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+    Object.entries(elementSourceInstancesByType).forEach(
+      ([type, instances]) => {
+        elementSourceRecordsByType[type] = instances.map(
+          (instance) => instance.value,
+        )
+      },
+    )
+  }
+
+  const fetchedBaseRecordByTypeAndId = _.mapValues(
+    fetchedBaseRecordsByType,
+    (records) => _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
   )
+
+  const elementSourceRecordsByTypeAndId = _.mapValues(
+    elementSourceRecordsByType,
+    (records) => _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
+  )
+
+  // Get reference to records
+  const referencedRecordsByTypeAndIdFromFetchedRecords =
+    await getReferencedRecords(
+      client,
+      customObjectFetchSetting,
+      fetchedBaseRecordByTypeAndId,
+    )
+
+  const referencedRecordsByTypeAndIdFromElementSourceRecords =
+    await getReferencedRecords(
+      client,
+      customObjectFetchSetting,
+      elementSourceRecordsByTypeAndId,
+    )
+
   const mergedRecords = {
-    ...referencedRecordsByTypeAndId,
-    ...baseRecordByTypeAndId,
+    ...referencedRecordsByTypeAndIdFromElementSourceRecords,
+    ...referencedRecordsByTypeAndIdFromFetchedRecords,
+    ...fetchedBaseRecordByTypeAndId,
   }
   return typesRecordsToInstances(mergedRecords, customObjectFetchSetting)
 }
@@ -899,6 +954,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       filteredChangesFetchSettings,
+      config,
     )
     instances.forEach((instance) => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)

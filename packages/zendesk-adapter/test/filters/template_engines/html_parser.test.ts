@@ -211,6 +211,26 @@ describe('parseHtmlPotentialReferences', () => {
     ])
   })
 
+  it('should handle Angular ng-href and ng-src', () => {
+    const htmlContent = `
+      <a ng-href="{{help_center.url}}/hc/en-us/articles/222552">Link 1</a>
+      <img ng-src="{{help_center.url}}/image.jpg" alt="Image">
+    `
+    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, instancesById })
+    expect(result.urls).toEqual([
+      {
+        value: {
+          parts: ['{{help_center.url}}/hc/en-us/articles/', new ReferenceExpression(article.elemID, article)],
+        },
+        loc: { start: 7, end: 74 },
+      },
+      {
+        value: '{{help_center.url}}/image.jpg',
+        loc: { start: 82, end: 137 },
+      },
+    ])
+  })
+
   it('should handle missing references when enableMissingReferences is true', () => {
     const htmlContent = `
       <a href="{{help_center.url}}/hc/en-us/articles/360001234568">Link 1</a>

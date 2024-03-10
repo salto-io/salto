@@ -87,6 +87,12 @@ export const parseTagsFromHtml = (
                 const urlAttr = ELEMENTS_WITH_URLS[node.name]
                 if (node.attribs[urlAttr]) {
                   urls.push({ value: node.attribs[urlAttr], loc: { start: node.startIndex, end: node.endIndex } })
+                } else if (node.attribs[`ng-${urlAttr}`]) {
+                  // Support AngularJS ng-href and ng-src
+                  urls.push({
+                    value: node.attribs[`ng-${urlAttr}`],
+                    loc: { start: node.startIndex, end: node.endIndex },
+                  })
                 }
               }
               if (node.name === 'script') {

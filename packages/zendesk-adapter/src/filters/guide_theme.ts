@@ -41,7 +41,6 @@ import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
-  BRAND_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
   THEME_FILE_TYPE_NAME,
   THEME_FOLDER_TYPE_NAME,
@@ -53,7 +52,7 @@ import { create } from './guide_themes/create'
 import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
-import { getBrandsForGuide, getBrandsForGuideThemes, matchBrand } from './utils'
+import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
 import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
 import { parseHtmlPotentialReferences } from './template_engines/html_parser'
 
@@ -121,13 +120,13 @@ const createTemplateParts = ({
 
 export const unzipFolderToElements = async ({
   buffer,
-  brandName,
+  currentBrandName,
   name,
   idsToElements,
   matchBrandSubdomain,
 }: {
   buffer: Buffer
-  brandName: string
+  currentBrandName: string
   name: string
   idsToElements: Record<string, InstanceElement>
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
@@ -151,7 +150,7 @@ export const unzipFolderToElements = async ({
 
     if (pathParts.length === 1) {
       // It's a file
-      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}/${fullPath}`
+      const filepath = `${ZENDESK}/themes/brands/${currentBrandName}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
       createTemplateParts({ filePath: fullPath, content: content.toString(), idsToElements, matchBrandSubdomain }) // Only logging for now
       currentDir.files[naclCase(firstPart)] = {
@@ -324,25 +323,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       }
       return brandName
     }
-    const matchBrandSubdomain = (): ((url: string) => InstanceElement | undefined) => {
-      const brandsByUrl = _.keyBy(
-        instances.filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME),
-        i => _.toString(i.value.brand_url),
-      )
-
-      const brandsIncludingGuide = getBrandsForGuide(instances, config[FETCH_CONFIG])
-      return (url: string) => {
-        const urlBrandInstance = matchBrand(url, brandsByUrl)
-        if (urlBrandInstance === undefined) {
-          return undefined
-        }
-        if (!brandsIncludingGuide.includes(urlBrandInstance)) {
-          log.info('Brand is excluded in found url %o, not creating references. %o', url, urlBrandInstance)
-          return undefined
-        }
-        return urlBrandInstance
-      }
-    }
+    const matchBrandSubdomain = matchBrandSubdomainFunc(instances, config[FETCH_CONFIG])
     const idsToElements = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
       .filter(element => element.value.id !== undefined)
@@ -353,8 +334,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
 
     const processedThemes = await Promise.all(
       guideThemes.map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
-        const brandName = getBrandName(theme)
-        if (brandName === undefined) {
+        const currentBrandName = getBrandName(theme)
+        if (currentBrandName === undefined) {
           // a log is written in the getBrandName func
           remove(elements, element => element.elemID.isEqual(theme.elemID))
           return { errors: [] }
@@ -367,10 +348,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         try {
           const themeElements = await unzipFolderToElements({
             buffer: themeZip,
-            brandName,
+            currentBrandName,
             name: theme.value.name,
             idsToElements,
-            matchBrandSubdomain: matchBrandSubdomain(),
+            matchBrandSubdomain,
           })
           theme.value.root = themeElements
         } catch (e) {

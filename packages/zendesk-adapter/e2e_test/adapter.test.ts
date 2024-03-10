@@ -305,7 +305,7 @@ describe('Zendesk adapter E2E', () => {
     ): Promise<ThemeDirectory> => {
       const root = await unzipFolderToElements({
         buffer,
-        brandName: brand.value.name,
+        currentBrandName: brand.value.name,
         name,
         idsToElements: {},
         matchBrandSubdomain: () => brand,

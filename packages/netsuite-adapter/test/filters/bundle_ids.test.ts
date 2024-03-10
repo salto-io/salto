@@ -25,8 +25,8 @@ jest.mock('../../src/autogen/bundle_components/bundle_components', () => ({
   BUNDLE_ID_TO_COMPONENTS: {
     39609: {
       'v4.0.0': new Set(['customlist_ns_ps_process_list']),
-    }
-  }
+    },
+  },
 }))
 describe('bundle_ids filter', () => {
   const filterOpts = {

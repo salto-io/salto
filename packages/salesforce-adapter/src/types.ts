@@ -833,7 +833,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
-    hideTypesFolder: {refType: BuiltinTypes.BOOLEAN},
+    hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

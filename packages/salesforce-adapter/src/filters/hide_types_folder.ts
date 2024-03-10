@@ -25,7 +25,7 @@ const isElementWithinTypesFolder = (element: Element): boolean => {
   return elementPath[0] === SALESFORCE && elementPath[1] === TYPES_PATH
 }
 
-const filterCreator: LocalFilterCreator = ({config}) => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'hideTypesFolder',
   onFetch: async (elements) => {
     if (!config.fetchProfile.isFeatureEnabled('hideTypesFolder')) {

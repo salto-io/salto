@@ -47,9 +47,13 @@ describe('hideTypesFolder filter', () => {
     })
     describe('when feature is enabled', () => {
       beforeEach(() => {
-        filter = filterCreator({ config: {
-          ...defaultFilterContext, 
-          fetchProfile: buildFetchProfile({fetchParams: {optionalFeatures: {hideTypesFolder: true}}}) }
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: { optionalFeatures: { hideTypesFolder: true } },
+            }),
+          },
         }) as typeof filter
       })
 
@@ -67,9 +71,13 @@ describe('hideTypesFolder filter', () => {
 
     describe('when feature is disabled', () => {
       beforeEach(() => {
-        filter = filterCreator({ config: {
-          ...defaultFilterContext, 
-          fetchProfile: buildFetchProfile({fetchParams: {optionalFeatures: {hideTypesFolder: false}}}) }
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: { optionalFeatures: { hideTypesFolder: false } },
+            }),
+          },
         }) as typeof filter
       })
 

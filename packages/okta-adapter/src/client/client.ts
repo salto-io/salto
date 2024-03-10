@@ -189,6 +189,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       }
     }
     try {
+      // when upgrading this adapter to next infra
+      // this part will be deleted and should be represented in the client definitions
       rateLimits.currentlyRunning += 1
       const res = await super.get(args)
       if (res.headers && this.shouldUseDynamicRateLimit()) {

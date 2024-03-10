@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-api",
-  "version": "0.3.53",
+  "version": "0.3.54",
   "license": "Apache-2.0",
   "description": "Salto Adapter API",
   "repository": {
@@ -31,9 +31,9 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/dag": "0.3.53",
-    "@salto-io/logging": "0.3.53",
-    "@salto-io/lowerdash": "0.3.53",
+    "@salto-io/dag": "0.3.54",
+    "@salto-io/logging": "0.3.54",
+    "@salto-io/lowerdash": "0.3.54",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

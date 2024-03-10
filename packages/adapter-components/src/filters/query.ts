@@ -19,8 +19,7 @@ import { filter, getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { AbstractNodeMap } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { FilterCreator } from '../filter_utils'
-import { ElementQuery } from '../fetch/query'
+import { UserConfigAdapterFilterCreator } from '../filter_utils'
 
 const log = logger(module)
 
@@ -53,18 +52,13 @@ export const createParentChildGraph = (
 /**
  * A filter to filter out instances by the fetchQuery of the adapter
  */
-export const queryFilterCreator: <
-  TClient,
-  TContext,
-  TResult extends void | filter.FilterResult,
-  TAdditional extends { fetchQuery: ElementQuery },
->({
+export const queryFilterCreator: <TContext, TResult extends void | filter.FilterResult>({
   additionalParentFields,
   typesToKeep,
 }: {
   additionalParentFields?: Record<string, string[]>
   typesToKeep?: string[]
-}) => FilterCreator<TClient, TContext, TResult, TAdditional> =
+}) => UserConfigAdapterFilterCreator<TContext, TResult> =
   ({ additionalParentFields, typesToKeep }) =>
   ({ fetchQuery }) => ({
     name: 'queryFilter',

@@ -44,7 +44,7 @@ import ZendeskClient from '../../client/client'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
-import { ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
+import { DOMAIN_REGEX, ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
 
 const { isDefined } = lowerDashValues
 
@@ -351,7 +351,6 @@ export const updateArticleTranslationBody = async ({
 }
 
 export const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
-export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 export const extractTemplateFromUrl = ({
   url,
@@ -360,14 +359,14 @@ export const extractTemplateFromUrl = ({
   enableMissingReferences,
 }: {
   url: string
-  urlBrandInstance: InstanceElement
+  urlBrandInstance?: InstanceElement
   instancesById: Record<string, InstanceElement>
   enableMissingReferences?: boolean
 }): string | TemplatePart[] => {
   const urlParts = extractTemplate(url, [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)], urlPart => {
     const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
     // We already made sure that the brand exists, so we can just return it
-    if (urlSubdomain !== undefined) {
+    if (urlSubdomain !== undefined && urlBrandInstance !== undefined) {
       return [new ReferenceExpression(urlBrandInstance.elemID, urlBrandInstance)]
     }
     return transformReferenceUrls({

@@ -45,6 +45,8 @@ export const XML_ATTRIBUTE_PREFIX = 'attr_'
 export const DEFAULT_NAMESPACE = 'standard'
 export const SALESFORCE_DATE_PLACEHOLDER = '1970-01-01T00:00:00.000Z'
 
+export const DEFAULT_FLS_PROFILES = [ADMIN_PROFILE]
+
 export enum FIELD_TYPE_NAMES {
   AUTONUMBER = 'AutoNumber',
   TEXT = 'Text',

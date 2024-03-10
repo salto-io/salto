@@ -60,16 +60,16 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(workspaceChanges, async change => {
       const response = await deployChange(change, client, config.apiDefinitions, ['selected_macros'])
       // It's possible for the deployment to return with status 200 and still have errors.
-      if (
-        response !== undefined &&
-        !_.isArray(response) &&
-        response.errors !== undefined &&
-        Array.isArray(response.errors) &&
-        response.errors.length > 0
-      ) {
+      if (response !== undefined && !_.isArray(response) && response.errors !== undefined) {
+        let errorMsg = 'Something went wrong'
+        if (Array.isArray(response.errors) && response.errors.length > 0) {
+          errorMsg = String(response.errors[0])
+        } else if (typeof response.errors === 'string') {
+          errorMsg = response.errors
+        }
         throw createSaltoElementError({
           // caught by deployChanges
-          message: response.errors[0],
+          message: errorMsg,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

@@ -25,9 +25,12 @@ const isElementWithinTypesFolder = (element: Element): boolean => {
   return elementPath[0] === SALESFORCE && elementPath[1] === TYPES_PATH
 }
 
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: LocalFilterCreator = ({config}) => ({
   name: 'hideTypesFolder',
   onFetch: async (elements) => {
+    if (!config.fetchProfile.isFeatureEnabled('hideTypesFolder')) {
+      return
+    }
     elements.filter(isElementWithinTypesFolder).forEach((element) => {
       element.annotations[CORE_ANNOTATIONS.HIDDEN] = true
     })

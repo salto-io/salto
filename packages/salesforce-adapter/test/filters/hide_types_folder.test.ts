@@ -15,6 +15,7 @@
  */
 
 import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
 import { SALESFORCE, TYPES_PATH } from '../../src/constants'
 import filterCreator from '../../src/filters/hide_types_folder'
@@ -22,9 +23,6 @@ import filterCreator from '../../src/filters/hide_types_folder'
 describe('hideTypesFolder filter', () => {
   let filter: Required<ReturnType<typeof filterCreator>>
 
-  beforeEach(() => {
-    filter = filterCreator({ config: defaultFilterContext }) as typeof filter
-  })
   describe('onFetch', () => {
     let elementWithinTypesFolder: ObjectType
     let elementNestedWithinTypesFolder: ObjectType
@@ -47,15 +45,44 @@ describe('hideTypesFolder filter', () => {
         path: [SALESFORCE, 'OtherDir', 'Third'],
       })
     })
-    it('should hide elements within the Types folder', async () => {
-      await filter.onFetch([
-        elementWithinTypesFolder,
-        elementNestedWithinTypesFolder,
-        elementOutsideTypesFolder,
-      ])
-      expect(elementWithinTypesFolder).toSatisfy(toBeHidden)
-      expect(elementNestedWithinTypesFolder).toSatisfy(toBeHidden)
-      expect(elementOutsideTypesFolder).not.toSatisfy(toBeHidden)
+    describe('when feature is enabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({ config: {
+          ...defaultFilterContext, 
+          fetchProfile: buildFetchProfile({fetchParams: {optionalFeatures: {hideTypesFolder: true}}}) }
+        }) as typeof filter
+      })
+
+      it('should hide elements within the Types folder', async () => {
+        await filter.onFetch([
+          elementWithinTypesFolder,
+          elementNestedWithinTypesFolder,
+          elementOutsideTypesFolder,
+        ])
+        expect(elementWithinTypesFolder).toSatisfy(toBeHidden)
+        expect(elementNestedWithinTypesFolder).toSatisfy(toBeHidden)
+        expect(elementOutsideTypesFolder).not.toSatisfy(toBeHidden)
+      })
+    })
+
+    describe('when feature is disabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({ config: {
+          ...defaultFilterContext, 
+          fetchProfile: buildFetchProfile({fetchParams: {optionalFeatures: {hideTypesFolder: false}}}) }
+        }) as typeof filter
+      })
+
+      it('should not hide elements within the Types folder', async () => {
+        await filter.onFetch([
+          elementWithinTypesFolder,
+          elementNestedWithinTypesFolder,
+          elementOutsideTypesFolder,
+        ])
+        expect(elementWithinTypesFolder).not.toSatisfy(toBeHidden)
+        expect(elementNestedWithinTypesFolder).not.toSatisfy(toBeHidden)
+        expect(elementOutsideTypesFolder).not.toSatisfy(toBeHidden)
+      })
     })
   })
 })

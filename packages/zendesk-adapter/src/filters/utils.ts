@@ -64,6 +64,7 @@ export type SubjectCondition = {
 }
 
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
+export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
@@ -158,6 +159,38 @@ export const getBrandsForGuideThemes = (
   elements: InstanceElement[],
   fetchConfig: ZendeskFetchConfig,
 ): InstanceElement[] => getBrandsForFilter(elements, fetchConfig, 'themesForBrands')
+
+export const matchBrand = (url: string, brands: Record<string, InstanceElement>): InstanceElement | undefined => {
+  const urlSubdomain = url.match(DOMAIN_REGEX)?.pop()
+  const urlBrand = urlSubdomain ? brands[urlSubdomain] : undefined
+  if (urlBrand !== undefined) {
+    return urlBrand
+  }
+  return undefined
+}
+
+export const matchBrandSubdomainFunc = (
+  instances: InstanceElement[],
+  fetchConfig: ZendeskFetchConfig,
+): ((url: string) => InstanceElement | undefined) => {
+  const brandsByUrl = _.keyBy(
+    instances.filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME),
+    brand => _.toString(brand.value.brand_url),
+  )
+
+  const brandsIncludingGuide = getBrandsForGuide(instances, fetchConfig)
+  return (url: string) => {
+    const urlBrandInstance = matchBrand(url, brandsByUrl)
+    if (urlBrandInstance === undefined) {
+      return undefined
+    }
+    if (!brandsIncludingGuide.includes(urlBrandInstance)) {
+      log.info('Brand is excluded in found url %o, not creating references. %o', url, urlBrandInstance)
+      return undefined
+    }
+    return urlBrandInstance
+  }
+}
 
 type CustomFieldOption = {
   // eslint-disable-next-line camelcase

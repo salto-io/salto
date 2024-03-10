@@ -50,18 +50,24 @@ const ELEMENTS_WITH_URLS: { [key: string]: string } = {
 export const parseUrlPotentialReferencesFromString = (
   content: string,
   {
-    urlBrandInstance,
+    matchBrandSubdomain,
     instancesById,
     enableMissingReferences,
   }: {
-    urlBrandInstance: InstanceElement
+    matchBrandSubdomain: (url: string) => InstanceElement | undefined
     instancesById: Record<string, InstanceElement>
     enableMissingReferences?: boolean
   },
 ): string | TemplateExpression =>
-  extractTemplate(content, [URL_REGEX, HELP_CENTER_URL], expression =>
-    extractTemplateFromUrl({ url: expression, urlBrandInstance, instancesById, enableMissingReferences }),
-  )
+  extractTemplate(content, [URL_REGEX, HELP_CENTER_URL], expression => {
+    if (expression.match(URL_REGEX)) {
+      const urlBrandInstance = matchBrandSubdomain(expression)
+      return urlBrandInstance !== undefined
+        ? extractTemplateFromUrl({ url: expression, urlBrandInstance, instancesById, enableMissingReferences })
+        : expression
+    }
+    return extractTemplateFromUrl({ url: expression, instancesById, enableMissingReferences })
+  })
 
 // Function to parse HTML and extract URLs from tags
 export const parseTagsFromHtml = (
@@ -81,6 +87,12 @@ export const parseTagsFromHtml = (
                 const urlAttr = ELEMENTS_WITH_URLS[node.name]
                 if (node.attribs[urlAttr]) {
                   urls.push({ value: node.attribs[urlAttr], loc: { start: node.startIndex, end: node.endIndex } })
+                } else if (node.attribs[`ng-${urlAttr}`]) {
+                  // Support AngularJS ng-href and ng-src
+                  urls.push({
+                    value: node.attribs[`ng-${urlAttr}`],
+                    loc: { start: node.startIndex, end: node.endIndex },
+                  })
                 }
               }
               if (node.name === 'script') {
@@ -115,11 +127,11 @@ export const parseTagsFromHtml = (
 export const parseHtmlPotentialReferences = (
   content: string,
   {
-    urlBrandInstance,
+    matchBrandSubdomain,
     instancesById,
     enableMissingReferences,
   }: {
-    urlBrandInstance: InstanceElement
+    matchBrandSubdomain: (url: string) => InstanceElement | undefined
     instancesById: Record<string, InstanceElement>
     enableMissingReferences?: boolean
   },
@@ -128,7 +140,7 @@ export const parseHtmlPotentialReferences = (
   return {
     urls: urls.map(url => ({
       value: parseUrlPotentialReferencesFromString(url.value, {
-        urlBrandInstance,
+        matchBrandSubdomain,
         instancesById,
         enableMissingReferences,
       }),

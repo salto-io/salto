@@ -31,11 +31,11 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { createSchemeGuard, getParents, naclCase, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'

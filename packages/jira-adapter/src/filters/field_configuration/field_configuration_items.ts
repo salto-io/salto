@@ -23,7 +23,9 @@ import {
   ModificationChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getParent, resolveValues } from '@salto-io/adapter-utils'
+import { getParent } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { JiraConfig } from '../../config/config'

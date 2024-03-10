@@ -26,16 +26,21 @@ import {
   isObjectTypeChange,
   ReferenceInfo,
   ReferenceType,
+  TemplateExpression,
+  StaticFile,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { parserUtils } from '@salto-io/parser'
 import { ElementsSource } from './elements_source'
 import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export const REFERENCE_INDEXES_VERSION = 6
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
@@ -52,8 +57,17 @@ type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
   `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
 
-const getReferences = (element: Element, customReferences: ReferenceInfo[]): ReferenceInfo[] => {
+const getReferences = async (element: Element, customReferences: ReferenceInfo[]): Promise<ReferenceInfo[]> => {
   const references: Record<string, ReferenceInfo> = {}
+  const templateStaticFiles: { value: StaticFile; source: ElemID }[] = []
+  const getReferencesFromTemplateExpression = (source: ElemID, template?: TemplateExpression): void => {
+    template?.parts.forEach(part => {
+      if (isReferenceExpression(part)) {
+        const refInfo = { source, target: part.elemID, type: 'strong' as const }
+        references[getReferenceDetailsIdentifier(refInfo)] = refInfo
+      }
+    })
+  }
   walkOnElement({
     element,
     func: ({ value, path: source }) => {
@@ -62,12 +76,10 @@ const getReferences = (element: Element, customReferences: ReferenceInfo[]): Ref
         references[getReferenceDetailsIdentifier(refInfo)] = refInfo
       }
       if (isTemplateExpression(value)) {
-        value.parts.forEach(part => {
-          if (isReferenceExpression(part)) {
-            const refInfo = { source, target: part.elemID, type: 'strong' as const }
-            references[getReferenceDetailsIdentifier(refInfo)] = refInfo
-          }
-        })
+        getReferencesFromTemplateExpression(source, value)
+      }
+      if (isStaticFile(value) && value.isTemplate) {
+        templateStaticFiles.push({ value, source })
       }
       return WALK_NEXT_STEP.RECURSE
     },
@@ -76,21 +88,30 @@ const getReferences = (element: Element, customReferences: ReferenceInfo[]): Ref
   customReferences.forEach(refInfo => {
     references[getReferenceDetailsIdentifier(refInfo)] = refInfo
   })
+  const templateExpressions = await Promise.all(
+    templateStaticFiles.map(async fileObj => {
+      const expression = await parserUtils.staticFileToTemplateExpression(fileObj.value)
+      return { expression, source: fileObj.source }
+    }),
+  )
+  templateExpressions.forEach(fileObj => {
+    getReferencesFromTemplateExpression(fileObj.source, fileObj.expression)
+  })
 
   return Object.values(references)
 }
 
-const getReferencesFromChange = (
+const getReferencesFromChange = async (
   change: Change<Element>,
   customReferences: { before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> },
-): ChangeReferences => {
+): Promise<ChangeReferences> => {
   const fullName = getChangeData(change).elemID.getFullName()
 
   const before = isRemovalOrModificationChange(change)
-    ? getReferences(change.data.before, customReferences.before[fullName] ?? [])
+    ? await getReferences(change.data.before, customReferences.before[fullName] ?? [])
     : []
   const after = isAdditionOrModificationChange(change)
-    ? getReferences(change.data.after, customReferences.after[fullName] ?? [])
+    ? await getReferences(change.data.after, customReferences.after[fullName] ?? [])
     : []
 
   const afterIds = new Set(after.map(getReferenceDetailsIdentifier))
@@ -294,10 +315,12 @@ export const updateReferenceIndexes = async (
     const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
 
     const changeToReferences = Object.fromEntries(
-      relevantChanges.map(change => [
-        getChangeData(change).elemID.getFullName(),
-        getReferencesFromChange(change, customReferences),
-      ]),
+      await awu(relevantChanges)
+        .map(async change => [
+          getChangeData(change).elemID.getFullName(),
+          await getReferencesFromChange(change, customReferences),
+        ])
+        .toArray(),
     )
 
     // Outgoing references

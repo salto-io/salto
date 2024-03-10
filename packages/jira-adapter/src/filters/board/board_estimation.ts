@@ -25,7 +25,9 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { resolveChangeElement, createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
+
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { BOARD_ESTIMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'

@@ -32,11 +32,12 @@ import {
   isField,
   isEqualValues,
   dependencyChange,
-  isRemovalChange,
 } from '@salto-io/adapter-api'
-import { getAllReferencedIds, getParents, resolvePath } from '@salto-io/adapter-utils'
+import { getParents, resolvePath } from '@salto-io/adapter-utils'
+import { getAllReferencedIds } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 
-const { awu } = collections.asynciterable
+const log = logger(module)
 
 const getParentIds = (elem: ChangeDataType): Set<string> =>
   new Set(
@@ -58,73 +59,51 @@ const isReferenceValueChanged = (change: Change<ChangeDataType>, refElemId: Elem
   })
 }
 
-export const addReferencesDependency: DependencyChanger = async changes => {
-  const changesById = collections.iterable.groupBy(changes, ([_id, change]) => getChangeElemId(change))
+export const addReferencesDependency: DependencyChanger = async changes =>
+  log.time(async () => {
+    const changesById = collections.iterable.groupBy(changes, ([_id, change]) => getChangeElemId(change))
 
-  const getTarget = (targetRefId: ElemID, changeElemIdName: string): undefined | ChangeEntry => {
-    const targetElemIdName = targetRefId.createBaseID().parent.getFullName()
-    // Ignore self references
-    if (targetElemIdName === changeElemIdName) {
-      return undefined
-    }
-    const [targetChangeEntry] = changesById.get(targetElemIdName) ?? []
-    return targetChangeEntry
-  }
-
-  // Because fields are separate nodes in the graph, for object types we should only consider
-  // references from the annotations
-  const onlyAnnotations = isObjectType
-
-  const addBeforeModificationDependency = ([id, change]: ChangeEntry): Iterable<DependencyChange> => {
-    if (!isModificationChange(change)) {
-      return []
-    }
-    const { before } = change.data
-    const elemIdName = before.elemID.getFullName()
-
-    return wu(getAllReferencedIds(before, onlyAnnotations(before)))
-      .map(targetRefIdFullName => {
-        const targetRefId = ElemID.fromFullName(targetRefIdFullName)
-
-        const targetChangeEntry = getTarget(targetRefId, elemIdName)
-        if (targetChangeEntry === undefined) {
+    const addChangeDependency = async ([id, change]: ChangeEntry): Promise<Iterable<DependencyChange>> => {
+      const elem = getChangeData(change)
+      const parents = getParentIds(elem)
+      const elemId = elem.elemID.getFullName()
+      // Because fields are separate nodes in the graph, for object types we should only consider
+      // references from the annotations
+      const onlyAnnotations = isObjectType(elem)
+      // Not using ElementsSource here is legit because it's ran
+      // after resolve
+      const allReferencedIds = await getAllReferencedIds(elem, onlyAnnotations)
+      return wu(allReferencedIds)
+        .map(targetRefIdFullName => {
+          const targetRefId = ElemID.fromFullName(targetRefIdFullName)
+          const targetElemId = targetRefId.createBaseID().parent.getFullName()
+          // Ignore self references
+          if (targetElemId === elemId) {
+            return undefined
+          }
+          const [targetChangeEntry] = changesById.get(targetElemId) ?? []
+          if (targetChangeEntry === undefined) {
+            return undefined
+          }
+          const [targetId, targetChange] = targetChangeEntry
+          if (isDependentAction(change.action, targetChange.action)) {
+            return parents.has(getChangeElemId(targetChange))
+              ? addParentDependency(id, targetId)
+              : addReferenceDependency(targetChange.action, id, targetId)
+          }
+          if (isReferenceValueChanged(targetChange, targetRefId)) {
+            return dependencyChange('add', id, targetId)
+          }
           return undefined
-        }
+        })
+        .filter(values.isDefined)
+    }
 
-        const [targetId, targetChange] = targetChangeEntry
-        return isRemovalChange(targetChange) ? dependencyChange('add', targetId, id) : undefined
-      })
-      .filter(values.isDefined)
-  }
-
-  const addChangeDependency = ([id, change]: ChangeEntry): Iterable<DependencyChange> => {
-    const elem = getChangeData(change)
-    const elemId = elem.elemID.getFullName()
-    // Not using ElementsSource here is legit because it's ran after resolve
-    const parent = getParentIds(elem)
-
-    return wu(getAllReferencedIds(elem, onlyAnnotations(elem)))
-      .map(targetRefIdFullName => {
-        const targetRefId = ElemID.fromFullName(targetRefIdFullName)
-        const targetChangeEntry = getTarget(targetRefId, elemId)
-        if (targetChangeEntry === undefined) {
-          return undefined
-        }
-        const [targetId, targetChange] = targetChangeEntry
-        if (isDependentAction(change.action, targetChange.action)) {
-          return parent.has(getChangeElemId(targetChange))
-            ? addParentDependency(id, targetId)
-            : addReferenceDependency(targetChange.action, id, targetId)
-        }
-        if (isReferenceValueChanged(targetChange, targetRefId)) {
-          return dependencyChange('add', id, targetId)
-        }
-        return undefined
-      })
-      .filter(values.isDefined)
-  }
-
-  return awu(changes)
-    .flatMap(entry => [...addChangeDependency(entry), ...addBeforeModificationDependency(entry)])
-    .toArray()
-}
+    const result = await Promise.all(
+      Array.from(changes.entries()).flatMap(async entry => {
+        const changeDependency = await addChangeDependency(entry)
+        return [...changeDependency]
+      }),
+    )
+    return result.flat()
+  }, 'addReferencesDependency')

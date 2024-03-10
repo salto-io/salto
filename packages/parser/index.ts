@@ -14,5 +14,6 @@
  * limitations under the License.
  */
 import * as parser from './src/parser'
+import * as parserUtils from './src/utils'
 
-export { parser }
+export { parser, parserUtils }

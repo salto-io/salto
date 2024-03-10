@@ -23,9 +23,9 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { references as referencesUtils } from '@salto-io/adapter-components'
+import { references as referencesUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { GetLookupNameFunc, resolveChangeElement } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { fieldNameToTypeMappingDefs, ZendeskFieldReferenceResolver } from '../src/filters/field_references'
 import { ZENDESK } from '../src/constants'
 

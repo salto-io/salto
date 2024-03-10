@@ -55,7 +55,8 @@ const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*[${NEWLINE_CHARS}]|.*?(?=\\$
 // We accept unicode newline characters because the string dump code does not treat them as newlines so they can appear
 // in a single line string
 const SINGLELINE_CONTENT = /[^\r\n\\]+?(?=\$\{|["\r\n\\])/
-const REFERENCE = new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`)
+export const REFERENCE_PART = `\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`
+const REFERENCE = new RegExp(REFERENCE_PART)
 
 export const rules: Record<string, moo.Rules> = {
   // Regarding ERROR tokens: Each section in the state must have an error token.

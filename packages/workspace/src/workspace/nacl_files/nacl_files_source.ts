@@ -118,7 +118,7 @@ export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
   getStaticFile: (
-    args: string | { filePath: string; encoding: BufferEncoding },
+    args: string | { filePath: string; encoding: BufferEncoding; isTemplate?: boolean },
     encoding?: BufferEncoding,
   ) => Promise<StaticFile | undefined>
   isPathIncluded: (filePath: string) => { included: boolean; isNacl?: boolean }
@@ -313,7 +313,7 @@ const createNaclFilesState = async (
       serialize: async element => serialize([element], 'keepRef'),
       deserialize: async data =>
         deserializeSingleElement(data, async sf =>
-          staticFilesSource.getStaticFile({ filepath: sf.filepath, encoding: sf.encoding }),
+          staticFilesSource.getStaticFile({ filepath: sf.filepath, encoding: sf.encoding, isTemplate: sf.isTemplate }),
         ),
       persistent,
     }),
@@ -1109,7 +1109,11 @@ const buildNaclFilesSource = (
         filePath = args.filePath
         fileEncoding = args.encoding
       }
-      const staticFile = await staticFilesSource.getStaticFile({ filepath: filePath, encoding: fileEncoding })
+      const staticFile = await staticFilesSource.getStaticFile({
+        filepath: filePath,
+        encoding: fileEncoding,
+        isTemplate: _.isObject(args) ? args.isTemplate : undefined,
+      })
       if (isStaticFile(staticFile)) {
         return staticFile
       }

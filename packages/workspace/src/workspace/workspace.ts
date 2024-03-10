@@ -296,7 +296,12 @@ export type Workspace = {
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
   getFileEnvs(filePath: string): { envName: string; isStatic?: boolean }[]
-  getStaticFile(params: { filepath: string; encoding: BufferEncoding; env?: string }): Promise<StaticFile | undefined>
+  getStaticFile(params: {
+    filepath: string
+    encoding: BufferEncoding
+    env?: string
+    isTemplate?: boolean
+  }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
   getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
@@ -510,6 +515,7 @@ export const loadWorkspace = async (
                           filePath: staticFile.filepath,
                           encoding: staticFile.encoding,
                           env: envName,
+                          isTemplate: staticFile.isTemplate,
                         })) ?? staticFile,
                     ),
                   persistent,
@@ -1575,8 +1581,8 @@ export const loadWorkspace = async (
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
-    getStaticFile: async ({ filepath, encoding, env }) =>
-      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv() }),
+    getStaticFile: async ({ filepath, encoding, env, isTemplate }) =>
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,

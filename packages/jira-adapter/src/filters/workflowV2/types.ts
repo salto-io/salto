@@ -23,6 +23,7 @@ import {
   Values,
   isAdditionOrModificationChange,
   isInstanceChange,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
@@ -63,7 +64,7 @@ export type WorkflowStatus = {
 }
 
 export type WorkflowStatusAndPort = {
-  statusReference: string
+  statusReference: string | ReferenceExpression
   port?: number
 }
 
@@ -116,12 +117,12 @@ const TRANSITION_SCHEME = Joi.object({
   name: Joi.string().required(),
   from: Joi.array().items(
     Joi.object({
-      statusReference: Joi.string().required(),
+      statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
       port: Joi.number(),
     }),
   ),
   to: Joi.object({
-    statusReference: Joi.string().required(),
+    statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
     port: Joi.number(),
   }),
   conditions: Joi.object(),

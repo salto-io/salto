@@ -237,9 +237,9 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
   const SLA = new InstanceElement(
-    `${randomString}_SUP`,
+    'Lemon_SUP',
     findType(SLA_TYPE_NAME, fetchedElements),
-    createSLAValues(randomString, fetchedElements),
+    createSLAValues(fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )

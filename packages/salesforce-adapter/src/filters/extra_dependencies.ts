@@ -28,11 +28,11 @@ import {
 } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  getAllReferencedIds,
   buildElementsSourceFromElements,
   extendGeneratedDependencies,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
+import { getAllReferencedIds } from '@salto-io/adapter-components'
 import { RemoteFilterCreator } from '../filter'
 import {
   metadataType,
@@ -285,15 +285,15 @@ const getDependenciesV2 = async (
  * @param elem        The element to modify
  * @param refElemIDs  The reference ids to add
  */
-const addGeneratedDependencies = (
+const addGeneratedDependencies = async (
   elem: Element,
   refElemIDs: ElemID[],
-): ReferenceExpression[] => {
+): Promise<ReferenceExpression[]> => {
   if (refElemIDs.length === 0) {
     return []
   }
 
-  const existingReferences = getAllReferencedIds(elem)
+  const existingReferences = await getAllReferencedIds(elem)
   const newDependencies = refElemIDs
     .filter((elemId) => !existingReferences.has(elemId.getFullName()))
     .map((elemId) => new ReferenceExpression(elemId))

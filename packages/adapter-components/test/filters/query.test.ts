@@ -23,7 +23,6 @@ import {
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FilterWith } from '../../src/filter_utils'
-import { Paginator } from '../../src/client'
 import { queryFilterCreator } from '../../src/filters/query'
 import { createMockQuery, ElementQuery } from '../../src/fetch/query'
 
@@ -91,8 +90,6 @@ describe('query filter', () => {
         fetchQuery = createMockQuery()
         elements = generateElements()
         filter = queryFilterCreator({})({
-          client: {} as unknown,
-          paginator: undefined as unknown as Paginator,
           config: {},
           fetchQuery,
         }) as FilterWith<'onFetch'>
@@ -128,8 +125,6 @@ describe('query filter', () => {
             instance.elemID.typeName !== 'extra' && instance.elemID.getFullName() !== 'salto.folder.instance.folder2',
         )
         filter = queryFilterCreator({})({
-          client: {} as unknown,
-          paginator: undefined as unknown as Paginator,
           config: {},
           fetchQuery,
         }) as FilterWith<'onFetch'>
@@ -167,8 +162,6 @@ describe('query filter', () => {
           },
           typesToKeep: ['extra'],
         })({
-          client: {} as unknown,
-          paginator: undefined as unknown as Paginator,
           config: {},
           fetchQuery,
         }) as FilterWith<'onFetch'>

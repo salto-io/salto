@@ -187,7 +187,7 @@ export const serializeStream = async <T = Element>(
     if (storeStaticFile !== undefined) {
       promises.push(storeStaticFile(e))
     }
-    return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding')
+    return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding', 'isTemplate')
   }
 
   const elemIdReplacer = (
@@ -367,7 +367,8 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       ReferenceExpression: reviveReferenceExpression,
       TypeReference: v => new TypeReference(reviveElemID(v.elemID)),
       VariableExpression: v => new VariableExpression(reviveElemID(v.elemID ?? v.elemId)),
-      StaticFile: v => new StaticFile({ filepath: v.filepath, hash: v.hash, encoding: v.encoding }),
+      StaticFile: v =>
+        new StaticFile({ filepath: v.filepath, hash: v.hash, encoding: v.encoding, isTemplate: v.isTemplate }),
       MissingStaticFile: v => new MissingStaticFile(v.filepath),
       AccessDeniedStaticFile: v => new AccessDeniedStaticFile(v.filepath),
       DuplicateAnnotationError: v =>

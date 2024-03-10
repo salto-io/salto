@@ -303,7 +303,13 @@ describe('Zendesk adapter E2E', () => {
       brand: InstanceElement,
       name: string,
     ): Promise<ThemeDirectory> => {
-      const root = await unzipFolderToElements({ buffer, brand, name, idsToElements: {} })
+      const root = await unzipFolderToElements({
+        buffer,
+        currentBrandName: brand.value.name,
+        name,
+        idsToElements: {},
+        matchBrandSubdomain: () => brand,
+      })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()
       if (!isStaticFile(content)) {

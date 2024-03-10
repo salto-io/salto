@@ -990,6 +990,7 @@ const fixStaticFilesForFromStateChanges = async (
         filepath: staticFile.filepath,
         encoding: staticFile.encoding,
         env,
+        isTemplate: staticFile.isTemplate,
       })
       if (!actualStaticFile?.isEqual(staticFile)) {
         invalidChangeIDs.add(change.id.getFullName())

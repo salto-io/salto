@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/zendesk-adapter",
-  "version": "0.3.53",
+  "version": "0.3.54",
   "license": "Apache-2.0",
   "description": "Salto Zendesk adapter",
   "repository": {
@@ -33,13 +33,14 @@
   },
   "dependencies": {
     "@handlebars/parser": "^2.1.0",
-    "@salto-io/adapter-api": "0.3.53",
-    "@salto-io/adapter-components": "0.3.53",
-    "@salto-io/adapter-utils": "0.3.53",
-    "@salto-io/dag": "0.3.53",
-    "@salto-io/file": "0.3.53",
-    "@salto-io/logging": "0.3.53",
-    "@salto-io/lowerdash": "0.3.53",
+    "@salto-io/adapter-api": "0.3.54",
+    "@salto-io/adapter-components": "0.3.54",
+    "@salto-io/adapter-utils": "0.3.54",
+    "@salto-io/parser": "0.3.54",
+    "@salto-io/dag": "0.3.54",
+    "@salto-io/file": "0.3.54",
+    "@salto-io/logging": "0.3.54",
+    "@salto-io/lowerdash": "0.3.54",
     "domhandler": "^4.2.2",
     "form-data": "^4.0.0",
     "htmlparser2": "^7.2.0",
@@ -52,9 +53,9 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.3.53",
-    "@salto-io/test-utils": "0.3.53",
-    "@salto-io/workspace": "0.3.53",
+    "@salto-io/e2e-credentials-store": "0.3.54",
+    "@salto-io/test-utils": "0.3.54",
+    "@salto-io/workspace": "0.3.54",
     "@types/jest": "^27.4.0",
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.168",

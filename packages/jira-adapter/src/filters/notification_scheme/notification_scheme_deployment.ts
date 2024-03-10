@@ -24,12 +24,8 @@ import {
   isInstanceChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import {
-  applyFunctionToChangeData,
-  createSchemeGuard,
-  resolveValues,
-  restoreChangeElement,
-} from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createSchemeGuard, restoreChangeElement } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { findObject, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'

@@ -25,7 +25,9 @@ import {
   isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'

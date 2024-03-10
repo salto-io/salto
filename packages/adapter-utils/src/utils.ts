@@ -35,7 +35,6 @@ import {
   isPrimitiveType,
   TypeMap,
   isField,
-  ChangeDataType,
   ReferenceExpression,
   Field,
   InstanceAnnotationTypes,
@@ -62,7 +61,6 @@ import {
   isElement,
   compareSpecialValues,
   getChangeData,
-  isTemplateExpression,
   PlaceholderObjectType,
   UnresolvedReference,
   FieldMap,
@@ -541,36 +539,6 @@ export type ResolveValuesFunc = <T extends Element>(
   allowEmpty?: boolean,
 ) => Promise<T>
 
-export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, elementsSource, allowEmpty = true) => {
-  const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
-    if (isReferenceExpression(value)) {
-      return getLookUpName({
-        // Make sure the reference here is always resolved
-        ref:
-          value.value === undefined && elementsSource !== undefined
-            ? new ReferenceExpression(value.elemID, await value.getResolvedValue(elementsSource), value.topLevelParent)
-            : value,
-        field,
-        path,
-        element,
-      })
-    }
-    if (isStaticFile(value)) {
-      const content = await value.getContent()
-      return value.encoding === 'binary' ? content : content?.toString(value.encoding)
-    }
-    return value
-  }
-
-  return transformElement({
-    element,
-    transformFunc: valuesReplacer,
-    strict: false,
-    elementsSource,
-    allowEmpty,
-  })
-}
-
 export type RestoreValuesFunc = <T extends Element>(
   source: T,
   targetElement: T,
@@ -685,14 +653,6 @@ export const restoreChangeElement = async (
   )
   return change
 }
-
-export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
-  change: T,
-  getLookUpName: GetLookupNameFunc,
-  resolveValuesFunc = resolveValues,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<T> =>
-  applyFunctionToChangeData(change, changeData => resolveValuesFunc(changeData, getLookUpName, elementsSource))
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> =>
   wu(elements).filter(e => e.elemID.isEqual(id))
@@ -1059,32 +1019,6 @@ export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: str
 
 export const inspectValue = (value: Value, options?: InspectOptions): string =>
   inspect(value, _.defaults({}, options ?? {}, { depth: 4 }))
-
-export const getAllReferencedIds = (element: Element, onlyAnnotations = false): Set<string> => {
-  const allReferencedIds = new Set<string>()
-  const func: WalkOnFunc = ({ value, path }) => {
-    // if onlyAnnotations is true - skip the non annotations part
-    if (onlyAnnotations && !path.isAttrID()) {
-      // If this is an element we need to recurse in order to get to the annotations
-      return isElement(value) ? WALK_NEXT_STEP.RECURSE : WALK_NEXT_STEP.SKIP
-    }
-    if (isReferenceExpression(value)) {
-      allReferencedIds.add(value.elemID.getFullName())
-      return WALK_NEXT_STEP.SKIP
-    }
-    if (isTemplateExpression(value)) {
-      value.parts.forEach(part => {
-        if (isReferenceExpression(part)) {
-          allReferencedIds.add(part.elemID.getFullName())
-        }
-      })
-      return WALK_NEXT_STEP.SKIP
-    }
-    return WALK_NEXT_STEP.RECURSE
-  }
-  walkOnElement({ element, func })
-  return allReferencedIds
-}
 
 export const getParents = (instance: Element): Array<Value> =>
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])

@@ -24,11 +24,11 @@ import {
   isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { resolvePath, resolveValues } from '@salto-io/adapter-utils'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import {
   getUsers,
   MISSING_USERS_DOC_LINK,

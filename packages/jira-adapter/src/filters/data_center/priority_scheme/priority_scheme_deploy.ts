@@ -24,7 +24,8 @@ import {
   ModificationChange,
   RemovalChange,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveChangeElement, resolveValues } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'

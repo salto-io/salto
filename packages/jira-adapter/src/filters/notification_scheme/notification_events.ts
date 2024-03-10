@@ -36,7 +36,7 @@ type EventValues = {
   notification: {
     id: string
     notificationType: string
-    parameter?: string
+    parameter?: string | { id: string }
   }
 }
 
@@ -98,8 +98,13 @@ export const transformNotificationEvent = (notificationEvent: NotificationEvent)
   })
 }
 
+const getEventParameter = (eventEntry: EventValues): string | undefined =>
+  typeof eventEntry.notification?.parameter === 'object' && 'id' in eventEntry.notification.parameter
+    ? eventEntry.notification.parameter.id
+    : eventEntry.notification?.parameter
+
 const getEventKey = (eventEntry: EventValues): string =>
-  `${eventEntry.event?.id}-${eventEntry.notification?.notificationType}-${eventEntry.notification?.parameter}`
+  `${eventEntry.event?.id}-${eventEntry.notification?.notificationType}-${getEventParameter(eventEntry)}`
 
 const getEventsValues = (notificationEvents: NotificationEvent[]): EventValues[] =>
   notificationEvents.flatMap((eventEntry: Values) =>

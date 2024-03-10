@@ -15,7 +15,6 @@
  */
 import {
   BuiltinTypes,
-  Change,
   ElemID,
   getChangeData,
   InstanceElement,
@@ -28,14 +27,7 @@ import {
   TypeReference,
   Value,
 } from '@salto-io/adapter-api'
-import {
-  walkOnElement,
-  WALK_NEXT_STEP,
-  WalkOnFunc,
-  setPath,
-  walkOnValue,
-  applyFunctionToChangeData,
-} from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { JiraConfig } from '../../config/config'
@@ -318,26 +310,21 @@ const filter: FilterCreator = ({ config }) => {
       changes
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
-        .filter(change => isDeployableAccountIdType(getChangeData(change)))
-        .forEach(change =>
-          applyFunctionToChangeData<Change<InstanceElement>>(change, async element => {
-            walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache), config) })
-            return element
-          }),
-        )
+        .map(getChangeData)
+        .filter(isDeployableAccountIdType)
+        .forEach(element => walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache), config) }))
     },
     onDeploy: async changes => {
       changes
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
-        .forEach(change =>
-          applyFunctionToChangeData<Change<InstanceElement>>(change, async element => {
-            cache[element.elemID.getFullName()]?.forEach(cacheInfo => {
-              setPath(element, cacheInfo.path, cacheInfo.object)
-            })
-            return element
-          }),
-        )
+        .map(getChangeData)
+        .forEach(element => {
+          cache[element.elemID.getFullName()]?.forEach(cacheInfo => {
+            setPath(element, cacheInfo.path, cacheInfo.object)
+          })
+          return element
+        })
     },
   }
 }

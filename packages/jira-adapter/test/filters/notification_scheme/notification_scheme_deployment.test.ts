@@ -435,7 +435,9 @@ describe('notificationSchemeDeploymentFilter', () => {
     })
     describe('removal change', () => {
       it('should remove instance', async () => {
-        const removal = toChange({ before: instance })
+        const instanceClone = instance.clone()
+        instanceClone.value.notificationSchemeEvents[0].notifications[0].parameter = { id: 'abc' }
+        const removal = toChange({ before: instanceClone })
         const res = await filter.deploy([removal])
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(res.deployResult.errors).toHaveLength(0)

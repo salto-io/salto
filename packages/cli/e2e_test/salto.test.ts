@@ -61,12 +61,12 @@ import { instanceExists, objectExists, getSalesforceCredsInstance, getSalesforce
 const { awu } = collections.asynciterable
 
 const SALESFORCE_SERVICE_NAME = 'salesforce'
-// const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 const apiNameAnno = (obj: string, field: string): Record<string, string> => ({
   [API_NAME]: [obj, field].join(API_NAME_SEPARATOR),
 })
 
-describe.each([[SALESFORCE_SERVICE_NAME]])(
+describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]])(
   'cli e2e with account name %s',
   accountName => {
     jest.setTimeout(15 * 60 * 1000)

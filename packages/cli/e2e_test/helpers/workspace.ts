@@ -187,7 +187,12 @@ export const runFetch = async (
       ...(inputEnvironment ? ['-e', inputEnvironment] : []),
       '-m',
       isolated ? 'isolated' : 'override',
-      ...(configOverrides ?? []).flatMap(override => ['-C', override]),
+      ...(configOverrides ?? [])
+        .concat([
+          'salesforce.fetch.optionalFeatures.hideTypesFolder=false',
+          'salesforce.fetch.optionalFeatures.hideTypesFolder=false',
+        ])
+        .flatMap(override => ['-C', override]),
     ],
   })
   expect(result).toEqual(CliExitCode.Success)

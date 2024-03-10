@@ -28,6 +28,7 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
   toChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _, { remove } from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -36,7 +37,13 @@ import { collections } from '@salto-io/lowerdash'
 import { FETCH_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
+import {
+  ACCOUNT_FEATURES_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
+  TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME,
+  ZENDESK,
+} from '../constants'
 
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
@@ -168,7 +175,7 @@ const removeCustomTicketStatusFromTicketFieldIDsField = (
   }
 
   const foundCustomTicketField = ticketFieldIDs.find(id =>
-    id instanceof ReferenceExpression ? id.elemID.isEqual(customTicketElement.elemID) : false,
+    isReferenceExpression(id) ? id.elemID.isEqual(customTicketElement.elemID) : false,
   )
   if (foundCustomTicketField !== undefined) {
     // found a ReferenceExpression pointing to the custom ticket
@@ -188,7 +195,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     }
     const genericCustomTicketElement = elements
       .filter(isInstanceElement)
-      .find(instance => instance.value.type === 'custom_status')
+      .find(instance => instance.value.type === TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME)
     if (genericCustomTicketElement === undefined) {
       return
     }

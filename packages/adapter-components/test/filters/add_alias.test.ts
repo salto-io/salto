@@ -38,104 +38,119 @@ describe('add alias filter', () => {
   const instType3 = new InstanceElement('inst3', objType3, { name: 'inst3 name', title: 'inst3 title' }, undefined, {
     _parent: [new ReferenceExpression(instType2.elemID, instType2)],
   })
-  const instType4 = new InstanceElement('inst3', objType4, { name: 'inst4 name', title: 'inst4 title', refField: new ReferenceExpression(instType3.elemID, instType3) })
+  const instType4 = new InstanceElement('inst3', objType4, {
+    name: 'inst4 name',
+    title: 'inst4 title',
+    refField: new ReferenceExpression(instType3.elemID, instType3),
+  })
   const instType5 = new InstanceElement('inst5', objType5, { name: 'inst5 name', title: 'inst5 title' })
   let elements: InstanceElement[]
   beforeEach(() => {
     elements = [instType1.clone(), instType2.clone(), instType3.clone(), instType4.clone(), instType5.clone()]
   })
 
+  const createFilter = (definitions: ApiDefinitions): FilterType =>
+    addAliasFilterCreator(definitions)({
+      client: {} as unknown,
+      paginator: undefined as unknown as Paginator,
+      fetchQuery: createMockQuery(),
+      config: {} as unknown,
+    }) as FilterType
 
-  const createFilter = (definitions: ApiDefinitions): FilterType => addAliasFilterCreator(definitions)({
-    client: {} as unknown,
-    paginator: undefined as unknown as Paginator,
-    fetchQuery: createMockQuery(),
-    config: {}  as unknown,
-  }) as FilterType
-
-    describe('when fetch definition is undefined', () => {
-      it('should do nothing on fetch', async () => {
-        const filter = createFilter({} as ApiDefinitions)
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined, undefined, undefined, undefined, undefined])
-      })
+  describe('when fetch definition is undefined', () => {
+    it('should do nothing on fetch', async () => {
+      const filter = createFilter({} as ApiDefinitions)
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      ])
     })
-    describe('when fetch definition is defined', () => {
-      const definitions = {
-        fetch: { 
-          instances: {
-            customizations: {
-              [type1]: {
-                element: {
-                  topLevel: {
-                    alias: {
-                      aliasComponents: [
-                        {
-                          fieldName: 'name',
-                        },
-                      ],
-                    },
+  })
+  describe('when fetch definition is defined', () => {
+    const definitions = {
+      fetch: {
+        instances: {
+          customizations: {
+            [type1]: {
+              element: {
+                topLevel: {
+                  alias: {
+                    aliasComponents: [
+                      {
+                        fieldName: 'name',
+                      },
+                    ],
                   },
                 },
               },
-              [type2]: {
-                element: {
-                  topLevel: {
-                    alias: {
-                      aliasComponents: [
-                        {
-                          fieldName: 'title',
-                        },
-                      ],
-                    },
+            },
+            [type2]: {
+              element: {
+                topLevel: {
+                  alias: {
+                    aliasComponents: [
+                      {
+                        fieldName: 'title',
+                      },
+                    ],
                   },
                 },
               },
-              [type3]: {
-                element: {
-                  topLevel: {
-                    alias: {
-                      aliasComponents: [
-                        {
-                          fieldName: '_parent.0',
-                          referenceFieldName: '_alias',
-                        },
-                        {
-                          fieldName: 'name',
-                        },
-                      ],
-                      separator: ':',
-                    },
+            },
+            [type3]: {
+              element: {
+                topLevel: {
+                  alias: {
+                    aliasComponents: [
+                      {
+                        fieldName: '_parent.0',
+                        referenceFieldName: '_alias',
+                      },
+                      {
+                        fieldName: 'name',
+                      },
+                    ],
+                    separator: ':',
                   },
                 },
               },
-              [type4]: {
-                element: {
-                  topLevel: {
-                    alias: {
-                      aliasComponents: [
-                        {
-                          fieldName: 'refField',
-                          referenceFieldName: '_alias',
-                        },
-                        {
-                          fieldName: 'title',
-                        },
-                      ],
-                      separator: ':',
-                    },
+            },
+            [type4]: {
+              element: {
+                topLevel: {
+                  alias: {
+                    aliasComponents: [
+                      {
+                        fieldName: 'refField',
+                        referenceFieldName: '_alias',
+                      },
+                      {
+                        fieldName: 'title',
+                      },
+                    ],
+                    separator: ':',
                   },
                 },
               },
             },
           },
         },
-      } as unknown as ApiDefinitions
-      it('should add aliases correctly', async () => {
-        const filter = createFilter(definitions)
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS]))
-          .toEqual(['inst1 name', 'inst2 title', 'inst2 title:inst3 name', 'inst2 title:inst3 name:inst4 title', undefined])
-      })
+      },
+    } as unknown as ApiDefinitions
+    it('should add aliases correctly', async () => {
+      const filter = createFilter(definitions)
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([
+        'inst1 name',
+        'inst2 title',
+        'inst2 title:inst3 name',
+        'inst2 title:inst3 name:inst4 title',
+        undefined,
+      ])
     })
+  })
 })

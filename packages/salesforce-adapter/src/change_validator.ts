@@ -47,6 +47,7 @@ import standardFieldOrObjectAdditionsOrDeletions from './change_validators/stand
 import deletedNonQueryableFields from './change_validators/deleted_non_queryable_fields'
 import instanceWithUnknownType from './change_validators/instance_with_unknown_type'
 import artificialTypes from './change_validators/artifical_types'
+import taskOrEventFieldsModifications from './change_validators/task_or_event_fields_modifications'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 import metadataTypes from './change_validators/metadata_types'
@@ -104,6 +105,7 @@ export const changeValidators: Record<
   instanceWithUnknownType: () => instanceWithUnknownType,
   artificialTypes: () => artificialTypes,
   metadataTypes: () => metadataTypes,
+  taskOrEventFieldsModifications: () => taskOrEventFieldsModifications,
   ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
 }
 

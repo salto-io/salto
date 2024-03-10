@@ -305,6 +305,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
 })
 const jiraDeployConfigType = definitions.createUserDeployConfigType(JIRA, changeValidatorConfigType, {
   ...defaultMissingUserFallbackField,
+  taskMaxRetries: { refType: BuiltinTypes.NUMBER },
+  taskRetryDelay: { refType: BuiltinTypes.NUMBER },
   forceDelete: { refType: BuiltinTypes.BOOLEAN },
 })
 

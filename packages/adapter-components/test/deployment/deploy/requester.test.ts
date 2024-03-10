@@ -26,10 +26,11 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../src/client/http_client'
+import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../src/client/http_client'
 import { getRequester } from '../../../src/deployment/deploy/requester'
 import { ApiDefinitions, queryWithDefault } from '../../../src/definitions'
 import { noPagination } from '../../../src/fetch/request/pagination'
+import { Response, ResponseValue } from '../../../src/client'
 
 type AdditionalAction = 'activate' | 'deactivate'
 
@@ -75,6 +76,17 @@ describe('DeployRequester', () => {
             httpClient: client,
             endpoints: {
               customizations: {},
+              default: {
+                delete: {
+                  additionalValidStatuses: [404],
+                  polling: {
+                    interval: 100,
+                    retries: 3,
+                    checkStatus: (response: Response<ResponseValue | ResponseValue[]>): boolean =>
+                      response.status !== 502,
+                  },
+                },
+              },
             },
           },
         },
@@ -366,7 +378,111 @@ describe('DeployRequester', () => {
       queryParams: undefined,
     })
   })
-  // TODO add tests for allowed status codes once SALTO-5415 is merged
+
+  it('should not throw an error when the client return a valid status code', async () => {
+    client.delete.mockRejectedValueOnce(
+      new HTTPError('Not Found', {
+        data: {},
+        status: 404,
+      }),
+    )
+
+    instance.value.id = '1'
+    _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
+    _.set(
+      definitions.deploy.instances.customizations,
+      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+      '{id}',
+    )
+    const requester = getRequester({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ before: instance })
+    await expect(
+      requester.requestAllForChangeAndAction({
+        action: change.action,
+        change,
+        changeGroup: { changes: [change], groupID: 'abc' },
+        elementSource: buildElementsSourceFromElements([]),
+      }),
+    ).resolves.not.toThrow()
+  })
+
+  it('should throw an error when the client return a non valid status code', async () => {
+    client.delete.mockRejectedValueOnce(
+      new HTTPError('Something went wrong', {
+        data: {},
+        status: 400,
+      }),
+    )
+
+    instance.value.id = '1'
+    _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
+    _.set(
+      definitions.deploy.instances.customizations,
+      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+      '{id}',
+    )
+    const requester = getRequester({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ before: instance })
+    await expect(async () => {
+      await requester.requestAllForChangeAndAction({
+        action: change.action,
+        change,
+        changeGroup: { changes: [change], groupID: 'abc' },
+        elementSource: buildElementsSourceFromElements([]),
+      })
+    }).rejects.toThrow('Something went wrong')
+  })
+
+  it('should call the client few times when polling', async () => {
+    client.delete
+      .mockResolvedValueOnce(
+        Promise.resolve({
+          data: {},
+          status: 502,
+        }),
+      )
+      .mockResolvedValueOnce(
+        Promise.resolve({
+          data: {},
+          status: 502,
+        }),
+      )
+      .mockResolvedValueOnce(
+        Promise.resolve({
+          data: {},
+          status: 200,
+        }),
+      )
+
+    instance.value.id = '1'
+    _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
+    _.set(
+      definitions.deploy.instances.customizations,
+      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+      '{id}',
+    )
+    const requester = getRequester({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ before: instance })
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+    })
+    expect(client.delete).toHaveBeenCalledTimes(3)
+  })
 
   it('should support multiple requests', async () => {
     client.post.mockResolvedValueOnce({

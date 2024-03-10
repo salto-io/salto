@@ -154,6 +154,7 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
       contexts,
       callArgs,
       additionalValidStatuses: mergedEndpointDef.additionalValidStatuses,
+      polling: mergedEndpointDef.polling,
     })
 
     const itemsWithContext = pagesWithContext

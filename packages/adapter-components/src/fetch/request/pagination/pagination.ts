@@ -15,13 +15,23 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { HTTPReadClientInterface, HTTPWriteClientInterface, ResponseValue } from '../../../client'
+import { collections, retry } from '@salto-io/lowerdash'
+import {
+  ClientBaseParams,
+  HTTPReadClientInterface,
+  HTTPWriteClientInterface,
+  Response,
+  ResponseValue,
+} from '../../../client'
 import { HTTPEndpointIdentifier, ContextParams, PaginationDefinitions } from '../../../definitions'
 import { RequestQueue, ClientRequest } from './queue'
-import { RequestArgs } from '../../../definitions/system'
+import { RequestArgs, PollingArgs } from '../../../definitions/system'
 import { replaceAllArgs } from '../utils'
 
+const {
+  withRetry,
+  retryStrategies: { intervals },
+} = retry
 const log = logger(module)
 
 type PagesWithContext = {
@@ -35,6 +45,7 @@ export const traversePages = async <ClientOptions extends string>({
   contexts,
   callArgs,
   additionalValidStatuses = [],
+  polling,
 }: {
   client: HTTPReadClientInterface & HTTPWriteClientInterface
   paginationDef: PaginationDefinitions<ClientOptions>
@@ -42,6 +53,7 @@ export const traversePages = async <ClientOptions extends string>({
   contexts: ContextParams[]
   callArgs: RequestArgs
   additionalValidStatuses?: number[]
+  polling?: PollingArgs
 }): Promise<PagesWithContext[]> => {
   const initialArgs = (_.isEmpty(contexts) ? [{}] : contexts).map(context => ({
     callArgs: replaceAllArgs({
@@ -62,12 +74,44 @@ export const traversePages = async <ClientOptions extends string>({
         throwOnUnresolvedArgs: true,
       })
 
+      const pollingFunc = async (
+        args: ClientBaseParams,
+        pollingArgs: PollingArgs,
+      ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
+        const response = await client[finalEndpointIdentifier.method ?? 'get'](args)
+        if (pollingArgs.checkStatus(response)) return response
+        return undefined
+      }
+
       const processPage: ClientRequest = async args => {
+        let page: Response<ResponseValue | ResponseValue[]>
+        //  SALTO-5575 consider splitting the polling from the pagination
         try {
-          const page = await client[finalEndpointIdentifier.method ?? 'get']({
-            url: finalEndpointIdentifier.path,
-            ...args,
-          })
+          if (polling) {
+            const pollingResult = await withRetry(
+              () =>
+                pollingFunc(
+                  {
+                    url: finalEndpointIdentifier.path,
+                    ...args,
+                  },
+                  polling,
+                ),
+              {
+                strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
+              },
+            )
+            if (pollingResult === undefined) {
+              // should never get here, withRetry would throw
+              throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
+            }
+            page = pollingResult
+          } else {
+            page = await client[finalEndpointIdentifier.method ?? 'get']({
+              url: finalEndpointIdentifier.path,
+              ...args,
+            })
+          }
           pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
           return page
         } catch (e) {

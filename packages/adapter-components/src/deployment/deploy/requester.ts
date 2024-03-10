@@ -26,8 +26,8 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
-import { ResponseValue, Response } from '../../client'
+import { collections, promises, values as lowerdashValues,retry } from '@salto-io/lowerdash'
+import { ResponseValue, Responseת ClientDataParams } from '../../client'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
 import { APIDefinitionsOptions, DeployHTTPEndpointDetails } from '../../definitions/system'
 import {
@@ -44,6 +44,10 @@ import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
 
+const {
+  withRetry,
+  retryStrategies: { intervals },
+} = retry
 const log = logger(module)
 const { awu } = collections.asynciterable
 
@@ -237,13 +241,55 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
       context: _.merge({}, value, additionalContext),
       throwOnUnresolvedArgs: true,
     })
-
     const client = clientDefs[clientName].httpClient
+    const additionalValidStatuses = mergedEndpointDef.additionalValidStatuses ?? []
+    const { polling } = mergedEndpointDef
 
-    return client[finalEndpointIdentifier.method ?? 'get']({
-      url: finalEndpointIdentifier.path,
-      ...callArgs,
-    })
+    const pollingFunc = async (
+      args: ClientDataParams,
+      pollingArgs: PollingArgs,
+    ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
+      const response = await client[finalEndpointIdentifier.method ?? 'get'](args)
+      if (pollingArgs.checkStatus(response)) return response
+      return undefined
+    }
+
+    try {
+      let res: Response<ResponseValue | ResponseValue[]>
+      if (polling) {
+        const pollingResult = await withRetry(
+          () =>
+            pollingFunc(
+              {
+                url: finalEndpointIdentifier.path,
+                ...callArgs,
+              },
+              polling,
+            ),
+          {
+            strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
+          },
+        )
+        if (pollingResult === undefined) {
+          // should never get here, withRetry would throw
+          throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
+        }
+        res = pollingResult
+      } else {
+        res = await client[finalEndpointIdentifier.method ?? 'get']({
+          url: finalEndpointIdentifier.path,
+          ...callArgs,
+        })
+      }
+      return res
+    } catch (e) {
+      const status = e.response?.status
+      if (additionalValidStatuses.includes(status)) {
+        log.debug('Suppressing %d error %o', status, e)
+        return { data: {}, status }
+      }
+      throw e
+    }
   }
 
   const requestAllForChangeAndAction: DeployRequester<

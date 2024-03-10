@@ -79,7 +79,7 @@ export const filterRunner = <
   onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
 ): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)
 
-// TODO deprecate when upgrading to new definitions
+// TODO deprecate when upgrading to new definitions SALTO-5538
 
 export type FilterOpts<TClient, TContext, TAdditional = {}> = {
   client: TClient

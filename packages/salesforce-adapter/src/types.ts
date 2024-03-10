@@ -160,6 +160,7 @@ export type ChangeValidatorName =
   | 'instanceWithUnknownType'
   | 'artificialTypes'
   | 'metadataTypes'
+  | 'newFieldsAndObjectsFLS'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -868,6 +869,7 @@ const changeValidatorConfigType =
       unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
       dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
       installedPackages: { refType: BuiltinTypes.BOOLEAN },
+      newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
       standardFieldOrObjectAdditionsOrDeletions: {
         refType: BuiltinTypes.BOOLEAN,
       },

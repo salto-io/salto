@@ -57,7 +57,12 @@ import { FileProperties } from '@salto-io/jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
-import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
+import {
+  FetchElements,
+  INSTANCE_SUFFIXES,
+  OptionalFeatures,
+  SalesforceConfig,
+} from '../types'
 import {
   ACTIVE,
   API_NAME,
@@ -68,6 +73,7 @@ import {
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
   DefaultSoqlQueryLimits,
+  DEFAULT_FLS_PROFILES,
   FIELD_ANNOTATIONS,
   FLOW_METADATA_TYPE,
   INSTALLED_PACKAGE_METADATA,
@@ -965,3 +971,6 @@ export const getMostRecentFileProperties = (
     ),
     (prop) => new Date(prop.lastModifiedDate).getTime(),
   )
+
+export const getFLSProfiles = (config: SalesforceConfig): string[] =>
+  config.client?.deploy?.flsProfiles ?? DEFAULT_FLS_PROFILES

@@ -55,11 +55,13 @@ import {
   isInstanceOfCustomObjectChangeSync,
   aliasOrElemID,
   getMostRecentFileProperties,
+  getFLSProfiles,
 } from '../../src/filters/utils'
 import {
   API_NAME,
   CUSTOM_OBJECT,
   CUSTOM_SETTINGS_TYPE,
+  DEFAULT_FLS_PROFILES,
   FIELD_ANNOTATIONS,
   INSTANCE_FULL_NAME_FIELD,
   LABEL,
@@ -1069,6 +1071,18 @@ describe('filter utils', () => {
         }),
       ]
       expect(getMostRecentFileProperties(fileProperties)).toBeUndefined()
+    })
+  })
+  describe('getFLSProfiles', () => {
+    it('should return the default FLS Profiles when flsProfiles are undefined in the config', () => {
+      expect(getFLSProfiles({})).toEqual(DEFAULT_FLS_PROFILES)
+    })
+
+    it('should return the FLS profiles defined in the config', () => {
+      const flsProfiles = ['Admin Copy', 'Test Profile']
+      expect(getFLSProfiles({ client: { deploy: { flsProfiles } } })).toEqual(
+        flsProfiles,
+      )
     })
   })
 })

@@ -134,8 +134,8 @@ describe('userUtils', () => {
           },
         ]
       })
-
-      const idByEmail = await userUtils.getIdByEmail(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByEmail = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmail).toEqual({
         1: 'a@a.com',
         2: 'b@b.com',
@@ -153,17 +153,18 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByEmail = await userUtils.getIdByEmail(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByEmail = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmail).toEqual({
         1: 'a@a.com',
         2: 'b@b.com',
       })
-      const idByEmailAfterCache = await userUtils.getIdByEmail(mockPaginator, true)
+      const idByEmailAfterCache = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmailAfterCache).toEqual({
         1: 'a@a.com',
         2: 'b@b.com',
       })
-      await userUtils.getIdByEmail(mockPaginator, true)
+      await userUtils.getIdByEmail(getUsersPromise)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
     it('should return empty object if users are in invalid format, getIdByEmail', async () => {
@@ -174,7 +175,8 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByEmail = await userUtils.getIdByEmail(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByEmail = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmail).toEqual({})
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
@@ -200,8 +202,8 @@ describe('userUtils', () => {
           },
         ]
       })
-
-      const idByName = await userUtils.getIdByName(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByName = await userUtils.getIdByName(getUsersPromise)
       expect(idByName).toEqual({
         1: 'a',
         2: 'b',
@@ -219,17 +221,18 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByName = await userUtils.getIdByName(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByName = await userUtils.getIdByName(getUsersPromise)
       expect(idByName).toEqual({
         1: 'a',
         2: 'b',
       })
-      const idByEmailAfterCache = await userUtils.getIdByName(mockPaginator, true)
+      const idByEmailAfterCache = await userUtils.getIdByName(getUsersPromise)
       expect(idByEmailAfterCache).toEqual({
         1: 'a',
         2: 'b',
       })
-      await userUtils.getIdByName(mockPaginator, true)
+      await userUtils.getIdByName(getUsersPromise)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
     it('should return empty object if users are in invalid format, getIdByName', async () => {
@@ -240,7 +243,8 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByName = await userUtils.getIdByName(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByName = await userUtils.getIdByName(getUsersPromise)
       expect(idByName).toEqual({})
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })

@@ -392,7 +392,7 @@ const addNewChangedBy = async ({
 /**
  * this filter adds changed_at and changed_by annotations
  */
-const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
+const filterCreator: FilterCreator = ({ elementsSource, client, config, usersPromise }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (elementsSource === undefined) {
@@ -428,8 +428,12 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
       return
     }
     await addPrevChangedBy(elementsSource, idByInstance)
-
-    const idToName = await getIdByName(paginator, config[FETCH_CONFIG].resolveUserIDs)
+    let idToName
+    if (usersPromise === undefined) {
+      idToName = {}
+    } else {
+      idToName = await getIdByName(usersPromise)
+    }
     await addNewChangedBy({ instances, idToName, newLastAuditTime, auditTimeInstance, client })
   },
 })

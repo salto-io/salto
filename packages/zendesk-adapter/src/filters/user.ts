@@ -15,14 +15,9 @@
  */
 import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { TYPE_NAME_TO_REPLACER, getIdByEmail } from '../users/user_utils'
 import { deployModificationFunc } from '../replacers_utils'
-import { paginate } from '../client/pagination'
-import { FETCH_CONFIG } from '../config'
-
-const { createPaginator } = clientUtils
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
@@ -30,26 +25,20 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean =>
 /**
  * Replaces the user ids with emails
  */
-const filterCreator: FilterCreator = ({ client, config, usersPromise }) => {
+const filterCreator: FilterCreator = ({ usersPromise }) => {
   let userIdToEmail: Record<string, string> = {}
-  const { resolveUserIDs } = config[FETCH_CONFIG]
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      const paginator = createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      })
+      if (usersPromise === undefined) {
+        return {}
+      }
 
-      const mapping = await getIdByEmail(paginator, resolveUserIDs)
+      const mapping = await getIdByEmail(usersPromise)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
-
-      if (usersPromise === undefined) {
-        return {}
-      }
 
       const { errors } = await usersPromise
       return { errors }
@@ -59,16 +48,12 @@ const filterCreator: FilterCreator = ({ client, config, usersPromise }) => {
       if (_.isEmpty(relevantChanges) || usersPromise === undefined) {
         return
       }
-      const paginator = createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      })
       const { users } = await usersPromise
       if (_.isEmpty(users)) {
         return
       }
       userIdToEmail = Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
-      userIdToEmail = await getIdByEmail(paginator, resolveUserIDs)
+      userIdToEmail = await getIdByEmail(usersPromise)
       const emailToUserId = Object.fromEntries(users.map(user => [user.email, user.id.toString()])) as Record<
         string,
         string

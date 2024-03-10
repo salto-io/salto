@@ -27,7 +27,7 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { references as referencesUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
@@ -48,12 +48,10 @@ import {
   transformCustomObjectLookupField,
   transformRelationshipFilterField,
 } from './utils'
-import { paginate } from '../../client/pagination'
 import { getIdByEmail } from '../../users/user_utils'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
-const { createPaginator } = clientUtils
 
 const log = logger(module)
 
@@ -317,12 +315,8 @@ const getUserConditions = (changes: Change[]): CustomObjectCondition[] => {
  *  preDeploy handles values that are users, including fallback user
  *  onDeploy reverts the preDeploy
  */
-const customObjectFieldsFilter: FilterCreator = ({ config, client, usersPromise }) => {
+const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
   const userPathToOriginalValue: Record<string, string> = {}
-  const paginator = createPaginator({
-    client,
-    paginationFuncCreator: paginate,
-  })
   return {
     name: 'customObjectFieldOptionsFilter',
     onFetch: async (elements: Element[]) => {
@@ -331,7 +325,13 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client, usersPromise 
       const instances = elements.filter(isInstanceElement)
 
       // It is possible to key all instance by id because the internal Id is unique across all types (SALTO-4805)
-      const usersById = await getIdByEmail(paginator, config[FETCH_CONFIG].resolveUserIDs)
+      let usersById: Record<string, string>
+      if (usersPromise === undefined) {
+        usersById = {}
+      } else {
+        usersById = await getIdByEmail(usersPromise)
+      }
+
       const instancesById = _.keyBy(
         instances.filter(instance => _.isNumber(instance.value.id)),
         instance => _.parseInt(instance.value.id),

@@ -20,8 +20,8 @@ import {
   isModificationChange,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { getParents, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { getParents } from '@salto-io/adapter-utils'
+import { client as clientUtils, resolveChangeElement, resolveValues } from '@salto-io/adapter-components'
 import { getLookUpName } from '../../reference_mapping'
 import { getDiffIds } from '../../diff'
 

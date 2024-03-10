@@ -21,7 +21,7 @@ import {
   isInstanceChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'

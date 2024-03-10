@@ -23,7 +23,7 @@ import {
   isAdditionChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
 
 import { FIELD_ANNOTATIONS } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'

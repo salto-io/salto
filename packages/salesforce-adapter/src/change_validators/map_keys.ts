@@ -25,11 +25,9 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import {
-  TransformFunc,
-  transformValues,
-  resolveValues,
-} from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import { collections } from '@salto-io/lowerdash'
 import {
   defaultMapper,

@@ -25,8 +25,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import { getFilterParams, mockClient } from '../../utils'

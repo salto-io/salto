@@ -27,13 +27,8 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import {
-  resolveChangeElement,
-  walkOnValue,
-  WALK_NEXT_STEP,
-  inspectValue,
-  createSchemeGuard,
-} from '@salto-io/adapter-utils'
+import { walkOnValue, WALK_NEXT_STEP, inspectValue, createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import {

@@ -19,6 +19,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 import { isFunctionExpression } from './functions'
 import { rules } from './native/lexer'
+import { escapeTemplateMarker } from './utils'
 
 const O_BLOCK = '{'
 const C_BLOCK = '}'
@@ -49,8 +50,6 @@ const separateByCommas = (items: string[][]): string[][] => {
 }
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
-
-const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
 
 // Double escaping happens when we stringify after escaping.
 const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')

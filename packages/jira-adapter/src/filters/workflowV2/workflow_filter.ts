@@ -16,14 +16,13 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, walkOnElement } from '@salto-io/adapter-utils'
 import {
-  WALK_NEXT_STEP,
-  WalkOnFunc,
-  isResolvedReferenceExpression,
+  elements as adapterElements,
+  config as configUtils,
+  client as clientUtils,
   resolveValues,
-  walkOnElement,
-} from '@salto-io/adapter-utils'
-import { elements as adapterElements, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
+} from '@salto-io/adapter-components'
 import {
   CORE_ANNOTATIONS,
   Element,

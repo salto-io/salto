@@ -81,6 +81,7 @@ export const buildHistoryStateStaticFilesSource = (dirStore: StateStaticFilesSto
         dirStore.getFullPath(filepath),
         async () => (await dirStore.get(getStaticFileUniqueName({ filepath, hash: fileHash as string })))?.buffer,
         fileEncoding,
+        _.isObject(args) ? args.isTemplate : undefined,
       )
     },
 

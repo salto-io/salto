@@ -25,7 +25,7 @@ import {
   ModificationChange,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'

@@ -27,7 +27,6 @@ import {
 import {
   transformElement,
   applyFunctionToChangeData,
-  resolveValues,
   restoreChangeElement,
   safeJsonStringify,
   restoreValues,
@@ -35,7 +34,7 @@ import {
   TransformFuncSync,
 } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import {
   AUTOMATION_TYPE,
   AUTOMATION_COMPONENT_TYPE,

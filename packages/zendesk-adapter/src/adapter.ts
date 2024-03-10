@@ -38,18 +38,13 @@ import {
   client as clientUtils,
   combineElementFixers,
   config as configUtils,
-  definitions,
   elements as elementUtils,
-  fetch as fetchUtils,
-} from '@salto-io/adapter-components'
-import {
-  getElemIdFuncWrapper,
-  inspectValue,
-  logDuration,
   resolveChangeElement,
   resolveValues,
-  restoreChangeElement,
-} from '@salto-io/adapter-utils'
+  definitions,
+  fetch as fetchUtils,
+} from '@salto-io/adapter-components'
+import { getElemIdFuncWrapper, inspectValue, logDuration, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'

@@ -27,7 +27,9 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'

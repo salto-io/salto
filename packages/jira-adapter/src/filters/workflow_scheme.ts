@@ -33,10 +33,15 @@ import {
   RemovalChange,
   Values,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import {
+  elements as elementUtils,
+  client as clientUtils,
+  config as configUtils,
+  resolveValues,
+} from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { applyFunctionToChangeData, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { handleDeploymentError } from '../deployment/deployment_error_handling'
 import { getLookUpName } from '../reference_mapping'

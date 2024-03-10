@@ -118,7 +118,9 @@ const getCacheSources = async (
     namespace: getRemoteMapCacheNamespace(cacheName, 'elements'),
     serialize: async (elements: Element[]) => serialize(elements ?? [], 'keepRef'),
     deserialize: async data =>
-      deserialize(data, async sf => staticFilesSource.getStaticFile({ filepath: sf.filepath, encoding: sf.encoding })),
+      deserialize(data, async sf =>
+        staticFilesSource.getStaticFile({ filepath: sf.filepath, encoding: sf.encoding, isTemplate: sf.isTemplate }),
+      ),
     persistent,
   }),
   sourceMap: await remoteMapCreator({

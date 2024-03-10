@@ -26,8 +26,15 @@ import {
   ReadOnlyElementsSource,
   SaltoElementError,
 } from '@salto-io/adapter-api'
-import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { invertNaclCase, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
+import {
+  config,
+  deployment,
+  client as clientUtils,
+  elements as elementUtils,
+  resolveChangeElement,
+  resolveValues,
+} from '@salto-io/adapter-components'
+import { invertNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { getLookUpName } from '../reference_mapping'

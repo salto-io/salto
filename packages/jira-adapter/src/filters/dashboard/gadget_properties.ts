@@ -30,7 +30,9 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, restoreChangeElement } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import { FilterCreator } from '../../filter'
 import { DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
 import { findObject } from '../../utils'

@@ -13,7 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as parser from './src/parser'
-import * as parserUtils from './src/utils'
-
-export { parser, parserUtils }
+export { templateExpressionToStaticFile, staticFileToTemplateExpression } from './template_static_file'

@@ -21,8 +21,8 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
+
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'

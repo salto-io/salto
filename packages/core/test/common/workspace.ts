@@ -144,7 +144,14 @@ export const mockWorkspace = ({
     getParsedNaclFile: async (filename: string) => ({
       elements: async () => parsedNaclFiles[filename],
     }),
-    getStaticFile: ({ filepath, encoding }: { filepath: string; encoding: BufferEncoding }) =>
-      staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding }) : undefined,
+    getStaticFile: ({
+      filepath,
+      encoding,
+      isTemplate,
+    }: {
+      filepath: string
+      encoding: BufferEncoding
+      isTemplate?: boolean
+    }) => (staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding, isTemplate }) : undefined),
   } as unknown as workspace.Workspace
 }

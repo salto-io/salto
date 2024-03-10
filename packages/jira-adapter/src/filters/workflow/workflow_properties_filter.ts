@@ -27,9 +27,9 @@ import {
   ObjectType,
   Values,
 } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'

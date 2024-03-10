@@ -111,21 +111,25 @@ const restoredWorkflowV2Instance = new InstanceElement('instance', createEmptyTy
 
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  resolveValues: jest.fn().mockImplementation((...args) => {
-    if (args[0].elemID.typeName === WORKFLOW_TYPE_NAME) {
-      return resolvedInstance
-    }
-    if (args[0].elemID.typeName === WORKFLOW_CONFIGURATION_TYPE) {
-      return resolvedWorkflowV2Instance
-    }
-    return undefined
-  }),
   restoreValues: jest.fn().mockImplementation((...args) => {
     if (args[1].elemID.typeName === WORKFLOW_TYPE_NAME) {
       return restoredInstance
     }
     if (args[1].elemID.typeName === WORKFLOW_CONFIGURATION_TYPE) {
       return restoredWorkflowV2Instance
+    }
+    return undefined
+  }),
+}))
+
+jest.mock('@salto-io/adapter-components', () => ({
+  ...jest.requireActual<{}>('@salto-io/adapter-components'),
+  resolveValues: jest.fn().mockImplementation((...args) => {
+    if (args[0].elemID.typeName === WORKFLOW_TYPE_NAME) {
+      return resolvedInstance
+    }
+    if (args[0].elemID.typeName === WORKFLOW_CONFIGURATION_TYPE) {
+      return resolvedWorkflowV2Instance
     }
     return undefined
   }),

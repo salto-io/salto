@@ -28,14 +28,12 @@ import {
   ReadOnlyElementsSource,
   Value,
 } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, resolveChangeElement, resolveValues } from '@salto-io/adapter-components'
 import {
   applyFunctionToChangeData,
   getParents,
   isResolvedReferenceExpression,
-  resolveChangeElement,
   resolvePath,
-  resolveValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
@@ -44,7 +42,6 @@ import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../u
 const resolveDefaultOption = (contextChange: Change<InstanceElement>): Promise<Change<InstanceElement>> =>
   applyFunctionToChangeData<Change<InstanceElement>>(contextChange, instance => {
     const clonedInstance = instance.clone()
-
     ;['optionId', 'cascadingOptionId']
       .filter(fieldName => isResolvedReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
       .forEach(fieldName => {

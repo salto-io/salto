@@ -36,14 +36,13 @@ import {
 import {
   normalizeFilePathPart,
   naclCase,
-  resolveChangeElement,
   safeJsonStringify,
   pathNaclCase,
   references,
   inspectValue,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { elements as elementsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, fetch as fetchUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ZENDESK, MACRO_TYPE_NAME } from '../constants'

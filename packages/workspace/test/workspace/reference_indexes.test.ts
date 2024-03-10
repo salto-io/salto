@@ -24,6 +24,8 @@ import {
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
+import { parserUtils } from '@salto-io/parser'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
 import {
   REFERENCE_INDEXES_VERSION,
   ReferenceTargetIndexValue,
@@ -80,6 +82,9 @@ describe('updateReferenceIndexes', () => {
       },
     })
 
+    const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID('test', 'article') }), {})
+    const macro1 = new InstanceElement('macro1', new ObjectType({ elemID: new ElemID('test', 'macro') }), {})
+
     instance = new InstanceElement(
       'instance',
       object,
@@ -93,6 +98,18 @@ describe('updateReferenceIndexes', () => {
             new ReferenceExpression(new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value')),
           ],
         }),
+        templateStaticFile: parserUtils.templateExpressionToStaticFile(
+          createTemplateExpression({
+            parts: [
+              '"/hc/test/test/articles/',
+              new ReferenceExpression(article.elemID, article),
+              '\n/test "hc/test/test/articles/',
+              new ReferenceExpression(macro1.elemID, macro1),
+              '/test',
+            ],
+          }),
+          'test',
+        ),
       },
       undefined,
       { someAnnotation: new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someField', 'value')) },
@@ -124,6 +141,13 @@ describe('updateReferenceIndexes', () => {
               [
                 { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
                 { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+              ],
+            ],
+            [
+              'templateStaticFile',
+              [
+                { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+                { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
               ],
             ],
           ]),
@@ -185,6 +209,14 @@ describe('updateReferenceIndexes', () => {
           value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
         },
         {
+          key: 'test.article.instance.article',
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+        },
+        {
+          key: 'test.macro.instance.macro1',
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+        },
+        {
           key: 'test.target1',
           value: [
             new ElemID('test', 'object', 'attr', 'typeRef'),
@@ -214,6 +246,7 @@ describe('updateReferenceIndexes', () => {
       const instanceAfter = instance.clone()
       delete instanceAfter.annotations.someAnnotation
       delete instanceAfter.value.templateValue
+      delete instanceAfter.value.templateStaticFile
 
       instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(
         new ElemID('test', 'target2', 'instance', 'someInstance', 'value'),
@@ -281,6 +314,8 @@ describe('updateReferenceIndexes', () => {
         'test.target2.field.someField',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
+        'test.article.instance.article',
+        'test.macro.instance.macro1',
         'test.target2',
       ])
     })
@@ -389,6 +424,8 @@ describe('updateReferenceIndexes', () => {
         'test.target2.instance.someInstance',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
+        'test.article.instance.article',
+        'test.macro.instance.macro1',
         'test.target1',
         'test.target2',
         'test.object',
@@ -427,6 +464,13 @@ describe('updateReferenceIndexes', () => {
                   { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
                 ],
               ],
+              [
+                'templateStaticFile',
+                [
+                  { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+                  { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+                ],
+              ],
             ]),
           },
         ])
@@ -450,6 +494,14 @@ describe('updateReferenceIndexes', () => {
           {
             key: 'test.target2.field.anotherTemplateField',
             value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          },
+          {
+            key: 'test.article.instance.article',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+          },
+          {
+            key: 'test.macro.instance.macro1',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
           },
           {
             key: 'test.target2',
@@ -494,6 +546,13 @@ describe('updateReferenceIndexes', () => {
                   { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
                 ],
               ],
+              [
+                'templateStaticFile',
+                [
+                  { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+                  { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+                ],
+              ],
             ]),
           },
         ])
@@ -517,6 +576,14 @@ describe('updateReferenceIndexes', () => {
           {
             key: 'test.target2.field.anotherTemplateField',
             value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')],
+          },
+          {
+            key: 'test.article.instance.article',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
+          },
+          {
+            key: 'test.macro.instance.macro1',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')],
           },
           {
             key: 'test.target2',

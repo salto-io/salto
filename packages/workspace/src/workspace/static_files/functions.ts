@@ -22,7 +22,9 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): p
   file: {
     parse: (parameters): Promise<StaticFile | InvalidStaticFile> => {
       const [filepath, encoding] = parameters
-      return staticFilesSource.getStaticFile({ filepath, encoding })
+      const finalEncoding = encoding === 'template' ? 'utf8' : encoding
+      const isTemplate = encoding === 'template'
+      return staticFilesSource.getStaticFile({ filepath, encoding: finalEncoding, isTemplate })
     },
     dump: async (val: Value): Promise<parser.FunctionExpression> => {
       if (isInvalidStaticFile(val)) {
@@ -32,7 +34,8 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): p
       if ((await val.getContent()) !== undefined) {
         await staticFilesSource.persistStaticFile(val)
       }
-      const params = val.encoding === DEFAULT_STATIC_FILE_ENCODING ? [val.filepath] : [val.filepath, val.encoding]
+      const finalEncoding = val.isTemplate === true ? 'template' : val.encoding
+      const params = finalEncoding === DEFAULT_STATIC_FILE_ENCODING ? [val.filepath] : [val.filepath, finalEncoding]
       return new parser.FunctionExpression('file', params)
     },
     isSerializedAsFunction: (val: Value) => isStaticFile(val) || isInvalidStaticFile(val),

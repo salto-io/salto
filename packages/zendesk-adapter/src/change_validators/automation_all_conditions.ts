@@ -23,7 +23,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 
-import { resolveValues } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isConditions } from '../filters/utils'

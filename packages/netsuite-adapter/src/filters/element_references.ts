@@ -25,7 +25,8 @@ import {
   InstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'

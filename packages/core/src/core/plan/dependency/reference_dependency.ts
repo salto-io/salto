@@ -63,42 +63,41 @@ export const addReferencesDependency: DependencyChanger = async changes =>
   log.time(async () => {
     const changesById = collections.iterable.groupBy(changes, ([_id, change]) => getChangeElemId(change))
 
-  const addChangeDependency = async ([id, change]: ChangeEntry): Promise<Iterable<DependencyChange>> => {
-    const elem = getChangeData(change)
-    const parents = getParentIds(elem)
-    const elemId = elem.elemID.getFullName()
-    // Because fields are separate nodes in the graph, for object types we should only consider
-    // references from the annotations
-    const onlyAnnotations = isObjectType(elem)
-    // Not using ElementsSource here is legit because it's ran
-    // after resolve
-    const allReferencedIds = await getAllReferencedIds(elem, onlyAnnotations)
-    return wu(allReferencedIds)
-
-      .map(targetRefIdFullName => {
-        const targetRefId = ElemID.fromFullName(targetRefIdFullName)
-        const targetElemId = targetRefId.createBaseID().parent.getFullName()
-        // Ignore self references
-        if (targetElemId === elemId) {
+    const addChangeDependency = async ([id, change]: ChangeEntry): Promise<Iterable<DependencyChange>> => {
+      const elem = getChangeData(change)
+      const parents = getParentIds(elem)
+      const elemId = elem.elemID.getFullName()
+      // Because fields are separate nodes in the graph, for object types we should only consider
+      // references from the annotations
+      const onlyAnnotations = isObjectType(elem)
+      // Not using ElementsSource here is legit because it's ran
+      // after resolve
+      const allReferencedIds = await getAllReferencedIds(elem, onlyAnnotations)
+      return wu(allReferencedIds)
+        .map(targetRefIdFullName => {
+          const targetRefId = ElemID.fromFullName(targetRefIdFullName)
+          const targetElemId = targetRefId.createBaseID().parent.getFullName()
+          // Ignore self references
+          if (targetElemId === elemId) {
+            return undefined
+          }
+          const [targetChangeEntry] = changesById.get(targetElemId) ?? []
+          if (targetChangeEntry === undefined) {
+            return undefined
+          }
+          const [targetId, targetChange] = targetChangeEntry
+          if (isDependentAction(change.action, targetChange.action)) {
+            return parents.has(getChangeElemId(targetChange))
+              ? addParentDependency(id, targetId)
+              : addReferenceDependency(targetChange.action, id, targetId)
+          }
+          if (isReferenceValueChanged(targetChange, targetRefId)) {
+            return dependencyChange('add', id, targetId)
+          }
           return undefined
-        }
-        const [targetChangeEntry] = changesById.get(targetElemId) ?? []
-        if (targetChangeEntry === undefined) {
-          return undefined
-        }
-        const [targetId, targetChange] = targetChangeEntry
-        if (isDependentAction(change.action, targetChange.action)) {
-          return parents.has(getChangeElemId(targetChange))
-            ? addParentDependency(id, targetId)
-            : addReferenceDependency(targetChange.action, id, targetId)
-        }
-        if (isReferenceValueChanged(targetChange, targetRefId)) {
-          return dependencyChange('add', id, targetId)
-        }
-        return undefined
-      })
-      .filter(values.isDefined)
-  }
+        })
+        .filter(values.isDefined)
+    }
 
     const result = await Promise.all(
       Array.from(changes.entries()).flatMap(async entry => {

@@ -70,7 +70,7 @@ import {
   WorkflowStatus,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
+import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -486,6 +486,9 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
         return { errors: [] }
       }
       const workflowConfiguration = findObject(elements, WORKFLOW_CONFIGURATION_TYPE)
+      const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
+      // eslint-disable-next-line no-console
+      console.log('workflowType', workflowType)
       if (workflowConfiguration === undefined) {
         log.error('WorkflowConfiguration type was not found')
         return {

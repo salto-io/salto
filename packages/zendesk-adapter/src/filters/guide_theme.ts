@@ -31,6 +31,7 @@ import {
   Field,
   MapType,
   CORE_ANNOTATIONS,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'

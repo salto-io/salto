@@ -13,10 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FieldReferenceDefinition } from '../../references'
+import _ from 'lodash'
+import { Element } from '@salto-io/adapter-api'
+import { FilterCreator } from '../../filter'
+import { WORKFLOW_TYPE_NAME } from '../../constants'
 
-export type ReferenceDefinitions = {
-  // rules for finding references - converting values to references in fetch, and references to values in deploy.
-  // this is an array of arrays because rules can be run in multiple iterations during fetch
-  rules: FieldReferenceDefinition<never>[]
-}
+const filter: FilterCreator = ({ config }) => ({
+  name: 'workflowV1RemovalFilter',
+  onFetch: async (elements: Element[]) => {
+    if (config.fetch.enableNewWorkflowAPI) {
+      _.remove(elements, element => element.elemID.typeName === WORKFLOW_TYPE_NAME)
+    }
+  },
+})
+
+export default filter

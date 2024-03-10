@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { HTTPReadClientInterface, HTTPWriteClientInterface, ResponseValue } from '../../../client'
 import { HTTPEndpointIdentifier, ContextParams, PaginationDefinitions } from '../../../definitions'
 import { RequestQueue, ClientRequest } from './queue'
 import { RequestArgs } from '../../../definitions/system'
 import { replaceAllArgs } from '../utils'
+
+const log = logger(module)
 
 type PagesWithContext = {
   context: ContextParams
@@ -31,12 +34,14 @@ export const traversePages = async <ClientOptions extends string>({
   paginationDef,
   contexts,
   callArgs,
+  additionalValidStatuses = [],
 }: {
   client: HTTPReadClientInterface & HTTPWriteClientInterface
   paginationDef: PaginationDefinitions<ClientOptions>
   endpointIdentifier: HTTPEndpointIdentifier<ClientOptions>
   contexts: ContextParams[]
   callArgs: RequestArgs
+  additionalValidStatuses?: number[]
 }): Promise<PagesWithContext[]> => {
   const initialArgs = (_.isEmpty(contexts) ? [{}] : contexts).map(context => ({
     callArgs: replaceAllArgs({
@@ -58,12 +63,21 @@ export const traversePages = async <ClientOptions extends string>({
       })
 
       const processPage: ClientRequest = async args => {
-        const page = await client[finalEndpointIdentifier.method ?? 'get']({
-          url: finalEndpointIdentifier.path,
-          ...args,
-        })
-        pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
-        return page
+        try {
+          const page = await client[finalEndpointIdentifier.method ?? 'get']({
+            url: finalEndpointIdentifier.path,
+            ...args,
+          })
+          pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
+          return page
+        } catch (e) {
+          const status = e.response?.status
+          if (additionalValidStatuses.includes(status)) {
+            log.debug('Suppressing %d error %o', status, e)
+            return { data: {}, status }
+          }
+          throw e
+        }
       }
 
       const getNextPages = paginationDef.funcCreator({

@@ -252,6 +252,7 @@ export const createRetrieveConfigChange = (
       createSkippedListConfigChange({
         type: regexRes?.groups?.type as string,
         instance: regexRes?.groups?.instance as string,
+        reason: regexRes?.[0],
       }),
     )
   log.debug('Created the config changes %o', configChanges)

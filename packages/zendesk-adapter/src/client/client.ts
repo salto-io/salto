@@ -163,7 +163,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      // will be deleted once we move to new infra
+      // when upgrading this adapter to next infra
+      // this part will be deleted and should be represented in the client definitions
       const response = await super.get(args)
       return this.adjuster(args.url, response)
     } catch (e) {
@@ -203,6 +204,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       throw new Error(`uninitialized ${this.clientName} resource client`)
     }
     try {
+      // when upgrading this adapter to next infra
+      // this part will be deleted and should be represented in the client definitions
       const { url, headers, responseType } = args
       const requestConfig = [headers, responseType].some(values.isDefined)
         ? {

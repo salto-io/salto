@@ -36,7 +36,7 @@ export type RequestArgs = {
 export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {
   omitBody?: boolean
 
-  // TODO add option to override default expected HTTP codes (SALTO-5415)
+  additionalValidStatuses?: number[]
 
   // the strategy to use to get all response pages
   pagination?: PaginationOptions

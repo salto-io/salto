@@ -56,6 +56,7 @@ describe('config creator', () => {
     const config = await getConfig(options)
     expect(config.value.fetch.enableScriptRunnerAddon).toBeTrue()
     expect(config.value.fetch.enableJSM).toBeTrue()
+    expect(config.value.fetch.enableJSMPremium).toBeTrue()
   })
   it('get config should return correctly when enableJSM is true', async () => {
     const config = await getConfig(options)

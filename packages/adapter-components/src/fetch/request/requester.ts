@@ -142,6 +142,7 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
       endpointIdentifier: mergedRequestDef.endpoint,
       contexts,
       callArgs,
+      additionalValidStatuses: mergedEndpointDef.additionalValidStatuses,
     })
 
     const itemsWithContext = pagesWithContext

@@ -17,7 +17,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\" \"yarn format\"",
+    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
     "test": "jest",
     "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist .eslintcache",

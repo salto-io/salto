@@ -79,6 +79,8 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
+      // when upgrading this adapter to next infra
+      // this part will be deleted and should be represented in the client definitions
       return await super.get(args)
     } catch (e) {
       // The http_client code catches the original error and transforms it such that it removes

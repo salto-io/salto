@@ -61,7 +61,11 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import {
+  ConfigChangeSuggestion,
+  FetchElements,
+  MAX_ITEMS_IN_RETRIEVE_REQUEST,
+} from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
@@ -2693,6 +2697,7 @@ describe('Fetch via retrieve API', () => {
   type MockInstanceDef = {
     type: MetadataObjectType
     instanceName: string
+    failRetrieve?: boolean
   }
 
   const updateProfileZipFileContents = (
@@ -2755,7 +2760,8 @@ describe('Fetch via retrieve API', () => {
   }
 
   const setupMocks = async (mockDefs: MockInstanceDef[]): Promise<void> => {
-    const { fileProps, zipFiles } = generateMockData(mockDefs)
+    const successfulMockDefs = mockDefs.filter((def) => !def.failRetrieve)
+    const { fileProps, zipFiles } = generateMockData(successfulMockDefs)
     connection.metadata.list.mockImplementation(async (inputQueries) => {
       const queries = Array.isArray(inputQueries)
         ? inputQueries
@@ -2771,7 +2777,23 @@ describe('Fetch via retrieve API', () => {
       .filter((zipFile) => zipFile.content.includes('</Profile>'))
       .forEach((zipFile) => updateProfileZipFileContents(zipFile, fileProps))
     connection.metadata.retrieve.mockReturnValue(
-      mockRetrieveLocator(mockRetrieveResult({ zipFiles })),
+      mockRetrieveLocator(
+        mockRetrieveResult({
+          messages: mockDefs
+            .filter((def) => def.failRetrieve)
+            .map((def) =>
+              mockFileProperties({
+                type: def.type.elemID.typeName,
+                fullName: def.instanceName,
+              }),
+            )
+            .map(({ fileName, fullName, type }) => ({
+              fileName,
+              problem: `Load of metadata from db failed for metadata of type:${type} and file name:${fullName}.`,
+            })),
+          zipFiles,
+        }),
+      ),
     )
   }
 
@@ -2962,6 +2984,90 @@ describe('Fetch via retrieve API', () => {
           .sortBy()
           .value()
         expect(referencedTypes).toEqual(['Account', 'Case'])
+      })
+    })
+  })
+
+  describe('Config changes', () => {
+    let configChanges: ConfigChangeSuggestion[]
+
+    beforeEach(async () => {
+      await setupMocks([
+        {
+          type: mockTypes.ApexClass,
+          instanceName: 'SomeApexClass',
+        },
+        {
+          type: mockTypes.ApexClass,
+          instanceName: 'ExcludedApexClass',
+          failRetrieve: true,
+        },
+      ])
+    })
+
+    describe('When retrieve fails', () => {
+      beforeEach(async () => {
+        const fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+          },
+        })
+
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+      it('Should create a config change for exclusion', () => {
+        expect(configChanges).toEqual([
+          expect.objectContaining({
+            type: 'metadataExclude',
+            value: {
+              metadataType: 'ApexClass',
+              name: 'ExcludedApexClass',
+            },
+          }),
+        ])
+      })
+    })
+    describe('When retrieve fails for an excluded instance', () => {
+      beforeEach(async () => {
+        const fetchProfile = buildFetchProfile({
+          fetchParams: {
+            addNamespacePrefixToFullName: false,
+            metadata: {
+              exclude: [
+                {
+                  metadataType: 'ApexClass',
+                  name: 'ExcludedApexClass',
+                },
+              ],
+            },
+          },
+        })
+
+        configChanges = (
+          await retrieveMetadataInstances({
+            client,
+            types: [mockTypes.ApexClass],
+            fetchProfile,
+          })
+        ).configChanges
+      })
+      it('Should not create a config change', () => {
+        // TODO change this to expect no config changes once configChangeAlreadyExists is changed
+        expect(configChanges).toEqual([
+          expect.objectContaining({
+            type: 'metadataExclude',
+            value: {
+              metadataType: 'ApexClass',
+              name: 'ExcludedApexClass',
+            },
+          }),
+        ])
       })
     })
   })

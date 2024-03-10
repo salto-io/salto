@@ -155,7 +155,7 @@ export default class SuiteAppClient {
     const limiter = new Bottleneck({
       maxConcurrent: params.config?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY,
     })
-    this.callsLimiter = fn => params.globalLimiter.schedule(() => limiter.schedule(fn))
+    this.callsLimiter = fn => limiter.schedule(() => params.globalLimiter.schedule(fn))
 
     const accountIdUrl = toUrlAccountId(params.credentials.accountId)
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)

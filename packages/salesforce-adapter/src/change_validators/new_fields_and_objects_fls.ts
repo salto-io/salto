@@ -33,7 +33,7 @@ const createFLSInfo = (
   const typeOrField = isField(element) ? 'CustomField' : 'CustomObject'
   return {
     message: `${typeOrField} visibility in Profiles.`,
-    detailedMessage: `Deploying this new ${typeOrField} will add access to it in the following Profiles: [${flsProfiles.join(', ')}].`,
+    detailedMessage: `Deploying this new ${typeOrField} will make it accessible by the following Profiles: [${flsProfiles.join(', ')}].`,
     severity: 'Info',
     elemID: element.elemID,
   }

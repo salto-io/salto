@@ -144,7 +144,7 @@ def merge_dictionaries(existing_data, new_bundle_dict):
 def main():
 # Running headless chrome speeds the script, but it's not required. To view the browser, remove the headless option.
   op = webdriver.ChromeOptions()
-#   op.add_argument('headless')
+  op.add_argument('headless')
   webpage = webdriver.Chrome(options=op)
   driverWait = wait.WebDriverWait(webpage, 20)
   account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

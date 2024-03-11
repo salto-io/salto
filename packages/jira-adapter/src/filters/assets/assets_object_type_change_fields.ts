@@ -19,7 +19,7 @@ import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 
-/* This filter modifies the parentObjectTypeId of roots with ObjectType to assetsSchema. */
+/* This filter modifies fields for objectTypes and objectSchemas  */
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypeChangeFields',
   onFetch: async elements => {
@@ -42,6 +42,9 @@ const filter: FilterCreator = ({ config }) => ({
         delete instance.value.objectTypes
         delete instance.value.objectSchemaStatuses
         delete instance.value.referenceTypes
+        if (Array.isArray(instance.value.properties) && instance.value.properties.length === 1) {
+          ;[instance.value.properties] = instance.value.properties
+        }
       })
   },
 })

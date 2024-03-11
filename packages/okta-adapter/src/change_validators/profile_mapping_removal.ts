@@ -21,7 +21,6 @@ import {
   isReferenceExpression,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 
 /**

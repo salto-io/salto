@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { Change, InstanceElement, getChangeData, ActionName, isServiceId, Values, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, getChangeData, ActionName, isServiceId, Values, isEqualValues, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -115,6 +115,14 @@ const extractResponseDataToApply = async <ClientOptions extends string>({ reques
   return dataToApply
 }
 
+const throwOnUnresolvedRefeferences = (value: unknown): void =>
+  _.cloneDeepWith(value, (val, key) => {
+    if (isReferenceExpression(val)) {
+      throw new Error(`found unresolved reference expression in ${key}`)
+    }
+  })
+
+
 export const getRequester = <
   AdditionalAction extends string,
   PaginationOptions extends string | 'none',
@@ -160,7 +168,6 @@ export const getRequester = <
 
     const extractor = createExtractor(mergedRequestDef.transformation)
 
-    // TODON make sure no unresolved references at this point
     const { elemID, value } = getChangeData(change)
 
     const resolvedChange = await changeResolver(change)
@@ -174,6 +181,9 @@ export const getRequester = <
           value: getChangeData(resolvedChange).value,
         })
     const data = Array.isArray(extractedBody) ? extractedBody[0] : extractedBody
+
+    throwOnUnresolvedRefeferences(data)
+
     const callArgs = {
       queryParams: mergedEndpointDef.queryArgs,
       headers: mergedEndpointDef.headers,

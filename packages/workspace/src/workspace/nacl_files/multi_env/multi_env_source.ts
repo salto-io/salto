@@ -121,9 +121,7 @@ export type MultiEnvSource = {
   load: (args: SourceLoadParams) => Promise<EnvsChanges>
   getSearchableNames(env: string): Promise<string[]>
   getStaticFile: (
-    args: string | { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
-    encoding?: BufferEncoding,
-    env?: string,
+    args: { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
   ) => Promise<StaticFile | undefined>
   getAll: (env: string) => Promise<AsyncIterable<Element>>
   promote: (env: string, idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>) => Promise<EnvsChanges>

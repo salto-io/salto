@@ -49,9 +49,7 @@ export const defaultDeployFilterCreator =
         throw new Error('change group not provided')
       }
 
-      const lookupFunc = generateLookupFunc(
-        definitions.references?.rules ?? [],
-      )
+      const lookupFunc = generateLookupFunc(definitions.references?.rules ?? [])
       const changeResolver = createChangeElementResolver<Change<InstanceElement>>({ getLookUpName: lookupFunc })
 
       const deployResult = await deployChanges({

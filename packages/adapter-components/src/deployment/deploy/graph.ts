@@ -30,7 +30,6 @@ import { toDefaultActionNames } from './requester'
 const toNodeID = <AdditionalAction extends string>(typeName: string, action: ActionName | AdditionalAction): ChangeId =>
   `${typeName}/${action}`
 
-
 type NodeType<AdditionalAction extends string> = {
   typeName: string
   action: ActionName | AdditionalAction
@@ -42,19 +41,29 @@ type NodeType<AdditionalAction extends string> = {
  * dependencies can be controlled at the type + action level
  */
 export const createDependencyGraph = <ClientOptions extends string, AdditionalAction extends string>({
-  defQuery, dependencies, changes, changeGroup, elementSource
+  defQuery,
+  dependencies,
+  changes,
+  changeGroup,
+  elementSource,
 }: {
-  defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>,
+  defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>
   dependencies?: ChangeDependency<AdditionalAction>[]
   changes: Change<InstanceElement>[]
   changeGroup: Readonly<ChangeGroup>
   elementSource: ReadOnlyElementsSource
 }): DAG<NodeType<AdditionalAction>> => {
-
-  const changesByTypeAndAction: Record<string, Partial<Record<ActionName | AdditionalAction, Change<InstanceElement>[]>>> = {}
+  const changesByTypeAndAction: Record<
+    string,
+    Partial<Record<ActionName | AdditionalAction, Change<InstanceElement>[]>>
+  > = {}
   changes.forEach(c => {
     const { typeName } = getChangeData(c).elemID
-    const actions = (defQuery.query(typeName)?.toActionNames ?? toDefaultActionNames)({ change: c, changeGroup, elementSource })
+    const actions = (defQuery.query(typeName)?.toActionNames ?? toDefaultActionNames)({
+      change: c,
+      changeGroup,
+      elementSource,
+    })
     if (changesByTypeAndAction[typeName] === undefined) {
       changesByTypeAndAction[typeName] = {}
     }
@@ -86,12 +95,9 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
     })
   })
   dependencies?.forEach(({ first, second }) => {
-    const beforeActions = first.action !== undefined
-      ? [first.action]
-      : Object.keys(changesByTypeAndAction[first.type])
-    const afterActions = second.action !== undefined
-      ? [second.action]
-      : Object.keys(changesByTypeAndAction[second.type])
+    const beforeActions = first.action !== undefined ? [first.action] : Object.keys(changesByTypeAndAction[first.type])
+    const afterActions =
+      second.action !== undefined ? [second.action] : Object.keys(changesByTypeAndAction[second.type])
 
     beforeActions.forEach(beforeAction => {
       afterActions.forEach(afterAction => {

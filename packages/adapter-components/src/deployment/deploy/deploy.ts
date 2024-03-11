@@ -50,7 +50,10 @@ export const createSingleChangeDeployer = <
   convertError,
   changeResolver,
 }: {
-  definitions: types.PickyRequired<ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>, 'clients' | 'deploy'>
+  definitions: types.PickyRequired<
+    ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>,
+    'clients' | 'deploy'
+  >
   convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
 }): ((args: DeployChangeInput<AdditionalAction>) => Promise<void>) => {
@@ -84,7 +87,10 @@ export const deployChanges = async <
   convertError,
   changeResolver,
 }: {
-  definitions: types.PickyRequired<ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>, 'clients' | 'deploy'>
+  definitions: types.PickyRequired<
+    ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>,
+    'clients' | 'deploy'
+  >
   changes: Change<InstanceElement>[]
   changeGroup: Readonly<ChangeGroup>
   elementSource: ReadOnlyElementsSource
@@ -103,10 +109,16 @@ export const deployChanges = async <
   const deploySingleChange =
     deployChangeFunc ?? createSingleChangeDeployer({ convertError, definitions, changeResolver })
 
-  await graph.walkAsync(async (nodeID) => {
+  await graph.walkAsync(async nodeID => {
     const { typeName, action, typeActionChanges } = graph.getData(nodeID)
 
-    log.debug('deploying %d changes of type %s action %s in group %s', typeActionChanges.length, typeName, action, changeGroup.groupID)
+    log.debug(
+      'deploying %d changes of type %s action %s in group %s',
+      typeActionChanges.length,
+      typeName,
+      action,
+      changeGroup.groupID,
+    )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
     const limiter = new Bottleneck({
       maxConcurrent: (concurrency ?? RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS) > 0 ? concurrency : null,
@@ -148,7 +160,10 @@ export const deployChanges = async <
   }
 }
 
-export type SingleChangeDeployCreator<ClientOptions extends string = 'main', AdditionalAction extends string = never> = ({
+export type SingleChangeDeployCreator<
+  ClientOptions extends string = 'main',
+  AdditionalAction extends string = never,
+> = ({
   definitions,
   convertError,
 }: {

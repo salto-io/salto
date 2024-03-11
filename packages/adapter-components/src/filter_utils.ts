@@ -47,7 +47,10 @@ export type AdapterFilterCreator<
   ClientOptions extends string = 'main',
   PaginationOptions extends string | 'none' = 'none',
   AdditionalAction extends string = never,
-> = filter.FilterCreator<TResult, FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>>
+> = filter.FilterCreator<
+  TResult,
+  FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>
+>
 
 export type UserConfigAdapterFilterCreator<
   TContext,

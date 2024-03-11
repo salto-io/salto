@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  InstanceElement,
-  isReferenceExpression,
-  TypeReference,
-} from '@salto-io/adapter-api'
+import { InstanceElement, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { generateType } from './type_elements'
 import { AdapterDuckTypeApiConfig, getConfigWithDefault } from '../../config'

@@ -14,5 +14,11 @@
  * limitations under the License.
  */
 
-export { getChangeGroupIdFromDefinition, groupWithFirstParent, selfGroup, groupByType, ChangeIdFunction } from './functions'
+export {
+  getChangeGroupIdFromDefinition,
+  groupWithFirstParent,
+  selfGroup,
+  groupByType,
+  ChangeIdFunction,
+} from './functions'
 export { getChangeGroupIdsFunc, getChangeGroupIdsFuncWithDefinitions } from './utils'

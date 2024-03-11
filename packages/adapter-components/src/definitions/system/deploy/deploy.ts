@@ -21,13 +21,17 @@ import { ChangeAndContext } from './types'
 
 export type ValueReferenceResolver = (args: { value: Values }) => Values
 
-export type DeployRequestCondition = ArgsWithCustomizer<boolean,{
-  // when true, the request will be sent even if the before and after values are equal
-  // default: true
-  skipIfIdentical?: boolean
-  // transformation to use on before and after of the change when comparing the values
-  transformForCheck?: TransformDefinition<ChangeAndContext>
-}, ChangeAndContext>
+export type DeployRequestCondition = ArgsWithCustomizer<
+  boolean,
+  {
+    // when true, the request will be sent even if the before and after values are equal
+    // default: true
+    skipIfIdentical?: boolean
+    // transformation to use on before and after of the change when comparing the values
+    transformForCheck?: TransformDefinition<ChangeAndContext>
+  },
+  ChangeAndContext
+>
 
 export type DeployableRequestDefinition<ClientOptions extends string> = {
   // when provided, only changes matching the condition will be used in this request
@@ -60,7 +64,10 @@ type ActionDependency<AdditionalAction extends string> = {
 
 export type InstanceDeployApiDefinitions<AdditionalAction extends string, ClientOptions extends string> = {
   // a sorted list of requests to make in order to deploy a change of this type
-  requestsByAction: DefaultWithCustomizations<DeployableRequestDefinition<ClientOptions>[], ActionName | AdditionalAction>
+  requestsByAction: DefaultWithCustomizations<
+    DeployableRequestDefinition<ClientOptions>[],
+    ActionName | AdditionalAction
+  >
 
   // how many changes of this type can be deployed in parallel
   // default = unlimited (max concurrency)

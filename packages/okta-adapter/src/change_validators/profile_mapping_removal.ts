@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import {
+  ChangeValidator,
+  getChangeData,
+  isInstanceChange,
+  isReferenceExpression,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 
@@ -22,6 +28,14 @@ const log = logger(module)
 
 /**
  * When removing a Profile Mapping, validate that either its source or target are also removed.
+ *
+ * Profile Mappings map profile fields between Okta user types and user profiles of external user providers connected
+ * to Okta. For each pair of external user provider and Okta user type, there is _always_ a Profile Mapping instance -
+ * it cannot be removed, and it is added with a default mapping value whenever a new external user provider or Okta user
+ * types are added. When either side of the profile mapping is removed, the profile mapping is removed automatically.
+ *
+ * This change validator ensures that a profile mapping can be manually removed only if one of the mapping sides (source
+ * or target) is also removed as part of the same deploy action.
  */
 export const profileMappingRemovalValidator: ChangeValidator = async changes => {
   const removeInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
@@ -34,19 +48,11 @@ export const profileMappingRemovalValidator: ChangeValidator = async changes => 
 
   return removedProfileMappingInstances
     .filter(profileMapping => {
-      try {
-        return !(
-          removedNames.has(profileMapping.value.source?.id.elemID.getFullName()) ||
-          removedNames.has(profileMapping.value.target?.id.elemID.getFullName())
-        )
-      } catch (e) {
-        log.error(`Current profileMapping: ${profileMapping}`)
-        log.error(
-          'Could not run profileMappingRemoval validator for instance ' +
-            `${profileMapping.elemID.getFullName()}: ${e}`,
-        )
-        return false
-      }
+      const {source, target} = profileMapping.value
+      return !(
+        (isReferenceExpression(source?.id) && removedNames.has(source.id.elemID.getFullName())) ||
+        (isReferenceExpression(target?.id) && removedNames.has(target.id.elemID.getFullName()))
+      )
     })
     .map(profileMapping => ({
       elemID: profileMapping.elemID,

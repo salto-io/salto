@@ -187,7 +187,11 @@ const listMetadataObjectsWithinFolders = async (
     .map((e) => e.input)
     .map(createListMetadataObjectsConfigChange)
     .concat(folders.configChanges)
-  return { elements, configChanges }
+  return {
+    elements,
+    configChanges,
+    messages: [], // All errors get mapped to config changes
+  }
 }
 
 const getPropsWithFullName = (
@@ -247,7 +251,7 @@ export const fetchMetadataInstances = async ({
   addNamespacePrefixToFullName?: boolean
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
-    return { elements: [], configChanges: [] }
+    return { elements: [], configChanges: [], messages: [] }
   }
 
   const typeName = fileProps[0].type
@@ -266,6 +270,7 @@ export const fetchMetadataInstances = async ({
       reason,
     })
     return {
+      messages: [],
       elements: [],
       configChanges: [skippedListConfigChange],
     }
@@ -291,7 +296,7 @@ export const fetchMetadataInstances = async ({
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
   if (filePropsToRead.length === 0) {
-    return { elements: [], configChanges: [] }
+    return { elements: [], configChanges: [], messages: [] }
   }
 
   const { result: metadataInfos, errors } = await client.readMetadata(
@@ -315,6 +320,7 @@ export const fetchMetadataInstances = async ({
       getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType),
     )
   return {
+    messages: [], // all errors get mapped to config changes
     elements,
     configChanges: makeArray(errors).map(({ input, error }) =>
       createSkippedListConfigChangeFromError({
@@ -355,6 +361,11 @@ type RetrieveMetadataInstancesArgs = {
   // along with the profiles, but discarded.
   typesToSkip?: ReadonlySet<string>
   getFilesToRetrieveFunc?: (allProps: FileProperties[]) => FileProperties[]
+}
+
+type RetrieveResult = {
+  elements: InstanceElement[]
+  messages: string[]
 }
 
 export const retrieveMetadataInstances = async ({
@@ -444,7 +455,7 @@ export const retrieveMetadataInstances = async ({
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
-  ): Promise<InstanceElement[]> => {
+  ): Promise<RetrieveResult> => {
     const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = allFileProps.map((inst) => ({
@@ -486,7 +497,10 @@ export const retrieveMetadataInstances = async ({
         log.warn(
           `retrieve request for ${typesToRetrieve} failed: ${result.errorStatusCode} ${result.errorMessage}, adding to skip list`,
         )
-        return []
+        return {
+          elements: [],
+          messages: [],
+        }
       }
 
       const chunkSize = Math.ceil(fileProps.length / 2)
@@ -499,19 +513,25 @@ export const retrieveMetadataInstances = async ({
         type: MAX_ITEMS_IN_RETRIEVE_REQUEST,
         value: chunkSize,
       })
-      return (
-        await Promise.all(
-          _.chunk(
-            fileProps,
-            chunkSize - filePropsToSendWithEveryChunk.length,
-          ).map((chunk) =>
-            retrieveInstances(chunk, filePropsToSendWithEveryChunk),
-          ),
-        )
-      ).flat()
+      const chunkResults = await Promise.all(
+        _.chunk(
+          fileProps,
+          chunkSize - filePropsToSendWithEveryChunk.length,
+        ).map((chunk) =>
+          retrieveInstances(chunk, filePropsToSendWithEveryChunk),
+        ),
+      )
+      return {
+        elements: chunkResults.flatMap((chunk) => chunk.elements),
+        messages: chunkResults.flatMap((chunk) => chunk.messages),
+      }
     }
 
-    const newConfigChanges = createRetrieveConfigChange(result).filter(
+    const {
+      configChanges: retrieveConfigChanges,
+      errorsWithoutConfigChanges: errorMessages,
+    } = createRetrieveConfigChange(result)
+    const newConfigChanges = retrieveConfigChanges.filter(
       (change) => !configChangeAlreadyExists(change),
     )
     configChanges.push(...newConfigChanges)
@@ -537,21 +557,24 @@ export const retrieveMetadataInstances = async ({
       typesWithContent,
       fetchProfile.isFeatureEnabled('fixRetrieveFilePaths'),
     )
-    return allValues.map(({ file, values }) =>
-      createInstanceElement(
-        values,
-        typesByName[file.type],
-        file.namespacePrefix,
-        getAuthorAnnotations(file),
+    return {
+      elements: allValues.map(({ file, values }) =>
+        createInstanceElement(
+          values,
+          typesByName[file.type],
+          file.namespacePrefix,
+          getAuthorAnnotations(file),
+        ),
       ),
-    )
+      messages: errorMessages,
+    }
   }
 
   const retrieveProfilesWithContextTypes = async (
     profileFileProps: ReadonlyArray<FileProperties>,
     contextFileProps: ReadonlyArray<FileProperties>,
-  ): Promise<Array<InstanceElement>> => {
-    const allInstances = await Promise.all(
+  ): Promise<RetrieveResult> => {
+    const chunkResults = await Promise.all(
       _.chunk(
         contextFileProps,
         maxItemsInRetrieveRequest - profileFileProps.length,
@@ -559,6 +582,7 @@ export const retrieveMetadataInstances = async ({
         .filter((filesChunk) => filesChunk.length > 0)
         .map((filesChunk) => retrieveInstances(filesChunk, profileFileProps)),
     )
+    const allInstances = chunkResults.flatMap((result) => result.elements)
 
     const [partialProfileInstances, contextInstances] = _(allInstances)
       .flatten()
@@ -573,7 +597,10 @@ export const retrieveMetadataInstances = async ({
       .mapValues(mergeProfileInstances)
       .value()
 
-    return contextInstances.concat(Object.values(profileInstances))
+    return {
+      elements: contextInstances.concat(Object.values(profileInstances)),
+      messages: chunkResults.flatMap((result) => result.messages),
+    }
   }
 
   const allProps = _.flatten(
@@ -593,7 +620,7 @@ export const retrieveMetadataInstances = async ({
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
   if (nonProfileFiles.length === 0) {
     log.debug('No files to retrieve, skipping')
-    return { elements: [], configChanges }
+    return { elements: [], configChanges, messages: [] }
   }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
@@ -604,10 +631,11 @@ export const retrieveMetadataInstances = async ({
   )
 
   return {
-    elements: instances.filter(
+    elements: instances.elements.filter(
       (instance) => !typesToSkip.has(instance.elemID.typeName),
     ),
     configChanges,
+    messages: instances.messages,
   }
 }
 
@@ -674,5 +702,6 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
     return {
       elements: result.flatMap((r) => r.elements),
       configChanges: result.flatMap((r) => r.configChanges),
+      messages: [],
     }
   }

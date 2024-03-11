@@ -835,6 +835,7 @@ export const listMetadataObjects = async (
 
   return {
     elements,
+    messages: [],
     configChanges: errors
       .map((e) => e.input)
       .map(createListMetadataObjectsConfigChange),

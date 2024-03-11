@@ -54,7 +54,7 @@ export const buildHistoryStateStaticFilesSource = (dirStore: StateStaticFilesSto
       })
       existingFiles.add(getStaticFileUniqueName(file))
     },
-    getStaticFile: async (args) => {
+    getStaticFile: async args => {
       if (args.hash === undefined) {
         throw new Error(`path ${args.filepath} was passed without a hash to getStaticFile`)
       }
@@ -62,7 +62,8 @@ export const buildHistoryStateStaticFilesSource = (dirStore: StateStaticFilesSto
         args.filepath,
         args.hash,
         dirStore.getFullPath(args.filepath),
-        async () => (await dirStore.get(getStaticFileUniqueName({ filepath: args.filepath, hash: args.hash as string })))?.buffer,
+        async () =>
+          (await dirStore.get(getStaticFileUniqueName({ filepath: args.filepath, hash: args.hash as string })))?.buffer,
         args.encoding,
         _.isObject(args) ? args.isTemplate : undefined,
       )

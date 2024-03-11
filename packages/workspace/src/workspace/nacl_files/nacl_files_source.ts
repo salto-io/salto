@@ -117,9 +117,11 @@ export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
-  getStaticFile: (
-    args: { filePath: string; encoding: BufferEncoding; isTemplate?: boolean },
-  ) => Promise<StaticFile | undefined>
+  getStaticFile: (args: {
+    filePath: string
+    encoding: BufferEncoding
+    isTemplate?: boolean
+  }) => Promise<StaticFile | undefined>
   isPathIncluded: (filePath: string) => { included: boolean; isNacl?: boolean }
 }
 
@@ -1093,7 +1095,7 @@ const buildNaclFilesSource = (
     },
     getSearchableNames: async (): Promise<string[]> =>
       awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray(),
-    getStaticFile: async (args) => {
+    getStaticFile: async args => {
       const staticFile = await staticFilesSource.getStaticFile({
         filepath: args.filePath,
         encoding: args.encoding,

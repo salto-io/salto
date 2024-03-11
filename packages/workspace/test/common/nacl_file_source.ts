@@ -153,7 +153,7 @@ export const createMockNaclFileSource = (
         }),
       ),
     ),
-    getStaticFile: mockFunction<NaclFilesSource['getStaticFile']>().mockImplementation(async (args) => {
+    getStaticFile: mockFunction<NaclFilesSource['getStaticFile']>().mockImplementation(async args => {
       const sfile = await staticFileSource.getStaticFile({ filepath: args.filePath, encoding: args.encoding })
       return isStaticFile(sfile) ? sfile : undefined
     }),

@@ -37,7 +37,7 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
       filename: file.filepath,
     })
   },
-  getStaticFile: async (args) => {
+  getStaticFile: async args => {
     if (args.hash === undefined) {
       throw new Error(`path ${args.filepath} was passed without a hash to getStaticFile`)
     }

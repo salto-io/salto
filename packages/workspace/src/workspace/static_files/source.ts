@@ -145,9 +145,12 @@ export const buildStaticFilesSource = (
 
       return [...newFiles, ...deletedFiles, ...modifiedFilesSet.keys()]
     },
-    getStaticFile: async (
-      args: { filepath: string; encoding: BufferEncoding; hash?: string; isTemplate?: boolean },
-    ): Promise<StaticFile | InvalidStaticFile> => {
+    getStaticFile: async (args: {
+      filepath: string
+      encoding: BufferEncoding
+      hash?: string
+      isTemplate?: boolean
+    }): Promise<StaticFile | InvalidStaticFile> => {
       try {
         const staticFileData = await getStaticFileData(args.filepath)
         if (args.hash !== undefined && staticFileData.hash !== args.hash) {

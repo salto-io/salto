@@ -55,6 +55,7 @@ import {
   Types,
   createInstanceServiceIds,
   isNameField,
+  toRecord,
 } from '../transformers/transformer'
 import {
   getNamespace,
@@ -566,11 +567,13 @@ export const getAllInstances = async (
           !fetchedRecordIds.has(instance.value[CUSTOM_OBJECT_ID_FIELD]),
       )
       .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
-    Object.entries(elementSourceInstancesByType).forEach(
-      ([type, instances]) => {
-        elementSourceRecordsByType[type] = instances.map(
-          (instance) => instance.value,
-        )
+    await awu(Object.entries(elementSourceInstancesByType)).forEach(
+      async ([type, instances]) => {
+        elementSourceRecordsByType[type] = await awu(instances)
+          .map((instance) =>
+            toRecord(instance, FIELD_ANNOTATIONS.QUERYABLE, true),
+          )
+          .toArray()
       },
     )
   }

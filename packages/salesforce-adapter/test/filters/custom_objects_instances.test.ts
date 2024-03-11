@@ -2301,6 +2301,7 @@ describe('Custom Object Instances filter', () => {
             refType: Types.primitiveDataTypes.Lookup,
             annotations: {
               [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToTypeName],
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },
         })

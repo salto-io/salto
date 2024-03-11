@@ -41,9 +41,6 @@ export type DeployableRequestDefinition<ClientOptions extends string> = {
     // default: true
     updateServiceIDs?: boolean
   }
-
-  // when true (and matched condition), do not proceed to next requests
-  earlyReturn?: boolean
 }
 
 type ChangeIdentifier<AdditionalAction extends string> = {

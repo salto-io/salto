@@ -184,66 +184,66 @@ export const getRequester = <
     }
 
     await awu(collections.array.makeArray(requests)).some(async def => {
-      const { request, condition, earlyReturn, copyFromResponse } = def
+      const { request, condition, copyFromResponse } = def
       const checkFunc = createCheck(condition)
       if (condition !== undefined && !checkFunc(args)) {
-        if (request.succeedWithoutRequest === undefined) {
+        if (!request.earlySuccess) {
           const { client, path, method } = request.endpoint
           log.trace(
-            'skipping call :s.%s(%s) for change %s because the condition was not met',
+            'skipping call s.%s(%s) for change %s action %s because the condition was not met',
             client,
             path,
             method,
             elemID.getFullName(),
-          )
-        }
-        if (request.succeedWithoutRequest) {
-          log.trace(
-            'skipping succeedWithoutRequest for change %s because the condition was not met',
-            elemID.getFullName(),
+            action,
           )
         }
         return false
       }
-      if (!request.succeedWithoutRequest) {
-        // TODON better error handling
-        const res = await singleRequest({ ...args, requestDef: request })
-        // apply relevant parts of the result back to change
-        const extractionDef = _.omit(copyFromResponse, 'updateServiceIDs')
-        if (copyFromResponse?.updateServiceIDs !== false) {
-          // TODON check if guaranteed to exist sync (will be much better...)
-          const type = await getChangeData(change).getType()
-          const serviceIDFieldNames = Object.keys(
-            _.pickBy(
-              await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
-              val => val,
-            ),
-          )
-          if (serviceIDFieldNames.length > 0) {
-            extractionDef.pick = _.concat(extractionDef.pick ?? [], serviceIDFieldNames)
-          }
-        }
-        const extractor = createValueTransformer(extractionDef)
-        const dataToApply = collections.array.makeArray(
-          extractor({
-            value: res.data,
-            typeName: elemID.typeName,
-            context: args,
-          }),
-        )[0]?.value
-        if (Array.isArray(dataToApply)) {
-          log.warn('extracted response for change %s is not a single value, cannot apply', elemID.getFullName())
-        } else if (dataToApply !== undefined) {
-          log.debug(
-            'applying the following value to change %s: %s',
-            elemID.getFullName(),
-            safeJsonStringify(dataToApply),
-          )
-          _.assign(getChangeData(change).value, dataToApply)
+      if (request.earlySuccess) {
+        // if earlySuccess is defined, we will not continue to the next request
+        log.trace(
+          'earlySuccess reached for change %s action %s',
+          elemID.getFullName(),
+          action,
+        )
+        return false
+      }
+
+      // TODON better error handling
+      const res = await singleRequest({ ...args, requestDef: request })
+      // apply relevant parts of the result back to change
+      const extractionDef = _.omit(copyFromResponse, 'updateServiceIDs')
+      if (copyFromResponse?.updateServiceIDs !== false) {
+        const type = await getChangeData(change).getType()
+        const serviceIDFieldNames = Object.keys(
+          _.pickBy(
+            await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
+            val => val,
+          ),
+        )
+        if (serviceIDFieldNames.length > 0) {
+          extractionDef.pick = _.concat(extractionDef.pick ?? [], serviceIDFieldNames)
         }
       }
-      // if earlyReturn is defined, we will not continue to the next request
-      return earlyReturn
+      const extractor = createValueTransformer(extractionDef)
+      const dataToApply = collections.array.makeArray(
+        extractor({
+          value: res.data,
+          typeName: elemID.typeName,
+          context: args,
+        }),
+      )[0]?.value
+      if (Array.isArray(dataToApply)) {
+        log.warn('extracted response for change %s is not a single value, cannot apply', elemID.getFullName())
+      } else if (dataToApply !== undefined) {
+        log.debug(
+          'applying the following value to change %s: %s',
+          elemID.getFullName(),
+          safeJsonStringify(dataToApply),
+        )
+        _.assign(getChangeData(change).value, dataToApply)
+      }
     })
   }
 

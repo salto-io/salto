@@ -27,7 +27,8 @@ export type DeployRequestEndpointDefinition<ClientOptions extends string = 'main
 
 export type DeployRequestDefinition<ClientOptions extends string = 'main'> = types.XOR<
   DeployRequestEndpointDefinition<ClientOptions>,
-  { succeedWithoutRequest: true }
+  // when true (and matched condition), return early without making additional requests
+  { earlySuccess: true }
 >
 
 export type DeployAdjustRequest = AdjustFunction<{ change: Change<InstanceElement> }>

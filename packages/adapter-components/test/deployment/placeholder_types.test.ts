@@ -24,15 +24,13 @@ import {
   Change,
   ListType,
 } from '@salto-io/adapter-api'
-import { SUBTYPES_PATH, TYPES_PATH } from '../../../src/elements'
-import {
-  replaceInstanceTypeForDeploy,
-  restoreInstanceTypeFromDeploy,
-} from '../../../src/elements/ducktype/deployment_placeholder_types'
+import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements'
+import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../src/deployment/placeholder_types'
+import { queryWithDefault } from '../../src/definitions'
+import { InstanceFetchApiDefinitions } from '../../src/definitions/system/fetch'
 
 const ADAPTER_NAME = 'myAdapter'
 
-// copied with adjustments to deployment/placeholder_types.test.ts
 describe('ducktype deployment functions', () => {
   const objType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'obj') })
   const instance = new InstanceElement('inst', objType, {
@@ -65,7 +63,7 @@ describe('ducktype deployment functions', () => {
     elemID: objType.elemID,
     fields: {
       name: { refType: BuiltinTypes.STRING },
-      id: { refType: BuiltinTypes.NUMBER },
+      id: { refType: BuiltinTypes.SERVICE_ID_NUMBER },
       success: { refType: BuiltinTypes.BOOLEAN },
       ref: { refType: BuiltinTypes.UNKNOWN },
       complex: {
@@ -105,15 +103,20 @@ describe('ducktype deployment functions', () => {
     },
     path: [ADAPTER_NAME, TYPES_PATH, 'obj'],
   })
-  describe('replaceInstanceTypeForDeploy', () => {
+  describe('overrideInstanceTypeForDeploy', () => {
     it('should generate correct type based on instance values', () => {
-      const instanceForDeploy = replaceInstanceTypeForDeploy({
+      const instanceForDeploy = overrideInstanceTypeForDeploy({
         instance,
-        config: {
-          typeDefaults: { transformation: { idFields: ['id'] } },
-          types: { obj: { transformation: { idFields: ['id'] } } },
-          supportedTypes: {},
-        },
+        defQuery: queryWithDefault<Pick<InstanceFetchApiDefinitions, 'element' | 'resource'>>({
+          default: {
+            resource: {
+              serviceIDFields: ['id'],
+            },
+          },
+          customizations: {
+            obj: {},
+          },
+        }),
       })
       expect(instanceForDeploy).toBeDefined()
       expect(instanceForDeploy.refType.type).toEqual(expectedType)
@@ -121,17 +124,22 @@ describe('ducktype deployment functions', () => {
     it('should replace and restore correctly', () => {
       const originalType = instance.clone().refType
       const originalChanges = [toChange({ after: instance.clone() })]
-      const instanceForDeploy = replaceInstanceTypeForDeploy({
+      const instanceForDeploy = overrideInstanceTypeForDeploy({
         instance,
-        config: {
-          typeDefaults: { transformation: { idFields: ['id'] } },
-          types: { obj: { transformation: { idFields: ['id'] } } },
-          supportedTypes: {},
-        },
+        defQuery: queryWithDefault<Pick<InstanceFetchApiDefinitions, 'element' | 'resource'>>({
+          default: {
+            resource: {
+              serviceIDFields: ['id'],
+            },
+          },
+          customizations: {
+            obj: {},
+          },
+        }),
       })
       expect(instanceForDeploy).toBeDefined()
       expect(instanceForDeploy.refType.type).toEqual(expectedType)
-      const changes = restoreInstanceTypeFromDeploy({
+      const changes = restoreInstanceTypeFromChange({
         appliedChanges: [toChange({ after: instanceForDeploy.clone() })],
         originalInstanceChanges: originalChanges,
       })
@@ -146,7 +154,7 @@ describe('ducktype deployment functions', () => {
       const originalChanges = [toChange({ after: instance.clone() })]
       const deployInstance = new InstanceElement(instance.elemID.name, expectedType, instance.value)
       const appliedChanges = [toChange({ after: deployInstance })]
-      const changes = restoreInstanceTypeFromDeploy({
+      const changes = restoreInstanceTypeFromChange({
         appliedChanges,
         originalInstanceChanges: originalChanges,
       })

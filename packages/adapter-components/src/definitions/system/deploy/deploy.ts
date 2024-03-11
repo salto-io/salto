@@ -78,7 +78,7 @@ export type InstanceDeployApiDefinitions<AdditionalAction extends string, Client
   // by default, the only action is the action from the change
   // example: if an app should be activated in a separate call after being added, we can add a custom "activate" action
   // and have the relevant addition changes be run as add + activate.
-  // changes will only be marked as successful if all actions are successful.
+  // changes will be marked as applied if at least one action succeeded, but will include errors from all changes (TODO may revisit in SALTO-5557).
   // Note: in most cases, customizing the actions goes hand in hand with customizing dependencies
   // (e.g. defining that all activate actions come after all add actions)
   toActionNames?: ({ change, changeGroup, elementSource }: ChangeAndContext) => (ActionName | AdditionalAction)[]
@@ -105,7 +105,7 @@ export type DeployApiDefinitions<AdditionalAction extends string, ClientOptions 
   // optional edges determining how to parallelize requests between changes *within the same group*.
   // for example, we can use this to specify that field additions should be made before field_option additions
   // Notes:
-  // * action dependencies within the same type can be controlled with actionDependencies
-  // * this is usually needed when adding custom actions
+  // - action dependencies within the same type can be controlled with actionDependencies
+  // - this is usually needed when adding custom actions
   dependencies?: ChangeDependency<AdditionalAction>[]
 }

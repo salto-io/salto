@@ -18,7 +18,6 @@ import {
   Change,
   InstanceElement,
   getChangeData,
-  ActionName,
   isServiceId,
   Values,
   isEqualValues,
@@ -47,15 +46,16 @@ import { ChangeElementResolver } from '../../resolve_utils'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const toDefaultActionNames = <AdditionalAction extends string = never>({
-  change,
-}: ChangeAndContext): (AdditionalAction | ActionName)[] => [change.action]
-
 export type DeployRequester<AdditionalAction extends string> = {
   requestAllForChangeAndAction: (args: DeployChangeInput<AdditionalAction>) => Promise<void>
 }
 
-type ItemExtractor = (args: ChangeAndContext & { value: Values }) => unknown
+type ItemExtractor = (
+  args: ChangeAndContext & {
+    value: Values
+    additionalContext?: Record<string, unknown>
+  },
+) => unknown
 
 const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContext>): ItemExtractor => {
   const transform = createValueTransformer(transformationDef)
@@ -196,6 +196,10 @@ export const getRequester = <
     const { elemID, value } = getChangeData(change)
 
     const resolvedChange = await changeResolver(change)
+    const additionalContext = replaceAllArgs({
+      context: value,
+      value: _.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource']),
+    })
 
     const extractedBody = mergedEndpointDef.omitBody
       ? undefined
@@ -203,6 +207,7 @@ export const getRequester = <
           change,
           changeGroup,
           elementSource,
+          additionalContext,
           value: getChangeData(resolvedChange).value,
         })
     const data = Array.isArray(extractedBody) ? extractedBody[0] : extractedBody
@@ -225,7 +230,7 @@ export const getRequester = <
 
     const finalEndpointIdentifier = replaceAllArgs({
       value: mergedEndpointDef,
-      context: value,
+      context: _.merge({}, value, additionalContext),
       throwOnUnresolvedArgs: true,
     })
 
@@ -244,14 +249,14 @@ export const getRequester = <
       log.debug('requestAllForChange change %s action %s group %s', elemID.getFullName(), action, changeGroup.groupID)
       const deployDef = deployDefQuery.query(elemID.typeName)
       if (deployDef === undefined) {
-        throw new Error(`could not find requests for change ${elemID.getFullName()} action ${action}`)
+        throw new Error(`Could not find requests for change ${elemID.getFullName()} action ${action}`)
       }
 
       const { requestsByAction } = deployDef
 
       const requests = queryWithDefault(requestsByAction).query(action)
       if (requests === undefined) {
-        throw new Error(`could not find requests for change ${elemID.getFullName()} action ${action}`)
+        throw new Error(`Could not find requests for change ${elemID.getFullName()} action ${action}`)
       }
 
       await awu(collections.array.makeArray(requests)).some(async def => {

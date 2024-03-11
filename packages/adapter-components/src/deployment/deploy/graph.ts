@@ -24,17 +24,30 @@ import {
 } from '@salto-io/adapter-api'
 import { DAG } from '@salto-io/dag'
 import { DefQuery } from '../../definitions'
-import { InstanceDeployApiDefinitions, ChangeDependency } from '../../definitions/system/deploy'
-import { toDefaultActionNames } from './requester'
+import { InstanceDeployApiDefinitions, ChangeDependency, ChangeAndContext } from '../../definitions/system/deploy'
 
 const toNodeID = <AdditionalAction extends string>(typeName: string, action: ActionName | AdditionalAction): ChangeId =>
   `${typeName}/${action}`
 
-type NodeType<AdditionalAction extends string> = {
+export type NodeType<AdditionalAction extends string> = {
   typeName: string
   action: ActionName | AdditionalAction
   typeActionChanges: Change<InstanceElement>[]
 }
+
+const getRelevantActions = <AdditionalAction extends string>(
+  changesByAction?: Partial<Record<ActionName | AdditionalAction, Change<InstanceElement>[]>>,
+  action?: ActionName | AdditionalAction,
+): (ActionName | AdditionalAction)[] => {
+  if (action !== undefined) {
+    return changesByAction?.[action] !== undefined ? [action] : []
+  }
+  return Object.keys(changesByAction ?? {}) as (ActionName | AdditionalAction)[]
+}
+
+const toDefaultActionNames = <AdditionalAction extends string = never>({
+  change,
+}: ChangeAndContext): (AdditionalAction | ActionName)[] => [change.action]
 
 /**
  * define the dependencies when deploying a change group, based on the existing changes.
@@ -95,13 +108,9 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
     })
   })
   dependencies?.forEach(({ first, second }) => {
-    const beforeActions = first.action !== undefined ? [first.action] : Object.keys(changesByTypeAndAction[first.type])
-    const afterActions =
-      second.action !== undefined ? [second.action] : Object.keys(changesByTypeAndAction[second.type])
-
-    beforeActions.forEach(beforeAction => {
-      afterActions.forEach(afterAction => {
-        graph.addEdge(toNodeID(first.type, beforeAction), toNodeID(second.type, afterAction))
+    getRelevantActions(changesByTypeAndAction[first.type], first.action).forEach(firstAction => {
+      getRelevantActions(changesByTypeAndAction[second.type], second.action).forEach(secondAction => {
+        graph.addEdge(toNodeID(first.type, firstAction), toNodeID(second.type, secondAction))
       })
     })
   })

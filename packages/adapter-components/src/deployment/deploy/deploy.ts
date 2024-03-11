@@ -25,6 +25,7 @@ import {
   ChangeGroup,
   isSaltoError,
   ReadOnlyElementsSource,
+  changeId,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, values } from '@salto-io/lowerdash'
@@ -41,7 +42,7 @@ const log = logger(module)
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints based on the provided deploy definitions
  */
-export const createSingleChangeDeployer = <
+const createSingleChangeDeployer = <
   ClientOptions extends string,
   PaginationOptions extends string | 'none',
   AdditionalAction extends string,
@@ -155,8 +156,8 @@ export const deployChanges = async <
 
   return {
     errors,
-    // TODO decide if change should be marked as applied if one of the actions failed
-    appliedChanges: _.uniqBy(appliedChanges, change => [getChangeData(change).elemID.getFullName(), change.action]),
+    // TODO SALTO-5557 decide if change should be marked as applied if one of the actions failed
+    appliedChanges: _.uniqBy(appliedChanges, changeId),
   }
 }
 

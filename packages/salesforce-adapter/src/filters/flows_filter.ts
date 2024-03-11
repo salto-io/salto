@@ -180,6 +180,7 @@ const getFlowInstances = async (
         ? getFlowWithoutVersion(e, flowType)
         : e,
     ),
+    messages: [],
   }
 }
 

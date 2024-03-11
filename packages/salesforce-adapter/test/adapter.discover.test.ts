@@ -2698,7 +2698,7 @@ describe('Fetch via retrieve API', () => {
   type MockInstanceDef = {
     type: MetadataObjectType
     instanceName: string
-    failRetrieve?: boolean
+    result?: 'fail' | 'warn' | 'success'
   }
 
   const updateProfileZipFileContents = (
@@ -2761,7 +2761,7 @@ describe('Fetch via retrieve API', () => {
   }
 
   const setupMocks = async (mockDefs: MockInstanceDef[]): Promise<void> => {
-    const successfulMockDefs = mockDefs.filter((def) => !def.failRetrieve)
+    const successfulMockDefs = mockDefs.filter((def) => def.result !== 'fail')
     const { fileProps, zipFiles } = generateMockData(successfulMockDefs)
     connection.metadata.list.mockImplementation(async (inputQueries) => {
       const queries = Array.isArray(inputQueries)
@@ -2777,21 +2777,34 @@ describe('Fetch via retrieve API', () => {
     zipFiles
       .filter((zipFile) => zipFile.content.includes('</Profile>'))
       .forEach((zipFile) => updateProfileZipFileContents(zipFile, fileProps))
+    const failMessages = mockDefs
+      .filter((def) => def.result === 'fail')
+      .map((def) =>
+        mockFileProperties({
+          type: def.type.elemID.typeName,
+          fullName: def.instanceName,
+        }),
+      )
+      .map(({ fileName, fullName, type }) => ({
+        fileName,
+        problem: `Load of metadata from db failed for metadata of type:${type} and file name:${fullName}.`,
+      }))
+    const successMessages = mockDefs
+      .filter((def) => def.result === 'warn')
+      .map((def) =>
+        mockFileProperties({
+          type: def.type.elemID.typeName,
+          fullName: def.instanceName,
+        }),
+      )
+      .map(({ fileName, fullName, type }) => ({
+        fileName,
+        problem: `Something interesting happened in type ${type} and file name:${fullName}.`,
+      }))
     connection.metadata.retrieve.mockReturnValue(
       mockRetrieveLocator(
         mockRetrieveResult({
-          messages: mockDefs
-            .filter((def) => def.failRetrieve)
-            .map((def) =>
-              mockFileProperties({
-                type: def.type.elemID.typeName,
-                fullName: def.instanceName,
-              }),
-            )
-            .map(({ fileName, fullName, type }) => ({
-              fileName,
-              problem: `Load of metadata from db failed for metadata of type:${type} and file name:${fullName}.`,
-            })),
+          messages: failMessages.concat(successMessages),
           zipFiles,
         }),
       ),
@@ -2803,32 +2816,60 @@ describe('Fetch via retrieve API', () => {
   })
 
   describe('Single regular instance', () => {
-    let elements: InstanceElement[] = []
+    let retrieveResult: FetchElements<InstanceElement[]>
 
-    beforeEach(async () => {
-      await setupMocks([
-        { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
-      ])
+    describe('No messages', () => {
+      beforeEach(async () => {
+        await setupMocks([
+          { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
+        ])
 
-      elements = (
-        await retrieveMetadataInstances({
+        retrieveResult = await retrieveMetadataInstances({
           client,
           types: [mockTypes.ApexClass],
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
           }),
         })
-      ).elements
-    })
+      })
 
-    it('should fetch the correct instances', () => {
-      expect(elements).toHaveLength(1)
-      expect(elements[0].elemID).toEqual(
-        new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
-      )
+      it('should fetch the correct instances', () => {
+        expect(retrieveResult.elements).toHaveLength(1)
+        expect(retrieveResult.elements[0].elemID).toEqual(
+          new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
+        )
+      })
+    })
+    describe('With messages', () => {
+      beforeEach(async () => {
+        await setupMocks([
+          {
+            type: mockTypes.ApexClass,
+            instanceName: 'SomeApexClass',
+            result: 'warn',
+          },
+        ])
+
+        retrieveResult = await retrieveMetadataInstances({
+          client,
+          types: [mockTypes.ApexClass],
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+          }),
+        })
+      })
+
+      it('should fetch the correct instances', () => {
+        expect(retrieveResult.elements).toHaveLength(1)
+        expect(retrieveResult.elements[0].elemID).toEqual(
+          new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
+        )
+      })
+      it('should propagate messages', () => {
+        expect(retrieveResult.messages).toHaveLength(1)
+      })
     })
   })
-
   describe.each([DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, 1])(
     'Chunks of regular instances [chunk size = $chunkSize]',
     (chunkSize) => {
@@ -3001,7 +3042,7 @@ describe('Fetch via retrieve API', () => {
         {
           type: mockTypes.ApexClass,
           instanceName: 'ExcludedApexClass',
-          failRetrieve: true,
+          result: 'fail',
         },
       ])
     })

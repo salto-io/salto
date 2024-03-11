@@ -32,6 +32,7 @@ import {
   Element,
   ProgressReporter,
   isInstanceElement,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -176,6 +177,7 @@ import {
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 const { partition } = promises.array
 const { concatObjects } = objects
 
@@ -599,6 +601,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
+      messages: metadataInstancesMessages,
     } = await metadataInstancesPromise
     const elements = [
       ...fieldTypes,
@@ -606,6 +609,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...metadataTypes,
       ...metadataInstancesElements,
     ]
+    const metadataInstancesErrors: SaltoError[] = metadataInstancesMessages.map(
+      (message) => ({
+        severity: 'Warning',
+        message,
+      }),
+    )
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
     })
@@ -658,7 +667,9 @@ export default class SalesforceAdapter implements AdapterOperations {
     metadataQuery.logData()
     return {
       elements,
-      errors: onFetchFilterResult.errors ?? [],
+      errors: makeArray(onFetchFilterResult.errors).concat(
+        makeArray(metadataInstancesErrors),
+      ),
       updatedConfig,
       partialFetchData: await getPartialFetchData(),
     }
@@ -838,6 +849,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       return {
         elements: _.flatten(result.map((r) => r.elements)),
         configChanges: _.flatten(result.map((r) => r.configChanges)),
+        messages: [],
       }
     }
 
@@ -862,7 +874,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         ? retrieveMetadataInstanceForFetchWithChangesDetection
         : retrieveMetadataInstances
 
-    const allInstances = await Promise.all([
+    const fetchResults = await Promise.all([
       retrieveMetadataInstancesFunc({
         client: this.client,
         types: metadataTypesToRetrieve,
@@ -872,9 +884,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       readInstances(metadataTypesToRead),
     ])
     return {
-      elements: _.flatten(allInstances.map((instances) => instances.elements)),
+      elements: fetchResults.flatMap((result) => result.elements),
+      messages: fetchResults.flatMap((result) => result.messages),
       configChanges: _.flatten(
-        allInstances.map((instances) => instances.configChanges),
+        fetchResults.flatMap((result) => result.configChanges),
       ),
     }
   }
@@ -898,6 +911,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       addNamespacePrefixToFullName: fetchProfile.addNamespacePrefixToFullName,
     })
     return {
+      messages: instances.messages,
       elements: instances.elements,
       configChanges: [...instances.configChanges, ...configChanges],
     }

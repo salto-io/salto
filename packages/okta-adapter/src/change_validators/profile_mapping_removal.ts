@@ -36,13 +36,14 @@ export const profileMappingRemovalValidator: ChangeValidator = async changes => 
     .filter(profileMapping => {
       try {
         return !(
-          removedNames.has(profileMapping.value.source?.elemID.getFullName()) ||
-          removedNames.has(profileMapping.value.target?.elemID.getFullName())
+          removedNames.has(profileMapping.value.source?.id.elemID.getFullName()) ||
+          removedNames.has(profileMapping.value.target?.id.elemID.getFullName())
         )
       } catch (e) {
+        log.error(`Current profileMapping: ${profileMapping}`)
         log.error(
-          'Could not run profileMappingAndAppValidator validator for instance ' +
-            `${profileMapping.elemID.getFullName}: ${e}`,
+          'Could not run profileMappingRemoval validator for instance ' +
+            `${profileMapping.elemID.getFullName()}: ${e}`,
         )
         return false
       }
@@ -53,8 +54,8 @@ export const profileMappingRemovalValidator: ChangeValidator = async changes => 
       message: 'Cannot remove profile mapping if neither its source nor target are also removed',
       detailedMessage:
         `In order to remove ${profileMapping.elemID.name}, either its source (instance ` +
-        `${profileMapping.value.source?.elemID.name} of type ${profileMapping.value.source?.elemID.typeName})` +
-        ` or target (instance ${profileMapping.value.target?.elemID.name} of type` +
-        ` ${profileMapping.value.target?.elemID.typeName}) must be removed as well.`,
+        `${profileMapping.value.source?.id.elemID.name} of type ${profileMapping.value.source?.id.elemID.typeName})` +
+        ` or target (instance ${profileMapping.value.target?.id.elemID.name} of type` +
+        ` ${profileMapping.value.target?.id.elemID.typeName}) must be removed as well.`,
     }))
 }

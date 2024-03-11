@@ -24,8 +24,6 @@ import {
 import { logger } from '@salto-io/logging'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 
-const log = logger(module)
-
 /**
  * When removing a Profile Mapping, validate that either its source or target are also removed.
  *

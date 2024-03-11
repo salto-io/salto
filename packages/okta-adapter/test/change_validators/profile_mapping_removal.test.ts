@@ -43,7 +43,7 @@ describe('profileMappingRemovalValidator', () => {
     target: {id: new ReferenceExpression(identityProvider.elemID, identityProvider)},
   })
 
-  it('should return an error when ProfileMapping is deleted without its parent Application', async () => {
+  it('should return an error when ProfileMapping is deleted without its source or target Application', async () => {
     const changeErrors = await profileMappingRemovalValidator([
       toChange({ before: profileMappingA }),
       toChange({ before: profileMappingB }),

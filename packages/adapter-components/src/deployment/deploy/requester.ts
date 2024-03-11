@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, ActionName, isServiceId, Values, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ResponseValue, Response } from '../../client'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
 import { DeployHTTPEndpointDetails } from '../../definitions/system'
@@ -30,7 +30,7 @@ import {
 import { createValueTransformer } from '../../fetch/utils'
 import { replaceAllArgs } from '../../fetch/request/utils'
 import { TransformDefinition } from '../../definitions/system/shared'
-import { DeployRequestCondition } from '../../definitions/system/deploy/deploy'
+import { DeployRequestCondition, DeployableRequestDefinition } from '../../definitions/system/deploy/deploy'
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 
@@ -78,6 +78,41 @@ const createCheck = (conditionDef?: DeployRequestCondition): (args: ChangeAndCon
       transform({ value: change.data.after, typeName, context: args }),
     )
   }
+}
+
+const extractResponseDataToApply = async <ClientOptions extends string>({ requestDef , response, change, changeGroup, elementSource }: {
+  requestDef: DeployableRequestDefinition<ClientOptions>
+  response: Response<ResponseValue | ResponseValue[]>
+} & ChangeAndContext): Promise<Values | undefined>  => {
+  const { copyFromResponse } = requestDef
+  const extractionDef = _.omit(copyFromResponse, 'updateServiceIDs')
+  if (copyFromResponse?.updateServiceIDs !== false) {
+    const type = await getChangeData(change).getType()
+    const serviceIDFieldNames = Object.keys(
+      _.pickBy(
+        await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
+        val => val,
+      ),
+    )
+    if (serviceIDFieldNames.length > 0) {
+      extractionDef.pick = _.concat(extractionDef.pick ?? [], serviceIDFieldNames)
+    }
+  }
+  const { elemID } = getChangeData(change)
+  const extractor = createValueTransformer(extractionDef)
+  const dataToApply = collections.array.makeArray(
+    extractor({
+      value: response.data,
+      typeName: getChangeData(change).elemID.typeName,
+      context: { change, changeGroup, elementSource },
+    }),
+  )[0]?.value
+  if (!lowerdashValues.isPlainObject(dataToApply)) {
+    log.warn('extracted response for change %s is not a plain object, cannot apply. received value: %s', elemID.getFullName(), safeJsonStringify(dataToApply))
+    return undefined
+  }
+
+  return dataToApply
 }
 
 export const getRequester = <
@@ -184,7 +219,7 @@ export const getRequester = <
     }
 
     await awu(collections.array.makeArray(requests)).some(async def => {
-      const { request, condition, copyFromResponse } = def
+      const { request, condition } = def
       const checkFunc = createCheck(condition)
       if (condition !== undefined && !checkFunc(args)) {
         if (!request.earlySuccess) {
@@ -207,43 +242,25 @@ export const getRequester = <
           elemID.getFullName(),
           action,
         )
-        return false
+        return true
       }
 
-      // TODON better error handling
       const res = await singleRequest({ ...args, requestDef: request })
-      // apply relevant parts of the result back to change
-      const extractionDef = _.omit(copyFromResponse, 'updateServiceIDs')
-      if (copyFromResponse?.updateServiceIDs !== false) {
-        const type = await getChangeData(change).getType()
-        const serviceIDFieldNames = Object.keys(
-          _.pickBy(
-            await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
-            val => val,
-          ),
-        )
-        if (serviceIDFieldNames.length > 0) {
-          extractionDef.pick = _.concat(extractionDef.pick ?? [], serviceIDFieldNames)
+      try {
+        const dataToApply = await extractResponseDataToApply({ ...args, requestDef: def, response: res })
+        if (dataToApply !== undefined) {
+          log.debug(
+            'applying the following value to change %s: %s',
+            elemID.getFullName(),
+            safeJsonStringify(dataToApply),
+          )
+          _.assign(getChangeData(change).value, dataToApply)
         }
+      } catch (e) {
+        log.error('failed to apply request result: %s (stack: %s)', e, e.stack)
+        throw new Error(`failed to update change ${elemID.getFullName()} action ${action} from response: ${e}`)
       }
-      const extractor = createValueTransformer(extractionDef)
-      const dataToApply = collections.array.makeArray(
-        extractor({
-          value: res.data,
-          typeName: elemID.typeName,
-          context: args,
-        }),
-      )[0]?.value
-      if (Array.isArray(dataToApply)) {
-        log.warn('extracted response for change %s is not a single value, cannot apply', elemID.getFullName())
-      } else if (dataToApply !== undefined) {
-        log.debug(
-          'applying the following value to change %s: %s',
-          elemID.getFullName(),
-          safeJsonStringify(dataToApply),
-        )
-        _.assign(getChangeData(change).value, dataToApply)
-      }
+      return false
     })
   }
 

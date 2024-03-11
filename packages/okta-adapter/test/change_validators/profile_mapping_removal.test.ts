@@ -34,13 +34,13 @@ describe('profileMappingRemovalValidator', () => {
   const userType = new InstanceElement('user type', userTypeType, { name: 'C', default: false })
 
   const profileMappingA = new InstanceElement('mappingA', profileMappingType, {
-    source: {id: new ReferenceExpression(app.elemID, app)},
-    target: {id: new ReferenceExpression(userType.elemID, userType)},
+    source: { id: new ReferenceExpression(app.elemID, app) },
+    target: { id: new ReferenceExpression(userType.elemID, userType) },
   })
 
   const profileMappingB = new InstanceElement('mappingB', profileMappingType, {
-    source: {id: new ReferenceExpression(userType.elemID, userType)},
-    target: {id: new ReferenceExpression(identityProvider.elemID, identityProvider)},
+    source: { id: new ReferenceExpression(userType.elemID, userType) },
+    target: { id: new ReferenceExpression(identityProvider.elemID, identityProvider) },
   })
 
   it('should return an error when ProfileMapping is deleted without its source or target Application', async () => {

@@ -45,7 +45,7 @@ export const profileMappingRemovalValidator: ChangeValidator = async changes => 
 
   return removedProfileMappingInstances
     .filter(profileMapping => {
-      const {source, target} = profileMapping.value
+      const { source, target } = profileMapping.value
       return !(
         (isReferenceExpression(source?.id) && removedNames.has(source.id.elemID.getFullName())) ||
         (isReferenceExpression(target?.id) && removedNames.has(target.id.elemID.getFullName()))

@@ -33,8 +33,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { createSchemeGuard, getParent, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as adapterElements } from '@salto-io/adapter-components'
-import { ResponseValue } from '@salto-io/adapter-components/src/client'
+import { elements as adapterElements, client as clientUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { FilterCreator } from '../filter'
 import { ISSUE_TYPE_ICON_NAME, ISSUE_TYPE_NAME, JIRA } from '../constants'
@@ -59,7 +58,7 @@ const ISSUE_TYPE_ICON_RESPONSE_SCHEME = Joi.object({
   .unknown(true)
 
 type QueryParamsType = {
-  foramt: string
+  format: string
 }
 
 const isIssueTypeIconResponse = createSchemeGuard<IssueTypeIconResponse>(ISSUE_TYPE_ICON_RESPONSE_SCHEME)
@@ -76,82 +75,82 @@ const createIconType = (): ObjectType =>
       contentType: { refType: BuiltinTypes.STRING },
       fileName: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, adapterElements.TYPES_PATH, adapterElements.TYPES_PATH, ISSUE_TYPE_ICON_NAME],
+    path: [JIRA, adapterElements.TYPES_PATH, ISSUE_TYPE_ICON_NAME],
   })
 
-const getLogoContent = async (link: string, client: JiraClient, queryParams: QueryParamsType): Promise<Buffer> => {
+const getIconContent = async (link: string, client: JiraClient, queryParams: QueryParamsType): Promise<Buffer> => {
   try {
     const res = await client.get({ url: link, queryParams, responseType: 'arraybuffer' })
     const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
     if (!Buffer.isBuffer(content)) {
-      throw new Error('Received invalid response from Jira API for attachment content')
+      throw new Error('Failed to fetch attachment content, response is not a buffer.')
     }
     return content
   } catch (e) {
-    throw new Error('Failed to fetch attachment content from Jira API')
+    throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e.message}`)
   }
 }
 const convertPathName = (pathName: string): string => pathName.replace(/_([a-z])/g, (_match, l) => l.toUpperCase())
 
-const getLogo = async ({
+const getIcon = async ({
   client,
-  parents,
-  logoType,
+  parent,
+  iconType,
   contentType,
-  logoName,
+  iconName,
   id,
   queryParams,
 }: {
   client: JiraClient
-  parents: InstanceElement[]
-  logoType: ObjectType
+  parent: InstanceElement
+  iconType: ObjectType
   contentType: string
-  logoName: string
+  iconName: string
   id: number
   queryParams: QueryParamsType
 }): Promise<InstanceElement> => {
   const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${id}`
-  const logoContent = await getLogoContent(link, client, queryParams)
-  const pathName = pathNaclCase(logoName)
+  const iconContent = await getIconContent(link, client, queryParams)
+  const pathName = pathNaclCase(iconName)
   const camelCaseName = convertPathName(pathName)
-  const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
-  const logo = new InstanceElement(
-    logoName,
-    logoType,
+  const refParent = new ReferenceExpression(parent.elemID, parent)
+  const icon = new InstanceElement(
+    iconName,
+    iconType,
     {
       id,
       fileName: `${camelCaseName}.${contentType}`,
       contentType,
       content: new StaticFile({
-        filepath: `${JIRA}/${logoType.elemID.name}/${camelCaseName}.${contentType}`,
-        content: logoContent,
+        filepath: `${JIRA}/${iconType.elemID.name}/${camelCaseName}.${contentType}`,
+        content: iconContent,
       }),
     },
-    [JIRA, adapterElements.RECORDS_PATH, logoType.elemID.typeName, pathName],
+    [JIRA, adapterElements.RECORDS_PATH, iconType.elemID.typeName, pathName],
     {
-      [CORE_ANNOTATIONS.PARENT]: refParents,
+      [CORE_ANNOTATIONS.PARENT]: [refParent],
     },
   )
-  return logo
+  return icon
 }
 
-const sendLogoRequest = async ({
+const sendIconRequest = async ({
   client,
   change,
-  logoInstance,
+  iconInstance,
   url,
 }: {
   client: JiraClient
   change: Change<InstanceElement>
-  logoInstance: InstanceElement
+  iconInstance: InstanceElement
   url: string
-}): Promise<ResponseValue> => {
+}): Promise<clientUtils.ResponseValue> => {
   const fileContent =
-    isAdditionOrModificationChange(change) && isStaticFile(logoInstance.value.content)
-      ? await logoInstance.value.content.getContent()
+    isAdditionOrModificationChange(change) && isStaticFile(iconInstance.value.content)
+      ? await iconInstance.value.content.getContent()
       : undefined
   if (fileContent === undefined) {
-    throw new Error(`Failed to fetch attachment content from logo ${logoInstance.elemID.name}`)
+    throw new Error(`Failed to fetch attachment content from icon ${iconInstance.elemID.name}`)
   }
   const resp = await client.post({
     url,
@@ -161,28 +160,26 @@ const sendLogoRequest = async ({
   return resp
 }
 
-const deployLogo = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
+const deployIcon = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   try {
-    const logoInstance = getChangeData(change)
-    const parent = getParent(logoInstance).value
-    const logoUrl = `/rest/api/3/issuetype/${parent.id}/avatar2`
-    const resp = await sendLogoRequest({ client, change, logoInstance, url: logoUrl })
-    if (!isIssueTypeIconResponse(resp)) {
-      throw new Error('Failed to deploy logo to Jira: Invalid response from Jira API')
+    const iconInstance = getChangeData(change)
+    const parent = getParent(iconInstance)
+    if (isRemovalChange(change)) {
+      await client.delete({
+        url: `/rest/api/3/universal_avatar/type/issuetype/owner/${parent.value.id}/avatar/${iconInstance.value.id}`,
+      })
+      return
     }
-    await client.put({
-      url: `/rest/api/3/issuetype/${parent.id}`,
-      data: {
-        avatarId: resp.data.id,
-        description: parent.description,
-        name: parent.name,
-      },
-    })
+    const iconUrl = `/rest/api/3/universal_avatar/type/issuetype/owner/${parent.value.id}`
+    const resp = await sendIconRequest({ client, change, iconInstance, url: iconUrl })
+    if (!isIssueTypeIconResponse(resp)) {
+      throw new Error('Failed to deploy icon to Jira: Invalid response from Jira API')
+    }
     if (isAdditionChange(change)) {
-      logoInstance.value.id = resp.data.id
+      iconInstance.value.id = resp.data.id
     }
   } catch (e) {
-    throw new Error(`Failed to deploy logo to Jira: ${e.message}`)
+    throw new Error(`Failed to deploy icon to Jira: ${e.message}`)
   }
 }
 
@@ -193,29 +190,29 @@ const filter: FilterCreator = ({ client }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ISSUE_TYPE_NAME)
 
-    const logoType = createIconType()
-    setTypeDeploymentAnnotations(logoType)
-    await addAnnotationRecursively(logoType, CORE_ANNOTATIONS.CREATABLE)
-    await addAnnotationRecursively(logoType, CORE_ANNOTATIONS.UPDATABLE)
-    await addAnnotationRecursively(logoType, CORE_ANNOTATIONS.DELETABLE)
-    elements.push(logoType)
+    const iconType = createIconType()
+    setTypeDeploymentAnnotations(iconType)
+    await addAnnotationRecursively(iconType, CORE_ANNOTATIONS.CREATABLE)
+    await addAnnotationRecursively(iconType, CORE_ANNOTATIONS.UPDATABLE)
+    await addAnnotationRecursively(iconType, CORE_ANNOTATIONS.DELETABLE)
+    elements.push(iconType)
     const errors: SaltoError[] = []
     try {
       await Promise.all(
         issueTypes.map(async issueType => {
           const queryParams = {
-            foramt: 'png',
+            format: 'png',
           }
-          const logo = await getLogo({
+          const icon = await getIcon({
             client,
-            parents: [issueType],
-            logoType,
+            parent: issueType,
+            iconType,
             contentType: 'png',
-            logoName: `${issueType.elemID.name}`,
+            iconName: `${issueType.elemID.name}`,
             id: issueType.value.avatarId,
             queryParams,
           })
-          elements.push(logo)
+          elements.push(icon)
           return undefined
         }),
       )
@@ -225,17 +222,13 @@ const filter: FilterCreator = ({ client }) => ({
     return { errors }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [logoChanges, leftoverChanges] = _.partition(
+    const [iconChanges, leftoverChanges] = _.partition(
       changes,
       change => getChangeData(change).elemID.typeName === ISSUE_TYPE_ICON_NAME,
     )
 
-    const deployResult = await deployChanges(logoChanges, async change => {
-      if (isRemovalChange(change)) {
-        // Will get here only if the issue type was removed as well.
-        return
-      }
-      await deployLogo(change, client)
+    const deployResult = await deployChanges(iconChanges, async change => {
+      await deployIcon(change, client)
     })
 
     return {

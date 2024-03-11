@@ -110,6 +110,7 @@ describe('issue type icon filter', () => {
       issueTypeIconInstance = new InstanceElement('issueType1', issueTypeIconType, {
         fileName: 'issueType1.png',
         contentType: 'png',
+        id: 101,
         content: new StaticFile({
           filepath: 'jira/IssueTypeIcon/issueType1.png',
           encoding: 'binary',
@@ -120,7 +121,7 @@ describe('issue type icon filter', () => {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance)],
       })
       connection.post.mockImplementation(async url => {
-        if (url === '/rest/api/3/issuetype/100/avatar2') {
+        if (url === '/rest/api/3/universal_avatar/type/issuetype/owner/100') {
           return {
             status: 200,
             data: {
@@ -138,7 +139,7 @@ describe('issue type icon filter', () => {
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(issueTypeIconInstance.value.id).toEqual('101')
     })
-    it('should modify logo instances', async () => {
+    it('should modify icon instances', async () => {
       const afterIconInstance = issueTypeIconInstance.clone()
       issueTypeIconInstance.value.content = new StaticFile({
         filepath: 'jira/IssueTypeIcon/changed.png',
@@ -156,7 +157,7 @@ describe('issue type icon filter', () => {
       const res = await filter.deploy([{ action: 'remove', data: { before: issueTypeIconInstance } }])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(connection.post).toHaveBeenCalledTimes(0)
+      expect(connection.delete).toHaveBeenCalledTimes(1)
     })
   })
 })

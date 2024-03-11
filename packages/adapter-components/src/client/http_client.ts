@@ -69,6 +69,7 @@ export interface HTTPReadClientInterface<TAdditionalArgs = {}> {
 }
 
 export interface HTTPWriteClientInterface<TAdditionalArgs = {}> {
+  get(params: ClientBaseParams & TAdditionalArgs): Promise<Response<ResponseValue | ResponseValue[]>>
   post(params: ClientDataParams & TAdditionalArgs): Promise<Response<ResponseValue | ResponseValue[]>>
   put(params: ClientDataParams & TAdditionalArgs): Promise<Response<ResponseValue | ResponseValue[]>>
   delete(params: ClientDataParams & TAdditionalArgs): Promise<Response<ResponseValue | ResponseValue[]>>

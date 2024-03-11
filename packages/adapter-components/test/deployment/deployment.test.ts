@@ -65,6 +65,7 @@ describe('deployChange', () => {
     }
 
     httpClient = {
+      get: mockFunction<HTTPWriteClientInterface['get']>(),
       post: mockFunction<HTTPWriteClientInterface['post']>(),
       put: mockFunction<HTTPWriteClientInterface['put']>(),
       delete: mockFunction<HTTPWriteClientInterface['delete']>(),

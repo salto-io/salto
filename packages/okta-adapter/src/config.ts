@@ -1310,7 +1310,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           mappingId: 'id',
         },
       },
-      // TODO SALTO-4769 add support in remove
+      remove: {
+        url: '/api/v1/mappings/{mappingId}',
+        method: 'get',
+        urlParamsToFields: {
+          mappingId: 'id',
+        },
+      },
     },
   },
   ProfileMappingSource: {

@@ -200,6 +200,7 @@ export type ChangeValidatorName =
   | 'screen'
   | 'issueTypeScheme'
   | 'issueTypeSchemeDefaultType'
+  | 'teamManagedProject'
   | 'projectDeletion'
   | 'status'
   | 'privateApi'
@@ -257,6 +258,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     screen: { refType: BuiltinTypes.BOOLEAN },
     issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },
+    teamManagedProject: { refType: BuiltinTypes.BOOLEAN },
     projectDeletion: { refType: BuiltinTypes.BOOLEAN },
     status: { refType: BuiltinTypes.BOOLEAN },
     privateApi: { refType: BuiltinTypes.BOOLEAN },

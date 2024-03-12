@@ -25,8 +25,8 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import JiraClient from '../client/client'
-import { JiraConfig } from '../config/config'
+import JiraClient from '../../client/client'
+import { JiraConfig } from '../../config/config'
 
 const { awu } = collections.asynciterable
 

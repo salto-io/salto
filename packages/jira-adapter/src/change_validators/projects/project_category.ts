@@ -21,9 +21,9 @@ import {
   isModificationChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import { PROJECT_TYPE } from '../constants'
-import JiraClient from '../client/client'
-import { isNeedToDeleteCategory } from '../filters/project_category'
+import { PROJECT_TYPE } from '../../constants'
+import JiraClient from '../../client/client'
+import { isNeedToDeleteCategory } from '../../filters/project_category'
 
 export const projectCategoryValidator: (client: JiraClient) => ChangeValidator = client => async changes => {
   if (!client.isDataCenter) {

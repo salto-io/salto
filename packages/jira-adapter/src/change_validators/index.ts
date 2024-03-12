@@ -21,7 +21,8 @@ import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'
 import { ChangeValidatorName, JiraConfig } from '../config/config'
-import { projectDeletionValidator } from './project_deletion'
+import { projectDeletionValidator } from './projects/project_deletion'
+import { teamManagedProjectValidator } from './projects/team_managed_project'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
 import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
@@ -54,7 +55,7 @@ import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
-import { projectCategoryValidator } from './project_category'
+import { projectCategoryValidator } from './projects/project_category'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
@@ -80,6 +81,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     screen: screenValidator,
     issueTypeScheme: issueTypeSchemeValidator,
     issueTypeSchemeDefaultType: issueTypeSchemeDefaultTypeValidator,
+    teamManagedProject: teamManagedProjectValidator(client),
     projectDeletion: projectDeletionValidator(client, config),
     status: statusValidator,
     privateApi: privateApiValidator(config),

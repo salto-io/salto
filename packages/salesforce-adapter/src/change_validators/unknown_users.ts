@@ -259,7 +259,7 @@ const getSalesforceUsers = async (
 const unknownUserError = ({ elemId, field, user }: UserRef): ChangeError => ({
   elemID: elemId,
   severity: 'Error',
-  message: `User ${user} doesn't exist`,
+  message: 'User does not exist',
   detailedMessage: `The field ${field} in '${elemId.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment`,
 })
 

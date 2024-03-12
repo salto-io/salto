@@ -78,7 +78,7 @@ const getMapKeyErrors = async (
             errors.push({
               elemID: path,
               severity: 'Error',
-              message: `Nested value '${mapDef.key}' not found in field '${fieldName}`,
+              message: 'Nested value not found in field',
               detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
             })
             return undefined
@@ -104,7 +104,7 @@ const getMapKeyErrors = async (
             errors.push({
               elemID: after.elemID.createNestedID(fieldName, ...previewPrefix),
               severity: 'Error',
-              message: `Incorrect map key in ${typeName} ${after.value.fullName} field ${fieldName}: ${previewPrefix?.join(API_NAME_SEPARATOR)} should be ${expectedPath.slice(0, previewPrefix.length).join(API_NAME_SEPARATOR)}`,
+              message: 'Incorrect map key in field',
               detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}`,
             })
           }

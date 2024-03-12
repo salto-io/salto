@@ -47,19 +47,17 @@ export const inboundTransitionChangeValidator: ChangeValidator = async changes =
     .map(getChangeData)
     .filter(isWorkflowV2Instance)
     .map(instance => {
-      const statusesWithoutInboundTransition = getStatusesWithoutInboundTransitions(instance)
-      if (_.isEmpty(statusesWithoutInboundTransition)) {
-        return undefined
-      }
-      const statusesWithoutInboundTransitionNames = statusesWithoutInboundTransition
+      const statusesWithoutInboundTransitionNames = getStatusesWithoutInboundTransitions(instance)
         .map(statusRef => statusRef.value.value.name)
         .join(', ')
-      return {
-        elemID: instance.elemID,
-        severity: 'Error' as SeverityLevel,
-        message: 'Workflow statuses must have at least one inbound transition',
-        detailedMessage: `The following statuses of workflow ${instance.value.name} have no inbound transitions: ${statusesWithoutInboundTransitionNames}. To fix this, remove those statuses or add inbound transitions to them.`,
-      }
+      return _.isEmpty(statusesWithoutInboundTransitionNames)
+        ? undefined
+        : {
+            elemID: instance.elemID,
+            severity: 'Error' as SeverityLevel,
+            message: 'Workflow statuses must have at least one inbound transition',
+            detailedMessage: `The following statuses of workflow ${instance.value.name} have no inbound transitions: ${statusesWithoutInboundTransitionNames}. To fix this, remove those statuses or add inbound transitions to them.`,
+          }
     })
     .filter(isDefined)
     .toArray()

@@ -74,7 +74,7 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
   if (custom !== undefined) {
     return custom({ skipIfIdentical, transformForCheck })
   }
-  if (!skipIfIdentical) {
+  if (skipIfIdentical !== false) {
     return () => true
   }
   const transform = createValueTransformer(transformForCheck)

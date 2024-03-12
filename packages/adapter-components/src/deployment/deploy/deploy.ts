@@ -40,7 +40,7 @@ import { ChangeElementResolver } from '../../resolve_utils'
 const log = logger(module)
 
 /**
- * Deploy change with the standard "add", "modify", "remove" endpoints based on the provided deploy definitions
+ * Deploy a change with standard (add / modify / remove) and custom-defined actions based on the provided deploy definitions
  */
 const createSingleChangeDeployer = <
   ClientOptions extends string,

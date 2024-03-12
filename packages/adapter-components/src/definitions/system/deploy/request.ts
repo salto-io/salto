@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 import { types } from '@salto-io/lowerdash'
-import { Change, InstanceElement } from '@salto-io/adapter-api'
-import { AdjustFunction, ArgsWithCustomizer, ContextParams, EndpointExtractionParams } from '../shared'
+import { ArgsWithCustomizer, ContextParams, EndpointExtractionParams } from '../shared'
 import { ChangeAndContext } from './types'
 
 export type ContextParamDefinitions = ArgsWithCustomizer<ContextParams, { args: ContextParams }>
@@ -30,5 +29,3 @@ export type DeployRequestDefinition<ClientOptions extends string = 'main'> = typ
   // when true (and matched condition), return early without making additional requests
   { earlySuccess: true }
 >
-
-export type DeployAdjustRequest = AdjustFunction<{ change: Change<InstanceElement> }>

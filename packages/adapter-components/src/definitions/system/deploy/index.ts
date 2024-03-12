@@ -20,5 +20,5 @@ export {
   ValueReferenceResolver,
   ChangeDependency,
 } from './deploy'
-export { DeployRequestDefinition, DeployRequestEndpointDefinition, DeployAdjustRequest } from './request'
+export { DeployRequestDefinition, DeployRequestEndpointDefinition } from './request'
 export { ChangeAndContext } from './types'

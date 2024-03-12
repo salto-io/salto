@@ -74,7 +74,7 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
   if (custom !== undefined) {
     return custom({ skipIfIdentical, transformForCheck })
   }
-  if (skipIfIdentical !== false) {
+  if (skipIfIdentical === false) {
     return () => true
   }
   const transform = createValueTransformer(transformForCheck)
@@ -84,7 +84,7 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
       return true
     }
     const { typeName } = change.data.after.elemID
-    return isEqualValues(
+    return !isEqualValues(
       transform({ value: change.data.before, typeName, context: args }),
       transform({ value: change.data.after, typeName, context: args }),
     )
@@ -262,7 +262,7 @@ export const getRequester = <
       await awu(collections.array.makeArray(requests)).some(async def => {
         const { request, condition } = def
         const checkFunc = createCheck(condition)
-        if (condition !== undefined && !checkFunc(args)) {
+        if (!checkFunc(args)) {
           if (!request.earlySuccess) {
             const { client, path, method } = request.endpoint
             log.trace(

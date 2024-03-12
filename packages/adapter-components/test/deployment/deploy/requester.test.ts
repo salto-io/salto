@@ -133,6 +133,57 @@ describe('DeployRequester', () => {
                           method: 'patch',
                         },
                       },
+                      copyFromResponse: {
+                        pick: ['stop'],
+                      },
+                    },
+                    {
+                      condition: {
+                        custom:
+                          () =>
+                          ({ change }) =>
+                            getChangeData(change).value.stop !== true,
+                      },
+                      request: {
+                        endpoint: {
+                          path: '/ep3',
+                        },
+                      },
+                    },
+                  ],
+                  modify: [
+                    {
+                      condition: {
+                        skipIfIdentical: false,
+                      },
+                      request: {
+                        endpoint: {
+                          path: '/ep1',
+                          method: 'post',
+                        },
+                      },
+                    },
+                    {
+                      request: {
+                        endpoint: {
+                          path: '/ep2',
+                          method: 'patch',
+                        },
+                      },
+                      copyFromResponse: {
+                        pick: ['stop'],
+                      },
+                    },
+                    {
+                      condition: {
+                        skipIfIdentical: false,
+                      },
+                      request: {
+                        endpoint: {
+                          path: '/ep3',
+                          method: 'post',
+                        },
+                      },
                     },
                   ],
                 },
@@ -203,7 +254,7 @@ describe('DeployRequester', () => {
                 {
                   request: {
                     transformation: {
-                      // TODO the original test had a fieldsToIgnore recursive function - this can now be done using adjust
+                      // TODO the "old infra" test had a fieldsToIgnore recursive function - this can now be done using adjust
                       omit: ['ignored'],
                     },
                   },
@@ -307,6 +358,10 @@ describe('DeployRequester', () => {
       status: 200,
       data: {},
     })
+    client.get.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
     const requester = getRequester({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
@@ -336,6 +391,107 @@ describe('DeployRequester', () => {
     expect(client.patch).toHaveBeenCalledWith(
       expect.objectContaining({
         url: '/ep2',
+      }),
+    )
+    expect(client.get).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/ep3',
+      }),
+    )
+  })
+
+  it('should run the correct request flow for the action and stop when a custom condition is not met', async () => {
+    client.post.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    client.patch.mockResolvedValue({
+      status: 200,
+      data: {
+        stop: true,
+      },
+    })
+    client.get.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+
+    const requester = getRequester({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const change = toChange({
+      after: new InstanceElement(
+        'bla',
+        new ObjectType({
+          elemID: new ElemID('bla', 'multi_test'),
+          fields: { id: { refType: BuiltinTypes.SERVICE_ID } },
+        }),
+      ),
+    })
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+    })
+    expect(getChangeData(change).value.stop).toBe(true)
+    expect(client.post).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/ep1',
+      }),
+    )
+    expect(client.patch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/ep2',
+      }),
+    )
+    expect(client.get).not.toHaveBeenCalled()
+  })
+  it('should run the correct request flow for the action and check skipIfIdentical at the individual request level', async () => {
+    client.post.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    client.patch.mockResolvedValue({
+      status: 200,
+      data: {
+        stop: true,
+      },
+    })
+
+    const requester = getRequester({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const inst = new InstanceElement(
+      'bla',
+      new ObjectType({
+        elemID: new ElemID('bla', 'multi_test'),
+        fields: { id: { refType: BuiltinTypes.SERVICE_ID } },
+      }),
+    )
+    const change = toChange({
+      before: inst,
+      after: inst,
+    })
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+    })
+    expect(client.post).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/ep1',
+      }),
+    )
+    expect(client.patch).not.toHaveBeenCalled()
+    expect(client.post).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/ep3',
       }),
     )
   })

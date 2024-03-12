@@ -29,7 +29,7 @@ jest.mock('@salto-io/adapter-components', () => {
     ...actual,
     deployment: {
       ...actual.deployment,
-      defaultDeployChange: jest.fn((...args) => mockDeployChange(...args)),
+      deployChange: jest.fn((...args) => mockDeployChange(...args)),
     },
   }
 })

@@ -78,6 +78,9 @@ salesforce {
           metadataType = "StandardValueSet"
           name = "AddressStateCode.*"
         },
+        {
+          metadataType: 'DiscoveryAIModel',
+        },
       ]
     }
     data = {

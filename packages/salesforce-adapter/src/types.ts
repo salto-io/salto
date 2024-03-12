@@ -959,6 +959,9 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
                 metadataType: 'Layout',
                 name: 'CaseInteraction-Case Feed Layout',
               },
+              {
+                metadataType: 'DiscoveryAIModel',
+              },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,

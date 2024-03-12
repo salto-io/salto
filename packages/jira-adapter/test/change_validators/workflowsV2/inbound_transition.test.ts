@@ -24,9 +24,11 @@ describe('inboundTransitionChangeValidator', () => {
   let status1: InstanceElement
   let status2: InstanceElement
   let status3: InstanceElement
+  let status4: InstanceElement
   let status1Ref: ReferenceExpression
   let status2Ref: ReferenceExpression
   let status3Ref: ReferenceExpression
+  let status4Ref: ReferenceExpression
 
   beforeEach(() => {
     const statusType = createEmptyType(STATUS_TYPE_NAME)
@@ -39,9 +41,13 @@ describe('inboundTransitionChangeValidator', () => {
     status3 = new InstanceElement('status3', statusType, {
       name: 'status3',
     })
+    status4 = new InstanceElement('status4', statusType, {
+      name: 'status4',
+    })
     status1Ref = new ReferenceExpression(status1.elemID, status1)
     status2Ref = new ReferenceExpression(status2.elemID, status2)
     status3Ref = new ReferenceExpression(status3.elemID, status3)
+    status4Ref = new ReferenceExpression(status4.elemID, status4)
     workflowInstance = new InstanceElement('workflowInstance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
       name: 'workflowInstance',
       version: {
@@ -62,6 +68,9 @@ describe('inboundTransitionChangeValidator', () => {
         {
           statusReference: status3Ref,
         },
+        {
+          statusReference: status4Ref,
+        },
       ],
       transitions: {
         tran1: {
@@ -77,6 +86,14 @@ describe('inboundTransitionChangeValidator', () => {
           id: 'id',
           type: 'DIRECTED',
         },
+        tran3: {
+          name: 'tran3',
+          id: 'id',
+          type: 'DIRECTED',
+          to: {
+            statusReference: status3Ref,
+          },
+        },
       },
     })
     changes = [toChange({ after: workflowInstance })]
@@ -89,15 +106,15 @@ describe('inboundTransitionChangeValidator', () => {
         severity: 'Error',
         message: 'Workflow statuses must have at least one inbound transition',
         detailedMessage:
-          'The following statuses of workflow workflowInstance have no inbound transitions: status2, status3. To fix this, remove this status or add an inbound transition to it.',
+          'The following statuses of workflow workflowInstance have no inbound transitions: status2, status4. To fix this, remove those statuses or add inbound transitions to them.',
       },
     ])
   })
 
   it('should return no error when all statuses have inbound transitions', async () => {
     workflowInstance.value.statuses.pop()
-    workflowInstance.value.transitions.tran3 = {
-      name: 'tran3',
+    workflowInstance.value.transitions.tran4 = {
+      name: 'tran4',
       id: 'id',
       type: 'DIRECTED',
       to: {

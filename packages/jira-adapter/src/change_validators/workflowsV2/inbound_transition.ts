@@ -51,11 +51,14 @@ export const inboundTransitionChangeValidator: ChangeValidator = async changes =
       if (_.isEmpty(statusesWithoutInboundTransition)) {
         return undefined
       }
+      const statusesWithoutInboundTransitionNames = statusesWithoutInboundTransition
+        .map(statusRef => statusRef.value.value.name)
+        .join(', ')
       return {
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Workflow statuses must have at least one inbound transition',
-        detailedMessage: `The following statuses of workflow ${instance.value.name} have no inbound transitions: ${statusesWithoutInboundTransition.map(statusRef => statusRef.value.value.name).join(', ')}. To fix this, remove this status or add an inbound transition to it.`,
+        detailedMessage: `The following statuses of workflow ${instance.value.name} have no inbound transitions: ${statusesWithoutInboundTransitionNames}. To fix this, remove those statuses or add inbound transitions to them.`,
       }
     })
     .filter(isDefined)

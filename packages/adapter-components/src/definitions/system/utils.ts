@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { types, values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { DefaultWithCustomizations } from './shared/types'
 import { UserFetchConfig } from '../user'
 import { FetchApiDefinitions } from './fetch'
@@ -61,25 +61,25 @@ export const mergeSingleDefWithDefault = <T, K extends string>(
   }).value
 }
 
-export type DefQuery<T> = {
-  query: (key: string) => T | undefined
-  allKeys: () => string[]
-  getAll: () => Record<string, T>
+export type DefQuery<T, K extends string = string> = {
+  query: (key: K) => T | undefined
+  allKeys: () => K[]
+  getAll: () => Record<K, T>
 }
 
-export const queryWithDefault = <T>(
-  defsWithDefault: types.PickyRequired<DefaultWithCustomizations<T, string>, 'customizations'>,
-): DefQuery<T> => {
-  const query: DefQuery<T>['query'] = key =>
+export const queryWithDefault = <T, K extends string = string>(
+  defsWithDefault: DefaultWithCustomizations<T, K>,
+): DefQuery<T, K> => {
+  const query: DefQuery<T, K>['query'] = key =>
     mergeSingleDefWithDefault(defsWithDefault.default, defsWithDefault.customizations[key])
   return {
     query,
-    allKeys: () => Object.keys(defsWithDefault.customizations ?? {}),
+    allKeys: () => Object.keys(defsWithDefault.customizations ?? {}) as K[],
     getAll: () =>
       _.pickBy(
-        _.mapValues(defsWithDefault.customizations, (_def, k) => query(k)),
+        _.mapValues(defsWithDefault.customizations, (_def, k) => query(k as K)),
         lowerdashValues.isDefined,
-      ),
+      ) as Record<K, T>,
   }
 }
 

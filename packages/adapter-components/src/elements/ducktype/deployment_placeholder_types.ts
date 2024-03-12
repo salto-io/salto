@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import {
-  Change,
-  getChangeData,
-  InstanceElement,
-  isInstanceChange,
-  isReferenceExpression,
-  TypeReference,
-} from '@salto-io/adapter-api'
+import { InstanceElement, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { generateType } from './type_elements'
 import { AdapterDuckTypeApiConfig, getConfigWithDefault } from '../../config'
+import { restoreInstanceTypeFromChange } from '../../deployment'
 
 /**
  * Changes instance type to be suitable for the deploy (generated from the latest instance))
@@ -61,23 +55,4 @@ export const replaceInstanceTypeForDeploy = ({
 /**
  * Restores instance type to have the original type (and not the fixed one for the deploy)
  */
-export const restoreInstanceTypeFromDeploy = ({
-  appliedChanges,
-  originalInstanceChanges,
-}: {
-  appliedChanges: Change[]
-  originalInstanceChanges: Change<InstanceElement>[]
-}): Change[] => {
-  const elemIDToOriginalType = Object.fromEntries(
-    originalInstanceChanges.map(getChangeData).map(inst => [inst.elemID.getFullName(), inst.refType]),
-  )
-  const [instanceChanges, nonInstanceChanges] = _.partition(appliedChanges, isInstanceChange)
-  const appliedInstanceChanges = instanceChanges.map(change => ({
-    action: change.action,
-    data: _.mapValues(change.data, (instance: InstanceElement) => {
-      instance.refType = elemIDToOriginalType[instance.elemID.getFullName()] ?? instance.refType
-      return instance
-    }),
-  })) as Change<InstanceElement>[]
-  return [...nonInstanceChanges, ...appliedInstanceChanges]
-}
+export const restoreInstanceTypeFromDeploy = restoreInstanceTypeFromChange

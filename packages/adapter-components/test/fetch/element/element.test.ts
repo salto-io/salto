@@ -25,6 +25,7 @@ import {
 import { getElementGenerator } from '../../../src/fetch/element/element'
 import { queryWithDefault } from '../../../src/definitions'
 import { createMockQuery } from '../../../src/fetch/query'
+import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
 
 describe('element', () => {
   const typeID = new ElemID('myAdapter', 'myType')
@@ -32,7 +33,9 @@ describe('element', () => {
     it('should create empty type with no instances when no entries or defs are provided', () => {
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
-        defQuery: queryWithDefault({ customizations: { myType: { element: { topLevel: { isTopLevel: true } } } } }),
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
+        }),
         fetchQuery: createMockQuery(),
       })
       generator.pushEntries({
@@ -47,7 +50,9 @@ describe('element', () => {
     it('should not throw when type is not marked as top-level', () => {
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
-        defQuery: queryWithDefault({ customizations: { myType: { element: { topLevel: { isTopLevel: true } } } } }),
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
+        }),
         fetchQuery: createMockQuery(),
       })
       generator.pushEntries({
@@ -66,7 +71,9 @@ describe('element', () => {
       ]
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
-        defQuery: queryWithDefault({ customizations: { myType: { element: { topLevel: { isTopLevel: true } } } } }),
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
+        }),
         fetchQuery: createMockQuery(),
       })
       generator.pushEntries({
@@ -115,7 +122,7 @@ describe('element', () => {
       ]
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
-        defQuery: queryWithDefault({
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: {
             myType: {
               resource: {

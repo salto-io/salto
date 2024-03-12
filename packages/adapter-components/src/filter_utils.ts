@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ActionName, ElemIdGetter, SaltoError } from '@salto-io/adapter-api'
+import { ElemIdGetter, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { Paginator } from './client'
 import { ElementQuery } from './fetch/query'
@@ -31,12 +31,13 @@ export type FilterOptions<
   TAdditional = {},
   ClientOptions extends string = 'main',
   PaginationOptions extends string | 'none' = 'none',
-  Action extends string = ActionName,
+  AdditionalAction extends string = never,
 > = {
-  definitions: ApiDefinitions<ClientOptions, PaginationOptions, Action>
+  definitions: ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>
   config: TContext
   getElemIdFunc?: ElemIdGetter
   fetchQuery: ElementQuery
+  elementSource: ReadOnlyElementsSource
 } & TAdditional
 
 export type AdapterFilterCreator<
@@ -45,8 +46,11 @@ export type AdapterFilterCreator<
   TAdditional = {},
   ClientOptions extends string = 'main',
   PaginationOptions extends string | 'none' = 'none',
-  Action extends string = ActionName,
-> = filter.FilterCreator<TResult, FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, Action>>
+  AdditionalAction extends string = never,
+> = filter.FilterCreator<
+  TResult,
+  FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>
+>
 
 export type UserConfigAdapterFilterCreator<
   TContext,
@@ -70,11 +74,11 @@ export const filterRunner = <
   TAdditional = {},
   ClientOptions extends string = 'main',
   PaginationOptions extends string | 'none' = 'none',
-  Action extends string = ActionName,
+  AdditionalAction extends string = never,
 >(
-  opts: FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, Action>,
+  opts: FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>,
   filterCreators: ReadonlyArray<
-    AdapterFilterCreator<TContext, TResult, TAdditional, ClientOptions, PaginationOptions, Action>
+    AdapterFilterCreator<TContext, TResult, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>
   >,
   onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
 ): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)

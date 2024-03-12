@@ -33,9 +33,6 @@ import { FetchRequestDefinition } from './request'
  */
 export type InstanceFetchApiDefinitions<ClientOptions extends string = 'main'> = {
   // "edges" specifying how to generate resources from endpoint calls.
-  // these are used in two places during fetch:
-  // 1. to decide which endpoints to call given a fetch query (all endpoints that produce resources of relevant types)
-  // 2. to generate resources from endpoint responses
   requests?: FetchRequestDefinition<ClientOptions>[]
 
   // a resource aggregates fragments associated with the same logical entity from various requests by a service id,

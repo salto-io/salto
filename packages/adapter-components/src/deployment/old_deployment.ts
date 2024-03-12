@@ -93,7 +93,7 @@ export const deployChange = async ({
     return undefined
   }
   log.trace(
-    `deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`,
+    `deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams }, { compact: true, depth: 6 })}`,
   )
   try {
     const response = await client[endpoint.method]({

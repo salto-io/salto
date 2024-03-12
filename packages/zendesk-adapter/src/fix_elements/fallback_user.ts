@@ -141,6 +141,9 @@ export const fallbackUsersHandler: FixElementsHandler =
   async elements => {
     const { users } = await usersPromise
     const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
+    // eslint-disable-next-line no-console
+    log.warn(`(5/5) in fallback_users fix elements, ${users.length} users kakdila`)
+
     if (
       defaultMissingUserFallback === undefined ||
       noRelevantUsers(users, defaultMissingUserFallback, config[FETCH_CONFIG].resolveUserIDs)

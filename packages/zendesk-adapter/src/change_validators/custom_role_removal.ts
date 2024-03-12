@@ -15,8 +15,11 @@
  */
 import _ from 'lodash'
 import { ChangeValidator, SaltoError, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { User } from '../users/types'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
+
+const log = logger(module)
 
 /*
  * Checks that no user with agent role is associated with the removed custom_role
@@ -36,6 +39,9 @@ export const customRoleRemovalValidator: (
   }
 
   const { users } = await usersPromise
+  // eslint-disable-next-line no-console
+  log.warn(`(1/5) in role removal, ${users.length}  users kakdila`)
+
   if (_.isEmpty(users)) {
     return []
   }

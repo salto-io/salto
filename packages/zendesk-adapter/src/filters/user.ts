@@ -15,9 +15,12 @@
  */
 import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { TYPE_NAME_TO_REPLACER, getIdByEmail } from '../users/user_utils'
 import { deployModificationFunc } from '../replacers_utils'
+
+const log = logger(module)
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
@@ -41,6 +44,9 @@ const filterCreator: FilterCreator = ({ usersPromise }) => {
       })
 
       const { errors } = await usersPromise
+      // eslint-disable-next-line no-console
+      log.warn(`(4/5)[a] in users filter, ${errors?.length}  errors kakdila`)
+
       return { errors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
@@ -49,11 +55,17 @@ const filterCreator: FilterCreator = ({ usersPromise }) => {
         return
       }
       const { users } = await usersPromise
+      // eslint-disable-next-line no-console
+      log.warn(`(4/5)[b] in users filter, ${users.length} users kakdila`)
+
       if (_.isEmpty(users)) {
         return
       }
       userIdToEmail = Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
       userIdToEmail = await getIdByEmail(usersPromise)
+      // eslint-disable-next-line no-console
+      log.warn(`(4/5)[c] in users filter, ${userIdToEmail.length} users kakdila`)
+
       const emailToUserId = Object.fromEntries(users.map(user => [user.email, user.id.toString()])) as Record<
         string,
         string

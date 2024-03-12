@@ -331,6 +331,8 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
       } else {
         usersById = await getIdByEmail(usersPromise)
       }
+      // eslint-disable-next-line no-console
+      log.warn(`(3/5)[a] in custom objects fields filter, ${usersById.length}  users kakdila`)
 
       const instancesById = _.keyBy(
         instances.filter(instance => _.isNumber(instance.value.id)),
@@ -376,6 +378,8 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
         return
       }
       const { users } = await usersPromise
+      // eslint-disable-next-line no-console
+      log.warn(`(3/5)[b] in custom objects fields filter, ${users.length}  users  kakdila`)
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

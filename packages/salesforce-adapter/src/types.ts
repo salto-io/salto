@@ -960,6 +960,13 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
                 name: 'CaseInteraction-Case Feed Layout',
               },
               {
+                metadataType: 'EclairGeoData',
+              },
+              {
+                metadataType:
+                  'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+              },
+              {
                 metadataType: 'DiscoveryAIModel',
               },
             ],

@@ -27,6 +27,7 @@ import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
 import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
 import { workflowStatusMappingsValidator } from './workflowsV2/status_mappings'
+import { inboundTransitionChangeValidator } from './workflowsV2/inbound_transition'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
@@ -97,6 +98,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
     workflowStatusMappings: workflowStatusMappingsValidator,
+    inboundTransition: inboundTransitionChangeValidator,
     issueTypeSchemeMigration: issueTypeSchemeMigrationValidator(client),
     activeSchemeChange: activeSchemeChangeValidator(client),
     masking: maskingValidator(client),

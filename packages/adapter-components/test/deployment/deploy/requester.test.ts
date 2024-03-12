@@ -185,6 +185,25 @@ describe('DeployRequester', () => {
                         },
                       },
                     },
+                    {
+                      condition: {
+                        skipIfIdentical: false,
+                      },
+                      request: {
+                        earlySuccess: true,
+                      },
+                    },
+                    {
+                      condition: {
+                        skipIfIdentical: false,
+                      },
+                      request: {
+                        endpoint: {
+                          path: '/ep4',
+                          method: 'post',
+                        },
+                      },
+                    },
                   ],
                 },
               },
@@ -449,7 +468,7 @@ describe('DeployRequester', () => {
     )
     expect(client.get).not.toHaveBeenCalled()
   })
-  it('should run the correct request flow for the action and check skipIfIdentical at the individual request level', async () => {
+  it('should run the correct request flow for the action and check skipIfIdentical at the individual request level, and stop on earlySuccess', async () => {
     client.post.mockResolvedValue({
       status: 200,
       data: {},
@@ -492,6 +511,11 @@ describe('DeployRequester', () => {
     expect(client.post).toHaveBeenCalledWith(
       expect.objectContaining({
         url: '/ep3',
+      }),
+    )
+    expect(client.post).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/ep4',
       }),
     )
   })

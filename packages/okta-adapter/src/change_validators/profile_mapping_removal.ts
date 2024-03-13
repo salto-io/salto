@@ -60,7 +60,7 @@ export const profileMappingRemovalValidator: ChangeValidator = async changes => 
         detailedMessage:
           'In order to remove this Profile Mapping, remove its' +
           ` source (${source?.id.elemID.typeName} ${source?.id.elemID.name}) or` +
-          ` target (${target?.id.elemID.typeName} ${target?.id.elemID.name}) as well.`
+          ` target (${target?.id.elemID.typeName} ${target?.id.elemID.name}) as well.`,
       }
     })
 }

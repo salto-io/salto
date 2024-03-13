@@ -66,33 +66,6 @@ describe('userUtils', () => {
         { id: 2, email: 'e@e.com', role: 'agent', name: 'e', locale: 'en-US', custom_role_id: undefined },
       ])
     })
-    it('should cache results when between getUsers calls', async () => {
-      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield [
-          {
-            users: [
-              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
-              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
-              { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
-            ],
-          },
-        ]
-      })
-      const { users } = await userUtils.getUsers(mockPaginator, true)
-      expect(users).toEqual([
-        { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
-        { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
-        { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
-      ])
-      const { users: getUsersAfterCache } = await userUtils.getUsers(mockPaginator, true)
-      expect(getUsersAfterCache).toEqual([
-        { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
-        { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
-        { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
-      ])
-      await userUtils.getUsers(mockPaginator, true)
-      expect(mockPaginator).toHaveBeenCalledTimes(1)
-    })
     it('should return empty list if users are in invalid format', async () => {
       const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
         yield [

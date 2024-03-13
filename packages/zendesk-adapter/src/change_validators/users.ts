@@ -24,10 +24,11 @@ import {
   isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { resolvePath, resolveValues } from '@salto-io/adapter-utils'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { resolveValues } from '@salto-io/adapter-components'
 import {
   MISSING_USERS_DOC_LINK,
   MISSING_USERS_ERROR_MSG,
@@ -116,8 +117,6 @@ export const usersValidator: (usersPromise: Promise<GetUsersResponse>) => Change
     }
 
     const { users } = await usersPromise
-    // eslint-disable-next-line no-console
-    log.warn(`(2/5) in users CV, ${users.length}  users kakdila`)
 
     const existingUsersEmails = new Set(users.map(user => user.email))
     const instancesUserPaths = relevantInstances.flatMap(instance => {

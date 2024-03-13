@@ -30,7 +30,6 @@ import Joi from 'joi'
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import moment from 'moment-timezone'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
 import {
   APP_INSTALLATION_TYPE_NAME,
   APP_OWNED_TYPE_NAME,
@@ -59,6 +58,7 @@ import {
 import ZendeskClient from '../client/client'
 import { getIdByName } from '../users/user_utils'
 import { FETCH_CONFIG, GUIDE_GLOBAL_TYPES, GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
+import { FilterCreator } from '../filter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

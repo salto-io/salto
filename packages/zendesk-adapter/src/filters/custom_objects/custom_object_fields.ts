@@ -31,7 +31,6 @@ import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../../filter'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
@@ -49,6 +48,7 @@ import {
   transformRelationshipFilterField,
 } from './utils'
 import { getIdByEmail } from '../../users/user_utils'
+import { FilterCreator } from '../../filter'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
@@ -331,9 +331,6 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
       } else {
         usersById = await getIdByEmail(usersPromise)
       }
-      // eslint-disable-next-line no-console
-      log.warn(`(3/5)[a] in custom objects fields filter, ${usersById.length}  users kakdila`)
-
       const instancesById = _.keyBy(
         instances.filter(instance => _.isNumber(instance.value.id)),
         instance => _.parseInt(instance.value.id),
@@ -378,8 +375,6 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
         return
       }
       const { users } = await usersPromise
-      // eslint-disable-next-line no-console
-      log.warn(`(3/5)[b] in custom objects fields filter, ${users.length}  users  kakdila`)
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
->>>>>>> fcd58d658 (fix build errors)
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
 import { FilterContext } from './config'

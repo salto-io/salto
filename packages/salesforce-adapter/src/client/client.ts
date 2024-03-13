@@ -1173,6 +1173,7 @@ export default class SalesforceClient {
     const { job } = batch
     await new Promise((resolve) => job.on('close', resolve))
     const result = (await batch.then()) as BatchResultInfo[]
+    log.trace('client.bulkLoadOperation result: %o', result)
     return flatValues(result)
   }
 }

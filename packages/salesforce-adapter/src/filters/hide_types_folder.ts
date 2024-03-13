@@ -16,25 +16,23 @@
 import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE, TYPES_PATH } from '../constants'
 import { LocalFilterCreator } from '../filter'
+import { ensureSafeFilterFetch } from './utils'
 
-const isElementWithinTypesFolder = (element: Element): boolean => {
-  const elementPath = element.path ?? []
-  if (elementPath.length < 2) {
-    return false
-  }
-  return elementPath[0] === SALESFORCE && elementPath[1] === TYPES_PATH
-}
+const isElementWithinTypesFolder = ({ path = [] }: Element): boolean =>
+  path?.[0] === SALESFORCE && path[1] === TYPES_PATH
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'hideTypesFolder',
-  onFetch: async (elements) => {
-    if (!config.fetchProfile.isFeatureEnabled('hideTypesFolder')) {
-      return
-    }
-    elements.filter(isElementWithinTypesFolder).forEach((element) => {
-      element.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-    })
-  },
+  onFetch: ensureSafeFilterFetch({
+    config,
+    filterName: 'hideTypesFolder',
+    warningMessage: 'Error occurred when attempting to hide the Types Folder',
+    fetchFilterFunc: async (elements) => {
+      elements.filter(isElementWithinTypesFolder).forEach((element) => {
+        element.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+      })
+    },
+  }),
 })
 
 export default filterCreator

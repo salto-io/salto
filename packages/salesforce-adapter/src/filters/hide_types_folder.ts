@@ -19,7 +19,7 @@ import { LocalFilterCreator } from '../filter'
 import { ensureSafeFilterFetch } from './utils'
 
 const isElementWithinTypesFolder = ({ path = [] }: Element): boolean =>
-  path?.[0] === SALESFORCE && path[1] === TYPES_PATH
+  path?.[0] === SALESFORCE && path?.[1] === TYPES_PATH
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'hideTypesFolder',

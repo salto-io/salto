@@ -69,8 +69,8 @@ const createSortOrderError = (
 ): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
-  message: `Duplicate rule instances for ${objectName} must be in sequential order.`,
-  detailedMessage: `Please set or update the order of the instances while making sure it starts from 1 and always increases by 1 (gaps are not allowed). Order is: ${order}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8032257-duplicate-rules-must-be-in-sequential-order`,
+  message: 'Duplicate rule instances must be in sequential order.',
+  detailedMessage: `Please set or update the order of the instances in object '${objectName}' while making sure it starts from 1 and always increases by 1 (gaps are not allowed). Order is: ${order}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8032257-duplicate-rules-must-be-in-sequential-order`,
 })
 
 /**

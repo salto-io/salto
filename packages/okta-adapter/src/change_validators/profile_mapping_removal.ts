@@ -51,14 +51,16 @@ export const profileMappingRemovalValidator: ChangeValidator = async changes => 
         (isReferenceExpression(target?.id) && removedNames.has(target.id.elemID.getFullName()))
       )
     })
-    .map(profileMapping => ({
-      elemID: profileMapping.elemID,
-      severity: 'Error',
-      message: 'Cannot remove profile mapping if neither its source nor target are also removed',
-      detailedMessage:
-        `In order to remove ${profileMapping.elemID.name}, either its source (instance ` +
-        `${profileMapping.value.source?.id.elemID.name} of type ${profileMapping.value.source?.id.elemID.typeName})` +
-        ` or target (instance ${profileMapping.value.target?.id.elemID.name} of type` +
-        ` ${profileMapping.value.target?.id.elemID.typeName}) must be removed as well.`,
-    }))
+    .map(profileMapping => {
+      const { source, target } = profileMapping.value
+      return {
+        elemID: profileMapping.elemID,
+        severity: 'Error',
+        message: 'Cannot remove profile mapping if neither its source nor target are also removed',
+        detailedMessage:
+          'In order to remove this Profile Mapping, remove its' +
+          ` source (${source?.id.elemID.typeName} ${source?.id.elemID.name}) or` +
+          ` target (${target?.id.elemID.typeName} ${target?.id.elemID.name}) as well.`
+      }
+    })
 }

@@ -55,14 +55,14 @@ describe('profileMappingRemovalValidator', () => {
         severity: 'Error',
         message: 'Cannot remove profile mapping if neither its source nor target are also removed',
         detailedMessage:
-          'In order to remove mappingA, either its source (instance app of type Application) or target (instance user type of type UserType) must be removed as well.',
+          'In order to remove this Profile Mapping, remove its source (Application app) or target (UserType user type) as well.',
       },
       {
         elemID: profileMappingB.elemID,
         severity: 'Error',
         message: 'Cannot remove profile mapping if neither its source nor target are also removed',
         detailedMessage:
-          'In order to remove mappingB, either its source (instance user type of type UserType) or target (instance idp of type IdentityProvider) must be removed as well.',
+          'In order to remove this Profile Mapping, remove its source (UserType user type) or target (IdentityProvider idp) as well.',
       },
     ])
   })

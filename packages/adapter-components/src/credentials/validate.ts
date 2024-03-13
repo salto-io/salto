@@ -13,6 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { combineDependencyChangers } from './dependency_changer'
-export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'
-export { ChangeWithKey } from './types'
+
+import { Adapter, InstanceElement } from '@salto-io/adapter-api'
+import { ConnectionCreator, validateCredentials } from '../client'
+
+export const defaultValidateCredentials =
+  <Credentials>({
+    createConnection,
+    credentialsFromConfig,
+  }: {
+    createConnection: ConnectionCreator<Credentials>
+    credentialsFromConfig: (config: Readonly<InstanceElement>) => Credentials
+  }): Adapter['validateCredentials'] =>
+  async config =>
+    validateCredentials(credentialsFromConfig(config), {
+      createConnection,
+    })

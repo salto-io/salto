@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { combineDependencyChangers } from './dependency_changer'
-export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'
-export { ChangeWithKey } from './types'
+import { DependencyChanger } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+
+export const combineDependencyChangers =
+  (changers: DependencyChanger[]): DependencyChanger =>
+  async (changes, deps) =>
+    collections.asynciterable
+      .awu(changers)
+      .flatMap(changer => changer(changes, deps))
+      .toArray()

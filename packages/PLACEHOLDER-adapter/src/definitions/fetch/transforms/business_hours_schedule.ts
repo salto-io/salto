@@ -13,6 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { combineDependencyChangers } from './dependency_changer'
-export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'
-export { ChangeWithKey } from './types'
+import _ from 'lodash'
+import { definitions } from '@salto-io/adapter-components'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+
+// TODO improve example in SALTO-5428
+export const transform: definitions.AdjustFunction = ({ value }) => {
+  if (!lowerdashValues.isPlainObject(value)) {
+    throw new Error('unexpected value for business hour schedule, not transforming')
+  }
+  const startYear = _.get(value, 'start_date')?.split('-')[0]
+  const endYear = _.get(value, 'end_date')?.split('-')[0]
+  return {
+    value: {
+      ...value,
+      start_year: startYear,
+      end_year: endYear,
+    },
+  }
+}

@@ -13,6 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { combineDependencyChangers } from './dependency_changer'
-export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'
-export { ChangeWithKey } from './types'
+import { elements, definitions } from '@salto-io/adapter-components'
+
+// TODO adjust this file
+
+export type UserFetchConfig = definitions.UserFetchConfig & {
+  // TODO add adapter-specific user-facing fetch flags here
+}
+export type UserClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
+export type UserDeployConfig = definitions.UserDeployConfig
+export type UserConfig = definitions.UserConfig<UserClientConfig, UserFetchConfig, UserDeployConfig>
+
+export const DEFAULT_CONFIG: UserConfig = {
+  client: {},
+  fetch: {
+    ...elements.query.INCLUDE_ALL_CONFIG,
+  },
+}

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { serviceUrlFilterCreator, addUrlToInstance } from './service_url'
-export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
-export { queryFilterCreator, createParentChildGraph } from './query'
-export { hideTypesFilterCreator } from './hide_types'
 export { defaultDeployFilterCreator } from './default_deploy'
+export { fieldReferencesFilterCreator } from './field_references'
+export { hideTypesFilterCreator } from './hide_types'
+export { queryFilterCreator, createParentChildGraph } from './query'
+export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
+export { serviceUrlFilterCreator, addUrlToInstance } from './service_url'
+export { createCommonFilters } from './common_filters'

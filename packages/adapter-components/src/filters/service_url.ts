@@ -119,12 +119,18 @@ export const serviceUrlFilterCreatorDeprecated: <
   additionalApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> = (baseUrl, additionalApiDefinitions) => args => {
   const { config } = args
-  const typeNamesSet = new Set([...Object.keys(config.apiDefinitions.types), ...Object.keys(additionalApiDefinitions?.types ?? {})])
+  const typeNamesSet = new Set([
+    ...Object.keys(config.apiDefinitions.types),
+    ...Object.keys(additionalApiDefinitions?.types ?? {}),
+  ])
   const customizations = Object.fromEntries(
-    Array.from(typeNamesSet).map(typeName => ([
+    Array.from(typeNamesSet).map(typeName => [
       typeName,
-      transformConfigToFetchDefinitionsForServiceUrl(config.apiDefinitions.types[typeName], additionalApiDefinitions?.types[typeName]),
-    ])),
+      transformConfigToFetchDefinitionsForServiceUrl(
+        config.apiDefinitions.types[typeName],
+        additionalApiDefinitions?.types[typeName],
+      ),
+    ]),
   )
 
   const definitions = {

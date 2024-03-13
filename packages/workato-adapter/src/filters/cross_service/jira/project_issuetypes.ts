@@ -15,6 +15,7 @@
  */
 import {
   Element,
+  InstanceElement,
   getChangeData,
   isAdditionOrModificationChange,
   isInstanceChange,
@@ -27,48 +28,47 @@ import { FilterCreator } from '../../../filter'
 import { BlockBase } from '../recipe_block_types'
 
 const INPUT_SEPERATOR = '--'
+const PROJECT_ISSUETYPE = 'project_issuetype'
+const SAMPLE_PROJECT_ISSUETYPE = 'sample_project_issuetype'
+const PROJECT_KEY = 'projectKey'
+const ISSUE_TYPE = 'issueType'
+const SAMPLE_PROJECT_KEY = 'sampleProjectKey'
+const SAMPLE_ISSUE_TYPE = 'sampleIssueType'
 
 /* eslint-disable camelcase */
-
 type JiraExportedBlock = BlockBase & {
   as: string
   provider: 'jira' | 'jira_secondary'
   dynamicPickListSelection?: {
-    project_issuetype: unknown
-    sample_project_issuetype?: unknown
+    [PROJECT_ISSUETYPE]?: unknown
+    [SAMPLE_PROJECT_ISSUETYPE]?: unknown
   }
   input: {
-    project_issuetype: string
-    sample_project_issuetype?: string
-    projectKey?: string
-    issueType?: string
-    sampleProjectKey?: string
-    sampleIssueType?: string
+    [PROJECT_ISSUETYPE]?: string
+    [SAMPLE_PROJECT_ISSUETYPE]?: string
+    [PROJECT_KEY]?: string
+    [ISSUE_TYPE]?: string
+    [SAMPLE_PROJECT_KEY]?: string
+    [SAMPLE_ISSUE_TYPE]?: string
   }
 }
 
-type JiraImportedBlock = BlockBase & {
-  as: string
-  provider: 'jira' | 'jira_secondary'
-  input: {
-    projectKey: string
-    issueType: string
-    sampleProjectKey?: string
-    sampleIssueType?: string
-    project_issuetype?: string
-    sample_project_issuetype?: string
-  }
-}
+type ProjectIssuetypeFunc = (
+  value: JiraExportedBlock,
+  originalFieldName: typeof PROJECT_ISSUETYPE | typeof SAMPLE_PROJECT_ISSUETYPE,
+  firstKey: typeof PROJECT_KEY | typeof SAMPLE_PROJECT_KEY,
+  secondKey: typeof ISSUE_TYPE | typeof SAMPLE_ISSUE_TYPE,
+) => void
 
 const JIRA_IMPORTED_BLOCK_SCHEMA = Joi.object({
   keyword: Joi.string().required(),
   as: Joi.string().required(),
   provider: Joi.string().valid('jira', 'jira_secondary').required(),
   input: Joi.object({
-    projectKey: Joi.any().required(),
-    issueType: Joi.any().required(),
-    sampleProjectKey: Joi.any(),
-    sampleIssueType: Joi.any(),
+    [PROJECT_KEY]: Joi.any().required(),
+    [ISSUE_TYPE]: Joi.any().required(),
+    [SAMPLE_PROJECT_KEY]: Joi.any(),
+    [SAMPLE_ISSUE_TYPE]: Joi.any(),
   })
     .unknown(true)
     .required(),
@@ -81,12 +81,12 @@ const JIRA_EXPORTED_BLOCK_SCHEMA = Joi.object({
   as: Joi.string().required(),
   provider: Joi.string().valid('jira', 'jira_secondary').required(),
   dynamicPickListSelection: Joi.object({
-    project_issuetype: Joi.any().required(),
-    sample_project_issuetype: Joi.any(),
+    [PROJECT_ISSUETYPE]: Joi.any().required(),
+    [SAMPLE_PROJECT_ISSUETYPE]: Joi.any(),
   }).unknown(true),
   input: Joi.object({
-    project_issuetype: Joi.string().required(),
-    sample_project_issuetype: Joi.string(),
+    [PROJECT_ISSUETYPE]: Joi.string().required(),
+    [SAMPLE_PROJECT_ISSUETYPE]: Joi.string(),
   })
     .unknown(true)
     .required(),
@@ -94,12 +94,7 @@ const JIRA_EXPORTED_BLOCK_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-const splitProjectAndIssueType = (
-  value: JiraExportedBlock,
-  argName: 'project_issuetype' | 'sample_project_issuetype',
-  firstKey: 'projectKey' | 'sampleProjectKey',
-  secondKey: 'issueType' | 'sampleIssueType',
-): void => {
+const splitProjectAndIssueType: ProjectIssuetypeFunc = (value, argName, firstKey, secondKey) => {
   const projectKeyAndIssueType = value.input[argName]
   if (projectKeyAndIssueType !== undefined && projectKeyAndIssueType.includes(INPUT_SEPERATOR)) {
     // The project key can't contain '-' sign while issueTypeName and projectName could.
@@ -115,12 +110,7 @@ const splitProjectAndIssueType = (
   }
 }
 
-const mergeProjectAndIssueType = (
-  value: JiraImportedBlock,
-  argName: 'project_issuetype' | 'sample_project_issuetype',
-  firstKey: 'projectKey' | 'sampleProjectKey',
-  secondKey: 'issueType' | 'sampleIssueType',
-): void => {
+const mergeProjectAndIssueType: ProjectIssuetypeFunc = (value, argName, firstKey, secondKey) => {
   const projectKey = value.input[firstKey]
   const issueType = value.input[secondKey]
   if (projectKey !== undefined && issueType !== undefined) {
@@ -129,6 +119,22 @@ const mergeProjectAndIssueType = (
     delete value.input[secondKey]
   }
 }
+
+const splitAllProjectAndIssueType = (inst: InstanceElement): void =>
+  walkOnElement({
+    element: inst,
+    func: ({ value }) => {
+      const objValues = isInstanceElement(value) ? value.value : value
+      if (
+        createSchemeGuard<JiraExportedBlock>(JIRA_EXPORTED_BLOCK_SCHEMA)(objValues) &&
+        CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)
+      ) {
+        splitProjectAndIssueType(objValues, PROJECT_ISSUETYPE, PROJECT_KEY, ISSUE_TYPE)
+        splitProjectAndIssueType(objValues, SAMPLE_PROJECT_ISSUETYPE, SAMPLE_PROJECT_KEY, SAMPLE_ISSUE_TYPE)
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
 
 /**
  * Workato recipe connected to Jira account include jira blocks from the format
@@ -147,30 +153,15 @@ const mergeProjectAndIssueType = (
  * To avoid duplications, we delete the dynamicPickListSelection arguments and split input
  * args to projectKey and issueTypeName
  */
-
 const filter: FilterCreator = () => ({
   name: 'jiraProjectIssueTypeFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === RECIPE_CODE_TYPE)
-      .forEach(inst =>
-        walkOnElement({
-          element: inst,
-          func: ({ value }) => {
-            const objValues = isInstanceElement(value) ? value.value : value
-            if (
-              createSchemeGuard<JiraExportedBlock>(JIRA_EXPORTED_BLOCK_SCHEMA)(objValues) &&
-              CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)
-            ) {
-              splitProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
-              splitProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
-            }
-            return WALK_NEXT_STEP.RECURSE
-          },
-        }),
-      )
+      .forEach(inst => splitAllProjectAndIssueType(inst))
   },
+
   preDeploy: async changes => {
     changes
       .filter(isInstanceChange)
@@ -183,16 +174,25 @@ const filter: FilterCreator = () => ({
           func: ({ value }) => {
             const objValues = isInstanceElement(value) ? value.value : value
             if (
-              createSchemeGuard<JiraImportedBlock>(JIRA_IMPORTED_BLOCK_SCHEMA)(objValues) &&
+              createSchemeGuard<JiraExportedBlock>(JIRA_IMPORTED_BLOCK_SCHEMA)(objValues) &&
               CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)
             ) {
-              mergeProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
-              mergeProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
+              mergeProjectAndIssueType(objValues, PROJECT_ISSUETYPE, PROJECT_KEY, ISSUE_TYPE)
+              mergeProjectAndIssueType(objValues, SAMPLE_PROJECT_ISSUETYPE, SAMPLE_PROJECT_KEY, SAMPLE_ISSUE_TYPE)
             }
             return WALK_NEXT_STEP.RECURSE
           },
         }),
       )
+  },
+
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(inst => [RECIPE_CODE_TYPE, RECIPE_TYPE].includes(inst.elemID.typeName))
+      .forEach(inst => splitAllProjectAndIssueType(inst))
   },
 })
 export default filter

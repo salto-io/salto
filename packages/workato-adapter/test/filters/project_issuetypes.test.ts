@@ -24,7 +24,7 @@ import filterCreator from '../../src/filters/cross_service/jira/project_issuetyp
 
 describe('projectIssuetype filter', () => {
   let client: WorkatoClient
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let elements: Element[]
 
@@ -386,6 +386,66 @@ describe('projectIssuetype filter', () => {
       expect(recipeCodeAfterFetch.value.block[0].block[0].input.sample_project_issuetype).toEqual(
         'SPN--SampleIssueTypeName',
       )
+    })
+
+    it('should not change anything in Deletion Change', async () => {
+      const anotherRecipeCodeAfterFetch = _.cloneDeep(recipeCodeAfterFetch)
+      const changes = [toChange({ before: recipeCodeAfterFetch })]
+      await filter.preDeploy(changes)
+      expect(anotherRecipeCodeAfterFetch).toEqual(recipeCodeAfterFetch)
+    })
+  })
+  describe('onDeploy', () => {
+    it("should replace 'project_issuetype' to projectKey and issueType at input", async () => {
+      expect(recipeCode.value.block[0].block[0].input.project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.projectKey).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.issueType).toBeUndefined()
+
+      expect(recipeCode.value.block[1].input.project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[1].input.projectKey).toBeUndefined()
+      expect(recipeCode.value.block[1].input.issueType).toBeUndefined()
+
+      expect(recipeCode.value.block[2].input.project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[2].input.projectKey).toBeUndefined()
+      expect(recipeCode.value.block[2].input.issueType).toBeUndefined()
+
+      const changes = [toChange({ before: recipeCode, after: recipeCode })]
+      await filter.onDeploy(changes)
+
+      expect(recipeCode.value.block[0].block[0].input.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.projectKey).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.projectKey).toEqual('PRN')
+      expect(recipeCode.value.block[0].block[0].input.issueType).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.issueType).toEqual(
+        "Issue Type Name with ' : ' sign and '--' sign ",
+      )
+
+      expect(recipeCode.value.block[1].input.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[1].input.projectKey).toBeDefined()
+      expect(recipeCode.value.block[1].input.projectKey).toEqual('PISB')
+      expect(recipeCode.value.block[1].input.issueType).toBeDefined()
+      expect(recipeCode.value.block[1].input.issueType).toEqual('IssueType')
+
+      expect(recipeCode.value.block[2].input.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[2].input.projectKey).toBeDefined()
+      expect(recipeCode.value.block[2].input.projectKey).toEqual('CheckWithout')
+      expect(recipeCode.value.block[2].input.issueType).toBeDefined()
+      expect(recipeCode.value.block[2].input.issueType).toEqual('DynamicPickListSelction')
+    })
+
+    it("should replace 'sample_project_issuetype' to sampleProjectKey and sampleIssueType at input", async () => {
+      expect(recipeCode.value.block[0].block[0].input.sample_project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toBeUndefined()
+
+      const changes = [toChange({ after: recipeCode })]
+      await filter.onDeploy(changes)
+
+      expect(recipeCode.value.block[0].block[0].input.sample_project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toEqual('SPN')
+      expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toEqual('SampleIssueTypeName')
     })
 
     it('should not change anything in Deletion Change', async () => {

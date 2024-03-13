@@ -88,7 +88,7 @@ export const getFilledJspUrls = (instance: InstanceElement, config: JiraConfig, 
       jspRequests.query &&
       fetchUtils.resource.createUrl({
         instance,
-        baseUrl: jspRequests.query,
+        url: jspRequests.query,
       }),
   }
 }

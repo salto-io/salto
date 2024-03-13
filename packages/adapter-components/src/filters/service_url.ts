@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  ActionName,
   Change,
   CORE_ANNOTATIONS,
   Element,
@@ -26,15 +27,39 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../filter_utils'
-import { AdapterApiConfig } from '../config'
+import { logger } from '@salto-io/logging'
+import { AdapterFilterCreator, FilterCreator } from '../filter_utils'
 import { createUrl } from '../fetch/resource'
+import { ApiDefinitions, queryWithDefault } from '../definitions'
+import { InstanceFetchApiDefinitions } from '../definitions/system/fetch'
+import { AdapterApiConfig, TransformationConfig, TypeConfig } from '../config'
 
-export const addUrlToInstance = (instance: InstanceElement, baseUrl: string, apiDefs: AdapterApiConfig): void => {
-  const serviceUrl = apiDefs.types[instance.elemID.typeName]?.transformation?.serviceUrl
+const log = logger(module)
+
+export const transformConfigToFetchDefinitionsForServiceUrl = (
+  configDef: TypeConfig<TransformationConfig, ActionName>,
+  additionalConfigDef?: TypeConfig<TransformationConfig, ActionName>
+  ): InstanceFetchApiDefinitions => {
+  const serviceUrl = additionalConfigDef?.transformation?.serviceUrl ?? configDef.transformation?.serviceUrl
+  return {
+    element: {
+      topLevel: {
+        isTopLevel: true as const,
+        serviceUrl: serviceUrl ? { path: serviceUrl } : undefined,
+      },
+    },
+  }
+}
+
+export const addUrlToInstance: <
+ClientOptions extends string = 'main'
+>(instance: InstanceElement, baseUrl: string, apiDef: InstanceFetchApiDefinitions<ClientOptions> | undefined) => void =
+(instance, baseUrl, apiDef) => {
+  const serviceUrl = apiDef?.element?.topLevel?.serviceUrl
   if (serviceUrl === undefined) {
     return
   }
+  // TODO_F use custom function from serviceUrl
   // parent is ReferenceExpression during fetch, and serialized into full value during deploy
   const parentValues = instance.annotations[CORE_ANNOTATIONS.PARENT]?.map((parent: unknown) =>
     isReferenceExpression(parent) ? parent.value.value : parent,
@@ -45,11 +70,45 @@ export const addUrlToInstance = (instance: InstanceElement, baseUrl: string, api
     })
     return result
   }, {})
-  const url = createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars: parentContext })
+  const url = createUrl({ instance, url: serviceUrl.path, additionalUrlVars: parentContext })
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, baseUrl).href
 }
 
 export const serviceUrlFilterCreator: <
+TContext,
+TResult extends void | filter.FilterResult = void,
+TAdditional = {},
+ClientOptions extends string = 'main',
+PaginationOptions extends string | 'none' = 'none',
+Action extends string = ActionName,
+>(
+  baseUrl: string,
+) => AdapterFilterCreator<TContext, TResult, TAdditional, ClientOptions, PaginationOptions, Action> =
+  (baseUrl) =>
+  ({ definitions }) => {
+    if (definitions.fetch === undefined) {
+      log.warn('No fetch definitions were found, skipping service url filter')
+      return () => ({})
+    }
+    const { instances } = definitions.fetch
+    const defQuery = queryWithDefault(instances)
+    return {
+    name: 'serviceUrlFilter',
+    onFetch: async (elements: Element[]) => {
+        elements.filter(isInstanceElement).forEach(instance => {
+          addUrlToInstance(instance, baseUrl, defQuery.query(instance.elemID.typeName))
+        })
+    },
+    onDeploy: async (changes: Change<InstanceElement>[]) => {
+        const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
+        relevantChanges.map(getChangeData).forEach(instance => {
+          addUrlToInstance(instance, baseUrl, defQuery.query(instance.elemID.typeName))
+        })
+    },
+  }
+}
+  // TODO deprecate when upgrading to new definitions SALTO-5538
+  export const serviceUrlFilterCreatorDeprecated: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void,
@@ -58,25 +117,17 @@ export const serviceUrlFilterCreator: <
   additionalApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> =
   (baseUrl, additionalApiDefinitions) =>
-  ({ config }) => ({
-    name: 'serviceUrlFilter',
-    onFetch: async (elements: Element[]) => {
-      elements.filter(isInstanceElement).forEach(instance => {
-        const apiDefinitions =
-          additionalApiDefinitions?.types[instance.elemID.typeName] !== undefined
-            ? additionalApiDefinitions
-            : config.apiDefinitions
-        addUrlToInstance(instance, baseUrl, apiDefinitions)
-      })
-    },
-    onDeploy: async (changes: Change<InstanceElement>[]) => {
-      const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
-      relevantChanges.map(getChangeData).forEach(instance => {
-        const apiDefinitions =
-          additionalApiDefinitions?.types[instance.elemID.typeName] !== undefined
-            ? additionalApiDefinitions
-            : config.apiDefinitions
-        addUrlToInstance(instance, baseUrl, apiDefinitions)
-      })
-    },
-  })
+  args => {
+    const { config } = args
+    const customizations = Object.fromEntries(Object.entries(config.apiDefinitions.types)
+      .map(([typeName, apiDef]) => ([typeName, transformConfigToFetchDefinitionsForServiceUrl(apiDef, additionalApiDefinitions?.types[typeName])])))
+    
+    const definitions = {
+      fetch: {
+        instances: {
+          customizations,
+        },
+      },
+    } as ApiDefinitions
+    return serviceUrlFilterCreator(baseUrl) ({ ...args, definitions })
+  }

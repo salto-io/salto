@@ -19,6 +19,6 @@ import { JiraConfig } from '../../config/config'
 import { FilterCreator, FilterResult } from '../../filter'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<JiraClient, JiraConfig, FilterResult>(params.client.baseUrl)(params)
+  filters.serviceUrlFilterCreatorDeprecated<JiraClient, JiraConfig, FilterResult>(params.client.baseUrl)(params)
 
 export default filter

@@ -126,7 +126,7 @@ export const deployStatusChange = async (
   }
   const url = createUrl({
     instance,
-    baseUrl: endpoint.url,
+    url: endpoint.url,
     urlParamsToFields: endpoint.urlParamsToFields,
   })
   try {

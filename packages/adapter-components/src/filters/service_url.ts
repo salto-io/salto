@@ -38,10 +38,10 @@ import { AdapterApiConfig, TransformationConfig, TypeConfig } from '../config'
 const log = logger(module)
 
 export const transformConfigToFetchDefinitionsForServiceUrl = (
-  configDef: TypeConfig<TransformationConfig, ActionName>,
+  configDef?: TypeConfig<TransformationConfig, ActionName>,
   additionalConfigDef?: TypeConfig<TransformationConfig, ActionName>,
 ): InstanceFetchApiDefinitions => {
-  const serviceUrl = additionalConfigDef?.transformation?.serviceUrl ?? configDef.transformation?.serviceUrl
+  const serviceUrl = additionalConfigDef?.transformation?.serviceUrl ?? configDef?.transformation?.serviceUrl
   return {
     element: {
       topLevel: {
@@ -119,11 +119,12 @@ export const serviceUrlFilterCreatorDeprecated: <
   additionalApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> = (baseUrl, additionalApiDefinitions) => args => {
   const { config } = args
+  const typeNamesSet = new Set([...Object.keys(config.apiDefinitions.types), ...Object.keys(additionalApiDefinitions?.types ?? {})])
   const customizations = Object.fromEntries(
-    Object.entries(config.apiDefinitions.types).map(([typeName, apiDef]) => [
+    Array.from(typeNamesSet).map(typeName => ([
       typeName,
-      transformConfigToFetchDefinitionsForServiceUrl(apiDef, additionalApiDefinitions?.types[typeName]),
-    ]),
+      transformConfigToFetchDefinitionsForServiceUrl(config.apiDefinitions.types[typeName], additionalApiDefinitions?.types[typeName]),
+    ])),
   )
 
   const definitions = {

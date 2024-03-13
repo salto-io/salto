@@ -17,10 +17,10 @@ import { toChange, ObjectType, ElemID, InstanceElement, ChangeValidator } from '
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { mockClient } from '../utils'
-import { projectDeletionValidator } from '../../src/change_validators/project_deletion'
-import { getDefaultConfig, JiraConfig } from '../../src/config/config'
-import { JIRA } from '../../src/constants'
+import { mockClient } from '../../utils'
+import { projectDeletionValidator } from '../../../src/change_validators/projects/project_deletion'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
+import { JIRA } from '../../../src/constants'
 
 describe('projectDeletionValidator', () => {
   let type: ObjectType

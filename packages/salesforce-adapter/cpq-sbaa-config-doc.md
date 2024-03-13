@@ -128,6 +128,16 @@ salesforce {
           metadataType = "Layout"
           name = "CaseInteraction-Case Feed Layout"
         },
+        {
+          metadataType: 'EclairGeoData',
+        },
+        {
+          metadataType:
+            'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+        },
+        {
+          metadataType: 'DiscoveryAIModel',
+        },
       ]
     }
     data = {

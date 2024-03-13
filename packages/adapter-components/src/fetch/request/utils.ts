@@ -42,7 +42,7 @@ export const replaceArgs = (
   throwOnUnresolvedArgs?: boolean,
 ): string => {
   const res = valueToReplace.replace(ARG_PLACEHOLDER_MATCHER, val => {
-    const replacement = args[val.slice(1, -1)] ?? val
+    const replacement = _.get(args, val.slice(1, -1)) ?? val
     if (!isPrimitiveValue(replacement)) {
       throw new Error(`Cannot replace param ${val} in ${valueToReplace} with non-primitive value ${replacement}`)
     }

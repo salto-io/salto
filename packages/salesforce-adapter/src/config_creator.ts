@@ -124,6 +124,9 @@ export const configWithCPQ = new InstanceElement(
             metadataType:
               'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
           },
+          {
+            metadataType: 'DiscoveryAIModel',
+          },
         ],
       },
       data: {

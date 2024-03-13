@@ -24,6 +24,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import filterCreator from '../../src/filters/ticket_form'
 import { createFilterCreatorParams } from '../utils'
 import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -65,7 +66,7 @@ const createElementSource = (customStatusesEnabled: boolean): ReadOnlyElementsSo
 }
 
 describe('ticket form filter', () => {
-  type FilterType = filterUtils.FilterWith<'deploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onDeploy' | 'onFetch'>
   let filter: FilterType
   const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
   const invalidTicketForm = new InstanceElement('invalid', ticketFormType, {
@@ -107,6 +108,74 @@ describe('ticket form filter', () => {
         child_fields: [{ required_on_statuses: { type: 'NO_STATUSES' } }],
       },
     ],
+  })
+  describe('fetch', () => {
+    const genericCustomTicketStatusField = new InstanceElement(
+      'custom_status',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+      {
+        type: 'custom_status',
+        id: 123,
+      },
+    )
+    const otherField = new InstanceElement(
+      'other field',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+      {
+        type: 'text',
+      },
+    )
+
+    const customTicketFieldRef = new ReferenceExpression(
+      genericCustomTicketStatusField.elemID,
+      genericCustomTicketStatusField,
+    )
+    const otherTicketFieldRef = new ReferenceExpression(otherField.elemID, otherField)
+
+    const elementSourceForm = new InstanceElement('elementSourceForm', ticketFormType, {
+      ticket_field_ids: [customTicketFieldRef, 123456, otherTicketFieldRef],
+    })
+    beforeEach(async () => {
+      jest.clearAllMocks()
+    })
+
+    it('should not remove the generic custom ticket on fetch when flag is off', async () => {
+      const elements = [elementSourceForm, otherField, genericCustomTicketStatusField]
+      filter = filterCreator(
+        createFilterCreatorParams({ elementsSource: buildElementsSourceFromElements(elements) }),
+      ) as FilterType
+
+      await filter.onFetch(elements)
+      expect(elementSourceForm.value.ticket_field_ids).toEqual([customTicketFieldRef, 123456, otherTicketFieldRef])
+    })
+    it('should remove the generic custom ticket on fetch when flag is on', async () => {
+      const elements = [elementSourceForm, otherField, genericCustomTicketStatusField]
+      const config = { ...DEFAULT_CONFIG }
+      config[FETCH_CONFIG].omitTicketStatusTicketField = true
+      filter = filterCreator(
+        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
+      ) as FilterType
+
+      await filter.onFetch(elements)
+      expect(elementSourceForm.value.ticket_field_ids).toEqual([123456, otherTicketFieldRef])
+      expect(elements).toEqual([elementSourceForm, otherField])
+    })
+    it('should remove the generic custom ticket on fetch when flag is on and there is no ref', async () => {
+      const elementSourceFormWithID = new InstanceElement('elementSourceFormWithID', ticketFormType, {
+        ticket_field_ids: [123, 123456, otherTicketFieldRef],
+      })
+      const elements = [elementSourceFormWithID, otherField, genericCustomTicketStatusField]
+
+      const config = { ...DEFAULT_CONFIG }
+      config[FETCH_CONFIG].omitTicketStatusTicketField = true
+      filter = filterCreator(
+        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements(elements) }),
+      ) as FilterType
+
+      await filter.onFetch(elements)
+      expect(elementSourceFormWithID.value.ticket_field_ids).toEqual([123456, otherTicketFieldRef])
+      expect(elements).toEqual([elementSourceFormWithID, otherField])
+    })
   })
 
   describe('deploy of removal of field and its condition', () => {

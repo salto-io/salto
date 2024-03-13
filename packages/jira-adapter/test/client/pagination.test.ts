@@ -56,6 +56,10 @@ describe('pageByOffset', () => {
           { name: 'scoped', scope: {} },
           { name: 'nested scope', nested: [{ name: 'valid' }, { name: 'bad', scope: {} }] },
           { name: 'globalScoped', scope: { type: 'GLOBAL' } },
+          { name: 'typed', type: 'classic' },
+          { name: 'typedSimple', type: 'simple' },
+          { name: 'typedSelfSimple', type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/1.0/board/1' },
+          { name: 'badSelf', type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/2.0/board/1' },
         ])
       const args = { url: 'http://myjira.net/thing' }
       const paginator = createPaginator({
@@ -74,15 +78,32 @@ describe('pageByOffset', () => {
     })
     it('should keep non-scoped entities', () => {
       const [page] = responses
-      expect(page[0]).toEqual({ name: 'thing' })
+      expect(page).toContainEqual({ name: 'thing' })
     })
     it('should omit nested scoped entities from the response', () => {
       const [page] = responses
-      expect(page[1]).toEqual({ name: 'nested scope', nested: [{ name: 'valid' }] })
+      expect(page).toContainEqual({ name: 'nested scope', nested: [{ name: 'valid' }] })
     })
     it('should keep global scoped entities', () => {
       const [page] = responses
-      expect(page[2]).toEqual({ name: 'globalScoped', scope: { type: 'GLOBAL' } })
+      expect(page).toContainEqual({ name: 'globalScoped', scope: { type: 'GLOBAL' } })
+    })
+    it('should keep non-simple type scopes', () => {
+      const [page] = responses
+      expect(page).toContainEqual({ name: 'typed', type: 'classic' })
+    })
+    it('should keep simple type scopes with non board self', () => {
+      const [page] = responses
+      expect(page).toContainEqual(
+        expect.objectContaining({ type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/2.0/board/1' }),
+      )
+    })
+    it('should omit team boards from the response', () => {
+      expect(responses).toHaveLength(1)
+      const [page] = responses
+      expect(page).not.toContainEqual(
+        expect.objectContaining({ type: 'simple', self: 'https://myJira.atlassian.net/rest/agile/1.0/board/1' }),
+      )
     })
   })
 

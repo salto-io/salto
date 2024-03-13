@@ -46,7 +46,7 @@ const INNER_TYPE_GROUPED_WITH_PARENT = [
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 
-const recurseIntoInstanceChangeToGroupId: deployment.ChangeIdFunction = async change => {
+const recurseIntoInstanceChangeToGroupId: deployment.grouping.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
   if (isInstanceElement(instance)) {
     const { typeName } = instance.elemID
@@ -61,13 +61,14 @@ const recurseIntoInstanceChangeToGroupId: deployment.ChangeIdFunction = async ch
   return undefined
 }
 
-const typeNameChangeGroupId: deployment.ChangeIdFunction = async change => getChangeData(change).elemID.typeName
+const typeNameChangeGroupId: deployment.grouping.ChangeIdFunction = async change =>
+  getChangeData(change).elemID.typeName
 
 // sections need to be grouped separately as there are dependencies with 'parent_section_id'
-const sectionChangeGroupId: deployment.ChangeIdFunction = async change =>
+const sectionChangeGroupId: deployment.grouping.ChangeIdFunction = async change =>
   getChangeData(change).elemID.typeName === SECTION_TYPE_NAME ? getChangeData(change).elemID.getFullName() : undefined
 
-export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
+export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   recurseIntoInstanceChangeToGroupId,
   sectionChangeGroupId,
   typeNameChangeGroupId,

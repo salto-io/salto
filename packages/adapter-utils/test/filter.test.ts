@@ -62,7 +62,7 @@ describe('filtersRunner', () => {
         const operations = [operation1, operation2]
         const filters = operations.map(f => () => ({ [operation]: f, name: 'bla' }))
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any)
+        filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any, undefined)
         const orderedOperations = operation === 'preDeploy' ? [...operations].reverse() : operations
 
         expect(orderedOperations[0]).toHaveBeenCalled()
@@ -75,40 +75,79 @@ describe('filtersRunner', () => {
 
   describe('deploy', () => {
     let filterRes: { leftoverChanges: Change[]; deployResult: DeployResult }
+    let allChanges: Change[]
+    let filterRunner: Required<Filter<{}, void>>
 
     beforeEach(async () => {
+      const typeChange = toChange({ after: new ObjectType({ elemID: new ElemID('adapter', 'type') }) })
+      allChanges = [typeChange, typeChange, typeChange]
       const filter: FilterWith<{}, 'deploy'> = {
         name: 'deployTestFilter',
-        deploy: async changes => ({
+        deploy: async (changes, changeGroup) => ({
           deployResult: {
             appliedChanges: [changes[0]],
-            errors: [{ message: changes.length.toString(), severity: 'Error' }],
+            errors: [{ message: `${changeGroup?.groupID}/${changes.length.toString()}`, severity: 'Error' }],
           },
           leftoverChanges: changes.slice(1),
         }),
       }
 
-      const filterRunner = filtersRunner({}, [() => filter, () => filter])
-      const typeChange = toChange({ after: new ObjectType({ elemID: new ElemID('adapter', 'type') }) })
-      filterRes = await filterRunner.deploy([typeChange, typeChange, typeChange])
+      filterRunner = filtersRunner({}, [() => filter, () => filter])
     })
+    describe('with change group', () => {
+      beforeEach(async () => {
+        filterRes = await filterRunner.deploy(allChanges, { changes: allChanges, groupID: 'abc' })
+      })
 
-    it('should return the changes that were not deployed', () => {
-      expect(filterRes.leftoverChanges).toHaveLength(1)
+      it('should return the changes that were not deployed', () => {
+        expect(filterRes.leftoverChanges).toHaveLength(1)
+      })
+
+      it('should return the merged deploy results', () => {
+        expect(filterRes.deployResult.appliedChanges).toHaveLength(2)
+        expect(filterRes.deployResult.errors).toEqual([
+          expect.objectContaining({
+            message: expect.stringContaining('3'),
+            severity: 'Error',
+          }),
+          expect.objectContaining({
+            message: expect.stringContaining('2'),
+            severity: 'Error',
+          }),
+        ])
+        expect(filterRes.deployResult.errors.map(e => e.message)).toEqual([
+          expect.stringContaining('abc/'),
+          expect.stringContaining('abc/'),
+        ])
+      })
     })
+    // TODO remove when change group becomes required in SALTO-5531
+    describe('without change group', () => {
+      beforeEach(async () => {
+        filterRes = await filterRunner.deploy(allChanges)
+      })
 
-    it('should return the merged deploy results', () => {
-      expect(filterRes.deployResult.appliedChanges).toHaveLength(2)
-      expect(filterRes.deployResult.errors).toEqual([
-        expect.objectContaining({
-          message: expect.stringContaining('3'),
-          severity: 'Error',
-        }),
-        expect.objectContaining({
-          message: expect.stringContaining('2'),
-          severity: 'Error',
-        }),
-      ])
+      it('should return the changes that were not deployed', () => {
+        expect(filterRes.leftoverChanges).toHaveLength(1)
+      })
+
+      it('should return the merged deploy results', () => {
+        expect(filterRes.deployResult.appliedChanges).toHaveLength(2)
+        expect(filterRes.deployResult.errors).toEqual([
+          expect.objectContaining({
+            message: expect.stringContaining('3'),
+            severity: 'Error',
+          }),
+          expect.objectContaining({
+            message: expect.stringContaining('2'),
+            severity: 'Error',
+          }),
+        ])
+        expect(filterRes.deployResult.errors.map(e => e.message)).toEqual([
+          expect.stringContaining('undefined/'),
+          expect.stringContaining('undefined/'),
+        ])
+      })
     })
   })
 })

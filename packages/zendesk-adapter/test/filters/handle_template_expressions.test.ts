@@ -196,6 +196,17 @@ describe('handle templates filter', () => {
       },
     ],
   })
+  const macro4 = new InstanceElement('macro4', testType, {
+    id: newId(),
+    actions: [
+      {
+        value:
+          'a lot of info like {{}} and  something that looks like a DC item, such as this email: rdc.blab@gmail.com',
+        field: 'comment_value_html',
+      },
+    ],
+  })
+
   const macroOrganization = new InstanceElement('macroOrg', testType, {
     id: newId(),
     actions: [
@@ -231,7 +242,7 @@ describe('handle templates filter', () => {
     id: newId(),
     actions: [
       {
-        value: `{{some other irrelevancies-ticket.ticket_field_${placeholder1.value.id} | something irrelevant | dynamic content now: dc.dynamic_content_test | and done}}`,
+        value: `{{some other irrelevancies-ticket.ticket_field_${placeholder1.value.id} | something irrelevant | dynamic content now: dc.not_dynamic_content_test | and done}}`,
         field: 'comment_value_html',
       },
     ],
@@ -240,7 +251,7 @@ describe('handle templates filter', () => {
     id: newId(),
     actions: [
       {
-        value: `{%some other irrelevancies-ticket.ticket_field_${placeholder1.value.id} | something irrelevant | dynamic content now: dc.dynamic_content_test | and done%}`,
+        value: `{%some other irrelevancies-ticket.ticket_field_${placeholder1.value.id} | something irrelevant | dynamic content now: dc.not_dynamic_content_test | and done%}`,
         field: 'comment_value_html',
       },
     ],
@@ -381,6 +392,7 @@ describe('handle templates filter', () => {
       macro1,
       macro2,
       macro3,
+      macro4,
       macroAlmostTemplate,
       macroAlmostTemplate2,
       target,
@@ -574,9 +586,7 @@ describe('handle templates filter', () => {
           parts: [
             `{{some other irrelevancies-${TICKET_TICKET_FIELD}_`,
             new ReferenceExpression(placeholder1.elemID, placeholder1),
-            ' | something irrelevant | dynamic content now: ',
-            new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-            ' | and done}}',
+            ' | something irrelevant | dynamic content now: dc.not_dynamic_content_test | and done}}',
           ],
         }),
       )
@@ -588,9 +598,7 @@ describe('handle templates filter', () => {
           parts: [
             `{%some other irrelevancies-${TICKET_TICKET_FIELD}_`,
             new ReferenceExpression(placeholder1.elemID, placeholder1),
-            ' | something irrelevant | dynamic content now: ',
-            new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-            ' | and done%}',
+            ' | something irrelevant | dynamic content now: dc.not_dynamic_content_test | and done%}',
           ],
         }),
       )
@@ -620,6 +628,13 @@ describe('handle templates filter', () => {
             '}}',
           ],
         }),
+      )
+    })
+
+    it('should not resolve strings that contain dc. if not in a placeholder', () => {
+      const fetchedMacro4 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro4')
+      expect(fetchedMacro4?.value.actions[0].value).toEqual(
+        'a lot of info like {{}} and  something that looks like a DC item, such as this email: rdc.blab@gmail.com',
       )
     })
 

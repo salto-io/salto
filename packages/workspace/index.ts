@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { parser } from '@salto-io/parser'
 import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
 import {
@@ -135,6 +134,5 @@ export {
   Author,
   createPathIndexForElement,
   buildStaticFilesCache,
-  parser,
   listElementsDependenciesInWorkspace,
 }

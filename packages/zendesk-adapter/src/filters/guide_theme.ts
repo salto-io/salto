@@ -55,6 +55,7 @@ import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
 import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
 import { parseHtmlPotentialReferences } from './template_engines/html_parser'
+import { extractGreedyIdsFromScripts } from './template_engines/javascript_extractor'
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
@@ -90,13 +91,23 @@ const createTemplateParts = ({
       if (handlebarReferences.length > 0) {
         log.info('Found the following references in file %s in the theme: %o', filePath, handlebarReferences)
       }
-      const { urls } = parseHtmlPotentialReferences(content, {
+      const { urls, scripts } = parseHtmlPotentialReferences(content, {
         matchBrandSubdomain,
         instancesById: idsToElements,
         enableMissingReferences: false,
       })
       if (urls.length > 0 && urls.filter(url => typeof url.value !== 'string').length > 0) {
         log.info('Found the following URLs file %s in the theme: %o', filePath, urls)
+      }
+      const scriptsWithReferences = scripts.map(script => ({
+        value: extractGreedyIdsFromScripts(idsToElements, script.value),
+        loc: script.loc,
+      }))
+      if (
+        scriptsWithReferences.length > 0 &&
+        scriptsWithReferences.filter(script => typeof script.value !== 'string').length > 0
+      ) {
+        log.info('Found the following script references in file %s in the theme: %o', filePath, urls)
       }
     } catch (e) {
       log.warn('Error parsing references in file %s, %o', filePath, e)
@@ -111,6 +122,16 @@ const createTemplateParts = ({
       })
       if (urls.length > 0 && urls.filter(url => typeof url.value !== 'string').length > 0) {
         log.info('Found the following URLs file %s in the theme: %o', filePath, urls)
+      }
+    } catch (e) {
+      log.warn('Error parsing references in file %s, %o', filePath, e)
+    }
+  }
+  if (filePath.endsWith('.js')) {
+    try {
+      const greedyIds = extractGreedyIdsFromScripts(idsToElements, content)
+      if (typeof greedyIds !== 'string') {
+        log.info('Found the following script references in file %s in the theme: %o', filePath, greedyIds)
       }
     } catch (e) {
       log.warn('Error parsing references in file %s, %o', filePath, e)

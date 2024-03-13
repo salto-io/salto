@@ -41,6 +41,7 @@ const log = logger(module)
 export const getElements = async <
   ClientOptions extends string = 'main',
   PaginationOptions extends string | 'none' = 'none',
+  AdditionalAction extends string = never,
 >({
   adapterName,
   fetchQuery,
@@ -51,7 +52,10 @@ export const getElements = async <
 }: {
   adapterName: string
   fetchQuery: ElementQuery
-  definitions: types.PickyRequired<ApiDefinitions<ClientOptions, PaginationOptions>, 'clients' | 'pagination' | 'fetch'>
+  definitions: types.PickyRequired<
+    ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>,
+    'clients' | 'pagination' | 'fetch'
+  >
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
   additionalRequestContext?: Record<string, unknown>

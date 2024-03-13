@@ -16,6 +16,8 @@
 
 import { collections, values } from '@salto-io/lowerdash'
 import { Change, ChangeGroupId, ChangeGroupIdFunction, ChangeId, getChangeData } from '@salto-io/adapter-api'
+import { getChangeGroupIdFromDefinition } from './functions'
+import { DeployApiDefinitions } from '../../definitions/system/deploy'
 
 const { awu } = collections.asynciterable
 export type ChangeIdFunction = (change: Change) => Promise<string | undefined>
@@ -46,3 +48,8 @@ export const getChangeGroupIdsFunc =
         .toArray(),
     ),
   })
+
+export const getChangeGroupIdsFuncWithDefinitions = <AdditionalAction extends string, ClientOptions extends string>(
+  def: DeployApiDefinitions<AdditionalAction, ClientOptions>['instances'],
+  changeIdProviders: ChangeIdFunction[] = [],
+): ChangeGroupIdFunction => getChangeGroupIdsFunc([getChangeGroupIdFromDefinition(def), ...changeIdProviders])

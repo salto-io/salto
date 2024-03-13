@@ -41,7 +41,7 @@ import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 import { doesProjectHaveIssues } from './projects/project_deletion'
 
-const { addUrlToInstance, transformConfigToFetchDefinitionsForServiceUrl } = filters
+const { addUrlToInstance, configDefToInstanceFetchApiDefinitionsForServiceUrl } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -262,7 +262,7 @@ export const workflowSchemeMigrationValidator =
         addUrlToInstance(
           instance,
           client.baseUrl,
-          transformConfigToFetchDefinitionsForServiceUrl(config.apiDefinitions.types[instance.elemID.typeName]),
+          configDefToInstanceFetchApiDefinitionsForServiceUrl(config.apiDefinitions.types[instance.elemID.typeName]),
         )
         const changedItems = await getChangedItemsFromChange(
           change,

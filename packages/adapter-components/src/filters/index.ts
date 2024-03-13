@@ -17,7 +17,7 @@ export {
   serviceUrlFilterCreator,
   addUrlToInstance,
   serviceUrlFilterCreatorDeprecated,
-  transformConfigToFetchDefinitionsForServiceUrl,
+  configDefToInstanceFetchApiDefinitionsForServiceUrl,
 } from './service_url'
 export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
 export { queryFilterCreator, createParentChildGraph } from './query'

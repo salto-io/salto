@@ -37,7 +37,7 @@ import { AdapterApiConfig, TransformationConfig, TypeConfig } from '../config'
 
 const log = logger(module)
 
-export const transformConfigToFetchDefinitionsForServiceUrl = (
+export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
   configDef?: TypeConfig<TransformationConfig, ActionName>,
   additionalConfigDef?: TypeConfig<TransformationConfig, ActionName>,
 ): InstanceFetchApiDefinitions => {
@@ -126,7 +126,7 @@ export const serviceUrlFilterCreatorDeprecated: <
   const customizations = Object.fromEntries(
     Array.from(typeNamesSet).map(typeName => [
       typeName,
-      transformConfigToFetchDefinitionsForServiceUrl(
+      configDefToInstanceFetchApiDefinitionsForServiceUrl(
         config.apiDefinitions.types[typeName],
         additionalApiDefinitions?.types[typeName],
       ),

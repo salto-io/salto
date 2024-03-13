@@ -61,7 +61,7 @@ export const addUrlToInstance: <ClientOptions extends string = 'main'>(
   if (serviceUrl === undefined) {
     return
   }
-  // TODO_F use custom function from serviceUrl
+  // TODO_F use custom function from serviceUrl SALTO-5580
   // parent is ReferenceExpression during fetch, and serialized into full value during deploy
   const parentValues = instance.annotations[CORE_ANNOTATIONS.PARENT]?.map((parent: unknown) =>
     isReferenceExpression(parent) ? parent.value.value : parent,

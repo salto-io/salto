@@ -244,13 +244,16 @@ const getMacroAttachments = async ({
   if (!isAttachments(attachments)) {
     return []
   }
-  return (
+  const attachmentsContent = (
     await Promise.all(
       attachments.map(async attachment => getAttachmentContent({ client, attachment, macro, attachmentType })),
     )
   )
     .flat()
     .filter(values.isDefined)
+
+  macro.value.attachments = attachmentsContent.map(attachment => new ReferenceExpression(attachment.elemID, attachment))
+  return attachmentsContent
 }
 
 /**

@@ -305,7 +305,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
-      queryParams: { limit: '10000' } // maximum page size allowed
+      queryParams: { limit: '10000' }, // maximum page size allowed
     },
   },
   Group: {

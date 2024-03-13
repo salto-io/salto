@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  Element,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { createSchemeGuard, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { CROSS_SERVICE_SUPPORTED_APPS, JIRA, RECIPE_CODE_TYPE, RECIPE_TYPE } from '../../../constants'
@@ -63,8 +69,12 @@ const JIRA_IMPORTED_BLOCK_SCHEMA = Joi.object({
     issueType: Joi.any().required(),
     sampleProjectKey: Joi.any(),
     sampleIssueType: Joi.any(),
-  }).unknown(true).required(),
-}).unknown(true).required()
+  })
+    .unknown(true)
+    .required(),
+})
+  .unknown(true)
+  .required()
 
 const JIRA_EXPORTED_BLOCK_SCHEMA = Joi.object({
   keyword: Joi.string().required(),
@@ -77,9 +87,12 @@ const JIRA_EXPORTED_BLOCK_SCHEMA = Joi.object({
   input: Joi.object({
     project_issuetype: Joi.string().required(),
     sample_project_issuetype: Joi.string(),
-  }).unknown(true).required(),
-}).unknown(true).required()
-
+  })
+    .unknown(true)
+    .required(),
+})
+  .unknown(true)
+  .required()
 
 const splitProjectAndIssueType = (
   value: JiraExportedBlock,
@@ -88,18 +101,15 @@ const splitProjectAndIssueType = (
   secondKey: 'issueType' | 'sampleIssueType',
 ): void => {
   const projectKeyAndIssueType = value.input[argName]
-  if (projectKeyAndIssueType !== undefined
-    && projectKeyAndIssueType.includes(INPUT_SEPERATOR)) {
+  if (projectKeyAndIssueType !== undefined && projectKeyAndIssueType.includes(INPUT_SEPERATOR)) {
     // The project key can't contain '-' sign while issueTypeName and projectName could.
     // So we split by first '-' in input args.
     const firstValue = projectKeyAndIssueType.split(INPUT_SEPERATOR, 1)[0]
-    const secondValue = projectKeyAndIssueType
-      .substring(firstValue.length + INPUT_SEPERATOR.length)
+    const secondValue = projectKeyAndIssueType.substring(firstValue.length + INPUT_SEPERATOR.length)
     value.input[firstKey] = firstValue
     value.input[secondKey] = secondValue
     delete value.input[argName]
-    if (value.dynamicPickListSelection !== undefined
-      && value.dynamicPickListSelection[argName] !== undefined) {
+    if (value.dynamicPickListSelection !== undefined && value.dynamicPickListSelection[argName] !== undefined) {
       delete value.dynamicPickListSelection[argName]
     }
   }
@@ -119,7 +129,6 @@ const mergeProjectAndIssueType = (
     delete value.input[secondKey]
   }
 }
-
 
 /**
  * Workato recipe connected to Jira account include jira blocks from the format
@@ -145,18 +154,22 @@ const filter: FilterCreator = () => ({
     elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === RECIPE_CODE_TYPE)
-      .forEach(inst => walkOnElement({
-        element: inst,
-        func: ({ value }) => {
-          const objValues = isInstanceElement(value) ? value.value : value
-          if (createSchemeGuard<JiraExportedBlock>(JIRA_EXPORTED_BLOCK_SCHEMA)(objValues)
-            && CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)) {
-            splitProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
-            splitProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
-          }
-          return WALK_NEXT_STEP.RECURSE
-        },
-      }))
+      .forEach(inst =>
+        walkOnElement({
+          element: inst,
+          func: ({ value }) => {
+            const objValues = isInstanceElement(value) ? value.value : value
+            if (
+              createSchemeGuard<JiraExportedBlock>(JIRA_EXPORTED_BLOCK_SCHEMA)(objValues) &&
+              CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)
+            ) {
+              splitProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
+              splitProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
+            }
+            return WALK_NEXT_STEP.RECURSE
+          },
+        }),
+      )
   },
   preDeploy: async changes => {
     changes
@@ -164,18 +177,22 @@ const filter: FilterCreator = () => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(inst => [RECIPE_CODE_TYPE, RECIPE_TYPE].includes(inst.elemID.typeName))
-      .forEach(inst => walkOnElement({
-        element: inst,
-        func: ({ value }) => {
-          const objValues = isInstanceElement(value) ? value.value : value
-          if (createSchemeGuard<JiraImportedBlock>(JIRA_IMPORTED_BLOCK_SCHEMA)(objValues)
-            && CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)) {
-            mergeProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
-            mergeProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
-          }
-          return WALK_NEXT_STEP.EXIT
-        },
-      }))
+      .forEach(inst =>
+        walkOnElement({
+          element: inst,
+          func: ({ value }) => {
+            const objValues = isInstanceElement(value) ? value.value : value
+            if (
+              createSchemeGuard<JiraImportedBlock>(JIRA_IMPORTED_BLOCK_SCHEMA)(objValues) &&
+              CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)
+            ) {
+              mergeProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
+              mergeProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
+            }
+            return WALK_NEXT_STEP.RECURSE
+          },
+        }),
+      )
   },
 })
 export default filter

@@ -24,7 +24,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elemUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
+import { getDefaultConfig, FETCH_CONFIG, SUPPORTED_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
 import WorkatoClient from '../../src/client/client'
 import { WORKATO } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
@@ -118,7 +118,7 @@ describe('referenced id fields filter', () => {
         paginationFuncCreator: paginate,
       }),
       config: {
-        fetch: DEFAULT_CONFIG[FETCH_CONFIG],
+        fetch: getDefaultConfig()[FETCH_CONFIG],
         apiDefinitions: {
           typeDefaults: {
             transformation: {
@@ -180,7 +180,7 @@ describe('referenced id fields filter', () => {
         paginationFuncCreator: paginate,
       }),
       config: {
-        fetch: DEFAULT_CONFIG[FETCH_CONFIG],
+        fetch: getDefaultConfig()[FETCH_CONFIG],
         apiDefinitions: {
           typeDefaults: {
             transformation: {

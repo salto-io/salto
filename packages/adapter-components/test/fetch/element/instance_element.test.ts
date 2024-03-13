@@ -44,7 +44,7 @@ describe('instance element', () => {
           adapterName: 'myAdapter',
           entries: [],
           typeName: 'myType',
-          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string><{}>({ customizations: {} }),
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({ customizations: {} }),
           customNameMappingFunctions: {},
         }),
       ).toThrow('type myAdapter:myType is not defined as top-level, cannot create instances')
@@ -95,14 +95,17 @@ describe('instance element', () => {
       ).toBeTruthy()
     })
     it('should create instances and matching type based on defined customizations', () => {
-      const res = generateInstancesWithInitialTypes<{ customNameMappingOptions: 'customTest' | 'Uri' }>({
+      const res = generateInstancesWithInitialTypes({
         adapterName: 'myAdapter',
         entries: [
           { str: 'A', num: 2, arr: [{ st: 'X', unknown: true }] },
           { str: 'CCC', arr: [{ unknown: 'text' }] },
         ],
         typeName: 'myType',
-        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+        defQuery: queryWithDefault<
+          InstanceFetchApiDefinitions<{ customNameMappingOptions: 'customTest' | 'Uri' }>,
+          string
+        >({
           customizations: {
             myType: {
               resource: {

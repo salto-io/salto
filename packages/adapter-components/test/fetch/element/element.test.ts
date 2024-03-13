@@ -71,7 +71,6 @@ describe('element', () => {
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
-         
           customizations: {
             myType: {
               element: {
@@ -79,7 +78,6 @@ describe('element', () => {
               },
             },
           },
-       ,
         }),
         customNameMappingFunctions: {},
       })
@@ -127,9 +125,12 @@ describe('element', () => {
         { str: 'A', otherField: 'B', num: 2, arr: [{ st: 'X', unknown: true }] },
         { str: 'CCC', otherField: 'DDD', arr: [{ unknown: 'text' }] },
       ]
-      const generator = getElementGenerator<{ customNameMappingOptions: 'firstCustom' | 'secondCustom' }>({
+      const generator = getElementGenerator({
         adapterName: 'myAdapter',
-        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+        defQuery: queryWithDefault<
+          InstanceFetchApiDefinitions<{ customNameMappingOptions: 'firstCustom' | 'secondCustom' }>,
+          string
+        >({
           customizations: {
             myType: {
               resource: {

@@ -29,7 +29,7 @@ import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ResponseValue, Response } from '../../client'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
-import { DeployHTTPEndpointDetails } from '../../definitions/system'
+import { APIDefinitionsOptions, DeployHTTPEndpointDetails } from '../../definitions/system'
 import {
   DeployRequestDefinition,
   DeployRequestEndpointDefinition,
@@ -42,6 +42,7 @@ import { TransformDefinition } from '../../definitions/system/shared'
 import { DeployRequestCondition, DeployableRequestDefinition } from '../../definitions/system/deploy/deploy'
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
+import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -143,29 +144,27 @@ const throwOnUnresolvedRefeferences = (value: unknown): void =>
     }
   })
 
-export const getRequester = <
-  AdditionalAction extends string,
-  PaginationOptions extends string | 'none',
-  ClientOptions extends string,
->({
+export const getRequester = <TOptions extends APIDefinitionsOptions>({
   clients,
   deployDefQuery,
   changeResolver,
 }: {
-  clients: ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>['clients']
-  deployDefQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>
+  clients: ApiDefinitions<TOptions>['clients']
+  deployDefQuery: DefQuery<
+    InstanceDeployApiDefinitions<ResolveAdditionalActionType<TOptions>, ResolveClientOptionsType<TOptions>>
+  >
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
-}): DeployRequester<AdditionalAction> => {
+}): DeployRequester<ResolveAdditionalActionType<TOptions>> => {
   const clientDefs = _.mapValues(clients.options, ({ endpoints, ...def }) => ({
     endpoints: queryWithDefault(endpoints),
     ...def,
   }))
 
   const getMergedRequestDefinition = (
-    requestDef: DeployRequestEndpointDefinition<ClientOptions>,
+    requestDef: DeployRequestEndpointDefinition<ResolveClientOptionsType<TOptions>>,
   ): {
-    merged: DeployRequestDefinition<ClientOptions> & { endpoint: DeployHTTPEndpointDetails }
-    clientName: ClientOptions
+    merged: DeployRequestDefinition<ResolveClientOptionsType<TOptions>> & { endpoint: DeployHTTPEndpointDetails }
+    clientName: ResolveClientOptionsType<TOptions>
   } => {
     const { endpoint: requestEndpoint } = requestDef
     const clientName = requestEndpoint.client ?? clients.default
@@ -186,7 +185,7 @@ export const getRequester = <
     changeGroup,
     elementSource,
   }: ChangeAndContext & {
-    requestDef: DeployRequestEndpointDefinition<ClientOptions>
+    requestDef: DeployRequestEndpointDefinition<ResolveClientOptionsType<TOptions>>
   }): Promise<Response<ResponseValue | ResponseValue[]>> => {
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)
     const mergedEndpointDef = mergedRequestDef.endpoint
@@ -242,64 +241,65 @@ export const getRequester = <
     })
   }
 
-  const requestAllForChangeAndAction: DeployRequester<AdditionalAction>['requestAllForChangeAndAction'] =
-    async args => {
-      const { change, changeGroup, action } = args
-      const { elemID } = getChangeData(change)
-      log.debug('requestAllForChange change %s action %s group %s', elemID.getFullName(), action, changeGroup.groupID)
-      const deployDef = deployDefQuery.query(elemID.typeName)
-      if (deployDef === undefined) {
-        throw new Error(`Could not find requests for change ${elemID.getFullName()} action ${action}`)
-      }
+  const requestAllForChangeAndAction: DeployRequester<
+    ResolveAdditionalActionType<TOptions>
+  >['requestAllForChangeAndAction'] = async args => {
+    const { change, changeGroup, action } = args
+    const { elemID } = getChangeData(change)
+    log.debug('requestAllForChange change %s action %s group %s', elemID.getFullName(), action, changeGroup.groupID)
+    const deployDef = deployDefQuery.query(elemID.typeName)
+    if (deployDef === undefined) {
+      throw new Error(`Could not find requests for change ${elemID.getFullName()} action ${action}`)
+    }
 
-      const { requestsByAction } = deployDef
+    const { requestsByAction } = deployDef
 
-      const requests = queryWithDefault(requestsByAction).query(action)
-      if (requests === undefined) {
-        throw new Error(`Could not find requests for change ${elemID.getFullName()} action ${action}`)
-      }
+    const requests = queryWithDefault(requestsByAction).query(action)
+    if (requests === undefined) {
+      throw new Error(`Could not find requests for change ${elemID.getFullName()} action ${action}`)
+    }
 
-      await awu(collections.array.makeArray(requests)).some(async def => {
-        const { request, condition } = def
-        const checkFunc = createCheck(condition)
-        if (!checkFunc(args)) {
-          if (!request.earlySuccess) {
-            const { client, path, method } = request.endpoint
-            log.trace(
-              'skipping call s.%s(%s) for change %s action %s because the condition was not met',
-              client,
-              path,
-              method,
-              elemID.getFullName(),
-              action,
-            )
-          }
-          return false
-        }
-        if (request.earlySuccess) {
-          // if earlySuccess is defined, we will not continue to the next request
-          log.trace('earlySuccess reached for change %s action %s', elemID.getFullName(), action)
-          return true
-        }
-
-        const res = await singleRequest({ ...args, requestDef: request })
-        try {
-          const dataToApply = await extractResponseDataToApply({ ...args, requestDef: def, response: res })
-          if (dataToApply !== undefined) {
-            log.debug(
-              'applying the following value to change %s: %s',
-              elemID.getFullName(),
-              safeJsonStringify(dataToApply),
-            )
-            _.assign(getChangeData(change).value, dataToApply)
-          }
-        } catch (e) {
-          log.error('failed to apply request result: %s (stack: %s)', e, e.stack)
-          throw new Error(`failed to update change ${elemID.getFullName()} action ${action} from response: ${e}`)
+    await awu(collections.array.makeArray(requests)).some(async def => {
+      const { request, condition } = def
+      const checkFunc = createCheck(condition)
+      if (!checkFunc(args)) {
+        if (!request.earlySuccess) {
+          const { client, path, method } = request.endpoint
+          log.trace(
+            'skipping call s.%s(%s) for change %s action %s because the condition was not met',
+            client,
+            path,
+            method,
+            elemID.getFullName(),
+            action,
+          )
         }
         return false
-      })
-    }
+      }
+      if (request.earlySuccess) {
+        // if earlySuccess is defined, we will not continue to the next request
+        log.trace('earlySuccess reached for change %s action %s', elemID.getFullName(), action)
+        return true
+      }
+
+      const res = await singleRequest({ ...args, requestDef: request })
+      try {
+        const dataToApply = await extractResponseDataToApply({ ...args, requestDef: def, response: res })
+        if (dataToApply !== undefined) {
+          log.debug(
+            'applying the following value to change %s: %s',
+            elemID.getFullName(),
+            safeJsonStringify(dataToApply),
+          )
+          _.assign(getChangeData(change).value, dataToApply)
+        }
+      } catch (e) {
+        log.error('failed to apply request result: %s (stack: %s)', e, e.stack)
+        throw new Error(`failed to update change ${elemID.getFullName()} action ${action} from response: ${e}`)
+      }
+      return false
+    })
+  }
 
   return { requestAllForChangeAndAction }
 }

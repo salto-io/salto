@@ -40,7 +40,10 @@ jest.mock('../../../src/deployment/deploy/requester', () => ({
 
 describe('deployChanges', () => {
   let changes: Change<InstanceElement>[]
-  let definitions: types.PickyRequired<ApiDefinitions<'main', 'none', 'activate' | 'deactivate'>, 'clients' | 'deploy'>
+  let definitions: types.PickyRequired<
+    ApiDefinitions<{ additionalAction: 'activate' | 'deactivate' }>,
+    'clients' | 'deploy'
+  >
   let client: MockInterface<HTTPReadClientInterface & HTTPWriteClientInterface>
 
   // TODO extend coverage (concurrency, error handling, references)

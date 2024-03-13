@@ -32,6 +32,7 @@ import {
 
 const ADAPTER_NAME = 'myAdapter'
 
+// copied with adjustments to deployment/placeholder_types.test.ts
 describe('ducktype deployment functions', () => {
   const objType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'obj') })
   const instance = new InstanceElement('inst', objType, {

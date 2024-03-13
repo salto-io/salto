@@ -28,7 +28,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../client/client'
 import { PROJECT_TYPE } from '../constants'
-import { doesProjectHaveIssues } from './project_deletion'
+import { doesProjectHaveIssues } from './projects/project_deletion'
 
 const { awu } = collections.asynciterable
 

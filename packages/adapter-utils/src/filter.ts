@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element, Change, PostFetchOptions, DeployResult, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+import {
+  Element,
+  Change,
+  PostFetchOptions,
+  DeployResult,
+  SaltoElementError,
+  SaltoError,
+  ChangeGroup,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
@@ -38,7 +46,11 @@ export type FilterMetadata = {
 export type Filter<T extends FilterResult | void, DeployInfo = void> = Partial<{
   onFetch(elements: Element[]): Promise<T | void>
   preDeploy(changes: Change[]): Promise<void>
-  deploy(changes: Change[]): Promise<{
+  // TODO add changeGroup everywhere and switch to named params (SALTO-5531)
+  deploy(
+    changes: Change[],
+    changeGroup?: ChangeGroup,
+  ): Promise<{
     deployResult: DeployResult
     leftoverChanges: Change[]
   }>
@@ -121,11 +133,11 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
     /**
      * deploy method for implementing a deployment functionality.
      */
-    deploy: async changes =>
+    deploy: async (changes, changeGroup) =>
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
           const { deployResult, leftoverChanges } = await log.time(
-            () => current.deploy(total.leftoverChanges),
+            () => current.deploy(total.leftoverChanges, changeGroup),
             `(${current.name}):deploy`,
           )
           return {

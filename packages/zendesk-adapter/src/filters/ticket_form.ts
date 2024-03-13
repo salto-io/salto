@@ -17,6 +17,7 @@ import {
   Change,
   DeployResult,
   ElemID,
+  Element,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -27,14 +28,22 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
   toChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import _, { remove } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { FETCH_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
+import {
+  ACCOUNT_FEATURES_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
+  TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME,
+  ZENDESK,
+} from '../constants'
 
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
@@ -154,12 +163,53 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   return clonedInst
 }
 
+const removeCustomTicketStatusFromTicketFieldIDsField = (
+  instance: InstanceElement,
+  customTicketElement: InstanceElement,
+): void => {
+  const ticketFieldIDs: Array<number | ReferenceExpression> = instance.value.ticket_field_ids || []
+  if (ticketFieldIDs.includes(customTicketElement.value.id)) {
+    // found the ID of the custom ticket
+    ticketFieldIDs.splice(ticketFieldIDs.indexOf(customTicketElement.value.id), 1)
+    return
+  }
+
+  const foundCustomTicketField = ticketFieldIDs.find(id =>
+    isReferenceExpression(id) ? id.elemID.isEqual(customTicketElement.elemID) : false,
+  )
+  if (foundCustomTicketField !== undefined) {
+    // found a ReferenceExpression pointing to the custom ticket
+    ticketFieldIDs.splice(ticketFieldIDs.indexOf(foundCustomTicketField), 1)
+  }
+}
+
 /**
  * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
  * required_on_statuses then it removes the statuses field.
  */
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'ticketFormDeploy',
+  onFetch: async (elements: Element[]): Promise<void> => {
+    if (config[FETCH_CONFIG].omitTicketStatusTicketField !== true) {
+      return
+    }
+    const genericCustomTicketElement = elements
+      .filter(isInstanceElement)
+      .find(instance => instance.value.type === TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME)
+    if (genericCustomTicketElement === undefined) {
+      return
+    }
+
+    elements
+      .filter(isInstanceElement)
+      .filter(element => element.elemID.typeName === TICKET_FORM_TYPE_NAME)
+      .map(instance => removeCustomTicketStatusFromTicketFieldIDsField(instance, genericCustomTicketElement))
+
+    remove(
+      elements,
+      element => genericCustomTicketElement.elemID && element.elemID.isEqual(genericCustomTicketElement.elemID),
+    )
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [ticketFormChanges, leftoverChanges] = _.partition(
       changes,

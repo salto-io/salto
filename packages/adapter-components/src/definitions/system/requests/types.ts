@@ -44,3 +44,5 @@ export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = Req
   // set this to mark as endpoint as safe for fetch. other endpoints can only be called during deploy.
   readonly?: boolean
 }
+
+export type DeployHTTPEndpointDetails = Omit<HTTPEndpointDetails<'none'>, 'pagination' | 'readonly'>

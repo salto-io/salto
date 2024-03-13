@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { WORKATO } from '../../src/constants'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 import filterCreator from '../../src/filters/cross_service/jira/project_issuetypes'
 
 describe('projectIssuetype filter', () => {
@@ -44,7 +44,7 @@ describe('projectIssuetype filter', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig(),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })

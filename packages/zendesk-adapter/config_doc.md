@@ -100,6 +100,7 @@ zendesk {
 | extractReferencesFromFreeText      | false                              | When enabled, convert ids in zendesk links in string values to salto references                                                                                        |
 | convertJsonIdsToReferences         | false                              | When enabled, If a field is a json with an 'id' field, convert its value to a reference                                                                                |
 | omitInactive                       | true                               | When enabled, Inactive instances will be omitted from the fetch. This option support default value and specific types can be overridden using the customizations field |
+| omitTicketStatusTicketField        | false                              | When enabled, Custom Ticket Status will be omitted from the fetch.                                                                                                     |
 
 ## Fetch entry options
 

@@ -22,9 +22,9 @@ import {
   BuiltinTypes,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { mockClient } from '../utils'
-import { projectCategoryValidator } from '../../src/change_validators/project_category'
-import { JIRA } from '../../src/constants'
+import { mockClient } from '../../utils'
+import { projectCategoryValidator } from '../../../src/change_validators/projects/project_category'
+import { JIRA } from '../../../src/constants'
 
 describe('projectCategoryValidator', () => {
   let projectType: ObjectType

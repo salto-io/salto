@@ -13,24 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  BuiltinTypes,
-  CORE_ANNOTATIONS,
-  ElemID,
-  InstanceElement,
-  ModificationChange,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { HTTPError, HTTPWriteClientInterface } from '../../src/client/http_client'
-import { deployChange, filterUndeployableValues, transformRemovedValuesToNull } from '../../src/deployment/deployment'
+import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../../src/client/http_client'
+import { deployChange } from '../../src/deployment/old_deployment'
 import { DeploymentRequestsByAction } from '../../src/config/request'
 
 describe('deployChange', () => {
   let type: ObjectType
   let instance: InstanceElement
-  let httpClient: MockInterface<HTTPWriteClientInterface>
+  let httpClient: MockInterface<HTTPWriteClientInterface & HTTPReadClientInterface>
   let endpoint: DeploymentRequestsByAction
 
   beforeEach(() => {
@@ -69,6 +61,10 @@ describe('deployChange', () => {
       put: mockFunction<HTTPWriteClientInterface['put']>(),
       delete: mockFunction<HTTPWriteClientInterface['delete']>(),
       patch: mockFunction<HTTPWriteClientInterface['patch']>(),
+      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
+      get: mockFunction<HTTPReadClientInterface['get']>(),
+      head: mockFunction<HTTPReadClientInterface['head']>(),
+      options: mockFunction<HTTPReadClientInterface['options']>(),
     }
   })
 
@@ -219,138 +215,5 @@ describe('deployChange', () => {
         allowedStatusCodesOnRemoval: [405],
       }),
     ).rejects.toThrow()
-  })
-})
-
-describe('filterUndeployableValues', () => {
-  let instance: InstanceElement
-
-  beforeEach(() => {
-    const type = new ObjectType({
-      elemID: new ElemID('adapter', 'test'),
-      fields: {
-        creatable: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            [CORE_ANNOTATIONS.CREATABLE]: true,
-            [CORE_ANNOTATIONS.UPDATABLE]: false,
-          },
-        },
-
-        updatable: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            [CORE_ANNOTATIONS.CREATABLE]: false,
-            [CORE_ANNOTATIONS.UPDATABLE]: true,
-          },
-        },
-      },
-    })
-
-    instance = new InstanceElement('instance', type, {
-      creatable: 'aaa',
-      updatable: 'bbb',
-      other: 'ccc',
-    })
-  })
-
-  it('should filter the the unsupported values', async () => {
-    const addValues = await filterUndeployableValues(instance, 'add')
-    expect(addValues.value).toEqual({
-      creatable: 'aaa',
-      other: 'ccc',
-    })
-
-    const updateValues = await filterUndeployableValues(instance, 'modify')
-    expect(updateValues.value).toEqual({
-      updatable: 'bbb',
-      other: 'ccc',
-    })
-
-    const removeValues = await filterUndeployableValues(instance, 'remove')
-    expect(removeValues.value).toEqual({
-      creatable: 'aaa',
-      updatable: 'bbb',
-      other: 'ccc',
-    })
-  })
-})
-
-describe('transformRemovedValuesToNull', () => {
-  let before: InstanceElement
-  let after: InstanceElement
-
-  beforeEach(() => {
-    const type = new ObjectType({ elemID: new ElemID('adapter', 'test') })
-    before = new InstanceElement('instance', type, {
-      name: 'inst',
-      status: 'active',
-      nested1: {
-        field: [1, 2, 3],
-        nested2: {
-          some: 'value',
-          another: { type: 'type' },
-        },
-        removedArray: [{ idx: 1 }, { idx: 2 }, { idx: 3 }],
-      },
-      settings: {
-        url: 'http://example.com',
-        urlb: 'http://example.com',
-      },
-    })
-    after = new InstanceElement('instance', type, {
-      name: 'inst',
-      status: 'active',
-      nested1: {
-        field: [1, 2],
-        nested2: {
-          some: 'value',
-        },
-      },
-      settings: {
-        url: 'http://example.com',
-      },
-    })
-  })
-  it('should transform removed values to null', () => {
-    const change = toChange({ before, after }) as ModificationChange<InstanceElement>
-    const result = transformRemovedValuesToNull(change)
-    expect(result.data.before.value).toEqual(before.value)
-    expect(result.data.after.value).toEqual({
-      name: 'inst',
-      status: 'active',
-      nested1: {
-        field: [1, 2],
-        nested2: {
-          some: 'value',
-          another: { type: null },
-        },
-        removedArray: null,
-      },
-      settings: {
-        url: 'http://example.com',
-        urlb: null,
-      },
-    })
-  })
-
-  it('should only transform the values in relevant path', () => {
-    const change = toChange({ before, after }) as ModificationChange<InstanceElement>
-    const result = transformRemovedValuesToNull(change, ['nested1', 'nested2'])
-    expect(result.data.before.value).toEqual(before.value)
-    expect(result.data.after.value).toEqual({
-      name: 'inst',
-      status: 'active',
-      nested1: {
-        field: [1, 2],
-        nested2: {
-          some: 'value',
-          another: { type: null },
-        },
-      },
-      settings: {
-        url: 'http://example.com',
-      },
-    })
   })
 })

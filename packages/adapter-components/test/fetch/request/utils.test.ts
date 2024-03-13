@@ -45,6 +45,9 @@ describe('request utils', () => {
     it('should replace found args and keep the rest', () => {
       expect(replaceArgs('a{b}c{d123} {e} {', { e: 'E' })).toEqual('a{b}c{d123} E {')
     })
+    it('should replace nested values', () => {
+      expect(replaceArgs('a{b}c{d123} {e.nested} {', { e: { nested: 'E' } })).toEqual('a{b}c{d123} E {')
+    })
   })
 
   describe('replaceAllArgs', () => {

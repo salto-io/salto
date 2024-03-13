@@ -23,7 +23,12 @@ import {
 } from '@salto-io/adapter-api'
 import deployNonDeployableTypes from '../../src/change_validators/metadata_types'
 import { createMetadataObjectType } from '../../src/transformers/transformer'
-import { CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import {
+  CUSTOM_METADATA,
+  CUSTOM_OBJECT,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createField } from '../utils'
 
@@ -33,6 +38,7 @@ describe('deployNonDeployableTypes', () => {
     beforeEach(async () => {
       validatorResult = await deployNonDeployableTypes([
         toChange({ after: mockTypes.Account }),
+        toChange({ after: mockTypes.CustomMetadataRecordType }),
       ])
     })
     it('should not generate errors', () => {
@@ -81,20 +87,29 @@ describe('deployNonDeployableTypes', () => {
       )
     })
   })
-  describe('When deploying the CustomObject metadata type', () => {
-    const metadataType = createMetadataObjectType({
+  describe('When deploying the CustomObject and CustomMetadata metadata types', () => {
+    const customObjectMetadataType = createMetadataObjectType({
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
       },
     })
+    const customMetadataMetadataType = createMetadataObjectType({
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_METADATA,
+      },
+    })
     beforeEach(async () => {
       validatorResult = await deployNonDeployableTypes([
-        toChange({ after: metadataType }),
+        toChange({ after: customObjectMetadataType }),
+        toChange({ after: customMetadataMetadataType }),
       ])
     })
     it('should generate errors', () => {
-      expect(validatorResult).toSatisfyAll((error) =>
-        error.elemID.isEqual(metadataType.elemID),
+      expect(validatorResult).toHaveLength(2)
+      const [customObjectError, customMetadataError] = validatorResult
+      expect(customObjectError.elemID).toEqual(customObjectMetadataType.elemID)
+      expect(customMetadataError.elemID).toEqual(
+        customMetadataMetadataType.elemID,
       )
     })
   })

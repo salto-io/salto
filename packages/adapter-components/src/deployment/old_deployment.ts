@@ -15,7 +15,6 @@
  */
 import _ from 'lodash'
 import {
-  ActionName,
   Change,
   ElemID,
   getChangeData,
@@ -23,108 +22,18 @@ import {
   ReadOnlyElementsSource,
   isAdditionOrModificationChange,
   isRemovalChange,
-  ModificationChange,
 } from '@salto-io/adapter-api'
-import {
-  transformElement,
-  inspectValue,
-  walkOnValue,
-  resolvePath,
-  setPath,
-  WALK_NEXT_STEP,
-} from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../fetch/resource'
-import { HTTPError, HTTPWriteClientInterface } from '../client/http_client'
-import { DeploymentRequestsByAction } from '../config/request'
+import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../client/http_client'
+import { DeploymentRequestsByAction } from '../config'
 import { ResponseValue } from '../client'
-import { OPERATION_TO_ANNOTATION } from './annotations'
+import { filterIgnoredValues, filterUndeployableValues } from './filtering'
 
 const log = logger(module)
 
 export type ResponseResult = ResponseValue | ResponseValue[] | undefined
-
-export const filterUndeployableValues = async (
-  instance: InstanceElement,
-  action: ActionName,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<InstanceElement> =>
-  transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    elementsSource,
-    transformFunc: ({ value, field }) => {
-      // The === false is because if the value is undefined, we don't want to filter it out
-      if (field?.annotations[OPERATION_TO_ANNOTATION[action]] === false) {
-        return undefined
-      }
-      return value
-    },
-  })
-
-export const filterIgnoredValues = async (
-  instance: InstanceElement,
-  fieldsToIgnore: string[] | ((path: ElemID) => boolean),
-  configFieldsToIgnore: string[] = [],
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<InstanceElement> => {
-  const filteredInstance = _.isFunction(fieldsToIgnore)
-    ? await transformElement({
-        element: instance,
-        strict: false,
-        allowEmpty: true,
-        elementsSource,
-        transformFunc: ({ value, path }) => {
-          if (path !== undefined && fieldsToIgnore(path)) {
-            return undefined
-          }
-          return value
-        },
-      })
-    : instance
-
-  filteredInstance.value = _.omit(filteredInstance.value, [
-    ...configFieldsToIgnore,
-    ...(Array.isArray(fieldsToIgnore) ? fieldsToIgnore : []),
-  ])
-
-  return filteredInstance
-}
-
-/**
- * Transform removed change values to null, for APIs that require explicit null values
- */
-export const transformRemovedValuesToNull = (
-  change: ModificationChange<InstanceElement>,
-  applyToPath?: string[],
-): ModificationChange<InstanceElement> => {
-  const { before, after } = change.data
-  const elemId = applyToPath
-    ? getChangeData(change).elemID.createNestedID(...applyToPath)
-    : getChangeData(change).elemID
-  walkOnValue({
-    elemId,
-    value: resolvePath(before, elemId),
-    func: ({ value, path }) => {
-      const valueInAfter = resolvePath(after, path)
-      if (valueInAfter === undefined) {
-        if (!_.isPlainObject(value)) {
-          setPath(after, path, null)
-          return WALK_NEXT_STEP.SKIP
-        }
-        // if value is an object, we want to recurse into it to set all its values to null
-        return WALK_NEXT_STEP.RECURSE
-      }
-      // Arrays are being skipped to avoid setting null to removed array elements
-      if (Array.isArray(value)) {
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
-    },
-  })
-  return change
-}
 
 /**
  * Deploy a single change to the service using the given details
@@ -149,7 +58,7 @@ export const deployChange = async ({
   allowedStatusCodesOnRemoval = [],
 }: {
   change: Change<InstanceElement>
-  client: HTTPWriteClientInterface
+  client: HTTPWriteClientInterface & HTTPReadClientInterface
   endpointDetails?: DeploymentRequestsByAction
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
@@ -184,7 +93,7 @@ export const deployChange = async ({
     return undefined
   }
   log.trace(
-    `deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`,
+    `deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams }, { compact: true, depth: 6 })}`,
   )
   try {
     const response = await client[endpoint.method]({

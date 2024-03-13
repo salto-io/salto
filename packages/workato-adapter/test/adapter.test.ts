@@ -31,7 +31,7 @@ import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType, DEFAULT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { configType, getDefaultConfig, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
 import { RECIPE_CODE_TYPE } from '../src/constants'
 
 type MockReply = {
@@ -65,7 +65,7 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
-            config: new InstanceElement('config', configType, DEFAULT_CONFIG),
+            config: new InstanceElement('config', configType, getDefaultConfig()),
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
@@ -252,9 +252,9 @@ describe('adapter', () => {
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
             config: new InstanceElement('config', configType, {
-              ...DEFAULT_CONFIG,
+              ...getDefaultConfig(),
               fetch: {
-                ...DEFAULT_CONFIG.fetch,
+                ...getDefaultConfig().fetch,
                 include: [{ type: '(?!recipe$).*' }, { type: 'recipe', criteria: { name: 'test.*' } }],
               },
             }),
@@ -408,7 +408,7 @@ describe('adapter', () => {
           credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
           config: new InstanceElement('config', configType, {
             [FETCH_CONFIG]: {
-              ...DEFAULT_CONFIG[FETCH_CONFIG],
+              ...getDefaultConfig()[FETCH_CONFIG],
               serviceConnectionNames: {
                 salesforce: ['sfdev1'],
                 salesforce2: ['dev2 sfdc account'],

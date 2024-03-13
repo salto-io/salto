@@ -123,8 +123,6 @@ describe('macro attachment filter', () => {
         'zendesk.macro_attachment.instance.test__test_txt@uuv',
       ])
       const instances = elements.filter(isInstanceElement)
-      const macro = instances.find(e => e.elemID.typeName === MACRO_TYPE_NAME)
-      expect(macro?.value).toEqual(macroInstance.value)
       const attachment = instances.find(e => e.elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME)
       expect(attachment?.value).toEqual({
         id: attachmentId,

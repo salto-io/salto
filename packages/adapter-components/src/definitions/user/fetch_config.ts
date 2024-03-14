@@ -105,7 +105,7 @@ export const createUserFetchConfigType = <TCustomNameMappingOptions extends stri
     fetchEntryType.fields.criteria = new Field(fetchEntryType, 'criteria', fetchCriteriaType)
   }
 
-  // TODO: find if there's a way to specify the generic type here of TCustomNameMappingOptions
+  // TODO SALTO-5595: find if there's a way to specify the generic type here of TCustomNameMappingOptions
   const elemIDPartType = createMatchingObjectType<Omit<FieldIDPart<NameMappingOptions>, 'condition' | 'custom'>>({
     elemID: new ElemID(adapterName, 'ElemIDPart'),
     fields: {

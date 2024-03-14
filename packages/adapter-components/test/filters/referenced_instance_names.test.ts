@@ -31,9 +31,9 @@ import {
 } from '@salto-io/adapter-api'
 import {
   addReferencesToInstanceNames,
-  referencedInstanceNamesFilterCreator,
+  referencedInstanceNamesFilterCreatorDeprecated,
   createReferenceIndex,
-} from '../../src/filters/referenced_instance_names'
+} from '../../src/filters/referenced_instance_names_deprecated'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { createMockQuery } from '../../src/fetch/query'
@@ -368,7 +368,7 @@ describe('referenced instances', () => {
 
     beforeEach(async () => {
       jest.clearAllMocks()
-      filter = referencedInstanceNamesFilterCreator()({
+      filter = referencedInstanceNamesFilterCreatorDeprecated()({
         client: {} as unknown,
         paginator: undefined as unknown as Paginator,
         config,

@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-import { MockInterface } from '@salto-io/test-utils'
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../utils'
-import OktaClient from '../../src/client/client'
 import profileMappingRemovalFilter from '../../src/filters/profile_mapping_removal'
 import { OKTA, PROFILE_MAPPING_TYPE_NAME } from '../../src/constants'
 
 describe('profileMappingRemovalFilter', () => {
   const { client } = mockClient()
   type FilterType = filterUtils.FilterWith<'deploy'>
-  let filter: FilterType = profileMappingRemovalFilter(getFilterParams({ client })) as FilterType
+  const filter: FilterType = profileMappingRemovalFilter(getFilterParams({ client })) as FilterType
   const mappingType = new ObjectType({ elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME) })
   const mappingInstance = new InstanceElement('mapping', mappingType, {
     source: {

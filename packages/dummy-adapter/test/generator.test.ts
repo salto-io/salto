@@ -20,7 +20,10 @@ import {
   isMapType,
   isListType,
   CORE_ANNOTATIONS,
-  StaticFile, isTemplateExpression, Element, isStaticFile,
+  StaticFile,
+  isTemplateExpression,
+  Element,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -247,7 +250,6 @@ describe('elements generator', () => {
       }
       const elements = await generateElements(templateExpressionParams, mockProgressReporter)
       expect(hasTemplate(elements)).toBeTruthy()
-
     })
     it('should not create template expression if frq is 0', async () => {
       const templateExpressionParams: GeneratorParams = {
@@ -261,7 +263,6 @@ describe('elements generator', () => {
       }
       const elements = await generateElements(templateExpressionParams, mockProgressReporter)
       expect(hasTemplate(elements)).toBeFalsy()
-
     })
   })
   describe('template static file', () => {
@@ -280,11 +281,10 @@ describe('elements generator', () => {
         numOfRecords: 0,
         numOfTypes: 0,
         templateExpressionFreq: 0,
-        templateStaticFileFreq: 1
+        templateStaticFileFreq: 1,
       }
       const elements = await generateElements(templateStaticFileParams, mockProgressReporter)
       expect(hasTemplateStaticFile(elements)).toBeTruthy()
-
     })
     it('should not create template static files if frq is 0', async () => {
       const templateStaticFileParams: GeneratorParams = {
@@ -295,11 +295,10 @@ describe('elements generator', () => {
         numOfRecords: 0,
         numOfTypes: 0,
         templateExpressionFreq: 0,
-        templateStaticFileFreq: 0
+        templateStaticFileFreq: 0,
       }
       const elements = await generateElements(templateStaticFileParams, mockProgressReporter)
       expect(hasTemplateStaticFile(elements)).toBeFalsy()
-
     })
   })
   describe('env data', () => {

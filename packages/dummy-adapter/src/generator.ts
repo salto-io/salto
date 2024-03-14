@@ -43,7 +43,9 @@ import {
   DeployActions,
   DeployAction,
   createRestriction,
-  SeverityLevel, TemplateExpression, isReferenceExpression,
+  SeverityLevel,
+  TemplateExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -59,7 +61,7 @@ import {
   createMatchingObjectType,
   createTemplateExpression,
   ImportantValues,
-  inspectValue
+  inspectValue,
 } from '@salto-io/adapter-utils'
 
 const { isDefined } = lowerDashValues
@@ -439,13 +441,13 @@ export const generateElements = async (
   const generateTemplateExpression = async (): Promise<TemplateExpression> => {
     const parts = await Promise.all(
       arrayOf(getListLength(), async () =>
-        randomGen() < 0.5 ? generateString() : new ReferenceExpression(chooseObjIgnoreRank().elemID)
-      )
+        randomGen() < 0.5 ? generateString() : new ReferenceExpression(chooseObjIgnoreRank().elemID),
+      ),
     )
-    if (_.isEmpty(parts.filter(isReferenceExpression))){
+    if (_.isEmpty(parts.filter(isReferenceExpression))) {
       parts.push(new ReferenceExpression(chooseObjIgnoreRank().elemID))
     }
-    return createTemplateExpression({parts})
+    return createTemplateExpression({ parts })
   }
 
   const generateTemplateStaticFile = async (): Promise<StaticFile> => {
@@ -454,10 +456,9 @@ export const generateElements = async (
     return parserUtils.templateExpressionToStaticFile(template, filepath)
   }
 
-
   const generateValue = async (ref: TypeElement, isHidden?: boolean): Promise<Value> => {
     if (staticFileIds.has(ref.elemID.getFullName()) && !isHidden) {
-      if (randomGen() < (params.templateStaticFileFreq ?? templateStaticFileFreqVal)){
+      if (randomGen() < (params.templateStaticFileFreq ?? templateStaticFileFreqVal)) {
         return generateTemplateStaticFile()
       }
       const content = generateFileContent()
@@ -579,8 +580,10 @@ export const generateElements = async (
           path: [DUMMY_ADAPTER, 'Types', name],
         })
         await updateElementRank(element)
-        if (element.primitive === PrimitiveTypes.STRING
-          && randomGen() < (params.templateExpressionFreq ?? templateExpressionFreqVal)) {
+        if (
+          element.primitive === PrimitiveTypes.STRING &&
+          randomGen() < (params.templateExpressionFreq ?? templateExpressionFreqVal)
+        ) {
           templateExpressionFields.add(element.elemID.getFullName())
         } else if (element.primitive === PrimitiveTypes.STRING && randomGen() < 1) {
           // defaultParams.staticFileFreq) {

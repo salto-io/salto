@@ -20,10 +20,14 @@ import filterCreator from '../../src/filters/guide_section_and_category'
 
 import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
+import ZendeskClient from '../../src/client/client'
+import { FilterResult } from '../../src/filter'
 
 describe('guid section and category filter', () => {
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy', FilterResult>
   let filter: FilterType
+  let client: ZendeskClient
+  let mockPut: jest.SpyInstance
 
   const sectionTypeName = 'section'
   const sectionTranslationTypename = 'section_translation'
@@ -58,8 +62,23 @@ describe('guid section and category filter', () => {
     translations: [sectionTranslationStringLocaleInstance.value],
   })
 
+  const categoryInstance = new InstanceElement(
+    'instance',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'category') }),
+    {
+      locale: 'he',
+      source_locale: 'he',
+      id: 1111,
+      outdated: false,
+    },
+  )
+
   beforeEach(async () => {
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    })
+
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('preDeploy', () => {
@@ -76,6 +95,26 @@ describe('guid section and category filter', () => {
       sectionInstanceStringLocale.value.name = sectionTranslationStringLocaleInstance.value.title
       sectionInstanceStringLocale.value.description = sectionTranslationStringLocaleInstance.value.body
       expect(sectionInstanceCopy).toEqual(sectionInstanceStringLocale)
+    })
+  })
+
+  describe('deploy', () => {
+    beforeEach(() => {
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockImplementation(params => {
+        if (['/api/v2/help_center/categories/1111/source_locale'].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
+    })
+    it('should send a separate request when updating default_locale', async () => {
+      const categoryInstanceCopy = categoryInstance.clone()
+      categoryInstanceCopy.value.source_locale = 'ar'
+      await filter.deploy([{ action: 'modify', data: { before: categoryInstance, after: categoryInstanceCopy } }])
+      expect(mockPut).toHaveBeenCalledTimes(2)
     })
   })
 

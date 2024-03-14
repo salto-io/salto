@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
@@ -397,7 +395,6 @@ export const maybeModifySourceLocaleInGuideObject = async (
   object: 'articles' | 'sections' | 'categories',
 ): Promise<boolean> => {
   if (!isModificationChange(change)) {
-    console.log('bolting early1')
     return true
   }
   const changeData = getChangeData(change)
@@ -405,7 +402,6 @@ export const maybeModifySourceLocaleInGuideObject = async (
     change.data.before.value.source_locale === changeData.value.source_locale ||
     changeData.value.source_locale === undefined
   ) {
-    console.log('bolting early2')
     return true
   }
   // eslint-disable-next-line camelcase
@@ -417,13 +413,9 @@ export const maybeModifySourceLocaleInGuideObject = async (
   } else {
     data.section_locale = changeData.value.source_locale
   }
-  // eslint-disable-next-line no-console
-  console.log(data)
-  // eslint-disable-next-line no-console
-  console.log(`/api/v2/help_center/${object}/${changeData.value.id}/source_locale`)
   const res = await client.put({
     url: `/api/v2/help_center/${object}/${changeData.value.id}/source_locale`,
     data,
   })
-  return res.status !== 200
+  return res.status === 200
 }

@@ -15,14 +15,18 @@
  */
 
 import { filterUtils } from '@salto-io/adapter-components'
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/guide_parent_to_section'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
+import ZendeskClient from '../../src/client/client'
+import { FilterResult } from '../../src/filter'
 
 describe('guid section filter', () => {
-  type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'preDeploy' | 'deploy' | 'onDeploy', FilterResult>
   let filter: FilterType
+  let client: ZendeskClient
+  let mockPut: jest.SpyInstance
 
   const sectionTypeName = 'section'
   const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
@@ -47,8 +51,34 @@ describe('guid section filter', () => {
     id: 123,
   })
 
+  const guideLanguageSettingsInstance = new InstanceElement(
+    'instance',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'section_translation') }),
+    {
+      locale: 'he',
+    },
+  )
+  const sectionTranslationInstance = new InstanceElement(
+    'instance',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'section_translation') }),
+    {
+      locale: new ReferenceExpression(guideLanguageSettingsInstance.elemID, guideLanguageSettingsInstance),
+      title: 'name',
+      body: 'description',
+    },
+  )
+  const sectionInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(ZENDESK, 'section') }), {
+    source_locale: 'he',
+    translations: [sectionTranslationInstance.value],
+    id: 1111,
+  })
+
   beforeEach(async () => {
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    })
+
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('preDeploy', () => {
@@ -61,6 +91,25 @@ describe('guid section filter', () => {
       ])
       expect(InnerSectionInstanceCopy).toEqual(InnerSectionInstanceNoFields)
       expect(OuterSectionInstanceCopy).toEqual(OuterSectionInstanceNoFields)
+    })
+  })
+  describe('deploy', () => {
+    beforeEach(() => {
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockImplementation(params => {
+        if (['/api/v2/help_center/sections/1111/source_locale'].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
+    })
+    it('should send a separate request when updating default_locale', async () => {
+      const sectionInstanceCopy = sectionInstance.clone()
+      sectionInstanceCopy.value.source_locale = 'ar'
+      await filter.deploy([{ action: 'modify', data: { before: sectionInstance, after: sectionInstanceCopy } }])
+      expect(mockPut).toHaveBeenCalledTimes(2)
     })
   })
 

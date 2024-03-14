@@ -569,7 +569,7 @@ describe('article filter', () => {
       })
       mockPut = jest.spyOn(client, 'put')
       mockPut.mockImplementation(params => {
-        if (['/api/v2/help_center/article/1111/source_locale'].includes(params.url)) {
+        if (['/api/v2/help_center/articles/1111/source_locale'].includes(params.url)) {
           return {
             status: 200,
           }

@@ -496,8 +496,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       addRemovalChangesId(articleRemovalChanges)
       setUserSegmentIdForAdditionOrModificationChanges(articleAdditionAndModificationChanges)
       const articleDeployResult = await deployChanges(articleAdditionAndModificationChanges, async change => {
-        const res = await maybeModifySourceLocaleInGuideObject(change, client, 'articles')
-        if (!res) {
+        const success = await maybeModifySourceLocaleInGuideObject(change, client, 'articles')
+        if (!success) {
           log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
         }
         await deployChange(change, client, config.apiDefinitions, ['translations', 'attachments', 'source_locale'])

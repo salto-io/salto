@@ -22,6 +22,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './guide_section_and_category'
@@ -33,6 +34,9 @@ import {
   TRANSLATIONS_FIELD,
   BRAND_FIELD,
 } from '../constants'
+import { maybeModifySourceLocaleInGuideObject } from './article/utils'
+
+const log = logger(module)
 
 const PARENT_SECTION_ID_FIELD = 'parent_section_id'
 
@@ -69,12 +73,18 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(parentChanges, async change => {
+      const success = await maybeModifySourceLocaleInGuideObject(change, client, 'sections')
+      if (!success) {
+        log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
+      }
+
       await deployChange(change, client, config.apiDefinitions, [
         TRANSLATIONS_FIELD,
         PARENT_SECTION_ID_FIELD,
         ARTICLES_FIELD,
         SECTIONS_FIELD,
         BRAND_FIELD,
+        'source_locale',
       ])
     })
     // need to deploy separately parent_section_id if exists since zendesk API does not support

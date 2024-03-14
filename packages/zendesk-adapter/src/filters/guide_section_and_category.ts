@@ -24,9 +24,13 @@ import {
 import _ from 'lodash'
 import Joi from 'joi'
 import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { BRAND_FIELD, SECTIONS_FIELD, TRANSLATIONS_FIELD } from '../constants'
+import { maybeModifySourceLocaleInGuideObject } from './article/utils'
+
+const log = logger(module)
 
 export const TRANSLATION_PARENT_TYPE_NAMES = ['section', 'category']
 const CATEGORY_TYPE_NAME = 'category'
@@ -129,7 +133,17 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(parentChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, [TRANSLATIONS_FIELD, SECTIONS_FIELD, BRAND_FIELD])
+      const success = await maybeModifySourceLocaleInGuideObject(change, client, 'categories')
+      if (!success) {
+        log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
+      }
+
+      await deployChange(change, client, config.apiDefinitions, [
+        TRANSLATIONS_FIELD,
+        SECTIONS_FIELD,
+        BRAND_FIELD,
+        'source_locale',
+      ])
     })
     return { deployResult, leftoverChanges }
   },

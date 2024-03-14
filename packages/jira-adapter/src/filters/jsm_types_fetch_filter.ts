@@ -29,6 +29,7 @@ import {
   REQUEST_TYPE_NAME,
   SLA_TYPE_NAME,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
+  OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
 } from '../constants'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
 
@@ -48,6 +49,7 @@ const assetsSupportedTypes = [
   OBJECT_TYPE_TYPE,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
+  OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
 ]
 
 const filterCreator: FilterCreator = ({ config }) => ({

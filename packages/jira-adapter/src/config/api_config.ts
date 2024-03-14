@@ -2389,6 +2389,21 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: [{ fieldName: 'objectSchemaId' }, { fieldName: 'url16' }, { fieldName: 'globalId' }],
     },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+        method: 'post', 
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    }
   },
 }
 
@@ -2402,6 +2417,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   SLA: ['SLA'],
   Form: [], // being fetched by a filter.
   ObjectSchema: [],
+  ObjectSchemaDefaultReferenceType: [],
   ObjectSchemaStatus: [], // being fetched by recurseInto.
   ObjectType: [], // being fetched by recurseInto.
   ObjectTypeAttribute: [], // being fetched by recurseInto.

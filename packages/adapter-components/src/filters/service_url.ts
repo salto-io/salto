@@ -42,7 +42,7 @@ export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
   configDef?: TypeConfig<TransformationConfig, ActionName>,
 ): InstanceFetchApiDefinitions | undefined => {
   const serviceUrl = configDef?.transformation?.serviceUrl
-  return serviceUrl
+  return serviceUrl !== undefined
     ? {
         element: {
           topLevel: {

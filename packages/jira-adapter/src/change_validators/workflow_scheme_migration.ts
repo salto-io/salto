@@ -32,7 +32,7 @@ import {
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import Joi from 'joi'
-import { filters, client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filters } from '@salto-io/adapter-components'
 import os from 'os'
 import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
 import { updateSchemeId } from '../filters/workflow_scheme'
@@ -41,7 +41,7 @@ import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 import { doesProjectHaveIssues } from './projects/project_deletion'
 
-const { addUrlToInstance } = filters
+const { addUrlToInstance, configDefToInstanceFetchApiDefinitionsForServiceUrl } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -259,7 +259,11 @@ export const workflowSchemeMigrationValidator =
       .map(async change => {
         await updateSchemeId(change, client, paginator, config)
         const instance = getChangeData(change)
-        addUrlToInstance(instance, client.baseUrl, config.apiDefinitions)
+        addUrlToInstance(
+          instance,
+          client.baseUrl,
+          configDefToInstanceFetchApiDefinitionsForServiceUrl(config.apiDefinitions.types[instance.elemID.typeName]),
+        )
         const changedItems = await getChangedItemsFromChange(
           change,
           workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],

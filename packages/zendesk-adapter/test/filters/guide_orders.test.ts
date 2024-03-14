@@ -190,7 +190,7 @@ const testDeploy = async (
   expect(mockPut).toHaveBeenCalledWith({
     url: createUrl({
       instance: createChildElement(),
-      baseUrl: updateApi.url,
+      url: updateApi.url,
       urlParamsToFields: updateApi.urlParamsToFields,
     }),
     data: { position: 0 },
@@ -198,7 +198,7 @@ const testDeploy = async (
   expect(mockPut).toHaveBeenCalledWith({
     url: createUrl({
       instance: createChildElement(1),
-      baseUrl: updateApi.url,
+      url: updateApi.url,
       urlParamsToFields: updateApi.urlParamsToFields,
     }),
     data: { position: 1 },

@@ -147,16 +147,16 @@ const computeDependsOnURLs = (
 
 export const createUrl = ({
   instance,
-  baseUrl,
+  url,
   urlParamsToFields,
   additionalUrlVars,
 }: {
   instance: InstanceElement
-  baseUrl: string
+  url: string
   urlParamsToFields?: UrlParams
   additionalUrlVars?: Record<string, string>
 }): string =>
-  replaceArgs(baseUrl, {
+  replaceArgs(url, {
     ...instance.value,
     ..._.mapValues(urlParamsToFields ?? {}, fieldName =>
       resolvePath(instance, instance.elemID.createNestedID(...fieldName.split(FIELD_PATH_DELIMITER))),

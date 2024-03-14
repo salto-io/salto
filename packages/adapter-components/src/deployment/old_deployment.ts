@@ -83,7 +83,7 @@ export const deployChange = async ({
 
   const url = createUrl({
     instance,
-    baseUrl: endpoint.url,
+    url: endpoint.url,
     urlParamsToFields: endpoint.urlParamsToFields,
     additionalUrlVars,
   })

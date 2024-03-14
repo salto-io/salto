@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
-import { serviceUrlFilterCreator } from '../../src/filters/service_url'
+import { serviceUrlFilterCreatorDeprecated } from '../../src/filters/service_url'
 import { createMockQuery } from '../../src/fetch/query'
 
 describe('service url filter', () => {
@@ -46,7 +46,7 @@ describe('service url filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    filter = serviceUrlFilterCreator(baseUrl)({
+    filter = serviceUrlFilterCreatorDeprecated(baseUrl)({
       client: {} as unknown,
       paginator: undefined as unknown as Paginator,
       fetchQuery: createMockQuery(),

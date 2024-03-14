@@ -20,7 +20,7 @@ import OktaClient from '../client/client'
 import { getAdminUrl } from '../client/admin'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<OktaClient, FilterContext, FilterResult>(
+  filters.serviceUrlFilterCreatorDeprecated<OktaClient, FilterContext, FilterResult>(
     getAdminUrl(params.client.baseUrl) ?? params.client.baseUrl,
     params.config[PRIVATE_API_DEFINITIONS_CONFIG],
   )(params)

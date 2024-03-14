@@ -38,7 +38,7 @@ type FetchEntry<T extends Record<string, unknown> | undefined> = {
   criteria?: T
 }
 
-export type ElemIDCustomization<TCustomNameMappingOptions extends string> =
+export type ElemIDCustomization<TCustomNameMappingOptions extends string = never> =
   ElemIDDefinition<TCustomNameMappingOptions> & {
     // when true - appends the added fields to the system-defined ones
     // when false - overrides the system's default for the specified type
@@ -65,7 +65,7 @@ export type UserFetchConfig<Options extends UserFetchConfigOptions = {}> = {
   elemID?: Record<string, ElemIDCustomization<ResolveCustomNameMappingOptionsType<Options>>>
 }
 
-export const createUserFetchConfigType = <TCustomNameMappingOptions extends string>({
+export const createUserFetchConfigType = <TCustomNameMappingOptions extends string = never>({
   adapterName,
   additionalFields,
   fetchCriteriaType,

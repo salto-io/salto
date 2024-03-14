@@ -30,7 +30,7 @@ import { GenerateTypeArgs } from './types'
 import { ResolveCustomNameMappingOptionsType } from '../api'
 import { NameMappingFunctionMap, NameMappingOptions } from '../shared'
 
-export type FieldIDPart<TCustomNameMappingOptions extends string> = ArgsWithCustomizer<
+export type FieldIDPart<TCustomNameMappingOptions extends string = never> = ArgsWithCustomizer<
   string | undefined,
   {
     fieldName: string
@@ -44,20 +44,20 @@ export type FieldIDPart<TCustomNameMappingOptions extends string> = ArgsWithCust
   Values
 >
 
-export type IDPartsDefinition<TCustomNameMappingOptions extends string> = {
+export type IDPartsDefinition<TCustomNameMappingOptions extends string = never> = {
   parts?: FieldIDPart<TCustomNameMappingOptions>[]
   // the delimiter to use between parts - default is '_'
   delimiter?: string
 }
 
-export type ElemIDDefinition<TCustomNameMappingOptions extends string> =
+export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
   IDPartsDefinition<TCustomNameMappingOptions> & {
     // default - true when parent annotation exists?
     // TODO check if still needed when implementing SALTO-5421
     extendsParent?: boolean
   }
 
-export type PathDefinition<TCustomNameMappingOptions extends string> = {
+export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
   // when id parts info is missing, inherited from elemID (but the values are path-nacl-cased)
   pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[]
 }
@@ -104,7 +104,7 @@ export type ElementsAndErrors = {
   configSuggestions?: ConfigChangeSuggestion[]
 }
 
-export type ElemIDCreatorArgs<TCustomNameMappingOptions extends string> = {
+export type ElemIDCreatorArgs<TCustomNameMappingOptions extends string = never> = {
   elemIDDef: ElemIDDefinition<TCustomNameMappingOptions>
   getElemIdFunc?: ElemIdGetter
   serviceIDDef?: string[]
@@ -114,13 +114,12 @@ export type ElemIDCreatorArgs<TCustomNameMappingOptions extends string> = {
 }
 
 export type ElementFetchDefinitionOptions = {
-  values?: Values
+  valueType?: Values
   customNameMappingOptions?: string
 }
 
-type ResolveValuesType<Options extends Pick<ElementFetchDefinitionOptions, 'values'>> = Options['values'] extends Values
-  ? Options['values']
-  : Values
+type ResolveValueType<Options extends Pick<ElementFetchDefinitionOptions, 'valueType'>> =
+  Options['valueType'] extends Values ? Options['valueType'] : Values
 
 type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
   isTopLevel: true
@@ -156,7 +155,7 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
 
   // guard for validating the value is as expected.
   // when missing, we validate that this is a plain object
-  valueGuard?: (val: unknown) => val is ResolveValuesType<Options>
+  valueGuard?: (val: unknown) => val is ResolveValueType<Options>
 
   // TODO add:
   // alias, important attributes

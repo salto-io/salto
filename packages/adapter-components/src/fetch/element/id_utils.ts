@@ -80,7 +80,7 @@ export const serviceIDKeyCreator =
  * If the name mapping option or the relevant custom mapping is not provided,
  * the function returns the name as is, after converting it to a string.
  */
-export const getNameMapping = <TCustomNameMappingOptions extends string>({
+export const getNameMapping = <TCustomNameMappingOptions extends string = never>({
   name,
   customNameMappingFunctions,
   nameMapping,
@@ -96,15 +96,15 @@ export const getNameMapping = <TCustomNameMappingOptions extends string>({
   const nameMappingFunctions = {
     ...DEFAULT_NAME_MAPPING_FUNCTIONS,
     ...customNameMappingFunctions,
+    // Unfortunately, TypeScript doesn't recognize that a union of NameMappingOptions and
+    // Exclude<TCustomNameMappingOptions, NameMappingOptions> is equivalent to
+    // NameMappingOptions | TCustomNameMappingOptions. Therefore, explicit casting is necessary :(
   } as Record<NameMappingOptions | TCustomNameMappingOptions, NameMappingFunction>
-  // Unfortunately, TypeScript doesn't recognize that a union of NameMappingOptions and
-  // Exclude<TCustomNameMappingOptions, NameMappingOptions> is equivalent to
-  // NameMappingOptions | TCustomNameMappingOptions. Therefore, explicit casting is necessary :(
   return nameMappingFunctions[nameMapping]?.(name) ?? String(name)
 }
 
 const computeElemIDPartsFunc =
-  <TCustomNameMappingOptions extends string>(
+  <TCustomNameMappingOptions extends string = never>(
     elemIDDef: ElemIDDefinition<TCustomNameMappingOptions>,
     customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>,
   ): PartsCreator =>
@@ -142,7 +142,7 @@ const computeElemIDPartsFunc =
   }
 
 export const createElemIDFunc =
-  <TCustomNameMappingOptions extends string>({
+  <TCustomNameMappingOptions extends string = never>({
     elemIDDef,
     getElemIdFunc,
     serviceIDDef,
@@ -173,7 +173,7 @@ export const createElemIDFunc =
   }
 
 export const getElemPath =
-  <TCustomNameMappingOptions extends string>({
+  <TCustomNameMappingOptions extends string = never>({
     def,
     elemIDCreator,
     typeID,

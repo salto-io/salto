@@ -22,7 +22,7 @@ import { APIDefinitionsOptions, ResolveClientOptionsType, ResolveCustomNameMappi
 import { NameMappingFunctionMap } from '../shared'
 
 export type FetchApiDefinitionsOptions = Pick<APIDefinitionsOptions, 'clientOptions' | 'customNameMappingOptions'> &
-  Pick<ElementFetchDefinitionOptions, 'values'>
+  Pick<ElementFetchDefinitionOptions, 'valueType'>
 
 /**
  * Fetch flow:
@@ -50,5 +50,5 @@ export type InstanceFetchApiDefinitions<Options extends FetchApiDefinitionsOptio
 
 export type FetchApiDefinitions<Options extends FetchApiDefinitionsOptions = {}> = {
   instances: DefaultWithCustomizations<InstanceFetchApiDefinitions<Options>>
-  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
 }

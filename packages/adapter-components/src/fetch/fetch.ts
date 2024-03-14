@@ -24,7 +24,9 @@ import {
   APIDefinitionsOptions,
   getNestedWithDefault,
   mergeWithDefault,
+  NameMappingFunctionMap,
   queryWithDefault,
+  ResolveCustomNameMappingOptionsType,
 } from '../definitions'
 import { getUniqueConfigSuggestions } from '../elements/ducktype' // TODO move
 import { getRequester } from './request/requester'
@@ -90,7 +92,8 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
     defQuery: queryWithDefault(fetch.instances),
     predefinedTypes: _.pickBy(predefinedTypes, isObjectType),
     getElemIdFunc,
-    customNameMappingFunctions: fetch.customNameMappingFunctions,
+    customNameMappingFunctions:
+      fetch.customNameMappingFunctions ?? ({} as NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>),
   })
 
   // the resource manager is responsible for orchestrating the generation of elements,

@@ -24,11 +24,12 @@ import {
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
-  ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
-import { filter } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, filter } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { AdapterFilterCreator, FilterCreator } from '../filter_utils'
 import { createUrl } from '../fetch/resource'
 import { ApiDefinitions, queryWithDefault } from '../definitions'
@@ -39,17 +40,18 @@ const log = logger(module)
 
 export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
   configDef?: TypeConfig<TransformationConfig, ActionName>,
-  additionalConfigDef?: TypeConfig<TransformationConfig, ActionName>,
-): InstanceFetchApiDefinitions => {
-  const serviceUrl = additionalConfigDef?.transformation?.serviceUrl ?? configDef?.transformation?.serviceUrl
-  return {
-    element: {
-      topLevel: {
-        isTopLevel: true as const,
-        serviceUrl: serviceUrl ? { path: serviceUrl } : undefined,
-      },
-    },
-  }
+): InstanceFetchApiDefinitions | undefined => {
+  const serviceUrl = configDef?.transformation?.serviceUrl
+  return serviceUrl
+    ? {
+        element: {
+          topLevel: {
+            isTopLevel: true as const,
+            serviceUrl: { path: serviceUrl },
+          },
+        },
+      }
+    : undefined
 }
 
 export const addUrlToInstance: <ClientOptions extends string = 'main'>(
@@ -61,7 +63,6 @@ export const addUrlToInstance: <ClientOptions extends string = 'main'>(
   if (serviceUrl === undefined) {
     return
   }
-  // TODO_F use custom function from serviceUrl SALTO-5580
   // parent is ReferenceExpression during fetch, and serialized into full value during deploy
   const parentValues = instance.annotations[CORE_ANNOTATIONS.PARENT]?.map((parent: unknown) =>
     isReferenceExpression(parent) ? parent.value.value : parent,
@@ -119,20 +120,12 @@ export const serviceUrlFilterCreatorDeprecated: <
   additionalApiDefinitions?: AdapterApiConfig,
 ) => FilterCreator<TClient, TContext, TResult> = (baseUrl, additionalApiDefinitions) => args => {
   const { config } = args
-  const typeNamesSet = new Set([
-    ...Object.keys(config.apiDefinitions.types),
-    ...Object.keys(additionalApiDefinitions?.types ?? {}),
-  ])
-  const customizations = Object.fromEntries(
-    Array.from(typeNamesSet).map(typeName => [
-      typeName,
-      configDefToInstanceFetchApiDefinitionsForServiceUrl(
-        config.apiDefinitions.types[typeName],
-        additionalApiDefinitions?.types[typeName],
-      ),
-    ]),
-  )
+  const customizations = _({ ...config.apiDefinitions.types, ...additionalApiDefinitions?.types })
+    .mapValues(configDefToInstanceFetchApiDefinitionsForServiceUrl)
+    .pickBy(lowerdashValues.isDefined)
+    .value()
 
+  // casting to "ApiDefinitions" is safe in this case because we use only fetch customizations for calculating serviceUrl
   const definitions = {
     fetch: {
       instances: {
@@ -140,5 +133,5 @@ export const serviceUrlFilterCreatorDeprecated: <
       },
     },
   } as ApiDefinitions
-  return serviceUrlFilterCreator(baseUrl)({ ...args, definitions, elementSource: {} as ReadOnlyElementsSource })
+  return serviceUrlFilterCreator(baseUrl)({ ...args, definitions, elementSource: buildElementsSourceFromElements([]) })
 }

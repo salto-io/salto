@@ -15,13 +15,10 @@
  */
 import _ from 'lodash'
 import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 
-const log = logger(module)
-
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = () => ({
   // If a ProfileMapping is removed, mark the result as success without actually using the endpoint.
   name: 'profileMappingRemovalFilter',
   deploy: async changes => {

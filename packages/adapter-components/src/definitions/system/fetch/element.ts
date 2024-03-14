@@ -110,7 +110,7 @@ export type ElemIDCreatorArgs<TCustomNameMappingOptions extends string = never> 
   serviceIDDef?: string[]
   typeID: ElemID
   singleton?: boolean
-  customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>
+  customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>
 }
 
 export type ElementFetchDefinitionOptions = {

@@ -110,7 +110,7 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   type: ObjectType
   defQuery: ElementAndResourceDefFinder<Options>
   getElemIdFunc?: ElemIdGetter
-  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
 }): {
   toElemName: ElemIDCreator
   toPath: PartsCreator

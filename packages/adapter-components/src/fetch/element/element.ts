@@ -49,7 +49,7 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
 }: {
   adapterName: string
   defQuery: ElementAndResourceDefFinder<Options>
-  customNameMappingFunctions: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
 }): ElementGenerator => {

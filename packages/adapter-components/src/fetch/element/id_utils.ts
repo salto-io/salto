@@ -86,7 +86,7 @@ export const getNameMapping = <TCustomNameMappingOptions extends string = never>
   nameMapping,
 }: {
   name: unknown
-  customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>
+  customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>
   nameMapping?: TCustomNameMappingOptions | NameMappingOptions
 }): string => {
   if (!nameMapping) {
@@ -100,13 +100,19 @@ export const getNameMapping = <TCustomNameMappingOptions extends string = never>
     // Exclude<TCustomNameMappingOptions, NameMappingOptions> is equivalent to
     // NameMappingOptions | TCustomNameMappingOptions. Therefore, explicit casting is necessary :(
   } as Record<NameMappingOptions | TCustomNameMappingOptions, NameMappingFunction>
-  return nameMappingFunctions[nameMapping]?.(name) ?? String(name)
+
+  const requestedMappingFunction = nameMappingFunctions[nameMapping]
+  if (requestedMappingFunction) {
+    return requestedMappingFunction(name)
+  }
+  log.warn('No name mapping function found for %s', nameMapping)
+  return String(name)
 }
 
 const computeElemIDPartsFunc =
   <TCustomNameMappingOptions extends string = never>(
     elemIDDef: ElemIDDefinition<TCustomNameMappingOptions>,
-    customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>,
+    customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>,
   ): PartsCreator =>
   ({ entry, parent }) => {
     const parts = (elemIDDef.parts ?? [])
@@ -186,7 +192,7 @@ export const getElemPath =
     typeID: ElemID
     singleton?: boolean
     nestUnderPath?: string[]
-    customNameMappingFunctions: NameMappingFunctionMap<TCustomNameMappingOptions>
+    customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>
   }): PartsCreator =>
   ({ entry, parent, defaultName }) => {
     if (singleton) {

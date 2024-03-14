@@ -82,6 +82,7 @@ import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingPropertiesFilter from './filters/profile_mapping_properties'
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
+import profileMappingRemovalFilter from './filters/profile_mapping_removal'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
@@ -130,6 +131,7 @@ const DEFAULT_FILTERS = [
   serviceUrlFilter,
   appDeploymentFilter,
   profileMappingAdditionFilter,
+  profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
   // should run after commonFilters,

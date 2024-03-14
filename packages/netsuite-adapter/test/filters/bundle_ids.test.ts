@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/bundle_ids'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import { bundleType } from '../../src/types/bundle_type'
 import { LocalFilterOpts } from '../../src/filter'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
+import filterCreator from '../../src/filters/bundle_ids'
 
+jest.mock('../../src/autogen/bundle_components/bundle_components', () => ({
+  BUNDLE_ID_TO_COMPONENTS: {
+    39609: {
+      'v4.0.0': new Set(['customlist_ns_ps_process_list']),
+    },
+  },
+}))
 describe('bundle_ids filter', () => {
   const filterOpts = {
     config: { fetch: { addBundles: true } },

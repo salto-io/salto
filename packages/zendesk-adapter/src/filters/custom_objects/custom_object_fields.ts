@@ -325,12 +325,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
       const instances = elements.filter(isInstanceElement)
 
       // It is possible to key all instance by id because the internal Id is unique across all types (SALTO-4805)
-      let usersById: Record<string, string>
-      if (usersPromise === undefined) {
-        usersById = {}
-      } else {
-        usersById = await getIdByEmail(usersPromise)
-      }
+      const usersById = usersPromise === undefined ? {} : await getIdByEmail(usersPromise)
       const instancesById = _.keyBy(
         instances.filter(instance => _.isNumber(instance.value.id)),
         instance => _.parseInt(instance.value.id),
@@ -372,6 +367,9 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
     preDeploy: async changes => {
       const userConditions = getUserConditions(changes)
       if (userConditions.length === 0 || usersPromise === undefined) {
+        if (usersPromise === undefined) {
+          log.trace('getUserPromise is undefined in preDeploy')
+        }
         return
       }
       const { users } = await usersPromise

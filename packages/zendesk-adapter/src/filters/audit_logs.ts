@@ -428,12 +428,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config, usersPro
       return
     }
     await addPrevChangedBy(elementsSource, idByInstance)
-    let idToName
-    if (usersPromise === undefined) {
-      idToName = {}
-    } else {
-      idToName = await getIdByName(usersPromise)
-    }
+    const idToName = usersPromise === undefined ? {} : await getIdByName(usersPromise)
     await addNewChangedBy({ instances, idToName, newLastAuditTime, auditTimeInstance, client })
   },
 })

@@ -282,19 +282,12 @@ export const getUserFallbackValue = async (
 }
 
 const getIdByEmailFunc = (): ((getUsersPromise: Promise<GetUsersResponse>) => Promise<Record<string, string>>) => {
-  let idToEmail: Record<string, string>
-
   const getIdByEmail = async (getUsersPromise: Promise<GetUsersResponse>): Promise<Record<string, string>> => {
-    if (idToEmail !== undefined) {
-      return idToEmail
-    }
     const { users } = await getUsersPromise
     if (_.isEmpty(users)) {
-      idToEmail = {}
       return {}
     }
-    idToEmail = Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
-    return idToEmail
+    return Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
   }
   return getIdByEmail
 }
@@ -302,19 +295,12 @@ const getIdByEmailFunc = (): ((getUsersPromise: Promise<GetUsersResponse>) => Pr
 export const getIdByEmail = getIdByEmailFunc()
 
 const getIdByNameFunc = (): ((getUsersPromise: Promise<GetUsersResponse>) => Promise<Record<string, string>>) => {
-  let idToName: Record<string, string>
-
   const getIdByName = async (getUsersPromise: Promise<GetUsersResponse>): Promise<Record<string, string>> => {
-    if (idToName !== undefined) {
-      return idToName
-    }
     const { users } = await getUsersPromise
     if (_.isEmpty(users)) {
-      idToName = {}
       return {}
     }
-    idToName = Object.fromEntries(users.map(user => [user.id.toString(), user.name])) as Record<string, string>
-    return idToName
+    return Object.fromEntries(users.map(user => [user.id.toString(), user.name])) as Record<string, string>
   }
   return getIdByName
 }

@@ -15,9 +15,12 @@
  */
 import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { TYPE_NAME_TO_REPLACER, getIdByEmail } from '../users/user_utils'
 import { deployModificationFunc } from '../replacers_utils'
 import { FilterCreator } from '../filter'
+
+const log = logger(module)
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
@@ -31,6 +34,7 @@ const filterCreator: FilterCreator = ({ usersPromise }) => {
     name: 'usersFilter',
     onFetch: async elements => {
       if (usersPromise === undefined) {
+        log.trace('getUserPromise is undefined in onFetch')
         return {}
       }
 

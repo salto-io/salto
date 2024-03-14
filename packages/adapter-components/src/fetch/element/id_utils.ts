@@ -22,6 +22,9 @@ import {
   ServiceIds,
   Values,
   toServiceIdsString,
+  ReferenceExpression,
+  isReferenceExpression,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { invertNaclCase, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -80,7 +83,29 @@ export const getNameMapping = (name: string, nameMapping?: NameMappingOptions): 
   }
 }
 
-const computElemIDPartsFunc =
+const getFieldValue = (entry: Values, fieldName: string): string | undefined => {
+  const dereferenceFieldValue = (fieldValue: ReferenceExpression): string => {
+    const { parent, path } = fieldValue.elemID.createTopLevelParentID()
+    return [parent.name, ...path].join('.')
+  }
+
+  const fieldValue = _.get(entry, fieldName)
+  if (isReferenceExpression(fieldValue)) {
+    return dereferenceFieldValue(fieldValue)
+  }
+  if (isTemplateExpression(fieldValue)) {
+    return fieldValue.parts
+      .map(part => (isReferenceExpression(part) ? dereferenceFieldValue(part) : _.toString(part)))
+      .join('')
+  }
+  if (fieldValue === undefined) {
+    log.debug(`could not find idField: ${fieldName}`)
+    return undefined
+  }
+  return _.toString(fieldValue)
+}
+
+const computeElemIDPartsFunc =
   (elemIDDef: ElemIDDefinition): PartsCreator =>
   ({ entry, parent }) => {
     const parts = (elemIDDef.parts ?? [])
@@ -89,7 +114,8 @@ const computElemIDPartsFunc =
         if (part.custom !== undefined) {
           return part.custom(part)(entry)
         }
-        return getNameMapping(String(_.get(entry, part.fieldName) ?? ''), part.mapping)
+        const fieldValue = getFieldValue(entry, part.fieldName)
+        return fieldValue !== undefined ? getNameMapping(fieldValue, part.mapping) : undefined
       })
     const nonEmptyParts = parts.filter(lowerdashValues.isDefined).filter(part => part.length > 0)
 
@@ -120,7 +146,7 @@ export const createElemIDFunc =
 
     // if the calculated name is empty ,fallback to the provided default name
     const computedName = naclCase(
-      computElemIDPartsFunc(elemIDDef)(args).join(elemIDDef.delimiter ?? ID_SEPARATOR) || args.defaultName,
+      computeElemIDPartsFunc(elemIDDef)(args).join(elemIDDef.delimiter ?? ID_SEPARATOR) || args.defaultName,
     )
     if (getElemIdFunc && serviceIDDef !== undefined) {
       const { entry } = args
@@ -153,7 +179,7 @@ export const getElemPath =
       return [typeID.adapter, RECORDS_PATH, SETTINGS_NESTED_PATH, pathNaclCase(typeID.typeName)]
     }
     const basicPathParts = def?.pathParts
-      ?.map(part => computElemIDPartsFunc(part)({ entry, parent, defaultName }).join(part.delimiter ?? ID_SEPARATOR))
+      ?.map(part => computeElemIDPartsFunc(part)({ entry, parent, defaultName }).join(part.delimiter ?? ID_SEPARATOR))
       .map(naclCase) ?? [elemIDCreator({ entry, parent, defaultName })]
     const pathParts = basicPathParts.map(pathNaclCase)
 

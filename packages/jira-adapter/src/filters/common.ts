@@ -21,7 +21,7 @@ import { JSM_DUCKTYPE_API_DEFINITIONS } from '../config/api_config'
  */
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
-  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(JSM_DUCKTYPE_API_DEFINITIONS),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreatorDeprecated(JSM_DUCKTYPE_API_DEFINITIONS),
   query: filters.queryFilterCreator({}),
 }
 

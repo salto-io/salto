@@ -87,7 +87,7 @@ export type UrlParams = Record<string, string>
 export type DeployRequestConfig = BaseRequestConfig & {
   urlParamsToFields?: UrlParams
   deployAsField?: string
-  method: 'post' | 'put' | 'delete' | 'patch' | 'get'
+  method: 'post' | 'put' | 'delete' | 'patch'
   fieldsToIgnore?: string[]
   omitRequestBody?: boolean
 }

@@ -42,6 +42,8 @@ export const configType = new ObjectType({
     // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },
     importantValuesFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
+    templateExpressionFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
+    templateStaticFileFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
   },
 })
 

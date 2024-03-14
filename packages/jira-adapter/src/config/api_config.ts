@@ -2392,7 +2392,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     deployRequests: {
       add: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
-        method: 'post', 
+        method: 'post',
       },
       modify: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
@@ -2403,7 +2403,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         method: 'delete',
         omitRequestBody: true,
       },
-    }
+    },
   },
 }
 

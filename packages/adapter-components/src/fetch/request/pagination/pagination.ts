@@ -74,46 +74,9 @@ export const traversePages = async <ClientOptions extends string>({
         throwOnUnresolvedArgs: true,
       })
 
-      const pollingFunc = async (
-        args: ClientBaseParams,
-        pollingArgs: PollingArgs,
-      ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
-        const response = await client[finalEndpointIdentifier.method ?? 'get'](args)
-        if (pollingArgs.checkStatus(response)) return response
-        return undefined
-      }
-
-      const processPage: ClientRequest = async args => {
-        let page: Response<ResponseValue | ResponseValue[]>
-        //  SALTO-5575 consider splitting the polling from the pagination
+      const singleClientCall = async (args: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>> => {
         try {
-          if (polling) {
-            const pollingResult = await withRetry(
-              () =>
-                pollingFunc(
-                  {
-                    url: finalEndpointIdentifier.path,
-                    ...args,
-                  },
-                  polling,
-                ),
-              {
-                strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
-              },
-            )
-            if (pollingResult === undefined) {
-              // should never get here, withRetry would throw
-              throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
-            }
-            page = pollingResult
-          } else {
-            page = await client[finalEndpointIdentifier.method ?? 'get']({
-              url: finalEndpointIdentifier.path,
-              ...args,
-            })
-          }
-          pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
-          return page
+          return await client[finalEndpointIdentifier.method ?? 'get'](args)
         } catch (e) {
           const status = e.response?.status
           if (additionalValidStatuses.includes(status)) {
@@ -122,6 +85,46 @@ export const traversePages = async <ClientOptions extends string>({
           }
           throw e
         }
+      }
+      const pollingFunc = async (
+        args: ClientBaseParams,
+        pollingArgs: PollingArgs,
+      ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
+        const response = await singleClientCall(args)
+        if (pollingArgs.checkStatus(response)) return response
+        return undefined
+      }
+
+      const processPage: ClientRequest = async args => {
+        let page: Response<ResponseValue | ResponseValue[]>
+        //  SALTO-5575 consider splitting the polling from the pagination
+        if (polling) {
+          const pollingResult = await withRetry(
+            () =>
+              pollingFunc(
+                {
+                  url: finalEndpointIdentifier.path,
+                  ...args,
+                },
+                polling,
+              ),
+            {
+              strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
+            },
+          )
+          if (pollingResult === undefined) {
+            // should never get here, withRetry would throw
+            throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
+          }
+          page = pollingResult
+        } else {
+          page = await singleClientCall({
+            url: finalEndpointIdentifier.path,
+            ...args,
+          })
+        }
+        pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
+        return page
       }
 
       const getNextPages = paginationDef.funcCreator({

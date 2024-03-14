@@ -245,51 +245,54 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     const additionalValidStatuses = mergedEndpointDef.additionalValidStatuses ?? []
     const { polling } = mergedEndpointDef
 
+    const singleClientCall = async (args: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> => {
+      try {
+        return await client[finalEndpointIdentifier.method ?? 'get'](args)
+      } catch (e) {
+        const status = e.response?.status
+        if (additionalValidStatuses.includes(status)) {
+          log.debug('Suppressing %d error %o', status, e)
+          return { data: {}, status }
+        }
+        throw e
+      }
+    }
     const pollingFunc = async (
       args: ClientDataParams,
       pollingArgs: PollingArgs,
     ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
-      const response = await client[finalEndpointIdentifier.method ?? 'get'](args)
+      const response = await singleClientCall(args)
       if (pollingArgs.checkStatus(response)) return response
       return undefined
     }
 
-    try {
-      let res: Response<ResponseValue | ResponseValue[]>
-      if (polling) {
-        const pollingResult = await withRetry(
-          () =>
-            pollingFunc(
-              {
-                url: finalEndpointIdentifier.path,
-                ...callArgs,
-              },
-              polling,
-            ),
-          {
-            strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
-          },
-        )
-        if (pollingResult === undefined) {
-          // should never get here, withRetry would throw
-          throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
-        }
-        res = pollingResult
-      } else {
-        res = await client[finalEndpointIdentifier.method ?? 'get']({
-          url: finalEndpointIdentifier.path,
-          ...callArgs,
-        })
+    let res: Response<ResponseValue | ResponseValue[]>
+    if (polling) {
+      const pollingResult = await withRetry(
+        () =>
+          pollingFunc(
+            {
+              url: finalEndpointIdentifier.path,
+              ...callArgs,
+            },
+            polling,
+          ),
+        {
+          strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
+        },
+      )
+      if (pollingResult === undefined) {
+        // should never get here, withRetry would throw
+        throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
       }
-      return res
-    } catch (e) {
-      const status = e.response?.status
-      if (additionalValidStatuses.includes(status)) {
-        log.debug('Suppressing %d error %o', status, e)
-        return { data: {}, status }
-      }
-      throw e
+      res = pollingResult
+    } else {
+      res = await singleClientCall({
+        url: finalEndpointIdentifier.path,
+        ...callArgs,
+      })
     }
+    return res
   }
 
   const requestAllForChangeAndAction: DeployRequester<

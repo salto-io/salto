@@ -328,13 +328,10 @@ describe('pagination', () => {
     })
     it('should call the client few times when polling', async () => {
       client.get
-        .mockResolvedValueOnce(
-          Promise.resolve({
-            data: {
-              a: 'a',
-            },
-            status: 201,
-            statusText: 'OK',
+        .mockRejectedValueOnce(
+          new HTTPError('Something else went wrong', {
+            data: {},
+            status: 404,
           }),
         )
         .mockResolvedValueOnce(
@@ -370,6 +367,7 @@ describe('pagination', () => {
           retries: 5,
           checkStatus: (response: Response<ResponseValue | ResponseValue[]>): boolean => response.status === 200,
         },
+        additionalValidStatuses: [404],
       })
       expect(result).toEqual([{ context: {}, pages: [{ a: 'c' }] }])
       expect(client.get).toHaveBeenCalledTimes(3)

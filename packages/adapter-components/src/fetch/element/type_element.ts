@@ -151,7 +151,7 @@ const normalizeType = (type: ObjectType): ObjectType => {
  * Note: field customizations should be applied separately, once all types have been created
  */
 export const generateType = <Options extends FetchApiDefinitionsOptions>(
-  args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType'>,
+  args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'customNameMappingOptions'>,
 ): ObjectTypeWithNestedTypes => {
   const {
     adapterName,

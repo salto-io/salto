@@ -27,6 +27,7 @@
     { "path": "../workspace" },
     { "path": "../zendesk-adapter" },
     { "path": "../zuora-billing-adapter" },
+    { "path": "../PLACEHOLDER-adapter" },
     { "path": "../parser" }
   ]
 }

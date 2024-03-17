@@ -13,16 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FieldDefinition, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { FieldDefinition, ObjectType, ElemID, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { createClientConfigType, ClientBaseConfig, ClientRateLimitConfig } from './client_config'
-import { UserFetchConfig, createUserFetchConfigType } from './fetch_config'
+import { createClientConfigType, ClientBaseConfig, ClientRateLimitConfig, validateClientConfig } from './client_config'
+import { DefaultFetchCriteria, UserFetchConfig, createUserFetchConfigType } from './fetch_config'
 import { UserDeployConfig, createChangeValidatorConfigType, createUserDeployConfigType } from './deploy_config'
 
-export type UserConfig<TCustomNameMappingOptions extends string = never> = {
-  client: ClientBaseConfig<ClientRateLimitConfig>
-  fetch: UserFetchConfig<{ customNameMappingOptions: TCustomNameMappingOptions }>
-  deploy?: UserDeployConfig
+export type UserConfig<
+  TCustomNameMappingOptions extends string = never,
+  TClient extends ClientBaseConfig<ClientRateLimitConfig> = ClientBaseConfig<ClientRateLimitConfig>,
+  TFetch extends UserFetchConfig<{
+    customNameMappingOptions: TCustomNameMappingOptions
+    fetchCriteria: DefaultFetchCriteria
+  }> = UserFetchConfig<{
+    customNameMappingOptions: TCustomNameMappingOptions
+    fetchCriteria: DefaultFetchCriteria
+  }>,
+  TDeploy extends UserDeployConfig = UserDeployConfig,
+> = {
+  client: TClient
+  fetch: TFetch
+  deploy?: TDeploy
 }
 
 type ConfigTypeCreatorParams<TCustomNameMappingOptions extends string = never> = {
@@ -77,3 +89,16 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
+
+export const adapterConfigFromConfig = <
+  TCustomNameMappingOptions extends string,
+  Co extends UserConfig<TCustomNameMappingOptions>,
+>(
+  config: Readonly<InstanceElement> | undefined,
+  defaultConfig: Co,
+): Co & UserConfig<TCustomNameMappingOptions> => {
+  // TODO extend validations SALTO-5584
+  const adapterConfig = _.defaults({}, config?.value, defaultConfig)
+  validateClientConfig('client', config?.value?.client)
+  return adapterConfig
+}

@@ -52,7 +52,7 @@ export type UserFetchConfigOptions = Pick<FetchApiDefinitionsOptions, 'customNam
 type ResolveFetchCriteriaType<Options extends Pick<UserFetchConfigOptions, 'fetchCriteria'>> =
   Options['fetchCriteria'] extends Record<string, unknown> ? Options['fetchCriteria'] : DefaultFetchCriteria
 
-export type UserFetchConfig<Options extends UserFetchConfigOptions = {}> = {
+export type UserFetchConfig<Options extends UserFetchConfigOptions = UserFetchConfigOptions> = {
   include: FetchEntry<ResolveFetchCriteriaType<Options>>[]
   exclude: FetchEntry<ResolveFetchCriteriaType<Options>>[]
   hideTypes?: boolean

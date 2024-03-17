@@ -41,7 +41,9 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
     def.omit !== undefined && lowerdashValues.isPlainObject(value) ? _.omit(value, def.omit) : value
 
   const nestUnderField = (value: unknown): unknown =>
-    def.nestUnderField !== undefined ? _.set({}, def.nestUnderField, value) : value
+    def.nestUnderField !== undefined && def.nestUnderField !== DATA_FIELD_ENTIRE_OBJECT
+      ? _.set({}, def.nestUnderField, value)
+      : value
 
   const transformItem: TransformFunction<TContext, TSource, unknown> = item => {
     const transformedValues = _(collections.array.makeArray(root(item.value)))

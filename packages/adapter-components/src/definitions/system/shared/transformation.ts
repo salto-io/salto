@@ -71,6 +71,7 @@ export type TransformDefinition<TContext = ContextParams, TTargetVal = Values> =
   pick?: string[]
   omit?: string[]
   nestUnderField?: string
+  // default: false for fetch, true for deploy
   single?: boolean
   adjust?: AdjustFunction<TContext, unknown, TTargetVal>
 }

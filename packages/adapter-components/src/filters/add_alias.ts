@@ -17,7 +17,7 @@ import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { addAliasToElements, AliasData } from '../add_alias'
-import { ApiDefinitions, queryWithDefault } from '../definitions'
+import { ApiDefinitions, APIDefinitionsOptions, queryWithDefault } from '../definitions'
 import { FilterCreator } from '../filter_utils'
 
 /**
@@ -27,11 +27,9 @@ export const addAliasFilterCreator: <
   TClient,
   TContext,
   TResult extends void | filter.FilterResult,
-  ClientOptions extends string,
-  PaginationOptions extends string | 'none',
-  Action extends string,
+  Options extends APIDefinitionsOptions = {},
 >(
-  definitions: ApiDefinitions<ClientOptions, PaginationOptions, Action>,
+  definitions: ApiDefinitions<Options>,
 ) => FilterCreator<TClient, TContext, TResult> = definitions => () => ({
   name: 'addAliasFilter',
   onFetch: async (elements: Element[]) => {

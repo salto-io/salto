@@ -214,9 +214,9 @@ export const getElemPath =
     const lastPart = pathParts[pathParts.length - 1]
     return [
       adapterName,
-      RECORDS_PATH, 
+      RECORDS_PATH,
       ...(nestUnderPath ?? [pathNaclCase(typeName)]),
       ...pathParts,
-      ...(createSelfFolder && lastPart ? [lastPart] : [])
+      ...(createSelfFolder && lastPart ? [lastPart] : []),
     ]
   }

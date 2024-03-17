@@ -129,8 +129,9 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   const { elemID: elemIDDef, singleton } = elementDef.topLevel
 
   // if there is at least one standalone field with nestPathUnderParent, we should create a folder to instance
-  const createSelfFolder = Object.entries(elementDef.fieldCustomizations ?? {})
-    .some(([_fieldName, fieldDef]) => fieldDef.standalone?.nestPathUnderParent)
+  const createSelfFolder = Object.entries(elementDef.fieldCustomizations ?? {}).some(
+    ([_fieldName, fieldDef]) => fieldDef.standalone?.nestPathUnderParent,
+  )
 
   // if this is a singleton, the instance name has to be 'config' and cannot be customized
   const elemIDCreator = elemIDDef?.custom && !singleton ? elemIDDef.custom : createElemIDFunc

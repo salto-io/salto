@@ -63,9 +63,15 @@ const extractStandaloneInstancesFromField =
     }
 
     const nestUnderPath = standaloneDef.nestPathUnderParent
-    ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), field.name]
-    : undefined
-    const { toElemName, toPath } = getInstanceCreationFunctions({ defQuery, type: fieldType, getElemIdFunc, nestUnderPath, customNameMappingFunctions })
+      ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), field.name]
+      : undefined
+    const { toElemName, toPath } = getInstanceCreationFunctions({
+      defQuery,
+      type: fieldType,
+      getElemIdFunc,
+      nestUnderPath,
+      customNameMappingFunctions,
+    })
     const newInstances = collections.array.makeArray(value).map((entry, index) =>
       createInstance({
         entry,

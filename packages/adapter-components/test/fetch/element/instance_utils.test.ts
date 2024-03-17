@@ -24,23 +24,23 @@ describe('instance utils', () => {
   describe('getInstanceCreationFunctions', () => {
     describe('instance with standalone fields', () => {
       const customizations: Record<string, InstanceFetchApiDefinitions> = {
-          myType: {
-            resource: {
-              directFetch: true,
+        myType: {
+          resource: {
+            directFetch: true,
+          },
+          element: {
+            topLevel: {
+              isTopLevel: true,
+              elemID: {
+                parts: [{ fieldName: 'str' }],
+              },
             },
-            element: {
-              topLevel: {
-                isTopLevel: true,
-                elemID: {
-                  parts: [{ fieldName: 'str' }],
-                },
-              },
-              fieldCustomizations: {
-                standaloneA: { standalone: { typeName: 'anotherType', nestPathUnderParent: true } },
-                standaloneB: { standalone: { typeName: 'anotherType', nestPathUnderParent: false } },
-              },
+            fieldCustomizations: {
+              standaloneA: { standalone: { typeName: 'anotherType', nestPathUnderParent: true } },
+              standaloneB: { standalone: { typeName: 'anotherType', nestPathUnderParent: false } },
             },
           },
+        },
       }
       it('should create self folder for instance if it has any standalone fields with nestPathUnderParent', () => {
         const { toElemName, toPath } = getInstanceCreationFunctions({
@@ -54,7 +54,7 @@ describe('instance utils', () => {
           toElemName,
           defaultName: 'test',
         })
-        expect(instance.path).toEqual(['myAdapter', 'Records','myType', 'A', 'A'])
+        expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A', 'A'])
       })
       it('should not create self folder for instance if its has no standalone fields', () => {
         const clonedCustomizations = _.cloneDeep(customizations)
@@ -70,11 +70,15 @@ describe('instance utils', () => {
           toElemName,
           defaultName: 'test',
         })
-        expect(instance.path).toEqual(['myAdapter', 'Records','myType', 'A'])
+        expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
       })
       it('should not create self folder for instance all its standalone fields disabled nestPathUnderParent', () => {
         const clonedCustomizations = _.cloneDeep(customizations)
-        _.set(clonedCustomizations, 'myType.element.fieldCustomizations.standaloneA.standalone.nestPathUnderParent', undefined)
+        _.set(
+          clonedCustomizations,
+          'myType.element.fieldCustomizations.standaloneA.standalone.nestPathUnderParent',
+          undefined,
+        )
 
         const { toElemName, toPath } = getInstanceCreationFunctions({
           defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({ customizations: clonedCustomizations }),
@@ -87,8 +91,8 @@ describe('instance utils', () => {
           toElemName,
           defaultName: 'test',
         })
-        expect(instance.path).toEqual(['myAdapter', 'Records','myType', 'A'])
+        expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
       })
     })
   })
-  })
+})

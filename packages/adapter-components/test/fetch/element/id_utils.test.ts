@@ -250,7 +250,7 @@ describe('id utils', () => {
           }),
           nestUnderPath: ['ParentType', 'FieldName'],
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
-      ).toEqual(['myAdapter', 'Records','ParentType', 'FieldName', 'A'])
+      ).toEqual(['myAdapter', 'Records', 'ParentType', 'FieldName', 'A'])
     })
     it('it should work with both nestUnderPath and createSelfFolder', () => {
       expect(
@@ -268,7 +268,7 @@ describe('id utils', () => {
           nestUnderPath: ['ParentType', 'FieldName'],
           createSelfFolder: true,
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
-      ).toEqual(['myAdapter', 'Records','ParentType', 'FieldName', 'A', 'A'])
+      ).toEqual(['myAdapter', 'Records', 'ParentType', 'FieldName', 'A', 'A'])
     })
   })
 

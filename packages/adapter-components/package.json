@@ -47,7 +47,8 @@
     "openapi-types": "^7.0.1",
     "qs": "^6.10.1",
     "soap": "^0.44.0",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "parse-link-header": "^2.0.0"
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.54",
@@ -60,6 +61,7 @@
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
+    "@types/parse-link-header": "^2.0.0",
     "axios-mock-adapter": "^1.19.0",
     "eslint": "^7.3.2",
     "eslint-config-airbnb": "18.0.1",

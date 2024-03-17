@@ -54,7 +54,34 @@ describe('removeProfileMappingAfterDeps', () => {
     target: { id: new ReferenceExpression(identityProvider.elemID, identityProvider) },
   })
 
-  it('should remove profile mapping after its source and/or target are removed', async () => {
+  it('should handle a simple case with one mapping and one dep removal', async () => {
+    const inputChanges = new Map([
+      ['app', toChange({ before: app })],
+      ['mappingA', toChange({ before: profileMappingA })],
+    ])
+    dependencyChanges = [...(await removeProfileMappingAfterDeps(inputChanges, new Map()))]
+    expect(dependencyChanges).toHaveLength(2)
+    expect(new Set(dependencyChanges)).toEqual(
+      new Set([
+        {
+          action: 'remove',
+          dependency: {
+            source: 'app',
+            target: 'mappingA',
+          },
+        },
+        {
+          action: 'add',
+          dependency: {
+            source: 'mappingA',
+            target: 'app',
+          },
+        },
+      ]),
+    )
+  })
+
+  it('should handle multiple mappings with shared deps', async () => {
     const inputChanges = new Map([
       ['app', toChange({ before: app })],
       ['user type', toChange({ before: userType })],
@@ -113,5 +140,15 @@ describe('removeProfileMappingAfterDeps', () => {
         },
       ]),
     )
+  })
+
+  it('should ignore modifications', async () => {
+    // Note: removing the mapping alone should be block by a separate change validator.
+    const inputChanges = new Map([
+      ['app', toChange({ before: app, after: app })],
+      ['mappingA', toChange({ before: profileMappingA })],
+    ])
+    dependencyChanges = [...(await removeProfileMappingAfterDeps(inputChanges, new Map()))]
+    expect(dependencyChanges).toHaveLength(0)
   })
 })

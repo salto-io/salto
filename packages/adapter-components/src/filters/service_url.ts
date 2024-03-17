@@ -33,7 +33,7 @@ import _ from 'lodash'
 import { AdapterFilterCreator, FilterCreator } from '../filter_utils'
 import { createUrl } from '../fetch/resource'
 import { ApiDefinitions, queryWithDefault } from '../definitions'
-import { InstanceFetchApiDefinitions } from '../definitions/system/fetch'
+import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../definitions/system/fetch'
 import { AdapterApiConfig, TransformationConfig, TypeConfig } from '../config'
 
 const log = logger(module)
@@ -54,10 +54,10 @@ export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
     : undefined
 }
 
-export const addUrlToInstance: <ClientOptions extends string = 'main'>(
+export const addUrlToInstance: <Options extends FetchApiDefinitionsOptions = {}>(
   instance: InstanceElement,
   baseUrl: string,
-  apiDef: InstanceFetchApiDefinitions<ClientOptions> | undefined,
+  apiDef: InstanceFetchApiDefinitions<Options> | undefined,
 ) => void = (instance, baseUrl, apiDef) => {
   const serviceUrl = apiDef?.element?.topLevel?.serviceUrl
   if (serviceUrl === undefined) {
@@ -81,12 +81,10 @@ export const serviceUrlFilterCreator: <
   TContext,
   TResult extends void | filter.FilterResult = void,
   TAdditional = {},
-  ClientOptions extends string = 'main',
-  PaginationOptions extends string | 'none' = 'none',
-  Action extends string = ActionName,
+  TOptions extends FetchApiDefinitionsOptions = {},
 >(
   baseUrl: string,
-) => AdapterFilterCreator<TContext, TResult, TAdditional, ClientOptions, PaginationOptions, Action> =
+) => AdapterFilterCreator<TContext, TResult, TAdditional, TOptions> =
   baseUrl =>
   ({ definitions }) => {
     if (definitions.fetch === undefined) {

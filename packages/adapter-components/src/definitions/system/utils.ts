@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { DefaultWithCustomizations } from './shared/types'
 import { UserFetchConfig } from '../user'
-import { FetchApiDefinitions } from './fetch'
+import { FetchApiDefinitions, FetchApiDefinitionsOptions } from './fetch'
 
 /**
  * merge a single custom definition with a default, assuming they came from a DefaultWithCustomizations definition.
@@ -111,15 +111,19 @@ export const getNestedWithDefault = <T, TNested, K extends string>(
  * this function combines these two, by treating the user-provided overrides as customizations
  * and giving them precedence when merging with the system definitions
  */
-export const mergeWithUserElemIDDefinitions = <ClientOptions extends string>({
+export const mergeWithUserElemIDDefinitions = <Options extends FetchApiDefinitionsOptions>({
   userElemID,
   fetchConfig,
 }: {
-  userElemID: UserFetchConfig['elemID']
-  fetchConfig?: FetchApiDefinitions<ClientOptions>
-}): FetchApiDefinitions<ClientOptions> => {
+  userElemID: UserFetchConfig<Options>['elemID']
+  fetchConfig?: FetchApiDefinitions<Options>
+}): FetchApiDefinitions<Options> => {
   if (userElemID === undefined) {
-    return fetchConfig ?? { instances: { customizations: {} } }
+    return (
+      fetchConfig ?? {
+        instances: { customizations: {} },
+      }
+    )
   }
   return _.merge({}, fetchConfig, {
     instances: {

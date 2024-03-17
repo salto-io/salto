@@ -102,7 +102,9 @@ export const getInstanceFilePath = ({
   const fileNameParts = fileNameFields !== undefined ? fileNameFields.map(field => _.get(entry, field)) : undefined
   const fileName = fileNameParts?.every(p => _.isString(p) || _.isNumber(p)) ? fileNameParts.join('_') : undefined
   const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
-  const mappedNaclCaseFileName = nameMapping ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName
+  const mappedNaclCaseFileName = nameMapping
+    ? getNameMapping({ name: naclCaseFileName, nameMapping, customNameMappingFunctions: {} })
+    : naclCaseFileName
   return isSettingType
     ? [adapterName, RECORDS_PATH, SETTINGS_NESTED_PATH, pathNaclCase(typeName)]
     : [
@@ -125,7 +127,9 @@ export const generateInstanceNameFromConfig = (
     apiDefinitions.typeDefaults.transformation,
   )
   const instanceName = getInstanceName(values, idFields, typeName)
-  return instanceName !== undefined ? getNameMapping(instanceName, nameMapping) : instanceName
+  return instanceName !== undefined
+    ? getNameMapping({ name: instanceName, nameMapping, customNameMappingFunctions: {} })
+    : instanceName
 }
 
 export const removeNullValuesTransformFunc: TransformFuncSync = ({ value }) => (value === null ? undefined : value)
@@ -163,7 +167,9 @@ export const getInstanceNaclName = ({
   const newName = parentName ? `${parentName}${nameWithSeparator}` : String(name)
   const naclName = naclCase(newName)
 
-  const desiredName = nameMapping ? getNameMapping(naclName, nameMapping) : naclName
+  const desiredName = nameMapping
+    ? getNameMapping({ name: naclName, nameMapping, customNameMappingFunctions: {} })
+    : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
         adapterName,

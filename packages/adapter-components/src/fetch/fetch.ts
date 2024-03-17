@@ -19,7 +19,13 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { types } from '@salto-io/lowerdash'
 import { ElementQuery } from './query'
-import { ApiDefinitions, getNestedWithDefault, mergeWithDefault, queryWithDefault } from '../definitions'
+import {
+  ApiDefinitions,
+  APIDefinitionsOptions,
+  getNestedWithDefault,
+  mergeWithDefault,
+  queryWithDefault,
+} from '../definitions'
 import { getUniqueConfigSuggestions } from '../elements/ducktype' // TODO move
 import { getRequester } from './request/requester'
 import { createResourceManager } from './resource/resource_manager'
@@ -38,11 +44,7 @@ const log = logger(module)
  * - resources are aggregated by service id, and when ready sent to the element generator
  * - once all resources have been produced, the element generator generates all instances and types
  */
-export const getElements = async <
-  ClientOptions extends string = 'main',
-  PaginationOptions extends string | 'none' = 'none',
-  AdditionalAction extends string = never,
->({
+export const getElements = async <Options extends APIDefinitionsOptions>({
   adapterName,
   fetchQuery,
   definitions,
@@ -52,10 +54,7 @@ export const getElements = async <
 }: {
   adapterName: string
   fetchQuery: ElementQuery
-  definitions: types.PickyRequired<
-    ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>,
-    'clients' | 'pagination' | 'fetch'
-  >
+  definitions: types.PickyRequired<ApiDefinitions<Options>, 'clients' | 'pagination' | 'fetch'>
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
   additionalRequestContext?: Record<string, unknown>
@@ -77,7 +76,7 @@ export const getElements = async <
   // the requester is responsible for making all "direct" client requests for a given resource including pagination,
   // i.e., the requests listed under the `requests` definition,
   // and returning the extracted items based on the transformation definition
-  const requester = getRequester<ClientOptions, PaginationOptions>({
+  const requester = getRequester<Options>({
     adapterName,
     clients,
     pagination,
@@ -90,8 +89,8 @@ export const getElements = async <
     adapterName,
     defQuery: queryWithDefault(fetch.instances),
     predefinedTypes: _.pickBy(predefinedTypes, isObjectType),
-    fetchQuery,
     getElemIdFunc,
+    customNameMappingFunctions: fetch.customNameMappingFunctions,
   })
 
   // the resource manager is responsible for orchestrating the generation of elements,

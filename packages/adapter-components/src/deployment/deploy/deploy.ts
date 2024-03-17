@@ -29,35 +29,29 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, values } from '@salto-io/lowerdash'
-import { ApiDefinitions, queryWithDefault } from '../../definitions'
+import { APIDefinitionsOptions, ApiDefinitions, queryWithDefault } from '../../definitions'
 import { ChangeAndContext } from '../../definitions/system/deploy'
 import { getRequester } from './requester'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../../client'
 import { createDependencyGraph } from './graph'
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
+import { ResolveAdditionalActionType } from '../../definitions/system/api'
 
 const log = logger(module)
 
 /**
  * Deploy a change with standard (add / modify / remove) and custom-defined actions based on the provided deploy definitions
  */
-const createSingleChangeDeployer = <
-  ClientOptions extends string,
-  PaginationOptions extends string | 'none',
-  AdditionalAction extends string,
->({
+const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
   definitions,
   convertError,
   changeResolver,
 }: {
-  definitions: types.PickyRequired<
-    ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>,
-    'clients' | 'deploy'
-  >
+  definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
-}): ((args: DeployChangeInput<AdditionalAction>) => Promise<void>) => {
+}): ((args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>) => {
   const { clients, deploy } = definitions
   const deployDefQuery = queryWithDefault(deploy.instances)
 
@@ -75,11 +69,7 @@ const createSingleChangeDeployer = <
 /**
  * Runs a deploy function of a single change on many changes and returns the deploy results
  */
-export const deployChanges = async <
-  ClientOptions extends string,
-  PaginationOptions extends string | 'none',
-  AdditionalAction extends string,
->({
+export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   definitions,
   changes,
   changeGroup,
@@ -88,15 +78,12 @@ export const deployChanges = async <
   convertError,
   changeResolver,
 }: {
-  definitions: types.PickyRequired<
-    ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>,
-    'clients' | 'deploy'
-  >
+  definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   changes: Change<InstanceElement>[]
   changeGroup: Readonly<ChangeGroup>
   elementSource: ReadOnlyElementsSource
   convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
-  deployChangeFunc?: (args: DeployChangeInput<AdditionalAction>) => Promise<void>
+  deployChangeFunc?: (args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
 }): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const defQuery = queryWithDefault(definitions.deploy.instances)
@@ -162,12 +149,11 @@ export const deployChanges = async <
 }
 
 export type SingleChangeDeployCreator<
-  ClientOptions extends string = 'main',
-  AdditionalAction extends string = never,
+  TOptions extends Pick<APIDefinitionsOptions, 'clientOptions' | 'additionalAction'>,
 > = ({
   definitions,
   convertError,
 }: {
-  definitions: types.PickyRequired<ApiDefinitions<ClientOptions, 'none', AdditionalAction>, 'clients' | 'deploy'>
+  definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
 }) => (args: ChangeAndContext) => Promise<void>

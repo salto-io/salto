@@ -20,12 +20,13 @@ import {
   serviceIDKeyCreator,
   createElemIDFunc,
   getElemPath,
+  getNameMapping,
 } from '../../../src/fetch/element/id_utils'
 
 describe('id utils', () => {
   const typeID = new ElemID('myAdapter', 'myType')
   describe('createServiceIDs', () => {
-    it('should calculate the service id for a given object and defintion', () => {
+    it('should calculate the service id for a given object and definition', () => {
       expect(
         createServiceIDs({
           entry: { a: 'A', b: 'B', c: 'C' },
@@ -80,13 +81,14 @@ describe('id utils', () => {
   })
 
   describe('createElemIDFunc', () => {
-    it('should calculate a nacl-cased elem name for a given object and defintion', () => {
+    it('should calculate a nacl-cased elem name for a given object and definition', () => {
       expect(
         createElemIDFunc({
           elemIDDef: {
             parts: [{ fieldName: 'a' }],
           },
           typeID,
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('A')
       const func2 = createElemIDFunc({
@@ -99,6 +101,7 @@ describe('id utils', () => {
           delimiter: '-',
         },
         typeID,
+        customNameMappingFunctions: {},
       })
       expect(func2({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' })).toEqual('A')
       expect(func2({ entry: { a: 'A', c: 'C', d: 123 }, defaultName: 'unnamed' })).toEqual('A_C@b')
@@ -113,6 +116,7 @@ describe('id utils', () => {
           typeID,
           getElemIdFunc: () => new ElemID('a', 'b', 'instance', 'NAME'),
           serviceIDDef: ['a'],
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('NAME')
     })
@@ -121,12 +125,14 @@ describe('id utils', () => {
         createElemIDFunc({
           elemIDDef: {},
           typeID,
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('unnamed')
       expect(
         createElemIDFunc({
           elemIDDef: { parts: [{ fieldName: 'nonexistent' }] },
           typeID,
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('unnamed')
     })
@@ -137,6 +143,7 @@ describe('id utils', () => {
           extendsParent: true,
         },
         typeID,
+        customNameMappingFunctions: {},
       })
       const parent = new InstanceElement('parent:b', new ObjectType({ elemID: typeID }))
       expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b__A@fuu')
@@ -151,6 +158,7 @@ describe('id utils', () => {
         },
         singleton: true,
         typeID,
+        customNameMappingFunctions: {},
       })
       expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' })).toEqual(ElemID.CONFIG_NAME)
     })
@@ -160,16 +168,22 @@ describe('id utils', () => {
           parts: [{ fieldName: 'a' }, { custom: () => () => 'CUSTOM', fieldName: 'ignore' }],
         },
         typeID,
+        customNameMappingFunctions: {},
       })
       expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' })).toEqual('A_CUSTOM')
     })
   })
+
   describe('getElemPath', () => {
-    it('should calculate a nacl-cased elem name for a given object and defintion', () => {
+    it('should calculate a nacl-cased elem name for a given object and definition', () => {
       expect(
         getElemPath({
           def: {
-            pathParts: [{ parts: [{ fieldName: 'a' }] }],
+            pathParts: [
+              {
+                parts: [{ fieldName: 'a', mapping: 'customTest' }],
+              },
+            ],
           },
           typeID,
           elemIDCreator: createElemIDFunc({
@@ -177,9 +191,13 @@ describe('id utils', () => {
               parts: [{ fieldName: 'a' }],
             },
             typeID,
+            customNameMappingFunctions: {},
           }),
+          customNameMappingFunctions: {
+            customTest: () => 'thisIsACuteCustomName',
+          },
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
-      ).toEqual(['myAdapter', 'Records', 'myType', 'A'])
+      ).toEqual(['myAdapter', 'Records', 'myType', 'thisIsACuteCustomName'])
     })
     it('should set path to settings folder if singleton', () => {
       expect(
@@ -194,9 +212,65 @@ describe('id utils', () => {
               parts: [{ fieldName: 'a' }],
             },
             typeID,
+            customNameMappingFunctions: {},
           }),
+          customNameMappingFunctions: {},
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual(['myAdapter', 'Records', 'Settings', 'myType'])
+    })
+  })
+
+  describe('getNameMapping', () => {
+    describe('when mapping is not defined', () => {
+      it('should return the name as is', () => {
+        expect(
+          getNameMapping({
+            name: 'name',
+            nameMapping: undefined,
+            customNameMappingFunctions: {},
+          }),
+        ).toEqual('name')
+      })
+    })
+
+    describe('when mapping is defined', () => {
+      describe('when mapping is lowercase', () => {
+        it('should return the name in lowercase', () => {
+          expect(
+            getNameMapping({
+              name: 'NAME',
+              nameMapping: 'lowercase',
+              customNameMappingFunctions: {},
+            }),
+          ).toEqual('name')
+        })
+      })
+
+      describe('when mapping is uppercase', () => {
+        it('should return the name in uppercase', () => {
+          expect(
+            getNameMapping({
+              name: 'name',
+              nameMapping: 'uppercase',
+              customNameMappingFunctions: {},
+            }),
+          ).toEqual('NAME')
+        })
+      })
+
+      describe('when mapping is a custom function', () => {
+        it('should return the name after applying the custom function', () => {
+          expect(
+            getNameMapping({
+              name: 'name',
+              nameMapping: 'test',
+              customNameMappingFunctions: {
+                test: () => 'test',
+              },
+            }),
+          ).toEqual('test')
+        })
+      })
     })
   })
 })

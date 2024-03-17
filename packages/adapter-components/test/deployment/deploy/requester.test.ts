@@ -31,11 +31,13 @@ import { getRequester } from '../../../src/deployment/deploy/requester'
 import { ApiDefinitions, queryWithDefault } from '../../../src/definitions'
 import { noPagination } from '../../../src/fetch/request/pagination'
 
+type AdditionalAction = 'activate' | 'deactivate'
+
 describe('DeployRequester', () => {
   let type: ObjectType
   let instance: InstanceElement
   let client: MockInterface<HTTPWriteClientInterface & HTTPReadClientInterface>
-  let definitions: types.PickyRequired<ApiDefinitions<'main', 'none', 'activate' | 'deactivate'>, 'clients' | 'deploy'>
+  let definitions: types.PickyRequired<ApiDefinitions<{ additionalAction: AdditionalAction }>, 'clients' | 'deploy'>
 
   beforeEach(() => {
     type = new ObjectType({
@@ -217,7 +219,7 @@ describe('DeployRequester', () => {
   // TODO extend (these cases are from the old infra deployChange tests)
 
   it('When no endpoint for deploying the element should throw an error', async () => {
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -238,7 +240,7 @@ describe('DeployRequester', () => {
       status: 200,
       data: {},
     })
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -284,7 +286,7 @@ describe('DeployRequester', () => {
         },
       },
     })
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(defs),
       changeResolver: async change => change,
@@ -318,7 +320,7 @@ describe('DeployRequester', () => {
       'test.requestsByAction.customizations.remove[0].request.context.instanceId',
       '{id}',
     )
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -346,7 +348,7 @@ describe('DeployRequester', () => {
       'test.requestsByAction.customizations.remove[0].request.context.instanceId',
       '{id}',
     )
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -381,7 +383,7 @@ describe('DeployRequester', () => {
       status: 200,
       data: {},
     })
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -435,7 +437,7 @@ describe('DeployRequester', () => {
       data: {},
     })
 
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -480,7 +482,7 @@ describe('DeployRequester', () => {
       },
     })
 
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,

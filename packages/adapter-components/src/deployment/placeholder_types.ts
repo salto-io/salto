@@ -43,6 +43,7 @@ export const overrideInstanceTypeForDeploy = ({
     typeName,
     defQuery,
     isUnknownEntry: isReferenceExpression,
+    customNameMappingFunctions: {},
   })
   const definedTypes = _.keyBy([generatedType.type, ...generatedType.nestedTypes], t => t.elemID.typeName)
   adjustFieldTypes({ definedTypes, defQuery })

@@ -39,7 +39,7 @@ import {
   TransformationDefaultConfig,
   validateTransoformationConfig,
 } from './transformation'
-import { UserFetchConfig } from '../definitions/user'
+import { UserFetchConfig, UserFetchConfigOptions } from '../definitions/user'
 
 const { isDefined } = lowerDashValues
 const { findDuplicates } = collections.array
@@ -250,9 +250,9 @@ export const validateApiDefinitionConfig = (
  * Verify that all fetch types are supported.
  * Note: This validation is only relevant for swagger adapters.
  */
-export const validateFetchConfig = (
+export const validateFetchConfig = <Options extends UserFetchConfigOptions>(
   fetchConfigPath: string,
-  userFetchConfig: UserFetchConfig,
+  userFetchConfig: UserFetchConfig<Options>,
   adapterApiConfig: AdapterSwaggerApiConfig,
 ): void => {
   validateSupportedTypes(fetchConfigPath, userFetchConfig, Object.keys(adapterApiConfig.supportedTypes))

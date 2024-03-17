@@ -242,7 +242,9 @@ describe('system definitions utils', () => {
   })
 
   describe('mergeWithUserElemIDDefinitions', () => {
-    let mergedDef: FetchApiDefinitions<'main'>
+    let mergedDef: FetchApiDefinitions<{
+      customNameMappingOptions: 'defaultMapping' | 'systemMapping' | 'otherMapping'
+    }>
 
     beforeAll(() => {
       mergedDef = mergeWithUserElemIDDefinitions({
@@ -252,7 +254,7 @@ describe('system definitions utils', () => {
               element: {
                 topLevel: {
                   elemID: {
-                    parts: [{ fieldName: 'something else' }],
+                    parts: [{ fieldName: 'something else', mapping: 'defaultMapping' }],
                   },
                 },
               },
@@ -263,7 +265,7 @@ describe('system definitions utils', () => {
                   topLevel: {
                     isTopLevel: true,
                     elemID: {
-                      parts: [{ fieldName: 'a' }],
+                      parts: [{ fieldName: 'a', mapping: 'systemMapping' }],
                       delimiter: 'X',
                     },
                   },
@@ -274,7 +276,7 @@ describe('system definitions utils', () => {
                   topLevel: {
                     isTopLevel: true,
                     elemID: {
-                      parts: [{ fieldName: 'a' }],
+                      parts: [{ fieldName: 'a', mapping: 'systemMapping' }],
                     },
                   },
                 },
@@ -284,17 +286,22 @@ describe('system definitions utils', () => {
                   topLevel: {
                     isTopLevel: true,
                     elemID: {
-                      parts: [{ fieldName: 'a' }],
+                      parts: [{ fieldName: 'a', mapping: 'lowercase' }],
                     },
                   },
                 },
               },
             },
           },
+          customNameMappingFunctions: {
+            defaultMapping: name => `${name}Default`,
+            systemMapping: name => `${name}System`,
+            otherMapping: name => `${name}Other`,
+          },
         },
         userElemID: {
           type1: {
-            parts: [{ fieldName: 'b' }],
+            parts: [{ fieldName: 'b', mapping: 'otherMapping' }],
           },
           type3: {
             parts: [{ fieldName: 'b' }],
@@ -313,7 +320,7 @@ describe('system definitions utils', () => {
           topLevel: {
             isTopLevel: true,
             elemID: {
-              parts: [{ fieldName: 'b' }],
+              parts: [{ fieldName: 'b', mapping: 'otherMapping' }],
               delimiter: 'X',
             },
           },
@@ -326,7 +333,7 @@ describe('system definitions utils', () => {
           topLevel: {
             isTopLevel: true,
             elemID: {
-              parts: [{ fieldName: 'a' }],
+              parts: [{ fieldName: 'a', mapping: 'systemMapping' }],
             },
           },
         },
@@ -338,7 +345,7 @@ describe('system definitions utils', () => {
           topLevel: {
             isTopLevel: true,
             elemID: {
-              parts: [{ fieldName: 'a' }, { fieldName: 'b' }],
+              parts: [{ fieldName: 'a', mapping: 'lowercase' }, { fieldName: 'b' }],
             },
           },
         },
@@ -357,7 +364,7 @@ describe('system definitions utils', () => {
     })
     it('should not modify system default', () => {
       expect(mergedDef.instances.default?.element?.topLevel?.elemID).toEqual({
-        parts: [{ fieldName: 'something else' }],
+        parts: [{ fieldName: 'something else', mapping: 'defaultMapping' }],
       })
     })
   })

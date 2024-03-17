@@ -25,18 +25,22 @@ import { TransformFuncSync, invertNaclCase, transformValuesSync } from '@salto-i
 import { collections } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { createInstance, getInstanceCreationFunctions } from './instance_utils'
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
+import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 
 const extractStandaloneInstancesFromField =
-  ({
+  <Options extends FetchApiDefinitionsOptions>({
     defQuery,
     instanceOutput,
     getElemIdFunc,
     parent,
+    customNameMappingFunctions,
   }: {
-    defQuery: ElementAndResourceDefFinder
+    defQuery: ElementAndResourceDefFinder<Options>
     instanceOutput: InstanceElement[]
     getElemIdFunc?: ElemIdGetter
     parent: InstanceElement
+    customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   }): TransformFuncSync =>
   ({ value, field }) => {
     if (field === undefined || isReferenceExpression(value)) {
@@ -58,7 +62,12 @@ const extractStandaloneInstancesFromField =
       )
     }
 
-    const { toElemName, toPath } = getInstanceCreationFunctions({ defQuery, type: fieldType, getElemIdFunc })
+    const { toElemName, toPath } = getInstanceCreationFunctions({
+      defQuery,
+      type: fieldType,
+      getElemIdFunc,
+      customNameMappingFunctions,
+    })
     const newInstances = collections.array.makeArray(value).map((entry, index) =>
       createInstance({
         entry,
@@ -91,13 +100,15 @@ const extractStandaloneInstancesFromField =
  *
  * Note: modifies the instances array in-place.
  */
-export const extractStandaloneInstances = ({
+export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOptions>({
   instances,
   defQuery,
+  customNameMappingFunctions,
   getElemIdFunc,
 }: {
   instances: InstanceElement[]
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   getElemIdFunc?: ElemIdGetter
 }): InstanceElement[] => {
   const instancesToProcess: InstanceElement[] = []
@@ -121,6 +132,7 @@ export const extractStandaloneInstances = ({
         instanceOutput: instancesToProcess,
         getElemIdFunc,
         parent: inst,
+        customNameMappingFunctions,
       }),
     })
     if (value !== undefined) {

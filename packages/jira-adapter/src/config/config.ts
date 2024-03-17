@@ -61,7 +61,7 @@ type JiraFetchFilters = definitions.DefaultFetchCriteria & {
   type?: string
 }
 
-type JiraFetchConfig = definitions.UserFetchConfig<JiraFetchFilters> & {
+type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFilters }> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean

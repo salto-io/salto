@@ -17,7 +17,7 @@ import { ElemIdGetter, ReadOnlyElementsSource, SaltoError } from '@salto-io/adap
 import { filter } from '@salto-io/adapter-utils'
 import { Paginator } from './client'
 import { ElementQuery } from './fetch/query'
-import { UserConfig, ApiDefinitions } from './definitions'
+import { UserConfig, ApiDefinitions, APIDefinitionsOptions, ResolveCustomNameMappingOptionsType } from './definitions'
 
 export type Filter<TResult extends void | filter.FilterResult = void> = filter.Filter<TResult>
 
@@ -27,13 +27,11 @@ export type FilterWith<M extends keyof Filter, TResult extends void | filter.Fil
 >
 
 export type FilterOptions<
-  TContext = UserConfig,
+  TOptions extends APIDefinitionsOptions = {},
+  TContext = UserConfig<ResolveCustomNameMappingOptionsType<TOptions>>,
   TAdditional = {},
-  ClientOptions extends string = 'main',
-  PaginationOptions extends string | 'none' = 'none',
-  AdditionalAction extends string = never,
 > = {
-  definitions: ApiDefinitions<ClientOptions, PaginationOptions, AdditionalAction>
+  definitions: ApiDefinitions<TOptions>
   config: TContext
   getElemIdFunc?: ElemIdGetter
   fetchQuery: ElementQuery
@@ -44,13 +42,8 @@ export type AdapterFilterCreator<
   TContext,
   TResult extends void | filter.FilterResult = void,
   TAdditional = {},
-  ClientOptions extends string = 'main',
-  PaginationOptions extends string | 'none' = 'none',
-  AdditionalAction extends string = never,
-> = filter.FilterCreator<
-  TResult,
-  FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>
->
+  TOptions extends APIDefinitionsOptions = {},
+> = filter.FilterCreator<TResult, FilterOptions<TOptions, TContext, TAdditional>>
 
 export type UserConfigAdapterFilterCreator<
   TContext,
@@ -72,14 +65,10 @@ export const filterRunner = <
   TContext,
   TResult extends void | filter.FilterResult = void,
   TAdditional = {},
-  ClientOptions extends string = 'main',
-  PaginationOptions extends string | 'none' = 'none',
-  AdditionalAction extends string = never,
+  TOptions extends APIDefinitionsOptions = {},
 >(
-  opts: FilterOptions<TContext, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>,
-  filterCreators: ReadonlyArray<
-    AdapterFilterCreator<TContext, TResult, TAdditional, ClientOptions, PaginationOptions, AdditionalAction>
-  >,
+  opts: FilterOptions<TOptions, TContext, TAdditional>,
+  filterCreators: ReadonlyArray<AdapterFilterCreator<TContext, TResult, TAdditional, TOptions>>,
   onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
 ): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)
 

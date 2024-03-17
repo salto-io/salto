@@ -15,7 +15,7 @@
  */
 import { InstanceElement, Value } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { UserFetchConfig } from '../../definitions/user'
+import { UserFetchConfig, UserFetchConfigOptions } from '../../definitions/user'
 
 export const ALL_TYPES = '.*'
 
@@ -46,8 +46,8 @@ const isPredicatesMatch = (
     .filter(([key]) => key in criteria)
     .every(([key, value]) => criteria[key]({ instance, value }))
 
-export const createElementQuery = <T extends Record<string, unknown>>(
-  fetchConfig: UserFetchConfig<T | undefined>,
+export const createElementQuery = <Options extends UserFetchConfigOptions>(
+  fetchConfig: UserFetchConfig<Options>,
   allCriteria: Record<string, QueryCriterion> = {},
 ): ElementQuery => ({
   isTypeMatch: (typeName: string) => {

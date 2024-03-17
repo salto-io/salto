@@ -20,24 +20,20 @@ import { deployChanges } from '../deployment'
 import { generateLookupFunc } from '../references'
 import { ChangeAndContext } from '../definitions/system/deploy'
 import { createChangeElementResolver } from '../resolve_utils'
+import { APIDefinitionsOptions } from '../definitions'
 
 /**
  * Default deploy based on deploy definitions.
  * Note: when there are other filters running custom deploy, they should usually run before this filter.
  */
 export const defaultDeployFilterCreator =
-  <
-    TResult extends void | filter.FilterResult,
-    ClientOptions extends string,
-    PaginationOptions extends string | 'none',
-    AdditionalAction extends string,
-  >({
+  <TResult extends void | filter.FilterResult, TOptions extends APIDefinitionsOptions>({
     deployChangeFunc,
     convertError,
   }: {
     deployChangeFunc?: (args: ChangeAndContext) => Promise<void>
     convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
-  }): AdapterFilterCreator<{}, TResult, {}, ClientOptions, PaginationOptions, AdditionalAction> =>
+  }): AdapterFilterCreator<{}, TResult, {}, TOptions> =>
   ({ definitions, elementSource }) => ({
     name: 'defaultDeployFilter',
     deploy: async (changes, changeGroup) => {

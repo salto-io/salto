@@ -185,6 +185,7 @@ export const getElemPath =
     typeID,
     singleton,
     nestUnderPath,
+    createSelfFolder,
     customNameMappingFunctions,
   }: {
     def: PathDefinition<TCustomNameMappingOptions> | undefined
@@ -192,6 +193,7 @@ export const getElemPath =
     typeID: ElemID
     singleton?: boolean
     nestUnderPath?: string[]
+    createSelfFolder?: boolean
     customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>
   }): PartsCreator =>
   ({ entry, parent, defaultName }) => {
@@ -209,5 +211,12 @@ export const getElemPath =
     const pathParts = basicPathParts.map(pathNaclCase)
 
     const { adapter: adapterName, typeName } = typeID
-    return [adapterName, RECORDS_PATH, ...(nestUnderPath ?? [pathNaclCase(typeName)]), ...pathParts]
+    const lastPart = pathParts[pathParts.length - 1]
+    return [
+      adapterName,
+      RECORDS_PATH, 
+      ...(nestUnderPath ?? [pathNaclCase(typeName)]),
+      ...pathParts,
+      ...(createSelfFolder && lastPart ? [lastPart] : [])
+    ]
   }

@@ -48,6 +48,7 @@ import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
   EVERYONE_USER_TYPE,
+  SOURCE_LOCALE_FIELD,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../../constants'
@@ -500,7 +501,11 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         if (!success) {
           log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
         }
-        await deployChange(change, client, config.apiDefinitions, ['translations', 'attachments', 'source_locale'])
+        const fieldsToIgnore = ['translations', 'attachments']
+        if (!isAdditionChange(change)) {
+          fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+        }
+        await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)
         if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
           await associateAttachments(

@@ -58,6 +58,9 @@ const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
 
+// eslint-disable-next-line camelcase
+type SourceLocaleModificationReqPayload = { category_locale?: string; section_locale?: string; article_locale?: string }
+
 type Attachment = InstanceElement & {
   value: {
     id: number
@@ -404,8 +407,7 @@ export const maybeModifySourceLocaleInGuideObject = async (
   ) {
     return true
   }
-  // eslint-disable-next-line camelcase
-  const data: { category_locale?: string; section_locale?: string; article_locale?: string } = {}
+  const data: SourceLocaleModificationReqPayload = {}
   if (object === 'articles') {
     data.article_locale = changeData.value.source_locale
   } else if (object === 'categories') {
@@ -413,9 +415,14 @@ export const maybeModifySourceLocaleInGuideObject = async (
   } else {
     data.section_locale = changeData.value.source_locale
   }
-  const res = await client.put({
-    url: `/api/v2/help_center/${object}/${changeData.value.id}/source_locale`,
-    data,
-  })
-  return res.status === 200
+  try {
+    const res = await client.put({
+      url: `/api/v2/help_center/${object}/${changeData.value.id}/source_locale`,
+      data,
+    })
+    return res.status === 200
+  } catch (e) {
+    log.error(`Failed to modify source_locale, error: ${safeJsonStringify(e)}`)
+    return false
+  }
 }

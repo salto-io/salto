@@ -17,6 +17,7 @@ import {
   Change,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isReferenceExpression,
   isRemovalChange,
   ReferenceExpression,
@@ -27,7 +28,7 @@ import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapt
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { BRAND_FIELD, SECTIONS_FIELD, TRANSLATIONS_FIELD } from '../constants'
+import { BRAND_FIELD, SECTIONS_FIELD, SOURCE_LOCALE_FIELD, TRANSLATIONS_FIELD } from '../constants'
 import { maybeModifySourceLocaleInGuideObject } from './article/utils'
 
 const log = logger(module)
@@ -116,6 +117,7 @@ export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void =>
  * work properly.
  * The Deploy ignores the 'translations' fields in the deployment. The onDeploy
  * discards the 'name' and 'description' fields from the section again.
+ * Additionally, this filter sends a separate request when `source_locale` is modified
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'guideSectionCategoryFilter',
@@ -137,13 +139,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       if (!success) {
         log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
       }
+      const fieldsToIgnore = [TRANSLATIONS_FIELD, SECTIONS_FIELD, BRAND_FIELD]
+      if (!isAdditionChange(change)) {
+        fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+      }
 
-      await deployChange(change, client, config.apiDefinitions, [
-        TRANSLATIONS_FIELD,
-        SECTIONS_FIELD,
-        BRAND_FIELD,
-        'source_locale',
-      ])
+      await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
     })
     return { deployResult, leftoverChanges }
   },

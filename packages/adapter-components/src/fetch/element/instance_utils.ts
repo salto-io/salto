@@ -91,7 +91,6 @@ export type InstanceCreationParams = {
   entry: Values
   type: ObjectType
   defaultName: string
-  nestUnderPath?: string[]
   parent?: InstanceElement
   toElemName: ElemIDCreator
   toPath: PartsCreator
@@ -106,11 +105,13 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   type,
   getElemIdFunc,
   customNameMappingFunctions,
+  nestUnderPath,
 }: {
   type: ObjectType
   defQuery: ElementAndResourceDefFinder<Options>
   getElemIdFunc?: ElemIdGetter
   customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  nestUnderPath?: string[]
 }): {
   toElemName: ElemIDCreator
   toPath: PartsCreator
@@ -126,6 +127,11 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   }
 
   const { elemID: elemIDDef, singleton } = elementDef.topLevel
+
+  // if there is at least one standalone field with nestPathUnderParent, we should create a folder to instance
+  const createSelfFolder = Object.entries(elementDef.fieldCustomizations ?? {}).some(
+    ([_fieldName, fieldDef]) => fieldDef.standalone?.nestPathUnderParent,
+  )
 
   // if this is a singleton, the instance name has to be 'config' and cannot be customized
   const elemIDCreator = elemIDDef?.custom && !singleton ? elemIDDef.custom : createElemIDFunc
@@ -144,6 +150,8 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
     elemIDCreator: toElemName,
     typeID: type.elemID,
     customNameMappingFunctions,
+    nestUnderPath,
+    createSelfFolder,
   })
 
   return { toElemName, toPath }
@@ -159,7 +167,6 @@ export const createInstance = ({
   toElemName,
   toPath,
   defaultName,
-  nestUnderPath,
   parent,
 }: InstanceCreationParams): InstanceElement => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
@@ -169,6 +176,6 @@ export const createInstance = ({
     annotations[INSTANCE_ANNOTATIONS.PARENT].push(new ReferenceExpression(parent.elemID, parent))
   }
 
-  const args = { entry, parent, defaultName, nestUnderPath }
+  const args = { entry, parent, defaultName }
   return new InstanceElement(toElemName(args), type, value, toPath(args), annotations)
 }

@@ -121,6 +121,8 @@ export const validateDefaultWithCustomizations = (
   config: DefaultWithCustomizations<boolean>,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
-  validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.supportedTypes))
-  validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.types))
+  if (config.customizations !== undefined) {
+    validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.supportedTypes))
+    validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.types))
+  }
 }

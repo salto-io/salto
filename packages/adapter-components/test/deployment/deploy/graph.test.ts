@@ -53,19 +53,13 @@ describe('createDependencyGraph', () => {
       instances: {
         customizations: {
           typeA: {
-            requestsByAction: {
-              customizations: {},
-            },
+            requestsByAction: {},
           },
           typeB: {
-            requestsByAction: {
-              customizations: {},
-            },
+            requestsByAction: {},
           },
           someOtherType: {
-            requestsByAction: {
-              customizations: {},
-            },
+            requestsByAction: {},
           },
         },
       },
@@ -105,6 +99,9 @@ describe('createDependencyGraph', () => {
   describe('with custom actions and dependencies', () => {
     let graph: DAG<NodeType<'activate' | 'deactivate'>>
     beforeEach(() => {
+      if (!deployDef.instances.customizations) {
+        deployDef.instances.customizations = {}
+      }
       deployDef.instances.customizations.typeB.toActionNames = ({ change }) => {
         if (change.action === 'add') {
           return ['add', 'activate']

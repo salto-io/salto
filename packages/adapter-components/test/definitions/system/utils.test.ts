@@ -54,24 +54,24 @@ describe('system definitions utils', () => {
       expect(mergeSingleDefWithDefault(defs.default, undefined)).toEqual(defs.default)
     })
     it('should return the custom definition when no default is provided', () => {
-      expect(mergeSingleDefWithDefault(undefined, defs.customizations.k1)).toEqual(defs.customizations.k1)
+      expect(mergeSingleDefWithDefault(undefined, defs.customizations?.k1)).toEqual(defs.customizations?.k1)
     })
     it('should give precedence to the custom definition', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'a')).toEqual('override')
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k1), 'a')).toEqual('override')
     })
     it('should apply default to all array items if default is not an array', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'arr')).toEqual([
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k1), 'arr')).toEqual([
         { a: 'a', x: 1, y: 2 },
         { b: 'b', x: 7, y: 2 },
       ])
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k2), 'arr')).toEqual([])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k2), 'arr')).toEqual([])
     })
     it('should ignore default if customization and default are both arrays', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'arr2')).toEqual([{ a: 'a' }])
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k2), 'arr')).toEqual([])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k1), 'arr2')).toEqual([{ a: 'a' }])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k2), 'arr')).toEqual([])
     })
     it('should not crash on type conflict', () => {
-      expect(mergeSingleDefWithDefault(defs.default, defs.customizations.k2)).toEqual({
+      expect(mergeSingleDefWithDefault(defs.default, defs.customizations?.k2)).toEqual({
         a: 'a',
         b: 'different type',
         arr: [],

@@ -57,7 +57,6 @@ describe('removeProfileMappingAfterDeps', () => {
   it('should remove profile mapping after its source and/or target are removed', async () => {
     const inputChanges = new Map([
       ['app', toChange({ before: app })],
-      ['idp', toChange({ before: identityProvider })],
       ['user type', toChange({ before: userType })],
       ['mappingA', toChange({ before: profileMappingA })],
       ['mappingB', toChange({ before: profileMappingB })],
@@ -67,7 +66,52 @@ describe('removeProfileMappingAfterDeps', () => {
       [1, new Set([0])],
     ])
     dependencyChanges = [...(await removeProfileMappingAfterDeps(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(8)
-    // TODO: expect more
+    expect(dependencyChanges).toHaveLength(6)
+    expect(new Set(dependencyChanges)).toEqual(
+      new Set([
+        {
+          action: 'remove',
+          dependency: {
+            source: 'app',
+            target: 'mappingA',
+          },
+        },
+        {
+          action: 'add',
+          dependency: {
+            source: 'mappingA',
+            target: 'app',
+          },
+        },
+        {
+          action: 'remove',
+          dependency: {
+            source: 'user type',
+            target: 'mappingA',
+          },
+        },
+        {
+          action: 'add',
+          dependency: {
+            source: 'mappingA',
+            target: 'user type',
+          },
+        },
+        {
+          action: 'remove',
+          dependency: {
+            source: 'user type',
+            target: 'mappingB',
+          },
+        },
+        {
+          action: 'add',
+          dependency: {
+            source: 'mappingB',
+            target: 'user type',
+          },
+        },
+      ]),
+    )
   })
 })

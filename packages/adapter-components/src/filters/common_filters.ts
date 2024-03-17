@@ -26,17 +26,15 @@ import { queryFilterCreator } from './query'
  * Filter creators of all the common filters
  */
 export const createCommonFilters = <
-  Options extends APIDefinitionsOptions = {},
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
 >({
   referenceRules,
 }: {
   referenceRules?: FieldReferenceDefinition<never>[]
-  config: UserConfig<ResolveCustomNameMappingOptionsType<Options>>
+  config: Co
   definitions: ApiDefinitions<Options>
-}): Record<
-  string,
-  AdapterFilterCreator<UserConfig, FilterResult, {}, Options>
-> => ({
+}): Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>> => ({
   // TODO SALTO-5421 finish upgrading filters to new def structure and add remaining shared filters
   hideTypes: hideTypesFilterCreator(),
   // fieldReferencesFilter should run after all elements were created

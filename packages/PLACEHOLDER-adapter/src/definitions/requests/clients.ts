@@ -20,7 +20,7 @@ import { ClientOptions, PaginationOptions } from '../types'
 
 export const createClientDefinitions = (
   clients: Record<ClientOptions, definitions.RESTApiClientDefinition<PaginationOptions>['httpClient']>,
-): definitions.ApiDefinitions<ClientOptions, PaginationOptions>['clients'] => ({
+): definitions.ApiDefinitions<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>['clients'] => ({
   default: 'main',
   options: {
     main: {

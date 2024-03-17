@@ -16,9 +16,7 @@
 import { types } from '@salto-io/lowerdash'
 import { APIDefinitionsOptions, ApiDefinitions } from './api'
 
-export type RequiredDefinitions<
-  Options extends APIDefinitionsOptions
-> = types.PickyRequired<
+export type RequiredDefinitions<Options extends APIDefinitionsOptions> = types.PickyRequired<
   ApiDefinitions<Options>,
   'clients' | 'pagination' | 'fetch'
 >

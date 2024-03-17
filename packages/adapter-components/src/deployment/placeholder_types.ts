@@ -24,16 +24,17 @@ import {
 } from '@salto-io/adapter-api'
 import { ElementAndResourceDefFinder } from '../definitions/system/fetch/types'
 import { generateType, adjustFieldTypes } from '../fetch/element'
+import { FetchApiDefinitionsOptions } from '../definitions/system/fetch'
 
 /**
  * Changes instance type to be suitable for the deploy (generated from the latest instance))
  */
-export const overrideInstanceTypeForDeploy = ({
+export const overrideInstanceTypeForDeploy = <Options extends FetchApiDefinitionsOptions>({
   instance,
   defQuery,
 }: {
   instance: InstanceElement
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
 }): InstanceElement => {
   const { typeName } = instance.elemID
   const clonedInstance = instance.clone()
@@ -43,7 +44,6 @@ export const overrideInstanceTypeForDeploy = ({
     typeName,
     defQuery,
     isUnknownEntry: isReferenceExpression,
-    customNameMappingFunctions: {},
   })
   const definedTypes = _.keyBy([generatedType.type, ...generatedType.nestedTypes], t => t.elemID.typeName)
   adjustFieldTypes({ definedTypes, defQuery })

@@ -18,12 +18,7 @@ import { ElemIdGetter, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ElementQuery } from './query'
-import {
-  APIDefinitionsOptions,
-  getNestedWithDefault,
-  mergeWithDefault,
-  queryWithDefault,
-} from '../definitions'
+import { APIDefinitionsOptions, getNestedWithDefault, mergeWithDefault, queryWithDefault } from '../definitions'
 import { getUniqueConfigSuggestions } from '../elements/ducktype' // TODO move
 import { getRequester } from './request/requester'
 import { createResourceManager } from './resource/resource_manager'

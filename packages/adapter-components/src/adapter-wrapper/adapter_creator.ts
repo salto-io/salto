@@ -20,20 +20,29 @@ import { createClient } from '../client/client_creator'
 import { AdapterImplConstructor } from './adapter/types'
 import { createAdapterImpl } from './adapter/creator'
 import { HTTPReadClientInterface, HTTPWriteClientInterface, ConnectionCreator } from '../client'
-import { UserConfig, ConfigTypeCreator, createUserConfigType, ClientRateLimitConfig, APIDefinitionsOptions, ResolveClientOptionsType } from '../definitions'
+import {
+  UserConfig,
+  ConfigTypeCreator,
+  createUserConfigType,
+  ClientRateLimitConfig,
+  APIDefinitionsOptions,
+  ResolveClientOptionsType,
+  ResolveCustomNameMappingOptionsType,
+} from '../definitions'
 import { RequiredDefinitions } from '../definitions/system/types'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
 import { defaultValidateCredentials } from '../credentials'
 import { adapterConfigFromConfig } from '../definitions/user/user_config'
 import { ClientDefaults } from '../client/http_client'
+import { AdapterImpl } from './adapter/adapter'
 
-type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config // TODON ?
+type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
 
 export const createAdapter = <
   Credentials,
-  Co extends UserConfig = UserConfig,
-  Options extends APIDefinitionsOptions = {},
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
 >({
   adapterName,
   initialClients,
@@ -51,20 +60,18 @@ export const createAdapter = <
   initialClients: Record<ResolveClientOptionsType<Options>, undefined>
   authenticationMethods: AdapterAuthentication
   validateCredentials?: Adapter['validateCredentials']
-  adapterImpl?: AdapterImplConstructor<Credentials, Co, Options>
+  adapterImpl?: AdapterImplConstructor<Credentials, Options, Co>
   defaultConfig: Co
   definitionsCreator: (args: {
     clients: Record<string, HTTPReadClientInterface & HTTPWriteClientInterface>
     userConfig: Co
   }) => RequiredDefinitions<Options>
-  configTypeCreator?: ConfigTypeCreator
+  configTypeCreator?: ConfigTypeCreator<ResolveCustomNameMappingOptionsType<Options>>
   operationsCustomizations: {
     adapterConfigCreator?: (config: Readonly<InstanceElement> | undefined) => Co
     credentialsFromConfig: (config: Readonly<InstanceElement>) => Credentials
     connectionCreatorFromConfig: (config: Co['client']) => ConnectionCreator<Credentials>
-    customizeFilterCreators?: (
-      config: Co,
-    ) => AdapterFilterCreator<UserConfig, FilterResult, {}, Options>[]
+    customizeFilterCreators?: (config: Co) => AdapterFilterCreator<Co, FilterResult, {}, Options>[]
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
 }): Adapter => {
@@ -92,7 +99,7 @@ export const createAdapter = <
         }),
       )
       const definitions = definitionsCreator({ clients, userConfig: config })
-      const adapterOperations = createAdapterImpl<Credentials, Co, Options>(
+      const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
           clients,
           config,
@@ -103,7 +110,7 @@ export const createAdapter = <
             customizeFilterCreators !== undefined
               ? customizeFilterCreators(config)
               : Object.values(
-                  createCommonFilters<Options>({
+                  createCommonFilters<Options, Co>({
                     config,
                     definitions,
                   }),
@@ -111,7 +118,7 @@ export const createAdapter = <
           adapterName,
           configInstance: context.config,
         },
-        adapterImpl,
+        adapterImpl ?? AdapterImpl,
       )
 
       return {

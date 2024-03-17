@@ -22,21 +22,23 @@ import {
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { Client } from '../../client/client_creator'
-import { APIDefinitionsOptions, ResolveClientOptionsType, UserConfig } from '../../definitions'
+import {
+  APIDefinitionsOptions,
+  ResolveClientOptionsType,
+  ResolveCustomNameMappingOptionsType,
+  UserConfig,
+} from '../../definitions'
 import { AdapterFilterCreator, FilterResult } from '../../filter_utils'
 import { RequiredDefinitions } from '../../definitions/system/types'
 
 export interface AdapterParams<
   Credentials,
-  Co extends UserConfig,
   Options extends APIDefinitionsOptions = {},
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>> = UserConfig<
+    ResolveCustomNameMappingOptionsType<Options>
+  >,
 > {
-  filterCreators: AdapterFilterCreator<
-    UserConfig,
-    FilterResult,
-    {},
-    Options
-  >[]
+  filterCreators: AdapterFilterCreator<Co, FilterResult, {}, Options>[]
   clients: Record<ResolveClientOptionsType<Options>, Client<Credentials>>
   definitions: RequiredDefinitions<Options>
   config: Co
@@ -51,8 +53,10 @@ export interface AdapterParams<
 
 export interface AdapterImplConstructor<
   Credentials,
-  Co extends UserConfig,
   Options extends APIDefinitionsOptions = {},
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>> = UserConfig<
+    ResolveCustomNameMappingOptionsType<Options>
+  >,
 > {
-  new (args: AdapterParams<Credentials, Co, Options>): AdapterOperations
+  new (args: AdapterParams<Credentials, Options, Co>): AdapterOperations
 }

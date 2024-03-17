@@ -15,21 +15,16 @@
  */
 import { AdapterOperations } from '@salto-io/adapter-api'
 import { AdapterImplConstructor, AdapterParams } from './types'
-import { AdapterImpl } from './adapter'
-import { APIDefinitionsOptions, UserConfig } from '../../definitions'
+import { APIDefinitionsOptions, ResolveCustomNameMappingOptionsType, UserConfig } from '../../definitions'
 
 export const createAdapterImpl = <
   Credentials,
-  Co extends UserConfig = UserConfig,
-  Options extends APIDefinitionsOptions = {},
-  P extends AdapterParams<Credentials, Co, Options> = AdapterParams<
-    Credentials,
-    Co,
-    Options
-  >,
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
+  P extends AdapterParams<Credentials, Options, Co> = AdapterParams<Credentials, Options, Co>,
 >(
   args: P,
-  ctor: AdapterImplConstructor<Credentials, Co, Options> = AdapterImpl,
+  ctor: AdapterImplConstructor<Credentials, Options, Co>,
 ): AdapterOperations =>
   // eslint-disable-next-line new-cap
   new ctor(args)

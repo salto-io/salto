@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { definitions } from '@salto-io/adapter-components'
 
 // TODO adjust
 
 export type AdditionalAction = never
 export type ClientOptions = 'main'
 export type PaginationOptions = 'cursor'
+
+export type Options = definitions.APIDefinitionsOptions & {
+  clientOptions: ClientOptions
+  paginationOptions: PaginationOptions
+  additionalAction: AdditionalAction
+}

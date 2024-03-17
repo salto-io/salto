@@ -39,7 +39,16 @@ import { Client } from '../../client/client_creator'
 import { AdapterParams } from './types'
 import { Filter, FilterResult, filterRunner } from '../../filter_utils'
 import { getUpdatedCofigFromConfigChanges } from '../../config'
-import { APIDefinitionsOptions, ResolveClientOptionsType, UserConfig, createUserConfigType, mergeWithUserElemIDDefinitions, queryWithDefault } from '../../definitions'
+import {
+  APIDefinitionsOptions,
+  ResolveClientOptionsType,
+  ResolveCustomNameMappingOptionsType,
+  UserConfig,
+  UserFetchConfig,
+  createUserConfigType,
+  mergeWithUserElemIDDefinitions,
+  queryWithDefault,
+} from '../../definitions'
 import { RequiredDefinitions } from '../../definitions/system/types'
 import { FetchElements, getElements } from '../../fetch'
 import { ElementQuery, createElementQuery } from '../../fetch/query'
@@ -62,8 +71,8 @@ type FilterWithResult = Filter<FilterResult>
 
 export class AdapterImpl<
   Credentials,
-  Co extends UserConfig,
-  Options extends APIDefinitionsOptions = {},
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
 > implements AdapterOperations
 {
   protected createFiltersRunner: () => Required<FilterWithResult>
@@ -88,13 +97,16 @@ export class AdapterImpl<
     getElemIdFunc,
     additionalChangeValidators,
     dependencyChangers,
-  }: AdapterParams<Credentials, Co, Options>) {
+  }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
     this.getElemIdFunc = getElemIdFunc
     this.definitions = {
       ...definitions,
-      fetch: mergeWithUserElemIDDefinitions({ userElemID: config.fetch.elemID, fetchConfig: definitions.fetch }),
+      fetch: mergeWithUserElemIDDefinitions({
+        userElemID: config.fetch.elemID as UserFetchConfig<Options>['elemID'],
+        fetchConfig: definitions.fetch,
+      }),
     }
     this.fetchQuery = createElementQuery(config.fetch)
     this.createFiltersRunner = () =>

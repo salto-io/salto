@@ -26,10 +26,7 @@ const { makeArray } = collections.array
  * replace values with references based on a set of rules
  */
 export const fieldReferencesFilterCreator =
-  <
-    TResult extends void | filter.FilterResult,
-    Options extends APIDefinitionsOptions = {},
-  >(
+  <TResult extends void | filter.FilterResult, Options extends APIDefinitionsOptions = {}>(
     referenceRules?: FieldReferenceDefinition<never>[],
   ): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions }) => ({

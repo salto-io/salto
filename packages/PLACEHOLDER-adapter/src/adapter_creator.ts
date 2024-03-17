@@ -18,20 +18,14 @@ import { Credentials, credentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
 import { ADAPTER_NAME } from './constants'
-import {
-  ClientOptions,
-  PaginationOptions,
-  createClientDefinitions,
-  createDeployDefinitions,
-  createFetchDefinitions,
-} from './definitions'
+import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
-import { AdditionalAction } from './definitions/types'
+import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
 
 const { defaultCredentialsFromConfig } = credentials
 
-export const adapter = createAdapter<Credentials, UserConfig, ClientOptions, PaginationOptions, AdditionalAction>({
+export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
   authenticationMethods: {
     basic: {

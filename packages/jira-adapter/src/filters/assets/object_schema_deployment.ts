@@ -23,8 +23,6 @@ import {
   isAdditionChange,
   isAdditionOrModificationChange,
   isEqualValues,
-  isInstanceChange,
-  isModificationChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -44,14 +42,8 @@ const deployProperties = async (
 ): Promise<void> => {
   const instance = getChangeData(change)
   const url = `/gateway/api/jsm/assets/workspace/${instance.value.workspaceId}/v1/global/config/objectschema/${instance.value.id}/property`
-  if (isAdditionChange(change)) {
-    await client.post({
-      url,
-      data: instance.value.properties,
-    })
-  }
   if (
-    isModificationChange(change) &&
+    isAdditionChange(change) ||
     !isEqualValues(change.data.before.value.properties, change.data.after.value.properties)
   ) {
     await client.post({
@@ -81,7 +73,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === OBJECT_SCHEMA_TYPE && isInstanceChange(change),
+      change => getChangeData(change).elemID.typeName === OBJECT_SCHEMA_TYPE,
     )
     const typeFixedChanges = relevantChanges.map(change => ({
       action: change.action,

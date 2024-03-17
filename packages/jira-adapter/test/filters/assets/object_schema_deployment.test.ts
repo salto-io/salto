@@ -154,5 +154,15 @@ describe('requestType filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.delete).toHaveBeenCalledTimes(1)
     })
+    it('should not deploy object schema if enableJSM is false', async () => {
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      const filterWithNoJsm = objectSchemaDeployFilter(getFilterParams({ config, client })) as typeof filter
+      const res = await filterWithNoJsm.deploy([{ action: 'add', data: { after: objectSchemaInstance } }])
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
   })
 })

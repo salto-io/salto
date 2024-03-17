@@ -43,7 +43,8 @@ const filter: FilterCreator = ({ config }) => ({
         delete instance.value.objectSchemaStatuses
         delete instance.value.referenceTypes
         if (Array.isArray(instance.value.properties) && instance.value.properties.length === 1) {
-          ;[instance.value.properties] = instance.value.properties
+          // eslint-disable-next-line prefer-destructuring
+          instance.value.properties = instance.value.properties[0]
         }
       })
   },

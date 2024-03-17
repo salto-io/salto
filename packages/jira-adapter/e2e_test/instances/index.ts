@@ -37,7 +37,7 @@ import { createInstances as createDataCenterInstances, modifyDataCenterInstances
 import { createInstances as createCloudInstances, modifyCloudInstances } from './cloud'
 
 export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
-  const randomString = `OssE2e${String(Date.now()).substring(1, 6)}`
+  const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
   const uuid = uuidv4()
 
   const issueType = new InstanceElement(randomString, findType(ISSUE_TYPE_NAME, fetchedElements), {

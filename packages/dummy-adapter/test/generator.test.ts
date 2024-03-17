@@ -21,6 +21,9 @@ import {
   isListType,
   CORE_ANNOTATIONS,
   StaticFile,
+  isTemplateExpression,
+  Element,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -225,6 +228,77 @@ describe('elements generator', () => {
               obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)),
         )
       expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
+    })
+  })
+  describe('template expression', () => {
+    const hasTemplate = (elements: Element[]): boolean =>
+      elements
+        .filter(isObjectType)
+        .map(obj => Object.values(obj.annotations))
+        .map(values => values.filter(isTemplateExpression))
+        .some(templateValues => !_.isEmpty(templateValues))
+
+    it('should create template expression correctly if freq is 1', async () => {
+      const templateExpressionParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 100,
+        numOfPrimitiveTypes: 30,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 0,
+        templateExpressionFreq: 1,
+      }
+      const elements = await generateElements(templateExpressionParams, mockProgressReporter)
+      expect(hasTemplate(elements)).toBeTruthy()
+    })
+    it('should not create template expression if frq is 0', async () => {
+      const templateExpressionParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 100,
+        numOfPrimitiveTypes: 30,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 0,
+        templateExpressionFreq: 0,
+      }
+      const elements = await generateElements(templateExpressionParams, mockProgressReporter)
+      expect(hasTemplate(elements)).toBeFalsy()
+    })
+  })
+  describe('template static file', () => {
+    const hasTemplateStaticFile = (elements: Element[]): boolean =>
+      elements
+        .filter(isObjectType)
+        .map(obj => Object.values(obj.annotations))
+        .map(values => values.filter(isStaticFile).filter(file => file.isTemplate))
+        .some(templateFiles => !_.isEmpty(templateFiles))
+    it('should create template static file correctly if freq is 1', async () => {
+      const templateStaticFileParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 100,
+        numOfPrimitiveTypes: 30,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 0,
+        templateExpressionFreq: 0,
+        templateStaticFileFreq: 1,
+      }
+      const elements = await generateElements(templateStaticFileParams, mockProgressReporter)
+      expect(hasTemplateStaticFile(elements)).toBeTruthy()
+    })
+    it('should not create template static files if frq is 0', async () => {
+      const templateStaticFileParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 100,
+        numOfPrimitiveTypes: 30,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 0,
+        templateExpressionFreq: 0,
+        templateStaticFileFreq: 0,
+      }
+      const elements = await generateElements(templateStaticFileParams, mockProgressReporter)
+      expect(hasTemplateStaticFile(elements)).toBeFalsy()
     })
   })
   describe('env data', () => {

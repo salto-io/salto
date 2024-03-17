@@ -44,6 +44,8 @@ import {
   DeployAction,
   createRestriction,
   SeverityLevel,
+  TemplateExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -54,8 +56,13 @@ import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { merger, expressions, elementSource } from '@salto-io/workspace'
-import { parser } from '@salto-io/parser'
-import { createMatchingObjectType, ImportantValues, inspectValue } from '@salto-io/adapter-utils'
+import { parser, parserUtils } from '@salto-io/parser'
+import {
+  createMatchingObjectType,
+  createTemplateExpression,
+  ImportantValues,
+  inspectValue,
+} from '@salto-io/adapter-utils'
 
 const { isDefined } = lowerDashValues
 const { mapValuesAsync } = promises.object
@@ -171,6 +178,8 @@ export type GeneratorParams = {
   typetAnnoMean: number
   typetAnnoStd: number
   staticFileFreq: number
+  templateExpressionFreq?: number
+  templateStaticFileFreq?: number
   parentFreq: number
   refFreq: number
   multilLinesStringLinesMean: number
@@ -211,6 +220,8 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
   parentFreq: 2.12,
   refFreq: 0.015,
   staticFileFreq: 0.00278,
+  templateExpressionFreq: 0.0075,
+  templateStaticFileFreq: 0,
   multilLinesStringLinesMean: 3.2,
   multilLinesStringLinesStd: 0.97,
   multilineFreq: 0.002,
@@ -222,6 +233,8 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
 }
 
 const MOCK_NACL_SUFFIX = 'nacl.mock'
+const templateExpressionFreqVal = defaultParams.templateExpressionFreq ?? 0.0075
+const templateStaticFileFreqVal = defaultParams.templateStaticFileFreq ?? 0
 
 const getDataPath = (): string => process.env.SALTO_DUMMY_ADAPTER_DATA_PATH || path.join(__dirname, 'data')
 
@@ -284,6 +297,7 @@ export const generateElements = async (
   const stringLinesOpts = JSON.parse(Buffer.from(fs.readFileSync(datFilePath, 'utf8'), 'base64').toString())
   const staticFileIds: Set<string> = new Set()
   const referenceFields: Set<string> = new Set()
+  const templateExpressionFields: Set<string> = new Set()
   // Standard Normal variate using Marsaglia polar method
   const normalRandom = (mean: number, stdDev: number): number => {
     let u
@@ -424,8 +438,29 @@ export const generateElements = async (
   const chooseObjIgnoreRank = (): ObjectType =>
     weightedRandomSelect(weightedRandomSelect(objByRank.filter(rank => rank.length > 0))) || defaultObj
 
+  const generateTemplateExpression = async (): Promise<TemplateExpression> => {
+    const parts = await Promise.all(
+      arrayOf(getListLength(), async () =>
+        randomGen() < 0.5 ? generateString() : new ReferenceExpression(chooseObjIgnoreRank().elemID),
+      ),
+    )
+    if (_.isEmpty(parts.filter(isReferenceExpression))) {
+      parts.push(new ReferenceExpression(chooseObjIgnoreRank().elemID))
+    }
+    return createTemplateExpression({ parts })
+  }
+
+  const generateTemplateStaticFile = async (): Promise<StaticFile> => {
+    const template = await generateTemplateExpression()
+    const filepath = [getName(), 'txt'].join('.')
+    return parserUtils.templateExpressionToStaticFile(template, filepath)
+  }
+
   const generateValue = async (ref: TypeElement, isHidden?: boolean): Promise<Value> => {
     if (staticFileIds.has(ref.elemID.getFullName()) && !isHidden) {
+      if (randomGen() < (params.templateStaticFileFreq ?? templateStaticFileFreqVal)) {
+        return generateTemplateStaticFile()
+      }
       const content = generateFileContent()
       return new StaticFile({
         content,
@@ -435,6 +470,9 @@ export const generateElements = async (
     }
     if (referenceFields.has(ref.elemID.getFullName()) && !isHidden) {
       return new ReferenceExpression(chooseObjIgnoreRank().elemID)
+    }
+    if (templateExpressionFields.has(ref.elemID.getFullName()) && !isHidden) {
+      return generateTemplateExpression()
     }
     if (isPrimitiveType(ref)) {
       switch (ref.primitive) {
@@ -542,10 +580,15 @@ export const generateElements = async (
           path: [DUMMY_ADAPTER, 'Types', name],
         })
         await updateElementRank(element)
-        if (element.primitive === PrimitiveTypes.STRING && randomGen() < 1) {
+        if (
+          element.primitive === PrimitiveTypes.STRING &&
+          randomGen() < (params.templateExpressionFreq ?? templateExpressionFreqVal)
+        ) {
+          templateExpressionFields.add(element.elemID.getFullName())
+        } else if (element.primitive === PrimitiveTypes.STRING && randomGen() < 1) {
           // defaultParams.staticFileFreq) {
           staticFileIds.add(element.elemID.getFullName())
-        } else if (randomGen() < defaultParams.staticFileFreq) {
+        } else if (randomGen() < defaultParams.refFreq) {
           referenceFields.add(element.elemID.getFullName())
         }
         return element

@@ -43,6 +43,7 @@ const filter: FilterCreator = ({ config }) => ({
         delete instance.value.objectSchemaStatuses
         delete instance.value.referenceTypes
         if (Array.isArray(instance.value.properties) && instance.value.properties.length === 1) {
+          // Each objectSchema has a single object properties, so we can remove the array and keep the object
           // eslint-disable-next-line prefer-destructuring
           instance.value.properties = instance.value.properties[0]
         }

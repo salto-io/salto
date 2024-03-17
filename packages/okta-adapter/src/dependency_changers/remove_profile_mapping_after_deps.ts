@@ -15,24 +15,25 @@
  */
 
 import {
-  DependencyChange,
   DependencyChanger,
   InstanceElement,
-  RemovalChange
+  RemovalChange,
   dependencyChange,
   getChangeData,
   isInstanceChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
-import { isActivationChange } from '../deployment'
-import { getParentApp } from '../change_validators/app_schema_with_inactive_app'
-import profile_mapping_removal from '../filters/profile_mapping_removal'
 
+/**
+ * Remove ProfileMapping only *after* one of its dependencies is removed.
+ *
+ * ProfileMappings are removed automatically by Okta when either side of the mapping is removed.
+ * The actual remove deploy for ProfileMapping does nothing - this just makes sure that we report success on its
+ * removal only after removing the dependencies (otherwise it will still exist in Okta).
+ */
 export const removeProfileMappingAfterDeps: DependencyChanger = async changes => {
-  // Find all ProfileMapping removal changes
   const removals = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(({ change }) => isRemovalChange(change))
@@ -40,24 +41,24 @@ export const removeProfileMappingAfterDeps: DependencyChanger = async changes =>
       isInstanceChange(change.change),
     )
 
-  const elemIDToRemoval = Object.fromEntries(removals.map(
-    change => [getChangeData(change.change).elemID.getFullName(), change]
-  ))
+  const profileMappingRemovals = removals.filter(
+    change => getChangeData(change.change).elemID.typeName === PROFILE_MAPPING_TYPE_NAME,
+  )
 
-  const profileMappingRemovals = removals
-    .filter(change => getChangeData(change.change).elemID.typeName === PROFILE_MAPPING_TYPE_NAME)
-    .map(change => {
-
-    })
-
-  return profileMappingRemovals.flatMap(change => {
-    const { source, target } = getChangeData(change).value
-
-    if (appChange === undefined) {
-      return []
-    }
-    return createDependencyChange(change, appChange)
-  }
-
-
+  return profileMappingRemovals.flatMap(profileMappingRemoval => {
+    const { source, target } = getChangeData(profileMappingRemoval.change).value
+    return removals
+      .filter(removal =>
+        [source.id.elemID.getFullName(), target.id.elemID.getFullName()].includes(
+          getChangeData(removal.change).elemID.getFullName(),
+        ),
+      )
+      .map(depRemoval => [
+        // ProfileMappings have a reference to source and target, so there will be an existing reference dependency -
+        // remove it and add the reverse dependency.
+        dependencyChange('remove', depRemoval.key, profileMappingRemoval.key),
+        dependencyChange('add', profileMappingRemoval.key, depRemoval.key),
+      ])
+      .flat()
+  })
 }

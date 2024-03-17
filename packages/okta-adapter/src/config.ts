@@ -1311,7 +1311,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           mappingId: 'id',
         },
       },
-      // TODO SALTO-4769 add support in remove
+      remove: {
+        // ProfileMappings are removed automatically by Okta when either side of the mapping is removed.
+        // We use an empty URL here to mark this action as supported in case a user removed the mapping
+        // alongside either side.
+        // A separate Change Validator ensures that mappings aren't removed by themselves.
+        url: '',
+        method: 'delete',
+        urlParamsToFields: {
+          mappingId: 'id',
+        },
+      },
     },
   },
   ProfileMappingSource: {

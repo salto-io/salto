@@ -316,7 +316,6 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
-  formsFilter,
   serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
@@ -373,6 +372,7 @@ export const DEFAULT_FILTERS = [
   queueDeploymentFilter,
   portalGroupsFilter,
   requestTypeFilter,
+  formsFilter, // Must run after requestTypeFilter
   // Must run before asstesDeployFilter
   assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter

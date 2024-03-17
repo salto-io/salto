@@ -143,19 +143,17 @@ describe('dummy adapter', () => {
     })
   })
   describe('fixElements', () => {
-    it('should return correct value', async() => {
+    it('should return correct value', async () => {
       const mockReporter = { reportProgress: jest.fn() }
       const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
       const fullInst1 = fetchResult.elements.find(e => e.elemID.getFullName() === 'dummy.Full.instance.FullInst1')
-      if (!isInstanceElement(fullInst1)){
+      if (!isInstanceElement(fullInst1)) {
         return
       }
       const cloned = fullInst1.clone()
       delete cloned.value.strField
       const fixed = await adapter.fixElements(fetchResult.elements)
-      expect(fixed.fixedElements).toEqual([
-        cloned
-      ])
+      expect(fixed.fixedElements).toEqual([cloned])
       expect(fixed.errors).toHaveLength(1)
     })
   })

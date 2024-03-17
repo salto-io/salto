@@ -218,6 +218,58 @@ describe('id utils', () => {
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual(['myAdapter', 'Records', 'Settings', 'myType'])
     })
+    it('it should create self folder if createSelfFolder is true', () => {
+      expect(
+        getElemPath({
+          def: {
+            pathParts: [{ parts: [{ fieldName: 'a' }] }],
+          },
+          typeID,
+          elemIDCreator: createElemIDFunc({
+            elemIDDef: {
+              parts: [{ fieldName: 'a' }],
+            },
+            typeID,
+          }),
+          createSelfFolder: true,
+        })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
+      ).toEqual(['myAdapter', 'Records', 'myType', 'A', 'A'])
+    })
+    it('it should nest under path if nested path provided and ignore the curent instance type name', () => {
+      expect(
+        getElemPath({
+          def: {
+            pathParts: [{ parts: [{ fieldName: 'a' }] }],
+          },
+          typeID,
+          elemIDCreator: createElemIDFunc({
+            elemIDDef: {
+              parts: [{ fieldName: 'a' }],
+            },
+            typeID,
+          }),
+          nestUnderPath: ['ParentType', 'FieldName'],
+        })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
+      ).toEqual(['myAdapter', 'Records','ParentType', 'FieldName', 'A'])
+    })
+    it('it should work with both nestUnderPath and createSelfFolder', () => {
+      expect(
+        getElemPath({
+          def: {
+            pathParts: [{ parts: [{ fieldName: 'a' }] }],
+          },
+          typeID,
+          elemIDCreator: createElemIDFunc({
+            elemIDDef: {
+              parts: [{ fieldName: 'a' }],
+            },
+            typeID,
+          }),
+          nestUnderPath: ['ParentType', 'FieldName'],
+          createSelfFolder: true,
+        })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
+      ).toEqual(['myAdapter', 'Records','ParentType', 'FieldName', 'A', 'A'])
+    })
   })
 
   describe('getNameMapping', () => {

@@ -18,7 +18,6 @@ import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { addAliasToElements, AliasData } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
   APP_OWNED_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -67,18 +66,6 @@ const ARTICLE_ORDER = 'Article Order'
 const LANGUAGE_SETTINGS = 'language settings'
 const SETTINGS = 'Settings'
 const THEME_SETTINGS = 'Theme settings'
-
-const SECOND_ITERATION_TYPES = [
-  DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME,
-  CATEGORY_TRANSLATION_TYPE_NAME,
-  SECTION_TRANSLATION_TYPE_NAME,
-  SECTION_ORDER_TYPE_NAME,
-  ARTICLE_TRANSLATION_TYPE_NAME,
-  ARTICLE_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME,
-  THEME_SETTINGS_TYPE_NAME,
-]
 
 const aliasMap: Record<string, AliasData> = {
   app_installation: {
@@ -528,7 +515,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
     addAliasToElements({
       elementsMap,
       aliasMap,
-      secondIterationGroupNames: SECOND_ITERATION_TYPES,
     })
   },
 })

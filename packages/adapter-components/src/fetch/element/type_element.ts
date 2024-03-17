@@ -25,6 +25,7 @@ import {
   ElemID,
   isListType,
   CORE_ANNOTATIONS,
+  Values,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -222,14 +223,27 @@ export const generateType = <Options extends FetchApiDefinitionsOptions>(
   )
 
   const { topLevel } = elementDef ?? {}
-  const { hide, singleton } = topLevel ?? {}
+  const { hide, singleton, importantValues } = topLevel ?? {}
+  const getAnnotations = (): Values | undefined => {
+    if (!hide && importantValues === undefined) {
+      return undefined
+    }
+    const annotations: Values = {}
+    if (hide) {
+      annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+    }
+    if (importantValues !== undefined) {
+      annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValues
+    }
+    return annotations
+  }
 
   const type = new ObjectType({
     elemID: new ElemID(adapterName, naclName),
     fields,
     path,
     isSettings: singleton ?? false,
-    annotations: hide ? { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } : undefined,
+    annotations: getAnnotations(),
   })
 
   return { type, nestedTypes }

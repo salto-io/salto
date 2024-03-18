@@ -51,7 +51,7 @@ export type ReferenceSerializationStrategy = {
 }>
 export const basicLookUp: LookupFunc = val => val
 
-export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
+export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath' | 'domainName'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -69,6 +69,11 @@ export const ReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.name,
     lookup: basicLookUp,
     lookupIndexName: 'name',
+  },
+  domainName: {
+    serialize: ({ ref }) => ref.value.value.domainName,
+    lookup: basicLookUp,
+    lookupIndexName: 'domainName',
   },
   nameWithPath: {
     lookup: basicLookUp,

@@ -15,9 +15,11 @@
  */
 
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
-
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
+
+const log = logger(module)
 
 /* This filter modifies fields for objectTypes and objectSchemas  */
 const filter: FilterCreator = ({ config }) => ({
@@ -42,11 +44,13 @@ const filter: FilterCreator = ({ config }) => ({
         delete instance.value.objectTypes
         delete instance.value.objectSchemaStatuses
         delete instance.value.referenceTypes
-        if (Array.isArray(instance.value.properties) && instance.value.properties.length === 1) {
+        if (!Array.isArray(instance.value.properties) || !(instance.value.properties.length === 1)) {
           // Each objectSchema has a single object properties, so we can remove the array and keep the object
-          // eslint-disable-next-line prefer-destructuring
-          instance.value.properties = instance.value.properties[0]
+          log.error('objectSchema properties should be an array with a single object', instance.value.properties)
+          return
         }
+        // eslint-disable-next-line prefer-destructuring
+        instance.value.properties = instance.value.properties[0]
       })
   },
 })

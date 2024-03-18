@@ -144,6 +144,30 @@ describe('NetsuiteAdapter creator', () => {
             const accountInfo = await adapter.validateCredentials(cred)
             expect(accountInfo).toEqual({ accountId, accountType: 'PRODUCTION', isProduction: true })
           })
+
+          it('Should return accountInfo with accountType = TEST and isProduction = false when identifying TSTDRV account', async () => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+              envType: EnvType.PRODUCTION,
+            })
+            const testAccountId = 'TSTDRV1234567'
+            netsuiteValidateMock.mockResolvedValueOnce({ accountId: testAccountId })
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId: testAccountId, accountType: 'TEST', isProduction: false })
+          })
+
+          it('Should return accountInfo with accountType = TEST and isProduction = false when identifying TD account', async () => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+              envType: EnvType.PRODUCTION,
+            })
+            const testAccountId = 'TD1234567'
+            netsuiteValidateMock.mockResolvedValueOnce({ accountId: testAccountId })
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId: testAccountId, accountType: 'TEST', isProduction: false })
+          })
         })
 
         describe('When systemInformation contains envType !== PRODUCTION', () => {

@@ -973,6 +973,9 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               {
                 metadataType: 'DiscoveryAIModel',
               },
+              {
+                metadataType: 'Translations',
+              },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,

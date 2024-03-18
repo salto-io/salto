@@ -88,6 +88,9 @@ salesforce {
         {
           metadataType: 'DiscoveryAIModel',
         },
+        {
+          metadataType: 'Translations',
+        },
       ]
     }
     data = {

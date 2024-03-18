@@ -127,6 +127,9 @@ export const configWithCPQ = new InstanceElement(
           {
             metadataType: 'DiscoveryAIModel',
           },
+          {
+            metadataType: 'Translations',
+          },
         ],
       },
       data: {

@@ -123,9 +123,11 @@ const isLegalEdge = (
   (startNode.value.changeType === 'addition' || startNode.value.addedObjects.has(serviceId)) &&
   startNode.id !== endNode.id
 
-const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'TEST'=> {
+const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'TEST' => {
   if (accountId.toUpperCase().startsWith('TSTDRV') || accountId.toUpperCase().startsWith('TD')) {
-    log.debug(`using 'TEST' account type although ${envType} envType is returned from NS since we assume ${accountId} indicates a testing account`)
+    log.debug(
+      `using 'TEST' account type although ${envType} envType is returned from NS since we assume ${accountId} indicates a testing account`,
+    )
     return 'TEST'
   }
   return envType

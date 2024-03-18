@@ -21,4 +21,9 @@ export const createObjectSchmaValues = (name: string): Values => ({
   objectSchemaKey: 'TEST',
   status: 'Ok',
   description: 'test description',
+  properties: {
+    quickCreateObjects: true,
+    validateQuickCreate: false,
+    allowOtherObjectSchema: false,
+  },
 })

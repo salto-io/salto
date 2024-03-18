@@ -15,11 +15,13 @@
  */
 
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
-
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 
-/* This filter modifies the parentObjectTypeId of roots with ObjectType to assetsSchema. */
+const log = logger(module)
+
+/* This filter modifies fields for objectTypes and objectSchemas  */
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypeChangeFields',
   onFetch: async elements => {
@@ -42,6 +44,13 @@ const filter: FilterCreator = ({ config }) => ({
         delete instance.value.objectTypes
         delete instance.value.objectSchemaStatuses
         delete instance.value.referenceTypes
+        if (!Array.isArray(instance.value.properties) || !(instance.value.properties.length === 1)) {
+          // Each objectSchema has a single object properties, so we can remove the array and keep the object
+          log.error('objectSchema properties should be an array with a single object', instance.value.properties)
+          return
+        }
+        // eslint-disable-next-line prefer-destructuring
+        instance.value.properties = instance.value.properties[0]
       })
   },
 })

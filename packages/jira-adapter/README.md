@@ -23,3 +23,12 @@ When starting a new E2E server there are several manual steps to perform before 
 - Install the addons of ScriptRunner and ScriptRunner Behaviours
 - Enter the ScriptRunner screens and advance through the survey until you can add an item (for instance in Scripted Fields)
 - Enter the ScriptRunner Behavior screen and advance through the survey until you can add a behavior
+
+## Running Jira E2E
+
+1. In your google account - go to [“AWS SSO”](https://accounts.google.com/AccountChooser/signinchooser?continue=https%3A%2F%2Faccounts.google.com%2Fo%2Fsaml2%2Finitsso%3Fidpid%3DC017078mt%26spid%3D348223541558%26forceauthn%3Dfalse%26from_login%3D1%26as%3DYx6XoVhSvv-tceibsGj1QkaQCSWrFbsUFvrNT1pyXK0&ltmpl=popup&btmpl=authsub&scc=1&oauth=1&theme=glif&flowName=GlifWebSignIn&flowEntry=AccountChooser).
+2. Click on “AWS account”
+3. Click on Salto → SaltoDevs - “**Command line or programmatic access”**
+4. Copy the access token.
+5. Paste the token in the terminal you run your e2e tests.
+6. write the following command in your desired folder `yarn build && SALTO_LOG_FILE=logsalto.log SALTO_LOG_LEVEL=trace yarn e2e-test`

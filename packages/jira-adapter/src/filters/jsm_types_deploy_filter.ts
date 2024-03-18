@@ -21,7 +21,6 @@ import { defaultDeployChange, deployChanges } from '../deployment/standard_deplo
 import { FilterCreator } from '../filter'
 import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 import {
-  OBJECT_SCHEMA_TYPE,
   OBJECT_TYPE_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
@@ -31,7 +30,6 @@ import { getWorkspaceId } from '../workspace_id'
 
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 const ASSETS_SUPPORTED_TYPES = [
-  OBJECT_SCHEMA_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_TYPE_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
@@ -72,9 +70,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const deployResult = await deployChanges(typeFixedChanges, async change => {
       const instance = getChangeData(change)
-      if (instance.value.typeName === OBJECT_SCHEMA_TYPE) {
-        instance.value.workspaceId = workspaceId
-      }
       const typeDefinition = jsmApiDefinitions.types[instance.elemID.typeName]
       const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests[change.action] : undefined
       const fieldsToIgnore = deployRequest?.fieldsToIgnore ?? []

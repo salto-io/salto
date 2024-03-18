@@ -2186,6 +2186,11 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
           toField: 'referenceTypes',
           context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
+        {
+          type: 'ObjectSchemaProperties',
+          toField: 'properties',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
       ],
     },
     transformation: {
@@ -2219,12 +2224,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       add: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/create',
         method: 'post',
-        fieldsToIgnore: ['objectSchemaStatuses', 'objectTypes'],
+        fieldsToIgnore: ['properties', 'workspaceId'],
       },
       modify: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
         method: 'put',
-        fieldsToIgnore: ['objectSchemaStatuses', 'objectTypes'],
+        fieldsToIgnore: ['properties', 'workspaceId'],
       },
       remove: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
@@ -2262,6 +2267,15 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         method: 'delete',
         omitRequestBody: true,
       },
+    },
+  },
+  ObjectSchemaProperties: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/global/config/objectschema/{AssetsSchemaId}/property',
+    },
+    transformation: {
+      sourceTypeName: 'ObjectSchema__ObjectSchemaProperties',
+      fieldsToOmit: [{ fieldName: 'createObjectsCustomField' }, { fieldName: 'serviceDescCustomersEnabled' }],
     },
   },
   ObjectTypes: {

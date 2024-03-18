@@ -177,6 +177,7 @@ import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_frag
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import assetsInstancesDeploymentFilter from './filters/assets/assets_instances_deployment'
 import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
+import objectSchemaDeployFilter from './filters/assets/object_schema_deployment'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
@@ -384,6 +385,7 @@ export const DEFAULT_FILTERS = [
   defaultAttributesFilter,
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
+  objectSchemaDeployFilter, // Must run before deployJsmTypesFilter
   deployJsmTypesFilter,
   hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   // Must be last

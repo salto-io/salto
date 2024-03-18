@@ -40,6 +40,7 @@
     "@salto-io/dag": "0.3.54",
     "@salto-io/dummy-adapter": "0.3.54",
     "@salto-io/file": "0.3.54",
+    "@salto-io/google-workspace-adapter": "0.3.54",
     "@salto-io/jira-adapter": "0.3.54",
     "@salto-io/logging": "0.3.54",
     "@salto-io/lowerdash": "0.3.54",

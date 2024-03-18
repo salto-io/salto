@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#orgUnit",
+      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/U_aCBD52pMaaM3hCzPWI5IWoDy0\"",
+      "name": "top",
+      "description": "forreal",
+      "orgUnitPath": "/uri/neta/top",
+      "orgUnitId": "id:03ph8a2z4exfoz5"
+    },
+    "headers": {},
+    "data": { "name": "top", "description": "forreal", "parentOrgUnitId": "id:03ph8a2z2tgxglu" }
+  },
+  {
+    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits/uri/neta/top",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "headers": {}
+  },
+  {
+    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/features",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#orgUnit",
+      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/U_aCBD52pMaaM3hCzPWI5IWoDy0\"",
+      "name": "macabi1"
+    },
+    "headers": {},
+    "data": { "name": "macabi1" }
+  },
+  {
+    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings/salto-office",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#resources#buildings#Building",
+      "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/smAg0UZBwLFlxHIP_CttbpRhdzI\"",
+      "buildingId": "salto-office",
+      "buildingName": "salto office",
+      "description": "new desc",
+      "floorNames": ["21"]
+    },
+    "headers": {},
+    "data": {
+      "buildingId": "salto-office",
+      "buildingName": "salto office",
+      "description": "wow",
+      "floorNames": ["21"]
+    }
+  }
+]

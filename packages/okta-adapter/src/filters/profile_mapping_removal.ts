@@ -14,11 +14,20 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
+import { isInstanceChange, getChangeData, isRemovalChange, RemovalChange, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
+import { deployChanges } from '../deployment'
 
-const filterCreator: FilterCreator = () => ({
+/**
+ * Override the default ProfileMapping removal with a verification of removal.
+ *
+ * ProfileMappings are removed automatically by Okta when either side of the mapping is removed, so instead only
+ * verify that they are removed.
+ * Separate change validator and dependency changer ensure that this is only executed if one of the mapping side was
+ * removed in the same deploy action.
+ */
+const filterCreator: FilterCreator = ({ client }) => ({
   // If a ProfileMapping is removed, mark the result as success without actually using the endpoint.
   name: 'profileMappingRemovalFilter',
   deploy: async changes => {
@@ -29,10 +38,19 @@ const filterCreator: FilterCreator = () => ({
         isRemovalChange(change) &&
         getChangeData(change).elemID.typeName === PROFILE_MAPPING_TYPE_NAME,
     )
+
+    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
+      const getResult = await client.get({
+        url: `/api/v1/mappings/${getChangeData(change).value.id}`,
+      })
+      if (getResult.status !== 404) {
+        throw new Error('Expected ProfileMapping to be deleted')
+      }
+    })
+
     return {
       leftoverChanges,
-      // Mark the removal as success
-      deployResult: { errors: [], appliedChanges: relevantChanges },
+      deployResult,
     }
   },
 })

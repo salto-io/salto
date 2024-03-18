@@ -22,6 +22,7 @@ import {
   getChangeData,
   isInstanceChange,
   isRemovalChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
@@ -29,9 +30,8 @@ import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 /**
  * Remove ProfileMapping only *after* one of its dependencies is removed.
  *
- * ProfileMappings are removed automatically by Okta when either side of the mapping is removed.
- * The actual remove deploy for ProfileMapping does nothing - this just makes sure that we report success on its
- * removal only after removing the dependencies (otherwise it will still exist in Okta).
+ * ProfileMappings have a reference to source and target, so there will be an existing reference dependency -
+ * remove it and add the reverse dependency.
  */
 export const removeProfileMappingAfterDeps: DependencyChanger = async changes => {
   const removals = Array.from(changes.entries())
@@ -48,14 +48,14 @@ export const removeProfileMappingAfterDeps: DependencyChanger = async changes =>
   return profileMappingRemovals.flatMap(profileMappingRemoval => {
     const { source, target } = getChangeData(profileMappingRemoval.change).value
     return removals
-      .filter(removal =>
-        [source.id.elemID.getFullName(), target.id.elemID.getFullName()].includes(
-          getChangeData(removal.change).elemID.getFullName(),
-        ),
-      )
+      .filter(removal => {
+        const removalName = getChangeData(removal.change).elemID.getFullName()
+        return (
+          (isReferenceExpression(source?.id) && source.id.elemID.getFullName() === removalName) ||
+          (isReferenceExpression(target?.id) && target.id.elemID.getFullName() === removalName)
+        )
+      })
       .map(depRemoval => [
-        // ProfileMappings have a reference to source and target, so there will be an existing reference dependency -
-        // remove it and add the reverse dependency.
         dependencyChange('remove', depRemoval.key, profileMappingRemoval.key),
         dependencyChange('add', profileMappingRemoval.key, depRemoval.key),
       ])

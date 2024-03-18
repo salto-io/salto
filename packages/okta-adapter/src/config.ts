@@ -1316,11 +1316,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         // We use an empty URL here to mark this action as supported in case a user removed the mapping
         // alongside either side.
         // A separate Change Validator ensures that mappings aren't removed by themselves.
-        url: '',
-        method: 'delete',
-        urlParamsToFields: {
-          mappingId: 'id',
-        },
+        url: '/api/v1/mappings/{mappingId}',
+        method: 'delete', // lies
       },
     },
   },

@@ -15,20 +15,33 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../utils'
 import profileMappingRemovalFilter from '../../src/filters/profile_mapping_removal'
 import { OKTA, PROFILE_MAPPING_TYPE_NAME } from '../../src/constants'
+import { MockInterface } from '@salto-io/test-utils'
+import OktaClient from '../../src/client/client'
+import profileMappingAdditionFilter from '../../src/filters/profile_mapping_addition'
 
 describe('profileMappingRemovalFilter', () => {
-  const { client } = mockClient()
+  let mockConnection: MockInterface<clientUtils.APIConnection>
+  let client: OktaClient
   type FilterType = filterUtils.FilterWith<'deploy'>
-  const filter: FilterType = profileMappingRemovalFilter(getFilterParams({ client })) as FilterType
+  let filter: FilterType
   const mappingType = new ObjectType({ elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME) })
   const mappingInstance = new InstanceElement('mapping', mappingType, {})
 
+  beforeEach(() => {
+    jest.clearAllMocks()
+    const { client: cli, connection } = mockClient()
+    mockConnection = connection
+    client = cli
+    filter = profileMappingRemovalFilter(getFilterParams({ client })) as typeof filter
+  })
+
   describe('deploy', () => {
     it('should successfully deploy removal of profile mapping as a no-op', async () => {
+      mockConnection.get.mockResolvedValue({ data: '', status: 404 })
       const changes = [toChange({ before: mappingInstance })]
       const result = await filter.deploy(changes)
       const { appliedChanges, errors } = result.deployResult

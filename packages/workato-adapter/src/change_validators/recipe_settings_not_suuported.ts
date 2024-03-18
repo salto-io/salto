@@ -15,16 +15,16 @@
  */
 
 import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { RLM_DEPLOY_SUPPORTED_TYPES } from '../constants'
+import { RECIPE_CODE_TYPE, RECIPE_TYPE } from '../constants'
 
-export const typesNotSupportedValidator: ChangeValidator = async changes =>
+export const recipeSettingsNotSupportedValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(elem => !RLM_DEPLOY_SUPPORTED_TYPES.includes(elem.elemID.typeName))
+    .filter(change => [RECIPE_CODE_TYPE, RECIPE_TYPE].includes(change.elemID.typeName))
     .map(element => ({
       elemID: element.elemID,
-      severity: 'Error',
-      message: 'Operation not supported',
-      detailedMessage: `Salto does not support deployment of ${element.elemID.getFullName()}.`,
+      severity: 'Warning',
+      message: 'Private and concurrency will be set to default values',
+      detailedMessage: `Salto does not configure recipe settings. By deploying, the privacy and concurrency settings of ${element.elemID.getFullName()} will be reset to their default values.`,
     }))

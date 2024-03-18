@@ -33,7 +33,7 @@ import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType, getDefaultConfig, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { configType, getDefaultConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
 import {
   CONNECTION_TYPE,
   DEPLOY_USING_RLM_GROUP,

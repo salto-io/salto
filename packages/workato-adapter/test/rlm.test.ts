@@ -14,19 +14,30 @@
  * limitations under the License.
  */
 
-import { Change, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import JSZip from 'jszip'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, WORKATO } from '../src/constants'
-import { RLMDeploy } from '../src/rlm'
+import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE, WORKATO } from '../src/constants'
+import { RLMDeploy, resolveWorkatoValues } from '../src/rlm'
 import WorkatoClient from '../src/client/client'
 
+const mockResolveValues = jest.fn()
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    resolveValues: jest.fn((...args) => mockResolveValues(...args)),
+  }
+})
+
 describe('RLM functions', () => {
+  const recipeType = new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) })
+  const recipeCodeType = new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_CODE_TYPE) })
+  const connectionType = new ObjectType({ elemID: new ElemID(WORKATO, CONNECTION_TYPE) })
+  const folderType = new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) })
+
   describe('RLMDeploy', () => {
-    const recipeType = new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) })
-    const connectionType = new ObjectType({ elemID: new ElemID(WORKATO, CONNECTION_TYPE) })
-    const folderType = new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) })
     const connection = new InstanceElement('connectionInstanceName', connectionType, {
       id: 2222,
       application: 'test app',
@@ -158,9 +169,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].severity).toBe('Error')
-        expect(deployResult.errors[0].message).toContain('connectionInstanceName')
-        expect(deployResult.errors[0].message).toContain('invalid connection')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
     })
 
@@ -240,9 +251,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].severity).toBe('Error')
-        expect(deployResult.errors[0].message).toContain('recipeInstanceName')
-        expect(deployResult.errors[0].message).toContain('invalid recipe')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.recipe.instance.recipeInstanceName')
       })
     })
 
@@ -258,9 +269,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('unknwon Types for RLM')
-        expect(deployResult.errors[0].message).toContain('folderInstanceName')
-        expect(deployResult.errors[0].message).toContain('type folder')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.folder.instance.folderInstanceName')
       })
     })
     describe('valid new recipe, new connection and connection modification and invalid recipe modification changes', () => {
@@ -293,10 +304,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(3)
         expect(deployResult.errors).toHaveLength(1)
-
-        expect(deployResult.errors[0].severity).toBe('Error')
-        expect(deployResult.errors[0].message).toContain('recipeInstanceName')
-        expect(deployResult.errors[0].message).toContain('invalid recipe')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.recipe.instance.recipeInstanceName')
       })
       it('should get a zip with a recipe and 2 connections, all in workato RLM format', async () => {
         await RLMDeploy(changes, client)
@@ -350,7 +360,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Bad Gateway')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
       it('should get Error response from workato server', async () => {
         mockPost = jest.spyOn(client, 'post')
@@ -358,9 +370,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('API not found')
-        expect(deployResult.errors[0].message).toContain('404')
-        expect(deployResult.errors[0].message).toContain('connection')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
 
       it('should raise HTTP Error whlie polling', async () => {
@@ -377,9 +389,9 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Server Error')
-        expect(deployResult.errors[0].message).toContain('500')
-        expect(deployResult.errors[0].message).toContain('connection')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
 
       it('should get failed response from workato whlie polling', async () => {
@@ -391,11 +403,85 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Bad Line')
-        expect(deployResult.errors[0].message).toContain('Deploy failed')
-        expect(deployResult.errors[0].message).toContain('connection')
-        expect(deployResult.errors[0].message).toContain('id: 3333')
+        expect(deployResult.errors[0].message).toContain('Deploy')
+        expect(deployResult.errors[0].message).toContain('failed')
+        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
+    })
+  })
+  describe('ResolveWorkatoValues', () => {
+    const mockCallback = jest.fn()
+    let recipe: InstanceElement
+    let recipeCode: InstanceElement
+    const recipeAfterMerge = new InstanceElement('recipeInstanceName', recipeType, {
+      params: 'params',
+      code: {
+        block: {
+          block1: 'block1 code test',
+          block2: 'block2 code test',
+        },
+      },
+    })
+
+    beforeEach(() => {
+      mockResolveValues.mockImplementation(async element => element)
+      recipeCode = new InstanceElement('recipeCodeInstanceName', recipeCodeType, {
+        block: {
+          block1: 'block1 code test',
+          block2: 'block2 code test',
+        },
+      })
+
+      recipe = new InstanceElement('recipeInstanceName', recipeType, {
+        params: 'params',
+        code: new ReferenceExpression(recipeCode.elemID, recipeCode),
+      })
+      recipeCode.annotations = { _parent: new ReferenceExpression(recipe.elemID, recipe) }
+    })
+
+    describe('resolve non instance element', () => {
+      it('should return the same instance', async () => {
+        const elem = new ObjectType({ elemID: new ElemID('test') })
+        const resolvedInstance = await resolveWorkatoValues(elem, mockCallback)
+
+        expect(resolvedInstance).toEqual(elem)
+        expect(mockCallback).not.toHaveBeenCalled()
+        expect(mockResolveValues).toHaveBeenCalledWith(elem, expect.anything(), undefined)
+      })
+    })
+
+    describe('resolve instance differenet from recipe or recipeCode', () => {
+      it('should return the same instance', async () => {
+        const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('test') }), {})
+        const resolvedInstance = await resolveWorkatoValues(instance, mockCallback)
+
+        expect(resolvedInstance).toEqual(instance)
+        expect(mockCallback).not.toHaveBeenCalled()
+        expect(mockResolveValues).toHaveBeenCalledWith(instance, expect.anything(), undefined)
+      })
+    })
+
+    describe('resolve recipe', () => {
+      it('should resolve recipe__code, recipe and merge it', async () => {
+        const resolvedRecipe = await resolveWorkatoValues(recipe, mockCallback)
+        expect(mockCallback).not.toHaveBeenCalled()
+        expect(mockResolveValues).toHaveBeenNthCalledWith(2, recipe, expect.anything(), undefined)
+        expect(mockResolveValues).toHaveBeenNthCalledWith(1, recipeCode, expect.anything(), undefined)
+        expect(resolvedRecipe).toEqual(recipeAfterMerge)
+      })
+    })
+
+    describe('resolve recipe code', () => {
+      it('should resolve recipe__code, recipe and merge it', async () => {
+        const resolvedRecipe = await resolveWorkatoValues(recipeCode, mockCallback)
+        expect(mockCallback).not.toHaveBeenCalled()
+        expect(mockResolveValues).toHaveBeenNthCalledWith(2, recipe, expect.anything(), undefined)
+        expect(mockResolveValues).toHaveBeenNthCalledWith(1, recipeCode, expect.anything(), undefined)
+        expect(resolvedRecipe).toEqual(recipeAfterMerge)
+      })
+    })
+    afterEach(() => {
+      mockResolveValues.mockRestore()
     })
   })
 })

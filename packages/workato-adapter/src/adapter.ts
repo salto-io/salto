@@ -24,6 +24,7 @@ import {
   DeployOptions,
   isInstanceChange,
   getChangeData,
+  Change,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -34,7 +35,6 @@ import {
 import { getParent, hasValidParent, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import WorkatoClient from './client/client'
 import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -50,7 +50,6 @@ import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { workatoLookUpName } from './reference_mapping'
 import { resolveWorkatoValues, RLMDeploy } from './rlm'
-import { isChangeFromType } from './utils'
 import { getChangeGroupIds } from './group_change'
 
 const log = logger(module)
@@ -156,12 +155,12 @@ export default class WorkatoAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     if (changeGroup.groupID !== DEPLOY_USING_RLM_GROUP || this.userConfig[ENABLE_DEPLOY_SUPPORT_FLAG] !== true) {
-      throw new Error('not implemented')
+      throw new Error('Not implemented')
     }
 
     // resolving workato references
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(async change => resolveChangeElement(change, workatoLookUpName, resolveWorkatoValues)) // TODO
+      .map(async change => resolveChangeElement(change, workatoLookUpName, resolveWorkatoValues))
       .toArray()
 
     const runner = this.createFiltersRunner()
@@ -170,16 +169,21 @@ export default class WorkatoAdapter implements AdapterOperations {
     const instanceChanges = resolvedChanges.filter(isInstanceChange)
     const deployResult = await RLMDeploy(instanceChanges, this.client)
 
-    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
+    const appliedChangesBeforeRestore: Change[] = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
 
     const appliedChangeIDsBeforeRestore = new Set(
       appliedChangesBeforeRestore.map(change => getChangeData(change).elemID.getFullName()),
     )
-    const appliedChanges = changeGroup.changes.filter(change => { // TODO ids - check modificiation after addition
+    // We don't need to update the id of the new recipes because rlm don't return the new id
+    // It looks like Workato just works with the full path of the recipe
+    // when
+    const appliedChanges = changeGroup.changes.filter(change => {
       const changeData = getChangeData(change)
       return appliedChangeIDsBeforeRestore.has(
-        isInstanceChange(change) && isChangeFromType([RECIPE_CODE_TYPE])(change) && hasValidParent(changeData)
+        isInstanceChange(change) &&
+          getChangeData(change).elemID.typeName === RECIPE_CODE_TYPE &&
+          hasValidParent(changeData)
           ? getParent(changeData).elemID.getFullName()
           : changeData.elemID.getFullName(),
       )

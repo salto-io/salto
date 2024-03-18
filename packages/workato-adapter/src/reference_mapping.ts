@@ -120,6 +120,7 @@ localWorkatoLookUpName = async args => {
   if (args.ref.elemID.adapter === WORKATO) {
     return referenceUtils.generateLookupFunc(referencesRules, defs => new WorkatoFieldReferenceResolver(defs))(args)
   }
-  return args.ref
+  // TODO - support cross-service references on deploy - SALTO-5997
+  throw new Error('We Currently not support cross-service references in deploy')
 }
 export const workatoLookUpName = localWorkatoLookUpName

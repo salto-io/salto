@@ -24,6 +24,6 @@ export const removalNotSupportedValidator: ChangeValidator = async changes =>
     .map(element => ({
       elemID: element.elemID,
       severity: 'Error',
-      message: `Removing element of type '${element.elemID.typeName}' is not supported`,
-      detailedMessage: `Removing element of type '${element.elemID.typeName}' is not supported`,
+      message: 'Operation not supported',
+      detailedMessage: `Salto does not support removal of ${element.elemID.getFullName()}.`,
     }))

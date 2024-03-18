@@ -16,11 +16,11 @@
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../src/config'
 import changeValidator from '../src/change_validator'
-import { RLM_DEPLOY_SUPPORTED_TYPES, WORKATO } from '../src/constants'
+import { RECIPE_TYPE, RLM_DEPLOY_SUPPORTED_TYPES, WORKATO } from '../src/constants'
 
 describe('change validator creator', () => {
   describe('withDeploySupport', () => {
-    describe('notSupportedTypesValidator', () => {
+    describe('notSupportedTypesVzalidator', () => {
       const nonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM') })
       const anotherNonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM1') })
 
@@ -54,14 +54,31 @@ describe('change validator creator', () => {
     describe('notSupportedRemovalValidator', () => {
       const InFolderType = new ObjectType({ elemID: new ElemID(WORKATO, RLM_DEPLOY_SUPPORTED_TYPES[0]) })
       it('should fail', async () => {
-        expect(
+        const validations = (
           await changeValidator(getDefaultConfig(true))([
             toChange({ before: new InstanceElement('inst1', InFolderType) }),
+          ])
+        ).filter(change => change.severity === 'Error')
+        expect(validations).toHaveLength(1)
+        expect(validations[0].severity).toEqual('Error')
+        expect(validations[0].message).toContain('not supported')
+      })
+    })
+
+    describe('notSupportedRecipeSettingsValidator', () => {
+      const recipeType = new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) })
+      it('should raise warning', async () => {
+        expect(
+          await changeValidator(getDefaultConfig(true))([
+            toChange({
+              before: new InstanceElement('inst1', recipeType),
+              after: new InstanceElement('inst1', recipeType),
+            }),
           ]),
         ).toMatchObject([
           {
-            severity: 'Error',
-            message: expect.stringContaining('not supported'),
+            severity: 'Warning',
+            message: expect.stringContaining('Private and concurrency'),
           },
         ])
       })

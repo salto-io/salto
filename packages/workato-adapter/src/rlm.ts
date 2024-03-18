@@ -29,6 +29,9 @@ import {
   Values,
   SaltoError,
   Value,
+  createSaltoElementError,
+  SaltoElementError,
+  isSaltoError,
 } from '@salto-io/adapter-api'
 import {
   createSchemeGuard,
@@ -42,7 +45,6 @@ import Joi from 'joi'
 import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import WorkatoClient from './client/client'
 import { CONNECTION_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE } from './constants'
-import { isChangeFromType, isInstanceFromType } from './utils'
 
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies
@@ -108,6 +110,28 @@ type RecipeConfig = {
   skip_validation: boolean
 }
 
+const getRootID = (change: Change<InstanceElement>): number | SaltoElementError => {
+  const someChange = getChangeData(change)
+  const someFolder = someChange.value.folder_id
+  if (someFolder === undefined) {
+    log.error('folder_id of element %s is undefined', someChange.elemID.getFullName())
+    return createSaltoElementError({
+      message: 'Salto broken element',
+      severity: 'Error',
+      elemID: someChange.elemID,
+    })
+  }
+  if (someFolder.rootId === undefined) {
+    log.error('folder %s has no root folder', someFolder.elemID.getFullName())
+    return createSaltoElementError({
+      message: 'Salto broken folder element',
+      severity: 'Error',
+      elemID: someFolder.elemID,
+    })
+  }
+  return someFolder.rootId
+}
+
 const halfSnakeCase = (str: string): string => str.replace(/\s+/g, '_').toLowerCase()
 const getFullPath = (elem: InstanceElement): string =>
   path.join(...elem.value.folder_id.folderParts, `${halfSnakeCase(elem.value.name)}.${elem.elemID.typeName}.json`)
@@ -128,24 +152,6 @@ const isStatusResponse = createSchemeGuard<{ status: string }>(
     .unknown(true)
     .required(),
   'Received an invalid project status response',
-)
-
-const isErrorResponse = createSchemeGuard<{ error: string }>(
-  Joi.object({
-    error: Joi.string().required(),
-  })
-    .unknown(true)
-    .required(),
-  'Received an invalid project error response',
-)
-
-const isMessageResponse = createSchemeGuard<{ message: string }>(
-  Joi.object({
-    message: Joi.string().required(),
-  })
-    .unknown(true)
-    .required(),
-  'Received an invalid project message response',
 )
 
 const CONNECTION_SCHEMA = Joi.object({
@@ -193,12 +199,12 @@ export const resolveWorkatoValues: ResolveValuesFunc = async (
   getLookUpNameFunc,
   elementSource,
 ): Promise<Value> => {
-  if (isInstanceElement(element) && isInstanceFromType([RECIPE_CODE_TYPE, RECIPE_TYPE])(element)) {
-    const codeData = isInstanceFromType([RECIPE_CODE_TYPE])(element) ? element : element.value.code.value
-    const recipeData = isInstanceFromType([RECIPE_TYPE])(element) ? element : getParent(element)
+  if (isInstanceElement(element) && [RECIPE_CODE_TYPE, RECIPE_TYPE].includes(element.elemID.typeName)) {
+    const codeData = element.elemID.typeName === RECIPE_CODE_TYPE ? element : element.value.code.value
+    const recipeData = element.elemID.typeName === RECIPE_TYPE ? element : getParent(element)
     const resolvedCodeData = await resolveValues(codeData, getLookUpNameFunc, elementSource)
     const resolvedRecipeData = await resolveValues(recipeData, getLookUpNameFunc, elementSource)
-    if (isInstanceElement(resolvedRecipeData) && isInstanceFromType([RECIPE_TYPE])(resolvedRecipeData)) {
+    if (isInstanceElement(resolvedRecipeData) && resolvedRecipeData.elemID.typeName === RECIPE_TYPE) {
       resolvedRecipeData.value.code = resolvedCodeData.value
       return resolvedRecipeData
     }
@@ -206,25 +212,19 @@ export const resolveWorkatoValues: ResolveValuesFunc = async (
   return resolveValues(element, getLookUpNameFunc, elementSource)
 }
 
-const checkRLMImportStatus = async (client: WorkatoClient, jobId: number): Promise<boolean> => { // TODO log.errors
+const checkRLMImportStatus = async (client: WorkatoClient, jobId: number): Promise<boolean> => {
   const res = await client.get({ url: `/packages/${jobId}` })
 
   if (res.status !== 200 || !isStatusResponse(res.data)) {
-    throw new Error(
-      [
-        "Can't get valid deploy response from Workato.",
-        `id: ${jobId}`,
-        `status: ${res.status}`,
-        `data: ${res.data}`,
-      ].join(EOL),
+    log.error(
+      ['Get invalid response from Workato', `status: ${res.status}`, `id: ${jobId}`, `data: ${res.data}`].join(EOL),
     )
+    throw new Error('Error while waiting for import status')
   }
 
   if (res.data.status === 'failed') {
-    if (isErrorResponse(res.data)) {
-      throw new Error(`Deploy failed. id: ${jobId}, error message ${res.data.error}`)
-    }
-    throw new Error(`Deploy failed. invalid response from Workato. id: ${jobId}`)
+    log.error(['Import failed', `id: ${jobId}`, `data: ${res.data}`].join(EOL))
+    throw new Error('Error while waiting for import status')
   }
   // when status is not 'completed' ('in progress' apperantly) we want to continue polling
   return res.data.status === 'completed'
@@ -239,33 +239,30 @@ const pollRLMImportStatus = async (client: WorkatoClient, jobId: number): Promis
   })
 }
 
-const getWorkatoError = (elemList: ElemID[], error: Error): SaltoError => {
-  // TODO change all to SaltoError
+const getWorkatoErrors = (elemList: ElemID[], error: Error): SaltoError[] => {
   const baseErrorMessage = `Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}`)}`
 
-  if (!(error instanceof clientUtils.HTTPError)) {
-    return { message: `${baseErrorMessage}\n${error}`, severity: 'Error' }
+  if (error instanceof clientUtils.HTTPError && [400, 401, 404, 500].includes(error.response.status)) {
+    log.error(
+      [
+        baseErrorMessage,
+        `status: ${error.response.status}`,
+        `message: ${error.response.statusText}`,
+        `data: ${safeJsonStringify(error.response.data)}`,
+        error.response.status === 500 && error.response.data.id ? `id: ${error.response.data.id}` : '',
+      ].join(EOL),
+    )
+  } else {
+    log.error(`${baseErrorMessage}\n${error}`)
   }
 
-  const logBaseErrorMessage = `Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}.`)}`
-  log.error([logBaseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(' '))
-
-  if ([400, 401, 404, 500].includes(error.response.status)) {
-    const errorResponse = [
-      baseErrorMessage,
-      `status: ${error.response.status}`,
-      `message: ${error.response.statusText}`,
-    ]
-    if (error.response.status === 500 && error.response.data.id !== undefined) {
-      errorResponse.push(`id: ${error.response.data.id}`)
-    }
-    return { message: errorResponse.join(EOL), severity: 'Error' }
-  }
-
-  return {
-    message: [baseErrorMessage, `${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL),
-    severity: 'Error',
-  }
+  return elemList.map(elem =>
+    createSaltoElementError({
+      message: `Deployment of ${elem.getFullName()} failed`,
+      severity: 'Error',
+      elemID: elem,
+    }),
+  )
 }
 
 const recipeToZipFormat = async (zip: JSZip, recipe: InstanceElement): Promise<void> => {
@@ -322,32 +319,27 @@ const connectionToZipFormat = (zip: JSZip, connection: InstanceElement): void =>
  * changes should be only connection or recipe changes (recipeCode merge into recipeFile while resolving)
  * return zip of converted files
  */
-const convertChangesToRLMFormat = (changes: Change<InstanceElement>[]): [JSZip, DeployResult] => {
+const convertChangesToRLMFormat = (
+  changes: Change<InstanceElement>[],
+): [JSZip, Change<InstanceElement>[], ElemID[]] => {
   const zip = new JSZip()
-  const [connectionChanges, nonConnectionChanges] = _.partition(changes, isChangeFromType([CONNECTION_TYPE]))
-  const [recipeChanges, otherChanges] = _.partition(
-    nonConnectionChanges,
-    isChangeFromType([RECIPE_TYPE, RECIPE_CODE_TYPE]),
+  const [connectionChanges, nonConnectionChanges] = _.partition(
+    changes,
+    change => getChangeData(change).elemID.typeName === CONNECTION_TYPE,
+  )
+  const [recipeChanges, otherChanges] = _.partition(nonConnectionChanges, change =>
+    [RECIPE_TYPE, RECIPE_CODE_TYPE].includes(getChangeData(change).elemID.typeName),
   )
 
   if (otherChanges.length !== 0) {
-    const errorsComment = otherChanges
-      .map(change => getChangeData(change))
-      .map(data => `\t${data.elemID.name} from type ${data.elemID.typeName}`)
+    const UnknownTypesElements = otherChanges.map(change => getChangeData(change)).map(data => data.elemID)
 
-    log.error('unknwon Types for RLM', errorsComment)
-    return [
-      zip,
-      {
-        appliedChanges: [],
-        errors: [
-          {
-            message: ['unknwon Types for RLM', ...errorsComment].join(EOL),
-            severity: 'Error',
-          },
-        ],
-      },
-    ]
+    log.error(
+      'unknwon Types for RLM',
+      UnknownTypesElements.map(elem => `\t${elem.name} from type ${elem.typeName}`),
+    )
+
+    return [zip, [], UnknownTypesElements]
   }
 
   const [validConnections, invalidConnections] = _.partition(connectionChanges, connection =>
@@ -360,19 +352,11 @@ const convertChangesToRLMFormat = (changes: Change<InstanceElement>[]): [JSZip, 
   validConnections.map(getChangeData).forEach(connection => connectionToZipFormat(zip, connection))
   validRecipes.map(getChangeData).forEach(recipe => recipeToZipFormat(zip, recipe))
 
-  return [
-    zip,
-    {
-      appliedChanges: [...validConnections, ...validRecipes],
-      errors: [...invalidConnections, ...invalidRecipes].map(elem => ({
-        message: [
-          `Deployment of ${getChangeData(elem).elemID.getFullName()} failed:`,
-          `invalid ${getChangeData(elem).elemID.typeName}`,
-        ].join(EOL),
-        severity: 'Error',
-      })),
-    },
-  ]
+  const invalidElements = [...invalidConnections, ...invalidRecipes].map(change => getChangeData(change).elemID)
+
+  log.error(['invalid workato elements:', ...invalidElements.map(elem => elem.getFullName())].join(EOL))
+
+  return [zip, [...validConnections, ...validRecipes], invalidElements]
 }
 
 /**
@@ -394,13 +378,11 @@ const RLMImportZip = async ({
   zip,
   client,
   rootId,
-  elemList,
 }: {
   zip: JSZip
   client: WorkatoClient
   rootId: number
-  elemList: ElemID[]
-}): Promise<void> => {
+}): Promise<Error | undefined> => {
   const content = await zip.generateAsync({ type: 'nodebuffer' })
   const url = `/packages/import/${rootId}`
 
@@ -413,46 +395,61 @@ const RLMImportZip = async ({
       data: content,
     })
   } catch (e) {
-    throw getWorkatoError(elemList, e)
+    return e as Error
   }
 
   if (response.status !== 200 || !isIdResponse(response.data)) {
-    const errorData = ['Get invalid response from Workato', `status: ${response.status}`]
-    if (isMessageResponse(response.data)) {
-      errorData.push(`message: ${response.data.message}`)
-    }
-    throw getWorkatoError(elemList, new Error(errorData.join(EOL)))
+    log.error(['Get invalid response from Workato', `status: ${response.status}`, `data: ${response.data}`].join(EOL))
+    return new Error('Invalid response from Workato')
   }
 
   try {
     await pollRLMImportStatus(client, response.data.id)
   } catch (e) {
-    throw getWorkatoError(elemList, e)
+    return e as Error
   }
+  return undefined
 }
 
 export const RLMDeploy = async (changes: Change<InstanceElement>[], client: WorkatoClient): Promise<DeployResult> => {
-  const [zip, deployOptionalResult] = convertChangesToRLMFormat(changes) // TODO remove deployResult
+  const [zip, convertedFormatChanges, erroredElements] = convertChangesToRLMFormat(changes)
+  const convertedFormatErrors = getWorkatoErrors(erroredElements, new Error('invalid Workato elements'))
 
-  if (!_.isEmpty(deployOptionalResult.appliedChanges)) {
-    try {
-      const someFolder = getChangeData(changes[0]).value.folder_id
-      if (someFolder === undefined || someFolder.rootId === undefined) {
-        throw new Error('folder_id or rootId is undefined') // TODO change to SaltoError
-      }
-
-      await RLMImportZip({
-        zip,
-        client,
-        rootId: someFolder.rootId,
-        elemList: changes.map(change => getChangeData(change).elemID),
-      })
-    } catch (e) {
-      return {
-        appliedChanges: [],
-        errors: [e, ...deployOptionalResult.errors],
-      }
+  if (_.isEmpty(convertedFormatChanges)) {
+    return {
+      appliedChanges: [],
+      errors: convertedFormatErrors,
     }
   }
-  return deployOptionalResult
+
+  const rootId = getRootID(convertedFormatChanges[0])
+  if (isSaltoError(rootId)) {
+    return {
+      appliedChanges: [],
+      errors: [rootId, ...convertedFormatErrors],
+    }
+  }
+
+  const error = await RLMImportZip({
+    zip,
+    client,
+    rootId,
+  })
+  if (error !== undefined) {
+    return {
+      appliedChanges: [],
+      errors: [
+        ...getWorkatoErrors(
+          changes.map(change => getChangeData(change).elemID),
+          error,
+        ),
+        ...convertedFormatErrors,
+      ],
+    }
+  }
+
+  return {
+    appliedChanges: convertedFormatChanges,
+    errors: convertedFormatErrors,
+  }
 }

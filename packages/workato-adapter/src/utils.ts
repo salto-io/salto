@@ -14,17 +14,7 @@
  * limitations under the License.
  */
 
-import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-
-export const isInstanceFromType =
-  (type: string[]) =>
-  (inst: InstanceElement): boolean =>
-    type.includes(inst.elemID.typeName)
-
-export const isChangeFromType =
-  (type: string[]) =>
-  (change: Change<InstanceElement>): boolean =>
-    type.includes(getChangeData(change).elemID.typeName)
+import { InstanceElement } from '@salto-io/adapter-api'
 
 export const getRootFolderID = (folder: InstanceElement): number =>
   folder.value.parent_id !== undefined ? getRootFolderID(folder.value.parent_id.value) : folder.value.id

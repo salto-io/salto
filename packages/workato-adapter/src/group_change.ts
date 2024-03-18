@@ -15,14 +15,13 @@
  */
 
 import { deployment } from '@salto-io/adapter-components'
-import { isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { isInstanceChange, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
 import { DEPLOY_USING_RLM_GROUP, RLM_DEPLOY_SUPPORTED_TYPES } from './constants'
-import { isChangeFromType } from './utils'
 
 export const getRLMGroupId: deployment.grouping.ChangeIdFunction = async change =>
   isAdditionOrModificationChange(change) &&
   isInstanceChange(change) &&
-  isChangeFromType(RLM_DEPLOY_SUPPORTED_TYPES)(change)
+  RLM_DEPLOY_SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName)
     ? DEPLOY_USING_RLM_GROUP
     : undefined
 

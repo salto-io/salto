@@ -243,6 +243,7 @@ export type ChangeValidatorName =
   | 'notSupportedTypes'
   | 'notSupportedRemoval'
   | 'deployNotSupported'
+  | 'notSupportedRecipeSettings'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -253,6 +254,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     notSupportedTypes: { refType: BuiltinTypes.BOOLEAN },
     notSupportedRemoval: { refType: BuiltinTypes.BOOLEAN },
     deployNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedRecipeSettings: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

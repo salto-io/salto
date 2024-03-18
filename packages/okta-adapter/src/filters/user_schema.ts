@@ -76,6 +76,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.elemID.typeName === USERTYPE_TYPE_NAME)
     const userSchemaType = elements.filter(isObjectType).find(type => type.elemID.name === USER_SCHEMA_TYPE_NAME)
     if (userSchemaType === undefined || _.isEmpty(userTypeInstances)) {
+      // TODOS modify filter to create UserSchemaType
       return
     }
 

@@ -31,7 +31,7 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { ISSUE_LAYOUT_TYPE, ISSUE_TYPE_SCREEN_SCHEME_TYPE, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../constants'
+import { ISSUE_LAYOUT_TYPE, ISSUE_TYPE_SCHEMA_NAME, ISSUE_TYPE_SCREEN_SCHEME_TYPE, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { createLayoutType, LayoutConfigItem } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
@@ -44,33 +44,43 @@ const log = logger(module)
 const { isDefined } = lowerDashValues
 
 type issueTypeMappingStruct = {
-  issueTypeId: string
+  issueTypeId: string | ReferenceExpression
   screenSchemeId: ReferenceExpression
 }
 
 type ResponsesRecord = Record<string, Record<string, Promise<graphQLResponseType>>>
 
+const viewOrDefaultScreen = (screenScheme: InstanceElement): ReferenceExpression => screenScheme.value.screens.view !== undefined ? screenScheme.value.screens.view : screenScheme.value.screens.default
+
 const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string, number[]> => {
+
   const screensSchemesToDefaultScreens = Object.fromEntries(
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SCREEN_SCHEME_TYPE)
       .filter(screenScheme => screenScheme.value.screens?.default !== undefined)
-      .map(screenScheme => [screenScheme.value.id, screenScheme.value.screens.default]),
+      .map(screenScheme => [screenScheme.value.id, viewOrDefaultScreen(screenScheme)]),
   )
 
-  const issueTypeScreenSchemesToScreens = Object.fromEntries(
+  const issueTypeScreenSchemesToiIssueTypeMappings = Object.fromEntries(
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === ISSUE_TYPE_SCREEN_SCHEME_TYPE)
       .map(issueTypeScreenScheme => [
         issueTypeScreenScheme.value.id,
-        issueTypeScreenScheme.value.issueTypeMappings
-          ?.map((struct: issueTypeMappingStruct) => struct.screenSchemeId)
-          ?.map((screenSchemeId: number) => screensSchemesToDefaultScreens[screenSchemeId]),
-      ]),
+        issueTypeScreenScheme.value.issueTypeMappings,      ]),
   )
 
+  const issueTypeSchemesToIssueTypeList = Object.fromEntries(
+    elements
+      .filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
+      .map(issueTypeScheme => [
+        issueTypeScheme.value.id,
+        issueTypeScheme.value.issueTypeIds,
+      ]),
+  )
+  
   return Object.fromEntries(
     elements
       .filter(isInstanceElement)
@@ -78,39 +88,15 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
       .filter(project => project.value.issueTypeScreenScheme?.issueTypeScreenScheme?.id !== undefined)
       .map(project => [
         project.value.id,
-        issueTypeScreenSchemesToScreens[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id],
+        issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
+          .filter((struct: issueTypeMappingStruct) => _.isString(struct.issueTypeId) ? struct.issueTypeId === 'default' : issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].includes(struct.issueTypeId))
+          .filter((struct: issueTypeMappingStruct) => struct.issueTypeId !== 'default' || issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id].length >= issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length)
+          .map((struct: issueTypeMappingStruct) => struct.screenSchemeId)
+          .map((screenSchemeId: number) => screensSchemesToDefaultScreens[screenSchemeId]),
       ]),
   )
 }
 
-const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
-  const projectToScreenId: Record<string, number[]> = Object.fromEntries(
-    await Promise.all(
-      elements
-        .filter(e => e.elemID.typeName === PROJECT_TYPE)
-        .filter(isInstanceElement)
-        .filter(project => isResolvedReferenceExpression(project.value.issueTypeScreenScheme))
-        .map(async project => {
-          const screenSchemes = (
-            project.value.issueTypeScreenScheme.value.value.issueTypeMappings.flatMap(
-              (struct: issueTypeMappingStruct) => struct.screenSchemeId.value,
-            ) as unknown[]
-          ).filter(isInstanceElement)
-
-          const screens = Array.from(
-            new Set(
-              screenSchemes
-                .map(screenScheme => screenScheme.value.screens.default)
-                .filter(isResolvedReferenceExpression)
-                .map(defaultScreen => defaultScreen.value.value.id),
-            ),
-          )
-          return [project.value.id, screens]
-        }),
-    ),
-  )
-  return projectToScreenId
-}
 
 const verifyProjectDeleted = async (projectId: string, client: JiraClient): Promise<boolean> => {
   try {
@@ -253,11 +239,6 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
       return
     }
     const projectIdToProject = await getProjectIdToProjectDict(elements)
-    const projectToScreenId = Object.fromEntries(
-      Object.entries(await getProjectToScreenMapping(elements)).filter(([key]) =>
-        Object.keys(projectIdToProject).includes(key),
-      ),
-    )
     const { subTypes, layoutType: issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
@@ -265,9 +246,9 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
 
     const issueLayouts = (
       await Promise.all(
-        Object.entries(projectToScreenId).flatMap(([projectId, screenIds]) =>
-          screenIds.map(async screenId => {
-            const response = await responses[projectId][screenId]
+        Object.entries(responses).flatMap(([projectId, screenIds]) =>
+        Object.entries(screenIds).map(async ([screenId, responsePromise]) => {
+            const response = await responsePromise
             const layoutInstance = await getLayout({
               extraDefinerId: screenId,
               response,

@@ -199,7 +199,7 @@ const updateAllReferences = ({
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = <ClientOptions extends string = 'main'>(
   instances: InstanceElement[],
-  fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<ClientOptions>>,
+  fetchDefinitionInstanceName: Record<string, InstanceFetchApiDefinitions<ClientOptions>>,
 ): DAG<InstanceElement> => {
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
@@ -213,7 +213,7 @@ const createGraph = <ClientOptions extends string = 'main'>(
 
   const graph = new DAG<InstanceElement>()
   instances.forEach(instance => {
-    const def = fetchDefinitionByType[instance.elemID.typeName]
+    const def = fetchDefinitionInstanceName[instance.elemID.getFullName()]
     const parts = def?.element?.topLevel?.elemID?.parts ?? []
     const extendsParent = def?.element?.topLevel?.elemID?.extendsParent
     if (extendsParent || parts.some(part => part.isReference)) {
@@ -258,8 +258,12 @@ export const addReferencesToInstanceNames = async <ClientOptions extends string 
 ): Promise<Element[]> => {
   const instances = elements.filter(isInstanceElement)
   const fetchDefinitionByType = defQuery.getAll()
-  const graph = createGraph(instances, fetchDefinitionByType)
   const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
+  const instanceNameToDefinition = _(nameToInstance)
+    .mapValues(value => fetchDefinitionByType[value.elemID.typeName])
+    .value()
+
+  const graph = createGraph(instances, instanceNameToDefinition)
 
   const elemIdsToRename = new Set(wu(graph.nodeData.keys()).map(instanceName => instanceName.toString()))
   const referenceIndex = createReferenceIndex(instances, elemIdsToRename)
@@ -267,7 +271,7 @@ export const addReferencesToInstanceNames = async <ClientOptions extends string 
     if (!elemIdsToRename.has(graphNode.toString())) {
       return
     }
-    const instanceFetchDefinitions = fetchDefinitionByType[graphNode.toString()]
+    const instanceFetchDefinitions = instanceNameToDefinition[graphNode.toString()]
     if (instanceFetchDefinitions !== undefined) {
       const instance = graph.getData(graphNode)
       const originalFullName = instance.elemID.getFullName()

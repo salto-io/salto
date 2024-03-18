@@ -30,7 +30,6 @@ import Joi from 'joi'
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import moment from 'moment-timezone'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
 import {
   APP_INSTALLATION_TYPE_NAME,
   APP_OWNED_TYPE_NAME,
@@ -57,8 +56,9 @@ import {
   ZENDESK,
 } from '../constants'
 import ZendeskClient from '../client/client'
-import { getIdByName } from '../user_utils'
+import { getIdByName } from '../users/user_utils'
 import { FETCH_CONFIG, GUIDE_GLOBAL_TYPES, GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
+import { FilterCreator } from '../filter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -392,7 +392,7 @@ const addNewChangedBy = async ({
 /**
  * this filter adds changed_at and changed_by annotations
  */
-const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
+const filterCreator: FilterCreator = ({ elementsSource, client, config, usersPromise }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (elementsSource === undefined) {
@@ -428,8 +428,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
       return
     }
     await addPrevChangedBy(elementsSource, idByInstance)
-
-    const idToName = await getIdByName(paginator, config[FETCH_CONFIG].resolveUserIDs)
+    const idToName = usersPromise === undefined ? {} : await getIdByName(usersPromise)
     await addNewChangedBy({ instances, idToName, newLastAuditTime, auditTimeInstance, client })
   },
 })

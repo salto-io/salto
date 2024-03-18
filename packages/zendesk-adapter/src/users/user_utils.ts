@@ -20,9 +20,10 @@ import { client as clientUtils, definitions } from '@salto-io/adapter-components
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { SaltoError, Values } from '@salto-io/adapter-api'
-import ZendeskClient from './client/client'
-import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
-import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from './config'
+import ZendeskClient from '../client/client'
+import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from '../replacers_utils'
+import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from '../config'
+import { CurrentUserResponse, GetUsersResponse, User } from './types'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -44,20 +45,6 @@ export const VALID_USER_VALUES = [
 export const MISSING_USERS_DOC_LINK =
   'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
 export const MISSING_USERS_ERROR_MSG = "Instance references users which don't exist in target environment"
-
-export type User = {
-  id: number
-  name: string
-  email: string
-  role: string
-  // eslint-disable-next-line camelcase
-  custom_role_id?: number | null
-  locale: string
-}
-
-type CurrentUserResponse = {
-  user: User
-}
 
 const EXPECTED_USER_SCHEMA = Joi.object({
   id: Joi.number().required(),
@@ -246,21 +233,15 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<{ user
 const getUsersFunc = (): ((
   paginator: clientUtils.Paginator,
   runQuery: boolean | undefined,
-) => Promise<{ users: User[]; errors?: SaltoError[] }>) => {
-  let calculatedUsersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
-
+) => Promise<GetUsersResponse>) => {
   const getUsers = async (
     paginator: clientUtils.Paginator,
     runQuery: boolean | undefined,
-  ): Promise<{ users: User[]; errors?: SaltoError[] }> => {
-    if (calculatedUsersPromise === undefined) {
-      if (runQuery === false) {
-        calculatedUsersPromise = Promise.resolve({ users: [], errors: [] })
-      } else {
-        calculatedUsersPromise = getUsersNoCache(paginator)
-      }
+  ): Promise<GetUsersResponse> => {
+    if (runQuery === false) {
+      return Promise.resolve({ users: [], errors: [] })
     }
-    return calculatedUsersPromise
+    return getUsersNoCache(paginator)
   }
 
   return getUsers
@@ -300,52 +281,26 @@ export const getUserFallbackValue = async (
   return defaultMissingUserFallback
 }
 
-const getIdByEmailFunc = (): ((
-  paginator: clientUtils.Paginator,
-  runQuery: boolean | undefined,
-) => Promise<Record<string, string>>) => {
-  let idToEmail: Record<string, string>
-
-  const getIdByEmail = async (
-    paginator: clientUtils.Paginator,
-    runQuery: boolean | undefined,
-  ): Promise<Record<string, string>> => {
-    if (idToEmail !== undefined) {
-      return idToEmail
-    }
-    const { users } = await getUsers(paginator, runQuery)
+const getIdByEmailFunc = (): ((getUsersPromise: Promise<GetUsersResponse>) => Promise<Record<string, string>>) => {
+  const getIdByEmail = async (getUsersPromise: Promise<GetUsersResponse>): Promise<Record<string, string>> => {
+    const { users } = await getUsersPromise
     if (_.isEmpty(users)) {
-      idToEmail = {}
       return {}
     }
-    idToEmail = Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
-    return idToEmail
+    return Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
   }
   return getIdByEmail
 }
 
 export const getIdByEmail = getIdByEmailFunc()
 
-const getIdByNameFunc = (): ((
-  paginator: clientUtils.Paginator,
-  runQuery: boolean | undefined,
-) => Promise<Record<string, string>>) => {
-  let idToName: Record<string, string>
-
-  const getIdByName = async (
-    paginator: clientUtils.Paginator,
-    runQuery: boolean | undefined,
-  ): Promise<Record<string, string>> => {
-    if (idToName !== undefined) {
-      return idToName
-    }
-    const { users } = await getUsers(paginator, runQuery)
+const getIdByNameFunc = (): ((getUsersPromise: Promise<GetUsersResponse>) => Promise<Record<string, string>>) => {
+  const getIdByName = async (getUsersPromise: Promise<GetUsersResponse>): Promise<Record<string, string>> => {
+    const { users } = await getUsersPromise
     if (_.isEmpty(users)) {
-      idToName = {}
       return {}
     }
-    idToName = Object.fromEntries(users.map(user => [user.id.toString(), user.name])) as Record<string, string>
-    return idToName
+    return Object.fromEntries(users.map(user => [user.id.toString(), user.name])) as Record<string, string>
   }
   return getIdByName
 }

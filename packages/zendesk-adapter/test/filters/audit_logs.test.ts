@@ -28,7 +28,7 @@ import ZendeskClient from '../../src/client/client'
 import filterCreator, { AUDIT_TIME_TYPE_ID, DELETED_USER } from '../../src/filters/audit_logs'
 import { createFilterCreatorParams } from '../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { getIdByName } from '../../src/user_utils'
+import { getIdByName } from '../../src/users/user_utils'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   AUDIT_TIME_TYPE_NAME,
@@ -43,8 +43,8 @@ const BEFORE_TIME = '2023-02-08T04:34:53Z'
 const BETWEEN_TIME = '2023-02-08T08:34:53Z'
 const AFTER_TIME = '2023-02-08T10:34:53Z'
 const AFTER_AFTER_TIME = '2023-02-08T10:38:53Z'
-jest.mock('../../src/user_utils', () => ({
-  ...jest.requireActual<{}>('../../src/user_utils'),
+jest.mock('../../src/users/user_utils', () => ({
+  ...jest.requireActual<{}>('../../src/users/user_utils'),
   getIdByName: jest.fn(),
 }))
 

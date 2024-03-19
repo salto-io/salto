@@ -15,9 +15,10 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, retry } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import {
   ClientBaseParams,
+  executeWithPolling,
   HTTPReadClientInterface,
   HTTPWriteClientInterface,
   Response,
@@ -28,10 +29,6 @@ import { RequestQueue, ClientRequest } from './queue'
 import { RequestArgs, PollingArgs } from '../../../definitions/system'
 import { replaceAllArgs } from '../utils'
 
-const {
-  withRetry,
-  retryStrategies: { intervals },
-} = retry
 const log = logger(module)
 
 type PagesWithContext = {
@@ -80,49 +77,22 @@ export const traversePages = async <ClientOptions extends string>({
         } catch (e) {
           const status = e.response?.status
           if (additionalValidStatuses.includes(status)) {
-            log.debug('Suppressing %d error %o', status, e)
+            log.debug('Suppressing %d  fetch error %o', status, e)
             return { data: {}, status }
           }
           throw e
         }
       }
-      const pollingFunc = async (
-        args: ClientBaseParams,
-        pollingArgs: PollingArgs,
-      ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
-        const response = await singleClientCall(args)
-        if (pollingArgs.checkStatus(response)) return response
-        return undefined
-      }
 
       const processPage: ClientRequest = async args => {
-        let page: Response<ResponseValue | ResponseValue[]>
         //  SALTO-5575 consider splitting the polling from the pagination
-        if (polling) {
-          const pollingResult = await withRetry(
-            () =>
-              pollingFunc(
-                {
-                  url: finalEndpointIdentifier.path,
-                  ...args,
-                },
-                polling,
-              ),
-            {
-              strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
-            },
-          )
-          if (pollingResult === undefined) {
-            // should never get here, withRetry would throw
-            throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
-          }
-          page = pollingResult
-        } else {
-          page = await singleClientCall({
-            url: finalEndpointIdentifier.path,
-            ...args,
-          })
+        const updatedArgs: ClientBaseParams = {
+          url: finalEndpointIdentifier.path,
+          ...args,
         }
+        const page = polling
+          ? await executeWithPolling<ClientBaseParams>(updatedArgs, polling, singleClientCall)
+          : await singleClientCall(updatedArgs)
         pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
         return page
       }

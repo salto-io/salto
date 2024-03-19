@@ -38,8 +38,6 @@ export type PollingArgs = {
   interval: number
   retries: number
   checkStatus: (response: Response<ResponseValue | ResponseValue[]>) => boolean
-  // fieldToPoll: string
-  // expectedValues: string[]
 }
 
 export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {

@@ -26,8 +26,8 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, promises, values as lowerdashValues,retry } from '@salto-io/lowerdash'
-import { ResponseValue, Responseת ClientDataParams } from '../../client'
+import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
+import { ResponseValue, Response, ClientDataParams, executeWithPolling } from '../../client'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
 import { APIDefinitionsOptions, DeployHTTPEndpointDetails } from '../../definitions/system'
 import {
@@ -44,10 +44,6 @@ import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
 
-const {
-  withRetry,
-  retryStrategies: { intervals },
-} = retry
 const log = logger(module)
 const { awu } = collections.asynciterable
 
@@ -257,42 +253,15 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         throw e
       }
     }
-    const pollingFunc = async (
-      args: ClientDataParams,
-      pollingArgs: PollingArgs,
-    ): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
-      const response = await singleClientCall(args)
-      if (pollingArgs.checkStatus(response)) return response
-      return undefined
-    }
 
-    let res: Response<ResponseValue | ResponseValue[]>
-    if (polling) {
-      const pollingResult = await withRetry(
-        () =>
-          pollingFunc(
-            {
-              url: finalEndpointIdentifier.path,
-              ...callArgs,
-            },
-            polling,
-          ),
-        {
-          strategy: intervals({ maxRetries: polling.retries, interval: polling.interval }),
-        },
-      )
-      if (pollingResult === undefined) {
-        // should never get here, withRetry would throw
-        throw new Error(`Error while waiting for polling ${finalEndpointIdentifier.path}`)
-      }
-      res = pollingResult
-    } else {
-      res = await singleClientCall({
-        url: finalEndpointIdentifier.path,
-        ...callArgs,
-      })
+    const updatedArgs: ClientDataParams = {
+      url: finalEndpointIdentifier.path,
+      ...callArgs,
     }
-    return res
+    const result = polling
+      ? await executeWithPolling<ClientDataParams>(updatedArgs, polling, singleClientCall)
+      : await singleClientCall(updatedArgs)
+    return result
   }
 
   const requestAllForChangeAndAction: DeployRequester<

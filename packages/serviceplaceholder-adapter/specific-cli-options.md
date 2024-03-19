@@ -1,4 +1,4 @@
-# PLACEHOLDER CLI options
+# serviceplaceholder CLI options
 
 ## Non interactive Login Parameters
 
@@ -13,5 +13,5 @@ TODO adjust according to auth
 ### Example
 
 ```
-salto account add PLACEHOLDER --login-parameters username=username
+salto account add serviceplaceholder --login-parameters username=username
 ```

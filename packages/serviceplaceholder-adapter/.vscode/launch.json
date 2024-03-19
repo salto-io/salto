@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "PLACEHOLDER-adapter Debug Jest Tests",
+      "name": "serviceplaceholder-adapter Debug Jest Tests",
       "cwd": "${workspaceFolder}",
       "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
       "outFiles": [],

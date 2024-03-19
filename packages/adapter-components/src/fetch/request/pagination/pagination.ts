@@ -81,7 +81,7 @@ export const traversePages = async <ClientOptions extends string>({
               'Suppressing %d error %o, for path %s in method %s',
               status,
               e,
-              finalEndpointIdentifier.url,
+              finalEndpointIdentifier.path,
               finalEndpointIdentifier.method,
             )
             return { data: {}, status }

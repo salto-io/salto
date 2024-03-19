@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
-import * as transforms from './transforms'
 
 // TODO example - adjust and remove:
 // * irrelevant definitions and comments
@@ -59,55 +58,182 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/api/v2/groups',
+          path: '/wiki/rest/api/group',
         },
         transformation: {
-          root: 'groups',
+          root: 'results',
         },
       },
     ],
     resource: {
-      // this type can be included/excluded based on the user's fetch query
       directFetch: true,
     },
     element: {
       topLevel: {
-        // isTopLevel should be set when the workspace can have instances of this type
         isTopLevel: true,
-        serviceUrl: {
-          path: '/some/path/to/group/with/potential/placeholder/{id}',
-        },
-      },
-      fieldCustomizations: {
-        id: {
-          fieldType: 'number',
-          hide: true,
-        },
       },
     },
   },
-
-  business_hours_schedule: {
+  label: {
     requests: [
       {
         endpoint: {
-          path: '/api/v2/business_hours/schedules',
+          path: '/wiki/rest/api/label',
         },
         transformation: {
-          root: 'schedules',
+          root: 'results',
         },
       },
     ],
     resource: {
       directFetch: true,
-      // after we get the business_hour_schedule response, we make a follow-up request to get
-      // the holiday and nest the response under the 'holidays' field
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  system_info: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/settings/systemInfo',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  space: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/space',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
       recurseInto: {
-        holidays: {
-          typeName: 'business_hours_schedule_holiday',
+        permissions: {
+          typeName: 'permission',
           context: {
             args: {
-              parent_id: {
+              id: {
+                fromField: 'id',
+              },
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        path: {
+          pathParts: [
+            {
+              parts: [{ fieldName: 'name' }],
+            },
+            {
+              parts: [{ fieldName: 'name' }],
+            },
+          ],
+        },
+      },
+      fieldCustomizations: {
+        properties: {
+          standalone: {
+            typeName: 'space_property',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            // nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  permission: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/api/v2/spaces/{id}/permissions',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+  },
+  space_property: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/api/v2/spaces/{id}/properties',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  template_page: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/template/page',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  page: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/api/v2/pages',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        restriction: {
+          typeName: 'restriction',
+          context: {
+            args: {
+              id: {
                 fromField: 'id',
               },
             },
@@ -119,50 +245,120 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         serviceUrl: {
-          path: '/admin/objects-rules/rules/schedules',
+          path: '/wiki/spaces/{spaceId.key}/pages/{id}',
+        },
+        elemID: {
+          // Confluence does not allow pages with the same title in the same space
+          parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
+        },
+        path: {
+          pathParts: [
+            {
+              parts: [{ fieldName: 'spaceId', isReference: true }],
+            },
+            {
+              parts: [{ fieldName: 'title' }],
+            },
+          ],
         },
       },
-      fieldCustomizations: {
-        id: {
-          fieldType: 'number',
-          hide: true,
+    },
+  },
+  settings: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/settings/lookandfeel',
         },
-        holidays: {
-          // extract each item in the holidays field to its own instance
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+      fieldCustomizations: {
+        global: {
           standalone: {
-            typeName: 'business_hours_schedule_holiday',
-            addParentAnnotation: true,
+            typeName: 'settings_global',
+            addParentAnnotation: false,
             referenceFromParent: false,
-            nestPathUnderParent: true,
+            nestPathUnderParent: false,
+          },
+        },
+        custom: {
+          standalone: {
+            typeName: 'settings_custom',
+            addParentAnnotation: false,
+            referenceFromParent: false,
+            nestPathUnderParent: false,
           },
         },
       },
     },
   },
-  business_hours_schedule_holiday: {
-    requests: [
-      {
-        endpoint: {
-          path: '/api/v2/business_hours/schedules/{parent_id}/holidays',
-        },
-        transformation: {
-          root: 'holidays',
-          adjust: transforms.transformHoliday,
-        },
-      },
-    ],
+  settings_global: {
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { extendsParent: true },
+        singleton: true,
       },
-      fieldCustomizations: {
-        id: {
-          fieldType: 'number',
-          hide: true,
+    },
+  },
+  settings_custom: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+    },
+  },
+  blogpost: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/api/v2/blogposts',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'title' }],
         },
       },
     },
+  },
+  restriction: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/content/{id}/restriction',
+        },
+        transformation: {
+          root: 'results',
+          adjust: item => ({
+            value: {
+              operation: _.get(item.value, 'operation'),
+              restrictions: {
+                user: _.get(item.value, 'restrictions.user.results'),
+                group: _.get(item.value, 'restrictions.group.results'),
+              },
+            },
+          }),
+        },
+      },
+    ],
   },
 })
 
@@ -171,6 +367,13 @@ export const createFetchDefinitions = (
 ): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {
+      requests: [
+        {
+          transformation: {
+            root: 'results',
+          },
+        },
+      ],
       resource: {
         serviceIDFields: ['id'],
       },

@@ -29,21 +29,13 @@ export const createClientDefinitions = (
         default: {
           get: {
             pagination: 'cursor',
-            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
             readonly: true,
           },
           delete: {
             omitBody: true,
           },
         },
-        customizations: {
-          // '/api/v2/groups': {
-          //   get: {
-          //     pagination: 'offset',
-          //     queryArgs: { type: 'a' },
-          //   },
-          // },
-        },
+        customizations: {},
       },
     },
   },

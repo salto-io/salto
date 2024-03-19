@@ -17,26 +17,24 @@ import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
-// TODO adjust based on the needed auth
 export type Credentials = {
+  token: string
   subdomain: string
-  username: string
-  password: string
+  email: string
 }
 
 export const credentialsType = createMatchingObjectType<Credentials>({
   elemID: new ElemID(constants.ADAPTER_NAME),
   fields: {
-    // TODO adjust according to above (fields should match)
+    token: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
     subdomain: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
-    username: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
-    },
-    password: {
+    email: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },

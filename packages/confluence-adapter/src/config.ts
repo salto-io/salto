@@ -15,14 +15,11 @@
  */
 import { elements, definitions } from '@salto-io/adapter-components'
 
-// TODO adjust this file
-
 export type UserFetchConfig = definitions.UserFetchConfig<{
   customNameMappingOptions: never
   fetchCriteria: definitions.DefaultFetchCriteria
-}> & {
-  // TODO add adapter-specific user-facing fetch flags here
-}
+}> & {}
+
 export type UserConfig = definitions.UserConfig<
   never,
   definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,

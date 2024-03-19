@@ -175,15 +175,15 @@ export default class WorkatoAdapter implements AdapterOperations {
     const appliedChangeIDsBeforeRestore = new Set(
       appliedChangesBeforeRestore.map(change => getChangeData(change).elemID.getFullName()),
     )
-    // We don't need to update the id of the new recipes because rlm don't return the new id
-    // It looks like Workato just works with the full path of the recipe
-    // when
+
+    /* We don't need to update the id of the new recipes because rlm don't return the new id
+     * It looks like Workato just works with the full path of the recipe
+     * When importing a recipe, the returned id is null (probably a bug in the rlm)
+     */
     const appliedChanges = changeGroup.changes.filter(change => {
       const changeData = getChangeData(change)
       return appliedChangeIDsBeforeRestore.has(
-        isInstanceChange(change) &&
-          getChangeData(change).elemID.typeName === RECIPE_CODE_TYPE &&
-          hasValidParent(changeData)
+        isInstanceChange(change) && changeData.elemID.typeName === RECIPE_CODE_TYPE && hasValidParent(changeData)
           ? getParent(changeData).elemID.getFullName()
           : changeData.elemID.getFullName(),
       )

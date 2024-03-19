@@ -237,13 +237,13 @@ export const getDefaultConfig = (deploySupported = false): WorkatoConfig => {
   }
   return defaultConfig
 }
-
-export type ChangeValidatorName =
+export type ChangeValidatorsDeploySupportedName =
   | 'deployTypesNotSupported'
   | 'notSupportedTypes'
   | 'notSupportedRemoval'
-  | 'deployNotSupported'
   | 'notSupportedRecipeSettings'
+
+export type ChangeValidatorName = ChangeValidatorsDeploySupportedName | 'deployNotSupported'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 

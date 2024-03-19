@@ -16,7 +16,13 @@
 
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { ChangeValidatorName, DEPLOY_CONFIG, ENABLE_DEPLOY_SUPPORT_FLAG, WorkatoConfig } from './config'
+import {
+  ChangeValidatorName,
+  ChangeValidatorsDeploySupportedName,
+  DEPLOY_CONFIG,
+  ENABLE_DEPLOY_SUPPORT_FLAG,
+  WorkatoConfig,
+} from './config'
 import { typesNotSupportedValidator } from './change_validators/types_not_supported'
 import { removalNotSupportedValidator } from './change_validators/removal_not_supported'
 import { recipeSettingsNotSupportedValidator } from './change_validators/recipe_settings_not_suuported'
@@ -28,7 +34,7 @@ const {
   deployNotSupportedValidator,
 } = deployment.changeValidators
 
-const validatorsWithDeploy: Record<Exclude<ChangeValidatorName, 'deployNotSupported'>, ChangeValidator> = {
+const validatorsWithDeploy: Record<ChangeValidatorsDeploySupportedName, ChangeValidator> = {
   ...getDefaultChangeValidators(),
   deployTypesNotSupported: deployTypesNotSupportedValidator,
   notSupportedTypes: typesNotSupportedValidator,
@@ -37,10 +43,7 @@ const validatorsWithDeploy: Record<Exclude<ChangeValidatorName, 'deployNotSuppor
 }
 
 const validatorsWithoutDeploy: Record<
-  Exclude<
-    ChangeValidatorName,
-    'deployTypesNotSupported' | 'notSupportedTypes' | 'notSupportedRemoval' | 'notSupportedRecipeSettings'
-  >,
+  Exclude<ChangeValidatorName, ChangeValidatorsDeploySupportedName>,
   ChangeValidator
 > = {
   ...getDefaultChangeValidators(),

@@ -212,19 +212,39 @@ export const resolveWorkatoValues: ResolveValuesFunc = async (
   return resolveValues(element, getLookUpNameFunc, elementSource)
 }
 
+const logNetworkError = (error: Error): void => {
+  if (error instanceof clientUtils.HTTPError && [400, 401, 404, 500].includes(error.response.status)) {
+    log.error(
+      [
+        'Network error while trying to communicate with Workato',
+        `status: ${error.response.status}`,
+        `message: ${error.response.statusText}`,
+        `data: ${safeJsonStringify(error.response.data)}`,
+        error.response.status === 500 && error.response.data.id ? `id: ${error.response.data.id}` : '',
+      ].join(EOL),
+    )
+  }
+}
+
 const checkRLMImportStatus = async (client: WorkatoClient, jobId: number): Promise<boolean> => {
-  const res = await client.get({ url: `/packages/${jobId}` })
+  let res
+  try {
+    res = await client.get({ url: `/packages/${jobId}` })
+  } catch (e) {
+    logNetworkError(e as Error)
+    throw new Error('Error while waiting for workato import status')
+  }
 
   if (res.status !== 200 || !isStatusResponse(res.data)) {
     log.error(
       ['Get invalid response from Workato', `status: ${res.status}`, `id: ${jobId}`, `data: ${res.data}`].join(EOL),
     )
-    throw new Error('Error while waiting for import status')
+    throw new Error('Error while waiting for workato import status')
   }
 
   if (res.data.status === 'failed') {
     log.error(['Import failed', `id: ${jobId}`, `data: ${res.data}`].join(EOL))
-    throw new Error('Error while waiting for import status')
+    throw new Error('Workato import failed')
   }
   // when status is not 'completed' ('in progress' apperantly) we want to continue polling
   return res.data.status === 'completed'
@@ -240,25 +260,11 @@ const pollRLMImportStatus = async (client: WorkatoClient, jobId: number): Promis
 }
 
 const getWorkatoErrors = (elemList: ElemID[], error: Error): SaltoError[] => {
-  const baseErrorMessage = `Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}`)}`
-
-  if (error instanceof clientUtils.HTTPError && [400, 401, 404, 500].includes(error.response.status)) {
-    log.error(
-      [
-        baseErrorMessage,
-        `status: ${error.response.status}`,
-        `message: ${error.response.statusText}`,
-        `data: ${safeJsonStringify(error.response.data)}`,
-        error.response.status === 500 && error.response.data.id ? `id: ${error.response.data.id}` : '',
-      ].join(EOL),
-    )
-  } else {
-    log.error(`${baseErrorMessage}\n${error}`)
-  }
+  log.error(`Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}`)}\n${error}`)
 
   return elemList.map(elem =>
     createSaltoElementError({
-      message: `Deployment of ${elem.getFullName()} failed`,
+      message: error.message === undefined ? 'Deployment failed' : error.message,
       severity: 'Error',
       elemID: elem,
     }),
@@ -321,7 +327,7 @@ const connectionToZipFormat = (zip: JSZip, connection: InstanceElement): void =>
  */
 const convertChangesToRLMFormat = (
   changes: Change<InstanceElement>[],
-): [JSZip, Change<InstanceElement>[], ElemID[]] => {
+): { zip: JSZip; changes: Change<InstanceElement>[]; erroredElements: ElemID[] } => {
   const zip = new JSZip()
   const [connectionChanges, nonConnectionChanges] = _.partition(
     changes,
@@ -332,14 +338,14 @@ const convertChangesToRLMFormat = (
   )
 
   if (otherChanges.length !== 0) {
-    const UnknownTypesElements = otherChanges.map(change => getChangeData(change)).map(data => data.elemID)
+    const unknownTypesElements = otherChanges.map(change => getChangeData(change)).map(data => data.elemID)
 
     log.error(
       'unknwon Types for RLM',
-      UnknownTypesElements.map(elem => `\t${elem.name} from type ${elem.typeName}`),
+      unknownTypesElements.map(elem => `\t${elem.name} from type ${elem.typeName}`),
     )
 
-    return [zip, [], UnknownTypesElements]
+    return { zip, changes: [], erroredElements: unknownTypesElements }
   }
 
   const [validConnections, invalidConnections] = _.partition(connectionChanges, connection =>
@@ -356,7 +362,7 @@ const convertChangesToRLMFormat = (
 
   log.error(['invalid workato elements:', ...invalidElements.map(elem => elem.getFullName())].join(EOL))
 
-  return [zip, [...validConnections, ...validRecipes], invalidElements]
+  return { zip, changes: [...validConnections, ...validRecipes], erroredElements: invalidElements }
 }
 
 /**
@@ -367,7 +373,6 @@ const convertChangesToRLMFormat = (
  * @param zip - The zip file containing the recipes and connections we want to deploy.
  * @param client - The Workato client to use for the deployment.
  * @param rootId - The root folder id to deploy the recipes to.
- * @param elemList - The list of elements to deploy.
  *
  * @throws {Error} - If the deployment fails.
  *
@@ -395,7 +400,8 @@ const RLMImportZip = async ({
       data: content,
     })
   } catch (e) {
-    return e as Error
+    logNetworkError(e as Error)
+    return new Error('Workato import request failed')
   }
 
   if (response.status !== 200 || !isIdResponse(response.data)) {
@@ -412,8 +418,10 @@ const RLMImportZip = async ({
 }
 
 export const RLMDeploy = async (changes: Change<InstanceElement>[], client: WorkatoClient): Promise<DeployResult> => {
-  const [zip, convertedFormatChanges, erroredElements] = convertChangesToRLMFormat(changes)
-  const convertedFormatErrors = getWorkatoErrors(erroredElements, new Error('invalid Workato elements'))
+  const { zip, changes: convertedFormatChanges, erroredElements } = convertChangesToRLMFormat(changes)
+  const convertedFormatErrors = !_.isEmpty(erroredElements)
+    ? getWorkatoErrors(erroredElements, new Error('invalid Workato elements'))
+    : []
 
   if (_.isEmpty(convertedFormatChanges)) {
     return {
@@ -422,6 +430,10 @@ export const RLMDeploy = async (changes: Change<InstanceElement>[], client: Work
     }
   }
 
+  // rootId is the root folder id.
+  // We use the root folder for deploying the recipes to Workato.
+  // There is only one root folder for each environment.
+  // So we take the root folder id from the first change.
   const rootId = getRootID(convertedFormatChanges[0])
   if (isSaltoError(rootId)) {
     return {

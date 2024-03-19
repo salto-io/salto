@@ -26,5 +26,5 @@ export const typesNotSupportedValidator: ChangeValidator = async changes =>
       elemID: element.elemID,
       severity: 'Error',
       message: 'Operation not supported',
-      detailedMessage: `Salto does not support deployment of ${element.elemID.getFullName()}.`,
+      detailedMessage: `Salto does not support deployment of ${element.elemID.typeName}.`,
     }))

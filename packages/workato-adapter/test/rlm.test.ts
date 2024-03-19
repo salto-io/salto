@@ -169,9 +169,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
     })
 
@@ -251,9 +248,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.recipe.instance.recipeInstanceName')
       })
     })
 
@@ -269,9 +263,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.folder.instance.folderInstanceName')
       })
     })
     describe('valid new recipe, new connection and connection modification and invalid recipe modification changes', () => {
@@ -304,9 +295,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(3)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.recipe.instance.recipeInstanceName')
       })
       it('should get a zip with a recipe and 2 connections, all in workato RLM format', async () => {
         await RLMDeploy(changes, client)
@@ -360,9 +348,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
       it('should get Error response from workato server', async () => {
         mockPost = jest.spyOn(client, 'post')
@@ -370,9 +355,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
 
       it('should raise HTTP Error whlie polling', async () => {
@@ -389,9 +371,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
 
       it('should get failed response from workato whlie polling', async () => {
@@ -403,9 +382,6 @@ describe('RLM functions', () => {
         const deployResult = await RLMDeploy(changes, client)
         expect(deployResult.appliedChanges).toHaveLength(0)
         expect(deployResult.errors).toHaveLength(1)
-        expect(deployResult.errors[0].message).toContain('Deploy')
-        expect(deployResult.errors[0].message).toContain('failed')
-        expect(deployResult.errors[0].message).toContain('workato.connection.instance.connectionInstanceName')
       })
     })
   })

@@ -27,7 +27,7 @@ type WorkatoFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<n
 
 const { toNestedTypeName } = fetchUtils.element
 
-let localWorkatoLookUpName: GetLookupNameFunc // add default raise error funciton
+let localWorkatoLookUpName: GetLookupNameFunc
 
 const WorkatoReferenceSerializationStrategyLookup: Record<
   WorkatoReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -101,12 +101,16 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
   },
 ]
 
-export const referencesRules: WorkatoFieldReferenceDefinition[] = [
+export const deployResolveRules: WorkatoFieldReferenceDefinition[] = [
+  // This rule is needed while deploying the recipe using rlm
+  // While importing zip by rlm we need to get all resolved data from the connection to the recipe config
   {
     src: { field: 'account_id', parentTypes: [RECIPE_CONFIG_TYPE] },
     WorkatoSerializationStrategy: 'serializeInner',
     target: { type: CONNECTION_TYPE },
   },
+  // This rule is needed while deploying using rlm
+  // Importing zip by rlm should get the root folder path
   {
     src: { field: 'folder_id', parentTypes: [RECIPE_CONFIG_TYPE, CONNECTION_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE] },
     WorkatoSerializationStrategy: 'folderPath',
@@ -115,10 +119,10 @@ export const referencesRules: WorkatoFieldReferenceDefinition[] = [
   ...fieldNameToTypeMappingDefs,
 ]
 
-// The second param is needed to resolve references by WorkatoSerializationStrategy
 localWorkatoLookUpName = async args => {
   if (args.ref.elemID.adapter === WORKATO) {
-    return referenceUtils.generateLookupFunc(referencesRules, defs => new WorkatoFieldReferenceResolver(defs))(args)
+    // The second param is needed to resolve references by WorkatoSerializationStrategy
+    return referenceUtils.generateLookupFunc(deployResolveRules, defs => new WorkatoFieldReferenceResolver(defs))(args)
   }
   // TODO - support cross-service references on deploy - SALTO-5997
   throw new Error('We Currently not support cross-service references in deploy')

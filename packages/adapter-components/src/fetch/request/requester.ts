@@ -145,7 +145,7 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
       adapterName,
       clientName,
       mergedRequestDef.endpoint.path,
-      mergedRequestDef.endpoint.method,
+      mergedRequestDef.endpoint.method ?? 'get',
     )
     const pagesWithContext = await traversePages({
       client: clientDefs[clientName].httpClient,

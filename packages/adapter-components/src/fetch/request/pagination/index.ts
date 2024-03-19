@@ -15,6 +15,7 @@
  */
 export {
   cursorPagination,
+  cursorHeaderPagination,
   itemOffsetPagination,
   offsetAndLimitPagination,
   pageOffsetAndLastPagination,

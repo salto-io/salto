@@ -77,7 +77,13 @@ export const traversePages = async <ClientOptions extends string>({
         } catch (e) {
           const status = e.response?.status
           if (additionalValidStatuses.includes(status)) {
-            log.debug('Suppressing %d error %o, for path %s in method %s', status, e, args.path, args.method)
+            log.debug(
+              'Suppressing %d error %o, for path %s in method %s',
+              status,
+              e,
+              finalEndpointIdentifier.url,
+              finalEndpointIdentifier.method,
+            )
             return { data: {}, status }
           }
           throw e

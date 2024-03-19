@@ -47,7 +47,7 @@ export const recurseIntoSubresources =
               // TODO avoid crashing if fails on sub-element (SALTO-5427)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,
-                context: nestedRequestContext,
+                context: { ...item.context, ...nestedRequestContext },
               })
               if (typeFetcher === undefined) {
                 log.debug('no resource fetcher defined for type %s, cannot recurse into resource', recurseDef.typeName)

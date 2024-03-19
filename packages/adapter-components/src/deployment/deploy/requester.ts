@@ -27,7 +27,7 @@ import {
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
-import { ResponseValue, Response } from '../../client'
+import { ResponseValue, Response, ClientDataParams, executeWithPolling } from '../../client'
 import { ApiDefinitions, DefQuery, queryWithDefault } from '../../definitions'
 import { APIDefinitionsOptions, DeployHTTPEndpointDetails } from '../../definitions/system'
 import {
@@ -237,13 +237,37 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
       context: _.merge({}, value, additionalContext),
       throwOnUnresolvedArgs: true,
     })
-
     const client = clientDefs[clientName].httpClient
+    const additionalValidStatuses = mergedEndpointDef.additionalValidStatuses ?? []
+    const { polling } = mergedEndpointDef
 
-    return client[finalEndpointIdentifier.method ?? 'get']({
+    const singleClientCall = async (args: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> => {
+      try {
+        return await client[finalEndpointIdentifier.method ?? 'get'](args)
+      } catch (e) {
+        const status = e.response?.status
+        if (additionalValidStatuses.includes(status)) {
+          log.debug(
+            'Suppressing %d error %o, for path %s in method %s',
+            status,
+            e,
+            finalEndpointIdentifier.path,
+            finalEndpointIdentifier.method,
+          )
+          return { data: {}, status }
+        }
+        throw e
+      }
+    }
+
+    const updatedArgs: ClientDataParams = {
       url: finalEndpointIdentifier.path,
       ...callArgs,
-    })
+    }
+    const result = polling
+      ? await executeWithPolling<ClientDataParams>(updatedArgs, polling, singleClientCall)
+      : await singleClientCall(updatedArgs)
+    return result
   }
 
   const requestAllForChangeAndAction: DeployRequester<

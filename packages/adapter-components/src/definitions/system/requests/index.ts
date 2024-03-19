@@ -22,4 +22,5 @@ export {
   HTTPMethod,
   HTTPEndpointDetails,
   DeployHTTPEndpointDetails,
+  PollingArgs,
 } from './types'

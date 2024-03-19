@@ -50,9 +50,9 @@ export const getBusinessHoursScheduleDefinition = (): InstanceDeployApiDefinitio
       },
     },
   }
-  _.assign(basicDef.requestsByAction.customizations.add?.[0], 'request.transformation.omit', ['schedule.intervals'])
-  basicDef.requestsByAction.customizations.add?.push(intervalRequest)
-  basicDef.requestsByAction.customizations.modify?.push(intervalRequest)
+  _.assign(basicDef.requestsByAction.customizations?.add?.[0], 'request.transformation.omit', ['schedule.intervals'])
+  basicDef.requestsByAction.customizations?.add?.push(intervalRequest)
+  basicDef.requestsByAction.customizations?.modify?.push(intervalRequest)
 
   return basicDef
 }

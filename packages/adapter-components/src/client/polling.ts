@@ -29,8 +29,7 @@ export const executeWithPolling = async <T>(
 ): Promise<Response<ResponseValue | ResponseValue[]>> => {
   const pollingFunc = async (): Promise<Response<ResponseValue | ResponseValue[]> | undefined> => {
     const response = await singleClientCall(args)
-    if (polling.checkStatus(response)) return response
-    return undefined
+    return polling.checkStatus(response) ? response : undefined
   }
 
   const pollingResult = await withRetry(() => pollingFunc(), {

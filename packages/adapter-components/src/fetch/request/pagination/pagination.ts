@@ -77,7 +77,7 @@ export const traversePages = async <ClientOptions extends string>({
         } catch (e) {
           const status = e.response?.status
           if (additionalValidStatuses.includes(status)) {
-            log.debug('Suppressing %d  fetch error %o', status, e)
+            log.debug('Suppressing %d error %o, for path %s in method %s', status, e, args.path, args.method)
             return { data: {}, status }
           }
           throw e
@@ -85,7 +85,7 @@ export const traversePages = async <ClientOptions extends string>({
       }
 
       const processPage: ClientRequest = async args => {
-        //  SALTO-5575 consider splitting the polling from the pagination
+        //  TODO SALTO-5575 consider splitting the polling from the pagination
         const updatedArgs: ClientBaseParams = {
           url: finalEndpointIdentifier.path,
           ...args,

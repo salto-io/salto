@@ -247,7 +247,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
       } catch (e) {
         const status = e.response?.status
         if (additionalValidStatuses.includes(status)) {
-          log.debug('Suppressing %d error %o', status, e)
+          log.debug('Suppressing %d error %o, for path %s in method %s', status, e, args.path, args.method)
           return { data: {}, status }
         }
         throw e

@@ -119,14 +119,14 @@ describe('adapter', () => {
           'group',
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'PLACEHOLDER.business_hours_schedule',
-          'PLACEHOLDER.business_hours_schedule.instance.Some_schedule@s',
-          'PLACEHOLDER.business_hours_schedule__intervals',
-          'PLACEHOLDER.business_hours_schedule_holiday',
-          'PLACEHOLDER.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
-          'PLACEHOLDER.group',
-          'PLACEHOLDER.group.instance.group_1@s',
-          'PLACEHOLDER.group.instance.group_2@s',
+          'serviceplaceholder.business_hours_schedule',
+          'serviceplaceholder.business_hours_schedule.instance.Some_schedule@s',
+          'serviceplaceholder.business_hours_schedule__intervals',
+          'serviceplaceholder.business_hours_schedule_holiday',
+          'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
+          'serviceplaceholder.group',
+          'serviceplaceholder.group.instance.group_1@s',
+          'serviceplaceholder.group.instance.group_2@s',
         ])
         expect(
           elements
@@ -134,7 +134,7 @@ describe('adapter', () => {
             .find(
               e =>
                 e.elemID.getFullName() ===
-                'PLACEHOLDER.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
+                'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
             )?.value,
         ).toEqual({
           end_date: '2024-02-21',

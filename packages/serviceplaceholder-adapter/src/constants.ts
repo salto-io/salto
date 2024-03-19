@@ -13,4 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const ADAPTER_NAME = 'PLACEHOLDER' // TODO adjust
+export const ADAPTER_NAME = 'serviceplaceholder' // TODO adjust

@@ -29,6 +29,7 @@ const getNextPage = (link: string): URL | undefined => {
   return undefined
 }
 
+// TODO remove this as part of SALTO-5608 (new name is cursorHeaderPagination)
 /**
  * Make paginated requests using the link response header.
  * Only supports next pages under the same endpoint (and uses the same host).

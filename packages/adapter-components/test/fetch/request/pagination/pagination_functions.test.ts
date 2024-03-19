@@ -19,6 +19,7 @@ import {
   itemOffsetPagination,
   cursorPagination,
   offsetAndLimitPagination,
+  cursorHeaderPagination,
 } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
@@ -93,6 +94,86 @@ describe('pagination functions', () => {
           responseData: { isLast: false, startAt: 2, values: [3] },
         }),
       ).toEqual([{ queryParams: { startAt: '3' } }])
+    })
+  })
+
+  describe('cursorHeaderPagination', () => {
+    const paginate = cursorHeaderPagination({ pathChecker: defaultPathChecker })
+
+    it('should query next page if the link header exits and there is a next page', async () => {
+      const args = { pageSize: 123 }
+      expect(
+        paginate({
+          ...args,
+          currentParams: {},
+          responseData: {
+            products: [{ p: 'a' }, { p: 'b' }],
+          },
+          responseHeaders: {
+            link: '<https://something.adapter.com/api/v1/path?limit=2>; rel="self", <https://something.adapter.com/api/v1/path?after=123123&limit=2>; rel="next"',
+          },
+          endpointIdentifier: { path: '/api/v1/path' },
+        }),
+      ).toEqual([
+        {
+          after: '123123',
+          limit: '2',
+        },
+      ])
+    })
+
+    it('should return nothing if there is no link header', () => {
+      const args = { pageSize: 123 }
+      expect(
+        paginate({
+          ...args,
+          currentParams: {},
+          responseData: {
+            products: [{ p: 'a' }, { p: 'b' }],
+          },
+          responseHeaders: {
+            expires: 0,
+          },
+          endpointIdentifier: { path: '/api/v1/path' },
+        }),
+      ).toEqual([])
+    })
+    it('should do nothing if there is no next page', () => {
+      const args = {
+        pageSize: 123,
+        getParams: {
+          url: '/api/v1/path',
+        },
+      }
+      expect(
+        paginate({
+          ...args,
+          currentParams: {},
+          responseData: {
+            products: [{ p: 'a' }, { p: 'b' }],
+          },
+          responseHeaders: {
+            link: '<https://something.okta.com/api/v1/path>; rel="self"',
+          },
+          endpointIdentifier: { path: '/api/v1/path' },
+        }),
+      ).toEqual([])
+    })
+    it('should throw error if the next page link is for different the endpoint', () => {
+      const args = { pageSize: 123 }
+      expect(() =>
+        paginate({
+          ...args,
+          currentParams: {},
+          responseData: {
+            products: [{ p: 'a' }, { p: 'b' }],
+          },
+          responseHeaders: {
+            link: '<https://something.okta.com/api/v1/path?limit=2>; rel="self", <https://something.okta.com/api/different/endpoint?after=123123&limit=2>; rel="next"',
+          },
+          endpointIdentifier: { path: '/api/v1/path' },
+        }),
+      ).toThrow()
     })
   })
 

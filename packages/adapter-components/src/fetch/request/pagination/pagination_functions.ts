@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import * as parse from 'parse-link-header'
+import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { PaginationFunction } from '../../../definitions/system/requests/pagination'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../../../definitions'
 import { ResponseValue } from '../../../client'
+
+const log = logger(module)
 
 const getItems = (value: ResponseValue | ResponseValue[], dataField: string): unknown[] =>
   collections.array
@@ -182,7 +186,7 @@ export const cursorPagination = ({
   paginationField,
   pathChecker = defaultPathChecker,
 }: {
-  pathChecker: PathCheckerFunc
+  pathChecker?: PathCheckerFunc
   paginationField: string
 }): PaginationFunction => {
   const nextPageCursorPages: PaginationFunction = ({ responseData, currentParams, endpointIdentifier }) => {
@@ -202,6 +206,55 @@ export const cursorPagination = ({
     ]
   }
   return nextPageCursorPages
+}
+
+/**
+ * Make paginated requests using the link response header.
+ * Only supports next pages under the same endpoint (and uses the same host).
+ */
+export const cursorHeaderPagination = ({
+  pathChecker = defaultPathChecker,
+}: {
+  pathChecker?: PathCheckerFunc
+}): PaginationFunction => {
+  const getNextPage = (link: string): URL | undefined => {
+    const parsedLinkHeader = parse.default(link)
+    if (parsedLinkHeader && parsedLinkHeader.next !== undefined) {
+      return new URL(parsedLinkHeader.next.url, 'http://localhost')
+    }
+    return undefined
+  }
+
+  const nextPageCursorPagesByHeader: PaginationFunction = ({ responseHeaders, endpointIdentifier, currentParams }) => {
+    const { headers } = currentParams
+    const { path } = endpointIdentifier
+    if (responseHeaders !== undefined) {
+      const linkHeader = _.get(responseHeaders, 'link')
+      if (_.isString(linkHeader)) {
+        const nextPage = getNextPage(linkHeader)
+        if (nextPage !== undefined) {
+          if (!pathChecker(path, nextPage.pathname)) {
+            log.error(
+              'unexpected next page received for endpoint %s params %o: %s',
+              path,
+              currentParams,
+              nextPage.pathname,
+            )
+            throw new Error(`unexpected next page received for endpoint ${path}: ${nextPage.pathname}`)
+          }
+          return [
+            {
+              ...currentParams,
+              ...Object.fromEntries(nextPage.searchParams.entries()),
+              ...headers,
+            },
+          ]
+        }
+      }
+    }
+    return []
+  }
+  return nextPageCursorPagesByHeader
 }
 
 export const noPagination = (): PaginationFunction => () => []

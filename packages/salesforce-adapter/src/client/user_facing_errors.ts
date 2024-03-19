@@ -24,6 +24,7 @@ import {
   ERROR_PROPERTIES,
   INVALID_GRANT,
   isSalesforceError,
+  SALESFORCE_CONNECTION_ERROR,
   SALESFORCE_ERRORS,
   SalesforceError,
 } from '../constants'
@@ -55,12 +56,16 @@ const isDNSException = (error: Error): error is DNSException =>
   _.isString(_.get(error, ERROR_PROPERTIES.CODE)) &&
   _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
 
+const CONNECTION_ERROR_HTML_PAGE_REGEX =
+  /<html[^>]+>.*<head>.*<title>Error Page<\/title>.*<\/head>.*<body[^>]*>.*An unexpected connection error occurred.*<\/body>.*<\/html>/gs
+
 type ErrorMapper<T extends Error> = {
   test: (error: Error) => error is T
   map: (error: T) => string
 }
 
 export type ErrorMappers = {
+  [SALESFORCE_CONNECTION_ERROR]: ErrorMapper<Error>
   [ERROR_HTTP_502]: ErrorMapper<Error>
   [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: ErrorMapper<SalesforceError>
   [INVALID_GRANT]: ErrorMapper<Error>
@@ -73,6 +78,11 @@ const withSalesforceError = (
 ): string => `${saltoErrorMessage}\n\nUnderlying Error: ${salesforceError}`
 
 export const ERROR_MAPPERS: ErrorMappers = {
+  [SALESFORCE_CONNECTION_ERROR]: {
+    test: (error: Error): error is Error =>
+      CONNECTION_ERROR_HTML_PAGE_REGEX.test(error.message),
+    map: (): string => ERROR_HTTP_502_MESSAGE,
+  },
   [ERROR_HTTP_502]: {
     test: (error: Error): error is Error => error.message === ERROR_HTTP_502,
     map: (error: Error): string =>

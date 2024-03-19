@@ -29,6 +29,7 @@
     { "path": "../zuora-billing-adapter" },
     { "path": "../serviceplaceholder-adapter" },
     { "path": "../google-workspace-adapter" },
+    { "path": "../confluence-adapter" },
     { "path": "../parser" }
   ]
 }

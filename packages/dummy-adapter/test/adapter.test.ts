@@ -153,7 +153,9 @@ describe('dummy adapter', () => {
           name: 'unresolved',
           val: { brokenRef: new ReferenceExpression(unresolvedId, new UnresolvedReference(unresolvedId)) },
         })
-        const errors = await adapterWithDeployModifiers.deployModifiers.changeValidator?.([toChange({ after: unresolvedReferences })])
+        const errors = await adapterWithDeployModifiers.deployModifiers.changeValidator?.([
+          toChange({ after: unresolvedReferences }),
+        ])
         expect(errors).toHaveLength(1)
         expect(errors?.[0]).toEqual({
           elemID: unresolvedReferences.elemID,

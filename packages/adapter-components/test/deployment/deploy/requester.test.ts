@@ -312,7 +312,9 @@ describe('DeployRequester', () => {
       status: 200,
       data: {},
     })
-
+    if (!definitions.deploy.instances.customizations) {
+      definitions.deploy.instances.customizations = {}
+    }
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', true)
     _.set(
@@ -340,7 +342,9 @@ describe('DeployRequester', () => {
       status: 200,
       data: {},
     })
-
+    if (!definitions.deploy.instances.customizations) {
+      definitions.deploy.instances.customizations = {}
+    }
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
     _.set(

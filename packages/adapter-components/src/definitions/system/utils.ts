@@ -71,7 +71,7 @@ export const queryWithDefault = <T, K extends string = string>(
   defsWithDefault: DefaultWithCustomizations<T, K>,
 ): DefQuery<T, K> => {
   const query: DefQuery<T, K>['query'] = key =>
-    mergeSingleDefWithDefault(defsWithDefault.default, defsWithDefault.customizations[key])
+    mergeSingleDefWithDefault(defsWithDefault.default, defsWithDefault.customizations?.[key] ?? undefined)
   return {
     query,
     allKeys: () => Object.keys(defsWithDefault.customizations ?? {}) as K[],
@@ -128,7 +128,7 @@ export const mergeWithUserElemIDDefinitions = <Options extends FetchApiDefinitio
   return _.merge({}, fetchConfig, {
     instances: {
       customizations: _.mapValues(userElemID, ({ extendSystemPartsDefinition, ...userDef }, type) => {
-        const { elemID: systemDef } = fetchConfig?.instances.customizations[type]?.element?.topLevel ?? {}
+        const { elemID: systemDef } = fetchConfig?.instances.customizations?.[type]?.element?.topLevel ?? {}
         const elemIDDef = {
           ..._.defaults({}, userDef, systemDef),
           parts: extendSystemPartsDefinition ? (systemDef?.parts ?? []).concat(userDef.parts ?? []) : userDef.parts,

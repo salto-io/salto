@@ -2782,7 +2782,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     handleIdenticalAttachmentConflicts: false,
     omitInactive: {
       default: true,
-      customizations: {},
     },
     omitTicketStatusTicketField: false,
   },
@@ -2862,9 +2861,6 @@ const OmitInactiveType = createMatchingObjectType<OmitInactiveConfig>({
     },
     customizations: {
       refType: new MapType(BuiltinTypes.BOOLEAN),
-      annotations: {
-        _required: true,
-      },
     },
   },
   annotations: {

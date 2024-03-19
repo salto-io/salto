@@ -27,6 +27,7 @@ import { FetchApiDefinitions } from '../../../src/definitions/system/fetch'
 
 describe('system definitions utils', () => {
   let defs: DefaultWithCustomizations<unknown>
+  let defsDefaultOnly: DefaultWithCustomizations<unknown>
   beforeEach(() => {
     defs = {
       default: {
@@ -47,6 +48,13 @@ describe('system definitions utils', () => {
         },
       },
     }
+    defsDefaultOnly = {
+      default: {
+        a: 'a',
+        b: { c: 'd' },
+        arr: [{ x: 1, y: 2 }],
+      },
+    }
   })
 
   describe('mergeSingleDefWithDefault', () => {
@@ -54,24 +62,24 @@ describe('system definitions utils', () => {
       expect(mergeSingleDefWithDefault(defs.default, undefined)).toEqual(defs.default)
     })
     it('should return the custom definition when no default is provided', () => {
-      expect(mergeSingleDefWithDefault(undefined, defs.customizations.k1)).toEqual(defs.customizations.k1)
+      expect(mergeSingleDefWithDefault(undefined, defs.customizations?.k1)).toEqual(defs.customizations?.k1)
     })
     it('should give precedence to the custom definition', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'a')).toEqual('override')
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k1), 'a')).toEqual('override')
     })
     it('should apply default to all array items if default is not an array', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'arr')).toEqual([
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k1), 'arr')).toEqual([
         { a: 'a', x: 1, y: 2 },
         { b: 'b', x: 7, y: 2 },
       ])
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k2), 'arr')).toEqual([])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k2), 'arr')).toEqual([])
     })
     it('should ignore default if customization and default are both arrays', () => {
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k1), 'arr2')).toEqual([{ a: 'a' }])
-      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations.k2), 'arr')).toEqual([])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k1), 'arr2')).toEqual([{ a: 'a' }])
+      expect(_.get(mergeSingleDefWithDefault(defs.default, defs.customizations?.k2), 'arr')).toEqual([])
     })
     it('should not crash on type conflict', () => {
-      expect(mergeSingleDefWithDefault(defs.default, defs.customizations.k2)).toEqual({
+      expect(mergeSingleDefWithDefault(defs.default, defs.customizations?.k2)).toEqual({
         a: 'a',
         b: 'different type',
         arr: [],
@@ -205,38 +213,43 @@ describe('system definitions utils', () => {
 
   describe('queryWithDefault', () => {
     let query: DefQuery<unknown>
-    beforeEach(() => {
-      query = queryWithDefault(defs)
-    })
-
-    describe('allKeys', () => {
-      it('should get all keys correctly', () => {
-        expect(_.sortBy(query.allKeys())).toEqual(['k1', 'k2'])
+    describe('when there are default and customizations', () => {
+      beforeEach(() => {
+        query = queryWithDefault(defs)
       })
-      it('should return empty list when there are no customizations', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect(queryWithDefault<any>({ default: {}, customizations: {} }).allKeys()).toEqual([])
-      })
-    })
-    describe('getAll', () => {
-      it('should be identical to mergeWithDefault', () => {
-        expect(query.getAll()).toEqual(mergeWithDefault(defs))
-      })
-    })
-    describe('query', () => {
-      it('should merge correctly when queried on an existing key', () => {
-        expect(query.query('k1')).toEqual({
-          a: 'override',
-          b: { c: 'd' },
-          arr: [
-            { a: 'a', x: 1, y: 2 },
-            { b: 'b', x: 7, y: 2 },
-          ],
-          arr2: [{ a: 'a' }],
+      describe('allKeys', () => {
+        it('should get all keys correctly', () => {
+          expect(_.sortBy(query.allKeys())).toEqual(['k1', 'k2'])
         })
       })
+      describe('getAll', () => {
+        it('should be identical to mergeWithDefault', () => {
+          expect(query.getAll()).toEqual(mergeWithDefault(defs))
+        })
+      })
+      describe('query', () => {
+        it('should merge correctly when queried on an existing key', () => {
+          expect(query.query('k1')).toEqual({
+            a: 'override',
+            b: { c: 'd' },
+            arr: [
+              { a: 'a', x: 1, y: 2 },
+              { b: 'b', x: 7, y: 2 },
+            ],
+            arr2: [{ a: 'a' }],
+          })
+        })
+      })
+    })
+    describe('when there are default only', () => {
+      beforeEach(() => {
+        query = queryWithDefault(defsDefaultOnly)
+      })
+      it('should return empty list when there are no customizations', () => {
+        expect(query.allKeys()).toEqual([])
+      })
       it('should return default when queried on a non-existing key', () => {
-        expect(query.query('missing')).toEqual(defs.default)
+        expect(query.query('missing')).toEqual(defsDefaultOnly.default)
       })
     })
   })

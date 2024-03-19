@@ -15,22 +15,185 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { Change, InstanceElement, Value, isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
-import { getBusinessHoursScheduleDefinition } from './business_hours_schedule'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
-// TODO example - adjust and remove irrelevant definitions. check @adapter-components/deployment for helper functions
+const getPermissionsDiff = (
+  change: Change<InstanceElement>,
+): { deletedPermissions: Value[]; addedPermissions: Value[] } => {
+  if (!isModificationChange(change)) {
+    return { deletedPermissions: [], addedPermissions: [] }
+  }
+  const { permissions: beforePermissions } = _.pickBy(change.data.before.value, 'permissions')
+  const { permissions: afterPermissions } = _.pickBy(change.data.after.value, 'permissions')
+  if (!Array.isArray(beforePermissions) || !Array.isArray(afterPermissions)) {
+    return { deletedPermissions: [], addedPermissions: [] }
+  }
+  return {
+    deletedPermissions: beforePermissions.filter(before => !afterPermissions.includes(before)),
+    addedPermissions: afterPermissions.filter(after => !beforePermissions.includes(after)),
+  }
+}
+
+const isSpaceChange = ({ change }: definitions.deploy.ChangeAndContext): boolean => {
+  if (!isModificationChange(change)) {
+    return false
+  }
+  return !_.isEqual(_.omitBy(change.data.before.value, 'permissions'), _.omitBy(change.data.after.value, 'permissions'))
+}
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
     AdditionalAction,
     ClientOptions
   >({
-    group: { bulkPath: '/api/v2/groups', nestUnderField: 'group' },
+    space: { bulkPath: '/wiki/rest/api/space', idField: 'key' },
+    blogpost: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
   })
+  // TODO_F each definition in its own file
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    business_hours_schedule: getBusinessHoursScheduleDefinition(),
+    page: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/pages',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['restriction', 'version'],
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'post',
+                },
+                transformation: {
+                  root: 'restriction',
+                  nestUnderField: 'results',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/pages/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  omit: ['restriction, version'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/pages/{id}',
+                  method: 'delete',
+                },
+                transformation: {
+                  omit: ['restriction', 'version'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    space: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: {
+                custom: () => isSpaceChange,
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space/{key}',
+                  method: 'put',
+                },
+              },
+            },
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) => {
+                    const { deletedPermissions, addedPermissions } = getPermissionsDiff(change)
+                    return deletedPermissions.length > 0 || addedPermissions.length > 0
+                  },
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space/{key}/permission',
+                  method: 'post',
+                },
+                // transformation: {
+                //   adjust: async ({ context }) => {
+                //     const { addedPermissions } = getPermissionsDiff(context.change)
+                //     return { value: addedPermissions }
+                //   },
+                // },
+              },
+            },
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) => {
+                    const { deletedPermissions, addedPermissions } = getPermissionsDiff(change)
+                    return deletedPermissions.length > 0 || addedPermissions.length > 0
+                  },
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space/{key}/permission',
+                  method: 'delete',
+                },
+                // transformation: {
+                //   adjust: async ({ context }) => {
+                //     const { deletedPermissions } = getPermissionsDiff(context.change)
+                //     return { value: deletedPermissions }
+                //   },
+                // },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/space/{key}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
   }
   return _.merge(standardRequestDefinitions, customDefinitions)
 }
@@ -50,14 +213,5 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
     },
     customizations: createCustomizations(),
   },
-  dependencies: [
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'add' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'add' },
-    // },
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'remove' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'remove' },
-    // },
-  ],
+  dependencies: [],
 })

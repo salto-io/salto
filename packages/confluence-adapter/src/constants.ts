@@ -13,4 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const ADAPTER_NAME = 'confluence' // TODO adjust
+export const ADAPTER_NAME = 'confluence'

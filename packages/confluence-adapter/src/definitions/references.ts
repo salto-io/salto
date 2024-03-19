@@ -16,38 +16,16 @@
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
 
 const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
-  // TODO adjust and remove unneeded examples and documentation
-
-  // all fields called group_id or group_ids are assumed to reference group instances by their id field
   {
-    src: { field: 'group_id' },
+    src: { field: 'spaceId' },
     serializationStrategy: 'id',
-    target: { type: 'group' },
+    target: { type: 'space' },
+    sourceTransformation: 'asString',
   },
   {
-    src: { field: 'group_ids' },
+    src: { field: 'parentId', parentTypes: ['page'] },
     serializationStrategy: 'id',
-    target: { type: 'group' },
-  },
-
-  // the field active under ticket_form_order instances is assumed to reference a ticket_form instance
-  {
-    src: { field: 'active', parentTypes: ['ticket_form_order'] },
-    serializationStrategy: 'id',
-    target: { type: 'ticket_form' },
-  },
-
-  // the field id under the (nested) types
-  // ticket_form__end_user_conditions__child_fields, ticket_form__agent_conditions__child_fields
-  // (in practice, these are in nested fields of ticket_form instances)
-  // points to a ticket_field
-  {
-    src: {
-      field: 'id',
-      parentTypes: ['ticket_form__end_user_conditions__child_fields', 'ticket_form__agent_conditions__child_fields'],
-    },
-    serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: 'page' },
   },
 ]
 

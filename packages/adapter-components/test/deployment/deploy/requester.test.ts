@@ -394,7 +394,7 @@ describe('DeployRequester', () => {
       'test.requestsByAction.customizations.remove[0].request.context.instanceId',
       '{id}',
     )
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -425,7 +425,7 @@ describe('DeployRequester', () => {
       'test.requestsByAction.customizations.remove[0].request.context.instanceId',
       '{id}',
     )
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,
@@ -469,7 +469,7 @@ describe('DeployRequester', () => {
       'test.requestsByAction.customizations.remove[0].request.context.instanceId',
       '{id}',
     )
-    const requester = getRequester({
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
       changeResolver: async change => change,

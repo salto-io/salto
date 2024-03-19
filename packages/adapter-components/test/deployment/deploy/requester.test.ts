@@ -329,11 +329,13 @@ describe('DeployRequester', () => {
     }
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', true)
-    _.set(
-      definitions.deploy.instances.customizations,
-      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
-      '{id}',
-    )
+    if (definitions.deploy.instances.customizations !== undefined) {
+      _.set(
+        definitions.deploy.instances.customizations,
+        'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+        '{id}',
+      )
+    }
     const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
@@ -359,11 +361,13 @@ describe('DeployRequester', () => {
     }
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
-    _.set(
-      definitions.deploy.instances.customizations,
-      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
-      '{id}',
-    )
+    if (definitions.deploy.instances.customizations !== undefined) {
+      _.set(
+        definitions.deploy.instances.customizations,
+        'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+        '{id}',
+      )
+    }
     const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
@@ -393,11 +397,13 @@ describe('DeployRequester', () => {
 
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
-    _.set(
-      definitions.deploy.instances.customizations,
-      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
-      '{id}',
-    )
+    if (definitions.deploy.instances.customizations !== undefined) {
+      _.set(
+        definitions.deploy.instances.customizations,
+        'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+        '{id}',
+      )
+    }
     const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
@@ -424,11 +430,13 @@ describe('DeployRequester', () => {
 
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
-    _.set(
-      definitions.deploy.instances.customizations,
-      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
-      '{id}',
-    )
+    if (definitions.deploy.instances.customizations !== undefined) {
+      _.set(
+        definitions.deploy.instances.customizations,
+        'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+        '{id}',
+      )
+    }
     const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),
@@ -468,11 +476,13 @@ describe('DeployRequester', () => {
 
     instance.value.id = '1'
     _.set(definitions.clients.options.main.endpoints, 'default.delete.omitBody', false)
-    _.set(
-      definitions.deploy.instances.customizations,
-      'test.requestsByAction.customizations.remove[0].request.context.instanceId',
-      '{id}',
-    )
+    if (definitions.deploy.instances.customizations !== undefined) {
+      _.set(
+        definitions.deploy.instances.customizations,
+        'test.requestsByAction.customizations.remove[0].request.context.instanceId',
+        '{id}',
+      )
+    }
     const requester = getRequester<{ additionalAction: AdditionalAction }>({
       clients: definitions.clients,
       deployDefQuery: queryWithDefault(definitions.deploy.instances),

@@ -290,7 +290,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     } catch (e) {
       const dataToLog = Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data
       log.warn(
-        `failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data ?? dataToLog)}, headers: ${safeJsonStringify(headers)} stack: ${e.stack}`,
+        `failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data ?? dataToLog)}, headers: ${safeJsonStringify(this.extractHeaders(headers))} stack: ${e.stack}`,
       )
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)

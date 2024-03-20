@@ -40,14 +40,23 @@ describe('profileMappingRemovalFilter', () => {
   })
 
   describe('deploy', () => {
-    it('should successfully deploy removal of profile mapping as a no-op', async () => {
-      mockConnection.get.mockResolvedValue({ data: '', status: 404 })
+    it('should successfully deploy removal of profile mapping as a verification', async () => {
+      mockConnection.get.mockResolvedValue({ data: '', status: 404 }) // 404 is success here.
       const changes = [toChange({ before: mappingInstance })]
       const result = await filter.deploy(changes)
       const { appliedChanges, errors } = result.deployResult
       expect(errors).toHaveLength(0)
       expect(appliedChanges).toHaveLength(1)
       expect(appliedChanges.map(change => getChangeData(change))[0]).toEqual(mappingInstance)
+    })
+
+    it('should fail when the mapping exists', async () => {
+      mockConnection.get.mockResolvedValue({ data: '', status: 200 }) // 200 is a failure here.
+      const changes = [toChange({ before: mappingInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+      expect(errors).toHaveLength(1)
+      expect(appliedChanges).toHaveLength(0)
     })
   })
 })

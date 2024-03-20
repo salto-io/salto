@@ -58,5 +58,15 @@ describe('profileMappingRemovalFilter', () => {
       expect(errors).toHaveLength(1)
       expect(appliedChanges).toHaveLength(0)
     })
+
+    it('should handle multiple changes', async () => {
+      mockConnection.get.mockResolvedValueOnce({ data: '', status: 404 }) // 404 is success here.
+      mockConnection.get.mockResolvedValueOnce({ data: '', status: 200 }) // 404 is success here.
+      const changes = [toChange({ before: mappingInstance }), toChange({ before: mappingInstance })]
+      const result = await filter.deploy(changes)
+      const { appliedChanges, errors } = result.deployResult
+      expect(errors).toHaveLength(1)
+      expect(appliedChanges).toHaveLength(1)
+    })
   })
 })

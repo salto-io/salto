@@ -82,7 +82,7 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
   }
 }
 
-const InvertRequestTypetoRef = (
+const requestTypetoRef = (
   form: InstanceElement,
   requestTypeIdsTorequestTypes: Record<number, InstanceElement>,
 ): void => {
@@ -187,7 +187,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery, elementsSource }) =
     )
     forms.forEach(form => {
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
-      InvertRequestTypetoRef(form, requestTypeIdsTorequestTypes)
+      requestTypetoRef(form, requestTypeIdsTorequestTypes)
       elements.push(form)
     })
 
@@ -239,7 +239,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery, elementsSource }) =
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         delete instance.value.updated
-        InvertRequestTypetoRef(instance, requestTypes)
+        requestTypetoRef(instance, requestTypes)
       })
   },
 })

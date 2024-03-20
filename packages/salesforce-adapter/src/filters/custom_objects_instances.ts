@@ -74,6 +74,7 @@ import {
   buildElementsSourceForFetch,
   getChangedAtSingletonInstance,
   isInstanceOfCustomObjectSync,
+  instanceInternalId,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -866,6 +867,40 @@ const createInaccessibleFieldsFetchWarning = (
   severity: 'Info',
 })
 
+const querySalesforceForRecordIdsOfElementSourceInstances = async (
+  elementsSource: ReadOnlyElementsSource,
+  client: SalesforceClient,
+  knownExistingIds: string[],
+): Promise<string[]> => {
+  // We implement a small optimization of not querying for IDs we just fetched, because we know these IDs couldn't
+  // have been deleted.
+  const fetchedIds = new Set(knownExistingIds)
+  const workspaceInstancesByType = await awu(await elementsSource.getAll())
+    .filter(isInstanceOfCustomObjectSync)
+    .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+  const workspaceIdsByType = _(workspaceInstancesByType)
+    .mapValues((instances) => ({
+      type: instances[0].getTypeSync(),
+      ids: instances
+        .map(instanceInternalId)
+        .filter((id) => !fetchedIds.has(id)),
+    }))
+    .value()
+  const queries = awu(Object.values(workspaceIdsByType))
+    .filter(({ type }) => apiNameSync(type) !== undefined)
+    .map(async ({ type, ids }) =>
+      buildQueryStrings(
+        apiNameSync(type) ?? '',
+        [type.fields[CUSTOM_OBJECT_ID_FIELD]],
+        ids,
+      ),
+    )
+  return awu(queries)
+    .flatMap(async (typeQueries) => queryClient(client, typeQueries))
+    .map((record) => record[CUSTOM_OBJECT_ID_FIELD])
+    .toArray()
+}
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
@@ -1004,6 +1039,24 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ),
       )
       .toArray()
+
+    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+      // In this case we won't know if a record was deleted on the Salesforce side so we need to explicitly look for
+      // deleted records.
+      const idsInSalesforce = new Set(
+        await querySalesforceForRecordIdsOfElementSourceInstances(
+          elementsSource,
+          client,
+          instances.map(instanceInternalId),
+        ),
+      )
+      _.remove(
+        elements,
+        (element) =>
+          isInstanceOfCustomObjectSync(element) &&
+          !idsInSalesforce.has(instanceInternalId(element)),
+      )
+    }
 
     const typesOfFetchedInstances = new Set(
       elements

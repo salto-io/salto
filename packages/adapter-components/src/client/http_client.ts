@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { ResponseType } from 'axios'
-import {inspectValue, safeJsonStringify} from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'

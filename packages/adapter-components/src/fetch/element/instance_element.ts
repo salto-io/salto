@@ -32,7 +32,7 @@ const log = logger(module)
 export const generateInstancesWithInitialTypes = <Options extends FetchApiDefinitionsOptions>(
   args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
 ): ElementsAndErrors => {
-  const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions } = args
+  const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions, definedTypes } = args
   const { element: elementDef } = defQuery.query(typeName) ?? {}
   if (elementDef === undefined) {
     log.error('could not find any element definitions for type %s:%s', adapterName, typeName)
@@ -83,6 +83,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
     defQuery,
     getElemIdFunc,
     customNameMappingFunctions,
+    definedTypes,
   })
 
   return { types: [type, ...nestedTypes], instances: instancesWithStandalone }

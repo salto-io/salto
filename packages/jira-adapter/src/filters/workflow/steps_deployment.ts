@@ -57,7 +57,10 @@ const isValidStatusesResponse = (response: unknown): response is StatusesRespons
   return true
 }
 
-const getStatusIdToStepId = async (workflowName: string, client: JiraClient): Promise<Record<string, string>> => {
+export const getStatusIdToStepId = async (
+  workflowName: string,
+  client: JiraClient,
+): Promise<Record<string, string>> => {
   const response = await client.getPrivate({
     url: '/rest/workflowDesigner/1.0/workflows',
     queryParams: {

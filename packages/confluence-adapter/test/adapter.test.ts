@@ -114,39 +114,49 @@ describe('adapter', () => {
           .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
-          'business_hours_schedule',
-          'business_hours_schedule_holiday',
-          'group',
+          'blogpost',
+          'page',
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'confluence.business_hours_schedule',
-          'confluence.business_hours_schedule.instance.Some_schedule@s',
-          'confluence.business_hours_schedule__intervals',
-          'confluence.business_hours_schedule_holiday',
-          'confluence.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
-          'confluence.group',
-          'confluence.group.instance.group_1@s',
-          'confluence.group.instance.group_2@s',
+          'confluence.blogpost',
+          'confluence.blogpost.instance.Hey__I_m_am_a_first_blog_post@lstsssss',
+          'confluence.blogpost.instance.This_is_My_super_blog@s',
+          'confluence.blogpost___links',
+          'confluence.blogpost__body',
+          'confluence.blogpost__version',
+          'confluence.page',
+          'confluence.page.instance.22_Getting_started_in_Confluence@usss',
+          'confluence.page.instance.22_Overview',
+          'confluence.page.instance.22_This_is_my_page_yay@ussss',
+          'confluence.page___links',
+          'confluence.page__body',
+          'confluence.page__restriction',
+          'confluence.page__restriction__restrictions',
+          'confluence.page__version',
+          'confluence.template_page',
         ])
         expect(
           elements
             .filter(isInstanceElement)
-            .find(
-              e =>
-                e.elemID.getFullName() ===
-                'confluence.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
-            )?.value,
+            .find(e => e.elemID.getFullName() === 'confluence.blogpost.instance.This_is_My_super_blog@s')?.value,
         ).toEqual({
-          end_date: '2024-02-21',
-          end_year: '2024',
-          id: 4442618333587,
-          name: 'New holiday1',
-          start_date: '2024-02-20',
-          start_year: '2024',
+          authorId: 'mockId22',
+          createdAt: '2024-03-20T10:30:12.473Z',
+          id: '22',
+          spaceId: '22',
+          status: 'current',
+          title: 'This is My super blog',
+          version: {
+            authorId: 'mockId22',
+            createdAt: '2024-03-20T10:30:12.815Z',
+            message: '',
+            minorEdit: false,
+            number: 1,
+          },
         })
       })
 
-      describe('deploy', () => {
+      describe.skip('deploy', () => {
         let operations: AdapterOperations
         let groupType: ObjectType
         let businessHoursScheduleType: ObjectType

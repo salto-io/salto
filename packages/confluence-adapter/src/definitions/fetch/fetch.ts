@@ -138,6 +138,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             },
           },
         },
+        templates: {
+          typeName: 'template',
+          context: {
+            args: {
+              key: {
+                fromField: 'key',
+              },
+            },
+          },
+        },
       },
     },
     element: {
@@ -147,6 +157,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       fieldCustomizations: {
         id: {
           hide: true,
+        },
+        templates: {
+          standalone: {
+            typeName: 'template',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
+          },
         },
       },
     },
@@ -342,6 +360,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       {
         endpoint: {
           path: '/wiki/rest/api/template/page',
+          queryArgs: {
+            spaceKey: '{key}',
+          },
         },
         transformation: {
           root: 'results',

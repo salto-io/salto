@@ -23,11 +23,6 @@ import { configType } from '../src/config'
 import { ZENDESK } from '../src/constants'
 import * as connection from '../src/client/connection'
 
-jest.mock('../src/users/user_utils', () => ({
-  ...jest.requireActual<{}>('../src/users/user_utils'),
-  getUsers: () => ({ users: [], errors: [] }),
-}))
-
 describe('adapter creator', () => {
   let mockAxiosAdapter: MockAdapter
   beforeEach(() => {

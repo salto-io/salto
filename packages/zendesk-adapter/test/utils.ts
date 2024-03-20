@@ -21,7 +21,6 @@ import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { BrandIdToClient } from '../src/filter'
-import { GetUsersResponse } from '../src/users/types'
 
 type FilterCreatorParams = {
   client: ZendeskClient
@@ -30,7 +29,6 @@ type FilterCreatorParams = {
   fetchQuery: elementUtils.query.ElementQuery
   elementsSource: ReadOnlyElementsSource
   brandIdToClient: BrandIdToClient
-  usersPromise: Promise<GetUsersResponse>
 }
 
 export const createFilterCreatorParams = ({
@@ -45,7 +43,6 @@ export const createFilterCreatorParams = ({
   fetchQuery = elementUtils.query.createMockQuery(),
   elementsSource = buildElementsSourceFromElements([]),
   brandIdToClient = {},
-  usersPromise = Promise.resolve({ users: [], errors: [] }),
 }: Partial<FilterCreatorParams>): FilterCreatorParams => ({
   client,
   paginator,
@@ -53,5 +50,4 @@ export const createFilterCreatorParams = ({
   fetchQuery,
   elementsSource,
   brandIdToClient,
-  usersPromise,
 })

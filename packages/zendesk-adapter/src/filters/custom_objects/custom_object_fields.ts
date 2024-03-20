@@ -27,10 +27,11 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { references as referencesUtils } from '@salto-io/adapter-components'
+import { references as referencesUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
+import { FilterCreator } from '../../filter'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
@@ -47,11 +48,12 @@ import {
   transformCustomObjectLookupField,
   transformRelationshipFilterField,
 } from './utils'
-import { getIdByEmail } from '../../users/user_utils'
-import { FilterCreator } from '../../filter'
+import { paginate } from '../../client/pagination'
+import { getIdByEmail, getUsers } from '../../user_utils'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
+const { createPaginator } = clientUtils
 
 const log = logger(module)
 
@@ -315,8 +317,12 @@ const getUserConditions = (changes: Change[]): CustomObjectCondition[] => {
  *  preDeploy handles values that are users, including fallback user
  *  onDeploy reverts the preDeploy
  */
-const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
+const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
   const userPathToOriginalValue: Record<string, string> = {}
+  const paginator = createPaginator({
+    client,
+    paginationFuncCreator: paginate,
+  })
   return {
     name: 'customObjectFieldOptionsFilter',
     onFetch: async (elements: Element[]) => {
@@ -325,7 +331,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
       const instances = elements.filter(isInstanceElement)
 
       // It is possible to key all instance by id because the internal Id is unique across all types (SALTO-4805)
-      const usersById = usersPromise === undefined ? {} : await getIdByEmail(usersPromise)
+      const usersById = await getIdByEmail(paginator, config[FETCH_CONFIG].resolveUserIDs)
       const instancesById = _.keyBy(
         instances.filter(instance => _.isNumber(instance.value.id)),
         instance => _.parseInt(instance.value.id),
@@ -366,13 +372,10 @@ const customObjectFieldsFilter: FilterCreator = ({ config, usersPromise }) => {
     // non-user references are handled by handle_template_expressions.ts
     preDeploy: async changes => {
       const userConditions = getUserConditions(changes)
-      if (userConditions.length === 0 || usersPromise === undefined) {
-        if (usersPromise === undefined) {
-          log.trace('getUserPromise is undefined in preDeploy')
-        }
+      if (userConditions.length === 0) {
         return
       }
-      const { users } = await usersPromise
+      const { users } = await getUsers(paginator, config[FETCH_CONFIG].resolveUserIDs)
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

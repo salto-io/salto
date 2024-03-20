@@ -88,7 +88,6 @@ import {
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
-import { GetUsersResponse } from './users/types'
 
 const {
   deployTypesNotSupportedValidator,
@@ -100,7 +99,6 @@ const {
 export default ({
   client,
   config,
-  usersPromise,
   apiConfig,
   fetchConfig,
   deployConfig,
@@ -109,7 +107,6 @@ export default ({
 }: {
   client: ZendeskClient
   config: ZendeskConfig
-  usersPromise: Promise<GetUsersResponse>
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
   deployConfig?: ZendeskDeployConfig
@@ -149,9 +146,9 @@ export default ({
     customStatusCategory: customStatusCategoryValidator,
     customStatusActiveDefault: customStatusActiveDefaultValidator,
     defaultCustomStatuses: defaultCustomStatusesValidator,
-    customRoleRemoval: customRoleRemovalValidator(usersPromise),
+    customRoleRemoval: customRoleRemovalValidator(client, fetchConfig),
     sideConversations: sideConversationsValidator,
-    users: usersValidator(usersPromise),
+    users: usersValidator(client, fetchConfig),
     requiredAppOwnedParameters: requiredAppOwnedParametersValidator,
     oneTranslationPerLocale: oneTranslationPerLocaleValidator,
     articleRemoval: articleRemovalValidator,

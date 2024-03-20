@@ -14,10 +14,29 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { isInstanceChange, getChangeData, isRemovalChange, RemovalChange, InstanceElement } from '@salto-io/adapter-api'
+import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
+import OktaClient from '../client/client'
+
+const verifyProfileMappingIsDeleted = async (profileMappingId: number, client: OktaClient): Promise<boolean> => {
+  try {
+    return (
+      (
+        await client.get({
+          url: `/api/v1/mappings/${profileMappingId}`,
+        })
+      ).status === 404
+    )
+  } catch (error) {
+    if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {
+      return true
+    }
+    throw error
+  }
+}
 
 /**
  * Override the default ProfileMapping removal with a verification of removal.
@@ -40,10 +59,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
-      const getResult = await client.get({
-        url: `/api/v1/mappings/${getChangeData(change).value.id}`,
-      })
-      if (getResult.status !== 404) {
+      if (!(await verifyProfileMappingIsDeleted(getChangeData(change).value.id, client))) {
         throw new Error('Expected ProfileMapping to be deleted')
       }
     })

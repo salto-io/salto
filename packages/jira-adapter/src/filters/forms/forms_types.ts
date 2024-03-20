@@ -203,17 +203,17 @@ export const createFormType = (): {
       portalRequestTypeIds: {
         refType: new ListType(BuiltinTypes.NUMBER),
       },
-      }
-    })
-  
+    },
+  })
+
   const formPublishType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormPublish'),
     fields: {
       portal: {
         refType: formPortalType,
       },
-      }
-    })
+    },
+  })
 
   const formType = new ObjectType({
     elemID: new ElemID(JIRA, FORM_TYPE),
@@ -241,7 +241,16 @@ export const createFormType = (): {
   })
   return {
     formType,
-    subTypes: [formSubmitType, formSettingsType, formLayoutItemType, formDesignType, questionType, contentLayoutType, formPortalType, formPublishType],
+    subTypes: [
+      formSubmitType,
+      formSettingsType,
+      formLayoutItemType,
+      formDesignType,
+      questionType,
+      contentLayoutType,
+      formPortalType,
+      formPublishType,
+    ],
   }
 }
 

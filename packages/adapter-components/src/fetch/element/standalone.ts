@@ -16,6 +16,7 @@
 import {
   ElemIdGetter,
   InstanceElement,
+  ObjectType,
   ReferenceExpression,
   getDeepInnerTypeSync,
   isObjectType,
@@ -35,12 +36,14 @@ const extractStandaloneInstancesFromField =
     getElemIdFunc,
     parent,
     customNameMappingFunctions,
+    definedTypes,
   }: {
     defQuery: ElementAndResourceDefFinder<Options>
     instanceOutput: InstanceElement[]
     getElemIdFunc?: ElemIdGetter
     parent: InstanceElement
     customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+    definedTypes?: Record<string, ObjectType>
   }): TransformFuncSync =>
   ({ value, field }) => {
     if (field === undefined || isReferenceExpression(value)) {
@@ -52,7 +55,7 @@ const extractStandaloneInstancesFromField =
       return value
     }
 
-    const fieldType = getDeepInnerTypeSync(field.getTypeSync())
+    const fieldType = definedTypes?.[standaloneDef.typeName] ?? getDeepInnerTypeSync(field.getTypeSync())
     if (!isObjectType(fieldType)) {
       throw new Error(`field type for ${field.elemID.getFullName()} is not an object type`)
     }
@@ -106,11 +109,13 @@ export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOp
   defQuery,
   customNameMappingFunctions,
   getElemIdFunc,
+  definedTypes,
 }: {
   instances: InstanceElement[]
   defQuery: ElementAndResourceDefFinder<Options>
   customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   getElemIdFunc?: ElemIdGetter
+  definedTypes?: Record<string, ObjectType>
 }): InstanceElement[] => {
   const instancesToProcess: InstanceElement[] = []
   instances.forEach(inst => instancesToProcess.push(inst))
@@ -134,6 +139,7 @@ export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOp
         getElemIdFunc,
         parent: inst,
         customNameMappingFunctions,
+        definedTypes,
       }),
     })
     if (value !== undefined) {

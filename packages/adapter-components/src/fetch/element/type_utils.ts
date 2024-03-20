@@ -220,9 +220,9 @@ export const markServiceIdField = (
 }
 
 /**
- * Adjust field definitions based on the defined customization.
+ * Adjust field types based on the defined customization.
  */
-export const adjustFieldTypes = <Options extends FetchApiDefinitionsOptions>({
+export const overrideFieldTypes = <Options extends FetchApiDefinitionsOptions>({
   definedTypes,
   defQuery,
   finalTypeNames,
@@ -240,19 +240,53 @@ export const adjustFieldTypes = <Options extends FetchApiDefinitionsOptions>({
     const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
 
     Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
-      if (customization.fieldType !== undefined) {
-        overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: customization.fieldType })
+      const { fieldType, restrictions } = customization
+      if (fieldType !== undefined) {
+        overrideFieldType({ type, definedTypes, fieldName, fieldTypeName: fieldType })
       }
       const field = type.fields[fieldName]
       if (field === undefined) {
         log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
         return
       }
-      const { hide, restrictions, standalone, omit } = customization
       if (restrictions) {
         log.debug('applying restrictions to field %s.%s', type.elemID.name, fieldName)
         field.annotate({ [CORE_ANNOTATIONS.RESTRICTION]: createRestriction(restrictions) })
       }
+    })
+    // mark service ids after applying field customizations, in order to set the right type
+    // (serviceid for strings / serviceid_number for numbers)
+    resourceDef?.serviceIDFields?.forEach(fieldName => markServiceIdField(fieldName, type.fields, typeName))
+  })
+}
+
+/**
+ * Hide and omit fields based on the defined customization.
+ */
+export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
+  definedTypes,
+  defQuery,
+  finalTypeNames,
+}: {
+  definedTypes: Record<string, ObjectType>
+  defQuery: ElementAndResourceDefFinder<Options>
+  finalTypeNames?: Set<string>
+}): void => {
+  Object.entries(definedTypes).forEach(([typeName, type]) => {
+    if (finalTypeNames?.has(typeName)) {
+      log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
+      return
+    }
+
+    const { element: elementDef } = defQuery.query(typeName) ?? {}
+
+    Object.entries(elementDef?.fieldCustomizations ?? {}).forEach(([fieldName, customization]) => {
+      const field = type.fields[fieldName]
+      if (field === undefined) {
+        log.debug('field %s.%s is undefined, not applying customizations', typeName, fieldName)
+        return
+      }
+      const { hide, standalone, omit } = customization
       if (hide) {
         log.debug('hiding field %s.%s', type.elemID.name, fieldName)
 
@@ -264,8 +298,5 @@ export const adjustFieldTypes = <Options extends FetchApiDefinitionsOptions>({
         delete type.fields[fieldName]
       }
     })
-    // mark service ids after applying field customizations, in order to set the right type
-    // (serviceid for strings / serviceid_number for numbers)
-    resourceDef?.serviceIDFields?.forEach(fieldName => markServiceIdField(fieldName, type.fields, typeName))
   })
 }

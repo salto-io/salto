@@ -37,7 +37,7 @@ export const createClientDefinitions = (
           },
         },
         customizations: {
-          // '/api/v2/groups': {
+          // '/api/v1/groups': {
           //   get: {
           //     pagination: 'offset',
           //     queryArgs: { type: 'a' },

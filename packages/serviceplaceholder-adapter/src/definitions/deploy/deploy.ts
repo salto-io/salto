@@ -27,7 +27,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     AdditionalAction,
     ClientOptions
   >({
-    group: { bulkPath: '/api/v2/groups', nestUnderField: 'group' },
+    group: { bulkPath: '/api/v1/groups', nestUnderField: 'group' },
   })
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
     business_hours_schedule: getBusinessHoursScheduleDefinition(),

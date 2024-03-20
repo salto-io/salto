@@ -26,7 +26,7 @@ type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefiniti
 // for create or modify, a separate call is then made to deploy intervals
 export const getBusinessHoursScheduleDefinition = (): InstanceDeployApiDefinitions => {
   const basicDef = deployment.helpers.createStandardItemDeployDefinition<AdditionalAction, ClientOptions>({
-    bulkPath: '/api/v2/business_hours/schedules',
+    bulkPath: '/api/v1/business_hours/schedules',
     nestUnderField: 'schedule',
   })
   const intervalRequest: definitions.deploy.DeployableRequestDefinition<ClientOptions> = {
@@ -40,7 +40,7 @@ export const getBusinessHoursScheduleDefinition = (): InstanceDeployApiDefinitio
     },
     request: {
       endpoint: {
-        path: '/api/v2/business_hours/schedules/{id}/workweek',
+        path: '/api/v1/business_hours/schedules/{id}/workweek',
         method: 'put',
       },
       // "rename" the intervals field to workweek for the deploy

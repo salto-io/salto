@@ -1,6 +1,6 @@
 [
   {
-    "url": "/api/v2/business_hours/schedules",
+    "url": "/api/v1/business_hours/schedules",
     "method": "GET",
     "status": 200,
     "response": {
@@ -20,18 +20,18 @@
           ]
         }
       ],
-      "url": "https://localhost:80/api/v2/business_hours/schedules"
+      "url": "https://localhost:80/api/v1/business_hours/schedules"
     },
     "headers": { "x-rate-limit": "700", "x-rate-limit-remaining": "698" }
   },
   {
-    "url": "/api/v2/groups",
+    "url": "/api/v1/groups",
     "method": "GET",
     "status": 200,
     "response": {
       "groups": [
         {
-          "url": "https://localhost:80/api/v2/groups/23007710794515.json",
+          "url": "https://localhost:80/api/v1/groups/23007710794515.json",
           "id": 23007710794515,
           "is_public": true,
           "name": "group 1",
@@ -42,7 +42,7 @@
           "updated_at": "2023-11-16T13:04:03Z"
         },
         {
-          "url": "https://localhost:80/api/v2/groups/19531527633683.json",
+          "url": "https://localhost:80/api/v1/groups/19531527633683.json",
           "id": 19531527633683,
           "is_public": true,
           "name": "group 2",
@@ -60,14 +60,14 @@
     "headers": { "x-rate-limit": "700", "x-rate-limit-remaining": "697" }
   },
   {
-    "url": "/api/v2/business_hours/schedules/4442604931859/holidays",
+    "url": "/api/v1/business_hours/schedules/4442604931859/holidays",
     "method": "GET",
     "status": 200,
     "response": {
       "holidays": [
         { "id": 4442618333587, "name": "New holiday1", "start_date": "2024-02-20", "end_date": "2024-02-21" }
       ],
-      "url": "https://localhost:80/api/v2/business_hours/schedules/4442604931859/holidays"
+      "url": "https://localhost:80/api/v1/business_hours/schedules/4442604931859/holidays"
     },
     "headers": { "x-rate-limit": "700", "x-rate-limit-remaining": "696" }
   }

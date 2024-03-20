@@ -97,7 +97,7 @@ describe('createAdapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     // TODO replace with endpoint used in validateCredentials
-    mockAxiosAdapter.onGet('/api/v2/account').reply(200)
+    mockAxiosAdapter.onGet('/api/v1/account').reply(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -126,7 +126,7 @@ describe('createAdapter', () => {
               requests: [
                 {
                   endpoint: {
-                    path: '/api/v2/groups',
+                    path: '/api/v1/groups',
                   },
                   transformation: {
                     root: 'groups',
@@ -157,7 +157,7 @@ describe('createAdapter', () => {
               requests: [
                 {
                   endpoint: {
-                    path: '/api/v2/business_hours/schedules',
+                    path: '/api/v1/business_hours/schedules',
                   },
                   transformation: {
                     root: 'schedules',
@@ -209,7 +209,7 @@ describe('createAdapter', () => {
               requests: [
                 {
                   endpoint: {
-                    path: '/api/v2/business_hours/schedules/{parent_id}/holidays',
+                    path: '/api/v1/business_hours/schedules/{parent_id}/holidays',
                   },
                   transformation: {
                     root: 'holidays',
@@ -235,7 +235,7 @@ describe('createAdapter', () => {
       deploy: {
         instances: {
           customizations: {
-            group: createStandardItemDeployDefinition({ bulkPath: '/api/v2/groups', nestUnderField: 'group' }),
+            group: createStandardItemDeployDefinition({ bulkPath: '/api/v1/groups', nestUnderField: 'group' }),
             business_hours_schedule: {
               requestsByAction: {
                 customizations: {
@@ -243,7 +243,7 @@ describe('createAdapter', () => {
                     {
                       request: {
                         endpoint: {
-                          path: '/api/v2/business_hours/schedules',
+                          path: '/api/v1/business_hours/schedules',
                           method: 'post',
                         },
                         transformation: {
@@ -263,7 +263,7 @@ describe('createAdapter', () => {
                       },
                       request: {
                         endpoint: {
-                          path: '/api/v2/business_hours/schedules/{id}/workweek',
+                          path: '/api/v1/business_hours/schedules/{id}/workweek',
                           method: 'put',
                         },
                         transformation: {

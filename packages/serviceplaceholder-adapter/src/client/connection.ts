@@ -30,7 +30,7 @@ export const validateCredentials = async ({
 }): Promise<AccountInfo> => {
   try {
     // TODO replace with some valid endpoint, identify production accounts
-    const res = await connection.get('/api/v2/account')
+    const res = await connection.get('/api/v1/account')
     const accountId = credentials.subdomain
     const isSandbox = _.get(res.data, 'account.sandbox')
     if (isSandbox !== undefined) {

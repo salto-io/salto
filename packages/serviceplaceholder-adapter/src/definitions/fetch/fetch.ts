@@ -59,7 +59,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/api/v2/groups',
+          path: '/api/v1/groups',
         },
         transformation: {
           root: 'groups',
@@ -91,7 +91,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/api/v2/business_hours/schedules',
+          path: '/api/v1/business_hours/schedules',
         },
         transformation: {
           root: 'schedules',
@@ -143,7 +143,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/api/v2/business_hours/schedules/{parent_id}/holidays',
+          path: '/api/v1/business_hours/schedules/{parent_id}/holidays',
         },
         transformation: {
           root: 'holidays',

@@ -1,6 +1,6 @@
 [
   {
-    "url": "/api/v2/business_hours/schedules",
+    "url": "/api/v1/business_hours/schedules",
     "method": "POST",
     "status": 201,
     "response": {
@@ -33,7 +33,7 @@
           }
         ]
       },
-      "url": "https://localhost:80/api/v2/business_hours/schedules/27510456136851"
+      "url": "https://localhost:80/api/v1/business_hours/schedules/27510456136851"
     },
     "headers": {
       "x-rate-limit": "700",
@@ -69,12 +69,12 @@
     }
   },
   {
-    "url": "/api/v2/groups",
+    "url": "/api/v1/groups",
     "method": "POST",
     "status": 201,
     "response": {
       "group": {
-        "url": "https://localhost:80/api/v2/groups/12345.json",
+        "url": "https://localhost:80/api/v1/groups/12345.json",
         "id": 12345,
         "is_public": false,
         "name": "new group",
@@ -96,7 +96,7 @@
     }
   },
   {
-    "url": "/api/v2/groups/1234",
+    "url": "/api/v1/groups/1234",
     "method": "PUT",
     "status": 200,
     "response": {
@@ -120,7 +120,7 @@
     }
   },
   {
-    "url": "/api/v2/business_hours/schedules/27510456136851/workweek",
+    "url": "/api/v1/business_hours/schedules/27510456136851/workweek",
     "method": "PUT",
     "status": 200,
     "response": {
@@ -148,7 +148,7 @@
           }
         ]
       },
-      "url": "https://localhost:80/api/v2/business_hours/schedules/27510456136851/workweek"
+      "url": "https://localhost:80/api/v1/business_hours/schedules/27510456136851/workweek"
     },
     "headers": {
       "x-rate-limit": "700",

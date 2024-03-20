@@ -26,14 +26,14 @@ const getPermissionsDiff = (
   if (!isModificationChange(change)) {
     return { deletedPermissions: [], addedPermissions: [] }
   }
-  const { permissions: beforePermissions } = _.pickBy(change.data.before.value, 'permissions')
-  const { permissions: afterPermissions } = _.pickBy(change.data.after.value, 'permissions')
+  const { permissions: beforePermissions } = _.pick(change.data.before.value, 'permissions')
+  const { permissions: afterPermissions } = _.pick(change.data.after.value, 'permissions')
   if (!Array.isArray(beforePermissions) || !Array.isArray(afterPermissions)) {
     return { deletedPermissions: [], addedPermissions: [] }
   }
   return {
-    deletedPermissions: beforePermissions.filter(before => !afterPermissions.includes(before)),
-    addedPermissions: afterPermissions.filter(after => !beforePermissions.includes(after)),
+    deletedPermissions: beforePermissions.filter(before => !afterPermissions.some(after => _.isEqual(after, before))),
+    addedPermissions: afterPermissions.filter(after => !beforePermissions.some(before => _.isEqual(after, before))),
   }
 }
 
@@ -41,7 +41,7 @@ const isSpaceChange = ({ change }: definitions.deploy.ChangeAndContext): boolean
   if (!isModificationChange(change)) {
     return false
   }
-  return !_.isEqual(_.omitBy(change.data.before.value, 'permissions'), _.omitBy(change.data.after.value, 'permissions'))
+  return !_.isEqual(_.omit(change.data.before.value, 'permissions'), _.omit(change.data.after.value, 'permissions'))
 }
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
@@ -121,6 +121,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/wiki/rest/api/space',
                   method: 'post',
                 },
+                transformation: {
+                  omit: ['permissions'],
+                },
               },
             },
           ],
@@ -134,6 +137,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/wiki/rest/api/space/{key}',
                   method: 'put',
                 },
+                transformation: {
+                  omit: ['permissions'],
+                },
               },
             },
             {
@@ -141,8 +147,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 custom:
                   () =>
                   ({ change }) => {
-                    const { deletedPermissions, addedPermissions } = getPermissionsDiff(change)
-                    return deletedPermissions.length > 0 || addedPermissions.length > 0
+                    const { addedPermissions } = getPermissionsDiff(change)
+                    return addedPermissions.length > 0
                   },
               },
               request: {
@@ -150,12 +156,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/wiki/rest/api/space/{key}/permission',
                   method: 'post',
                 },
-                // transformation: {
-                //   adjust: async ({ context }) => {
-                //     const { addedPermissions } = getPermissionsDiff(context.change)
-                //     return { value: addedPermissions }
-                //   },
-                // },
+                transformation: {
+                  adjust: ({ context }) => {
+                    const { addedPermissions } = getPermissionsDiff(context.change)
+                    return { value: addedPermissions }
+                  },
+                },
               },
             },
             {
@@ -163,21 +169,21 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 custom:
                   () =>
                   ({ change }) => {
-                    const { deletedPermissions, addedPermissions } = getPermissionsDiff(change)
-                    return deletedPermissions.length > 0 || addedPermissions.length > 0
+                    const { deletedPermissions } = getPermissionsDiff(change)
+                    return deletedPermissions.length > 0
                   },
               },
               request: {
                 endpoint: {
-                  path: '/wiki/rest/api/space/{key}/permission',
+                  path: '/wiki/rest/api/space/{key}/permission/{id}',
                   method: 'delete',
                 },
-                // transformation: {
-                //   adjust: async ({ context }) => {
-                //     const { deletedPermissions } = getPermissionsDiff(context.change)
-                //     return { value: deletedPermissions }
-                //   },
-                // },
+                transformation: {
+                  adjust: ({ context }) => {
+                    const { deletedPermissions } = getPermissionsDiff(context.change)
+                    return { value: deletedPermissions }
+                  },
+                },
               },
             },
           ],
@@ -187,6 +193,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/wiki/rest/api/space/{key}',
                   method: 'delete',
+                },
+                transformation: {
+                  omit: ['permissions'],
                 },
               },
             },

@@ -16,13 +16,11 @@
 import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import ZendeskClient from '../client/client'
 import { ZendeskConfig } from '../config'
-import { GetUsersResponse } from '../users/types'
 
 export type FixElementsArgs = {
   client: ZendeskClient
   config: ZendeskConfig
   elementsSource: ReadOnlyElementsSource
-  usersPromise: Promise<GetUsersResponse>
 }
 
 export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc

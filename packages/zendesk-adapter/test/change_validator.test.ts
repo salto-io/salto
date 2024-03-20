@@ -32,7 +32,6 @@ describe('change validator creator', () => {
           deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
           typesDeployedViaParent: [],
           typesWithNoDeploy: [],
-          usersPromise: Promise.resolve({ users: [], errors: [] }),
         })([]),
       ).toEqual([])
     })
@@ -47,7 +46,6 @@ describe('change validator creator', () => {
           deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
           typesDeployedViaParent: [],
           typesWithNoDeploy: [],
-          usersPromise: Promise.resolve({ users: [], errors: [] }),
         })([
           toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') }) }),
           toChange({ before: new ObjectType({ elemID: new ElemID(ZENDESK, 'obj2') }) }),
@@ -82,7 +80,6 @@ describe('change validator creator', () => {
           deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
           typesDeployedViaParent: [],
           typesWithNoDeploy: [],
-          usersPromise: Promise.resolve({ users: [], errors: [] }),
         })([
           toChange({ after: new InstanceElement('inst1', type) }),
           toChange({ before: new InstanceElement('inst2', type) }),

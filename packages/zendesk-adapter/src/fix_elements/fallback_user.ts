@@ -15,11 +15,12 @@
  */
 
 import { ChangeError, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { definitions } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { paginate } from '../client/pagination'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../config'
 import {
   MISSING_USERS_DOC_LINK,
@@ -27,13 +28,15 @@ import {
   TYPE_NAME_TO_REPLACER,
   VALID_USER_VALUES,
   getUserFallbackValue,
-} from '../users/user_utils'
+  getUsers,
+  User,
+} from '../user_utils'
 import { FixElementsHandler } from './types'
 import { CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 import { FieldsParams, ValueReplacer, replaceConditionsAndActionsCreator } from '../replacers_utils'
-import { User } from '../users/types'
 
 const log = logger(module)
+const { createPaginator } = clientUtils
 
 const fallbackUserIsMissingError = (
   instance: InstanceElement,
@@ -137,9 +140,13 @@ const isRelevantElement = (element: unknown): element is InstanceElement =>
  * 2. If provided fallback user is not valid, return error severity errors
  */
 export const fallbackUsersHandler: FixElementsHandler =
-  ({ client, config, usersPromise }) =>
+  ({ client, config }) =>
   async elements => {
-    const { users } = await usersPromise
+    const paginator = createPaginator({
+      client,
+      paginationFuncCreator: paginate,
+    })
+    const { users } = await getUsers(paginator, config[FETCH_CONFIG].resolveUserIDs)
     const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
     if (
       defaultMissingUserFallback === undefined ||

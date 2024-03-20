@@ -15,12 +15,14 @@
  */
 import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { TYPE_NAME_TO_REPLACER, getIdByEmail } from '../users/user_utils'
-import { deployModificationFunc } from '../replacers_utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
+import { TYPE_NAME_TO_REPLACER, getIdByEmail, getUsers } from '../user_utils'
+import { deployModificationFunc } from '../replacers_utils'
+import { paginate } from '../client/pagination'
+import { FETCH_CONFIG } from '../config'
 
-const log = logger(module)
+const { createPaginator } = clientUtils
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
@@ -28,36 +30,39 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean =>
 /**
  * Replaces the user ids with emails
  */
-const filterCreator: FilterCreator = ({ usersPromise }) => {
+const filterCreator: FilterCreator = ({ client, config }) => {
   let userIdToEmail: Record<string, string> = {}
+  const { resolveUserIDs } = config[FETCH_CONFIG]
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      if (usersPromise === undefined) {
-        log.trace('getUserPromise is undefined in onFetch')
-        return {}
-      }
-
-      const mapping = await getIdByEmail(usersPromise)
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: paginate,
+      })
+      const { errors } = await getUsers(paginator, resolveUserIDs)
+      const mapping = await getIdByEmail(paginator, resolveUserIDs)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
-
-      const { errors } = await usersPromise
       return { errors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
-      if (_.isEmpty(relevantChanges) || usersPromise === undefined) {
+      if (_.isEmpty(relevantChanges)) {
         return
       }
-      const { users } = await usersPromise
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: paginate,
+      })
+      const { users } = await getUsers(paginator, resolveUserIDs)
       if (_.isEmpty(users)) {
         return
       }
       userIdToEmail = Object.fromEntries(users.map(user => [user.id.toString(), user.email])) as Record<string, string>
-      userIdToEmail = await getIdByEmail(usersPromise)
+      userIdToEmail = await getIdByEmail(paginator, resolveUserIDs)
       const emailToUserId = Object.fromEntries(users.map(user => [user.email, user.id.toString()])) as Record<
         string,
         string

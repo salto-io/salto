@@ -44,6 +44,7 @@ import {
 import {
   buildSelectQueries,
   getFieldNamesForQuery,
+  isInstanceOfCustomObjectSync,
   QueryOperator,
   SoqlQuery,
 } from '../../src/filters/utils'
@@ -2272,18 +2273,38 @@ describe('Custom Object Instances filter', () => {
             fetchProfile,
           },
         }) as FilterType
+
+        const testType = createCustomObject(testTypeName)
+        const existingInstanceThatDoesntExistInSalesforce = new InstanceElement(
+          'DeletedInstance',
+          testType,
+          {
+            [CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
+          },
+        )
+        elements = [
+          testType,
+          existingInstanceThatDoesntExistInSalesforce,
+          changedAtSingleton,
+        ]
       })
       describe('Without allowReferenceTo', () => {
         beforeEach(async () => {
+          const testType = createCustomObject(testTypeName)
+          const existingInstanceThatDoesntExistInSalesforce =
+            new InstanceElement('DeletedInstance', testType, {
+              [CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
+            })
           elements = [
-            createCustomObject(testTypeName),
+            testType,
+            existingInstanceThatDoesntExistInSalesforce,
             createCustomObject(refToTypeName),
             changedAtSingleton,
           ]
           await filter.onFetch(elements)
         })
         it('Should query using the changed-at value', () => {
-          expect(basicQueryImplementation).toHaveBeenLastCalledWith(
+          expect(basicQueryImplementation).toHaveBeenCalledWith(
             expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`),
           )
         })
@@ -2294,6 +2315,18 @@ describe('Custom Object Instances filter', () => {
             expect.objectContaining({
               [CUSTOM_OBJECT_ID_FIELD]: testInstanceId,
             }),
+          )
+        })
+        it('Should query for deleted items', () => {
+          expect(basicQueryImplementation).toHaveBeenCalledWith(
+            expect.stringContaining("Id IN ('deletedId')"),
+          )
+        })
+        it('Should remove deleted instance', () => {
+          expect(elements).not.toSatisfyAny(
+            (element) =>
+              isInstanceOfCustomObjectSync(element) &&
+              element.value[CUSTOM_OBJECT_ID_FIELD] === 'deletedId',
           )
         })
       })

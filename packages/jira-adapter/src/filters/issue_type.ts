@@ -20,11 +20,20 @@ import {
   isAdditionChange,
   isInstanceChange,
   isInstanceElement,
+  isAdditionOrModificationChange,
+  ModificationChange,
+  AdditionChange,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ISSUE_TYPE_NAME } from '../constants'
+import JiraClient from '../client/client'
+import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
+import { PRIVATE_API_HEADERS } from '../client/headers'
+import { isIconResponse, sendIconRequest, setIconContent } from './icon_utils'
 
 const { awu } = collections.asynciterable
 
@@ -33,10 +42,28 @@ const SUBTASK_TYPE = 'subtask'
 const STANDARD_HIERARCHY_LEVEL = 0
 const SUBTASK_HIERARCHY_LEVEL = -1
 
+const deployIcon = async (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  client: JiraClient,
+): Promise<void> => {
+  const instance = getChangeData(change)
+  try {
+    const headers = { ...PRIVATE_API_HEADERS, 'Content-Type': 'image/png' }
+    const url = `/rest/api/3/universal_avatar/type/issuetype/owner/${instance.value.id}`
+    const resp = await sendIconRequest({ client, change, url, fieldName: 'avatar', headers })
+    if (!isIconResponse(resp)) {
+      throw new Error('Failed to deploy icon to Jira issue type: Invalid response from Jira API')
+    }
+    instance.value.avatarId = Number(resp.data.id)
+  } catch (e) {
+    throw new Error(`Failed to deploy icon to Jira issue type: ${e.message}`)
+  }
+}
+
 /**
  * Align the DC issue types values with the Cloud
  */
-const filter: FilterCreator = ({ client }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'issueTypeFilter',
   onFetch: async elements => {
     const issueTypes = elements
@@ -48,10 +75,21 @@ const filter: FilterCreator = ({ client }) => ({
         instance.value.hierarchyLevel = instance.value.subtask ? SUBTASK_HIERARCHY_LEVEL : STANDARD_HIERARCHY_LEVEL
       })
     }
-
     issueTypes.forEach(issueType => {
       delete issueType.value.subtask
     })
+    const errors: SaltoError[] = []
+    await Promise.all(
+      issueTypes.map(async issueType => {
+        try {
+          const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
+          await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
+        } catch (e) {
+          errors.push({ message: e.message, severity: 'Error' })
+        }
+      }),
+    )
+    return { errors }
   },
 
   preDeploy: async changes => {
@@ -70,6 +108,47 @@ const filter: FilterCreator = ({ client }) => ({
           return instance
         }),
       )
+  },
+  deploy: async (changes: Change<InstanceElement>[]) => {
+    const [issueTypeChanges, leftoverChanges] = _.partition(
+      changes,
+      change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME && isAdditionOrModificationChange(change),
+    )
+
+    const deployResult = await deployChanges(issueTypeChanges.filter(isAdditionOrModificationChange), async change => {
+      if (isAdditionChange(change)) {
+        // deploy issueType first to get issueType id
+        await defaultDeployChange({
+          change,
+          client,
+          fieldsToIgnore: ['avatar'],
+          apiDefinitions: config.apiDefinitions,
+        })
+        // Load the avatar to get avatarId
+        await deployIcon(change, client)
+        // update the issueTpype with the avatarId
+        const instance = getChangeData(change)
+        await client.put({
+          url: `/rest/api/3/issuetype/${instance.value.id}`,
+          data: { avatarId: instance.value.avatarId },
+        })
+      } else {
+        // Load the avatar to get avatarId
+        await deployIcon(change, client)
+        // update the issueTpype with the avatarId
+        await defaultDeployChange({
+          change,
+          client,
+          fieldsToIgnore: ['avatar'],
+          apiDefinitions: config.apiDefinitions,
+        })
+      }
+    })
+
+    return {
+      leftoverChanges,
+      deployResult,
+    }
   },
 
   onDeploy: async changes => {

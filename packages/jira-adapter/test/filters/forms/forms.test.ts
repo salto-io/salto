@@ -24,12 +24,12 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FilterResult } from '../../../src/filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { FORM_TYPE, JIRA, PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
+import { FORM_TYPE, JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
@@ -41,141 +41,51 @@ describe('forms filter', () => {
   const projectType = createEmptyType(PROJECT_TYPE)
   let projectInstance: InstanceElement
   let elements: Element[]
-  const requestTypeInstance = new InstanceElement('requestTypeInstance', createEmptyType(REQUEST_TYPE_NAME), {
-    id: 17,
-    name: 'requestTypeInstance',
-  })
   describe('on fetch', () => {
-    describe('form linked to a request type', () => {
-      beforeEach(async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = true
-        const { client: cli, connection: conn } = mockClient(false)
-        connection = conn
-        client = cli
-        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
-        projectInstance = new InstanceElement(
-          'project1',
-          projectType,
-          {
-            id: 11111,
-            name: 'project1',
-            projectTypeKey: 'service_desk',
-            key: 'project1Key',
+    beforeEach(async () => {
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      const { client: cli, connection: conn } = mockClient(false)
+      connection = conn
+      client = cli
+      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      projectInstance = new InstanceElement(
+        'project1',
+        projectType,
+        {
+          id: 11111,
+          name: 'project1',
+          projectTypeKey: 'service_desk',
+          key: 'project1Key',
+        },
+        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
+      )
+      connection.post.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          unparsedData: {
+            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+              tenantId: 'cloudId',
+            }),
           },
-          [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
-        )
-        connection.post.mockResolvedValueOnce({
-          status: 200,
-          data: {
-            unparsedData: {
-              [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                tenantId: 'cloudId',
-              }),
-            },
-          },
-        })
-
-        connection.get.mockResolvedValueOnce({
-          status: 200,
-          data: [
-            {
-              id: 1,
-              name: 'form1',
-            },
-          ],
-        })
-        connection.get.mockResolvedValueOnce({
-          status: 200,
-          data: {
-            updated: '2023-09-28T08:20:31.552322Z',
-            uuid: 'uuid',
-            publish: {
-              portal: {
-                portalRequestTypeIds: [17],
-              },
-            },
-            design: {
-              settings: {
-                templateId: 6,
-                name: 'form6',
-                submit: {
-                  lock: false,
-                  pdf: false,
-                },
-                templateFormUuid: 'templateFormUuid',
-              },
-              layout: [
-                {
-                  version: 1,
-                  type: 'doc',
-                  content: [
-                    {
-                      type: 'paragraph',
-                      content: [
-                        {
-                          type: 'text',
-                          text: 'form 6 content',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-              conditions: {},
-              sections: {
-                36: {
-                  t: 'sh',
-                  i: {
-                    co: {
-                      cIds: {
-                        3: ['2'],
-                      },
-                    },
-                  },
-                  o: {
-                    sIds: ['4'],
-                  },
-                },
-              },
-              questions: {
-                3: {
-                  type: 'cm',
-                  label: 'Items to be verified',
-                  description: '',
-                  choices: [
-                    {
-                      id: '1',
-                      label: 'Education',
-                      other: false,
-                    },
-                    {
-                      id: '2',
-                      label: 'Licenses',
-                      other: false,
-                    },
-                  ],
-                  questionKey: '',
-                },
-              },
-            },
-          },
-        })
-        elements = [projectInstance, projectType, requestTypeInstance]
+        },
       })
-      it('should add forms to elements when enableJSM is true', async () => {
-        await filter.onFetch(elements)
-        const instances = elements.filter(isInstanceElement)
-        const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
-        expect(formInstance).toBeDefined()
-        expect(formInstance?.value).toEqual({
-          uuid: 'uuid',
-          updated: '2023-09-28T08:20:31.552322Z',
-          publish: {
-            portal: {
-              portalRequestTypeIds: [new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance)],
-            },
+
+      connection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [
+          {
+            id: 1,
+            name: 'form1',
           },
+        ],
+      })
+
+      connection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          updated: '2023-09-28T08:20:31.552322Z',
+          uuid: 'uuid',
           design: {
             settings: {
               templateId: 6,
@@ -205,12 +115,12 @@ describe('forms filter', () => {
             ],
             conditions: {},
             sections: {
-              '36@': {
+              36: {
                 t: 'sh',
                 i: {
                   co: {
                     cIds: {
-                      '3@': ['2'],
+                      3: ['2'],
                     },
                   },
                 },
@@ -220,7 +130,7 @@ describe('forms filter', () => {
               },
             },
             questions: {
-              '3@': {
+              3: {
                 type: 'cm',
                 label: 'Items to be verified',
                 description: '',
@@ -240,213 +150,92 @@ describe('forms filter', () => {
               },
             },
           },
-        })
+        },
       })
-      it('should not add forms to elements when enableJSM is false', async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = false
-        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
-        await filter.onFetch(elements)
-        const instances = elements.filter(isInstanceElement)
-        const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
-        expect(formInstance).toBeUndefined()
+      elements = [projectInstance, projectType]
+    })
+    it('should add forms to elements when enableJSM is true', async () => {
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
+      expect(formInstance).toBeDefined()
+      expect(formInstance?.value).toEqual({
+        uuid: 'uuid',
+        updated: '2023-09-28T08:20:31.552322Z',
+        design: {
+          settings: {
+            templateId: 6,
+            name: 'form6',
+            submit: {
+              lock: false,
+              pdf: false,
+            },
+            templateFormUuid: 'templateFormUuid',
+          },
+          layout: [
+            {
+              version: 1,
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      type: 'text',
+                      text: 'form 6 content',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          conditions: {},
+          sections: {
+            '36@': {
+              t: 'sh',
+              i: {
+                co: {
+                  cIds: {
+                    '3@': ['2'],
+                  },
+                },
+              },
+              o: {
+                sIds: ['4'],
+              },
+            },
+          },
+          questions: {
+            '3@': {
+              type: 'cm',
+              label: 'Items to be verified',
+              description: '',
+              choices: [
+                {
+                  id: '1',
+                  label: 'Education',
+                  other: false,
+                },
+                {
+                  id: '2',
+                  label: 'Licenses',
+                  other: false,
+                },
+              ],
+              questionKey: '',
+            },
+          },
+        },
       })
     })
-    describe('form not linked to a request type', () => {
-      beforeEach(async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = true
-        const { client: cli, connection: conn } = mockClient(false)
-        connection = conn
-        client = cli
-        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
-        projectInstance = new InstanceElement(
-          'project1',
-          projectType,
-          {
-            id: 11111,
-            name: 'project1',
-            projectTypeKey: 'service_desk',
-            key: 'project1Key',
-          },
-          [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
-        )
-        connection.post.mockResolvedValueOnce({
-          status: 200,
-          data: {
-            unparsedData: {
-              [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                tenantId: 'cloudId',
-              }),
-            },
-          },
-        })
-
-        connection.get.mockResolvedValueOnce({
-          status: 200,
-          data: [
-            {
-              id: 1,
-              name: 'form1',
-            },
-          ],
-        })
-        connection.get.mockResolvedValueOnce({
-          status: 200,
-          data: {
-            updated: '2023-09-28T08:20:31.552322Z',
-            uuid: 'uuid',
-            design: {
-              settings: {
-                templateId: 6,
-                name: 'form6',
-                submit: {
-                  lock: false,
-                  pdf: false,
-                },
-                templateFormUuid: 'templateFormUuid',
-              },
-              layout: [
-                {
-                  version: 1,
-                  type: 'doc',
-                  content: [
-                    {
-                      type: 'paragraph',
-                      content: [
-                        {
-                          type: 'text',
-                          text: 'form 6 content',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-              conditions: {},
-              sections: {
-                36: {
-                  t: 'sh',
-                  i: {
-                    co: {
-                      cIds: {
-                        3: ['2'],
-                      },
-                    },
-                  },
-                  o: {
-                    sIds: ['4'],
-                  },
-                },
-              },
-              questions: {
-                3: {
-                  type: 'cm',
-                  label: 'Items to be verified',
-                  description: '',
-                  choices: [
-                    {
-                      id: '1',
-                      label: 'Education',
-                      other: false,
-                    },
-                    {
-                      id: '2',
-                      label: 'Licenses',
-                      other: false,
-                    },
-                  ],
-                  questionKey: '',
-                },
-              },
-            },
-          },
-        })
-        elements = [projectInstance, projectType]
-      })
-      it('should add forms to elements when enableJSM is true', async () => {
-        await filter.onFetch(elements)
-        const instances = elements.filter(isInstanceElement)
-        const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
-        expect(formInstance).toBeDefined()
-        expect(formInstance?.value).toEqual({
-          uuid: 'uuid',
-          updated: '2023-09-28T08:20:31.552322Z',
-          design: {
-            settings: {
-              templateId: 6,
-              name: 'form6',
-              submit: {
-                lock: false,
-                pdf: false,
-              },
-              templateFormUuid: 'templateFormUuid',
-            },
-            layout: [
-              {
-                version: 1,
-                type: 'doc',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'form 6 content',
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-            conditions: {},
-            sections: {
-              '36@': {
-                t: 'sh',
-                i: {
-                  co: {
-                    cIds: {
-                      '3@': ['2'],
-                    },
-                  },
-                },
-                o: {
-                  sIds: ['4'],
-                },
-              },
-            },
-            questions: {
-              '3@': {
-                type: 'cm',
-                label: 'Items to be verified',
-                description: '',
-                choices: [
-                  {
-                    id: '1',
-                    label: 'Education',
-                    other: false,
-                  },
-                  {
-                    id: '2',
-                    label: 'Licenses',
-                    other: false,
-                  },
-                ],
-                questionKey: '',
-              },
-            },
-          },
-        })
-      })
-      it('should not add forms to elements when enableJSM is false', async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = false
-        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
-        await filter.onFetch(elements)
-        const instances = elements.filter(isInstanceElement)
-        const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
-        expect(formInstance).toBeUndefined()
-      })
+    it('should not add forms to elements when enableJSM is false', async () => {
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
+      expect(formInstance).toBeUndefined()
     })
   })
   describe('on fetch errors', () => {
@@ -797,11 +586,6 @@ describe('forms filter', () => {
         createEmptyType(FORM_TYPE),
         {
           uuid: 'uuid',
-          publish: {
-            portal: {
-              portalRequestTypeIds: [new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance)],
-            },
-          },
           design: {
             settings: {
               templateId: 6,
@@ -888,21 +672,16 @@ describe('forms filter', () => {
       const isBetween = updatedTime >= timeBeforeFilter && updatedTime <= timeAfterFilter
       expect(isBetween).toBeTruthy()
     })
-    it('should change the requestType to its id', async () => {
-      await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
-      expect(formInstance.value.publish.portal.portalRequestTypeIds).toEqual([17])
-    })
   })
   describe('onDeploy', () => {
     let formInstance: InstanceElement
-    const elementsSource = buildElementsSourceFromElements([requestTypeInstance])
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       const { client: cli, connection: conn } = mockClient(false)
       connection = conn
       client = cli
-      filter = formsFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
+      filter = formsFilter(getFilterParams({ config, client })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,
@@ -920,11 +699,6 @@ describe('forms filter', () => {
         {
           uuid: 'uuid',
           updated: '2023-09-28T08:20:31.552322Z',
-          publish: {
-            portal: {
-              portalRequestTypeIds: [17],
-            },
-          },
           design: {
             settings: {
               templateId: 6,
@@ -1006,12 +780,6 @@ describe('forms filter', () => {
     it('should delete updated field', async () => {
       await filter.onDeploy([{ action: 'add', data: { after: formInstance } }])
       expect(formInstance.value.updated).toBeUndefined()
-    })
-    it('should change request Type id to reference', async () => {
-      await filter.onDeploy([{ action: 'add', data: { after: formInstance } }])
-      expect(formInstance.value.publish.portal.portalRequestTypeIds).toEqual([
-        new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
-      ])
     })
   })
 })

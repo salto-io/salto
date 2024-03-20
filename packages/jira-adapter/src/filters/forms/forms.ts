@@ -27,18 +27,11 @@ import {
   isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
-import {
-  getParent,
-  invertNaclCase,
-  mapKeysRecursive,
-  naclCase,
-  pathNaclCase,
-  references,
-} from '@salto-io/adapter-utils'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, REQUEST_TYPE_NAME, SERVICE_DESK } from '../../constants'
+import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
 import { createFormType, isCreateFormResponse, isDetailedFormsResponse, isFormsResponse } from './forms_types'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -46,8 +39,6 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
-const { awu } = collections.asynciterable
-const { isArrayOfRefExprToInstances } = references
 
 const deployForms = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const form = getChangeData(change)
@@ -82,37 +73,11 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
   }
 }
 
-const requestTypetoRef = (
-  form: InstanceElement,
-  requestTypeIdsTorequestTypes: Record<number, InstanceElement>,
-): void => {
-  if (
-    !form.value.publish?.portal?.portalRequestTypeIds ||
-    !Array.isArray(form.value.publish.portal.portalRequestTypeIds)
-  ) {
-    return
-  }
-  form.value.publish.portal.portalRequestTypeIds = form.value.publish.portal.portalRequestTypeIds.map(
-    (id: number) => new ReferenceExpression(requestTypeIdsTorequestTypes[id].elemID, requestTypeIdsTorequestTypes[id]),
-  )
-}
-
-const revertToRequestTypeId = (form: InstanceElement): void => {
-  if (
-    !form.value.publish?.portal?.portalRequestTypeIds ||
-    !isArrayOfRefExprToInstances(form.value.publish.portal.portalRequestTypeIds)
-  ) {
-    return
-  }
-  form.value.publish.portal.portalRequestTypeIds = form.value.publish.portal.portalRequestTypeIds.map(
-    (requestType: ReferenceExpression) => Number(requestType.value.value.id),
-  )
-}
 /*
  * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
  * We use filter because we need to use cloudId which is not available in the infrastructure.
  */
-const filter: FilterCreator = ({ config, client, fetchQuery, elementsSource }) => ({
+const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
     if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
@@ -178,16 +143,8 @@ const filter: FilterCreator = ({ config, client, fetchQuery, elementsSource }) =
     )
       .flat()
       .filter(isDefined)
-    const requestTypeIdsTorequestTypes = Object.fromEntries(
-      elements
-        .filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === REQUEST_TYPE_NAME)
-        .map(requestType => [requestType.value.id, requestType])
-        .filter(isDefined),
-    )
     forms.forEach(form => {
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
-      requestTypetoRef(form, requestTypeIdsTorequestTypes)
       elements.push(form)
     })
 
@@ -200,7 +157,6 @@ const filter: FilterCreator = ({ config, client, fetchQuery, elementsSource }) =
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         instance.value.updated = new Date().toISOString()
-        revertToRequestTypeId(instance)
       })
   },
   deploy: async changes => {
@@ -223,23 +179,12 @@ const filter: FilterCreator = ({ config, client, fetchQuery, elementsSource }) =
     }
   },
   onDeploy: async changes => {
-    const requestTypes = Object.fromEntries(
-      (
-        await awu(await elementsSource.list())
-          .filter(id => id.typeName === REQUEST_TYPE_NAME)
-          .map(id => elementsSource.get(id))
-          .filter(isInstanceElement)
-          .toArray()
-      ).map(requestType => [requestType.value.id, requestType]),
-    )
-
     changes
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         delete instance.value.updated
-        requestTypetoRef(instance, requestTypes)
       })
   },
 })

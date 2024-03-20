@@ -1340,6 +1340,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: OBJECT_SCHEMA_TYPE },
   },
+    {
+    src: { field: 'portalRequestTypeIds', parentTypes: ['FormPortal'] },
+    serializationStrategy: 'id',
+    target: { type: REQUEST_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

@@ -272,6 +272,7 @@ export const DEFAULT_FILTERS = [
   // must run after workflowFilter
   emptyValidatorWorkflowFilter,
   // must run before fieldReferencesFilter
+  formsFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -372,7 +373,6 @@ export const DEFAULT_FILTERS = [
   queueDeploymentFilter,
   portalGroupsFilter,
   requestTypeFilter,
-  formsFilter, // Must run after requestTypeFilter
   // Must run before asstesDeployFilter
   assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter

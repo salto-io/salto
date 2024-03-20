@@ -23,7 +23,7 @@ import {
   TypeReference,
 } from '@salto-io/adapter-api'
 import { ElementAndResourceDefFinder } from '../definitions/system/fetch/types'
-import { generateType, adjustFieldTypes } from '../fetch/element'
+import { generateType, overrideFieldTypes } from '../fetch/element'
 import { FetchApiDefinitionsOptions } from '../definitions/system/fetch'
 
 /**
@@ -46,7 +46,7 @@ export const overrideInstanceTypeForDeploy = <Options extends FetchApiDefinition
     isUnknownEntry: isReferenceExpression,
   })
   const definedTypes = _.keyBy([generatedType.type, ...generatedType.nestedTypes], t => t.elemID.typeName)
-  adjustFieldTypes({ definedTypes, defQuery })
+  overrideFieldTypes({ definedTypes, defQuery })
   clonedInstance.refType = new TypeReference(generatedType.type.elemID, generatedType.type)
   return clonedInstance
 }

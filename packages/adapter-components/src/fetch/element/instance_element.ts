@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { ElementsAndErrors } from '../../definitions/system/fetch/element'
 import { generateType } from './type_element'
-import { createInstance, getInstanceCreationFunctions, toInstanceValue } from './instance_utils'
+import { createInstance, getInstanceCreationFunctions, recursiveNaclCase } from './instance_utils'
 import { extractStandaloneInstances } from './standalone'
 import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from '../../config/shared' // TODO move
@@ -64,7 +64,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
   })
   // TODO should also nacl-case field names on predefined fields similarly (SALTO-5422)
   const instances = entries
-    .map(value => toInstanceValue({ value, type, defQuery }))
+    .map(value => recursiveNaclCase(value))
     .map((entry, index) =>
       createInstance({
         entry,

@@ -146,10 +146,10 @@ describe('instance element', () => {
         'myAdapter.myType.instance.custom_CCC',
       ])
     })
-    it('should omit nulls and undefined values from instances and nacl-case field names', () => {
+    it('should nacl-case field names', () => {
       const res = generateInstancesWithInitialTypes({
         adapterName: 'myAdapter',
-        entries: [{ str: 'A', nullVal: null, missing: undefined, 'with spaces': 'a' }],
+        entries: [{ str: 'A', 'with spaces': 'a' }],
         typeName: 'myType',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
           customizations: {
@@ -162,7 +162,7 @@ describe('instance element', () => {
       expect(res.instances).toHaveLength(1)
       expect(res.types).toHaveLength(1)
       expect(res.types.map(e => e.elemID.getFullName())).toEqual(['myAdapter.myType'])
-      expect(Object.keys(res.types[0].fields).sort()).toEqual(['missing', 'nullVal', 'str', 'with_spaces@s'])
+      expect(Object.keys(res.types[0].fields).sort()).toEqual(['str', 'with_spaces@s'])
       expect(res.instances[0].value).toEqual({ str: 'A', 'with_spaces@s': 'a' })
     })
   })

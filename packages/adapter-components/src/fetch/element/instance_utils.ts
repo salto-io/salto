@@ -36,7 +36,7 @@ import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/type
  * - when used as an instance value, the relevant type elements' fields should also be nacl-cased separately.
  * - in most cases, this transformation should be reverted before deploy. this can be done be setting invert=true
  */
-const recursiveNaclCase = (value: Values, invert = false): Values => {
+export const recursiveNaclCase = (value: Values, invert = false): Values => {
   const func = invert ? invertNaclCase : naclCase
   return _.cloneDeepWith(value, val => (_.isPlainObject(val) ? _.mapKeys(val, (_v, k) => func(k)) : val))
 }
@@ -70,7 +70,7 @@ const omitValues =
  *
  * Note: standalone fields' values with referenceFromParent=false should be omitted separately
  */
-export const toInstanceValue = <Options extends FetchApiDefinitionsOptions>({
+export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
   value,
   defQuery,
   type,
@@ -80,8 +80,7 @@ export const toInstanceValue = <Options extends FetchApiDefinitionsOptions>({
   type: ObjectType
 }): Values =>
   transformValuesSync({
-    // nacl-case all keys recursively
-    values: recursiveNaclCase(value),
+    values: value,
     type,
     transformFunc: omitValues(defQuery),
     strict: false,
@@ -98,7 +97,7 @@ export type InstanceCreationParams = {
 
 /**
  * Generate an instance for a single entry returned for a given type, and set its elem id and path.
- * Assuming the entry is already in its final structure (after running toInstanceValue).
+ * Assuming the entry is already in its final structure (after nacl-case), except for omitting fields
  */
 export const getInstanceCreationFunctions = <Options extends FetchApiDefinitionsOptions>({
   defQuery,

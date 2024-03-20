@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { queryWithDefault } from '../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
-import { getInstanceCreationFunctions, createInstance } from '../../../src/fetch/element/instance_utils'
+import {
+  getInstanceCreationFunctions,
+  createInstance,
+  omitInstanceValues,
+} from '../../../src/fetch/element/instance_utils'
 
 describe('instance utils', () => {
   const type = new ObjectType({ elemID: new ElemID('myAdapter', 'myType') })
@@ -93,6 +97,39 @@ describe('instance utils', () => {
         })
         expect(instance.path).toEqual(['myAdapter', 'Records', 'myType', 'A'])
       })
+    })
+  })
+  describe('omitInstanceValues', () => {
+    it('should omit nulls, undefined values, and omitted fields from instances', () => {
+      const objType = new ObjectType({
+        elemID: new ElemID('myAdapter', 'myType'),
+        fields: { omitThis: { refType: BuiltinTypes.UNKNOWN } },
+      })
+      const defQuery = queryWithDefault<InstanceFetchApiDefinitions, string>({
+        customizations: {
+          myType: { element: { topLevel: { isTopLevel: true }, fieldCustomizations: { omitThis: { omit: true } } } },
+        },
+      })
+      expect(
+        omitInstanceValues({
+          value: { str: 'A', nullVal: null, missing: undefined, something: 'a', omitThis: 'abc' },
+          type: objType,
+          defQuery,
+        }),
+      ).toEqual({ str: 'A', something: 'a' })
+      expect(
+        omitInstanceValues({
+          value: {
+            str: 'A',
+            nullVal: null,
+            missing: undefined,
+            something: 'a',
+            omitThis: { complex: [{ value: true }] },
+          },
+          type: objType,
+          defQuery,
+        }),
+      ).toEqual({ str: 'A', something: 'a' })
     })
   })
 })

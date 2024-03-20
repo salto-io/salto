@@ -18,11 +18,12 @@ import { ClientOptions, PaginationOptions } from '../types'
 
 const { cursorPagination } = fetchUtils.request.pagination
 
-// TODO adjust - replace with the correct pagination function(s), remove unneeded ones
-
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {
     funcCreator: () =>
-      cursorPagination({ pathChecker: fetchUtils.request.pagination.defaultPathChecker, paginationField: 'next' }),
+      cursorPagination({
+        pathChecker: fetchUtils.request.pagination.defaultPathChecker,
+        paginationField: '_links.next',
+      }),
   },
 }

@@ -143,25 +143,10 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        path: {
-          pathParts: [
-            {
-              parts: [{ fieldName: 'name' }],
-            },
-            {
-              parts: [{ fieldName: 'name' }],
-            },
-          ],
-        },
       },
       fieldCustomizations: {
-        properties: {
-          standalone: {
-            typeName: 'space_property',
-            addParentAnnotation: true,
-            referenceFromParent: true,
-            // nestPathUnderParent: true,
-          },
+        id: {
+          hide: true,
         },
       },
     },
@@ -177,21 +162,12 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
-  },
-  space_property: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/api/v2/spaces/{id}/properties',
-        },
-        transformation: {
-          root: 'results',
-        },
-      },
-    ],
     element: {
-      topLevel: {
-        isTopLevel: true,
+      // TODO_F this is not working
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
       },
     },
   },
@@ -359,6 +335,27 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
+  },
+  // TODO_F not working, do I have templates?
+  template: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/template/page',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
   },
 })
 

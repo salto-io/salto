@@ -17,23 +17,23 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {
-  AdapterOperations,
-  Change,
-  DeployResult,
-  ElemID,
-  getChangeData,
+  // AdapterOperations,
+  // Change,
+  // DeployResult,
+  // ElemID,
+  // getChangeData,
   InstanceElement,
   isInstanceElement,
   ObjectType,
-  ProgressReporter,
-  toChange,
+  // ProgressReporter,
+  // toChange,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/config'
-import { ADAPTER_NAME } from '../src/constants'
+// import { ADAPTER_NAME } from '../src/constants'
 // TODO update mock file -
 // for fetch: run fetch with trace-level logs:
 //  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
@@ -44,9 +44,9 @@ import { ADAPTER_NAME } from '../src/constants'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
-const nullProgressReporter: ProgressReporter = {
-  reportProgress: () => '',
-}
+// const nullProgressReporter: ProgressReporter = {
+//   reportProgress: () => '',
+// }
 
 type MockReply = {
   url: string
@@ -156,117 +156,117 @@ describe('adapter', () => {
         })
       })
 
-      describe.skip('deploy', () => {
-        let operations: AdapterOperations
-        let groupType: ObjectType
-        let businessHoursScheduleType: ObjectType
-        let group1: InstanceElement
-        let schedule1: InstanceElement
+      // describe.skip('deploy', () => {
+      //   let operations: AdapterOperations
+      //   let groupType: ObjectType
+      //   let businessHoursScheduleType: ObjectType
+      //   let group1: InstanceElement
+      //   let schedule1: InstanceElement
 
-        beforeEach(() => {
-          // TODO update to relevant changes
-          groupType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'group') })
-          businessHoursScheduleType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'business_hours_schedule') })
-          group1 = new InstanceElement('group1', groupType, { name: 'group1', is_public: 'false', id: 1234 })
-          schedule1 = new InstanceElement('My_Schedule@s', businessHoursScheduleType, {
-            name: 'My Schedule',
-            time_zone: 'Pacific Time (US & Canada)',
-            intervals: [
-              {
-                start_time: 1980,
-                end_time: 2460,
-              },
-              {
-                start_time: 3420,
-                end_time: 3900,
-              },
-              {
-                start_time: 4860,
-                end_time: 5340,
-              },
-              {
-                start_time: 6300,
-                end_time: 6780,
-              },
-              {
-                start_time: 7740,
-                end_time: 8220,
-              },
-            ],
-          })
+      //   beforeEach(() => {
+      //     // TODO update to relevant changes
+      //     groupType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'group') })
+      //     businessHoursScheduleType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'business_hours_schedule') })
+      //     group1 = new InstanceElement('group1', groupType, { name: 'group1', is_public: 'false', id: 1234 })
+      //     schedule1 = new InstanceElement('My_Schedule@s', businessHoursScheduleType, {
+      //       name: 'My Schedule',
+      //       time_zone: 'Pacific Time (US & Canada)',
+      //       intervals: [
+      //         {
+      //           start_time: 1980,
+      //           end_time: 2460,
+      //         },
+      //         {
+      //           start_time: 3420,
+      //           end_time: 3900,
+      //         },
+      //         {
+      //           start_time: 4860,
+      //           end_time: 5340,
+      //         },
+      //         {
+      //           start_time: 6300,
+      //           end_time: 6780,
+      //         },
+      //         {
+      //           start_time: 7740,
+      //           end_time: 8220,
+      //         },
+      //       ],
+      //     })
 
-          operations = adapter.operations({
-            credentials: new InstanceElement('config', credentialsType, {
-              username: 'user123',
-              password: 'pwd456',
-              subdomain: 'myBrand',
-            }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-            elementsSource: buildElementsSourceFromElements([groupType, businessHoursScheduleType, group1, schedule1]),
-          })
-        })
+      //     operations = adapter.operations({
+      //       credentials: new InstanceElement('config', credentialsType, {
+      //         username: 'user123',
+      //         password: 'pwd456',
+      //         subdomain: 'myBrand',
+      //       }),
+      //       config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+      //       elementsSource: buildElementsSourceFromElements([groupType, businessHoursScheduleType, group1, schedule1]),
+      //     })
+      //   })
 
-        it('should return the applied changes', async () => {
-          const results: DeployResult[] = []
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [toChange({ after: new InstanceElement('new_group@s', groupType, { name: 'new group' }) })],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-          const updatedGroup1 = group1.clone()
-          updatedGroup1.value.name = 'new name'
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [
-                  toChange({
-                    before: group1,
-                    after: updatedGroup1,
-                  }),
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
+      //   it('should return the applied changes', async () => {
+      //     const results: DeployResult[] = []
+      //     results.push(
+      //       await operations.deploy({
+      //         changeGroup: {
+      //           groupID: 'group',
+      //           changes: [toChange({ after: new InstanceElement('new_group@s', groupType, { name: 'new group' }) })],
+      //         },
+      //         progressReporter: nullProgressReporter,
+      //       }),
+      //     )
+      //     const updatedGroup1 = group1.clone()
+      //     updatedGroup1.value.name = 'new name'
+      //     results.push(
+      //       await operations.deploy({
+      //         changeGroup: {
+      //           groupID: 'group',
+      //           changes: [
+      //             toChange({
+      //               before: group1,
+      //               after: updatedGroup1,
+      //             }),
+      //           ],
+      //         },
+      //         progressReporter: nullProgressReporter,
+      //       }),
+      //     )
 
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [
-                  toChange({
-                    after: new InstanceElement('schedule2', businessHoursScheduleType, {
-                      name: 'schedule2',
-                      time_zone: 'Pacific Time (US & Canada)',
-                      intervals: [
-                        {
-                          start_time: 1980,
-                          end_time: 2460,
-                        },
-                        {
-                          start_time: 3420,
-                          end_time: 3900,
-                        },
-                      ],
-                    }),
-                  }),
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
+      //     results.push(
+      //       await operations.deploy({
+      //         changeGroup: {
+      //           groupID: 'group',
+      //           changes: [
+      //             toChange({
+      //               after: new InstanceElement('schedule2', businessHoursScheduleType, {
+      //                 name: 'schedule2',
+      //                 time_zone: 'Pacific Time (US & Canada)',
+      //                 intervals: [
+      //                   {
+      //                     start_time: 1980,
+      //                     end_time: 2460,
+      //                   },
+      //                   {
+      //                     start_time: 3420,
+      //                     end_time: 3900,
+      //                   },
+      //                 ],
+      //               }),
+      //             }),
+      //           ],
+      //         },
+      //         progressReporter: nullProgressReporter,
+      //       }),
+      //     )
 
-          expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
-          expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
-          const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-          expect(getChangeData(addRes).value.id).toEqual(12345)
-        })
-      })
+      //     expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
+      //     expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
+      //     const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
+      //     expect(getChangeData(addRes).value.id).toEqual(12345)
+      //   })
+      // })
     })
   })
 })

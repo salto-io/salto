@@ -787,15 +787,13 @@ const createCustomizations = ({
   AuthorizationServerPolicy: {
     requests: [{ 
       endpoint: { path: '/api/v1/authorizationServers/{id}/policies' },
-      // TODOS - not working 
-      transformation: { adjust: ({ value, context }) => ({ value: { ...(_.isPlainObject(value) ? { value } : {}), authServerId: context.id }}) },
     }],
     resource: {
       directFetch: false,
       recurseInto: {
         policyRules: {
           typeName: 'AuthorizationServerPolicyRule',
-          context: { args: { id: { fromField: 'authServerId' }, policyId: { fromField: 'id' } } },
+          context: { args: { policyId: { fromField: 'id' } } },
         },
       },
     },

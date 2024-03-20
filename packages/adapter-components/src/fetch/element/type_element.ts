@@ -26,7 +26,7 @@ import {
   isListType,
   CORE_ANNOTATIONS,
   Values,
-  Field,
+  // Field,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -189,41 +189,47 @@ export const generateType = <Options extends FetchApiDefinitionsOptions>(
   }
 
   const predefinedType = definedTypes?.[typeName]
+  if (predefinedType !== undefined) {
+    log.debug('found type %s for adapter %s in pre-generated object types, returning as-is', typeName, adapterName)
+    const type = normalizeType(predefinedType)
+    return { type, nestedTypes: [] }
+  }
+
   // TODOS - this is a bug, cause we might a case when a type is defined in swagger, but the entries contains additional data
   // This happens with standalone fields (and then crash the code when we try to extract them cause thers no matching type)
-  if (predefinedType !== undefined) {
-    log.debug(
-      'found type %s for adapter %s in pre-generated object types, generating additional types',
-      typeName,
-      adapterName,
-    )
-    const type = normalizeType(predefinedType)
-    _.uniq(entries.flatMap(e => Object.keys(e))).forEach(key => {
-      const fieldName = naclCase(key)
-      if (type.fields[fieldName] === undefined) {
-        type.fields[fieldName] = new Field(
-          type,
-          fieldName,
-          addNestedType(
-            generateNestedType({
-              ...args,
-              typeName: fieldName,
-              parentName: typeName,
-              entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
-              typeNameOverrides: typesToRename,
-              isMapWithDynamicType: elementDef?.fieldCustomizations?.[fieldName]?.isMapWithDynamicType,
-            }),
-          ),
-        )
-      }
-    })
-    log.debug(
-      'added the following nested types: %o for type %s',
-      nestedTypes.map(t => t.elemID.name),
-      typeName,
-    )
-    return { type, nestedTypes }
-  }
+  // if (predefinedType !== undefined) {
+  //   log.debug(
+  //     'found type %s for adapter %s in pre-generated object types, generating additional types',
+  //     typeName,
+  //     adapterName,
+  //   )
+  //   const type = normalizeType(predefinedType)
+  //   _.uniq(entries.flatMap(e => Object.keys(e))).forEach(key => {
+  //     const fieldName = naclCase(key)
+  //     if (type.fields[fieldName] === undefined) {
+  //       type.fields[fieldName] = new Field(
+  //         type,
+  //         fieldName,
+  //         addNestedType(
+  //           generateNestedType({
+  //             ...args,
+  //             typeName: fieldName,
+  //             parentName: typeName,
+  //             entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
+  //             typeNameOverrides: typesToRename,
+  //             isMapWithDynamicType: elementDef?.fieldCustomizations?.[fieldName]?.isMapWithDynamicType,
+  //           }),
+  //         ),
+  //       )
+  //     }
+  //   })
+  //   log.debug(
+  //     'added the following nested types: %o for type %s',
+  //     nestedTypes.map(t => t.elemID.name),
+  //     typeName,
+  //   )
+  //   return { type, nestedTypes }
+  // }
 
   const fields: Record<string, FieldDefinition> = Object.fromEntries(
     _.uniq(entries.flatMap(e => Object.keys(e))).map(key => {

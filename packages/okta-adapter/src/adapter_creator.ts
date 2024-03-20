@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+// import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import {
@@ -28,7 +29,7 @@ import {
 import {
   configType,
   OktaConfig,
-  API_DEFINITIONS_CONFIG,
+  // API_DEFINITIONS_CONFIG,
   FETCH_CONFIG,
   DEFAULT_CONFIG,
   CLIENT_CONFIG,
@@ -36,7 +37,7 @@ import {
   OktaSwaggerApiConfig,
   PRIVATE_API_DEFINITIONS_CONFIG,
   OktaDuckTypeApiConfig,
-  validateOktaFetchConfig,
+  // validateOktaFetchConfig,
   DEPLOY_CONFIG,
   OktaDeployConfig,
 } from './config'
@@ -46,8 +47,8 @@ import { getAdminUrl } from './client/admin'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig } = definitions
-const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig } = configUtils
+// const { validateClientConfig } = definitions
+// const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig } = configUtils
 
 const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
   configValue.authType === 'oauth' &&
@@ -92,15 +93,15 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     config?.value?.deploy,
   ) as OktaDeployConfig
 
-  validateClientConfig(CLIENT_CONFIG, client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
-  validateOktaFetchConfig({
-    fetchConfig: fetch,
-    clientConfig: client,
-    apiDefinitions,
-    privateApiDefinitions,
-  })
-  validateDuckTypeApiDefinitionConfig(PRIVATE_API_DEFINITIONS_CONFIG, privateApiDefinitions)
+  // validateClientConfig(CLIENT_CONFIG, client)
+  // validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  // validateOktaFetchConfig({
+  //   fetchConfig: fetch,
+  //   clientConfig: client,
+  //   apiDefinitions,
+  //   privateApiDefinitions,
+  // })
+  // validateDuckTypeApiDefinitionConfig(PRIVATE_API_DEFINITIONS_CONFIG, privateApiDefinitions)
 
   const adapterConfig: { [K in keyof Required<OktaConfig>]: OktaConfig[K] } = {
     client,

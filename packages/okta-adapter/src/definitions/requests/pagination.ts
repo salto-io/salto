@@ -16,12 +16,11 @@
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ClientOptions, PaginationOptions } from '../types'
 
-const { cursorPagination, defaultPathChecker, noPagination } = fetchUtils.request.pagination
+const { cursorPagination, defaultPathChecker, cursorHeaderPagination } = fetchUtils.request.pagination
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursorHeader: {
-    // TODOS adjust
-    funcCreator: () => noPagination(),
+    funcCreator: () => cursorHeaderPagination({ pathChecker: defaultPathChecker}),
   },
   cursor: {
     funcCreator: () => cursorPagination({ paginationField: 'nextMappingsPageUrl', pathChecker: defaultPathChecker }),

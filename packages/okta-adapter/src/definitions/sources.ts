@@ -13,5 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { definitions } from '@salto-io/adapter-components'
+import { ClientOptions } from './types'
 
-export { OpenAPIDefinition } from './openapi'
+export const OPEN_API_DEFINITIONS: definitions.sources.OpenAPIDefinition<ClientOptions> = {
+   url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/okta/management-swagger-v3.yaml',
+   toClient: 'main',
+   typeAdjustments: {
+      AppUserSchema: {
+         originalTypeName: 'UserSchema',
+         rename: false,
+      }
+   }
+}

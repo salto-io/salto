@@ -19,7 +19,6 @@ import {
   AdapterOperations,
   DeployResult,
   InstanceElement,
-  TypeMap,
   isObjectType,
   FetchOptions,
   DeployOptions,
@@ -38,6 +37,7 @@ import {
   combineElementFixers,
   resolveChangeElement,
   fetch as fetchUtils,
+  definitions,
 } from '@salto-io/adapter-components'
 import {
   applyFunctionToChangeData,
@@ -93,10 +93,11 @@ import { createFetchDefinitions } from './definitions/fetch'
 import { PAGINATION } from './definitions/requests/pagination'
 import { createClientDefinitions } from './definitions/requests/clients'
 import { ClientOptions, PaginationOptions } from './definitions/types'
+import { OPEN_API_DEFINITIONS } from './definitions/sources'
 
 const { awu } = collections.asynciterable
 
-const { generateTypes } = elementUtils.swagger
+const { generateOpenApiTypes } = elementUtils.swagger
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -128,7 +129,6 @@ const DEFAULT_FILTERS = [
   profileMappingAdditionFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
-  // should run after commonFilters,
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,
@@ -158,6 +158,7 @@ export default class OktaAdapter implements AdapterOperations {
   private isOAuthLogin: boolean
   private adminClient?: OktaClient
   private fixElementsFunc: FixElementsFunc
+  protected definitions: definitions. RequiredDefinitions<{ clientOptions: ClientOptions, paginationOptions: PaginationOptions}>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -179,6 +180,12 @@ export default class OktaAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
+    this.definitions = {
+      clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
+      pagination: PAGINATION,
+      fetch: createFetchDefinitions(this.userConfig),
+      sources: { openAPI: [ OPEN_API_DEFINITIONS ]}
+    }
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
@@ -202,14 +209,6 @@ export default class OktaAdapter implements AdapterOperations {
         objects.concatObjects,
       )
     this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config }))
-  }
-
-  @logDuration('generating types from swagger')
-  private async getSwaggerTypes(): Promise<{
-    allTypes: TypeMap
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  }> {
-    return generateTypes(OKTA, this.userConfig[API_DEFINITIONS_CONFIG])
   }
 
   private async handleClassicEngineOrg(): Promise<configUtils.ConfigChangeSuggestion | undefined> {
@@ -253,21 +252,28 @@ export default class OktaAdapter implements AdapterOperations {
     return { errors: [], configChanges: [] }
   }
 
-  @logDuration('generating instances from service')
+
+  @logDuration('generating types from swagger')
+  private async getAllSwaggerTypes(): Promise<elementUtils.swagger.ParsedTypes> {
+    return _.defaults(
+      {},
+      ...(await Promise.all(
+        collections.array.makeArray(this.definitions.sources?.openAPI).map(def =>
+          generateOpenApiTypes({ adapterName: OKTA, swaggerUrl: def.url }),
+        ),
+      )),
+    )
+  }
+
+  @logDuration('fetching account configuration')
   async getElements(): Promise<fetchUtils.FetchElements> {
-    const { allTypes, parsedConfigs } = await this.getSwaggerTypes()
+    const { allTypes, parsedConfigs } = await this.getAllSwaggerTypes()
     log.debug('Full parsed configuration from swaggers: %s', safeJsonStringify(parsedConfigs))
 
-    const defs = {
-      clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
-      pagination: PAGINATION,
-      fetch: createFetchDefinitions(this.userConfig),
-    }
-
-    const res = await fetchUtils.getElements<{ clientOptions: ClientOptions; paginationOptions: PaginationOptions }>({
+    const res = await fetchUtils.getElements({
       adapterName: OKTA,
       fetchQuery: this.fetchQuery,
-      definitions: defs,
+      definitions: this.definitions,
       getElemIdFunc: this.getElemIdFunc,
       predefinedTypes: _.pickBy(allTypes, isObjectType),
     })

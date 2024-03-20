@@ -23,7 +23,7 @@ import {
   Values,
   toServiceIdsString,
 } from '@salto-io/adapter-api'
-import { invertNaclCase, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { NameMappingFunction, NameMappingFunctionMap, NameMappingOptions } from '../../definitions'
@@ -132,7 +132,7 @@ const computeElemIDPartsFunc =
     const res =
       elemIDDef.extendsParent && parent !== undefined
         ? // the delimiter between parent and child will be doubled
-          [invertNaclCase(parent.elemID.name), '', ...nonEmptyParts]
+          [parent.elemID.name, '', ...nonEmptyParts]
         : nonEmptyParts
 
     if (nonEmptyParts.length < parts.length) {

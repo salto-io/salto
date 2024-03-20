@@ -49,6 +49,7 @@ import {
   SWAGGER_OBJECT,
   isArraySchemaObject,
   SchemasAndRefs,
+  getParsedSchemas,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes, getFieldTypeOverridesTypes } from './type_config_override'
 import { filterTypes } from '../../type_elements'
@@ -56,6 +57,7 @@ import { LoadedSwagger } from '../swagger'
 import { getConfigWithDefault } from '../../../config/shared'
 import { getDependencies } from '../../element_getter'
 import { markServiceIdField } from '../../../fetch/element/type_utils'
+// import { OpenAPIDefinition } from '../../../definitions/system/sources/openapi'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes
@@ -337,6 +339,51 @@ export const generateTypes = async (
 
   return {
     allTypes: _.keyBy(filteredTypes, type => type.elemID.name),
+    parsedConfigs,
+  }
+}
+
+/**
+ * Generate types for the given OpenAPI definitions.
+ */
+export const generateOpenApiTypes = async ({
+  adapterName,
+  swaggerUrl,
+  // TODO support prefix
+}:{
+  adapterName: string
+  swaggerUrl: string
+}): Promise<ParsedTypes> => {
+
+  // const toUpdatedResourceName = (origResourceName: string): string =>
+  //   swagger.typeNameOverrides?.find(({ originalName }) => originalName === naclCase(origResourceName))?.newName ??
+  //   origResourceName
+  
+  const definedTypes: Record<string, ObjectType> = {}
+  const parsedConfigs: Record<string, RequestableTypeSwaggerConfig> = {}
+
+  const { schemas, refs } = await getParsedSchemas({ swaggerPath: swaggerUrl })
+
+  const addType = typeAdder({
+    adapterName,
+    schemas,
+    toUpdatedResourceName: ( originalResourceName: string ) => originalResourceName,
+    definedTypes,
+    parsedConfigs,
+    refs,
+  })
+
+  Object.entries(schemas).forEach(([endpointName, schema]) => addType(schema, toTypeName(endpointName), endpointName))
+
+  // TODOS, verify the following are done here (or later) - 
+  // 1. we mark fields as service IDs
+  // 2. we mark hidden fields
+  // 3. we adjust field types by fields customizations
+  // 4. add `isSettings` to singleton types
+  // addServiceIdAnnotations(definedTypes, types, typeDefaults)
+
+  return {
+    allTypes: definedTypes,
     parsedConfigs,
   }
 }

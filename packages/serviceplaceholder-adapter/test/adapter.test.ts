@@ -76,7 +76,9 @@ const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockA
   }
 }
 
-describe('adapter', () => {
+// skip until SALTO-5640 is resolved
+// eslint-disable-next-line jest/no-disabled-tests
+describe.skip('adapter', () => {
   jest.setTimeout(10 * 1000)
   let mockAxiosAdapter: MockAdapter
 

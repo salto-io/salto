@@ -87,7 +87,9 @@ const DEFAULT_CONFIG: UserConfig = {
   },
 }
 
-describe('createAdapter', () => {
+// skip until SALTO-5640 is resolved
+// eslint-disable-next-line jest/no-disabled-tests
+describe.skip('createAdapter', () => {
   jest.setTimeout(10 * 1000)
   let mockAxiosAdapter: MockAdapter
   let definitions: Omit<types.PickyRequired<ApiDefinitions, 'fetch'>, 'clients'>

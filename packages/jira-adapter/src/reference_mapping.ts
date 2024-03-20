@@ -1344,7 +1344,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'avatarId', parentTypes: [ISSUE_TYPE_NAME] },
     serializationStrategy: 'id',
-    jiraMissingRefStrategy: 'typeAndValue',
+    // No missing references strategy - field can be a number points to a system avatar
     target: { type: ISSUE_TYPE_ICON_NAME },
   },
 ]

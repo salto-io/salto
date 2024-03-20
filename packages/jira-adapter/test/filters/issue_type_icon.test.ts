@@ -60,6 +60,17 @@ describe('issue type icon filter', () => {
 
     it('should add issue type icon to elements', async () => {
       mockGet.mockImplementationOnce(params => {
+        if (params.url === '/rest/api/3/avatar/issuetype/system') {
+          return {
+            status: 200,
+            data: {
+              system: [{ id: '303' }],
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      mockGet.mockImplementationOnce(params => {
         if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/101') {
           return {
             status: 200,
@@ -69,10 +80,10 @@ describe('issue type icon filter', () => {
         throw new Error('Err')
       })
       await filter.onFetch(elements)
-      const iconInstanse = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
+      const iconInstance = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
       expect(elements).toHaveLength(4)
-      expect(iconInstanse).toBeDefined()
-      expect(iconInstanse?.value).toEqual({
+      expect(iconInstance).toBeDefined()
+      expect(iconInstance?.value).toEqual({
         contentType: 'png',
         fileName: 'issueType1.png',
         id: 101,
@@ -82,32 +93,39 @@ describe('issue type icon filter', () => {
           content,
         }),
       })
+      expect(iconInstance?.elemID.typeName).toEqual(ISSUE_TYPE_ICON_NAME)
     })
-    it('should not add issue layout if it is a bad response', async () => {
+    it('should not add issue type icon if it is a bad response', async () => {
       mockGet.mockClear()
       mockGet.mockImplementation(() => ({
         status: 200,
         data: {},
       }))
       await filter.onFetch(elements)
-      const iconInstanse = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
-      expect(iconInstanse).toBeUndefined()
+      const iconInstance = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
+      expect(iconInstance).toBeUndefined()
     })
-    it('should not add issue layoutif error has been thrown from client', async () => {
+    it('should not add issue type icon if error has been thrown from client', async () => {
       mockGet.mockClear()
-      mockGet.mockImplementation(() => {
+      mockGet.mockImplementationOnce(() => ({
+        status: 200,
+        data: {},
+      }))
+
+      mockGet.mockImplementationOnce(() => {
         throw new Error('Error')
       })
       await filter.onFetch(elements)
-      const iconInstanse = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
-      expect(iconInstanse).toBeUndefined()
+      const iconInstance = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
+      expect(iconInstance).toBeUndefined()
     })
   })
   describe('deploy', () => {
     const issueTypeIconType = createEmptyType(ISSUE_TYPE_ICON_NAME)
     let issueTypeIconInstance: InstanceElement
     beforeEach(async () => {
-      issueTypeIconInstance = new InstanceElement('issueType1', issueTypeIconType, {
+      issueTypeIconInstance = new InstanceElement('issueType1', issueTypeIconType, 
+      {
         fileName: 'issueType1.png',
         contentType: 'png',
         id: 101,
@@ -116,10 +134,12 @@ describe('issue type icon filter', () => {
           encoding: 'binary',
           content,
         }),
-      })
-      issueTypeIconInstance.annotate({
+      },
+      undefined,
+      {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance)],
-      })
+      }
+      )
       connection.post.mockImplementation(async url => {
         if (url === '/rest/api/3/universal_avatar/type/issuetype/owner/100') {
           return {

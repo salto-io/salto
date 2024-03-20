@@ -128,7 +128,6 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
-    // deleteIssueTypeIcon: deleteIssueTypeIconValidator,
   }
 
   return createChangeValidator({

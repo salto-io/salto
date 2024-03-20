@@ -47,6 +47,28 @@ type IssueTypeIconResponse = {
     id: string
   }
 }
+
+type SystemIssueTypeResponse = {
+  system: {
+    id: number
+  }[]
+}
+const SYSTEM_ISSUE_TYPE_RESPONSE_SCHEME = Joi.object({
+  system: Joi.array()
+    .items(
+      Joi.object({
+        id: Joi.number().required(),
+      })
+        .required()
+        .unknown(true),
+    )
+    .required(),
+})
+  .required()
+  .unknown(true)
+
+const isSystemIssueTypeResponse = createSchemeGuard<SystemIssueTypeResponse>(SYSTEM_ISSUE_TYPE_RESPONSE_SCHEME)
+
 const ISSUE_TYPE_ICON_RESPONSE_SCHEME = Joi.object({
   data: Joi.object({
     id: Joi.string().required(),
@@ -63,31 +85,19 @@ type QueryParamsType = {
 
 const isIssueTypeIconResponse = createSchemeGuard<IssueTypeIconResponse>(ISSUE_TYPE_ICON_RESPONSE_SCHEME)
 
-const createIconType = (): ObjectType =>
-  new ObjectType({
-    elemID: new ElemID(JIRA, ISSUE_TYPE_ICON_NAME),
-    fields: {
-      id: {
-        refType: BuiltinTypes.SERVICE_ID_NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
-      content: { refType: BuiltinTypes.STRING },
-      contentType: { refType: BuiltinTypes.STRING },
-      fileName: { refType: BuiltinTypes.STRING },
-    },
-    path: [JIRA, adapterElements.TYPES_PATH, ISSUE_TYPE_ICON_NAME],
-  })
-
-const getIconContent = async (link: string, client: JiraClient, queryParams: QueryParamsType): Promise<Buffer> => {
+const getIconContent = async (url: string, client: JiraClient, queryParams: QueryParamsType): Promise<Buffer> => {
   try {
-    const res = await client.get({ url: link, queryParams, responseType: 'arraybuffer' })
+    const res = await client.get({ url, queryParams, responseType: 'arraybuffer' })
     const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
     if (!Buffer.isBuffer(content)) {
       throw new Error('Failed to fetch attachment content, response is not a buffer.')
     }
     return content
   } catch (e) {
-    throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e.message}`)
+    if (e instanceof Error) {
+      throw new Error(`Failed to fetch attachment content from Jira API. error: ${e.message}`)
+    }
+    throw new Error('Failed to fetch attachment content from Jira API.')
   }
 }
 const convertPathName = (pathName: string): string => pathName.replace(/_([a-z])/g, (_match, l) => l.toUpperCase())
@@ -183,23 +193,49 @@ const deployIcon = async (change: Change<InstanceElement>, client: JiraClient): 
   }
 }
 
+const getSystemIssueTypeIconsIds = async (client: JiraClient): Promise<number[]> => {
+  const resp = await client.get({
+    url: '/rest/api/3/avatar/issuetype/system',
+  })
+  if (!isSystemIssueTypeResponse(resp.data)) {
+    return []
+  }
+  return resp.data.system.map(icon => Number(icon.id))
+}
+
 const filter: FilterCreator = ({ client }) => ({
   name: 'issueTypeIconFilter',
   onFetch: async elements => {
+    if (client.isDataCenter) {
+      return { errors: [] }
+    }
+    const systemIssueTypeIconsIds = await getSystemIssueTypeIconsIds(client)
     const issueTypes = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ISSUE_TYPE_NAME)
-
-    const iconType = createIconType()
+      .filter(instance => !systemIssueTypeIconsIds.includes(instance.value.avatarId))
+    const iconType = new ObjectType({
+      elemID: new ElemID(JIRA, ISSUE_TYPE_ICON_NAME),
+      fields: {
+        id: {
+          refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+        },
+        content: { refType: BuiltinTypes.STRING },
+        contentType: { refType: BuiltinTypes.STRING },
+        fileName: { refType: BuiltinTypes.STRING },
+      },
+      path: [JIRA, adapterElements.TYPES_PATH, ISSUE_TYPE_ICON_NAME],
+    })
     setTypeDeploymentAnnotations(iconType)
     await addAnnotationRecursively(iconType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(iconType, CORE_ANNOTATIONS.UPDATABLE)
     await addAnnotationRecursively(iconType, CORE_ANNOTATIONS.DELETABLE)
     elements.push(iconType)
     const errors: SaltoError[] = []
-    try {
       await Promise.all(
         issueTypes.map(async issueType => {
+          try {
           const queryParams = {
             format: 'png',
           }
@@ -213,12 +249,11 @@ const filter: FilterCreator = ({ client }) => ({
             queryParams,
           })
           elements.push(icon)
-          return undefined
+        } catch (e) {
+          errors.push({ message: e.message, severity: 'Error' })
+        }
         }),
       )
-    } catch (e) {
-      errors.push({ message: e.message, severity: 'Error' })
-    }
     return { errors }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

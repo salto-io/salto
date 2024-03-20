@@ -1431,8 +1431,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       dataField: '.',
       fieldTypeOverrides: [{ fieldName: 'untranslatedName', fieldType: 'string' }],
-      fieldsToOmit: [{ fieldName: 'avatarId' }, { fieldName: 'iconUrl' }],
+      fieldsToOmit: [{ fieldName: 'iconUrl' }],
       fieldsToHide: [
+        {
+          fieldName: 'avatarId',
+        },
         {
           fieldName: 'id',
         },
@@ -1443,10 +1446,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       add: {
         url: '/rest/api/3/issuetype',
         method: 'post',
+        fieldsToIgnore: ['avatar'],
       },
       modify: {
         url: '/rest/api/3/issuetype/{id}',
         method: 'put',
+        fieldsToIgnore: ['avatar'],
       },
       remove: {
         url: '/rest/api/3/issuetype/{id}',

@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { ResponseType } from 'axios'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import {inspectValue, safeJsonStringify} from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -288,8 +288,9 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
         headers: this.extractHeaders(res.headers),
       }
     } catch (e) {
+      const dataToLog = Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data
       log.warn(
-        `failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`,
+        `failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data ?? dataToLog)}, headers: ${safeJsonStringify(headers)} stack: ${e.stack}`,
       )
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)

@@ -21,7 +21,7 @@ import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
 import OktaClient from '../client/client'
 
-const verifyProfileMappingIsDeleted = async (profileMappingId: number, client: OktaClient): Promise<boolean> => {
+const verifyProfileMappingIsDeleted = async (profileMappingId: string, client: OktaClient): Promise<boolean> => {
   try {
     return (
       (
@@ -47,7 +47,6 @@ const verifyProfileMappingIsDeleted = async (profileMappingId: number, client: O
  * removed in the same deploy action.
  */
 const filterCreator: FilterCreator = ({ client }) => ({
-  // If a ProfileMapping is removed, mark the result as success without actually using the endpoint.
   name: 'profileMappingRemovalFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(

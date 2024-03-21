@@ -137,7 +137,8 @@ def merge_dictionaries(existing_data, new_bundle_dict):
       for version in new_bundle_data:
         if version not in existing_bundle_data:
           existing_bundle_data[version] = new_bundle_data
-          merged_dict[bundle_id] = existing_bundle_data
+          
+      merged_dict[bundle_id] = existing_bundle_data
 
   return merged_dict
 

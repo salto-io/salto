@@ -30,6 +30,7 @@ import {
   SLA_TYPE_NAME,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
+  OBJECT_TYPE_ICON,
 } from '../constants'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
 
@@ -50,6 +51,7 @@ const assetsSupportedTypes = [
   OBJECT_TYPE_ATTRIBUTE_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
+  OBJECT_TYPE_ICON,
 ]
 
 const filterCreator: FilterCreator = ({ config }) => ({

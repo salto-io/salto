@@ -274,6 +274,7 @@ export const DEFAULT_FILTERS = [
   // must run after workflowFilter
   emptyValidatorWorkflowFilter,
   // must run before fieldReferencesFilter
+  formsFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -318,7 +319,6 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
-  formsFilter,
   serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter

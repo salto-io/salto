@@ -1,4 +1,4 @@
-# PLACEHOLDER CLI options
+# Google Workspace CLI options
 
 ## Non interactive Login Parameters
 
@@ -6,12 +6,10 @@ Supprted parameters are:
 
 TODO adjust according to auth
 
-- `subdomain`
-- `username`
-- `password`
+- `acceeToken`: The access token to use for authentication
 
 ### Example
 
 ```
-salto account add PLACEHOLDER --login-parameters username=username
+salto account add google_workspace
 ```

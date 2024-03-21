@@ -52,7 +52,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles',
+          path: '/customer/my_customer/roles',
         },
         transformation: {
           root: 'items',
@@ -75,7 +75,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   //   requests: [
   //     {
   //       endpoint: {
-  //         path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles/ALL/privileges',
+  //         path: '/customer/my_customer/roles/ALL/privileges',
   //       },
   //       transformation: {
   //         root: 'items',
@@ -97,7 +97,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/domains',
+          path: '/customer/my_customer/domains',
         },
         transformation: {
           root: 'domains',
@@ -149,6 +149,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'domainAliasName' }] },
       },
     },
   },
@@ -156,7 +157,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: 'https://admin.googleapis.com/admin/directory/v1/groups?domain={domain}',
+          path: '/groups?domain={domain}',
         },
         transformation: {
           root: 'groups',

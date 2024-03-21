@@ -37,7 +37,7 @@ export const validateCredentials = async ({
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions =>
   clientUtils.axiosConnection({
     retryOptions,
-    baseURLFunc: async () => '',
+    baseURLFunc: async () => 'https://admin.googleapis.com/admin/directory/v1',
     authParamsFunc: async ({ accessToken }: Credentials) => ({
       headers: {
         Authorization: `Bearer ${accessToken}`,

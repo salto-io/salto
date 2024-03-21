@@ -1,5 +1,5 @@
-# PLACEHOLDER adapter
+# Google Workspace adapter
 
-PLACEHOLDER adapter for salto.io
+Google Workspace adapter for salto.io
 
 TODO add details about the adapter

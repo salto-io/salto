@@ -39,7 +39,8 @@
     "form-data": "^4.0.0",
     "axios": "^0.26.1",
     "node-html-parser": "^6.1.5",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "google-auth-library": "^9.7.0"
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.54",

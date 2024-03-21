@@ -22,8 +22,51 @@ type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefiniti
 // TODO example - adjust and remove irrelevant definitions. check @adapter-components/deployment for helper functions
 
 const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
-  const standardRequestDefinitions = {}
-  const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {}
+  const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
+    AdditionalAction,
+    ClientOptions
+  >({})
+  const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    role: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/roles',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['roleId', 'kind', 'etag'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/roles/{roleId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/roles/{roleId}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  }
   return _.merge(standardRequestDefinitions, customDefinitions)
 }
 
@@ -42,14 +85,5 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
     },
     customizations: createCustomizations(),
   },
-  dependencies: [
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'add' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'add' },
-    // },
-    // {
-    //   first: { type: 'dynamic_content_item', action: 'remove' },
-    //   second: { type: 'dynamic_content_item_variant', action: 'remove' },
-    // },
-  ],
+  dependencies: [],
 })

@@ -122,7 +122,7 @@ const getOauthConfig = async (
   outputLine(formatCredentialsHeader(oauthMethod.oauthRequestParameters.elemID.adapter), output)
   const newConfig = await getLoginInput(oauthMethod.oauthRequestParameters)
   const oauthParameters = oauthMethod.createOAuthRequest(newConfig)
-  const credentials = oauthMethod.createFromOauthResponse(
+  const credentials = await oauthMethod.createFromOauthResponse(
     newConfig.value,
     await processOauthCredentials(
       newConfig.value.port,

@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import os from 'os'
+import path from 'path'
 import _ from 'lodash'
 import { Readable } from 'stream'
 import { createGzip } from 'zlib'
@@ -380,11 +382,11 @@ describe('localState', () => {
       const clone = mockElement.clone()
       const newField = Object.values(mockElement.fields)[0]
       newField.name = 'new_field'
-      clone.fields.newfield = newField
+      clone.fields.newField = newField
       await state.set(clone)
 
       const fromState = (await state.get(mockElement.elemID)) as ObjectType
-      expect(fromState.fields.newfield).toBeDefined()
+      expect(fromState.fields.newField).toBeDefined()
     })
 
     it('should add to state', async () => {
@@ -471,7 +473,13 @@ describe('localState', () => {
       })
       overridingStateFilesSource = mockStaticFilesSource([])
       contentProvider = mockContentProvider({})
-      state = localState('empty', '', inMemRemoteMapCreator(), contentProvider, overridingStateFilesSource)
+      state = localState(
+        path.join(os.tmpdir(), 'empty'),
+        '',
+        inMemRemoteMapCreator(),
+        contentProvider,
+        overridingStateFilesSource,
+      )
     })
     it('should use the overriding files source and not the one from the content provider', async () => {
       await state.set(instanceWithStaticFile)

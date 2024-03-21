@@ -39,7 +39,15 @@ import JiraClient, { graphQLResponseType } from '../../../src/client/client'
 import issueLayoutFilter, { getLayoutRequestsAsync } from '../../../src/filters/layouts/issue_layout'
 import asyncApiCallsFilter from '../../../src/filters/async_api_calls'
 import { getFilterParams, mockClient, createEmptyType } from '../../utils'
-import { ISSUE_LAYOUT_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, ISSUE_TYPE_SCREEN_SCHEME_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
+import {
+  ISSUE_LAYOUT_TYPE,
+  ISSUE_TYPE_NAME,
+  ISSUE_TYPE_SCHEMA_NAME,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
+  JIRA,
+  PROJECT_TYPE,
+  SCREEN_SCHEME_TYPE,
+} from '../../../src/constants'
 import { createLayoutType } from '../../../src/filters/layouts/layout_types'
 import { generateLayoutId } from '../../../src/filters/layouts/layout_service_operations'
 
@@ -125,7 +133,7 @@ describe('issue layout filter', () => {
     issueTypeType = createEmptyType(ISSUE_TYPE_NAME)
 
     issueTypeScheme = createEmptyType(ISSUE_TYPE_SCHEMA_NAME)
-    
+
     screenSchemeInstance = new InstanceElement('screenScheme1', screenSchemeType, {
       id: 111,
       screens: { default: 11 },

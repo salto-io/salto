@@ -113,19 +113,23 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
       .filter(project => project.value.issueTypeScreenScheme?.issueTypeScreenScheme?.id !== undefined)
       .map(project => [
         project.value.id,
-        issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
-          .filter((struct: issueTypeMappingStruct) =>
-            intersectionOfIssueType(struct, issueTypeSchemesToIssueTypeList, project),
-          )
-          .filter((struct: issueTypeMappingStruct) =>
-            isScreenOfViewOrDefaultIssueTypeScreenScheme(
-              struct,
-              issueTypeScreenSchemesToiIssueTypeMappings,
-              issueTypeSchemesToIssueTypeList,
-              project,
-            ),
-          )
-          .map((struct: issueTypeMappingStruct) => screensSchemesToDefaultOrViewScreens[struct.screenSchemeId]),
+        [
+          ...new Set(
+            issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
+              .filter((struct: issueTypeMappingStruct) =>
+                intersectionOfIssueType(struct, issueTypeSchemesToIssueTypeList, project),
+              )
+              .filter((struct: issueTypeMappingStruct) =>
+                isScreenOfViewOrDefaultIssueTypeScreenScheme(
+                  struct,
+                  issueTypeScreenSchemesToiIssueTypeMappings,
+                  issueTypeSchemesToIssueTypeList,
+                  project,
+                ),
+              )
+              .map((struct: issueTypeMappingStruct) => screensSchemesToDefaultOrViewScreens[struct.screenSchemeId]),
+          ),
+        ],
       ]),
   )
 }

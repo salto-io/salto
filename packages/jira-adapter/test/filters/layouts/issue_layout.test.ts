@@ -23,8 +23,6 @@ import {
   ObjectType,
   ElemID,
   InstanceElement,
-  BuiltinTypes,
-  ListType,
   ReferenceExpression,
   Element,
   isInstanceElement,
@@ -40,7 +38,7 @@ import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 import JiraClient, { graphQLResponseType } from '../../../src/client/client'
 import issueLayoutFilter, { getLayoutRequestsAsync } from '../../../src/filters/layouts/issue_layout'
 import asyncApiCallsFilter from '../../../src/filters/async_api_calls'
-import { getFilterParams, mockClient } from '../../utils'
+import { getFilterParams, mockClient, createEmptyType } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
 import { createLayoutType } from '../../../src/filters/layouts/layout_types'
 import { generateLayoutId } from '../../../src/filters/layouts/layout_service_operations'
@@ -95,16 +93,13 @@ describe('issue layout filter', () => {
     config.fetch.enableIssueLayouts = true
     layoutFilter = issueLayoutFilter(getFilterParams({ client, config, adapterContext })) as typeof layoutFilter
     asyncFilter = asyncApiCallsFilter(getFilterParams({ client, config })) as typeof asyncFilter
-    screenType = new ObjectType({
-      elemID: new ElemID(JIRA, 'Screen'),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-      },
-    })
+    createEmptyType('Screen')
+    screenType = createEmptyType('Screen')
     screenInstance = new InstanceElement('screen1', screenType, {
       id: 11,
     })
-    fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
+
+    fieldType = createEmptyType('Field')
     fieldInstance1 = new InstanceElement('testField1', fieldType, {
       id: 'testField1',
       name: 'TestField1',
@@ -117,45 +112,18 @@ describe('issue layout filter', () => {
         system: 'testField2',
       },
     })
-    screenSchemeType = new ObjectType({
-      elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        screens: { refType: screenType },
-      },
-    })
-    issueTypeScreenSchemeItemType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueTypeScreenSchemeItem'),
-      fields: {
-        issueTypeId: { refType: BuiltinTypes.STRING },
-        screenSchemeId: { refType: screenSchemeType },
-      },
-    })
-    issueTypeScreenSchemeType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueTypeScreenScheme'),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        issueTypeMappings: { refType: new ListType(issueTypeScreenSchemeItemType) },
-      },
-    })
-    projectType = new ObjectType({
-      elemID: new ElemID(JIRA, PROJECT_TYPE),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        simplified: { refType: BuiltinTypes.BOOLEAN },
-        issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
-        key: { refType: BuiltinTypes.STRING },
-      },
-    })
-    issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
 
-    issueTypeScheme = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueTypeScheme'),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        issueTypeIds: { refType: new ListType(BuiltinTypes.STRING) },
-      },
-    })
+    screenSchemeType = createEmptyType(SCREEN_SCHEME_TYPE)
+
+    issueTypeScreenSchemeItemType = createEmptyType('IssueTypeScreenSchemeItem')
+
+    issueTypeScreenSchemeType = createEmptyType('IssueTypeScreenScheme')
+
+    projectType = createEmptyType(PROJECT_TYPE)
+
+    issueTypeType = createEmptyType('IssueType')
+
+    issueTypeScheme = createEmptyType('IssueTypeScheme')
 
     screenSchemeInstance = new InstanceElement('screenScheme1', screenSchemeType, {
       id: 111,
@@ -234,20 +202,12 @@ describe('issue layout filter', () => {
     beforeEach(() => {
       client = mockCli.client
 
-      projectInstance = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11111',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
-          issueTypeScheme: { issueTypeScheme: { id: '10' } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
-      )
+      projectInstance = new InstanceElement('project1', projectType, {
+        id: '11111',
+        projectTypeKey: 'software',
+        issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
+        issueTypeScheme: { issueTypeScheme: { id: '10' } },
+      })
 
       issueTypeInstance1 = new InstanceElement('issueType1', issueTypeType, {
         id: '100',
@@ -530,7 +490,7 @@ describe('issue layout filter', () => {
         'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11',
       )
     })
-    it('should not do problems if the adapterContext.layoutsPromise is empty', async () => {
+    it('should not crash if the adapterContext.layoutsPromise is empty', async () => {
       adapterContext.layoutsPromise = {}
       await layoutFilter.onFetch(elements)
       expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()

@@ -22,6 +22,7 @@ import {
   isResolvedReferenceExpression,
   walkOnElement,
   walkOnValue,
+  getInstancesFromElementSource,
 } from '@salto-io/adapter-utils'
 import {
   elements as adapterElements,
@@ -48,6 +49,7 @@ import {
   Values,
   ElemID,
   Field,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
@@ -78,7 +80,7 @@ import {
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
+import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -86,6 +88,10 @@ import { JiraConfig } from '../../config/config'
 import { transformTransitions } from '../workflow/transition_structure'
 import { scriptRunnerObjectType } from '../workflow/post_functions_types'
 import { getStatusIdToStepId } from '../workflow/steps_deployment'
+import {
+  isWorkflowSchemeItem,
+  projectHasWorkflowSchemeReference,
+} from '../../change_validators/workflow_scheme_migration'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -391,6 +397,30 @@ const getWorkflowPayload = (
   return workflowPayload
 }
 
+const getWorkflowsFromWorkflowScheme = async (
+  workflowSchemeInstance: InstanceElement,
+): Promise<ReferenceExpression[]> => {
+  const { defaultWorkflow } = workflowSchemeInstance.value
+  const workflows = makeArray(workflowSchemeInstance.value?.items)
+    .filter(isWorkflowSchemeItem)
+    .map(item => item.workflow)
+    .filter(values.isDefined)
+  return [defaultWorkflow, ...workflows].filter(isReferenceExpression)
+}
+
+// active workflow is a workflow that is associated with a project using a workflow scheme
+const getActiveWorkflows = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
+  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+  const activeWorkflows = await awu(projects)
+    .filter(projectHasWorkflowSchemeReference)
+    .map(project => project.value.workflowScheme.getResolvedValue(elementsSource))
+    .filter(isInstanceElement)
+    .flatMap(getWorkflowsFromWorkflowScheme)
+    .map(workflowRef => workflowRef.elemID.getFullName())
+    .toArray()
+  return new Set(activeWorkflows)
+}
+
 const getWorkflowStepsUrl = (baseUrl: string, workflowName: string): URL => {
   const url = new URL('/secure/admin/workflows/ViewWorkflowSteps.jspa', baseUrl)
   url.searchParams.append('workflowMode', 'live')
@@ -400,6 +430,7 @@ const getWorkflowStepsUrl = (baseUrl: string, workflowName: string): URL => {
 
 const deploySteps = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  activeWorkflows: Set<string>,
   client: JiraClient,
 ): Promise<void> => {
   const workflowPayload = getChangeData(change).value
@@ -423,26 +454,58 @@ const deploySteps = async (
       }
       const stepStatus = payloadStatusesByReference[status.statusReference].id
       const workflowStep = statusIdToStepId[payloadStatusesByReference[status.statusReference].id]
-      await client.jspPost({
-        url: '/secure/admin/workflows/EditWorkflowStep.jspa',
-        data: {
-          stepName: status.name,
-          workflowStep,
-          stepStatus,
-          workflowName,
-          workflowMode: 'live',
-        },
-      })
+      if (activeWorkflows.has(change.data.after.elemID.getFullName())) {
+        // create draft
+        await client.jspGet({
+          url: '/secure/admin/workflows/EditWorkflowDispatcher.jspa',
+          queryParams: {
+            wfName: workflowName,
+          },
+        })
+        // edit steps
+        await client.jspPost({
+          url: '/secure/admin/workflows/EditWorkflowStep.jspa',
+          data: {
+            stepName: status.name,
+            workflowStep,
+            stepStatus,
+            workflowName,
+            workflowMode: 'draft',
+          },
+        })
+        // publish draft
+        await client.jspPost({
+          url: '/secure/admin/workflows/PublishDraftWorkflow.jspa',
+          data: {
+            enableBackup: 'false',
+            workflowName,
+            workflowMode: 'draft',
+          },
+        })
+      } else {
+        await client.jspPost({
+          url: '/secure/admin/workflows/EditWorkflowStep.jspa',
+          data: {
+            stepName: status.name,
+            workflowStep,
+            stepStatus,
+            workflowName,
+            workflowMode: 'live',
+          },
+        })
+      }
     })
 }
 
 const deployWorkflow = async ({
   change,
+  activeWorkflows,
   client,
   config,
   elementsSource,
 }: {
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+  activeWorkflows: Set<string>
   client: JiraClient
   config: JiraConfig
   elementsSource: ReadOnlyElementsSource
@@ -489,7 +552,7 @@ const deployWorkflow = async ({
   }
   if (config.client.usePrivateAPI) {
     try {
-      await deploySteps(change, client)
+      await deploySteps(change, activeWorkflows, client)
     } catch (error) {
       const workflowName = getChangeData(change).value.workflows[0].name
       const workflowStepsLink = getWorkflowStepsUrl(client.baseUrl, workflowName)
@@ -641,9 +704,11 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(changes, isAdditionOrModificationWorkflowChange)
+      const activeWorkflows = _.isEmpty(relevantChanges) ? new Set<string>() : await getActiveWorkflows(elementsSource)
       const deployResult = await deployChanges(relevantChanges, async change =>
         deployWorkflow({
           change,
+          activeWorkflows,
           client,
           config,
           elementsSource,

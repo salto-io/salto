@@ -76,14 +76,14 @@ describe('client', () => {
     mockAxios.onDelete().reply(200, { response: 'asd' })
     await client.patchPrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' }, data: { a: 'b' } })
     await client.jspPost({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
+    await client.jspGet({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
     await client.putPrivate({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
     await client.postPrivate({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
     await client.getPrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' } })
     await client.deletePrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' } })
     expect(mockAxios.history.patch[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
-    expect(mockAxios.history.get.find(r => r.url === '/myPath')?.headers?.['x-atlassian-force-account-id']).toEqual(
-      '1234',
-    )
+    expect(mockAxios.history.get[3].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.get[4].headers?.['x-atlassian-force-account-id']).toEqual('1234')
     expect(mockAxios.history.post[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
     expect(mockAxios.history.post[1].headers?.['x-atlassian-force-account-id']).toEqual('1234')
     expect(mockAxios.history.delete[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')

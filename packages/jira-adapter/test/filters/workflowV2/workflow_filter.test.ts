@@ -24,9 +24,10 @@ import {
   ReferenceExpression,
   toChange,
   MapType,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { naclCase } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { logger } from '@salto-io/logging'
 import { FilterResult } from '../../../src/filter'
@@ -689,6 +690,11 @@ describe('workflow filter', () => {
     let statusCategory1: InstanceElement
     let status1: InstanceElement
     let status2: InstanceElement
+    let projectInstance: InstanceElement
+    let issueTypeInstance: InstanceElement
+    let workflowSchemeInstance: InstanceElement
+    let defaultWorkflowInstance: InstanceElement
+    let elementsSource: ReadOnlyElementsSource
 
     const modificationSetup = (): void => {
       workflowInstance.value.id = '1'
@@ -697,12 +703,12 @@ describe('workflow filter', () => {
         versionNumber: 1,
       }
       workflowInstanceBefore = _.cloneDeep(workflowInstance)
-      const issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME), { id: '11' })
-      const projectInstance = new InstanceElement('project', createEmptyType(PROJECT_TYPE), { id: '22' })
+      issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME), { id: '11' })
+      const projectInstance2 = new InstanceElement('project', createEmptyType(PROJECT_TYPE), { id: '22' })
       const statusMapping = [
         {
           issueTypeId: new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          projectId: new ReferenceExpression(projectInstance2.elemID, projectInstance2),
           statusMigrations: [
             {
               newStatusReference: new ReferenceExpression(status1.elemID, status1),
@@ -876,6 +882,23 @@ describe('workflow filter', () => {
           },
         },
       })
+      issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME))
+      defaultWorkflowInstance = new InstanceElement('defaultWorkflow', workflowType)
+      workflowSchemeInstance = new InstanceElement('workflowScheme', createEmptyType('WorkflowScheme'), {
+        id: '1',
+        name: 'workflowScheme',
+        defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
+        items: [
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
+          },
+        ],
+      })
+      projectInstance = new InstanceElement('project', createEmptyType(PROJECT_TYPE), {
+        name: 'project',
+        workflowScheme: new ReferenceExpression(workflowSchemeInstance.elemID, workflowSchemeInstance),
+      })
       const { client: cli, connection: conn } = mockClient()
       client = cli
       connection = conn
@@ -976,10 +999,12 @@ describe('workflow filter', () => {
         ],
       })
       config.deploy.taskMaxRetries = 3
+      elementsSource = buildElementsSourceFromElements([projectInstance, workflowSchemeInstance])
       filter = workflowFilter(
         getFilterParams({
           client,
           config,
+          elementsSource,
         }),
       ) as typeof filter
     })
@@ -1085,6 +1110,7 @@ describe('workflow filter', () => {
       describe('addition', () => {
         beforeEach(() => {
           workflowInstance.value = WORKFLOW_PAYLOAD
+          workflowSchemeInstance.value.items = undefined
         })
         it('should add the new id, version and scope to the workflow instance', async () => {
           await filter.deploy([toChange({ after: workflowInstance })])
@@ -1201,15 +1227,22 @@ describe('workflow filter', () => {
             })
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          // one call is for steps deployment
-          expect(connection.get).toHaveBeenCalledTimes(3)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(4)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
         })
 
         it('should deploy workflow steps', async () => {
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          expect(connection.post).toHaveBeenCalledTimes(1)
+          expect(connection.get).toHaveBeenCalledTimes(3)
+          expect(connection.get).toHaveBeenCalledWith('/secure/admin/workflows/EditWorkflowDispatcher.jspa', {
+            params: {
+              wfName: 'workflow',
+            },
+            headers: JSP_API_HEADERS,
+          })
+          expect(connection.post).toHaveBeenCalledTimes(2)
           expect(connection.post).toHaveBeenCalledWith(
             '/secure/admin/workflows/EditWorkflowStep.jspa',
             new URLSearchParams({
@@ -1217,7 +1250,18 @@ describe('workflow filter', () => {
               workflowStep: '4',
               stepStatus: '1',
               workflowName: 'workflow',
-              workflowMode: 'live',
+              workflowMode: 'draft',
+            }),
+            {
+              headers: JSP_API_HEADERS,
+            },
+          )
+          expect(connection.post).toHaveBeenCalledWith(
+            '/secure/admin/workflows/PublishDraftWorkflow.jspa',
+            new URLSearchParams({
+              enableBackup: 'false',
+              workflowName: 'workflow',
+              workflowMode: 'draft',
             }),
             {
               headers: JSP_API_HEADERS,
@@ -1235,8 +1279,8 @@ describe('workflow filter', () => {
           })
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          // one call is for steps deployment
-          expect(connection.get).toHaveBeenCalledTimes(2)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(3)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
           expect(logErrorSpy).toHaveBeenCalledWith(
             'Status migration failed for workflow: workflow, with status CANCELLED',
@@ -1275,8 +1319,8 @@ describe('workflow filter', () => {
 
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          // one call is for steps deployment
-          expect(connection.get).toHaveBeenCalledTimes(5)
+          // two calls is for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(6)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
           expect(logErrorSpy).toHaveBeenCalledWith(
             'Failed to run status migration for workflow: workflow - did not receive success response after await timeout',
@@ -1292,8 +1336,8 @@ describe('workflow filter', () => {
           })
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          // one call is for steps deployment
-          expect(connection.get).toHaveBeenCalledTimes(2)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(3)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
           expect(logErrorSpy).toHaveBeenCalledWith(
             'Status migration failed for workflow: workflow, with unknown status UNKNOWN',
@@ -1306,8 +1350,8 @@ describe('workflow filter', () => {
           })
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          // one call is for steps deployment
-          expect(connection.get).toHaveBeenCalledTimes(2)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(3)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
         })
       })

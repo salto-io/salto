@@ -214,40 +214,40 @@ export const createInstances = (
   )
 
   const portalGroup = new InstanceElement(
-    `${randomString}_SUP`,
+    `PG_${randomString}_SUP`,
     findType(PORTAL_GROUP_TYPE, fetchedElements),
-    createPortalGroupValues(randomString, fetchedElements),
+    createPortalGroupValues(`PG_${randomString}`, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
 
   const queue = new InstanceElement(
-    `${randomString}_SUP`,
+    `Queue_${randomString}_SUP`,
     findType(QUEUE_TYPE, fetchedElements),
-    createQueueValues(randomString, fetchedElements),
+    createQueueValues(`Queue_${randomString}`, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
 
   const calendar = new InstanceElement(
-    `${randomString}_SUP`,
+    `CAL_${randomString}_SUP`,
     findType(CALENDAR_TYPE, fetchedElements),
-    createCalendarValues(randomString),
+    createCalendarValues(`CAL_${randomString}`),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
   const SLA = new InstanceElement(
-    'Lemon_SUP',
+    `SLA_${randomString}_SUP`,
     findType(SLA_TYPE_NAME, fetchedElements),
-    createSLAValues(fetchedElements),
+    createSLAValues(`SLA_${randomString}`, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
 
   const requestType = new InstanceElement(
-    `${randomString}_SUP`,
+    `RT_${randomString}_SUP`,
     findType('RequestType', fetchedElements),
-    createrequestTypeValues(randomString, fetchedElements),
+    createrequestTypeValues(`RT_${randomString}`, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] },
   )
@@ -262,9 +262,9 @@ export const createInstances = (
   const objectSchemaRef = createReference(new ElemID(JIRA, 'ObjectSchema', 'instance', 'testSchema'), fetchedElements)
 
   const objectSchema = new InstanceElement(
-    randomString,
+    `OS_${randomString}`,
     findType(OBJECT_SCHEMA_TYPE, fetchedElements),
-    createObjectSchmaValues(randomString),
+    createObjectSchmaValues(`OS_${randomString}`),
     undefined,
   )
 

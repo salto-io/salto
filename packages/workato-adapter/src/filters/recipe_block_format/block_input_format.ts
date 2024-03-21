@@ -1,0 +1,163 @@
+/*
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  Element,
+  InstanceElement,
+  Value,
+  getChangeData,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { TransformFunc, createSchemeGuard, transformValues } from '@salto-io/adapter-utils'
+import Joi from 'joi'
+import _ from 'lodash'
+import { RECIPE_CODE_TYPE, RECIPE_TYPE } from '../../constants'
+import { FilterCreator } from '../../filter'
+import { BlockBase } from '../cross_service/recipe_block_types'
+
+const log = logger(module)
+
+type KeyValue = {
+  key: string
+  value: Value
+}
+
+type RecipeInputBlock = BlockBase & {
+  as: string
+  provider: string
+  content: Array<KeyValue>
+  input: {
+    [key: string]: Value
+  }
+}
+
+const RECIPE_INPUT_BLOCK_SCHEMA = Joi.object({
+  keyword: Joi.string().invalid('if').required(),
+  as: Joi.string().required(),
+  provider: Joi.string().required(),
+  input: Joi.object().min(1).unknown(true).required(),
+})
+  .unknown(true)
+  .required()
+
+const KEY_VALUE_SCHEMA = Joi.object({
+  key: Joi.string().required(),
+  value: Joi.any().required(),
+})
+  .unknown(true)
+  .required()
+
+const RECIPE_NEW_INPUT_BLOCK_SCHEMA = Joi.object({
+  keyword: Joi.string().invalid('if').required(),
+  as: Joi.string().required(),
+  provider: Joi.string().required(),
+  content: Joi.array().items(KEY_VALUE_SCHEMA).min(1).required(),
+})
+  .unknown(true)
+  .required()
+
+const transformServerToNacl: TransformFunc = async ({ value }) => {
+  if (createSchemeGuard<RecipeInputBlock>(RECIPE_INPUT_BLOCK_SCHEMA)(value)) {
+    value.content = []
+    Object.keys(value.input).forEach(key => {
+      value.content.push({
+        key,
+        value: value.input[key],
+      })
+    })
+    if (Object.keys(value.input).length !== 0) {
+      log.warn(`Unknown input keys found in recipe block ${value.as}: ${Object.keys(value.input)}`)
+    }
+    return _.omit(value, 'input')
+  }
+  return value
+}
+
+const transformNaclToServer: TransformFunc = async ({ value }) => {
+  if (createSchemeGuard<RecipeInputBlock>(RECIPE_NEW_INPUT_BLOCK_SCHEMA)(value)) {
+    value.input = {}
+    value.content.forEach(item => {
+      value.input[item.key] = item.value
+    })
+    if (Object.keys(value.content).length !== 0) {
+      log.warn(`Unknown content keys found in recipe block ${value.as}: ${Object.keys(value.input)}`)
+    }
+    return _.omit(value, 'content')
+  }
+  return value
+}
+
+const transformRecipeBlock = async (instance: InstanceElement, transformFunc: TransformFunc): Promise<void> => {
+  instance.value =
+    (await transformValues({
+      values: instance.value,
+      type: await instance.getType(),
+      strict: false,
+      allowEmpty: true, // TODO check if strict and allowEmpty
+      transformFunc,
+    })) ?? instance.value
+}
+
+/**
+ * Change the input format of recipe blocks to support cross-service references addition.
+ * From each input key-value we will create a new item with key and value.
+ * For example:
+ * input: {
+ *  <key_name1> : <value_name1>,
+ *  ...
+ * }
+ * will be changed to:
+ * input: [
+ *  {
+ *    key: <key_name1>
+ *    value: <value_name1>
+ *  },
+ *  ...
+ * ]
+ */
+const filterCreator: FilterCreator = ({ config }) => ({
+  name: 'recipeBlockInputFormatFilter',
+  onFetch: async (elements: Element[]) => {
+    if (config.enableDeployWithReferencesSupport === false) {
+      log.debug('Parsing recipe block input format was disabled')
+      return
+    }
+    await Promise.all(
+      elements
+        .filter(isInstanceElement)
+        .filter(elem => elem.elemID.typeName === RECIPE_CODE_TYPE)
+        .map(instance => transformRecipeBlock(instance, transformServerToNacl)),
+    )
+  },
+  preDeploy: async changes => {
+    if (config.enableDeployWithReferencesSupport === false) {
+      log.debug('Parsing recipe block input format was disabled')
+      return
+    }
+    await Promise.all(
+      changes
+        .filter(isInstanceChange)
+        .map(getChangeData)
+        .filter(change => change.elemID.typeName === RECIPE_TYPE)
+        // Although there are changes in the "recipe__code", we only check the "recipe" type.
+        // This is because the resolving hook only returns the "recipe" type.
+        .map(instance => transformRecipeBlock(instance, transformNaclToServer)),
+    )
+  },
+})
+
+export default filterCreator

@@ -236,12 +236,15 @@ describe('OrganizationExistence', () => {
       ],
     })
     await getOrganizationsByIds(['1', '2'], client)
+    const responseText =
+      '{"url":"/api/v2/organizations/show_many?ids=1,2","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
 
     expect(logTrace).toHaveBeenCalledWith([
-      'Full HTTP response for %s on %s: %s',
+      'Full HTTP response for %s on %s (size: %d): %s',
       'GET',
       '/api/v2/organizations/show_many?ids=1,2',
-      '{"url":"/api/v2/organizations/show_many?ids=1,2","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}',
+      responseText.length,
+      responseText,
     ])
   })
 })

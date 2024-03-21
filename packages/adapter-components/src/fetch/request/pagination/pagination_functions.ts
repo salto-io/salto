@@ -244,8 +244,7 @@ export const cursorHeaderPagination = ({
           }
           return [
             {
-              ...currentParams,
-              ...Object.fromEntries(nextPage.searchParams.entries()),
+              ..._.merge({}, currentParams, { queryParams: Object.fromEntries(nextPage.searchParams.entries()) }),
               ...headers,
             },
           ]

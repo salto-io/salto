@@ -18,6 +18,7 @@ import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType }
 import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+
 import {
   WORKATO,
   PROPERTY_TYPE,
@@ -45,6 +46,11 @@ export const EXTENDED_SCHEMA_FIELDS: configUtils.FieldToOmitType[] = [
   { fieldName: 'extended_output_schema' },
 ]
 
+export const FIELDS_TO_OMIT_WHILE_SUPPORT_DEPLOY_WITH_REFERENCES: configUtils.FieldToOmitType[] = [
+  { fieldName: 'dynamicPickListSelection' },
+  { fieldName: 'visible_config_fields' },
+]
+
 export const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
@@ -69,6 +75,7 @@ export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const ENABLE_DEPLOY_SUPPORT_FLAG = 'enableDeploySupport'
+export const ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG = 'enableDeployWithReferencesSupport'
 
 export type WorkatoClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
@@ -83,6 +90,7 @@ export type WorkatoConfig = {
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
   [DEPLOY_CONFIG]?: UserDeployConfig
   [ENABLE_DEPLOY_SUPPORT_FLAG]?: boolean
+  [ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG]?: boolean
 }
 
 export const SUPPORTED_TYPES = {
@@ -217,9 +225,10 @@ const DEFAULT_CONFIG: WorkatoConfig = {
     supportedTypes: SUPPORTED_TYPES,
   },
   [ENABLE_DEPLOY_SUPPORT_FLAG]: false,
+  [ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG]: false,
 }
 
-export const getDefaultConfig = (deploySupported = false): WorkatoConfig => {
+export const getDefaultConfig = (deploySupported = false, deployWithReferencesSupported = false): WorkatoConfig => {
   if (!deploySupported) {
     return DEFAULT_CONFIG
   }
@@ -234,6 +243,13 @@ export const getDefaultConfig = (deploySupported = false): WorkatoConfig => {
       'Updated fieldsToOmit of typeDefaults.transformation in default config to %o',
       typeDefaultTransformation.fieldsToOmit,
     )
+  }
+  if (deployWithReferencesSupported) {
+    typeDefaultTransformation.fieldsToOmit =
+      typeDefaultTransformation.fieldsToOmit !== undefined
+        ? [...typeDefaultTransformation.fieldsToOmit, ...FIELDS_TO_OMIT_WHILE_SUPPORT_DEPLOY_WITH_REFERENCES]
+        : FIELDS_TO_OMIT_WHILE_SUPPORT_DEPLOY_WITH_REFERENCES
+    defaultConfig[ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG] = deployWithReferencesSupported
   }
   return defaultConfig
 }
@@ -285,6 +301,7 @@ export const configType = new ObjectType({
       refType: definitions.createUserDeployConfigType(WORKATO, changeValidatorConfigType),
     },
     [ENABLE_DEPLOY_SUPPORT_FLAG]: { refType: BuiltinTypes.BOOLEAN },
+    [ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG]: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
@@ -292,6 +309,7 @@ export const configType = new ObjectType({
       API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       ENABLE_DEPLOY_SUPPORT_FLAG,
+      ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

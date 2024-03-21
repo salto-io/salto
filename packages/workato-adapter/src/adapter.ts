@@ -42,6 +42,11 @@ import { ENABLE_DEPLOY_SUPPORT_FLAG, FETCH_CONFIG, WorkatoConfig } from './confi
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
 import jiraProjectIssueTypeFilter from './filters/cross_service/jira/project_issuetypes'
+import recipeBlockInputFormatFilter from './filters/recipe_block_format/block_input_format'
+import recipeBlockToggleCfgFormatFilter from './filters/recipe_block_format/block_toggle_cfg_format'
+import recipeBlockExtendedOutputSchemaMinimizeFilter from './filters/recipe_block_format/block_extended_output_format'
+import recipeBlockExtendedInputSchemaMinimizeFilter from './filters/recipe_block_format/block_extended_input_format'
+import recipeBlockExtendedSchemaAttributesFilter from './filters/recipe_block_format/block_extended_attributes_format'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import commonFilters from './filters/common'
@@ -61,11 +66,18 @@ const { awu } = collections.asynciterable
 
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
-  jiraProjectIssueTypeFilter,
+  jiraProjectIssueTypeFilter, // TODO: We should change this to split toggleCfg also
+  recipeBlockInputFormatFilter,
+  // recipeBlockToggleCfgFormatFilter should run after recipeBlockInputFormatFilter
+  recipeBlockToggleCfgFormatFilter,
+  recipeBlockExtendedOutputSchemaMinimizeFilter,
+  recipeBlockExtendedInputSchemaMinimizeFilter,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
   serviceUrlFilter,
+  // recipeBlockExtendedSchemaAttributesFilter should run after recipeCrossServiceReferencesFilter
+  recipeBlockExtendedSchemaAttributesFilter,
   // referencedIdFieldsFilter and queryFilter should run after element references are resolved
   ...Object.values(commonFilters),
 ]
@@ -104,6 +116,8 @@ export default class WorkatoAdapter implements AdapterOperations {
           config: {
             fetch: config.fetch,
             apiDefinitions: config.apiDefinitions,
+            enableDeploySupport: config.enableDeploySupport,
+            enableDeployWithReferencesSupport: config.enableDeployWithReferencesSupport,
           },
           getElemIdFunc,
           fetchQuery: this.fetchQuery,

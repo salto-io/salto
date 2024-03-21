@@ -32,6 +32,7 @@ import {
   createSaltoElementError,
   SaltoElementError,
   isSaltoError,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   createSchemeGuard,
@@ -39,12 +40,15 @@ import {
   getParent,
   ResolveValuesFunc,
   safeJsonStringify,
+  transformElement,
+  TransformFunc,
 } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
 import WorkatoClient from './client/client'
 import { CONNECTION_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE } from './constants'
+import { isExtendedSchemaRefernecedItem } from './filters/recipe_block_format/block_extended_attributes_format'
 
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies
@@ -189,6 +193,29 @@ export const isRecipe = createSchemeGuardForInstance<JsonRecipe & InstanceElemen
   'Received an invalid value for recipe',
 )
 
+const resolveAttributesList: TransformFunc = async ({ value }) => {
+  // TODO: Understand how to orgnize it into files (with block_extended_attributes_schema in filters)
+  if (
+    !isExtendedSchemaRefernecedItem(value) ||
+    value.attributes === undefined ||
+    !isReferenceExpression(value.reference)
+  ) {
+    return value
+  }
+  return {
+    ...value.attributes.map(attr => ({ attr: value.reference.value[attr] })),
+    ..._.omit(value, value.attributes),
+  }
+}
+
+const resolveExtendedSchemaAttributes = async (element: InstanceElement): Promise<InstanceElement> =>
+  isInstanceElement(element) && element.elemID.typeName === RECIPE_CODE_TYPE
+    ? transformElement({
+        element,
+        transformFunc: resolveAttributesList,
+      })
+    : element
+
 /**
  * Resolve the values of the given change data.
  * For recipe and recipe code types, we resolve the values of the recipe and the code separately.
@@ -202,7 +229,11 @@ export const resolveWorkatoValues: ResolveValuesFunc = async (
   if (isInstanceElement(element) && [RECIPE_CODE_TYPE, RECIPE_TYPE].includes(element.elemID.typeName)) {
     const codeData = element.elemID.typeName === RECIPE_CODE_TYPE ? element : element.value.code.value
     const recipeData = element.elemID.typeName === RECIPE_TYPE ? element : getParent(element)
-    const resolvedCodeData = await resolveValues(codeData, getLookUpNameFunc, elementSource)
+    const resolvedCodeData = await resolveValues(
+      await resolveExtendedSchemaAttributes(codeData),
+      getLookUpNameFunc,
+      elementSource,
+    )
     const resolvedRecipeData = await resolveValues(recipeData, getLookUpNameFunc, elementSource)
     if (isInstanceElement(resolvedRecipeData) && resolvedRecipeData.elemID.typeName === RECIPE_TYPE) {
       resolvedRecipeData.value.code = resolvedCodeData.value

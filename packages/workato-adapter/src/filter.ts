@@ -15,7 +15,7 @@
  */
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import WorkatoClient from './client/client'
-import { FilterContext } from './config'
+import { WorkatoConfig } from './config'
 
 export const { filtersRunner } = filterUtils
 
@@ -25,4 +25,4 @@ export type FilterAdditionalParams = {
 
 export type Filter = filterUtils.Filter
 
-export type FilterCreator = filterUtils.FilterCreator<WorkatoClient, FilterContext>
+export type FilterCreator = filterUtils.FilterCreator<WorkatoClient, WorkatoConfig>

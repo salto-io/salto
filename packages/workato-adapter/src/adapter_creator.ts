@@ -41,7 +41,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
   const configValue = config?.value ?? {}
-  const defaultConfig = getDefaultConfig(configValue.enableDeploySupport)
+  const defaultConfig = getDefaultConfig(configValue.enableDeploySupport, configValue.enableDeployWithReferencesSupport)
   const apiDefinitions = mergeWithDefaultConfig(
     defaultConfig.apiDefinitions,
     config?.value.apiDefinitions,
@@ -55,6 +55,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     apiDefinitions,
     deploy: configValue.deploy,
     enableDeploySupport: configValue.enableDeploySupport,
+    enableDeployWithReferencesSupport: configValue.enableDeployWithReferencesSupport,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)

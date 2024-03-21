@@ -55,6 +55,9 @@ const isDNSException = (error: Error): error is DNSException =>
   _.isString(_.get(error, ERROR_PROPERTIES.CODE)) &&
   _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
 
+const CONNECTION_ERROR_HTML_PAGE_REGEX =
+  /<html[^>]+>.*<head>.*<title>Error Page<\/title>.*<\/head>.*<body[^>]*>.*An unexpected connection error occurred.*<\/body>.*<\/html>/gs
+
 type ErrorMapper<T extends Error> = {
   test: (error: Error) => error is T
   map: (error: T) => string
@@ -74,7 +77,9 @@ const withSalesforceError = (
 
 export const ERROR_MAPPERS: ErrorMappers = {
   [ERROR_HTTP_502]: {
-    test: (error: Error): error is Error => error.message === ERROR_HTTP_502,
+    test: (error: Error): error is Error =>
+      error.message === ERROR_HTTP_502 ||
+      CONNECTION_ERROR_HTML_PAGE_REGEX.test(error.message),
     map: (error: Error): string =>
       withSalesforceError(error.message, ERROR_HTTP_502_MESSAGE),
   },

@@ -473,12 +473,21 @@ describe('salesforce client', () => {
           `Unable to communicate with the salesforce org at ${TEST_HOSTNAME}.` +
           ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
       },
-      [ERROR_HTTP_502]: {
-        errorProperties: {
-          [ERROR_PROPERTIES.MESSAGE]: ERROR_HTTP_502,
+      [ERROR_HTTP_502]: [
+        {
+          errorProperties: {
+            [ERROR_PROPERTIES.MESSAGE]:
+              '<html lang="en-US"><head><title>Error Page</title></head><body><h3>An unexpected connection error occurred.</h3></body></html>',
+          },
+          expectedMessage: ERROR_HTTP_502_MESSAGE,
         },
-        expectedMessage: ERROR_HTTP_502_MESSAGE,
-      },
+        {
+          errorProperties: {
+            [ERROR_PROPERTIES.MESSAGE]: ERROR_HTTP_502,
+          },
+          expectedMessage: ERROR_HTTP_502_MESSAGE,
+        },
+      ],
       [INVALID_GRANT]: {
         errorProperties: {
           [ERROR_PROPERTIES.NAME]: INVALID_GRANT,
@@ -517,7 +526,7 @@ describe('salesforce client', () => {
       )
     })
 
-    describe('when login throws invaid_grant error', () => {
+    describe('when login throws invalid_grant error', () => {
       beforeEach(() => {
         const mocks = mockClient()
         testClient = mocks.client

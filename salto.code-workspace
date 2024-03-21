@@ -44,6 +44,10 @@
       "name": "file",
       "path": "packages/file",
     },
+		{
+			"name": "intercom-adapter",
+			"path": "packages/intercom-adapter"
+		},
     {
       "name": "jira-adapter",
       "path": "packages/jira-adapter",

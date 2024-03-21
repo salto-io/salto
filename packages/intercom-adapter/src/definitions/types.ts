@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  cursorPagination,
-  cursorHeaderPagination,
-  itemOffsetPagination,
-  offsetAndLimitPagination,
-  pageOffsetAndLastPagination,
-  pageOffsetPagination,
-  noPagination,
-  defaultPathChecker,
-  scrollingPagination,
-  PathCheckerFunc,
-  tokenPagination,
-} from './pagination_functions'
-export { traversePages } from './pagination'
+import { definitions } from '@salto-io/adapter-components'
+
+export type ClientOptions = 'main'
+export type PaginationOptions = 'cursor' | 'scroll'
+export type ReferenceContextStrategies = 'parentType'
+
+export type Options = definitions.APIDefinitionsOptions & {
+  clientOptions: ClientOptions
+  paginationOptions: PaginationOptions
+  referenceContextStrategies: ReferenceContextStrategies
+}

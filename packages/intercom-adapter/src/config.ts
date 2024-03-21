@@ -13,17 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  cursorPagination,
-  cursorHeaderPagination,
-  itemOffsetPagination,
-  offsetAndLimitPagination,
-  pageOffsetAndLastPagination,
-  pageOffsetPagination,
-  noPagination,
-  defaultPathChecker,
-  scrollingPagination,
-  PathCheckerFunc,
-  tokenPagination,
-} from './pagination_functions'
-export { traversePages } from './pagination'
+import { definitions, elements } from '@salto-io/adapter-components'
+
+export type UserFetchConfig = definitions.UserFetchConfig<{
+  customNameMappingOptions: never
+  fetchCriteria: definitions.DefaultFetchCriteria
+}>
+
+export type UserConfig = definitions.UserConfig<
+  never,
+  definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
+  UserFetchConfig,
+  definitions.UserDeployConfig
+>
+
+export const DEFAULT_CONFIG: UserConfig = {
+  client: {},
+  fetch: {
+    include: [{ type: elements.query.ALL_TYPES }],
+    exclude: [{ type: 'company' }],
+  },
+}

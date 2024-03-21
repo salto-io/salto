@@ -20,9 +20,9 @@ import {
   ElemID,
   BuiltinTypes,
   Field,
-  MapType,
   ListType,
   TypeMap,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { types as lowerdashTypes, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -165,36 +165,13 @@ const typeAdder = ({
         return new Field(type, fieldName, createNestedType(fieldSchema, toNestedTypeName(fieldSchema)))
       }),
     )
-
     if (additionalProperties !== undefined) {
-      if (type.fields[ADDITIONAL_PROPERTIES_FIELD] !== undefined) {
-        log.warn(
-          'type %s has both a standard %s field and allows additionalProperties - overriding with an additionalProperties field of type unknown',
-          type.elemID.name,
-          ADDITIONAL_PROPERTIES_FIELD,
-        )
-        Object.assign(type.fields, {
-          [ADDITIONAL_PROPERTIES_FIELD]: new Field(
-            type,
-            ADDITIONAL_PROPERTIES_FIELD,
-            new MapType(BuiltinTypes.UNKNOWN),
-          ),
-        })
-      } else {
-        Object.assign(type.fields, {
-          [ADDITIONAL_PROPERTIES_FIELD]: new Field(
-            type,
-            ADDITIONAL_PROPERTIES_FIELD,
-            new MapType(
-              createNestedType(
-                additionalProperties,
-                // fallback type name when no name is provided in the swagger def
-                `${objName}_${ADDITIONAL_PROPERTIES_FIELD}`,
-              ),
-            ),
-          ),
-        })
-      }
+      const additionalPropertiesType = createNestedType(
+        additionalProperties,
+        // fallback type name when no name is provided in the swagger def
+        `${objName}_${ADDITIONAL_PROPERTIES_FIELD}`,
+      )
+      type.annotate({ [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: { refType: additionalPropertiesType } })
     }
 
     if (endpoints !== undefined && endpoints.length > 0) {

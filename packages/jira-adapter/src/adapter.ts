@@ -127,6 +127,7 @@ import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_u
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import objectTypeIconFilter from './filters/assets/object_type_icon'
 import filtersFilter from './filters/filter'
 import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
@@ -275,6 +276,7 @@ export const DEFAULT_FILTERS = [
   emptyValidatorWorkflowFilter,
   // must run before fieldReferencesFilter
   formsFilter,
+  objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,

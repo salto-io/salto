@@ -193,6 +193,7 @@ import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_ord
 import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import asyncApiCallsFilter from './filters/async_api_calls'
+import issueTypeIconFilter from './filters/issue_type_icon'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
@@ -277,6 +278,7 @@ export const DEFAULT_FILTERS = [
   workflowSchemeFilter,
   workflowDiagramFilter,
   issueTypeFilter,
+  issueTypeIconFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   prioritySchemeFetchFilter,

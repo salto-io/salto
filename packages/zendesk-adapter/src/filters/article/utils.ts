@@ -422,7 +422,7 @@ export const maybeModifySourceLocaleInGuideObject = async (
     })
     return res.status === 200
   } catch (e) {
-    log.error(`Failed to modify source_locale, error: ${safeJsonStringify(e)}`)
+    log.error(`Failed to modify source_locale, error: ${inspectValue(e)}`)
     return false
   }
 }

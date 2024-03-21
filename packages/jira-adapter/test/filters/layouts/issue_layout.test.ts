@@ -23,8 +23,6 @@ import {
   ObjectType,
   ElemID,
   InstanceElement,
-  BuiltinTypes,
-  ListType,
   ReferenceExpression,
   Element,
   isInstanceElement,
@@ -40,8 +38,16 @@ import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 import JiraClient, { graphQLResponseType } from '../../../src/client/client'
 import issueLayoutFilter, { getLayoutRequestsAsync } from '../../../src/filters/layouts/issue_layout'
 import asyncApiCallsFilter from '../../../src/filters/async_api_calls'
-import { getFilterParams, mockClient } from '../../utils'
-import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
+import { getFilterParams, mockClient, createEmptyType } from '../../utils'
+import {
+  ISSUE_LAYOUT_TYPE,
+  ISSUE_TYPE_NAME,
+  ISSUE_TYPE_SCHEMA_NAME,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
+  JIRA,
+  PROJECT_TYPE,
+  SCREEN_SCHEME_TYPE,
+} from '../../../src/constants'
 import { createLayoutType } from '../../../src/filters/layouts/layout_types'
 import { generateLayoutId } from '../../../src/filters/layouts/layout_service_operations'
 
@@ -58,18 +64,29 @@ describe('issue layout filter', () => {
   let screenType: ObjectType
   let screenInstance: InstanceElement
   let screenSchemeType: ObjectType
+  let screenSchemeInstance1: InstanceElement
+  let screenSchemeInstance2: InstanceElement
+  let screenSchemeInstance3: InstanceElement
   let screenSchemeInstance: InstanceElement
   let issueTypeScreenSchemeItemType: ObjectType
   let issueTypeScreenSchemeType: ObjectType
+  let issueTypeScreenSchemeInstance1: InstanceElement
+  let issueTypeScreenSchemeInstance2: InstanceElement
+  let issueTypeScreenSchemeInstance3: InstanceElement
   let issueTypeScreenSchemeInstance: InstanceElement
   let projectType: ObjectType
-  let projectInstance: InstanceElement
+  let projectInstance1: InstanceElement
+  let projectInstance2: InstanceElement
   let issueTypeType: ObjectType
+  let issueTypeScheme: ObjectType
+  let issueTypeSchemeInstance1: InstanceElement
+  let issueTypeSchemeInstance2: InstanceElement
   let issueTypeInstance: InstanceElement
   let fieldType: ObjectType
   let fieldInstance1: InstanceElement
   let fieldInstance2: InstanceElement
   let requestReply: graphQLResponseType
+
   const adapterContext: Values = {}
   const mockCli = mockClient()
 
@@ -81,16 +98,13 @@ describe('issue layout filter', () => {
     config.fetch.enableIssueLayouts = true
     layoutFilter = issueLayoutFilter(getFilterParams({ client, config, adapterContext })) as typeof layoutFilter
     asyncFilter = asyncApiCallsFilter(getFilterParams({ client, config })) as typeof asyncFilter
-    screenType = new ObjectType({
-      elemID: new ElemID(JIRA, 'Screen'),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-      },
-    })
+    screenType = createEmptyType('Screen')
+
     screenInstance = new InstanceElement('screen1', screenType, {
       id: 11,
     })
-    fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
+
+    fieldType = createEmptyType('Field')
     fieldInstance1 = new InstanceElement('testField1', fieldType, {
       id: 'testField1',
       name: 'TestField1',
@@ -103,36 +117,14 @@ describe('issue layout filter', () => {
         system: 'testField2',
       },
     })
-    screenSchemeType = new ObjectType({
-      elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        screens: { refType: screenType },
-      },
-    })
-    issueTypeScreenSchemeItemType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueTypeScreenSchemeItem'),
-      fields: {
-        issueTypeId: { refType: BuiltinTypes.STRING },
-        screenSchemeId: { refType: screenSchemeType },
-      },
-    })
-    issueTypeScreenSchemeType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueTypeScreenScheme'),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        issueTypeMappings: { refType: new ListType(issueTypeScreenSchemeItemType) },
-      },
-    })
-    projectType = new ObjectType({
-      elemID: new ElemID(JIRA, PROJECT_TYPE),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        simplified: { refType: BuiltinTypes.BOOLEAN },
-        issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
-        key: { refType: BuiltinTypes.STRING },
-      },
-    })
+
+    screenSchemeType = createEmptyType(SCREEN_SCHEME_TYPE)
+    issueTypeScreenSchemeItemType = createEmptyType('IssueTypeScreenSchemeItem')
+    issueTypeScreenSchemeType = createEmptyType(ISSUE_TYPE_SCREEN_SCHEME_TYPE)
+    projectType = createEmptyType(PROJECT_TYPE)
+    issueTypeType = createEmptyType(ISSUE_TYPE_NAME)
+    issueTypeScheme = createEmptyType(ISSUE_TYPE_SCHEMA_NAME)
+
     screenSchemeInstance = new InstanceElement('screenScheme1', screenSchemeType, {
       id: 111,
       screens: { default: 11 },
@@ -146,7 +138,7 @@ describe('issue layout filter', () => {
         },
       ],
     })
-    projectInstance = new InstanceElement(
+    projectInstance1 = new InstanceElement(
       'project1',
       projectType,
       {
@@ -209,11 +201,80 @@ describe('issue layout filter', () => {
   describe('async get', () => {
     beforeEach(() => {
       client = mockCli.client
-      issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
-      issueTypeInstance = new InstanceElement('issueType1', issueTypeType, {
-        id: '100',
-        name: 'OwnerTest',
+
+      projectInstance1 = new InstanceElement('project1', projectType, {
+        id: '11111',
+        projectTypeKey: 'software',
+        issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
+        issueTypeScheme: { issueTypeScheme: { id: '10' } },
       })
+
+      projectInstance2 = new InstanceElement('project2', projectType, {
+        id: '22222',
+        projectTypeKey: 'software',
+        issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
+        issueTypeScheme: { issueTypeScheme: { id: '10' } },
+      })
+
+      issueTypeSchemeInstance1 = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
+        id: '10',
+        issueTypeIds: ['100'],
+      })
+
+      issueTypeSchemeInstance2 = new InstanceElement('issueTypeScheme2', issueTypeScheme, {
+        id: '20',
+        issueTypeIds: ['100', '200'],
+      })
+
+      screenSchemeInstance1 = new InstanceElement('screenScheme1', screenSchemeType, {
+        id: 111,
+      })
+      screenSchemeInstance2 = new InstanceElement('screenScheme2', screenSchemeType, {
+        id: 222,
+        screens: { default: 11 },
+      })
+      screenSchemeInstance3 = new InstanceElement('screenScheme3', screenSchemeType, {
+        id: 333,
+        screens: { default: 13, view: 12 },
+      })
+
+      issueTypeScreenSchemeInstance1 = new InstanceElement('issueTypeScreenScheme1', issueTypeScreenSchemeType, {
+        id: 1111,
+        issueTypeMappings: [
+          {
+            issueTypeId: '100',
+            screenSchemeId: 222,
+          },
+        ],
+      })
+
+      issueTypeScreenSchemeInstance2 = new InstanceElement('issueTypeScreenScheme2', issueTypeScreenSchemeType, {
+        id: 2222,
+        issueTypeMappings: [
+          {
+            issueTypeId: '100',
+            screenSchemeId: 111,
+          },
+          {
+            issueTypeId: 'default',
+            screenSchemeId: 222,
+          },
+        ],
+      })
+      issueTypeScreenSchemeInstance3 = new InstanceElement('issueTypeScreenScheme3', issueTypeScreenSchemeType, {
+        id: 3333,
+        issueTypeMappings: [
+          {
+            issueTypeId: '100',
+            screenSchemeId: 333,
+          },
+          {
+            issueTypeId: '200',
+            screenSchemeId: 222,
+          },
+        ],
+      })
+
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -221,26 +282,64 @@ describe('issue layout filter', () => {
         }
         throw new Error('Err')
       })
+
       elements = [
+        issueTypeType,
+        issueTypeScheme,
+        issueTypeSchemeInstance1,
+        issueTypeSchemeInstance2,
         screenType,
-        screenInstance,
         screenSchemeType,
-        screenSchemeInstance,
+        screenSchemeInstance1,
+        screenSchemeInstance2,
+        screenSchemeInstance3,
         issueTypeScreenSchemeItemType,
         issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstance,
+        issueTypeScreenSchemeInstance1,
+        issueTypeScreenSchemeInstance2,
+        issueTypeScreenSchemeInstance3,
         projectType,
-        projectInstance,
-        issueTypeType,
-        issueTypeInstance,
-        fieldType,
-        fieldInstance1,
-        fieldInstance2,
+        projectInstance1,
       ]
     })
+    it('should return the correct request', async () => {
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res['11111'][11]).toBeDefined()
+      const resolvedRes = await res['11111'][11]
+      expect(resolvedRes.data).toBeDefined()
+    })
+    it('should return the correct request if there are multiple projects', async () => {
+      elements.push(projectInstance2)
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(2)
+      expect(res['11111'][11]).toBeDefined()
+      expect(res['22222'][11]).toBeDefined()
+    })
+    it('should be empty answer if it is a bad response', async () => {
+      mockGet.mockImplementation(() => ({
+        status: 200,
+        data: {},
+      }))
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res['11111'][11]).toBeDefined()
+      const resolvedRes = await res['11111'][11]
+      expect(resolvedRes.data).toBeEmpty()
+    })
+    it('should catch an error if gql post throws an error and return empty', async () => {
+      mockGet.mockImplementation(() => {
+        throw new Error('err')
+      })
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res['11111'][11]).toBeDefined()
+      const resolvedRes = await res['11111'][11]
+      expect(resolvedRes.data).toBeUndefined()
+    })
     it('should return empty if there are no issueTypeScreenScheme', async () => {
-      projectInstance.value.issueTypeScreenScheme = undefined
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, [projectInstance])
+      projectInstance1.value.issueTypeScreenScheme = undefined
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, [projectInstance1])
       expect(res).toBeEmpty()
     })
     it('should not fetch issue layouts if it disabled', async () => {
@@ -268,385 +367,76 @@ describe('issue layout filter', () => {
       await getLayoutRequestsAsync(mockClient(true).client, configWithDataCenterTrue, fetchQuery, elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
-    describe('issue Layout for view and default', () => {
 
-      let issueTypeScheme: ObjectType
-      let issueTypeInstance1: InstanceElement
-      let issueTypeInstance2: InstanceElement
-      let issueTypeSchemeInstanceForView: InstanceElement
-      let issueTypeSchemeInstanceForDefault: InstanceElement
-      let issueTypeSchemeInstanceWithBoth: InstanceElement
-      let issueTypeSchemeInstance2: InstanceElement
-      let viewScreenInstance: InstanceElement
-      let defaultScreenInstance: InstanceElement
-      let projectInstance1: InstanceElement
-      let projectInstance2: InstanceElement 
-      let projectInstanceForView: InstanceElement
-      let projectInstanceForDefault: InstanceElement
-      let screenSchemeInstanceWithView: InstanceElement
-      let screenSchemeInstanceWithoutView: InstanceElement
-      let issueTypeScreenSchemeInstanceWith1IssueTypesForDefault: InstanceElement
-      let issueTypeScreenSchemeInstanceWith1IssueTypesForView: InstanceElement
-      let issueTypeScreenSchemeInstanceWith2IssueTypes: InstanceElement
-      let issueTypeSchemeInstanceForNoScreens: InstanceElement 
-      let issueTypeScreenSchemeInstanceWithNoScreen: InstanceElement
-      let screenSchemeInstanceWithNoScreens: InstanceElement
-      let projectInstanceForNoScreens: InstanceElement
-      let issueTypeSchemeInstance0: InstanceElement
-      let projectInstance0: InstanceElement
-      let screenSchemeInstance0: InstanceElement
-      let issueTypeScreenSchemeInstance0: InstanceElement
-  
+    describe('get the correct screens for the issue Layouts', () => {
+      it('should return empty list if screen scheme does not have screens', async () => {
+        issueTypeScreenSchemeInstance1.value.issueTypeMappings[0] = { issueTypeId: '100', screenSchemeId: 111 }
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: '10' } }
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(res[11111]).toEqual({
+          undefined: Promise.resolve({ data: {} }),
+        })
+      })
+      it('should return the view screen and not the default screen if there is', async () => {
+        issueTypeScreenSchemeInstance1.value.issueTypeMappings[0] = { issueTypeId: '100', screenSchemeId: 333 }
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: '10' } }
 
-    
-      beforeEach(() => {
-      
-      issueTypeScheme = new ObjectType({
-        elemID: new ElemID(JIRA, 'IssueTypeScheme'),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-          issueTypeIds: { refType: new ListType(BuiltinTypes.STRING) },
-        },
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(Object.entries(res['11111'])).toHaveLength(1)
+        expect(res['11111'][12]).toBeDefined()
       })
-      issueTypeInstance1 = new InstanceElement('issueType1', issueTypeType, {
-        id: '1',
-      })
-      issueTypeInstance2 = new InstanceElement('issueType2', issueTypeType, {
-        id: '2',
-      })
-      viewScreenInstance = new InstanceElement('screen1', screenType, {
-        id: 13,
-      })
-      defaultScreenInstance = new InstanceElement('screen2', screenType, {
-        id: 33,
-      })
-      screenSchemeInstanceWithView = new InstanceElement('screenScheme1', screenSchemeType, {
-        id: 111,
-        screens: { default: 33, view: 13 },
-      })
-      screenSchemeInstanceWithoutView = new InstanceElement('screenScheme2', screenSchemeType, {
-        id: 222,
-        screens: { default: 33 },
-      })
-      issueTypeScreenSchemeInstanceWith2IssueTypes = new InstanceElement('issueTypeScreenScheme1', issueTypeScreenSchemeType, {
-        id: 1111,
-        issueTypeMappings: [
-          {
-            issueTypeId: 1,
-            screenSchemeId: 111,
-          },
-          {
-            issueTypeId: 'default',
-            screenSchemeId: 222,
-          },
-        ],
-      })
-      
-      issueTypeSchemeInstance0 = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
-        id: '10',
-        issueTypeIds: [1],
-      })
-      screenSchemeInstance0 = new InstanceElement('screenScheme1', screenSchemeType, {
-        id: 555,
-        screens: { default: 33 },
-      })
-      issueTypeScreenSchemeInstance0 = new InstanceElement('issueTypeScreenSchemeInstanceWithNoScreen', issueTypeScreenSchemeType, {
-        id: 1110,
-        issueTypeMappings: [
-          {
-            issueTypeId: 1,
-            screenSchemeId: 555,
-          },
-        ],
-      })
-      projectInstance0 = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11115',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1110 } },
-          issueTypeScheme: { issueTypeScheme: { id: '10' } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],  
-      )    
-      elements = [
-        issueTypeType,
-        issueTypeInstance1,
-        issueTypeScheme,
-        issueTypeSchemeInstance0,
-        projectType,
-        projectInstance0,
-        screenType,
-        defaultScreenInstance,
-        screenSchemeType,
-        screenSchemeInstance0,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstance0,  
-      ]
-    })
-    it('should be empty answer if it is a bad response', async () => {
-      mockGet.mockImplementation(() => ({
-        status: 200,
-        data: {},
-      }))
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res[11115][33]).toBeDefined()
-      const resolvedRes = await res[11115][33]
-      expect(resolvedRes.data).toBeEmpty()
-    })
-    it('should catch an error if gql post throws an error and return empty', async () => {
-      mockGet.mockImplementation(() => {
-        throw new Error('err')
-      })
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res[11115][33]).toBeDefined()
-      const resolvedRes = await res[11115][33]
-      expect(resolvedRes.data).toBeUndefined()
-    })
-    it('should return empty list if screen scheme does not have screens', async () => {
+      it('should return the default screen if there is no view screen', async () => {
+        issueTypeScreenSchemeInstance1.value.issueTypeMappings[0] = { issueTypeId: '100', screenSchemeId: 222 }
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: '10' } }
 
-      issueTypeSchemeInstanceForNoScreens = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
-        id: '1',
-        issueTypeIds: [1],
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(Object.entries(res['11111'])).toHaveLength(1)
+        expect(res['11111'][11]).toBeDefined()
       })
-      screenSchemeInstanceWithNoScreens = new InstanceElement('screenScheme1', screenSchemeType, {
-        id: 333,
-      })
-      issueTypeScreenSchemeInstanceWithNoScreen = new InstanceElement('issueTypeScreenSchemeInstanceWithNoScreen', issueTypeScreenSchemeType, {
-        id: 1117,
-        issueTypeMappings: [
-          {
-            issueTypeId: 1,
-            screenSchemeId: 333,
-          },
-        ],
-      })
-      projectInstanceForNoScreens = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11113',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1117 } },
-          issueTypeScheme: { issueTypeScheme: { id: 1 } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],  
-      )    
-      elements = [
-        issueTypeType,
-        issueTypeInstance1,
-        issueTypeScheme,
-        issueTypeSchemeInstanceForNoScreens,
-        projectType,
-        projectInstanceForNoScreens,
-        screenSchemeType,
-        screenSchemeInstanceWithNoScreens,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstanceWithNoScreen,  
-      ]
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res[11113]).toEqual({
-        undefined: Promise.resolve({ data: {} }),
-      })
-    })
-    it('should return the view screen and not the default screen if there is', async () => {
-      issueTypeScreenSchemeInstanceWith1IssueTypesForView = new InstanceElement('issueTypeScreenScheme1', issueTypeScreenSchemeType, {
-        id: 1115,
-        issueTypeMappings: [
-          {
-            issueTypeId: 1,
-            screenSchemeId: 111,
-          },
-        ],
-      })
-    
-      issueTypeSchemeInstanceForView = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
-        id: '1',
-        issueTypeIds: [1],
-      })
-    
-      projectInstanceForView = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11113',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1115 } },
-          issueTypeScheme: { issueTypeScheme: { id: 1 } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],  
-      )
-      elements = [
-        issueTypeType,
-        issueTypeInstance1,
-        issueTypeScheme,
-        issueTypeSchemeInstanceForView,
-        projectType,
-        projectInstanceForView,
-        screenType,
-        defaultScreenInstance,
-        viewScreenInstance,
-        screenSchemeType,
-        screenSchemeInstanceWithView,
-        issueTypeSchemeInstanceForView,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstanceWith1IssueTypesForView,   
-      ]
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res[11113][13]).toBeDefined()
-      const resolvedRes = await res[11113][13]
-      expect(resolvedRes.data).toBeDefined()
-    })
-    it('should return the default screen if there is no view screen', async () => {
+      it('Return the default issueTypeScreenScheme for unhandled issueTypes in the projects scheme', async () => {
+        issueTypeScreenSchemeInstance2.value.issueTypeMappings = [
+          { issueTypeId: '100', screenSchemeId: 222 },
+          { issueTypeId: 'default', screenSchemeId: 333 },
+        ]
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 2222 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: '20' } }
 
-      issueTypeScreenSchemeInstanceWith1IssueTypesForDefault = new InstanceElement('issueTypeScreenScheme1', issueTypeScreenSchemeType, {
-        id: 1116,
-        issueTypeMappings: [
-          {
-            issueTypeId: 1,
-            screenSchemeId: 222,
-          },
-        ],
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(Object.entries(res['11111'])).toHaveLength(2)
+        expect(res['11111'][11]).toBeDefined()
+        expect(res['11111'][12]).toBeDefined()
       })
-    
-      issueTypeSchemeInstanceForDefault = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
-        id: '2',
-        issueTypeIds: [1],
-      })
-    
-      projectInstanceForDefault = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11117',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1116 } },
-          issueTypeScheme: { issueTypeScheme: { id: 2 } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
-      )
-      elements = [
-        issueTypeType,
-        issueTypeInstance1,
-        issueTypeScheme,
-        issueTypeSchemeInstanceForDefault,
-        projectType,
-        projectInstanceForDefault,
-        screenType,
-        defaultScreenInstance,
-        viewScreenInstance,
-        screenSchemeType,
-        screenSchemeInstanceWithoutView,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstanceWith1IssueTypesForDefault,   
-      ]
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res[11117][33]).toBeDefined()
-    })
-    it('should return the default of the issueTypeScreenScheme if there is issueType of the issueTypeScheme of the project that the issueTypeScreenScheme does not handle the issueType directly', async () => {
-      issueTypeSchemeInstanceWithBoth = new InstanceElement('issueTypeScheme2', issueTypeScheme, {
-        id: '3',
-        issueTypeIds: [1, 2],
-      })      
-      
-      projectInstance1 = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11112',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
-          issueTypeScheme: { issueTypeScheme: { id: '3' } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
-      )
-      elements = [
-        issueTypeType,
-        issueTypeInstance1,
-        issueTypeInstance2,
-        issueTypeScheme,
-        issueTypeSchemeInstanceWithBoth,
-        projectType,
-        projectInstance1,
-        screenType,
-        viewScreenInstance,
-        defaultScreenInstance,  
-        screenSchemeType,
-        screenSchemeInstanceWithView,
-        screenSchemeInstanceWithoutView,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstanceWith2IssueTypes,  
-      ]
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)[0]).toHaveLength(2)
-      expect(res[11112][33]).toBeDefined()
-      expect(res[11112][13]).toBeDefined()
-    })
-    it('should not return the default of the issueTypeScreenScheme if the issueTypeScreenScheme handle directly all the issueTypes of the issueTypeScheme of the project', async () => {
-      issueTypeSchemeInstance2 = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
-        id: '4',
-        issueTypeIds: [2],
-      })
-      
-      projectInstance2 = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: '11115',
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme: { issueTypeScreenScheme: { id: 1111 } },
-          issueTypeScheme: { issueTypeScheme: { id: '4' } },
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1'],
-      )
-      elements = [
-        issueTypeType,
-        issueTypeInstance1,
-        issueTypeInstance2,
-        issueTypeScheme,
-        issueTypeSchemeInstance2,
-        projectType,
-        projectInstance2,
-        screenType,
-        viewScreenInstance,
-        defaultScreenInstance,  
-        screenSchemeType,  
-        screenSchemeInstanceWithView,
-        screenSchemeInstanceWithoutView,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstanceWith2IssueTypes,   
-      ]
+      it('If the issueTypeScreenScheme directly handles all project issueTypes, do not return its default', async () => {
+        issueTypeScreenSchemeInstance2.value.issueTypeMappings = [
+          { issueTypeId: '100', screenSchemeId: 222 },
+          { issueTypeId: 'default', screenSchemeId: 333 },
+        ]
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 2222 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: '10' } }
 
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res[11115][33]).toBeDefined()
-      expect(res[11115][13]).toBeUndefined()
-    })
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(Object.entries(res['11111'])).toHaveLength(1)
+        expect(res['11111'][11]).toBeDefined()
+        expect(res['11111'][12]).toBeUndefined()
+      })
+      it('do not return the screen of issueType that is in the issueTypeScreenScheme but not in the project issueTypeScheme', async () => {
+        projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 3333 } }
+        projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: '10' } }
+
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(Object.entries(res['11111'])).toHaveLength(1)
+        expect(res['11111'][12]).toBeDefined()
+        expect(res['11111'][11]).toBeUndefined()
+      })
     })
   })
   describe('on fetch', () => {
@@ -666,7 +456,7 @@ describe('issue layout filter', () => {
         issueTypeScreenSchemeType,
         issueTypeScreenSchemeInstance,
         projectType,
-        projectInstance,
+        projectInstance1,
         issueTypeType,
         issueTypeInstance,
         fieldType,
@@ -683,7 +473,7 @@ describe('issue layout filter', () => {
         screenSchemeInstance.elemID,
         screenSchemeInstance,
       )
-      projectInstance.value.issueTypeScreenScheme = new ReferenceExpression(
+      projectInstance1.value.issueTypeScreenScheme = new ReferenceExpression(
         issueTypeScreenSchemeInstance.elemID,
         issueTypeScreenSchemeInstance,
       )
@@ -716,7 +506,7 @@ describe('issue layout filter', () => {
         'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11',
       )
     })
-    it('should not do problems if the adapterContext.layoutsPromise is empty', async () => {
+    it('should not crash if the adapterContext.layoutsPromise is empty', async () => {
       adapterContext.layoutsPromise = {}
       await layoutFilter.onFetch(elements)
       expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
@@ -854,7 +644,7 @@ describe('issue layout filter', () => {
         'issueLayout',
         issueLayoutType,
         {
-          id: generateLayoutId({ projectId: projectInstance.value.id, extraDefinerId: screenInstance.value.id }),
+          id: generateLayoutId({ projectId: projectInstance1.value.id, extraDefinerId: screenInstance.value.id }),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -872,7 +662,7 @@ describe('issue layout filter', () => {
           },
         },
         undefined,
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)] },
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance1.elemID, projectInstance1)] },
       )
       afterIssueLayoutInstance = issueLayoutInstance.clone()
     })
@@ -898,15 +688,15 @@ describe('issue layout filter', () => {
           },
         },
         undefined,
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)] },
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance1.elemID, projectInstance1)] },
       )
       const res = await layoutFilter.deploy([
         { action: 'add', data: { after: issueLayoutInstanceWithoutId } },
-        { action: 'add', data: { after: projectInstance } },
+        { action: 'add', data: { after: projectInstance1 } },
       ])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
-      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(projectInstance.value)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value).toEqual(projectInstance1.value)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'add', data: { after: issueLayoutInstance } })
     })

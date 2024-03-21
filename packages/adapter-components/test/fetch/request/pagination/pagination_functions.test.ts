@@ -116,8 +116,7 @@ describe('pagination functions', () => {
         }),
       ).toEqual([
         {
-          after: '123123',
-          limit: '2',
+          queryParams: { after: '123123', limit: '2' }, 
         },
       ])
     })

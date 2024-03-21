@@ -33,7 +33,7 @@ import {
   TemplateExpression,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, ResolveValuesFunc, restoreValues } from '@salto-io/adapter-utils'
-import { resolveValues, resolveChangeElement } from '../src/resolve_utils'
+import { resolveValues, resolveChangeElement, createChangeElementResolver } from '../src/resolve_utils'
 import { fileContent, getName, mockInstance, regValue, valueFile, valueRef } from './utils'
 
 describe('resolve utils func', () => {
@@ -291,7 +291,7 @@ describe('resolve utils func', () => {
     })
   })
 
-  describe('resolveChangeElement func', () => {
+  describe('resolveChangeElement func + createChangeElementResolver', () => {
     let afterData: InstanceElement
     let beforeData: InstanceElement
     let additionChange: AdditionChange<InstanceElement>
@@ -311,19 +311,32 @@ describe('resolve utils func', () => {
         .fn()
         .mockImplementation(<T extends Element>(element: T, _getLookUpName: GetLookupNameFunc) => element)
     })
-    it('should call resolve func on after data when add change', async () => {
+    it('should call resolve func on after data for add change', async () => {
       await resolveChangeElement(additionChange, getName, mockResolve)
       expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
     })
+    it('should call resolver resolve func on after data for add change', async () => {
+      await createChangeElementResolver({ getLookUpName: getName, resolveValuesFunc: mockResolve })(additionChange)
+      expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
+    })
 
-    it('should call resolve func on before and after data when modification change', async () => {
+    it('should call resolve func on before and after data for modification change', async () => {
       await resolveChangeElement(modificationChange, getName, mockResolve)
+      expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
+      expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
+    })
+    it('should call resolver resolve func on before and after data for modification change', async () => {
+      await createChangeElementResolver({ getLookUpName: getName, resolveValuesFunc: mockResolve })(modificationChange)
       expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
       expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
     })
 
     it('should call resolve func on before data when removal change', async () => {
       await resolveChangeElement(removalChange, getName, mockResolve)
+      expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
+    })
+    it('should call resolver resolve func on before data when removal change', async () => {
+      await createChangeElementResolver({ getLookUpName: getName, resolveValuesFunc: mockResolve })(removalChange)
       expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
     })
   })

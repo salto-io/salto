@@ -19,6 +19,8 @@ import { FilterCreator, FilterResult } from '../filter'
 import ZendeskClient from '../client/client'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(params.client.getUrl().href)(params)
+  filters.serviceUrlFilterCreatorDeprecated<ZendeskClient, FilterContext, FilterResult>(params.client.getUrl().href)(
+    params,
+  )
 
 export default filter

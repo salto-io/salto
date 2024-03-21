@@ -945,7 +945,6 @@ describe('Zendesk adapter E2E', () => {
       const article3Instance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          author_id: 'neta.marcus+zendesk@salto.io',
           draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
@@ -1144,7 +1143,6 @@ describe('Zendesk adapter E2E', () => {
         'oauth_global_client',
         'organization',
         'organization_field',
-        'resource_collection',
         'routing_attribute',
         'sharing_agreement',
         'sla_policy',

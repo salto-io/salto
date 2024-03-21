@@ -15,12 +15,10 @@
  */
 export * as changeValidators from './change_validators'
 export * as dependency from './dependency'
-export {
-  filterUndeployableValues,
-  filterIgnoredValues,
-  deployChange,
-  ResponseResult,
-  transformRemovedValuesToNull,
-} from './deployment'
+export * as grouping from './grouping'
+export { filterUndeployableValues, filterIgnoredValues, transformRemovedValuesToNull } from './filtering'
+export { deployChange, ResponseResult } from './old_deployment'
+export * from './deploy/deploy'
 export { OPERATION_TO_ANNOTATION } from './annotations'
-export { getChangeGroupIdsFunc, ChangeIdFunction } from './group_change'
+export * from './placeholder_types'
+export * as helpers from './definition_helpers'

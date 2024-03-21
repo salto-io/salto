@@ -19,7 +19,7 @@ export {
   markServiceIdField,
   toNestedTypeName,
   toPrimitiveType,
-  adjustFieldTypes,
+  overrideFieldTypes,
 } from './type_utils'
 export { generateInstancesWithInitialTypes } from './instance_element'
 export { generateType } from './type_element'

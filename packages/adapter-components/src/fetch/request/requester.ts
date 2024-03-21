@@ -25,7 +25,12 @@ import { createValueTransformer } from '../utils'
 import { traversePages } from './pagination/pagination'
 import { noPagination } from './pagination'
 import { computeArgCombinations } from '../resource/request_parameters'
-import { HTTPEndpointDetails } from '../../definitions/system'
+import {
+  APIDefinitionsOptions,
+  HTTPEndpointDetails,
+  ResolveClientOptionsType,
+  ResolvePaginationOptionsType,
+} from '../../definitions/system'
 import { FetchRequestDefinition } from '../../definitions/system/fetch'
 
 const log = logger(module)
@@ -64,27 +69,29 @@ const createExtractor = <ClientOptions extends string>(
     )
 }
 
-export const getRequester = <ClientOptions extends string, PaginationOptions extends string | 'none'>({
+export const getRequester = <Options extends APIDefinitionsOptions>({
   adapterName,
   clients,
   pagination,
   requestDefQuery,
 }: {
   adapterName: string
-  clients: ApiDefinitions<ClientOptions, PaginationOptions>['clients']
-  pagination: ApiDefinitions<ClientOptions, PaginationOptions>['pagination']
-  requestDefQuery: DefQuery<FetchRequestDefinition<ClientOptions>[]>
-}): Requester<ClientOptions> => {
+  clients: ApiDefinitions<Options>['clients']
+  pagination: ApiDefinitions<Options>['pagination']
+  requestDefQuery: DefQuery<FetchRequestDefinition<ResolveClientOptionsType<Options>>[]>
+}): Requester<ResolveClientOptionsType<Options>> => {
   const clientDefs = _.mapValues(clients.options, ({ endpoints, ...def }) => ({
     endpoints: queryWithDefault(endpoints),
     ...def,
   }))
 
   const getMergedRequestDefinition = (
-    requestDef: FetchRequestDefinition<ClientOptions>,
+    requestDef: FetchRequestDefinition<ResolveClientOptionsType<Options>>,
   ): {
-    merged: FetchRequestDefinition<ClientOptions> & { endpoint: HTTPEndpointDetails<PaginationOptions> }
-    clientName: ClientOptions
+    merged: FetchRequestDefinition<ResolveClientOptionsType<Options>> & {
+      endpoint: HTTPEndpointDetails<ResolvePaginationOptionsType<Options>>
+    }
+    clientName: ResolveClientOptionsType<Options>
   } => {
     const { endpoint: requestEndpoint } = requestDef
     const clientName = requestEndpoint.client ?? clients.default
@@ -107,7 +114,11 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
     }
   }
 
-  const request: Requester<ClientOptions>['request'] = async ({ contexts, requestDef, typeName }) => {
+  const request: Requester<ResolveClientOptionsType<Options>>['request'] = async ({
+    contexts,
+    requestDef,
+    typeName,
+  }) => {
     // TODO optimizations for requests made from multiple "flows":
     // * cache only the "unconsumed" extracted items by request hash, and keep them available until consumed
     // * add promises for in-flight requests, to avoid making the same request multiple times in parallel
@@ -134,7 +145,7 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
       adapterName,
       clientName,
       mergedRequestDef.endpoint.path,
-      mergedRequestDef.endpoint.method,
+      mergedRequestDef.endpoint.method ?? 'get',
     )
     const pagesWithContext = await traversePages({
       client: clientDefs[clientName].httpClient,
@@ -143,6 +154,7 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
       contexts,
       callArgs,
       additionalValidStatuses: mergedEndpointDef.additionalValidStatuses,
+      polling: mergedEndpointDef.polling,
     })
 
     const itemsWithContext = pagesWithContext
@@ -163,7 +175,7 @@ export const getRequester = <ClientOptions extends string, PaginationOptions ext
     }) as ValueGeneratedItem[]
   }
 
-  const requestAllForResource: Requester<ClientOptions>['requestAllForResource'] = async ({
+  const requestAllForResource: Requester<ResolveClientOptionsType<Options>>['requestAllForResource'] = async ({
     callerIdentifier,
     contextPossibleArgs,
   }) =>

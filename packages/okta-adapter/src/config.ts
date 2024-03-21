@@ -86,6 +86,9 @@ const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'createdBy' },
   { fieldName: 'lastUpdatedBy' },
 ]
+const REQUEST_DEFAULTS: Omit<configUtils.FetchRequestConfig, 'url'> = {
+  queryParams: { limit: '200' },
+}
 const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
   idFields: DEFAULT_ID_FIELDS,
   fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
@@ -302,6 +305,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
+      queryParams: { limit: '10000' }, // maximum page size allowed
     },
   },
   Group: {
@@ -358,7 +362,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__apps: {
     request: {
       url: '/api/v1/apps',
-      queryParams: { limit: '200' },
       recurseInto: [
         {
           type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
@@ -431,7 +434,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__apps___appId___groups@uuuuuu_00123_00125uu': {
     request: {
       url: 'api/v1/apps/{appId}/groups',
-      queryParams: { limit: '200' },
     },
   },
   ApplicationGroupAssignment: {
@@ -1039,7 +1041,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups__rules: {
     request: {
       url: '/api/v1/groups/rules',
-      queryParams: { limit: '200' },
     },
   },
   GroupRule: {
@@ -1808,6 +1809,7 @@ export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
 export const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
   typeDefaults: {
+    request: REQUEST_DEFAULTS,
     transformation: TRANSFORMATION_DEFAULTS,
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

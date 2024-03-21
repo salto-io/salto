@@ -23,18 +23,21 @@ import {
   SaltoError,
   Values,
 } from '@salto-io/adapter-api'
-import { NameMappingOptions } from '../shared'
+import { ImportantValues } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion } from '../../../config' // TODO move
 import { ArgsWithCustomizer } from '../shared/types'
 // eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'
+import { ResolveCustomNameMappingOptionsType } from '../api'
+import { NameMappingFunctionMap, NameMappingOptions } from '../shared'
+import { AliasData } from '../../../add_alias'
 
-export type FieldIDPart = ArgsWithCustomizer<
+export type FieldIDPart<TCustomNameMappingOptions extends string = never> = ArgsWithCustomizer<
   string | undefined,
   {
     fieldName: string
     condition?: (value: Values) => boolean
-    mapping?: NameMappingOptions
+    mapping?: TCustomNameMappingOptions | NameMappingOptions
     // when true, the elem ids are re-calculated after all references have been generated
     // TODO see if can change the default to always re-generate all elem ids at the end of the fetch, except
     // where explicitly specified otherwise (in SALTO-5421)
@@ -43,21 +46,22 @@ export type FieldIDPart = ArgsWithCustomizer<
   Values
 >
 
-export type IDPartsDefinition = {
-  parts?: FieldIDPart[]
+export type IDPartsDefinition<TCustomNameMappingOptions extends string = never> = {
+  parts?: FieldIDPart<TCustomNameMappingOptions>[]
   // the delimiter to use between parts - default is '_'
   delimiter?: string
 }
 
-export type ElemIDDefinition = IDPartsDefinition & {
-  // default - true when parent annotation exists?
-  // TODO check if still needed when implementing SALTO-5421
-  extendsParent?: boolean
-}
+export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
+  IDPartsDefinition<TCustomNameMappingOptions> & {
+    // default - true when parent annotation exists?
+    // TODO check if still needed when implementing SALTO-5421
+    extendsParent?: boolean
+  }
 
-export type PathDefinition = {
+export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
   // when id parts info is missing, inherited from elemID (but the values are path-nacl-cased)
-  pathParts?: IDPartsDefinition[]
+  pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[]
 }
 
 type StandaloneFieldDefinition = {
@@ -102,19 +106,30 @@ export type ElementsAndErrors = {
   configSuggestions?: ConfigChangeSuggestion[]
 }
 
-export type ElemIDCreatorArgs = {
-  elemIDDef: ElemIDDefinition
+export type ElemIDCreatorArgs<TCustomNameMappingOptions extends string = never> = {
+  elemIDDef: ElemIDDefinition<TCustomNameMappingOptions>
   getElemIdFunc?: ElemIdGetter
   serviceIDDef?: string[]
   typeID: ElemID
   singleton?: boolean
+  customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>
 }
 
-type FetchTopLevelElementDefinition<TVal extends Values = Values> = {
+export type ElementFetchDefinitionOptions = {
+  valueType?: Values
+  customNameMappingOptions?: string
+}
+
+type ResolveValueType<Options extends Pick<ElementFetchDefinitionOptions, 'valueType'>> =
+  Options['valueType'] extends Values ? Options['valueType'] : Values
+
+type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
   isTopLevel: true
 
-  // eslint-disable-next-line no-use-before-define
-  custom?: (args: Partial<ElementFetchDefinition<TVal>>) => (input: GenerateTypeArgs) => ElementsAndErrors
+  custom?: (
+    // eslint-disable-next-line no-use-before-define
+    args: Partial<ElementFetchDefinition<Options>>,
+  ) => (input: GenerateTypeArgs<Options>) => ElementsAndErrors
 
   // the type should have exactly one instance, and it will use the settings instance name.
   // note: when set, the elemID definition is ignored
@@ -122,16 +137,16 @@ type FetchTopLevelElementDefinition<TVal extends Values = Values> = {
 
   elemID?: ArgsWithCustomizer<
     string,
-    ElemIDDefinition,
+    ElemIDDefinition<ResolveCustomNameMappingOptionsType<Options>>,
     {
       entry: Values
       defaultName: string
       parentName?: string
     },
-    ElemIDCreatorArgs
+    ElemIDCreatorArgs<ResolveCustomNameMappingOptionsType<Options>>
   >
 
-  path?: PathDefinition
+  path?: PathDefinition<ResolveCustomNameMappingOptionsType<Options>>
 
   // customize the service-url annotation used to define go-to-service
   // TODO use
@@ -142,15 +157,16 @@ type FetchTopLevelElementDefinition<TVal extends Values = Values> = {
 
   // guard for validating the value is as expected.
   // when missing, we validate that this is a plain object
-  valueGuard?: (val: unknown) => val is TVal
+  valueGuard?: (val: unknown) => val is ResolveValueType<Options>
 
-  // TODO add:
-  // alias, important attributes
+  alias?: AliasData
+
+  importantValues?: ImportantValues
 }
 
-export type ElementFetchDefinition<TVal extends Values = Values> = {
+export type ElementFetchDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
   // the topLevel definition should be specified for types that have instances, and should not be specified for subtypes
-  topLevel?: FetchTopLevelElementDefinition<TVal>
+  topLevel?: FetchTopLevelElementDefinition<Options>
 
   // customize field definitions
   fieldCustomizations?: Record<string, ElementFieldCustomization>

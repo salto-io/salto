@@ -153,22 +153,8 @@ export const createMockNaclFileSource = (
         }),
       ),
     ),
-    getStaticFile: mockFunction<NaclFilesSource['getStaticFile']>().mockImplementation(async (args, enc) => {
-      let filePath: string
-      let fileEncoding: BufferEncoding
-
-      // Check if args is a string or an object and assign values accordingly
-      if (_.isString(args)) {
-        if (enc === undefined) {
-          throw new Error("When 'args' is a string, 'encoding' must be provided")
-        }
-        filePath = args
-        fileEncoding = enc
-      } else {
-        filePath = args.filePath
-        fileEncoding = args.encoding
-      }
-      const sfile = await staticFileSource.getStaticFile({ filepath: filePath, encoding: fileEncoding })
+    getStaticFile: mockFunction<NaclFilesSource['getStaticFile']>().mockImplementation(async args => {
+      const sfile = await staticFileSource.getStaticFile({ filepath: args.filePath, encoding: args.encoding })
       return isStaticFile(sfile) ? sfile : undefined
     }),
     isPathIncluded: mockFunction<NaclFilesSource['isPathIncluded']>().mockImplementation(filePath => ({

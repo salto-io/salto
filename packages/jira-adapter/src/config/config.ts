@@ -61,7 +61,7 @@ type JiraFetchFilters = definitions.DefaultFetchCriteria & {
   type?: string
 }
 
-type JiraFetchConfig = definitions.UserFetchConfig<JiraFetchFilters> & {
+type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFilters }> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean
@@ -200,6 +200,7 @@ export type ChangeValidatorName =
   | 'screen'
   | 'issueTypeScheme'
   | 'issueTypeSchemeDefaultType'
+  | 'teamManagedProject'
   | 'projectDeletion'
   | 'status'
   | 'privateApi'
@@ -214,6 +215,7 @@ export type ChangeValidatorName =
   | 'statusMigrationChange'
   | 'workflowSchemeMigration'
   | 'workflowStatusMappings'
+  | 'inboundTransition'
   | 'issueTypeSchemeMigration'
   | 'activeSchemeChange'
   | 'masking'
@@ -257,6 +259,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     screen: { refType: BuiltinTypes.BOOLEAN },
     issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },
+    teamManagedProject: { refType: BuiltinTypes.BOOLEAN },
     projectDeletion: { refType: BuiltinTypes.BOOLEAN },
     status: { refType: BuiltinTypes.BOOLEAN },
     privateApi: { refType: BuiltinTypes.BOOLEAN },
@@ -271,6 +274,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
+    inboundTransition: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
     masking: { refType: BuiltinTypes.BOOLEAN },

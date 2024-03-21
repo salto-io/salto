@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { types, values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { DefaultWithCustomizations } from './shared/types'
 import { UserFetchConfig } from '../user'
-import { FetchApiDefinitions } from './fetch'
+import { FetchApiDefinitions, FetchApiDefinitionsOptions } from './fetch'
 
 /**
  * merge a single custom definition with a default, assuming they came from a DefaultWithCustomizations definition.
@@ -61,25 +61,25 @@ export const mergeSingleDefWithDefault = <T, K extends string>(
   }).value
 }
 
-export type DefQuery<T> = {
-  query: (key: string) => T | undefined
-  allKeys: () => string[]
-  getAll: () => Record<string, T>
+export type DefQuery<T, K extends string = string> = {
+  query: (key: K) => T | undefined
+  allKeys: () => K[]
+  getAll: () => Record<K, T>
 }
 
-export const queryWithDefault = <T>(
-  defsWithDefault: types.PickyRequired<DefaultWithCustomizations<T, string>, 'customizations'>,
-): DefQuery<T> => {
-  const query: DefQuery<T>['query'] = key =>
-    mergeSingleDefWithDefault(defsWithDefault.default, defsWithDefault.customizations[key])
+export const queryWithDefault = <T, K extends string = string>(
+  defsWithDefault: DefaultWithCustomizations<T, K>,
+): DefQuery<T, K> => {
+  const query: DefQuery<T, K>['query'] = key =>
+    mergeSingleDefWithDefault(defsWithDefault.default, defsWithDefault.customizations?.[key] ?? undefined)
   return {
     query,
-    allKeys: () => Object.keys(defsWithDefault.customizations ?? {}),
+    allKeys: () => Object.keys(defsWithDefault.customizations ?? {}) as K[],
     getAll: () =>
       _.pickBy(
-        _.mapValues(defsWithDefault.customizations, (_def, k) => query(k)),
+        _.mapValues(defsWithDefault.customizations, (_def, k) => query(k as K)),
         lowerdashValues.isDefined,
-      ),
+      ) as Record<K, T>,
   }
 }
 
@@ -111,20 +111,24 @@ export const getNestedWithDefault = <T, TNested, K extends string>(
  * this function combines these two, by treating the user-provided overrides as customizations
  * and giving them precedence when merging with the system definitions
  */
-export const mergeWithUserElemIDDefinitions = <ClientOptions extends string>({
+export const mergeWithUserElemIDDefinitions = <Options extends FetchApiDefinitionsOptions>({
   userElemID,
   fetchConfig,
 }: {
-  userElemID: UserFetchConfig['elemID']
-  fetchConfig?: FetchApiDefinitions<ClientOptions>
-}): FetchApiDefinitions<ClientOptions> => {
+  userElemID: UserFetchConfig<Options>['elemID']
+  fetchConfig?: FetchApiDefinitions<Options>
+}): FetchApiDefinitions<Options> => {
   if (userElemID === undefined) {
-    return fetchConfig ?? { instances: { customizations: {} } }
+    return (
+      fetchConfig ?? {
+        instances: { customizations: {} },
+      }
+    )
   }
   return _.merge({}, fetchConfig, {
     instances: {
       customizations: _.mapValues(userElemID, ({ extendSystemPartsDefinition, ...userDef }, type) => {
-        const { elemID: systemDef } = fetchConfig?.instances.customizations[type]?.element?.topLevel ?? {}
+        const { elemID: systemDef } = fetchConfig?.instances.customizations?.[type]?.element?.topLevel ?? {}
         const elemIDDef = {
           ..._.defaults({}, userDef, systemDef),
           parts: extendSystemPartsDefinition ? (systemDef?.parts ?? []).concat(userDef.parts ?? []) : userDef.parts,

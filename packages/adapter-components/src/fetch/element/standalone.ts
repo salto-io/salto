@@ -16,6 +16,7 @@
 import {
   ElemIdGetter,
   InstanceElement,
+  ObjectType,
   ReferenceExpression,
   getDeepInnerTypeSync,
   isObjectType,
@@ -25,18 +26,24 @@ import { TransformFuncSync, invertNaclCase, transformValuesSync } from '@salto-i
 import { collections } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { createInstance, getInstanceCreationFunctions } from './instance_utils'
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
+import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 
 const extractStandaloneInstancesFromField =
-  ({
+  <Options extends FetchApiDefinitionsOptions>({
     defQuery,
     instanceOutput,
     getElemIdFunc,
     parent,
+    customNameMappingFunctions,
+    definedTypes,
   }: {
-    defQuery: ElementAndResourceDefFinder
+    defQuery: ElementAndResourceDefFinder<Options>
     instanceOutput: InstanceElement[]
     getElemIdFunc?: ElemIdGetter
     parent: InstanceElement
+    customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+    definedTypes?: Record<string, ObjectType>
   }): TransformFuncSync =>
   ({ value, field }) => {
     if (field === undefined || isReferenceExpression(value)) {
@@ -48,7 +55,7 @@ const extractStandaloneInstancesFromField =
       return value
     }
 
-    const fieldType = getDeepInnerTypeSync(field.getTypeSync())
+    const fieldType = definedTypes?.[standaloneDef.typeName] ?? getDeepInnerTypeSync(field.getTypeSync())
     if (!isObjectType(fieldType)) {
       throw new Error(`field type for ${field.elemID.getFullName()} is not an object type`)
     }
@@ -58,7 +65,16 @@ const extractStandaloneInstancesFromField =
       )
     }
 
-    const { toElemName, toPath } = getInstanceCreationFunctions({ defQuery, type: fieldType, getElemIdFunc })
+    const nestUnderPath = standaloneDef.nestPathUnderParent
+      ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), field.name]
+      : undefined
+    const { toElemName, toPath } = getInstanceCreationFunctions({
+      defQuery,
+      type: fieldType,
+      getElemIdFunc,
+      nestUnderPath,
+      customNameMappingFunctions,
+    })
     const newInstances = collections.array.makeArray(value).map((entry, index) =>
       createInstance({
         entry,
@@ -67,9 +83,6 @@ const extractStandaloneInstancesFromField =
         toPath,
         defaultName: `${invertNaclCase(parent.elemID.name)}__unnamed_${index}`,
         parent: standaloneDef.addParentAnnotation !== false ? parent : undefined,
-        nestUnderPath: standaloneDef.nestPathUnderParent
-          ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), field.name]
-          : undefined,
       }),
     )
     newInstances.forEach(inst => instanceOutput.push(inst))
@@ -91,14 +104,18 @@ const extractStandaloneInstancesFromField =
  *
  * Note: modifies the instances array in-place.
  */
-export const extractStandaloneInstances = ({
+export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOptions>({
   instances,
   defQuery,
+  customNameMappingFunctions,
   getElemIdFunc,
+  definedTypes,
 }: {
   instances: InstanceElement[]
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   getElemIdFunc?: ElemIdGetter
+  definedTypes?: Record<string, ObjectType>
 }): InstanceElement[] => {
   const instancesToProcess: InstanceElement[] = []
   instances.forEach(inst => instancesToProcess.push(inst))
@@ -121,6 +138,8 @@ export const extractStandaloneInstances = ({
         instanceOutput: instancesToProcess,
         getElemIdFunc,
         parent: inst,
+        customNameMappingFunctions,
+        definedTypes,
       }),
     })
     if (value !== undefined) {

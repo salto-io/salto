@@ -16,10 +16,11 @@
 import { logger } from '@salto-io/logging'
 import { ElementsAndErrors } from '../../definitions/system/fetch/element'
 import { generateType } from './type_element'
-import { createInstance, getInstanceCreationFunctions, toInstanceValue } from './instance_utils'
+import { createInstance, getInstanceCreationFunctions, recursiveNaclCase } from './instance_utils'
 import { extractStandaloneInstances } from './standalone'
 import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from '../../config/shared' // TODO move
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 
 const log = logger(module)
 
@@ -28,10 +29,10 @@ const log = logger(module)
  * Note: it is recommended to re-generate types after all instances of all types have been created,
  * since there might be some overlaps between subtypes.
  */
-export const generateInstancesWithInitialTypes = (
-  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
+export const generateInstancesWithInitialTypes = <Options extends FetchApiDefinitionsOptions>(
+  args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>,
 ): ElementsAndErrors => {
-  const { defQuery, entries, adapterName, typeName, getElemIdFunc } = args
+  const { defQuery, entries, adapterName, typeName, getElemIdFunc, customNameMappingFunctions, definedTypes } = args
   const { element: elementDef } = defQuery.query(typeName) ?? {}
   if (elementDef === undefined) {
     log.error('could not find any element definitions for type %s:%s', adapterName, typeName)
@@ -55,10 +56,15 @@ export const generateInstancesWithInitialTypes = (
   // create a temporary type recursively so we can correctly extract standalone instances
   // note that all types should be re-generated at the end once instance values have been finalized
   const { type, nestedTypes } = generateType(args)
-  const { toElemName, toPath } = getInstanceCreationFunctions({ defQuery, type, getElemIdFunc })
+  const { toElemName, toPath } = getInstanceCreationFunctions({
+    defQuery,
+    type,
+    getElemIdFunc,
+    customNameMappingFunctions,
+  })
   // TODO should also nacl-case field names on predefined fields similarly (SALTO-5422)
   const instances = entries
-    .map(value => toInstanceValue({ value, type, defQuery }))
+    .map(value => recursiveNaclCase(value))
     .map((entry, index) =>
       createInstance({
         entry,
@@ -76,6 +82,8 @@ export const generateInstancesWithInitialTypes = (
     instances,
     defQuery,
     getElemIdFunc,
+    customNameMappingFunctions,
+    definedTypes,
   })
 
   return { types: [type, ...nestedTypes], instances: instancesWithStandalone }

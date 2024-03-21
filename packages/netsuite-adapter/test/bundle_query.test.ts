@@ -16,6 +16,17 @@
 
 import { BundlesQueryAndSupportedBundles, buildNetsuiteBundlesQuery } from '../src/config/bundle_query'
 
+jest.mock('../src/autogen/bundle_components/bundle_components', () => ({
+  BUNDLE_ID_TO_COMPONENTS: {
+    39609: {
+      'v4.0.0': new Set(['customlist_ns_ps_process_list']),
+    },
+    53195: {
+      '1.11.5': new Set(['record1', 'customrecord_lsa']),
+    },
+  },
+}))
+
 describe('bundle_query', () => {
   const installedBundles = [
     {

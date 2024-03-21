@@ -45,7 +45,7 @@ const log = logger(module)
 
 type DeployChangeParam = {
   change: Change<InstanceElement>
-  client: clientUtils.HTTPWriteClientInterface
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface
   apiDefinitions: config.AdapterApiConfig
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>

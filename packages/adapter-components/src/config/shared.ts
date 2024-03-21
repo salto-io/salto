@@ -34,7 +34,7 @@ import {
   FetchRequestDefaultConfig,
   getConfigTypeName,
 } from './request'
-import { UserFetchConfig } from '../definitions/user'
+import { UserFetchConfig, UserFetchConfigOptions } from '../definitions/user'
 
 export class InvalidSingletonType extends Error {}
 
@@ -158,9 +158,9 @@ export const getConfigWithDefault = <
 /**
  * Verify that all fetch types are supported.
  */
-export const validateSupportedTypes = (
+export const validateSupportedTypes = <Options extends UserFetchConfigOptions>(
   fetchConfigPath: string,
-  userFetchConfig: UserFetchConfig,
+  userFetchConfig: UserFetchConfig<Options>,
   supportedTypesNames: string[],
 ): void => {
   const invalidIncludedTypes = [...userFetchConfig.include, ...userFetchConfig.exclude]

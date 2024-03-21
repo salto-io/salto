@@ -24,8 +24,8 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFuncSync, invertNaclCase, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
-import { DefQuery } from '../../definitions'
+import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
+import { DefQuery, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 
@@ -36,7 +36,7 @@ import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/type
  * - when used as an instance value, the relevant type elements' fields should also be nacl-cased separately.
  * - in most cases, this transformation should be reverted before deploy. this can be done be setting invert=true
  */
-const recursiveNaclCase = (value: Values, invert = false): Values => {
+export const recursiveNaclCase = (value: Values, invert = false): Values => {
   const func = invert ? invertNaclCase : naclCase
   return _.cloneDeepWith(value, val => (_.isPlainObject(val) ? _.mapKeys(val, (_v, k) => func(k)) : val))
 }
@@ -46,7 +46,9 @@ const recursiveNaclCase = (value: Values, invert = false): Values => {
  * - omit null values
  */
 const omitValues =
-  <ClientOptions extends string>(defQuery: DefQuery<InstanceFetchApiDefinitions<ClientOptions>>): TransformFuncSync =>
+  <Options extends FetchApiDefinitionsOptions>(
+    defQuery: DefQuery<InstanceFetchApiDefinitions<Options>>,
+  ): TransformFuncSync =>
   ({ value, field }) => {
     if (value === null) {
       return undefined
@@ -68,18 +70,17 @@ const omitValues =
  *
  * Note: standalone fields' values with referenceFromParent=false should be omitted separately
  */
-export const toInstanceValue = ({
+export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
   value,
   defQuery,
   type,
 }: {
   value: Values
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
   type: ObjectType
 }): Values =>
   transformValuesSync({
-    // nacl-case all keys recursively
-    values: recursiveNaclCase(value),
+    values: value,
     type,
     transformFunc: omitValues(defQuery),
     strict: false,
@@ -89,7 +90,6 @@ export type InstanceCreationParams = {
   entry: Values
   type: ObjectType
   defaultName: string
-  nestUnderPath?: string[]
   parent?: InstanceElement
   toElemName: ElemIDCreator
   toPath: PartsCreator
@@ -97,16 +97,20 @@ export type InstanceCreationParams = {
 
 /**
  * Generate an instance for a single entry returned for a given type, and set its elem id and path.
- * Assuming the entry is already in its final structure (after running toInstanceValue).
+ * Assuming the entry is already in its final structure (after nacl-case), except for omitting fields
  */
-export const getInstanceCreationFunctions = ({
+export const getInstanceCreationFunctions = <Options extends FetchApiDefinitionsOptions>({
   defQuery,
   type,
   getElemIdFunc,
+  customNameMappingFunctions,
+  nestUnderPath,
 }: {
   type: ObjectType
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
   getElemIdFunc?: ElemIdGetter
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
+  nestUnderPath?: string[]
 }): {
   toElemName: ElemIDCreator
   toPath: PartsCreator
@@ -123,6 +127,11 @@ export const getInstanceCreationFunctions = ({
 
   const { elemID: elemIDDef, singleton } = elementDef.topLevel
 
+  // if there is at least one standalone field with nestPathUnderParent, we should create a folder to instance
+  const createSelfFolder = Object.entries(elementDef.fieldCustomizations ?? {}).some(
+    ([_fieldName, fieldDef]) => fieldDef.standalone?.nestPathUnderParent,
+  )
+
   // if this is a singleton, the instance name has to be 'config' and cannot be customized
   const elemIDCreator = elemIDDef?.custom && !singleton ? elemIDDef.custom : createElemIDFunc
 
@@ -132,12 +141,16 @@ export const getInstanceCreationFunctions = ({
     getElemIdFunc,
     serviceIDDef: resourceDef?.serviceIDFields,
     typeID: type.elemID,
+    customNameMappingFunctions,
   })
   const toPath = getElemPath({
     def: elementDef.topLevel.path,
     singleton,
     elemIDCreator: toElemName,
     typeID: type.elemID,
+    customNameMappingFunctions,
+    nestUnderPath,
+    createSelfFolder,
   })
 
   return { toElemName, toPath }
@@ -153,7 +166,6 @@ export const createInstance = ({
   toElemName,
   toPath,
   defaultName,
-  nestUnderPath,
   parent,
 }: InstanceCreationParams): InstanceElement => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
@@ -163,6 +175,6 @@ export const createInstance = ({
     annotations[INSTANCE_ANNOTATIONS.PARENT].push(new ReferenceExpression(parent.elemID, parent))
   }
 
-  const args = { entry, parent, defaultName, nestUnderPath }
+  const args = { entry, parent, defaultName }
   return new InstanceElement(toElemName(args), type, value, toPath(args), annotations)
 }

@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-export { ApiDefinitions } from './api'
+export {
+  ApiDefinitions,
+  APIDefinitionsOptions,
+  ResolveClientOptionsType,
+  ResolvePaginationOptionsType,
+  ResolveCustomNameMappingOptionsType,
+} from './api'
+export * as deploy from './deploy'
 export * as fetch from './fetch'
 export * from './requests'
 export {
   DATA_FIELD_ENTIRE_OBJECT,
   NameMappingOptions,
+  NameMappingFunction,
+  NameMappingFunctionMap,
   DefaultWithCustomizations,
   ArgsWithCustomizer,
   OptionsWithDefault,

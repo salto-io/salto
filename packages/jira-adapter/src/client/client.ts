@@ -146,13 +146,12 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     })
     if (isGraphQLResponse(response.data)) {
       if (response.data.errors !== undefined && response.data.errors.length > 0) {
-        log.error(
+        log.warn(
           'received the following errors for POST on %s with query: (%s). errors: %o',
           args.url,
           safeJsonStringify(args.query),
           response.data.errors,
         )
-        throw new Error(`Received GQL error: ${safeJsonStringify(response.data.errors)}`)
       }
       return response.data
     }

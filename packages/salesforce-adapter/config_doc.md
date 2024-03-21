@@ -78,6 +78,19 @@ salesforce {
           metadataType = "StandardValueSet"
           name = "AddressStateCode.*"
         },
+        {
+          metadataType: 'EclairGeoData',
+        },
+        {
+          metadataType:
+            'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+        },
+        {
+          metadataType: 'DiscoveryAIModel',
+        },
+        {
+          metadataType: 'Translations',
+        },
       ]
     }
     data = {

@@ -33,7 +33,7 @@ import {
 } from './transformation'
 
 import { validateRequestConfig } from './request'
-import { UserFetchConfig } from '../definitions/user'
+import { UserFetchConfig, UserFetchConfigOptions } from '../definitions/user'
 import { DefaultWithCustomizations } from '../definitions'
 
 const { isDefined } = lowerDashValues
@@ -107,9 +107,9 @@ export const validateApiDefinitionConfig = (
  * Verify that all fetch types exist in the endpoint definitions.
  * Note: This validation is only relevant for ducktype adapters.
  */
-export const validateFetchConfig = (
+export const validateFetchConfig = <Options extends UserFetchConfigOptions>(
   fetchConfigPath: string,
-  userFetchConfig: UserFetchConfig,
+  userFetchConfig: UserFetchConfig<Options>,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
   validateSupportedTypes(fetchConfigPath, userFetchConfig, Object.keys(adapterApiConfig.supportedTypes))
@@ -121,6 +121,8 @@ export const validateDefaultWithCustomizations = (
   config: DefaultWithCustomizations<boolean>,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
-  validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.supportedTypes))
-  validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.types))
+  if (config.customizations !== undefined) {
+    validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.supportedTypes))
+    validateCustomizationsTypes(customizationName, config.customizations, Object.keys(adapterApiConfig.types))
+  }
 }

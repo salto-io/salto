@@ -123,6 +123,16 @@ const isLegalEdge = (
   (startNode.value.changeType === 'addition' || startNode.value.addedObjects.has(serviceId)) &&
   startNode.id !== endNode.id
 
+const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'TEST' => {
+  if (accountId.toUpperCase().startsWith('TSTDRV') || accountId.toUpperCase().startsWith('TD')) {
+    log.debug(
+      `using 'TEST' account type although ${envType} envType is returned from NS since we assume ${accountId} indicates a testing account`,
+    )
+    return 'TEST'
+  }
+  return envType
+}
+
 export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
@@ -170,10 +180,11 @@ export default class NetsuiteClient {
     if (systemInformation?.envType === undefined) {
       return { accountId }
     }
+    const accountType = determineAccountType(accountId, systemInformation.envType)
     return {
       accountId,
-      isProduction: systemInformation.envType === EnvType.PRODUCTION,
-      accountType: EnvType[systemInformation.envType],
+      isProduction: accountType === EnvType.PRODUCTION,
+      accountType,
     }
   }
 

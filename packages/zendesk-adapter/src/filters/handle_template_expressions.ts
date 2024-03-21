@@ -60,8 +60,9 @@ const BRACKETS = [
   ['{{', '}}'],
   ['{%', '%}'],
 ]
-const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
+const REFERENCE_MARKER_REGEX = /\$\{({{.+?}})\}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
+const DYNAMIC_CONTENT_REGEX_WITH_BRACKETS = /({{dc\.[\w-]+}})/g
 const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\\d]+))'
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
@@ -95,10 +96,10 @@ const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TY
 const typeSearchRegexes: RegExp[] = []
 BRACKETS.forEach(([opener, closer]) => {
   POTENTIAL_REFERENCE_TYPES.forEach(type => {
-    typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*${type}_[\\d]+[^}]*)(${closer})`, 'g'))
+    typeSearchRegexes.push(new RegExp(`(?<!\\$})(${opener})([\\w]*${type}_[\\d]+[^}]*)(${closer})`, 'g'))
   })
   // dynamic content references look different, but can still be part of template
-  typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
+  typeSearchRegexes.push(new RegExp(`(?<!\\$})(${opener})([\\w]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
 })
 
 // the potential references will start with one of the POTENTIAL_REFERENCE_TYPES, following either '_<number>' or
@@ -242,7 +243,7 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
     // The replace flags the pattern with a reference-like string to avoid the later code from
     // detecting ids in numbers that are not marked as ids.
     // eslint-disable-next-line no-template-curly-in-string
-    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$1$${$2}$3')
+    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '${$1$2$3}')
   })
   return formulaWithDetectedParts
 }
@@ -263,7 +264,8 @@ const formulaToTemplate = ({
   extractReferencesFromFreeText?: boolean
 }): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
-    const reference = ref.pop() ?? ''
+    const rawReference = ref.pop() ?? ''
+    const reference = rawReference.startsWith('{{') ? rawReference.substring(2, rawReference.length - 2) : rawReference
     const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, or TYPE.name.title so should contain exactly 2 or 3 parts
     if (splitReference.length !== 2 && splitReference.length !== 3) {
@@ -297,27 +299,30 @@ const formulaToTemplate = ({
     return [`${type}_`, new ReferenceExpression(missingInstance.elemID, missingInstance)]
   }
 
-  const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
+  const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray): TemplatePart | TemplatePart[] => {
     const dcPlaceholder = ref.pop() ?? ''
     const elem = (instancesByType[DYNAMIC_CONTENT_ITEM_TYPE_NAME] ?? []).find(
-      instance => instance.value.placeholder === `{{${dcPlaceholder}}}`,
+      instance => instance.value.placeholder === dcPlaceholder,
     )
+    const placeholderNoBrackets = dcPlaceholder.substring(2, dcPlaceholder.length - 2)
+
     if (elem) {
-      return new ReferenceExpression(elem.elemID, elem)
+      return ['{{', new ReferenceExpression(elem.elemID, elem), '}}']
     }
+
     if (!_.isEmpty(dcPlaceholder) && enableMissingReferences) {
       const missingInstance = createMissingInstance(
         ZENDESK,
         DYNAMIC_CONTENT_ITEM_TYPE_NAME,
-        dcPlaceholder.startsWith('dc.') ? dcPlaceholder.slice(3) : dcPlaceholder,
+        placeholderNoBrackets.startsWith('dc.') ? placeholderNoBrackets.slice(3) : placeholderNoBrackets,
       )
-      missingInstance.value.placeholder = `{{${dcPlaceholder}}}`
-      return new ReferenceExpression(missingInstance.elemID, missingInstance)
+      missingInstance.value.placeholder = dcPlaceholder
+      return ['{{', new ReferenceExpression(missingInstance.elemID, missingInstance), '}}']
     }
     return expression
   }
 
-  const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX]
+  const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX_WITH_BRACKETS]
   if (extractReferencesFromFreeText) {
     potentialRegexes.push(...ELEMENTS_REGEXES.map(s => s.urlRegex))
   }
@@ -330,7 +335,7 @@ const formulaToTemplate = ({
     if (zendeskReference) {
       return handleZendeskReference(expression, zendeskReference)
     }
-    const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX)
+    const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX_WITH_BRACKETS)
     if (dynamicContentReference) {
       return handleDynamicContentReference(expression, dynamicContentReference)
     }

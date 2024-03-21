@@ -126,6 +126,7 @@ export type OptionalFeatures = {
   organizationWideSharingDefaults?: boolean
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
+  hideTypesFolder?: boolean
 }
 
 export type ChangeValidatorName =
@@ -160,7 +161,7 @@ export type ChangeValidatorName =
   | 'instanceWithUnknownType'
   | 'artificialTypes'
   | 'metadataTypes'
-  | 'newFieldsAndObjectsFLS'
+  | 'taskOrEventFieldsModifications'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -833,6 +834,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
+    hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -869,7 +871,6 @@ const changeValidatorConfigType =
       unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
       dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
       installedPackages: { refType: BuiltinTypes.BOOLEAN },
-      newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
       standardFieldOrObjectAdditionsOrDeletions: {
         refType: BuiltinTypes.BOOLEAN,
       },
@@ -877,6 +878,7 @@ const changeValidatorConfigType =
       instanceWithUnknownType: { refType: BuiltinTypes.BOOLEAN },
       artificialTypes: { refType: BuiltinTypes.BOOLEAN },
       metadataTypes: { refType: BuiltinTypes.BOOLEAN },
+      taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -941,7 +943,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',
-                name: 'MarketoEmailTemplates/.*',
+                name: 'Marketo_?Email_?Templates/.*',
               },
               { metadataType: 'ContentAsset' },
               { metadataType: 'CustomObjectTranslation' },
@@ -960,6 +962,19 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               {
                 metadataType: 'Layout',
                 name: 'CaseInteraction-Case Feed Layout',
+              },
+              {
+                metadataType: 'EclairGeoData',
+              },
+              {
+                metadataType:
+                  'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+              },
+              {
+                metadataType: 'DiscoveryAIModel',
+              },
+              {
+                metadataType: 'Translations',
               },
             ],
           },

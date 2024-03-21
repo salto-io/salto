@@ -70,7 +70,7 @@ export class RequestQueue<ClientOptions extends string> {
         'processNext on queue %s.%s:%s - %d items left',
         this.endpointIdentifier.client,
         this.endpointIdentifier.path,
-        this.endpointIdentifier.method,
+        this.endpointIdentifier.method ?? 'get',
         this.queue.length,
       )
       if (args === undefined) {

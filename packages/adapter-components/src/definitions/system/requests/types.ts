@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { Values } from '@salto-io/adapter-api'
+import { Response, ResponseValue } from '../../../client'
 
 export type HTTPMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head' | 'options'
 
@@ -33,6 +34,12 @@ export type RequestArgs = {
   body?: unknown
 }
 
+export type PollingArgs = {
+  interval: number
+  retries: number
+  checkStatus: (response: Response<ResponseValue | ResponseValue[]>) => boolean
+}
+
 export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {
   omitBody?: boolean
 
@@ -43,4 +50,8 @@ export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = Req
 
   // set this to mark as endpoint as safe for fetch. other endpoints can only be called during deploy.
   readonly?: boolean
+
+  polling?: PollingArgs
 }
+
+export type DeployHTTPEndpointDetails = Omit<HTTPEndpointDetails<'none'>, 'pagination' | 'readonly'>

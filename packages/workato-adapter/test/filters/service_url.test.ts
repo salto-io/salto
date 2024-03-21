@@ -18,7 +18,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import filterCreator from '../../src/filters/service_url'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 import {
   CONNECTION_TYPE,
   RECIPE_TYPE,
@@ -97,7 +97,7 @@ describe('service_url', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig(),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
 

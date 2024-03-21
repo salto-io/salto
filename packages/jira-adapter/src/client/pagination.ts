@@ -24,17 +24,30 @@ const ITEM_INDEX_PAGINATION_URLS = [
   '/rest/api/2/user/search',
   '/rest/api/2/priorityschemes',
 ]
+const isBoardSelfUrl = (self: unknown): boolean => {
+  if (typeof self !== 'string') {
+    return false
+  }
+
+  // This regex pattern assumes 'https://' at the start, allows any characters for the domain,
+  // and then matches the specific path with a variable board ID at the end.
+  // The board ID is expected to be a sequence of digits.
+  const pattern = /^https:\/\/[^/]+\/rest\/agile\/1\.0\/board\/(\d+)$/
+  return pattern.test(self)
+}
+
+// filters out entries of specific project scope as we don't support it,
+// but leaves entries of global scope
+const notTeamScopeObject = (obj: clientUtils.ResponseValue): boolean =>
+  !(_.isPlainObject(obj) && 'scope' in obj && !_.isEqual(obj.scope, { type: 'GLOBAL' }))
+
+// filters out boards located in team managed projects
+const notTeamBoard = (obj: clientUtils.ResponseValue): boolean =>
+  !(_.isPlainObject(obj) && 'type' in obj && obj.type === 'simple' && 'self' in obj && isBoardSelfUrl(obj.self))
 
 const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(response: T | T[]): T | T[] => {
   if (Array.isArray(response)) {
-    return response
-      .filter(
-        item =>
-          // filters out entries of specific project scope as we don't support it,
-          // but leaves entries of global scope
-          !(_.isPlainObject(item) && 'scope' in item && !_.isEqual(item.scope, { type: 'GLOBAL' })),
-      )
-      .flatMap(removeScopedObjectsImpl) as T[]
+    return response.filter(notTeamScopeObject).filter(notTeamBoard).flatMap(removeScopedObjectsImpl) as T[]
   }
   if (_.isObject(response)) {
     return _.mapValues(response, removeScopedObjectsImpl) as T

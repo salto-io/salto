@@ -35,8 +35,6 @@ import {
 
 const log = logger(module)
 
-const SECOND_ITERATION_TYPES = ['FieldConfigurationItem', 'CustomFieldContext']
-
 const aliasMap: Record<string, AliasData> = {
   Field: {
     aliasComponents: [
@@ -238,7 +236,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
     addAliasToElements({
       elementsMap,
       aliasMap,
-      secondIterationGroupNames: SECOND_ITERATION_TYPES,
     })
   },
 })

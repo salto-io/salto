@@ -25,6 +25,7 @@ import {
   ElemID,
   isListType,
   CORE_ANNOTATIONS,
+  Values,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -34,11 +35,12 @@ import { SUBTYPES_PATH, TYPES_PATH } from '../../elements/constants'
 import { ARRAY_ITEMS_FIELD } from '../../elements/swagger/type_elements/swagger_parser'
 import { computeTypesToRename, toNestedTypeName, NESTING_SEPARATOR } from './type_utils'
 import { GenerateTypeArgs } from '../../definitions/system/fetch/types'
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 
 const log = logger(module)
 
-const generateNestedType = (
-  args: lowerdashTypes.PickyRequired<GenerateTypeArgs, 'parentName'>,
+const generateNestedType = <Options extends FetchApiDefinitionsOptions>(
+  args: lowerdashTypes.PickyRequired<GenerateTypeArgs<Options>, 'parentName'>,
 ): NestedTypeWithNestedTypes => {
   const { typeName, parentName, entries, isUnknownEntry, isMapWithDynamicType } = args
 
@@ -148,8 +150,8 @@ const normalizeType = (type: ObjectType): ObjectType => {
  *
  * Note: field customizations should be applied separately, once all types have been created
  */
-export const generateType = (
-  args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType'>,
+export const generateType = <Options extends FetchApiDefinitionsOptions>(
+  args: Omit<GenerateTypeArgs<Options>, 'parentName' | 'isMapWithDynamicType' | 'customNameMappingOptions'>,
 ): ObjectTypeWithNestedTypes => {
   const {
     adapterName,
@@ -221,14 +223,27 @@ export const generateType = (
   )
 
   const { topLevel } = elementDef ?? {}
-  const { hide, singleton } = topLevel ?? {}
+  const { hide, singleton, importantValues } = topLevel ?? {}
+  const getAnnotations = (): Values | undefined => {
+    if (!hide && importantValues === undefined) {
+      return undefined
+    }
+    const annotations: Values = {}
+    if (hide) {
+      annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+    }
+    if (importantValues !== undefined) {
+      annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValues
+    }
+    return annotations
+  }
 
   const type = new ObjectType({
     elemID: new ElemID(adapterName, naclName),
     fields,
     path,
     isSettings: singleton ?? false,
-    annotations: hide ? { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } : undefined,
+    annotations: getAnnotations(),
   })
 
   return { type, nestedTypes }

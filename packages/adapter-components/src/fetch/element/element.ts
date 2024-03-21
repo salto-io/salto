@@ -18,12 +18,14 @@ import { ElemIdGetter, Element, ObjectType, SeverityLevel, Values } from '@salto
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { ElementQuery } from '../query'
 import { FetchElements } from '../types'
 import { generateInstancesWithInitialTypes } from './instance_element'
-import { adjustFieldTypes } from './type_utils'
+import { hideAndOmitFields, overrideFieldTypes } from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from '../../config/shared' // TODO move
+import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
+import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
+import { omitInstanceValues } from './instance_utils'
 
 const log = logger(module)
 
@@ -39,15 +41,16 @@ export type ElementGenerator = {
   generate: () => FetchElements
 }
 
-export const getElementGenerator = ({
+export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>({
   adapterName,
   defQuery,
   predefinedTypes,
+  customNameMappingFunctions,
   getElemIdFunc,
 }: {
   adapterName: string
-  fetchQuery: ElementQuery
-  defQuery: ElementAndResourceDefFinder
+  defQuery: ElementAndResourceDefFinder<Options>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
 }): ElementGenerator => {
@@ -82,6 +85,7 @@ export const getElementGenerator = ({
           typeName,
           definedTypes: predefinedTypes,
           getElemIdFunc,
+          customNameMappingFunctions,
         })
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5427)
@@ -94,14 +98,23 @@ export const getElementGenerator = ({
     const instances = allResults.flatMap(e => e.instances)
     const [finalTypeLists, typeListsToAdjust] = _.partition(allResults, t => t.typesAreFinal)
     const finalTypeNames = new Set(finalTypeLists.flatMap(t => t.types).map(t => t.elemID.name))
-    const definedTypes = _.keyBy(
-      // concatenating in this order so that the final types will take precedence
-      typeListsToAdjust.concat(finalTypeLists).flatMap(t => t.types),
-      t => t.elemID.name,
+    const definedTypes = _.defaults(
+      {},
+      _.keyBy(
+        // concatenating in this order so that the final types will take precedence
+        typeListsToAdjust.concat(finalTypeLists).flatMap(t => t.types),
+        t => t.elemID.name,
+      ),
+      predefinedTypes,
     )
 
-    // TODO instead regenerate all types and update in-place for instances
-    adjustFieldTypes({ definedTypes, defQuery, finalTypeNames })
+    overrideFieldTypes({ definedTypes, defQuery, finalTypeNames })
+    // omit fields based on the adjusted types
+    instances.forEach(inst => {
+      inst.value = omitInstanceValues({ value: inst.value, type: inst.getTypeSync(), defQuery })
+    })
+
+    hideAndOmitFields({ definedTypes, defQuery, finalTypeNames })
 
     return {
       elements: (instances as Element[]).concat(Object.values(definedTypes)),

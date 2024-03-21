@@ -15,9 +15,14 @@
  */
 import { FetchResourceDefinition } from './resource'
 // eslint-disable-next-line import/no-cycle
-import { ElementFetchDefinition } from './element'
+import { ElementFetchDefinition, ElementFetchDefinitionOptions } from './element'
 import { DefaultWithCustomizations } from '../shared/types'
 import { FetchRequestDefinition } from './request'
+import { APIDefinitionsOptions, ResolveClientOptionsType, ResolveCustomNameMappingOptionsType } from '../api'
+import { NameMappingFunctionMap } from '../shared'
+
+export type FetchApiDefinitionsOptions = Pick<APIDefinitionsOptions, 'clientOptions' | 'customNameMappingOptions'> &
+  Pick<ElementFetchDefinitionOptions, 'valueType'>
 
 /**
  * Fetch flow:
@@ -31,21 +36,19 @@ import { FetchRequestDefinition } from './request'
  * - Once all fragments of a resource have been fetched, the resource is created using the mergeAndTransform definition
  * - Once all resources have been generated, elements are produced
  */
-export type InstanceFetchApiDefinitions<ClientOptions extends string = 'main'> = {
+export type InstanceFetchApiDefinitions<Options extends FetchApiDefinitionsOptions = {}> = {
   // "edges" specifying how to generate resources from endpoint calls.
-  // these are used in two places during fetch:
-  // 1. to decide which endpoints to call given a fetch query (all endpoints that produce resources of relevant types)
-  // 2. to generate resources from endpoint responses
-  requests?: FetchRequestDefinition<ClientOptions>[]
+  requests?: FetchRequestDefinition<ResolveClientOptionsType<Options>>[]
 
   // a resource aggregates fragments associated with the same logical entity from various requests by a service id,
   // and transforms the value that will become the instance(s). it is mainly used for orchestrating the structure and
   // requests for complex types
   resource?: FetchResourceDefinition
 
-  element?: ElementFetchDefinition
+  element?: ElementFetchDefinition<Options>
 }
 
-export type FetchApiDefinitions<ClientOptions extends string = 'main'> = {
-  instances: DefaultWithCustomizations<InstanceFetchApiDefinitions<ClientOptions>>
+export type FetchApiDefinitions<Options extends FetchApiDefinitionsOptions = {}> = {
+  instances: DefaultWithCustomizations<InstanceFetchApiDefinitions<Options>>
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
 }

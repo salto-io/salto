@@ -26,6 +26,8 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ElemIDDefinition, FieldIDPart } from '../system/fetch/element'
+import { NameMappingOptions, ResolveCustomNameMappingOptionsType } from '../system'
+import { FetchApiDefinitionsOptions } from '../system/fetch'
 
 export type DefaultFetchCriteria = {
   name?: string
@@ -36,15 +38,23 @@ type FetchEntry<T extends Record<string, unknown> | undefined> = {
   criteria?: T
 }
 
-export type ElemIDCustomization = ElemIDDefinition & {
-  // when true - appends the added fields to the system-defined ones
-  // when false - overrides the system's default for the specified type
-  extendSystemPartsDefinition?: boolean
+export type ElemIDCustomization<TCustomNameMappingOptions extends string = never> =
+  ElemIDDefinition<TCustomNameMappingOptions> & {
+    // when true - appends the added fields to the system-defined ones
+    // when false - overrides the system's default for the specified type
+    extendSystemPartsDefinition?: boolean
+  }
+
+export type UserFetchConfigOptions = Pick<FetchApiDefinitionsOptions, 'customNameMappingOptions'> & {
+  fetchCriteria?: Record<string, unknown>
 }
 
-export type UserFetchConfig<T extends Record<string, unknown> | undefined = DefaultFetchCriteria> = {
-  include: FetchEntry<T>[]
-  exclude: FetchEntry<T>[]
+type ResolveFetchCriteriaType<Options extends Pick<UserFetchConfigOptions, 'fetchCriteria'>> =
+  Options['fetchCriteria'] extends Record<string, unknown> ? Options['fetchCriteria'] : DefaultFetchCriteria
+
+export type UserFetchConfig<Options extends UserFetchConfigOptions = UserFetchConfigOptions> = {
+  include: FetchEntry<ResolveFetchCriteriaType<Options>>[]
+  exclude: FetchEntry<ResolveFetchCriteriaType<Options>>[]
   hideTypes?: boolean
   // TODO deprecate and remove once the migration is complete and everything is async
   asyncPagination?: boolean
@@ -52,10 +62,10 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
   // TODO validate that the types are valid and top-level
   // TODO (informative, remove after discussions) - not using default+customizations to avoid questions about
   //   priorities between user default and system custom
-  elemID?: Record<string, ElemIDCustomization>
+  elemID?: Record<string, ElemIDCustomization<ResolveCustomNameMappingOptionsType<Options>>>
 }
 
-export const createUserFetchConfigType = ({
+export const createUserFetchConfigType = <TCustomNameMappingOptions extends string = never>({
   adapterName,
   additionalFields,
   fetchCriteriaType,
@@ -95,7 +105,8 @@ export const createUserFetchConfigType = ({
     fetchEntryType.fields.criteria = new Field(fetchEntryType, 'criteria', fetchCriteriaType)
   }
 
-  const elemIDPartType = createMatchingObjectType<Omit<FieldIDPart, 'condition' | 'custom'>>({
+  // TODO SALTO-5595: find if there's a way to specify the generic type here of TCustomNameMappingOptions
+  const elemIDPartType = createMatchingObjectType<Omit<FieldIDPart<NameMappingOptions>, 'condition' | 'custom'>>({
     elemID: new ElemID(adapterName, 'ElemIDPart'),
     fields: {
       fieldName: {
@@ -113,7 +124,7 @@ export const createUserFetchConfigType = ({
     },
   })
 
-  const elemIDCustomizationType = createMatchingObjectType<ElemIDCustomization>({
+  const elemIDCustomizationType = createMatchingObjectType<ElemIDCustomization<TCustomNameMappingOptions>>({
     elemID: new ElemID(adapterName, 'ElemIDCustomization'),
     fields: {
       extendsParent: {
@@ -134,7 +145,7 @@ export const createUserFetchConfigType = ({
     },
   })
 
-  const type = createMatchingObjectType<UserFetchConfig>({
+  const type = createMatchingObjectType<UserFetchConfig<{ customNameMappingOptions: TCustomNameMappingOptions }>>({
     elemID: new ElemID(adapterName, 'userFetchConfig'),
     fields: {
       include: {

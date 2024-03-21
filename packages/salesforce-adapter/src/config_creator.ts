@@ -87,7 +87,7 @@ export const configWithCPQ = new InstanceElement(
           },
           {
             metadataType: 'EmailTemplate',
-            name: 'MarketoEmailTemplates/.*',
+            name: 'Marketo_?Email_?Templates/.*',
           },
           {
             metadataType: 'ContentAsset',
@@ -123,6 +123,12 @@ export const configWithCPQ = new InstanceElement(
           {
             metadataType:
               'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+          },
+          {
+            metadataType: 'DiscoveryAIModel',
+          },
+          {
+            metadataType: 'Translations',
           },
         ],
       },

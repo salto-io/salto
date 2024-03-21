@@ -162,7 +162,7 @@ const updateElementPositions = async (
           await client.put({
             url: createUrl({
               instance: resolvedChild,
-              baseUrl: childUpdateApi.url,
+              url: childUpdateApi.url,
               urlParamsToFields: childUpdateApi.urlParamsToFields,
             }),
             data: { position: i },

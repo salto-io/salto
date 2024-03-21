@@ -23,6 +23,8 @@ import {
   isObjectType,
   CORE_ANNOTATIONS,
   ProgressReporter,
+  ReferenceExpression,
+  UnresolvedReference,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from '../src/adapter'
@@ -140,6 +142,45 @@ describe('dummy adapter', () => {
     })
     it('should NOT return changeError when element is not exist in changes list', async () => {
       expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst1Change])).toHaveLength(0)
+    })
+    describe('validators', () => {
+      it('should return all validators', () => {
+        expect(adapterWithDeployModifiers.deployModifiers.changeValidator).toHaveLength(2)
+      })
+      it('should return outgoingUnresolvedReferences error for element with unresolved references', async () => {
+        const unresolvedId = new ElemID('dummy', 'type', 'instance', 'missing')
+        const unresolvedReferences = new InstanceElement('unresolved', objType, {
+          name: 'unresolved',
+          val: { brokenRef: new ReferenceExpression(unresolvedId, new UnresolvedReference(unresolvedId)) },
+        })
+        const errors = await adapterWithDeployModifiers.deployModifiers.changeValidator?.([
+          toChange({ after: unresolvedReferences }),
+        ])
+        expect(errors).toHaveLength(1)
+        expect(errors?.[0]).toEqual({
+          elemID: unresolvedReferences.elemID,
+          severity: 'Error',
+          message: expect.any(String),
+          detailedMessage: expect.any(String),
+          unresolvedElemIds: [unresolvedId],
+          type: 'unresolvedReferences',
+        })
+      })
+    })
+  })
+  describe('fixElements', () => {
+    it('should return correct value', async () => {
+      const mockReporter = { reportProgress: jest.fn() }
+      const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
+      const fullInst1 = fetchResult.elements.find(e => e.elemID.getFullName() === 'dummy.Full.instance.FullInst1')
+      if (!isInstanceElement(fullInst1)) {
+        return
+      }
+      const cloned = fullInst1.clone()
+      delete cloned.value.strField
+      const fixed = await adapter.fixElements(fetchResult.elements)
+      expect(fixed.fixedElements).toEqual([cloned])
+      expect(fixed.errors).toHaveLength(1)
     })
   })
 })

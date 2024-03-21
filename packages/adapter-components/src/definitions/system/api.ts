@@ -13,24 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ActionName } from '@salto-io/adapter-api'
 import { ApiClientDefinition, PaginationDefinitions } from './requests'
 import { OptionsWithDefault } from './shared'
 import { OpenAPIDefinition } from './sources'
 import { FetchApiDefinitions } from './fetch'
-// import { DeployApiDefinitions } from './deploy'
+import { DeployApiDefinitions } from './deploy'
 import { ReferenceDefinitions } from './references'
 
-export type ApiDefinitions<
-  ClientOptions extends string = 'main',
-  PaginationOptions extends string | 'none' = 'none',
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _Action extends string = ActionName,
-> = {
+export type APIDefinitionsOptions = {
+  clientOptions?: string
+  paginationOptions?: string
+  customNameMappingOptions?: string
+  additionalAction?: string
+}
+
+export type ResolveClientOptionsType<Options extends Pick<APIDefinitionsOptions, 'clientOptions'>> =
+  Options['clientOptions'] extends string ? Options['clientOptions'] : 'main'
+
+export type ResolvePaginationOptionsType<Options extends Pick<APIDefinitionsOptions, 'paginationOptions'>> =
+  Options['paginationOptions'] extends string ? Options['paginationOptions'] : 'none'
+
+export type ResolveCustomNameMappingOptionsType<
+  Options extends Pick<APIDefinitionsOptions, 'customNameMappingOptions'>,
+> = Options['customNameMappingOptions'] extends string ? Options['customNameMappingOptions'] : never
+
+export type ResolveAdditionalActionType<Options extends Pick<APIDefinitionsOptions, 'additionalAction'>> =
+  Options['additionalAction'] extends string ? Options['additionalAction'] : never
+
+export type ApiDefinitions<Options extends APIDefinitionsOptions = {}> = {
   // sources are processed and used to populate initial options for clients and components, in order of definition,
   // followed by the rest of the adjustments
   sources?: {
-    openAPI?: OpenAPIDefinition<ClientOptions>[]
+    openAPI?: OpenAPIDefinition<ResolveClientOptionsType<Options>>[]
   }
 
   // TODO add auth definitions
@@ -38,15 +52,17 @@ export type ApiDefinitions<
 
   // clients will be initialized as part of a big "client" in the adapter creator,
   // but need to be "registered" here in order to be used by the infra
-  clients: OptionsWithDefault<ApiClientDefinition<PaginationOptions>, ClientOptions>
+  clients: OptionsWithDefault<
+    ApiClientDefinition<ResolvePaginationOptionsType<Options>>,
+    ResolveClientOptionsType<Options>
+  >
 
   // supported pagination options. when missing, no pagination is used (TODO add warning)
-  pagination: Record<PaginationOptions, PaginationDefinitions<ClientOptions>>
+  pagination: Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
 
   // rules for reference extraction (during fetch) and serialization (during deploy)
   references?: ReferenceDefinitions
 
-  fetch?: FetchApiDefinitions<ClientOptions>
-  // TODO add deploy
-  // deploy?: DeployApiDefinitions<Action, ClientOptions>
+  fetch?: FetchApiDefinitions<Options>
+  deploy?: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
 }

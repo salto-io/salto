@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../../src/client'
+import {
+  HTTPError,
+  HTTPReadClientInterface,
+  HTTPWriteClientInterface,
+  Response,
+  ResponseValue,
+} from '../../../../src/client'
 import { PaginationFunction } from '../../../../src/definitions'
 import { PaginationFuncCreator } from '../../../../src/definitions/system/requests/pagination'
 import { traversePages } from '../../../../src/fetch/request/pagination'
@@ -319,6 +325,52 @@ describe('pagination', () => {
           contexts: [],
         }),
       ).rejects.toThrow('Something went wrong')
+    })
+    it('should call the client few times when polling', async () => {
+      client.get
+        .mockRejectedValueOnce(
+          new HTTPError('Something else went wrong', {
+            data: {},
+            status: 404,
+          }),
+        )
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'b',
+            },
+            status: 201,
+            statusText: 'OK',
+          }),
+        )
+        .mockResolvedValueOnce(
+          Promise.resolve({
+            data: {
+              a: 'c',
+            },
+            status: 200,
+            statusText: 'OK',
+          }),
+        )
+      const result = await traversePages({
+        client,
+        endpointIdentifier: {
+          path: '/ep',
+        },
+        paginationDef: {
+          funcCreator: paginationFuncCreator,
+        },
+        callArgs: {},
+        contexts: [],
+        polling: {
+          interval: 100,
+          retries: 5,
+          checkStatus: (response: Response<ResponseValue | ResponseValue[]>): boolean => response.status === 200,
+        },
+        additionalValidStatuses: [404],
+      })
+      expect(result).toEqual([{ context: {}, pages: [{ a: 'c' }] }])
+      expect(client.get).toHaveBeenCalledTimes(3)
     })
   })
 })

@@ -29,11 +29,6 @@ describe('addAliasToElements', () => {
   const categoryOrderTypeName = 'category_order'
   const categoryTranslationTypeName = 'category_translation'
   const ZENDESK = 'zendesk'
-  const secondIterationGroupNames = [
-    dynamicContentItemVariantsTypeName,
-    categoryOrderTypeName,
-    categoryTranslationTypeName,
-  ]
 
   const aliasMap: Record<string, AliasData> = {
     [appInstallationTypeName]: {
@@ -172,7 +167,6 @@ describe('addAliasToElements', () => {
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([
       'app installation name',
@@ -194,7 +188,6 @@ describe('addAliasToElements', () => {
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
@@ -211,7 +204,6 @@ describe('addAliasToElements', () => {
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
@@ -231,7 +223,6 @@ describe('addAliasToElements', () => {
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
@@ -243,7 +234,6 @@ describe('addAliasToElements', () => {
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })

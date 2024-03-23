@@ -351,6 +351,98 @@ const getTypesWithMetaFile = async (
       .toArray(),
   )
 
+type retrieveMessageHandler = {
+  regex: RegExp
+  header: string
+  messageLine: (matchResult: ReturnType<typeof RegExp.prototype.exec>) => string
+}
+
+const KNOWN_RETRIEVE_MESSAGES: Record<string, retrieveMessageHandler> = {
+  entityNotFound: {
+    regex:
+      /Entity of type '(?<type>\w+)' named '(?<name>[^']+)' cannot be found/,
+    header: 'The following entities could not be found:',
+    messageLine: (matchResult) =>
+      matchResult
+        ? `${matchResult.groups?.name} [${matchResult.groups?.type}]`
+        : '',
+  },
+  noPermissions: {
+    regex: /You do not have the proper permissions to access (?<name>\w+)/,
+    header:
+      'You do not have the proper permissions to access the following types:',
+    messageLine: (matchResult) =>
+      (matchResult && matchResult.groups?.name) ?? '',
+  },
+  experienceBundleNotEnabled: {
+    regex:
+      // note the use of the Unicode apostrophe!
+      /(?<name>\w+) wasn’t retrieved because ExperienceBundle isn’t enabled for Aura sites\. To enable ExperienceBundle, in Setup, select Enable ExperienceBundle Metadata API in Digital Experiences \| Settings/,
+    header:
+      'The following records were not retrieved because ExperienceBundle is not enabled for Aura sites. To enable ExperienceBundle, in Setup, select Enable ExperienceBundle Metadata API in Digital Experiences | Settings:',
+    messageLine: (matchResult) =>
+      (matchResult && matchResult.groups?.name) ?? '',
+  },
+  duplicateNamesInPackage: {
+    regex:
+      /Duplicate object names in the same package, '(?<packageName>[^']+)'; please rename one/,
+    header: 'The following packages contain duplicate names:',
+    messageLine: (matchResult) =>
+      (matchResult && matchResult.groups?.packageName) ?? '',
+  },
+  duplicateDeveloperName: {
+    regex:
+      /Unable to retrieve file for id (?<recordId>\w+) of type (?<type>\w+)\. Found duplicate developerName as (?<duplicate>\w+)\. You can't have template folders with same developer name in the same package\.Please rename the developer name/,
+    header:
+      'Found duplicate developerName values for template folders. You can`t have template folders with same developer name in the same package:',
+    messageLine: (matchResult) =>
+      (matchResult &&
+        `Failed to fetch record ${matchResult.groups?.recordId} [${matchResult.groups?.type}] - duplicate developerName as ${matchResult.groups?.duplicate}`) ??
+      '',
+  },
+  unsupportedExperienceBundleTemplate: {
+    regex:
+      /ExperienceBundle Metadata API doesn't support the template of (?<name>\w+)/,
+    header:
+      "ExperienceBundle Metadata API doesn't support the template of the following records:",
+    messageLine: (matchResult) =>
+      (matchResult && matchResult.groups?.name) ?? '',
+  },
+  noFlowAccess: {
+    regex:
+      /Unable to retrieve file for id (?<recordId>\w+) of type (?<type>\w+). You don't have access to view or run flows of type (?<flowType>\w+)/,
+    header:
+      'The following records could not be retrieved because you do not have access to view or run the required flow types:',
+    messageLine: (matchResult) =>
+      (matchResult &&
+        `Failed to fetch record ${matchResult.groups?.recordId} [${matchResult.groups?.type}] - insufficient permissions for flows of type ${matchResult.groups?.flowType}`) ??
+      '',
+  },
+}
+
+const groupAndFilterRetrieveMessages = (
+  messages: ReadonlyArray<string>,
+): string[] => {
+  const messagesByGroup = _(messages)
+    .uniq() // no reason to show the user duplicate messages, since they are not associated with an ElemID anyway.
+    .groupBy(
+      (message) =>
+        Object.keys(KNOWN_RETRIEVE_MESSAGES).find((groupName) =>
+          KNOWN_RETRIEVE_MESSAGES[groupName].regex.test(message),
+        ) ?? '',
+    )
+    .value()
+  messagesByGroup['']?.forEach((message) =>
+    log.debug('Discarded retrieve message: %s', message),
+  )
+  _.unset(messagesByGroup, '')
+
+  return Object.entries(messagesByGroup).map(([groupName, groupMessages]) => {
+    const groupDef = KNOWN_RETRIEVE_MESSAGES[groupName]
+    return `${groupDef.header}\n${groupMessages.map((message) => groupDef.messageLine(groupDef.regex.exec(message))).join('\n')}`
+  })
+}
+
 type RetrieveMetadataInstancesArgs = {
   client: SalesforceClient
   types: ReadonlyArray<MetadataObjectType>
@@ -635,7 +727,7 @@ export const retrieveMetadataInstances = async ({
       (instance) => !typesToSkip.has(instance.elemID.typeName),
     ),
     configChanges,
-    messages: instances.messages,
+    messages: groupAndFilterRetrieveMessages(instances.messages),
   }
 }
 

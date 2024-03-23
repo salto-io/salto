@@ -2699,6 +2699,7 @@ describe('Fetch via retrieve API', () => {
     type: MetadataObjectType
     instanceName: string
     result?: 'fail' | 'warn' | 'success'
+    resultMessage?: string
   }
 
   const updateProfileZipFileContents = (
@@ -2779,27 +2780,33 @@ describe('Fetch via retrieve API', () => {
       .forEach((zipFile) => updateProfileZipFileContents(zipFile, fileProps))
     const failMessages = mockDefs
       .filter((def) => def.result === 'fail')
-      .map((def) =>
-        mockFileProperties({
+      .map((def) => ({
+        fileProperties: mockFileProperties({
           type: def.type.elemID.typeName,
           fullName: def.instanceName,
         }),
-      )
-      .map(({ fileName, fullName, type }) => ({
+        mockDef: def,
+      }))
+      .map(({ fileProperties: { fileName, fullName, type }, mockDef }) => ({
         fileName,
-        problem: `Load of metadata from db failed for metadata of type:${type} and file name:${fullName}.`,
+        problem: mockDef.resultMessage
+          ? mockDef.resultMessage
+          : `Load of metadata from db failed for metadata of type:${type} and file name:${fullName}.`,
       }))
     const successMessages = mockDefs
       .filter((def) => def.result === 'warn')
-      .map((def) =>
-        mockFileProperties({
+      .map((def) => ({
+        fileProperties: mockFileProperties({
           type: def.type.elemID.typeName,
           fullName: def.instanceName,
         }),
-      )
-      .map(({ fileName, fullName, type }) => ({
+        mockDef: def,
+      }))
+      .map(({ fileProperties: { fileName, fullName, type }, mockDef }) => ({
         fileName,
-        problem: `Something interesting happened in type ${type} and file name:${fullName}.`,
+        problem: mockDef.resultMessage
+          ? mockDef.resultMessage
+          : `Something interesting happened in type ${type} and file name:${fullName}.`,
       }))
     connection.metadata.retrieve.mockReturnValue(
       mockRetrieveLocator(
@@ -2840,7 +2847,7 @@ describe('Fetch via retrieve API', () => {
         )
       })
     })
-    describe('With messages', () => {
+    describe('With an unknown message', () => {
       beforeEach(async () => {
         await setupMocks([
           {
@@ -2865,37 +2872,125 @@ describe('Fetch via retrieve API', () => {
           new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
         )
       })
-      it('should propagate messages', () => {
-        expect(retrieveResult.messages).toHaveLength(1)
+      it('should discard the message', () => {
+        expect(retrieveResult.messages).toBeEmpty()
+      })
+    })
+    describe.each([
+      {
+        message:
+          "Entity of type 'InstalledPackage' named 'workspan' cannot be found",
+        expectedMessage:
+          'The following entities could not be found:\nworkspan [InstalledPackage]',
+      },
+      {
+        message:
+          "Entity of type 'EmailTemplate' named 'All_Templates_Admin/SUPPORT%3A Self-Service New Comment %28SAMPLE%29' cannot be found",
+        expectedMessage:
+          'The following entities could not be found:\nAll_Templates_Admin/SUPPORT%3A Self-Service New Comment %28SAMPLE%29 [EmailTemplate]',
+      },
+      {
+        message: 'You do not have the proper permissions to access Layout.',
+        expectedMessage:
+          'You do not have the proper permissions to access the following types:\nLayout',
+      },
+      {
+        message:
+          "Unable to retrieve file for id 3006Q000000brzS of type FlowDefinition. You don't have access to view or run flows of type Survey.",
+        expectedMessage:
+          'The following records could not be retrieved because you do not have access to view or run the required flow types:\nFailed to fetch record 3006Q000000brzS [FlowDefinition] - insufficient permissions for flows of type Survey',
+      },
+      {
+        message:
+          'Client_Test1 wasn’t retrieved because ExperienceBundle isn’t enabled for Aura sites. To enable ExperienceBundle, in Setup, select Enable ExperienceBundle Metadata API in Digital Experiences | Settings.',
+        expectedMessage:
+          'The following records were not retrieved because ExperienceBundle is not enabled for Aura sites. To enable ExperienceBundle, in Setup, select Enable ExperienceBundle Metadata API in Digital Experiences | Settings:\nClient_Test1',
+      },
+      {
+        message:
+          "Duplicate object names in the same package, 'aura/defaultTokens/defaultTokens.tokens-meta.xml'; please rename one",
+        expectedMessage:
+          'The following packages contain duplicate names:\naura/defaultTokens/defaultTokens.tokens-meta.xml',
+      },
+      {
+        message:
+          "Unable to retrieve file for id 00l8c000002vepO of type EmailTemplate. Found duplicate developerName as Compliance_Quest. You can't have template folders with same developer name in the same package.Please rename the developer name.",
+        expectedMessage:
+          'Found duplicate developerName values for template folders. You can`t have template folders with same developer name in the same package:\nFailed to fetch record 00l8c000002vepO [EmailTemplate] - duplicate developerName as Compliance_Quest',
+      },
+      {
+        message:
+          "ExperienceBundle Metadata API doesn't support the template of Company_Partner_Community_Old_C.",
+        expectedMessage:
+          "ExperienceBundle Metadata API doesn't support the template of the following records:\nCompany_Partner_Community_Old_C",
+      },
+    ])('With a single known message', ({ message, expectedMessage }) => {
+      beforeEach(async () => {
+        await setupMocks([
+          {
+            type: mockTypes.ApexClass,
+            instanceName: 'SomeApexClass',
+            result: 'warn',
+            resultMessage: message,
+          },
+        ])
+
+        retrieveResult = await retrieveMetadataInstances({
+          client,
+          types: [mockTypes.ApexClass],
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+          }),
+        })
+      })
+
+      it('should fetch the correct instances', () => {
+        expect(retrieveResult.elements).toHaveLength(1)
+        expect(retrieveResult.elements[0].elemID).toEqual(
+          new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
+        )
+      })
+      it('should return the grouped version of the message', () => {
+        expect(retrieveResult.messages).toEqual([expectedMessage])
       })
     })
   })
   describe.each([DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, 1])(
     'Chunks of regular instances [chunk size = $chunkSize]',
     (chunkSize) => {
-      let elements: InstanceElement[] = []
+      let retrieveResult: FetchElements<InstanceElement[]>
 
       beforeEach(async () => {
         await setupMocks([
-          { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
-          { type: mockTypes.CustomObject, instanceName: 'Account' },
+          {
+            type: mockTypes.ApexClass,
+            instanceName: 'SomeApexClass',
+            result: 'warn',
+            resultMessage:
+              "Entity of type 'InstalledPackage' named 'workspan' cannot be found",
+          },
+          {
+            type: mockTypes.CustomObject,
+            instanceName: 'Account',
+            result: 'warn',
+            resultMessage:
+              "Entity of type 'EmailTemplate' named 'Email_Templates/Some_Email_Template' cannot be found",
+          },
         ])
 
-        elements = (
-          await retrieveMetadataInstances({
-            client,
-            types: [mockTypes.ApexClass, mockTypes.CustomObject],
-            fetchProfile: buildFetchProfile({
-              fetchParams: { addNamespacePrefixToFullName: false },
-              maxItemsInRetrieveRequest: chunkSize,
-            }),
-          })
-        ).elements
+        retrieveResult = await retrieveMetadataInstances({
+          client,
+          types: [mockTypes.ApexClass, mockTypes.CustomObject],
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: chunkSize,
+          }),
+        })
       })
 
       it('should fetch the correct instances', () => {
-        expect(elements).toHaveLength(2)
-        expect(elements).toIncludeAllPartialMembers([
+        expect(retrieveResult.elements).toHaveLength(2)
+        expect(retrieveResult.elements).toIncludeAllPartialMembers([
           {
             elemID: new ElemID(
               SALESFORCE,
@@ -2912,6 +3007,12 @@ describe('Fetch via retrieve API', () => {
               'Account',
             ),
           },
+        ])
+      })
+
+      it('should return a single grouped message', () => {
+        expect(retrieveResult.messages).toEqual([
+          'The following entities could not be found:\nworkspan [InstalledPackage]\nEmail_Templates/Some_Email_Template [EmailTemplate]',
         ])
       })
     },

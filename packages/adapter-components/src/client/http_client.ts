@@ -256,7 +256,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
 
       if (error === undefined) {
         log.trace(
-          'Full HTTP response for %s on %s (size: %d): %s',
+          'Full HTTP response for %s on %s (size %d): %s',
           method.toUpperCase(),
           url,
           responseText.length,

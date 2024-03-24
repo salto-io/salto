@@ -29,7 +29,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { workflowSchemeMigrationValidator } from '../../src/change_validators/workflow_scheme_migration'
-import { JIRA } from '../../src/constants'
+import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../../src/constants'
 
 const ERROR_MESSAGE = `This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .
 statusMigrations = [
@@ -79,7 +79,10 @@ statusMigrations = [
   },
 ]`
 
-describe('workflow scheme migration', () => {
+const WORKFLOW_V1 = 'workflowV1'
+const WORKFLOW_V2 = 'workflowV2'
+
+describe.each([[WORKFLOW_V1], [WORKFLOW_V2]])('workflow scheme migration: %s ', workflowVersion => {
   const statusID = new ElemID(JIRA, 'status')
   const status1Id = new ElemID(JIRA, 'Status', 'instance', 'status1')
   const status2Id = new ElemID(JIRA, 'Status', 'instance', 'status2')
@@ -123,6 +126,117 @@ describe('workflow scheme migration', () => {
   let elementSource: ReadOnlyElementsSource
   let numberOfIssues: number
 
+  const setupWorkflowReferences = (): void => {
+    if (workflowVersion === 'workflowV1') {
+      workflow1 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow1'),
+        new InstanceElement('workflow1', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
+          id: '1',
+          statuses: [{ id: status1 }, { id: status2 }],
+        }),
+      )
+      workflow2 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow2'),
+        new InstanceElement('workflow2', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
+          id: '2',
+          statuses: [{ id: status3 }, { id: status4 }],
+        }),
+      )
+      workflow3 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow3'),
+        new InstanceElement('workflow3', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
+          id: '3',
+          statuses: [{ id: status1 }, { id: status2 }],
+        }),
+      )
+      workflow4 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow4'),
+        new InstanceElement('workflow4', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
+          id: '4',
+          statuses: [{ id: status1 }, { id: status4 }],
+        }),
+      )
+    }
+    if (workflowVersion === 'workflowV2') {
+      workflow1 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow1'),
+        new InstanceElement('workflow1', new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE) }), {
+          id: '1',
+          name: 'workflow1',
+          scope: {
+            type: 'global',
+          },
+          statuses: [
+            {
+              statusReference: new ReferenceExpression(status1.elemID, status1),
+            },
+            {
+              statusReference: new ReferenceExpression(status2.elemID, status2),
+            },
+          ],
+          transitions: {},
+        }),
+      )
+      workflow2 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow2'),
+        new InstanceElement('workflow2', new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE) }), {
+          id: '2',
+          name: 'workflow2',
+          scope: {
+            type: 'global',
+          },
+          statuses: [
+            {
+              statusReference: new ReferenceExpression(status3.elemID, status3),
+            },
+            {
+              statusReference: new ReferenceExpression(status4.elemID, status4),
+            },
+          ],
+          transitions: {},
+        }),
+      )
+      workflow3 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow3'),
+        new InstanceElement('workflow3', new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE) }), {
+          id: '3',
+          name: 'workflow3',
+          scope: {
+            type: 'global',
+          },
+          statuses: [
+            {
+              statusReference: new ReferenceExpression(status1.elemID, status1),
+            },
+            {
+              statusReference: new ReferenceExpression(status2.elemID, status2),
+            },
+          ],
+          transitions: {},
+        }),
+      )
+      workflow4 = new ReferenceExpression(
+        new ElemID(JIRA, 'workflow4'),
+        new InstanceElement('workflow4', new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE) }), {
+          id: '4',
+          name: 'workflow4',
+          scope: {
+            type: 'global',
+          },
+          statuses: [
+            {
+              statusReference: new ReferenceExpression(status1.elemID, status1),
+            },
+            {
+              statusReference: new ReferenceExpression(status4.elemID, status4),
+            },
+          ],
+          transitions: {},
+        }),
+      )
+    }
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     const { client, paginator, connection } = mockClient()
@@ -130,34 +244,7 @@ describe('workflow scheme migration', () => {
     numberOfIssues = 100
     workflowSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
     issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
-    workflow1 = new ReferenceExpression(
-      new ElemID(JIRA, 'workflow1'),
-      new InstanceElement('workflow1', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
-        id: '1',
-        statuses: [{ id: status1 }, { id: status2 }],
-      }),
-    )
-    workflow2 = new ReferenceExpression(
-      new ElemID(JIRA, 'workflow2'),
-      new InstanceElement('workflow2', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
-        id: '2',
-        statuses: [{ id: status3 }, { id: status4 }],
-      }),
-    )
-    workflow3 = new ReferenceExpression(
-      new ElemID(JIRA, 'workflow3'),
-      new InstanceElement('workflow3', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
-        id: '3',
-        statuses: [{ id: status1 }, { id: status2 }],
-      }),
-    )
-    workflow4 = new ReferenceExpression(
-      new ElemID(JIRA, 'workflow4'),
-      new InstanceElement('workflow4', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), {
-        id: '4',
-        statuses: [{ id: status1 }, { id: status4 }],
-      }),
-    )
+    setupWorkflowReferences()
     issueTypeSchemeInstance = new InstanceElement('issueTypeScheme', issueTypeSchemeType, {
       issueTypeIds: [
         new ReferenceExpression(issueType1Id),

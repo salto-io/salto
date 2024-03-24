@@ -30,6 +30,7 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
@@ -37,6 +38,7 @@ import { createFormType, isCreateFormResponse, isDetailedFormsResponse, isFormsR
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
+import { getLookUpName } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
 
@@ -61,7 +63,14 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
       form.value.id = resp.data.id
       form.value.design.settings.templateId = resp.data.id
     }
-    const data = mapKeysRecursive(form.value, ({ key }) => invertNaclCase(key))
+    const resolvedForm = await resolveValues(form, getLookUpName)
+    const data = mapKeysRecursive(resolvedForm.value, ({ key }) => invertNaclCase(key))
+    // RequestType Id is a string, but the forms API expects a number
+    if (Array.isArray(data.publish?.portal?.portalRequestTypeIds)) {
+      data.publish.portal.portalRequestTypeIds = data.publish.portal.portalRequestTypeIds.map((id: string) =>
+        Number(id),
+      )
+    }
     await client.put({
       url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${form.value.id}`,
       data,

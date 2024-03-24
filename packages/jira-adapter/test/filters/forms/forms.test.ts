@@ -22,6 +22,9 @@ import {
   isInstanceElement,
   CORE_ANNOTATIONS,
   ReferenceExpression,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -29,7 +32,7 @@ import { FilterResult } from '../../../src/filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { FORM_TYPE, JIRA, PROJECT_TYPE } from '../../../src/constants'
+import { FORM_TYPE, JIRA, PROJECT_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
@@ -359,6 +362,36 @@ describe('forms filter', () => {
   })
   describe('deploy', () => {
     let formInstance: InstanceElement
+    const requestTypeType = new ObjectType({
+      elemID: new ElemID(JIRA, REQUEST_TYPE_NAME),
+      fields: {
+        id: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const requestTypeInstance = new InstanceElement('requestTypeInstanceName', requestTypeType, {
+      id: '999',
+    })
+    const formPortalType = new ObjectType({
+      elemID: new ElemID(JIRA, 'FormPortal'),
+      fields: {
+        portalRequestTypeIds: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const formPublishType = new ObjectType({
+      elemID: new ElemID(JIRA, 'FormPublish'),
+      fields: {
+        portal: { refType: formPortalType },
+      },
+    })
+
+    const formType = new ObjectType({
+      elemID: new ElemID(JIRA, FORM_TYPE),
+      fields: {
+        publish: { refType: formPublishType },
+      },
+    })
+
     beforeEach(async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
@@ -379,10 +412,15 @@ describe('forms filter', () => {
       )
       formInstance = new InstanceElement(
         'formInstanceName',
-        createEmptyType(FORM_TYPE),
+        formType,
         {
           uuid: 'uuid',
           updated: '2023-09-28T08:20:31.552322Z',
+          publish: {
+            portal: {
+              portalRequestTypeIds: [new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance)],
+            },
+          },
           design: {
             settings: {
               templateId: 6,
@@ -483,7 +521,7 @@ describe('forms filter', () => {
         throw new Error('Unexpected url')
       })
 
-      elements = [projectInstance, projectType]
+      elements = [projectInstance, projectType, formPortalType, formPublishType, formType, requestTypeType]
     })
     it('should add form', async () => {
       const res = await filter.deploy([{ action: 'add', data: { after: formInstance } }])
@@ -491,6 +529,91 @@ describe('forms filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(2)
+      expect(connection.put).toHaveBeenCalledTimes(1)
+      expect(connection.put).toHaveBeenCalledWith(
+        '/gateway/api/proforma/cloudid/cloudId/api/2/projects/11111/forms/1',
+        {
+          uuid: 'uuid',
+          id: 1,
+          updated: '2023-09-28T08:20:31.552322Z',
+          publish: {
+            portal: {
+              portalRequestTypeIds: [999],
+            },
+          },
+          design: {
+            settings: {
+              templateId: 1,
+              name: 'form6',
+              submit: {
+                lock: false,
+                pdf: false,
+              },
+              templateFormUuid: 'templateFormUuid',
+            },
+            layout: [
+              {
+                version: 1,
+                type: 'doc',
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [
+                      {
+                        type: 'text',
+                        text: 'form 6 content',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+            conditions: {
+              10: {
+                t: 'sh',
+                i: {
+                  co: {
+                    cIds: {
+                      2: ['2'],
+                    },
+                  },
+                },
+                o: {
+                  sIds: ['1'],
+                },
+              },
+            },
+            sections: {
+              1: {
+                name: 'Ido section',
+                conditions: ['10'],
+              },
+            },
+            questions: {
+              2: {
+                type: 'cs',
+                label: 'What is the impact on IT resources?',
+                description: '',
+                validation: {
+                  rq: false,
+                },
+                choices: [
+                  {
+                    id: '1',
+                    label: 'No Risk – Involves a single IT resource from a workgroup',
+                  },
+                  {
+                    id: '2',
+                    label: 'Low Risk – Involves one workgroup from the same IT division',
+                  },
+                ],
+                questionKey: '',
+              },
+            },
+          },
+        },
+        undefined,
+      )
     })
     it('should modify form', async () => {
       const formInstanceAfter = formInstance.clone()

@@ -1343,6 +1343,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'portalRequestTypeIds', parentTypes: ['FormPortal'] },
     serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: REQUEST_TYPE_NAME },
   },
 ]

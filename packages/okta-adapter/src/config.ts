@@ -95,6 +95,8 @@ const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
   nestStandaloneInstances: true,
 }
 
+const DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES = false
+
 // Policy type is split to different kinds of policies
 // The full list of policy types is taken from here:
 // https://developer.okta.com/docs/reference/api/policy/#policy-types
@@ -1824,7 +1826,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
     enableMissingReferences: true,
     includeGroupMemberships: false,
-    includeProfileMappingProperties: true,
+    includeProfileMappingProperties: DEFAULT_INCLUDE_PROFILE_MAPPING_PROPERTIES,
     getUsersStrategy: DEFAULT_GET_USERS_STRATEGY,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,

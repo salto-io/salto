@@ -367,23 +367,19 @@ describe('forms filter', () => {
       fields: {
         id: { refType: BuiltinTypes.STRING },
       },
-      })
-    const requestTypeInstance = new InstanceElement(
-      'requestTypeInstanceName',
-      requestTypeType,
-      {
-        id: '999',
-      },
-    )
+    })
+    const requestTypeInstance = new InstanceElement('requestTypeInstanceName', requestTypeType, {
+      id: '999',
+    })
     const formPortalType = new ObjectType({
-      elemID: new ElemID(JIRA, 'FormPortal' ),
+      elemID: new ElemID(JIRA, 'FormPortal'),
       fields: {
         portalRequestTypeIds: { refType: BuiltinTypes.STRING },
       },
     })
 
     const formPublishType = new ObjectType({
-      elemID: new ElemID(JIRA, 'FormPublish' ),
+      elemID: new ElemID(JIRA, 'FormPublish'),
       fields: {
         portal: { refType: formPortalType },
       },
@@ -393,7 +389,7 @@ describe('forms filter', () => {
       elemID: new ElemID(JIRA, FORM_TYPE),
       fields: {
         publish: { refType: formPublishType },
-      }
+      },
     })
 
     beforeEach(async () => {
@@ -615,8 +611,8 @@ describe('forms filter', () => {
               },
             },
           },
-      },
-      undefined,
+        },
+        undefined,
       )
     })
     it('should modify form', async () => {

@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { getAllInstances, extractPageEntriesByNestedField } from './instance_elements'
-export { generateTypes, ParsedTypes } from './type_elements/element_generator'
-export {
-  toPrimitiveType,
-  ADDITIONAL_PROPERTIES_FIELD,
-  SchemaObject,
-  SchemasAndRefs,
-  SchemaOrReference,
-} from './type_elements/swagger_parser'
-export { loadSwagger, LoadedSwagger } from './swagger'
-export { addDeploymentAnnotations } from './deployment/annotations'
-export { flattenAdditionalProperties } from './deployment/additional_properties'
+import { loadSwagger } from '../../../elements/swagger'
+import { SchemasAndRefs, isV3 } from '../../../elements/swagger/type_elements/swagger_parser'
+
+export const getParsedSchemas = async ({ swaggerPath }: { swaggerPath: string }): Promise<SchemasAndRefs> => {
+  const swagger = await loadSwagger(swaggerPath)
+
+  const schemas = isV3(swagger.document) ? swagger.document.components?.schemas : swagger.document.definitions
+  return {
+    // TODO SALTO-5649 return schemas reachable from endpoints as well
+    schemas: schemas ?? {},
+    refs: swagger.parser.$refs,
+  }
+}

@@ -58,7 +58,7 @@ import {
   deployNotSupportedValidator,
   getDefaultChangeValidators,
 } from '../../deployment/change_validators'
-import { generateOpenApiTypes } from '../../elements/swagger'
+import { generateOpenApiTypes } from '../../fetch/element/openAPI/types'
 import { generateLookupFunc } from '../../references'
 import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../deployment'
 import { createChangeElementResolver } from '../../resolve_utils'

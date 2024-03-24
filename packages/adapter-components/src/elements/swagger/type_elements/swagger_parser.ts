@@ -172,17 +172,6 @@ export const getParsedDefs = async ({
   }
 }
 
-export const getParsedSchemas = async ({ swaggerPath }: { swaggerPath: string }): Promise<SchemasAndRefs> => {
-  const swagger = await loadSwagger(swaggerPath)
-
-  const schemas = isV3(swagger.document) ? swagger.document.components?.schemas : swagger.document.definitions
-  return {
-    // TODO SALTO-5649 return schemas reachable from endpoints as well
-    schemas: schemas ?? {},
-    refs: swagger.parser.$refs,
-  }
-}
-
 type HasXOf = {
   allOf?: SchemaOrReference[]
   anyOf?: SchemaOrReference[]

@@ -1114,14 +1114,14 @@ export const createSchemeGuardForInstance =
     return true
   }
 
-export const getSubtypes = async (types: ObjectType[], validateUniqueness = false): Promise<ObjectType[]> => {
+export const getSubtypes = (types: ObjectType[], validateUniqueness = false): ObjectType[] => {
   const subtypes: Record<string, ObjectType> = {}
 
-  const findSubtypes = async (type: ObjectType): Promise<void> => {
-    await awu(Object.values(type.fields)).forEach(async field => {
-      const fieldContainerOrType = await field.getType()
+  const findSubtypes = (type: ObjectType): void => {
+    Object.values(type.fields).forEach(field => {
+      const fieldContainerOrType = field.getTypeSync()
       const fieldType = isContainerType(fieldContainerOrType)
-        ? await fieldContainerOrType.getInnerType()
+        ? fieldContainerOrType.getInnerTypeSync()
         : fieldContainerOrType
 
       if (!isObjectType(fieldType) || types.includes(fieldType)) {
@@ -1135,11 +1135,11 @@ export const getSubtypes = async (types: ObjectType[], validateUniqueness = fals
       }
 
       subtypes[fieldType.elemID.getFullName()] = fieldType
-      await findSubtypes(fieldType)
+      findSubtypes(fieldType)
     })
   }
 
-  await awu(types).forEach(findSubtypes)
+  types.forEach(findSubtypes)
 
   return Object.values(subtypes)
 }

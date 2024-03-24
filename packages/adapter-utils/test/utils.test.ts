@@ -2750,7 +2750,7 @@ describe('Test utils.ts', () => {
     })
   })
   describe('getSubtypes', () => {
-    it('should return the expected subtypes', async () => {
+    it('should return the expected subtypes', () => {
       const typeA = new ObjectType({ elemID: new ElemID('adapter', 'A') })
       const typeB = new ObjectType({ elemID: new ElemID('adapter', 'B') })
       const typeC = new ObjectType({
@@ -2774,7 +2774,7 @@ describe('Test utils.ts', () => {
           e: { refType: typeE },
         },
       })
-      const subtypes = await getSubtypes([typeD, typeF])
+      const subtypes = getSubtypes([typeD, typeF])
       expect(_.sortBy(subtypes, type => type.elemID.name)).toEqual([typeA, typeB, typeC, typeE])
     })
   })

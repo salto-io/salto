@@ -234,7 +234,7 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
   )
 
 export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
-  const configTypesByAccount = await getAdaptersConfigTypesMap()
+  const configTypesByAccount = getAdaptersConfigTypesMap()
   const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
   const differentlyNamedAccounts = Object.fromEntries(
     envs
@@ -412,7 +412,7 @@ export const initLocalWorkspace = async (
     baseDir,
     remoteMapCreator,
     persistentMode,
-    Object.values(await getAdaptersConfigTypesMap()).flat(),
+    Object.values(getAdaptersConfigTypesMap()).flat(),
   )
   const credentials = credentialsSource(localStorage)
 

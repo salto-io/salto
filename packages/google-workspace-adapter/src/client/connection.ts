@@ -26,7 +26,7 @@ export const validateCredentials = async ({
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    await connection.get('https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles')
+    await connection.get('/customer/my_customer/roles')
     return { accountId: 'googoo' }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)

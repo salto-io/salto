@@ -17,25 +17,14 @@ import {
   BuiltinTypes,
   ElemID,
   InstanceElement,
+  OAuthMethod,
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
-import { OAuth2Client } from 'google-auth-library'
+import { Credentials, OAuth2Client } from 'google-auth-library'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { Credentials, credentialsType } from './auth'
-import { DEFAULT_CONFIG, UserConfig } from './config'
-import { createConnection } from './client/connection'
-import { ADAPTER_NAME } from './constants'
-import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
-import { PAGINATION } from './definitions/requests/pagination'
-import { REFERENCES } from './definitions/references'
-import { Options } from './definitions/types'
-
-const { validateCredentials } = clientUtils
-
-const { defaultCredentialsFromConfig } = credentials
+import { ADAPTER_NAME } from '../constants'
 
 const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
@@ -47,10 +36,7 @@ const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/admin.directory.resource.calendar',
 ]
 
-// TODO adjust if needed. if the config is the same as the credentials, just use it
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => config.value as Credentials
-
-const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
+export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
   // create an oAuth client to authorize the API call.  Secrets are kept in a `keys.json` file,
   // which should be downloaded from the Google Developers Console.
   const { clientId, clientSecret, redirectUri } = userInput.value
@@ -68,26 +54,47 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   }
 }
 
-export type OauthAccessTokenCredentials = {
-  accessToken: string
-}
-
-export const oauthAccessTokenCredentialsType = createMatchingObjectType<OauthAccessTokenCredentials>({
-  elemID: new ElemID(ADAPTER_NAME),
-  fields: {
-    accessToken: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
-    },
-  },
-})
-
 export type OauthRequestParameters = {
   clientId: string
   clientSecret: string
   redirectUri: string
   port: number
 }
+
+export type OauthAccessTokenCredentials = Required<
+  Pick<Credentials, 'access_token' | 'refresh_token' | 'expiry_date'>
+> &
+  Omit<OauthRequestParameters, 'port'>
+
+export const oauthAccessTokenCredentialsType = createMatchingObjectType<OauthAccessTokenCredentials>({
+  elemID: new ElemID(ADAPTER_NAME),
+  fields: {
+    access_token: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    refresh_token: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    expiry_date: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: { _required: true },
+    },
+    clientId: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    clientSecret: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    redirectUri: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+})
 
 export const oauthRequestParametersType = createMatchingObjectType<OauthRequestParameters>({
   elemID: new ElemID(ADAPTER_NAME),
@@ -123,46 +130,17 @@ export const oauthRequestParametersType = createMatchingObjectType<OauthRequestP
   },
 })
 
-export const adapter = createAdapter<Credentials, Options, UserConfig>({
-  adapterName: ADAPTER_NAME,
-  authenticationMethods: {
-    basic: {
-      credentialsType,
-    },
-    oauth: {
-      createOAuthRequest,
-      credentialsType: oauthAccessTokenCredentialsType,
-      oauthRequestParameters: oauthRequestParametersType,
-      createFromOauthResponse: async (input: Values, response: OauthAccessTokenResponse) => {
-        const { clientId, clientSecret, redirectUri } = input
-        const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
-        const { code } = response.fields
-        const accessToken = (await oAuth2Client.getToken(code)).tokens.access_token
-        return {
-          accessToken,
-        }
-      },
-    },
-  },
-  validateCredentials: async config =>
-    validateCredentials(credentialsFromConfig(config), {
-      createConnection,
-    }),
-  defaultConfig: DEFAULT_CONFIG,
-  // TODON should leave placeholder for client that will be filled by the wrapper
-  definitionsCreator: ({ clients, userConfig }) => ({
-    clients: createClientDefinitions(clients),
-    pagination: PAGINATION,
-    fetch: createFetchDefinitions(userConfig.fetch),
-    deploy: createDeployDefinitions(),
-    references: REFERENCES,
-  }),
-  operationsCustomizations: {
-    connectionCreatorFromConfig: () => createConnection,
-    credentialsFromConfig: defaultCredentialsFromConfig,
-    // TODO add other customizations if needed (check which ones are available - e.g. additional filters)
-  },
-  initialClients: {
-    main: undefined,
-  },
-})
+export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = async (
+  input: Values,
+  response: OauthAccessTokenResponse,
+) => {
+  const { clientId, clientSecret, redirectUri } = input
+  const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
+  const { code } = response.fields
+  const { tokens } = await oAuth2Client.getToken(code)
+  return {
+    ...tokens,
+    clientId,
+    clientSecret,
+  }
+}

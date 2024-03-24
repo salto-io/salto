@@ -38,7 +38,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  omit: ['roleId', 'kind', 'etag'],
+                  omit: ['roleId'],
                 },
               },
             },
@@ -58,6 +58,283 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/customer/my_customer/roles/{roleId}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    domain: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/domains',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['verified', 'isPrimary'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/domains/{domainName}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          // Wea are only able to edit the domainAliases
+          // For that we are waiting for a new infra func that dills with changes inside of field array
+          // modify: [
+          //   {
+          //     request: {
+          //       endpoint: {
+          //         path: '/customer/my_customer/domains/{domainName}',
+          //         method: 'put',
+          //       },
+          //     },
+          //   },
+          // ],
+        },
+      },
+    },
+    group: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/groups',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['id', 'directMembersCount', 'adminCreated'],
+                },
+              },
+              copyFromResponse: {
+                pick: ['directMembersCount', 'adminCreated'],
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/groups/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/groups/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  omit: ['directMembersCount', 'adminCreated', 'nonEditableAliases'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    orgUnit: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/orgunits',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['orgUnitPath', 'orgUnitId'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/orgunits{orgUnitPath}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/orgunits{orgUnitPath}',
+                  method: 'put',
+                },
+                transformation: {
+                  omit: ['orgUnitId'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    roleAssignment: {
+      requestsByAction: {
+        customizations: {
+          // At the moment we did not decide how to handle the user reference
+          // But we aer only able to create role assignment reference to security groups
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/roleassignments',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['roleAssignmentId'],
+                },
+              },
+            },
+          ],
+          // there is noway to edit role assignment
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/roleassignments/{roleAssignmentId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    schema: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/schemas',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['schemaId'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/schemas/{schemaId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/schemas/{schemaId}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    buildingResource: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/resources/buildings',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['buildingId'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/resources/buildings/{buildingId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/resources/buildings/{buildingId}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    calenderResource: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/resources/calenders',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['calenderId'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/resources/calenders/{resourceId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/customer/my_customer/resources/calenders/{resourceId}',
                   method: 'put',
                 },
               },

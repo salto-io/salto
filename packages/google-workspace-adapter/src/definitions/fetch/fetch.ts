@@ -27,14 +27,17 @@ import { Options } from '../types'
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {}
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
   creationTime: {
-    hide: true,
+    omit: true,
   },
   // TODO we dont need those fields for now
   kind: {
-    hide: true,
+    omit: true,
   },
   etag: {
-    hide: true,
+    omit: true,
+  },
+  etags: {
+    omit: true,
   },
 }
 
@@ -71,6 +74,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   // TODO need to make sure that the privilege is a closed list
+  // If so, we do not need to fetch it
   // privilege: {
   //   requests: [
   //     {
@@ -93,6 +97,31 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   //     },
   //   },
   // },
+
+  // RoleAssignment is assigned to a user/group we need to decide on a strategy
+  // After we do so we need to implement the deploy for it
+  roleAssignment: {
+    requests: [
+      {
+        endpoint: {
+          path: '/customer/my_customer/roleassignments',
+        },
+        transformation: {
+          root: 'items',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['roleAssignmentId'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'roleAssignmentId' }] },
+      },
+    },
+  },
   domain: {
     requests: [
       {
@@ -134,25 +163,25 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             nestPathUnderParent: false,
           },
         },
-        domainAliases: {
-          standalone: {
-            typeName: 'domain__domainAliases',
-            addParentAnnotation: false,
-            referenceFromParent: true,
-            nestPathUnderParent: true,
-          },
-        },
+        // domainAliases: {
+        //   standalone: {
+        //     typeName: 'domain__domainAliases',
+        //     addParentAnnotation: false,
+        //     referenceFromParent: true,
+        //     nestPathUnderParent: true,
+        //   },
+        // },
       },
     },
   },
-  domain__domainAliases: {
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'domainAliasName' }] },
-      },
-    },
-  },
+  // domain__domainAliases: {
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //       elemID: { parts: [{ fieldName: 'domainAliasName' }] },
+  //     },
+  //   },
+  // },
   group: {
     requests: [
       {
@@ -164,6 +193,114 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  orgUnit: {
+    requests: [
+      {
+        endpoint: {
+          path: '/customer/my_customer/orgunits?type=ALL_INCLUDING_PARENT',
+        },
+        transformation: {
+          root: 'organizationUnits',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['orgUnitPath'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  schema: {
+    requests: [
+      {
+        endpoint: {
+          path: '/customer/my_customer/schemas',
+        },
+        transformation: {
+          root: 'schemas',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['schemaId'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'schemaName' }] },
+      },
+    },
+  },
+  buildingResource: {
+    requests: [
+      {
+        endpoint: {
+          path: '/customer/my_customer/resources/buildings',
+        },
+        transformation: {
+          root: 'buildings',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['buildingId'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'buildingName' }] },
+      },
+    },
+  },
+  calenderResource: {
+    requests: [
+      {
+        endpoint: {
+          path: '/customer/my_customer/resources/calendars',
+        },
+        transformation: {
+          root: 'items',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['resourceId'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'resourceName' }] },
+      },
+    },
+  },
+  featuresResource: {
+    requests: [
+      {
+        endpoint: {
+          path: '/customer/my_customer/resources/features',
+        },
+        transformation: {
+          root: 'features',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['name'],
+    },
     element: {
       topLevel: {
         isTopLevel: true,

@@ -15,23 +15,45 @@
  */
 import _ from 'lodash'
 import { ObjectType, TypeMap } from '@salto-io/adapter-api'
+import { pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { getParsedSchemas } from './parser'
 import { OpenAPIDefinition } from '../../../definitions/system/sources'
 import { defineAdditionalTypes } from '../../../elements/swagger/type_elements/type_config_override'
 import { typeAdder } from '../../../elements/swagger/type_elements/element_generator'
+import { ElementAndResourceDefFinder } from '../../../definitions/system/fetch/types'
+import { FetchApiDefinitionsOptions } from '../../../definitions/system/fetch'
+import { TYPES_PATH, SUBTYPES_PATH } from '../../../elements/constants'
 
 const log = logger(module)
 
 /**
+ * openAPI types are created by under the subtypes folder, modify path of top level instances to be under the types folder
+ */
+const adjustTypesPath = <Options extends FetchApiDefinitionsOptions>(
+  adapterName: string,
+  types: ObjectType[],
+  defQuery: ElementAndResourceDefFinder<Options>,
+): void => {
+  const topLevelTypes = _.mapValues(defQuery.getAll(), def => def.element?.topLevel?.isTopLevel ?? false)
+  types.forEach(type => {
+    type.path = topLevelTypes[type.elemID.name]
+      ? [adapterName, TYPES_PATH, pathNaclCase(type.elemID.name)]
+      : [adapterName, TYPES_PATH, SUBTYPES_PATH, pathNaclCase(type.elemID.name), pathNaclCase(type.elemID.name)]
+  })
+}
+
+/**
  * Generate types for the given OpenAPI definitions
  */
-export const generateOpenApiTypes = async ({
+export const generateOpenApiTypes = async <Options extends FetchApiDefinitionsOptions>({
   adapterName,
   openApiDefs,
+  defQuery,
 }: {
   adapterName: string
   openApiDefs: Omit<OpenAPIDefinition<never>, 'toClient'>
+  defQuery: ElementAndResourceDefFinder<Options>
 }): Promise<TypeMap> => {
   const { url: swaggerPath, endpointsOnly } = openApiDefs
   if (endpointsOnly) {
@@ -78,6 +100,7 @@ export const generateOpenApiTypes = async ({
     .map(({ targetTypeName, originalTypeName }) => ({ typeName: targetTypeName, cloneFrom: originalTypeName }))
 
   defineAdditionalTypes(adapterName, typesToClone, definedTypes)
+  adjustTypesPath(adapterName, Object.values(definedTypes), defQuery)
 
   return definedTypes
 }

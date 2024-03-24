@@ -17,6 +17,8 @@ import _ from 'lodash'
 import { ObjectType } from '@salto-io/adapter-api'
 import { OpenAPIDefinition } from '../../../../src/definitions/system/sources'
 import { generateOpenApiTypes } from '../../../../src/fetch/element/openAPI/types'
+import { queryWithDefault } from '../../../../src/definitions'
+import { InstanceFetchApiDefinitions } from '../../../../src/definitions/system/fetch'
 
 jest.mock('@salto-io/lowerdash', () => {
   const actual = jest.requireActual('@salto-io/lowerdash')
@@ -36,6 +38,11 @@ const ADAPTER_NAME = 'myAdapter'
 const BASE_DIR = __dirname.replace('/dist', '')
 
 describe('generateOpenApiTypes', () => {
+  const defQuery = queryWithDefault<InstanceFetchApiDefinitions, string>({
+    customizations: {
+      Pet: { element: { topLevel: { isTopLevel: true }, fieldCustomizations: { omitThis: { omit: true } } } },
+    },
+  })
   describe('V3 OpenAPI', () => {
     const expectedTypes = [
       'Address',
@@ -57,7 +64,7 @@ describe('generateOpenApiTypes', () => {
     it.each([`${BASE_DIR}/petstore_openapi.v3.yaml`, `${BASE_DIR}/petstore_openapi.v3.json`])(
       'should generate types from all schemas',
       async url => {
-        const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url } })
+        const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url }, defQuery })
         expect(Object.keys(createdTypes).sort()).toEqual(expectedTypes.sort())
 
         // regular response type with reference
@@ -72,6 +79,7 @@ describe('generateOpenApiTypes', () => {
           status: 'string',
           tags: 'List<myAdapter.Tag>',
         })
+        expect(pet.path).toEqual([ADAPTER_NAME, 'Types', 'Pet'])
 
         // field with allOf
         const user = createdTypes.User as ObjectType
@@ -92,6 +100,7 @@ describe('generateOpenApiTypes', () => {
           middleName2: 'string',
           additionalProperties: 'Map<myAdapter.Order>',
         })
+        expect(user.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'User', 'User'])
 
         const food = createdTypes.Food as ObjectType
         expect(food).toBeInstanceOf(ObjectType)
@@ -101,6 +110,7 @@ describe('generateOpenApiTypes', () => {
           storage: 'List<string>',
           additionalProperties: 'Map<unknown>',
         })
+        expect(food.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'Food', 'Food'])
 
         const category = createdTypes.Category as ObjectType
         const foodOrCategory = createdTypes.FoodOrCategory as ObjectType
@@ -143,7 +153,7 @@ describe('generateOpenApiTypes', () => {
     ]
 
     it.each([`${BASE_DIR}/petstore_swagger.v2.json`])('should generate types from all schemas', async url => {
-      const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url } })
+      const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url }, defQuery })
       expect(Object.keys(createdTypes).sort()).toEqual(expectedTypes.sort())
 
       // regular response type with reference
@@ -158,6 +168,7 @@ describe('generateOpenApiTypes', () => {
         status: 'string',
         tags: 'List<myAdapter.Tag>',
       })
+      expect(pet.path).toEqual([ADAPTER_NAME, 'Types', 'Pet'])
 
       // field with allOf
       const user = createdTypes.User as ObjectType
@@ -178,6 +189,7 @@ describe('generateOpenApiTypes', () => {
         middleName2: 'string',
         additionalProperties: 'Map<myAdapter.Order>',
       })
+      expect(user.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'User', 'User'])
 
       const food = createdTypes.Food as ObjectType
       expect(food).toBeInstanceOf(ObjectType)
@@ -187,6 +199,7 @@ describe('generateOpenApiTypes', () => {
         storage: 'List<string>',
         additionalProperties: 'Map<unknown>',
       })
+      expect(food.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'Food', 'Food'])
     })
   })
 
@@ -199,7 +212,7 @@ describe('generateOpenApiTypes', () => {
           AnotherPet: { originalTypeName: 'Pet', rename: false },
         },
       }
-      const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })
+      const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs, defQuery })
       const expectedPetFields = {
         additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
@@ -230,7 +243,7 @@ describe('generateOpenApiTypes', () => {
           RenamedPet: { originalTypeName: 'Pet', rename: true },
         },
       }
-      const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })
+      const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs, defQuery })
       expect(createdTypes.Pet).toBeUndefined()
       const renamedPet = createdTypes.RenamedPet as ObjectType
       expect(renamedPet).toBeInstanceOf(ObjectType)
@@ -253,7 +266,7 @@ describe('generateOpenApiTypes', () => {
           AnotherPet: { originalTypeName: 'Pet', rename: true },
         },
       }
-      await expect(() => generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })).rejects.toThrow(
+      await expect(() => generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs, defQuery })).rejects.toThrow(
         new Error('type Pet cannot be both renamed and cloned'),
       )
     })
@@ -262,12 +275,20 @@ describe('generateOpenApiTypes', () => {
   describe('invalid versions', () => {
     it('should fail on invalid swagger version (v2)', async () => {
       await expect(() =>
-        generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url: `${BASE_DIR}/invalid_swagger.yaml` } }),
+        generateOpenApiTypes({
+          adapterName: ADAPTER_NAME,
+          openApiDefs: { url: `${BASE_DIR}/invalid_swagger.yaml` },
+          defQuery,
+        }),
       ).rejects.toThrow(new Error('Unrecognized Swagger version: 1.0. Expected 2.0'))
     })
     it('should fail on invalid swagger version (v3)', async () => {
       await expect(() =>
-        generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url: `${BASE_DIR}/invalid_openapi.yaml` } }),
+        generateOpenApiTypes({
+          adapterName: ADAPTER_NAME,
+          openApiDefs: { url: `${BASE_DIR}/invalid_openapi.yaml` },
+          defQuery,
+        }),
       ).rejects.toThrow(
         new Error(
           'Unsupported OpenAPI version: 4.0.1. Swagger Parser only supports versions 3.0.0, 3.0.1, 3.0.2, 3.0.3',

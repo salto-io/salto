@@ -138,9 +138,13 @@ export class AdapterImpl<
     return _.defaults(
       {},
       ...(await Promise.all(
-        collections.array
-          .makeArray(this.definitions.sources?.openAPI)
-          .map(def => generateOpenApiTypes({ adapterName: this.adapterName, openApiDefs: def })),
+        collections.array.makeArray(this.definitions.sources?.openAPI).map(def =>
+          generateOpenApiTypes({
+            adapterName: this.adapterName,
+            openApiDefs: def,
+            defQuery: queryWithDefault(this.definitions.fetch.instances),
+          }),
+        ),
       )),
     )
   }

@@ -44,6 +44,7 @@ export const overrideInstanceTypeForDeploy = <Options extends FetchApiDefinition
     typeName,
     defQuery,
     isUnknownEntry: isReferenceExpression,
+    definedTypes: {},
   })
   const definedTypes = _.keyBy([generatedType.type, ...generatedType.nestedTypes], t => t.elemID.typeName)
   overrideFieldTypes({ definedTypes, defQuery })

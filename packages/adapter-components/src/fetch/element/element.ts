@@ -44,7 +44,7 @@ export type ElementGenerator = {
 export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>({
   adapterName,
   defQuery,
-  predefinedTypes,
+  predefinedTypes = {},
   customNameMappingFunctions,
   getElemIdFunc,
 }: {

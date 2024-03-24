@@ -31,6 +31,7 @@ describe('instance element', () => {
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
         customNameMappingFunctions: {},
+        definedTypes: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(0)
@@ -46,6 +47,7 @@ describe('instance element', () => {
           typeName: 'myType',
           defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({ customizations: {} }),
           customNameMappingFunctions: {},
+          definedTypes: {},
         }),
       ).toThrow('type myAdapter:myType is not defined as top-level, cannot create instances')
     })
@@ -62,6 +64,7 @@ describe('instance element', () => {
           customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
         }),
         customNameMappingFunctions: {},
+        definedTypes: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(2)
@@ -126,6 +129,7 @@ describe('instance element', () => {
           customTest: name => `custom_${name}`,
           Uri: name => `uri_${name}`,
         },
+        definedTypes: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(2)
@@ -157,6 +161,7 @@ describe('instance element', () => {
           },
         }),
         customNameMappingFunctions: {},
+        definedTypes: {},
       })
       expect(res.errors).toBeUndefined()
       expect(res.instances).toHaveLength(1)

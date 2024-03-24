@@ -92,9 +92,7 @@ export const transformNotificationEvent = (notificationEvent: NotificationEvent)
   notificationEvent.notifications?.forEach((notification: Values) => {
     notification.type = notification.notificationType
     delete notification.notificationType
-    delete notification.recipient
-    delete notification.field
-    delete notification.projectRole
+    delete notification.additionalProperties
     delete notification.user
     delete notification.id
   })

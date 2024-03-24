@@ -114,11 +114,20 @@ const createWarnings = async (
   ): Promise<SaltoError> => {
     const typesOfMissingRefsTargets: string[] = _(missingRefsFromOriginType)
       .map(
-        (missingRef) =>
+        (missingRef: MissingRef): (string | ReferenceExpression)[] =>
           missingRef.origin.field?.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
       )
       .filter(isDefined)
-      .uniq()
+      .flatten()
+      .map((referenceTo: string | ReferenceExpression): string => {
+        if (typeof referenceTo === 'string') {
+          return referenceTo
+        }
+
+        return referenceTo.elemID.getFullName()
+      })
+      .sortBy()
+      .sortedUniq()
       .value()
     const numMissingInstances = _.uniqBy(
       missingRefsFromOriginType,
@@ -127,7 +136,7 @@ const createWarnings = async (
     const header = `Your Salto environment is configured to manage records of the ${originTypeName} object. ${numMissingInstances} ${originTypeName} records were not fetched because they have a lookup relationship to one of the following objects:`
     const perTargetTypeMsgs = typesOfMissingRefsTargets.join('\n')
     const perInstancesPreamble =
-      'and these objects are not part of your Salto configuration. \n\nHere are the records:'
+      'and these objects are not part of your Salto configuration.\n\nHere are the records:'
     const perMissingInstanceMsgs = missingRefs
       .filter((missingRef) => missingRef.origin.type === originTypeName)
       .map(

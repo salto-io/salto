@@ -263,7 +263,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
           responseText,
         )
       } else {
-        log.warn(`failed to ${method} ${url} with error: ${error}, stack: ${error.stack}, ${responseText}`)
+        log.error(`failed to ${method.toLocaleUpperCase()} ${url} with error: ${error}, stack: ${error.stack}, ${responseText}`)
       }
     }
 

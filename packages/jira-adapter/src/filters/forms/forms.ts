@@ -69,7 +69,9 @@ const deployForms = async (change: Change<InstanceElement>, client: JiraClient):
     const data = mapKeysRecursive(resolvedChange.data.after.value, ({ key }) => invertNaclCase(key))
     // RequestType Id is a string, but the forms API expects a number
     if (Array.isArray(data.publish?.portal?.portalRequestTypeIds)) {
-      data.publish.portal.portalRequestTypeIds = data.publish.portal.portalRequestTypeIds.map((id: string) => Number(id))
+      data.publish.portal.portalRequestTypeIds = data.publish.portal.portalRequestTypeIds.map((id: string) =>
+        Number(id),
+      )
     }
     await client.put({
       url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${form.value.id}`,

@@ -942,9 +942,8 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
-    jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'workflowStatusPropertiesContext' },
-  },
+  }, // No missing references here as properties are just key values and can contain any string
   {
     src: { field: 'value', parentTypes: ['WorkflowReferenceStatus_properties'] },
     jiraSerializationStrategy: 'groupStrategyById',
@@ -953,9 +952,8 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowReferenceStatus_properties'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
-    jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'workflowStatusPropertiesContext' },
-  },
+  }, // No missing references here as properties are just key values and can contain any string
   {
     src: { field: 'value', parentTypes: ['WorkflowTransitions_properties'] },
     jiraSerializationStrategy: 'groupStrategyById',

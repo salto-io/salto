@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import os from 'os'
 import path from 'path'
 import _ from 'lodash'
 import { Readable } from 'stream'
@@ -32,7 +31,7 @@ import {
   ProviderOptionsS3,
 } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
-import { mockFunction } from '@salto-io/test-utils'
+import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
 import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
@@ -467,6 +466,9 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     let overridingStateFilesSource: staticFiles.StateStaticFilesSource
     let instanceWithStaticFile: InstanceElement
+
+    const testDir = setupTmpDir()
+
     beforeEach(() => {
       instanceWithStaticFile = new InstanceElement('inst', mockElement, {
         content: new StaticFile({ filepath: 'path', content: Buffer.from('asd') }),
@@ -474,7 +476,7 @@ describe('localState', () => {
       overridingStateFilesSource = mockStaticFilesSource([])
       contentProvider = mockContentProvider({})
       state = localState(
-        path.join(os.tmpdir(), 'empty'),
+        path.join(testDir.name(), 'empty'),
         '',
         inMemRemoteMapCreator(),
         contentProvider,

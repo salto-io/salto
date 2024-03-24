@@ -64,6 +64,7 @@ describe('generateOpenApiTypes', () => {
         const pet = createdTypes.Pet as ObjectType
         expect(pet).toBeInstanceOf(ObjectType)
         expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
+          additionalProperties: 'Map<unknown>',
           category: 'myAdapter.Category',
           id: 'number',
           name: 'string',
@@ -89,6 +90,7 @@ describe('generateOpenApiTypes', () => {
           middleName: 'string',
           // ref to UserAdditional2 in swagger
           middleName2: 'string',
+          additionalProperties: 'Map<myAdapter.Order>',
         })
 
         const food = createdTypes.Food as ObjectType
@@ -97,7 +99,7 @@ describe('generateOpenApiTypes', () => {
           brand: 'string',
           id: 'number',
           storage: 'List<string>',
-          additionalProperties: 'myAdapter.Category',
+          additionalProperties: 'Map<unknown>',
         })
 
         const category = createdTypes.Category as ObjectType
@@ -117,6 +119,7 @@ describe('generateOpenApiTypes', () => {
         const location = createdTypes.Location as ObjectType
         expect(location).toBeInstanceOf(ObjectType)
         expect(_.mapValues(location.fields, f => f.refType.elemID.name)).toEqual({
+          additionalProperties: 'Map<unknown>',
           name: 'string',
           // address is defined as anyOf combining primitive and object - should use unknown
           address: 'unknown',
@@ -147,6 +150,7 @@ describe('generateOpenApiTypes', () => {
       const pet = createdTypes.Pet as ObjectType
       expect(pet).toBeInstanceOf(ObjectType)
       expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
+        additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
         id: 'number',
         name: 'string',
@@ -172,6 +176,7 @@ describe('generateOpenApiTypes', () => {
         middleName: 'string',
         // ref to UserAdditional2 in swagger
         middleName2: 'string',
+        additionalProperties: 'Map<myAdapter.Order>',
       })
 
       const food = createdTypes.Food as ObjectType
@@ -180,7 +185,7 @@ describe('generateOpenApiTypes', () => {
         brand: 'string',
         id: 'number',
         storage: 'List<string>',
-        additionalProperties: 'myAdapter.Category',
+        additionalProperties: 'Map<unknown>',
       })
     })
   })
@@ -196,6 +201,7 @@ describe('generateOpenApiTypes', () => {
       }
       const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })
       const expectedPetFields = {
+        additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
         id: 'number',
         name: 'string',
@@ -229,6 +235,7 @@ describe('generateOpenApiTypes', () => {
       const renamedPet = createdTypes.RenamedPet as ObjectType
       expect(renamedPet).toBeInstanceOf(ObjectType)
       expect(_.mapValues(renamedPet.fields, f => f.refType.elemID.getFullName())).toEqual({
+        additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
         id: 'number',
         name: 'string',

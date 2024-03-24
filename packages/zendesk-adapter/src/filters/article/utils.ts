@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
@@ -28,8 +29,11 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
+  Change,
   createSaltoElementError,
+  getChangeData,
   InstanceElement,
+  isModificationChange,
   isStaticFile,
   isTemplateExpression,
   ObjectType,
@@ -53,6 +57,9 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
+
+// eslint-disable-next-line camelcase
+type SourceLocaleModificationReqPayload = { category_locale?: string; section_locale?: string; article_locale?: string }
 
 type Attachment = InstanceElement & {
   value: {
@@ -377,4 +384,45 @@ export const extractTemplateFromUrl = ({
     })
   })
   return _.isString(urlParts) ? urlParts : urlParts.parts
+}
+
+/**
+ * Modifying the source_locale is done through a different endpoint.
+ * This function checks whether there are changes to the source_locale, and if there are - sends a put request to
+ * the correct endpoint before any of the other changes get deployed.
+ * Object can be a section, article or category
+ */
+export const maybeModifySourceLocaleInGuideObject = async (
+  change: Change<InstanceElement>,
+  client: ZendeskClient,
+  object: 'articles' | 'sections' | 'categories',
+): Promise<boolean> => {
+  if (!isModificationChange(change)) {
+    return true
+  }
+  const changeData = getChangeData(change)
+  if (
+    change.data.before.value.source_locale === changeData.value.source_locale ||
+    changeData.value.source_locale === undefined
+  ) {
+    return true
+  }
+  const data: SourceLocaleModificationReqPayload = {}
+  if (object === 'articles') {
+    data.article_locale = changeData.value.source_locale
+  } else if (object === 'categories') {
+    data.category_locale = changeData.value.source_locale
+  } else {
+    data.section_locale = changeData.value.source_locale
+  }
+  try {
+    const res = await client.put({
+      url: `/api/v2/help_center/${object}/${changeData.value.id}/source_locale`,
+      data,
+    })
+    return res.status === 200
+  } catch (e) {
+    log.error(`Failed to modify source_locale, error: ${inspectValue(e)}`)
+    return false
+  }
 }

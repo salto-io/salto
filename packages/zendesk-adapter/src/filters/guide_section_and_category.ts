@@ -17,6 +17,7 @@ import {
   Change,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isReferenceExpression,
   isRemovalChange,
   ReferenceExpression,
@@ -24,9 +25,13 @@ import {
 import _ from 'lodash'
 import Joi from 'joi'
 import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { BRAND_FIELD, SECTIONS_FIELD, TRANSLATIONS_FIELD } from '../constants'
+import { BRAND_FIELD, SECTIONS_FIELD, SOURCE_LOCALE_FIELD, TRANSLATIONS_FIELD } from '../constants'
+import { maybeModifySourceLocaleInGuideObject } from './article/utils'
+
+const log = logger(module)
 
 export const TRANSLATION_PARENT_TYPE_NAMES = ['section', 'category']
 const CATEGORY_TYPE_NAME = 'category'
@@ -112,6 +117,7 @@ export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void =>
  * work properly.
  * The Deploy ignores the 'translations' fields in the deployment. The onDeploy
  * discards the 'name' and 'description' fields from the section again.
+ * Additionally, this filter sends a separate request when `source_locale` is modified
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'guideSectionCategoryFilter',
@@ -129,7 +135,16 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(parentChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, [TRANSLATIONS_FIELD, SECTIONS_FIELD, BRAND_FIELD])
+      const success = await maybeModifySourceLocaleInGuideObject(change, client, 'categories')
+      if (!success) {
+        log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
+      }
+      const fieldsToIgnore = [TRANSLATIONS_FIELD, SECTIONS_FIELD, BRAND_FIELD]
+      if (!isAdditionChange(change)) {
+        fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+      }
+
+      await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
     })
     return { deployResult, leftoverChanges }
   },

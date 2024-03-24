@@ -17,11 +17,13 @@ import {
   Change,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isAdditionOrModificationChange,
   toChange,
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './guide_section_and_category'
@@ -32,7 +34,11 @@ import {
   SECTIONS_FIELD,
   TRANSLATIONS_FIELD,
   BRAND_FIELD,
+  SOURCE_LOCALE_FIELD,
 } from '../constants'
+import { maybeModifySourceLocaleInGuideObject } from './article/utils'
+
+const log = logger(module)
 
 const PARENT_SECTION_ID_FIELD = 'parent_section_id'
 
@@ -54,6 +60,7 @@ export const addParentFields = (value: Values): void => {
 // the fields 'direct_parent_id' and 'direct_parent_type' are created during fetch, therefore this
 // filter omits these fields in preDeploy. and adds them in onDeploy. During deploy, the field
 // 'parent_section_id' is ignored and is deployed as modification change separately later.
+// Additionally, this filter sends a separate request when `source_locale` is modified
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'guideParentSection',
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
@@ -69,13 +76,16 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(parentChanges, async change => {
-      await deployChange(change, client, config.apiDefinitions, [
-        TRANSLATIONS_FIELD,
-        PARENT_SECTION_ID_FIELD,
-        ARTICLES_FIELD,
-        SECTIONS_FIELD,
-        BRAND_FIELD,
-      ])
+      const success = await maybeModifySourceLocaleInGuideObject(change, client, 'sections')
+      if (!success) {
+        log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
+      }
+      const fieldsToIgnore = [TRANSLATIONS_FIELD, PARENT_SECTION_ID_FIELD, ARTICLES_FIELD, SECTIONS_FIELD, BRAND_FIELD]
+      if (!isAdditionChange(change)) {
+        fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+      }
+
+      await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
     })
     // need to deploy separately parent_section_id if exists since zendesk API does not support
     // parent_section_id if the data request has more fields in it.

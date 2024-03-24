@@ -58,6 +58,7 @@ describe('article filter', () => {
   let filter: FilterType
   let mockGet: jest.SpyInstance
   let mockPost: jest.SpyInstance
+  let mockPut: jest.SpyInstance
   let mockDelete: jest.SpyInstance
 
   const brandType = new ObjectType({
@@ -566,7 +567,17 @@ describe('article filter', () => {
         }
         throw new Error('Err')
       })
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockImplementation(params => {
+        if (['/api/v2/help_center/articles/1111/source_locale'].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
     })
+
     it('should pass the correct params to deployChange on create', async () => {
       const id = 2
       mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
@@ -600,7 +611,7 @@ describe('article filter', () => {
         change: { action: 'modify', data: { before: clonedArticleBefore, after: clonedArticleAfter } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations', 'attachments'],
+        fieldsToIgnore: ['translations', 'attachments', 'source_locale'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -670,6 +681,14 @@ describe('article filter', () => {
         { action: 'add', data: { after: clonedAttachment } },
       ])
     })
+    it('should send a separate request when updating default_locale', async () => {
+      const clonedArticle = articleInstance.clone()
+      clonedArticle.value.source_locale = 'ar'
+      await filter.deploy([{ action: 'modify', data: { before: articleInstance, after: clonedArticle } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockPut).toHaveBeenCalledTimes(1)
+    })
+
     it('should not associate attachments to articles if attachment was not modified', async () => {
       const clonedArticle = new InstanceElement(
         'articleWithAttachment',

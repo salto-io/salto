@@ -48,6 +48,7 @@ import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
   EVERYONE_USER_TYPE,
+  SOURCE_LOCALE_FIELD,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../../constants'
@@ -60,6 +61,7 @@ import {
   deleteArticleAttachment,
   getArticleAttachments,
   isAttachments,
+  maybeModifySourceLocaleInGuideObject,
   updateArticleTranslationBody,
 } from './utils'
 import { API_DEFINITIONS_CONFIG, CLIENT_CONFIG, FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
@@ -495,7 +497,15 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       addRemovalChangesId(articleRemovalChanges)
       setUserSegmentIdForAdditionOrModificationChanges(articleAdditionAndModificationChanges)
       const articleDeployResult = await deployChanges(articleAdditionAndModificationChanges, async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations', 'attachments'])
+        const success = await maybeModifySourceLocaleInGuideObject(change, client, 'articles')
+        if (!success) {
+          log.error(`Attempting to modify the source_locale field in ${getChangeData(change).elemID.name} has failed `)
+        }
+        const fieldsToIgnore = ['translations', 'attachments']
+        if (!isAdditionChange(change)) {
+          fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+        }
+        await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)
         if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
           await associateAttachments(

@@ -210,6 +210,7 @@ export type ChangeValidatorName =
   | 'readOnlyWorkflow'
   | 'dashboardGadgets'
   | 'dashboardLayout'
+  | 'issueLayouts'
   | 'permissionType'
   | 'automations'
   | 'activeSchemeDeletion'
@@ -269,6 +270,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     readOnlyWorkflow: { refType: BuiltinTypes.BOOLEAN },
     dashboardGadgets: { refType: BuiltinTypes.BOOLEAN },
     dashboardLayout: { refType: BuiltinTypes.BOOLEAN },
+    issueLayouts: { refType: BuiltinTypes.BOOLEAN },
     permissionType: { refType: BuiltinTypes.BOOLEAN },
     automations: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },

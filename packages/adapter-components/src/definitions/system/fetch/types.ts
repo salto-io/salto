@@ -33,7 +33,7 @@ export type GenerateTypeArgs<Options extends FetchApiDefinitionsOptions = {}> = 
   customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   typeNameOverrides?: Record<string, string>
   isUnknownEntry?: (value: unknown) => boolean
-  definedTypes?: Record<string, ObjectType>
+  definedTypes: Record<string, ObjectType>
   isSubType?: boolean
   isMapWithDynamicType?: boolean
   getElemIdFunc?: ElemIdGetter

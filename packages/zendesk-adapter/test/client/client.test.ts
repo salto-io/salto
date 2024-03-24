@@ -205,7 +205,7 @@ describe('client', () => {
         '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(1, [
-        'Full HTTP response for %s on %s (size: %d): %s',
+        'Full HTTP response for %s on %s (size %d): %s',
         'GET',
         'organizations/show_many',
         responseText1.length,
@@ -216,7 +216,7 @@ describe('client', () => {
         '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(2, [
-        'Full HTTP response for %s on %s (size: %d): %s',
+        'Full HTTP response for %s on %s (size %d): %s',
         'GET',
         'organizations/autocomplete',
         responseText2.length,
@@ -227,7 +227,7 @@ describe('client', () => {
         '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(3, [
-        'Full HTTP response for %s on %s (size: %d): %s',
+        'Full HTTP response for %s on %s (size %d): %s',
         'GET',
         'organizations/show_many',
         responseText3.length,
@@ -238,7 +238,7 @@ describe('client', () => {
         '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(4, [
-        'Full HTTP response for %s on %s (size: %d): %s',
+        'Full HTTP response for %s on %s (size %d): %s',
         'GET',
         'organizations/autocomplete',
         responseText4.length,

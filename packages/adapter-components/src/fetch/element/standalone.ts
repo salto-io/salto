@@ -15,22 +15,69 @@
  */
 import {
   ElemIdGetter,
+  Field,
   InstanceElement,
   ObjectType,
   ReferenceExpression,
+  Value,
   getDeepInnerTypeSync,
   isObjectType,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { TransformFuncSync, invertNaclCase, transformValuesSync } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { createInstance, getInstanceCreationFunctions } from './instance_utils'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
+import { generateType } from './type_element'
+
+const log = logger(module)
+
+/*
+ * get standalone field type, and create it if it doesn't exist
+ * note: in case the field type is created, definedTypes will be modified to include the created types
+ */
+const getOrCreateAndAssignStandaloneType = <Options extends FetchApiDefinitionsOptions>({
+  adapterName,
+  defQuery,
+  typeName,
+  entries,
+  definedTypes,
+  standaloneField,
+}: {
+  adapterName: string
+  defQuery: ElementAndResourceDefFinder<Options>
+  typeName: string
+  parentName?: string
+  entries: Value[]
+  definedTypes: Record<string, ObjectType>
+  standaloneField: Field
+}): ObjectType => {
+  const fieldType = definedTypes?.[typeName] ?? getDeepInnerTypeSync(standaloneField.getTypeSync())
+  if (isObjectType(fieldType)) {
+    if (fieldType.elemID.name !== typeName) {
+      throw new Error(
+        `unexpected field type for ${fieldType.elemID.getFullName()} (expected: ${typeName} but found: ${fieldType.elemID.name})`,
+      )
+    }
+    return fieldType
+  }
+
+  log.debug('field type not found, creating type %s for standalone field %s', typeName, standaloneField.name)
+  const { type, nestedTypes } = generateType({ adapterName, defQuery, typeName, definedTypes, entries })
+  const additionalTypes = [type, ...nestedTypes]
+  // update definedTypes to return the new types created
+  additionalTypes.forEach(t => {
+    definedTypes[t.elemID.name] = t
+  })
+  return type
+}
 
 const extractStandaloneInstancesFromField =
   <Options extends FetchApiDefinitionsOptions>({
+    adapterName,
     defQuery,
     instanceOutput,
     getElemIdFunc,
@@ -38,12 +85,13 @@ const extractStandaloneInstancesFromField =
     customNameMappingFunctions,
     definedTypes,
   }: {
+    adapterName: string
     defQuery: ElementAndResourceDefFinder<Options>
     instanceOutput: InstanceElement[]
     getElemIdFunc?: ElemIdGetter
     parent: InstanceElement
     customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
-    definedTypes?: Record<string, ObjectType>
+    definedTypes: Record<string, ObjectType>
   }): TransformFuncSync =>
   ({ value, field }) => {
     if (field === undefined || isReferenceExpression(value)) {
@@ -54,16 +102,16 @@ const extractStandaloneInstancesFromField =
     if (standaloneDef?.typeName === undefined) {
       return value
     }
+    const standaloneEntries = collections.array.makeArray(value)
 
-    const fieldType = definedTypes?.[standaloneDef.typeName] ?? getDeepInnerTypeSync(field.getTypeSync())
-    if (!isObjectType(fieldType)) {
-      throw new Error(`field type for ${field.elemID.getFullName()} is not an object type`)
-    }
-    if (fieldType.elemID.name !== standaloneDef.typeName) {
-      throw new Error(
-        `unexpected field type for ${field.elemID.getFullName()} (expected: ${standaloneDef.typeName} but found: ${fieldType.elemID.name})`,
-      )
-    }
+    const fieldType = getOrCreateAndAssignStandaloneType({
+      adapterName,
+      defQuery,
+      typeName: standaloneDef?.typeName,
+      entries: standaloneEntries,
+      definedTypes,
+      standaloneField: field,
+    })
 
     const nestUnderPath = standaloneDef.nestPathUnderParent
       ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), field.name]
@@ -75,7 +123,7 @@ const extractStandaloneInstancesFromField =
       nestUnderPath,
       customNameMappingFunctions,
     })
-    const newInstances = collections.array.makeArray(value).map((entry, index) =>
+    const newInstances = standaloneEntries.map((entry, index) =>
       createInstance({
         entry,
         type: fieldType,
@@ -105,17 +153,19 @@ const extractStandaloneInstancesFromField =
  * Note: modifies the instances array in-place.
  */
 export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOptions>({
+  adapterName,
   instances,
   defQuery,
   customNameMappingFunctions,
   getElemIdFunc,
   definedTypes,
 }: {
+  adapterName: string
   instances: InstanceElement[]
   defQuery: ElementAndResourceDefFinder<Options>
   customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<Options>>
   getElemIdFunc?: ElemIdGetter
-  definedTypes?: Record<string, ObjectType>
+  definedTypes: Record<string, ObjectType>
 }): InstanceElement[] => {
   const instancesToProcess: InstanceElement[] = []
   instances.forEach(inst => instancesToProcess.push(inst))
@@ -134,6 +184,7 @@ export const extractStandaloneInstances = <Options extends FetchApiDefinitionsOp
       strict: false,
       pathID: inst.elemID,
       transformFunc: extractStandaloneInstancesFromField({
+        adapterName,
         defQuery,
         instanceOutput: instancesToProcess,
         getElemIdFunc,

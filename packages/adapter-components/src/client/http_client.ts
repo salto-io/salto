@@ -239,7 +239,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     const data = isMethodWithData(params) ? params.data : undefined
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const logResponse = (res: Response<any>): void => {
+    const logResponse = (res: Response<any>, error?: any): void => {
       log.debug('Received response for %s on %s', method.toUpperCase(), url)
 
       const responseText = safeJsonStringify({
@@ -254,9 +254,17 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
         data: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
       })
 
-      log.debug('Response size for %s on %s is %d', method.toUpperCase(), url, responseText.length)
-
-      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, responseText)
+      if (error === undefined) {
+        log.trace(
+          'Full HTTP response for %s on %s (size: %d): %s',
+          method.toUpperCase(),
+          url,
+          responseText.length,
+          responseText,
+        )
+      } else {
+        log.warn(`failed to ${method} ${url} with error: ${error}, stack: ${error.stack}, ${responseText}`)
+      }
     }
 
     try {
@@ -288,14 +296,18 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
         headers: this.extractHeaders(res.headers),
       }
     } catch (e) {
-      log.warn(
-        `failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`,
+      logResponse(
+        {
+          data: e?.response?.data ?? data,
+          status: e?.response?.status ?? 'undefined',
+          headers: e?.response?.headers ?? headers,
+        },
+        e,
       )
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }
       if (e.response !== undefined) {
-        logResponse(e.response)
         throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, {
           status: e.response.status,
           data: e.response.data,

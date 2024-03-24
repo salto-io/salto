@@ -76,6 +76,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
+  showImportantValues?: boolean // temp, should be removed
 }
 
 export type MaskingConfig = {
@@ -159,6 +160,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: false,
+    showImportantValues: false,
   },
   deploy: {
     forceDelete: false,
@@ -343,6 +345,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
+    showImportantValues: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,

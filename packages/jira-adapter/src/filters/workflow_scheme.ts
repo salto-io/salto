@@ -355,9 +355,10 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
       .filter(instance => instance.elemID.typeName === WORKFLOW_SCHEME_TYPE)
       .filter(instance => instance.value.issueTypeMappings !== undefined)
       .forEach(instance => {
-        instance.value.items = Object.entries(instance.value.issueTypeMappings.additionalProperties ?? {}).map(
-          ([issueType, workflow]) => ({ workflow, issueType }),
-        )
+        instance.value.items = Object.entries(instance.value.issueTypeMappings ?? {}).map(([issueType, workflow]) => ({
+          workflow,
+          issueType,
+        }))
         delete instance.value.issueTypeMappings
       })
   },

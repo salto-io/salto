@@ -49,6 +49,7 @@ import {
   SWAGGER_OBJECT,
   isArraySchemaObject,
   SchemasAndRefs,
+  getParsedSchemas,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes, getFieldTypeOverridesTypes } from './type_config_override'
 import { filterTypes } from '../../type_elements'
@@ -56,6 +57,7 @@ import { LoadedSwagger } from '../swagger'
 import { getConfigWithDefault } from '../../../config/shared'
 import { getDependencies } from '../../element_getter'
 import { markServiceIdField } from '../../../fetch/element/type_utils'
+import { OpenAPIDefinition } from '../../../definitions/system/sources/openapi'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes
@@ -147,10 +149,10 @@ const typeAdder = ({
     definedTypes[naclObjName] = type
 
     const { allProperties, additionalProperties } = extractProperties(schemaDef, refs)
-
+    const naclCasedProperties = _.mapKeys(allProperties, (_value, key) => naclCase(key))
     Object.assign(
       type.fields,
-      _.mapValues(allProperties, (fieldSchema, fieldName) => {
+      _.mapValues(naclCasedProperties, (fieldSchema, fieldName) => {
         const toNestedTypeName = ({ allOf, anyOf, oneOf }: SchemaObject): string => {
           const xOf = [allOf, anyOf, oneOf].filter(isDefined).flat()
           if (xOf.length > 0 && isArrayOfType(xOf, isReferenceObject)) {
@@ -339,4 +341,62 @@ export const generateTypes = async (
     allTypes: _.keyBy(filteredTypes, type => type.elemID.name),
     parsedConfigs,
   }
+}
+
+/**
+ * Generate types for the given OpenAPI definitions
+ */
+export const generateOpenApiTypes = async ({
+  adapterName,
+  openApiDefs,
+}: {
+  adapterName: string
+  openApiDefs: Omit<OpenAPIDefinition<never>, 'toClient'>
+}): Promise<TypeMap> => {
+  const { url: swaggerPath, endpointsOnly } = openApiDefs
+  if (endpointsOnly) {
+    log.debug('Skipping types generation for adapter %s, as only endpoints are required', adapterName)
+    return {}
+  }
+
+  const typeAdjustments = openApiDefs.typeAdjustments ?? {}
+  const adjustmentsWithTargetType = Object.entries(typeAdjustments).map(([targetTypeName, sourceDefs]) => ({
+    targetTypeName,
+    ...sourceDefs,
+  }))
+  const adjustmentsByOriginalType = _.groupBy(adjustmentsWithTargetType, entry => entry.originalTypeName)
+
+  Object.entries(adjustmentsByOriginalType).forEach(([originalTypeName, entries]) => {
+    if (entries.some(({ rename }) => rename) && entries.some(({ rename }) => !rename)) {
+      throw new Error(`type ${originalTypeName} cannot be both renamed and cloned`)
+    }
+  })
+
+  const getTypeName = (schemaName: string): string => {
+    const renameDefinitions = adjustmentsByOriginalType[schemaName]?.find(entry => entry.rename)
+    return renameDefinitions?.targetTypeName ?? schemaName
+  }
+
+  const definedTypes: Record<string, ObjectType> = {}
+
+  const { schemas, refs } = await getParsedSchemas({ swaggerPath })
+
+  const addType = typeAdder({
+    adapterName,
+    schemas,
+    toUpdatedResourceName: getTypeName,
+    definedTypes,
+    parsedConfigs: {},
+    refs,
+  })
+
+  Object.entries(schemas).forEach(([typeName, schema]) => addType(schema, typeName))
+
+  const typesToClone = adjustmentsWithTargetType
+    .filter(def => !def.rename)
+    .map(({ targetTypeName, originalTypeName }) => ({ typeName: targetTypeName, cloneFrom: originalTypeName }))
+
+  defineAdditionalTypes(adapterName, typesToClone, definedTypes)
+
+  return definedTypes
 }

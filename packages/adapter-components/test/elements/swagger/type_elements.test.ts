@@ -15,8 +15,9 @@
  */
 import _ from 'lodash'
 import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
+import { generateTypes, toPrimitiveType, generateOpenApiTypes } from '../../../src/elements/swagger'
 import { RequestableTypeSwaggerConfig } from '../../../src/config'
+import { OpenAPIDefinition } from '../../../src/definitions/system/sources'
 
 jest.mock('@salto-io/lowerdash', () => {
   const actual = jest.requireActual('@salto-io/lowerdash')
@@ -512,6 +513,241 @@ describe('swagger_type_elements', () => {
     })
     it('should return unknown when multiple conflicting types are specified', () => {
       expect(toPrimitiveType(['string', 'number'])).toEqual(BuiltinTypes.UNKNOWN)
+    })
+  })
+
+  describe('generateOpenApiTypes', () => {
+    describe('V3 OpenAPI', () => {
+      const expectedTypes = [
+        'Address',
+        'ApiResponse',
+        'Category',
+        'Food',
+        'FoodAndCategory',
+        'Order',
+        'Pet',
+        'Tag',
+        'User',
+        'FoodOrCategory',
+        'FoodXorCategory',
+        'Location',
+        'UserAdditional1',
+        'UserAdditional2',
+      ]
+
+      it.each([`${BASE_DIR}/petstore_openapi.v3.yaml`, `${BASE_DIR}/petstore_openapi.v3.json`])(
+        'should generate types from all schemas',
+        async url => {
+          const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url } })
+          expect(Object.keys(createdTypes).sort()).toEqual(expectedTypes.sort())
+
+          // regular response type with reference
+          const pet = createdTypes.Pet as ObjectType
+          expect(pet).toBeInstanceOf(ObjectType)
+          expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
+            category: 'myAdapter.Category',
+            id: 'number',
+            name: 'string',
+            photoUrls: 'List<string>',
+            status: 'string',
+            tags: 'List<myAdapter.Tag>',
+          })
+
+          // field with allOf
+          const user = createdTypes.User as ObjectType
+          expect(user).toBeInstanceOf(ObjectType)
+          expect(_.mapValues(user.fields, f => f.refType.elemID.getFullName())).toEqual({
+            // directly listed
+            email: 'string',
+            firstName: 'string',
+            id: 'number',
+            lastName: 'string',
+            password: 'string',
+            phone: 'string',
+            userStatus: 'number',
+            username: 'string',
+            // ref to UserAdditional1 in swagger
+            middleName: 'string',
+            // ref to UserAdditional2 in swagger
+            middleName2: 'string',
+          })
+
+          const food = createdTypes.Food as ObjectType
+          expect(food).toBeInstanceOf(ObjectType)
+          expect(_.mapValues(food.fields, f => f.refType.elemID.getFullName())).toEqual({
+            brand: 'string',
+            id: 'number',
+            storage: 'List<string>',
+            additionalProperties: 'myAdapter.Category',
+          })
+
+          const category = createdTypes.Category as ObjectType
+          const foodOrCategory = createdTypes.FoodOrCategory as ObjectType
+          expect(_.mapValues(foodOrCategory.fields, f => f.refType.elemID.name)).toEqual({
+            ..._.mapValues(food.fields, f => f.refType.elemID.name),
+            ..._.mapValues(category.fields, f => f.refType.elemID.name),
+          })
+
+          // oneOf
+          const foodXorCategory = createdTypes.FoodXorCategory as ObjectType
+          expect(_.mapValues(foodXorCategory.fields, f => f.refType.elemID.name)).toEqual({
+            ..._.mapValues(food.fields, f => f.refType.elemID.name),
+            ..._.mapValues(category.fields, f => f.refType.elemID.name),
+          })
+
+          const location = createdTypes.Location as ObjectType
+          expect(location).toBeInstanceOf(ObjectType)
+          expect(_.mapValues(location.fields, f => f.refType.elemID.name)).toEqual({
+            name: 'string',
+            // address is defined as anyOf combining primitive and object - should use unknown
+            address: 'unknown',
+          })
+        },
+      )
+    })
+
+    describe('V2 swagger', () => {
+      const expectedTypes = [
+        'ApiResponse',
+        'Category',
+        'Food',
+        'FoodAndCategory',
+        'Order',
+        'Pet',
+        'Tag',
+        'User',
+        'UserAdditional1',
+        'UserAdditional2',
+      ]
+
+      it.each([`${BASE_DIR}/petstore_swagger.v2.json`])('should generate types from all schemas', async url => {
+        const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url } })
+        expect(Object.keys(createdTypes).sort()).toEqual(expectedTypes.sort())
+
+        // regular response type with reference
+        const pet = createdTypes.Pet as ObjectType
+        expect(pet).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
+          category: 'myAdapter.Category',
+          id: 'number',
+          name: 'string',
+          photoUrls: 'List<string>',
+          status: 'string',
+          tags: 'List<myAdapter.Tag>',
+        })
+
+        // field with allOf
+        const user = createdTypes.User as ObjectType
+        expect(user).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(user.fields, f => f.refType.elemID.getFullName())).toEqual({
+          // directly listed
+          email: 'string',
+          firstName: 'string',
+          id: 'number',
+          lastName: 'string',
+          password: 'string',
+          phone: 'string',
+          userStatus: 'number',
+          username: 'string',
+          // ref to UserAdditional1 in swagger
+          middleName: 'string',
+          // ref to UserAdditional2 in swagger
+          middleName2: 'string',
+        })
+
+        const food = createdTypes.Food as ObjectType
+        expect(food).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(food.fields, f => f.refType.elemID.getFullName())).toEqual({
+          brand: 'string',
+          id: 'number',
+          storage: 'List<string>',
+          additionalProperties: 'myAdapter.Category',
+        })
+      })
+    })
+
+    describe('with type adjustments', () => {
+      it('should clone types based on definitions', async () => {
+        const openApiDefs: Omit<OpenAPIDefinition<never>, 'toClient'> = {
+          url: `${BASE_DIR}/petstore_openapi.v3.yaml`,
+          typeAdjustments: {
+            ClonedPet: { originalTypeName: 'Pet', rename: false },
+            AnotherPet: { originalTypeName: 'Pet', rename: false },
+          },
+        }
+        const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })
+        const expectedPetFields = {
+          category: 'myAdapter.Category',
+          id: 'number',
+          name: 'string',
+          photoUrls: 'List<string>',
+          status: 'string',
+          tags: 'List<myAdapter.Tag>',
+        }
+
+        const pet = createdTypes.Pet as ObjectType
+        expect(pet).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual(expectedPetFields)
+
+        const clonedPet = createdTypes.ClonedPet as ObjectType
+        expect(clonedPet).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(clonedPet.fields, f => f.refType.elemID.getFullName())).toEqual(expectedPetFields)
+
+        const anotherPet = createdTypes.AnotherPet as ObjectType
+        expect(anotherPet).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(anotherPet.fields, f => f.refType.elemID.getFullName())).toEqual(expectedPetFields)
+      })
+
+      it('should rename types based on definitions', async () => {
+        const openApiDefs: Omit<OpenAPIDefinition<never>, 'toClient'> = {
+          url: `${BASE_DIR}/petstore_openapi.v3.yaml`,
+          typeAdjustments: {
+            RenamedPet: { originalTypeName: 'Pet', rename: true },
+          },
+        }
+        const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })
+        expect(createdTypes.Pet).toBeUndefined()
+        const renamedPet = createdTypes.RenamedPet as ObjectType
+        expect(renamedPet).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(renamedPet.fields, f => f.refType.elemID.getFullName())).toEqual({
+          category: 'myAdapter.Category',
+          id: 'number',
+          name: 'string',
+          photoUrls: 'List<string>',
+          status: 'string',
+          tags: 'List<myAdapter.Tag>',
+        })
+      })
+
+      it('should throw same type is both cloned and renamed', async () => {
+        const openApiDefs: Omit<OpenAPIDefinition<never>, 'toClient'> = {
+          url: `${BASE_DIR}/petstore_openapi.v3.yaml`,
+          typeAdjustments: {
+            ClonedPet: { originalTypeName: 'Pet', rename: false },
+            AnotherPet: { originalTypeName: 'Pet', rename: true },
+          },
+        }
+        await expect(() => generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs })).rejects.toThrow(
+          new Error('type Pet cannot be both renamed and cloned'),
+        )
+      })
+    })
+
+    describe('invalid versions', () => {
+      it('should fail on invalid swagger version (v2)', async () => {
+        await expect(() =>
+          generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url: `${BASE_DIR}/invalid_swagger.yaml` } }),
+        ).rejects.toThrow(new Error('Unrecognized Swagger version: 1.0. Expected 2.0'))
+      })
+      it('should fail on invalid swagger version (v3)', async () => {
+        await expect(() =>
+          generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs: { url: `${BASE_DIR}/invalid_openapi.yaml` } }),
+        ).rejects.toThrow(
+          new Error(
+            'Unsupported OpenAPI version: 4.0.1. Swagger Parser only supports versions 3.0.0, 3.0.1, 3.0.2, 3.0.3',
+          ),
+        )
+      })
     })
   })
 })

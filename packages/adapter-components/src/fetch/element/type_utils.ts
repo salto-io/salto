@@ -21,6 +21,7 @@ import {
   FieldDefinition,
   GENERIC_ID_PREFIX,
   GENERIC_ID_SUFFIX,
+  InstanceElement,
   LIST_ID_PREFIX,
   ListType,
   MAP_ID_PREFIX,
@@ -31,10 +32,14 @@ import {
   TypeElement,
   createRefToElmWithValue,
   createRestriction,
+  getDeepInnerTypeSync,
   isEqualElements,
+  isField,
+  isObjectType,
   isPrimitiveType,
   isTypeReference,
 } from '@salto-io/adapter-api'
+import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -299,4 +304,42 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
       }
     })
   })
+}
+
+/**
+ * Filter for types that are either used by instance or defined in fetch definitions
+ */
+export const getReachableTypes = <Options extends FetchApiDefinitionsOptions>({
+  instances,
+  types,
+  defQuery,
+}: {
+  instances: InstanceElement[]
+  types: ObjectType[]
+  defQuery: ElementAndResourceDefFinder<Options>
+}): ObjectType[] => {
+  const topLevelTypeNames = new Set(defQuery.allKeys().concat(instances.map(inst => inst.elemID.typeName)))
+
+  const topLevelTypes = types.filter(type => topLevelTypeNames.has(type.elemID.name))
+  const nestedTypesToReturn: Set<string> = new Set()
+
+  topLevelTypes.forEach(type => {
+    walkOnElement({
+      element: type,
+      func: ({ value }) => {
+        if (isField(value)) {
+          const fieldType = getDeepInnerTypeSync(value.getTypeSync())
+          if (isObjectType(fieldType)) {
+            nestedTypesToReturn.add(fieldType.elemID.getFullName())
+          }
+        }
+        return WALK_NEXT_STEP.RECURSE
+      },
+    })
+  })
+
+  const reachableTypes = types.filter(
+    type => topLevelTypeNames.has(type.elemID.name) || nestedTypesToReturn.has(type.elemID.getFullName()),
+  )
+  return reachableTypes
 }

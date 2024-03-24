@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 export { getAllInstances, extractPageEntriesByNestedField } from './instance_elements'
-export { generateTypes, ParsedTypes } from './type_elements/element_generator'
+export { generateTypes, ParsedTypes, generateOpenApiTypes } from './type_elements/element_generator'
 export {
   toPrimitiveType,
   ADDITIONAL_PROPERTIES_FIELD,

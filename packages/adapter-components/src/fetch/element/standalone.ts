@@ -35,7 +35,11 @@ import { generateType } from './type_element'
 
 const log = logger(module)
 
-const getStandaloneType = <Options extends FetchApiDefinitionsOptions>({
+/*
+* get standalone field type, and create it if it doesn't exist
+* note: in case the field type is created, definedTypes will be modified to include the created types
+*/
+const getOrCreateAndAssignStandaloneType = <Options extends FetchApiDefinitionsOptions>({
   adapterName,
   defQuery,
   typeName,
@@ -62,9 +66,10 @@ const getStandaloneType = <Options extends FetchApiDefinitionsOptions>({
   }
 
   log.debug('field type not found, creating type %s for standalone field %s', typeName, standaloneField.name)
-  const { type } = generateType({ adapterName, defQuery, typeName, definedTypes, entries })
-  // update definedTypes to return the new type created
-  definedTypes[type.elemID.name] = type
+  const { type, nestedTypes } = generateType({ adapterName, defQuery, typeName, definedTypes, entries })
+  const additionalTypes = [type, ...nestedTypes]
+  // update definedTypes to return the new types created
+  additionalTypes.forEach(t => { definedTypes[t.elemID.name] = t })
   return type
 }
 
@@ -97,7 +102,7 @@ const extractStandaloneInstancesFromField =
     }
     const standaloneEntries = collections.array.makeArray(value)
 
-    const fieldType = getStandaloneType({
+    const fieldType = getOrCreateAndAssignStandaloneType({
       adapterName,
       defQuery,
       typeName: standaloneDef?.typeName,

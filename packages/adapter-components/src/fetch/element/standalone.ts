@@ -36,9 +36,9 @@ import { generateType } from './type_element'
 const log = logger(module)
 
 /*
-* get standalone field type, and create it if it doesn't exist
-* note: in case the field type is created, definedTypes will be modified to include the created types
-*/
+ * get standalone field type, and create it if it doesn't exist
+ * note: in case the field type is created, definedTypes will be modified to include the created types
+ */
 const getOrCreateAndAssignStandaloneType = <Options extends FetchApiDefinitionsOptions>({
   adapterName,
   defQuery,
@@ -69,7 +69,9 @@ const getOrCreateAndAssignStandaloneType = <Options extends FetchApiDefinitionsO
   const { type, nestedTypes } = generateType({ adapterName, defQuery, typeName, definedTypes, entries })
   const additionalTypes = [type, ...nestedTypes]
   // update definedTypes to return the new types created
-  additionalTypes.forEach(t => { definedTypes[t.elemID.name] = t })
+  additionalTypes.forEach(t => {
+    definedTypes[t.elemID.name] = t
+  })
   return type
 }
 

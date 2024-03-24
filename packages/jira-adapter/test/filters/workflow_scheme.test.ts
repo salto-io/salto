@@ -113,7 +113,9 @@ describe('workflowScheme', () => {
     it('replace value of issueTypeMappings with items', async () => {
       const instance = new InstanceElement('instance', workflowSchemeType, {
         issueTypeMappings: {
-          1234: 'workflow name',
+          additionalProperties: {
+            1234: 'workflow name',
+          },
         },
       })
       await filter.onFetch?.([instance])

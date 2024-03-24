@@ -197,14 +197,18 @@ describe('workflowStructureFilter', () => {
         statuses: [
           {
             properties: {
-              'jira.issue.editable': 'true',
-              issueEditable: true,
+              additionalProperties: {
+                'jira.issue.editable': 'true',
+                issueEditable: true,
+              },
             },
           },
           {
             properties: {
-              'jira.issue.editable': 'false',
-              issueEditable: false,
+              additionalProperties: {
+                'jira.issue.editable': 'false',
+                issueEditable: false,
+              },
             },
           },
           {},
@@ -233,15 +237,19 @@ describe('workflowStructureFilter', () => {
           {
             name: 'tran1',
             properties: {
-              'jira.issue.editable': 'true',
-              issueEditable: true,
+              additionalProperties: {
+                'jira.issue.editable': 'true',
+                issueEditable: true,
+              },
             },
           },
           {
             name: 'tran2',
             properties: {
-              'jira.issue.editable': 'false',
-              issueEditable: false,
+              additionalProperties: {
+                'jira.issue.editable': 'false',
+                issueEditable: false,
+              },
             },
           },
           { name: 'tran3' },

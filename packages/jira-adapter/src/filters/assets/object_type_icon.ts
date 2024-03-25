@@ -26,15 +26,17 @@ import {
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
+import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
-import { OBJECT_TYPE_ICON } from '../../constants'
+import { OBJECT_TYPE_ICON_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { convertName, isIconResponse, sendIconRequest, setIconContent } from '../icon_utils'
 import { getWorkspaceId } from '../../workspace_id'
-import { createLogoTwoConnection } from '../../client/connection'
+import { createLogoConnection } from '../../client/connection'
 
+const { awu } = collections.asynciterable
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
 type AuthorizationToken = {
   data: {
@@ -87,7 +89,7 @@ const deployAdditionIcon = async (
   try {
     const resp = await sendIconRequest({ client: logoClient, change, url, fieldName: 'icon' })
     if (!isIconCreationResponseScheme(resp)) {
-      throw new Error('Failed to deploy object type icon: Invalid response from Jira API')
+      throw new Error(`Failed to deploy object type icon with response: ${resp}`)
     }
     const response = await client.post({
       url: `gateway/api/jsm/assets/workspace/${workspaceId}/v1/icon/create`,
@@ -97,11 +99,14 @@ const deployAdditionIcon = async (
       },
     })
     if (!isIconResponse(response)) {
-      throw new Error('Failed to deploy icon to Jira object type: Invalid response from Jira API')
+      throw new Error(`Failed to deploy object type icon with response: ${response}`)
     }
     instance.value.id = Number(response.data.id)
   } catch (e) {
-    throw new Error(`Failed to deploy icon to Jira object type: ${e.message}`)
+    if (e instanceof clientUtils.HTTPError) {
+      throw new Error(`Failed to deploy icon to Jira object type: ${e.message}`)
+    }
+    throw new Error(`Failed to deploy icon to Jira object type: ${e}`)
   }
 }
 
@@ -109,31 +114,37 @@ const deployAdditionIcon = async (
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'objectTypeIconFilter',
   onFetch: async elements => {
-    const objectTypeIcons = elements.filter(e => e.elemID.typeName === OBJECT_TYPE_ICON).filter(isInstanceElement)
+    if (!config.fetch.enableJSM || !config.fetch.enableJSMPremium) {
+      return { errors: [] }
+    }
+    const objectTypeIcons = elements.filter(e => e.elemID.typeName === OBJECT_TYPE_ICON_TYPE).filter(isInstanceElement)
     const workSpaceId = await getWorkspaceId(client, config)
     const errors: SaltoError[] = []
-    await Promise.all(
-      objectTypeIcons.map(async objectTypeIcon => {
-        try {
-          const link = `/gateway/api/jsm/insight/workspace/${workSpaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
-          await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
-        } catch (e) {
-          errors.push({ message: e.message, severity: 'Error' })
-        }
-      }),
-    )
+    await awu(objectTypeIcons).forEach(async objectTypeIcon => {
+      try {
+        const link = `/gateway/api/jsm/insight/workspace/${workSpaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
+        await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
+      } catch (e) {
+        errors.push({ message: e.message, severity: 'Error' })
+      }
+    })
     return { errors }
   },
-
+  /* Only deploys addition of object type icons. The deployment of modifications and deletion of object type icons
+  is done in the standard jsm deployment. */
   deploy: async (changes: Change<InstanceElement>[]) => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM || !config.fetch.enableJSMPremium || jsmApiDefinitions === undefined) {
       return { deployResult: { appliedChanges: [], errors: [] }, leftoverChanges: changes }
     }
+
     const [objectTypeIconAdditionChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === OBJECT_TYPE_ICON && isAdditionChange(change),
+      change => getChangeData(change).elemID.typeName === OBJECT_TYPE_ICON_TYPE && isAdditionChange(change),
     )
+    if (objectTypeIconAdditionChanges.length === 0) {
+      return { deployResult: { appliedChanges: [], errors: [] }, leftoverChanges: changes }
+    }
 
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
@@ -152,7 +163,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       }
     }
     const baseUrl = 'https://api.media.atlassian.com'
-    const logoConnection = createLogoTwoConnection(createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS))
+    const logoConnection = createLogoConnection(createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS))
     await logoConnection.login({ token: authorizationToken.data.mediaJwtToken, baseUrl, user: '' })
     const logoClient = new JiraClient({
       connection: logoConnection,

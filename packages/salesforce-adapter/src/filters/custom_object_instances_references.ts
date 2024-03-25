@@ -119,6 +119,7 @@ const createWarnings = async (
       )
       .filter(isDefined)
       .map((referenceTo: string | ReferenceExpression): string =>
+        // Ideally we would use the API name, but we don't have it here and reconstructing it is overkill for a warning
         _.isString(referenceTo)
           ? referenceTo
           : referenceTo.elemID.getFullName(),

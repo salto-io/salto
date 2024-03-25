@@ -78,17 +78,21 @@ const filter: FilterCreator = ({ client, config }) => ({
     issueTypes.forEach(issueType => {
       delete issueType.value.subtask
     })
+    if (client.isDataCenter) {
+      return { errors: [] }
+    }
     const errors: SaltoError[] = []
-    await Promise.all(
-      issueTypes.map(async issueType => {
-        try {
-          const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
-          await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
-        } catch (e) {
-          errors.push({ message: e.message, severity: 'Error' })
+    await awu(issueTypes).forEach(async issueType => {
+      try {
+        if (issueType.value.avatarId === undefined) {
+          return
         }
-      }),
-    )
+        const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
+        await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
+      } catch (e) {
+        errors.push({ message: e.message, severity: 'Error' })
+      }
+    })
     return { errors }
   },
 
@@ -110,6 +114,12 @@ const filter: FilterCreator = ({ client, config }) => ({
       )
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
+    if (client.isDataCenter) {
+      return {
+        deployResult: { appliedChanges: [], errors: [] },
+        leftoverChanges: changes,
+      }
+    }
     const [issueTypeChanges, leftoverChanges] = _.partition(
       changes,
       change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME && isAdditionOrModificationChange(change),

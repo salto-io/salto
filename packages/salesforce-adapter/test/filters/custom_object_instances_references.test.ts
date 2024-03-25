@@ -100,6 +100,11 @@ describe('Custom Object Instances References filter', () => {
       },
     },
   })
+  const masterReferenceExpression = new ReferenceExpression(
+    masterElemID,
+    masterObj,
+  )
+
   const refToName = 'refToName'
   const refToObj = createCustomObjectType(refToName, {})
   const refToElemID = refToObj.elemID
@@ -118,7 +123,7 @@ describe('Custom Object Instances References filter', () => {
           [API_NAME]: 'LookupExample',
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          referenceTo: [refToName],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToName],
         },
       },
       NonDeployableLookup: {
@@ -129,7 +134,7 @@ describe('Custom Object Instances References filter', () => {
           [API_NAME]: 'LookupExample',
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,
-          referenceTo: [refToName],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToName],
         },
       },
       RefToUser: {
@@ -140,7 +145,7 @@ describe('Custom Object Instances References filter', () => {
           [API_NAME]: 'RefToUser',
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          referenceTo: [userObjName],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [userObjName],
         },
       },
       MasterDetailExample: {
@@ -151,7 +156,7 @@ describe('Custom Object Instances References filter', () => {
           [API_NAME]: 'MasterDetailExample',
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          referenceTo: [masterName],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [masterReferenceExpression],
         },
       },
       HierarchyExample: {
@@ -173,7 +178,7 @@ describe('Custom Object Instances References filter', () => {
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
           [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-          referenceTo: [masterName],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [masterName],
         },
       },
       RefToMetadataField: {
@@ -184,7 +189,7 @@ describe('Custom Object Instances References filter', () => {
           [API_NAME]: 'LookupMetadataField',
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          referenceTo: [refToMetadataName],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToMetadataName],
         },
       },
     },
@@ -313,7 +318,7 @@ describe('Custom Object Instances References filter', () => {
       }
     })
 
-    it('Should drop the illegal instances and not change the objects and the ref to instances', () => {
+    it('should drop the illegal instances and not change the objects and the ref to instances', () => {
       expect(elements.length).toEqual(objects.length + legalInstances.length)
 
       // object types
@@ -377,19 +382,22 @@ describe('Custom Object Instances References filter', () => {
       expect(afterFilterFirstDup).toBeUndefined()
       expect(afterFilterSecondDup).toBeUndefined()
     })
+
     it('should drop instances with ref to instances that have elemID duplications', () => {
       const afterFilterRefFromToDup = elements.find((e) =>
         e.elemID.isEqual(refFromToDupInst.elemID),
       )
       expect(afterFilterRefFromToDup).toBeUndefined()
     })
+
     it('should drop instances with ref to instances that have refs to inst with elemID duplications', () => {
       const afterFilterRefFromToRefToDup = elements.find((e) =>
         e.elemID.isEqual(refFromToRefToDupInst.elemID),
       )
       expect(afterFilterRefFromToRefToDup).toBeUndefined()
     })
-    it('Should have warnings that include all illegal instances names/Ids', () => {
+
+    it('should have warnings that include all illegal instances names/Ids', () => {
       expect(errors).toBeDefined()
       illegalInstances.forEach((instance) => {
         const errorMessages = errors.map((error) => error.message)
@@ -401,6 +409,21 @@ describe('Custom Object Instances References filter', () => {
         expect(warningsIncludeNameOrId).toBeTruthy()
       })
     })
+
+    it('should have a warning for the missing references', () => {
+      expect(errors).toBeDefined()
+
+      const missingReferencesTo: string[] = [
+        masterElemID.getFullName(),
+        refToName,
+      ]
+      const errorMessages = errors.map((error) => error.message)
+      const warningsIncludeMissingReferences = errorMessages.some((errorMsg) =>
+        missingReferencesTo.every((to) => errorMsg.includes(to)),
+      )
+      expect(warningsIncludeMissingReferences).toBeTruthy()
+    })
+
     describe('when instances with empty Salto ID exist', () => {
       let instancesWithEmptyNames: InstanceElement[]
       beforeEach(async () => {

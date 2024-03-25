@@ -624,7 +624,7 @@ export const mockTypes = {
       SBQQ__Template__c: {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
-          referenceTo: ['SBQQ__Template__c'],
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SBQQ__Template__c'],
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
       },

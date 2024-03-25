@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  FieldDefinition,
+  BuiltinTypes,
+  ObjectType,
+  ElemID,
+  createRefToElmWithValue,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import {
   markServiceIdField,
   getContainerForType,
   toNestedTypeName,
   toPrimitiveType,
+  getReachableTypes,
 } from '../../../src/fetch/element/type_utils'
+import { queryWithDefault } from '../../../src/definitions'
+import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
 
 describe('type utils', () => {
   describe('markServiceIdField', () => {
@@ -97,6 +107,57 @@ describe('type utils', () => {
     })
     it('should return unknown when type is not known', () => {
       expect(toPrimitiveType('bla')).toEqual(BuiltinTypes.UNKNOWN)
+    })
+  })
+
+  describe('getReachableTypes', () => {
+    const defQuery = queryWithDefault<InstanceFetchApiDefinitions, string>({
+      customizations: {
+        typeA: { element: { topLevel: { isTopLevel: true } } },
+        typeB: {},
+        typeC: { element: { fieldCustomizations: { id: { fieldType: 'string' } } } },
+      },
+    })
+    const innerType = new ObjectType({ elemID: new ElemID('adapter', 'innerType') })
+    const innerUnusedType = new ObjectType({ elemID: new ElemID('adapter', 'innerUnusedType') })
+    const innerTypeUsedByB = new ObjectType({ elemID: new ElemID('adapter', 'innerTypeUsedByB') })
+    const typeWithInst = new ObjectType({
+      elemID: new ElemID('adapter', 'typeA'),
+      fields: { inner: { refType: innerType } },
+    })
+    const types = [
+      // used types
+      innerType,
+      typeWithInst,
+      innerTypeUsedByB,
+      new ObjectType({
+        elemID: new ElemID('adapter', 'typeB'),
+        fields: { id: { refType: BuiltinTypes.STRING }, obj: { refType: innerTypeUsedByB } },
+      }),
+      new ObjectType({ elemID: new ElemID('adapter', 'typeC') }),
+      // unused types
+      innerUnusedType,
+      new ObjectType({
+        elemID: new ElemID('adapter', 'unusedType'),
+        fields: { id: { refType: BuiltinTypes.STRING }, unused: { refType: innerUnusedType } },
+      }),
+    ]
+    const instances = [new InstanceElement('inst1', typeWithInst, { inner: { id: 'aaa' } })]
+
+    it('should include all types used by instances and their subtypes or in definitions', () => {
+      const filteredTypes = getReachableTypes({
+        instances,
+        types,
+        defQuery,
+      })
+      expect(filteredTypes).toHaveLength(5)
+      expect(filteredTypes.map(t => t.elemID.name).sort()).toEqual([
+        'innerType',
+        'innerTypeUsedByB',
+        'typeA',
+        'typeB',
+        'typeC',
+      ])
     })
   })
 })

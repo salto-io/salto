@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FetchElements } from '../types'
 import { generateInstancesWithInitialTypes } from './instance_element'
-import { hideAndOmitFields, overrideFieldTypes } from './type_utils'
+import { getReachableTypes, hideAndOmitFields, overrideFieldTypes } from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from '../../config/shared' // TODO move
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
@@ -116,8 +116,10 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
 
     hideAndOmitFields({ definedTypes, defQuery, finalTypeNames })
 
+    // only return types that are reachable from instances or definitions
+    const filteredTypes = getReachableTypes({ instances, types: Object.values(definedTypes), defQuery })
     return {
-      elements: (instances as Element[]).concat(Object.values(definedTypes)),
+      elements: (instances as Element[]).concat(filteredTypes),
       errors: allResults.flatMap(t => t.errors ?? []),
     }
   }

@@ -21,6 +21,7 @@ import {
   FieldDefinition,
   GENERIC_ID_PREFIX,
   GENERIC_ID_SUFFIX,
+  InstanceElement,
   LIST_ID_PREFIX,
   ListType,
   MAP_ID_PREFIX,
@@ -35,6 +36,7 @@ import {
   isPrimitiveType,
   isTypeReference,
 } from '@salto-io/adapter-api'
+import { getSubtypes } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
@@ -299,4 +301,23 @@ export const hideAndOmitFields = <Options extends FetchApiDefinitionsOptions>({
       }
     })
   })
+}
+
+/**
+ * Filter for types that are either used by instance or defined in fetch definitions
+ */
+export const getReachableTypes = <Options extends FetchApiDefinitionsOptions>({
+  instances,
+  types,
+  defQuery,
+}: {
+  instances: InstanceElement[]
+  types: ObjectType[]
+  defQuery: ElementAndResourceDefFinder<Options>
+}): ObjectType[] => {
+  const rootTypeNames = new Set(defQuery.allKeys().concat(instances.map(inst => inst.elemID.typeName)))
+  const rootTypes = types.filter(type => rootTypeNames.has(type.elemID.name))
+  const rootTypesSubtypes = new Set(getSubtypes(rootTypes).map(type => type.elemID.name))
+
+  return types.filter(type => rootTypeNames.has(type.elemID.name) || rootTypesSubtypes.has(type.elemID.name))
 }

@@ -34,7 +34,7 @@ export const defineAdditionalTypes = (
   adapterName: string,
   additionalTypes: AdditionalTypeConfig[],
   definedTypes: Record<string, ObjectType>,
-  typeConfig: Record<string, TypeSwaggerConfig>,
+  typeConfig?: Record<string, TypeSwaggerConfig>,
 ): void => {
   additionalTypes.forEach(({ typeName, cloneFrom }) => {
     const origType = definedTypes[cloneFrom]
@@ -46,9 +46,13 @@ export const defineAdditionalTypes = (
       elemID: new ElemID(adapterName, typeName),
     })
     definedTypes[typeName] = additionalType
-    // the request should be defined directly in the type configuration
-    if (typeConfig[typeName]?.request?.url === undefined) {
-      log.error('Missing request url for cloned type %s', typeName)
+
+    // only enforced for old infra
+    if (typeConfig !== undefined) {
+      // the request should be defined directly in the type configuration
+      if (typeConfig[typeName]?.request?.url === undefined) {
+        log.error('Missing request url for cloned type %s', typeName)
+      }
     }
   })
 }

@@ -35,8 +35,8 @@ describe('analytics parsed types tests', () => {
       })
       expect(multiUsedElemIds.size).toEqual(0)
     })
-    it('should include All used objectTypes in the innerTypes', async () => {
-      const usedTypes = await getSubtypes([dataset])
+    it('should include All used objectTypes in the innerTypes', () => {
+      const usedTypes = getSubtypes([dataset])
       const innerTypesNames = new Set<string>(
         Object.values(innerTypes).map(innerType => innerType.elemID.getFullName()),
       )
@@ -68,7 +68,7 @@ describe('analytics parsed types tests', () => {
       expect(multiUsedElemIds.size).toEqual(0)
     })
     it('should include All used objectTypes in the innerTypes', async () => {
-      const usedTypes = new Set<string>((await getSubtypes([workbook])).map(elem => elem.elemID.getFullName()))
+      const usedTypes = new Set<string>(getSubtypes([workbook]).map(elem => elem.elemID.getFullName()))
       const innerTypesNames = new Set<string>(
         Object.values(innerTypes).map(innerType => innerType.elemID.getFullName()),
       )

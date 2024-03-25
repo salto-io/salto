@@ -39,11 +39,10 @@ import {
   updateElementsWithAlternativeAccount,
   elementSource as workspaceElementSource,
 } from '@salto-io/workspace'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
 
 const { awu } = collections.asynciterable
-const { mapValuesAsync } = promises.object
 const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
@@ -89,19 +88,17 @@ const getAdapterConfigFromType = async (adapterName: string): Promise<InstanceEl
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const getAdaptersConfigTypesMap = async (): Promise<Record<string, ObjectType[]>> =>
+export const getAdaptersConfigTypesMap = (): Record<string, ObjectType[]> =>
   Object.fromEntries(
     Object.entries(
-      await mapValuesAsync(adapterCreators, async adapterCreator =>
-        adapterCreator.configType
-          ? [adapterCreator.configType, ...(await getSubtypes([adapterCreator.configType], true))]
-          : [],
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
       ),
     ).filter(entry => entry[1].length > 0),
   )
 
 export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
-  Object.values(await getAdaptersConfigTypesMap()).flat()
+  Object.values(getAdaptersConfigTypesMap()).flat()
 
 export const getDefaultAdapterConfig = async (
   adapterName: string,

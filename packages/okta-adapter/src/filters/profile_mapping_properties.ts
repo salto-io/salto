@@ -35,7 +35,7 @@ const getProfileMapping = async (mappingId: string, client: OktaClient): Promise
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'profileMappingPropertiesFilter',
   onFetch: async (elements: Element[]) => {
-    if (config[FETCH_CONFIG].includeProfileMappingProperties === false) {
+    if (!config[FETCH_CONFIG].includeProfileMappingProperties === true) {
       log.debug('Fetch of profile mapping properties is disabled')
       return
     }

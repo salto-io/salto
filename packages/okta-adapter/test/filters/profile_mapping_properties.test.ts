@@ -65,15 +65,15 @@ describe('profileMappingPropertiesFilter', () => {
   })
 
   it('should do nothing when includeProfileMappingProperties config flag is disabled', async () => {
-    const config = _.cloneDeep(DEFAULT_CONFIG)
-    config[FETCH_CONFIG].includeProfileMappingProperties = false
     const elements = [mappingType, mappingInstanceA, mappingInstanceB]
-    filter = profileMappingPropertiesFilter(getFilterParams({ client, config })) as typeof filter
+    filter = profileMappingPropertiesFilter(getFilterParams({ client, config: DEFAULT_CONFIG })) as typeof filter
     await filter.onFetch(elements)
     expect(elements.filter(isInstanceElement).every(instance => !instance.value.properties)).toEqual(true)
     expect(mockGet).toHaveBeenCalledTimes(0)
   })
   it('should add profile mapping properties for ProfileMapping instances when flag is enabled', async () => {
+    const config = _.cloneDeep(DEFAULT_CONFIG)
+    config[FETCH_CONFIG].includeProfileMappingProperties = true
     const elements = [mappingType, mappingInstanceA, mappingInstanceB]
     mockGet.mockImplementation(params => {
       if (params.url === '/api/v1/mappings/abc123') {
@@ -84,7 +84,7 @@ describe('profileMappingPropertiesFilter', () => {
       }
       throw new Error('Err')
     })
-    filter = profileMappingPropertiesFilter(getFilterParams({ client, config: DEFAULT_CONFIG })) as typeof filter
+    filter = profileMappingPropertiesFilter(getFilterParams({ client, config })) as typeof filter
     await filter.onFetch(elements)
     expect(mockGet).toHaveBeenCalledTimes(2)
     const mappingInstances = elements.filter(isInstanceElement)

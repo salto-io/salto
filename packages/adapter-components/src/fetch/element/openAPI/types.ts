@@ -28,7 +28,7 @@ import { TYPES_PATH, SUBTYPES_PATH } from '../../../elements/constants'
 const log = logger(module)
 
 /**
- * openAPI types are created by under the subtypes folder, modify path of top level instances to be under the types folder
+ * openAPI types are created under the subtypes folder, modify path of top level instances to be under the types folder
  */
 const adjustTypesPath = <Options extends FetchApiDefinitionsOptions>(
   adapterName: string,

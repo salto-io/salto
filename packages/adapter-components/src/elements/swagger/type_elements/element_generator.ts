@@ -78,7 +78,7 @@ export const typeAdder = ({
   definedTypes,
   parsedConfigs,
   refs,
-  naclCaseFields = false,
+  naclCaseFields = true,
 }: {
   adapterName: string
   toUpdatedResourceName: (origResourceName: string) => string
@@ -311,6 +311,7 @@ export const generateTypes = async (
     definedTypes,
     parsedConfigs,
     refs,
+    naclCaseFields: false,
   })
 
   Object.entries(schemas).forEach(([endpointName, schema]) => addType(schema, toTypeName(endpointName), endpointName))

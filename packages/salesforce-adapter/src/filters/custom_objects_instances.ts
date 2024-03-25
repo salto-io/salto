@@ -528,6 +528,9 @@ const getReferencedRecords = async (
   return allReferenceRecords
 }
 
+type SalesforceRecordsByType = Record<string, SalesforceRecord>
+type SalesforceRecordsByTypeAndId = Record<string, SalesforceRecordsByType>
+
 export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
@@ -536,6 +539,44 @@ export const getAllInstances = async (
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
 }> => {
+  const getElementSourceRecordsByTypeAndId = async (
+    elementsSource: ReadOnlyElementsSource,
+    types: Set<string>,
+    ignoredRecordIds: Set<string>,
+  ): Promise<SalesforceRecordsByTypeAndId> => {
+    const instancesToRecords = async (
+      instances: ReadonlyArray<InstanceElement>,
+    ): Promise<SalesforceRecord[]> =>
+      awu(instances)
+        .map((instance) =>
+          toRecord(instance, FIELD_ANNOTATIONS.QUERYABLE, true),
+        )
+        .toArray()
+
+    const elementSourceRecordsByType: Record<string, Values> = {}
+    const elementSourceInstancesByType = await awu(
+      await elementsSource.getAll(),
+    )
+      .filter(isInstanceOfCustomObjectSync)
+      .filter((instance) =>
+        types.has(apiNameSync(instance.getTypeSync()) ?? ''),
+      )
+      .filter(
+        (instance) =>
+          !ignoredRecordIds.has(instance.value[CUSTOM_OBJECT_ID_FIELD]),
+      )
+      .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+
+    await awu(Object.entries(elementSourceInstancesByType)).forEach(
+      async ([type, instances]) => {
+        elementSourceRecordsByType[type] = await instancesToRecords(instances)
+      },
+    )
+    return _.mapValues(elementSourceRecordsByType, (records) =>
+      _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
+    )
+  }
+
   const baseTypesSettings = _.pickBy(
     customObjectFetchSetting,
     (setting) => setting.isBase,
@@ -546,45 +587,23 @@ export const getAllInstances = async (
     (setting) => getRecords({ client, customObjectFetchSettings: setting }),
   )
 
-  const elementSourceRecordsByType: Record<string, Values> = {}
+  let elementSourceRecordsByTypeAndId: SalesforceRecordsByTypeAndId = {}
+
   if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
     const fetchedRecordIds = new Set(
       Object.values(fetchedBaseRecordsByType)
         .flat()
         .map((record) => record[CUSTOM_OBJECT_ID_FIELD]),
     )
-    const elementsSource = buildElementsSourceForFetch([], config)
-    const baseTypes = Object.keys(baseTypesSettings)
-    const elementSourceInstancesByType = await awu(
-      await elementsSource.getAll(),
-    )
-      .filter(isInstanceOfCustomObjectSync)
-      .filter((instance) =>
-        baseTypes.includes(apiNameSync(instance.getTypeSync()) ?? ''),
-      )
-      .filter(
-        (instance) =>
-          !fetchedRecordIds.has(instance.value[CUSTOM_OBJECT_ID_FIELD]),
-      )
-      .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
-    await awu(Object.entries(elementSourceInstancesByType)).forEach(
-      async ([type, instances]) => {
-        elementSourceRecordsByType[type] = await awu(instances)
-          .map((instance) =>
-            toRecord(instance, FIELD_ANNOTATIONS.QUERYABLE, true),
-          )
-          .toArray()
-      },
+    elementSourceRecordsByTypeAndId = await getElementSourceRecordsByTypeAndId(
+      buildElementsSourceForFetch([], config),
+      new Set(Object.keys(baseTypesSettings)),
+      fetchedRecordIds,
     )
   }
 
   const fetchedBaseRecordByTypeAndId = _.mapValues(
     fetchedBaseRecordsByType,
-    (records) => _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
-  )
-
-  const elementSourceRecordsByTypeAndId = _.mapValues(
-    elementSourceRecordsByType,
     (records) => _.keyBy(records, (record) => record[CUSTOM_OBJECT_ID_FIELD]),
   )
 

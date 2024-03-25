@@ -113,19 +113,16 @@ const createWarnings = async (
     missingRefsFromOriginType: MissingRef[],
   ): Promise<SaltoError> => {
     const typesOfMissingRefsTargets: string[] = _(missingRefsFromOriginType)
-      .map(
+      .flatMap(
         (missingRef: MissingRef): (string | ReferenceExpression)[] =>
           missingRef.origin.field?.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
       )
       .filter(isDefined)
-      .flatten()
-      .map((referenceTo: string | ReferenceExpression): string => {
-        if (typeof referenceTo === 'string') {
-          return referenceTo
-        }
-
-        return referenceTo.elemID.getFullName()
-      })
+      .map((referenceTo: string | ReferenceExpression): string =>
+        _.isString(referenceTo)
+          ? referenceTo
+          : referenceTo.elemID.getFullName(),
+      )
       .sortBy()
       .sortedUniq()
       .value()

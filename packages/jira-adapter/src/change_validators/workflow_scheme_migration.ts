@@ -40,6 +40,7 @@ import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 import { doesProjectHaveIssues } from './projects/project_deletion'
+import { isWorkflowV2Instance } from '../filters/workflowV2/types'
 
 const { addUrlToInstance, configDefToInstanceFetchApiDefinitionsForServiceUrl } = filters
 const { awu } = collections.asynciterable
@@ -177,8 +178,12 @@ const areStatusesEquals = (status1: ReferenceExpression, status2: ReferenceExpre
   status1.elemID.isEqual(status2.elemID)
 
 const getMissingStatuses = (before: InstanceElement, after: InstanceElement): ReferenceExpression[] => {
-  const beforeStatuses = (before.value.statuses ?? []).map((status: { id: ReferenceExpression }) => status.id)
-  const afterStatuses = (after.value.statuses ?? []).map((status: { id: ReferenceExpression }) => status.id)
+  const beforeStatuses = isWorkflowV2Instance(before)
+    ? before.value.statuses.map(status => status.statusReference)
+    : (before.value.statuses ?? []).map((status: { id: ReferenceExpression }) => status.id)
+  const afterStatuses = isWorkflowV2Instance(after)
+    ? after.value.statuses.map(status => status.statusReference)
+    : (after.value.statuses ?? []).map((status: { id: ReferenceExpression }) => status.id)
   return _.differenceWith(beforeStatuses, afterStatuses, areStatusesEquals)
 }
 

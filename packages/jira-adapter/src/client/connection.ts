@@ -91,7 +91,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (ret
     timeout,
   })
 
-export const createLogoTwoConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
+export const createLogoConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async ({ token }) => ({

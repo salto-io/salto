@@ -59,7 +59,10 @@ const getIconContent = async (link: string, client: JiraClient): Promise<Buffer>
     }
     return content
   } catch (e) {
-    throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e.message}`)
+    if (e instanceof clientUtils.HTTPError) {
+      throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e.message}`)
+    }
+    throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e}`)
   }
 }
 // replace spaces and [] to underscore

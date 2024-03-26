@@ -18,6 +18,7 @@ import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
 import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -184,6 +185,7 @@ export const buildMetadataQuery = ({
         })
       return _.keyBy(folderPaths, (path) => _.last(path.split('/')) ?? path)
     },
+    logData: () => ({}),
   }
 }
 
@@ -240,6 +242,11 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
       : true
   }
 
+  const missingOrInvalidChangedAtInstances: MetadataInstance[] = []
+  const updatedInstances: (MetadataInstance & {
+    changedAtFromSingleton: string | undefined
+  })[] = []
+
   const isIncludedInFetchWithChangesDetection = (
     instance: MetadataInstance,
   ): boolean => {
@@ -248,15 +255,12 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
       instance.name,
     ])
     if (
-      !isValidDateString(dateFromSingleton) ||
-      !isValidDateString(instance.changedAt)
-    ) {
-      log.trace(
-        'The instance %s of type %s will be fetched due to missing or invalid changedAt: %o',
-        instance.name,
-        instance.metadataType,
-        { dateFromSingleton, dateFromService: instance.changedAt },
+      !(
+        isValidDateString(dateFromSingleton) &&
+        isValidDateString(instance.changedAt)
       )
+    ) {
+      missingOrInvalidChangedAtInstances.push(instance)
       return true
     }
     if (
@@ -268,6 +272,10 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         instance.name,
         instance.metadataType,
       )
+      updatedInstances.push({
+        ...instance,
+        changedAtFromSingleton: dateFromSingleton,
+      })
       return true
     }
     return false
@@ -291,6 +299,18 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         )
       }
       return isIncludedInFetchWithChangesDetection(instance)
+    },
+    logData: () => {
+      ;(updatedInstances.length > 100 ? log.trace : log.debug)(
+        'The following instances were fetched in fetch with changes detection since they were updated: %s',
+        safeJsonStringify(updatedInstances),
+      )
+      ;(missingOrInvalidChangedAtInstances.length > 100
+        ? log.trace
+        : log.debug)(
+        'The following instances were fetched in fetch with changes detection due to invalid or missing changedAt: %s',
+        safeJsonStringify(missingOrInvalidChangedAtInstances),
+      )
     },
   }
 }

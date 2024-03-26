@@ -20,8 +20,6 @@ import {
   InstanceElement,
   Values,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { ArtificialTypes, DATA_INSTANCES_CHANGED_AT_MAGIC } from '../constants'
@@ -34,8 +32,6 @@ import {
 } from './utils'
 import { MetadataInstanceElement } from '../transformers/transformer'
 import { LastChangeDateOfTypesWithNestedInstances } from '../types'
-
-const log = logger(module)
 
 const createCurrentChangedAtSingletonValues = (
   lastChangeDateOfTypesWithNestedInstances:
@@ -116,10 +112,6 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
           mostRecentChangedAt,
         )
       })
-    log.trace(
-      'ChangedAtSingleton values: %s',
-      safeJsonStringify(changedAtInstance.value),
-    )
   },
 })
 

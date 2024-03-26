@@ -650,13 +650,12 @@ export default class SalesforceAdapter implements AdapterOperations {
             isCustomObjectSync(element) || isInstanceElement(element),
         )
         .map((element) => element.elemID.getFullName())
-      const logTraceOrDebug =
-        relevantFetchedElementIds.length > 100 ? log.trace : log.debug
-      logTraceOrDebug(
+      ;(relevantFetchedElementIds.length > 100 ? log.trace : log.debug)(
         'Fetched the following elements in quick fetch: %s',
         safeJsonStringify(relevantFetchedElementIds),
       )
     }
+    metadataQuery.logData()
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],

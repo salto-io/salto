@@ -811,6 +811,7 @@ describe('buildMetadataQuery', () => {
         isPartialFetch: jest.fn(),
         isTargetedFetch: jest.fn(),
         getFolderPathsByName: jest.fn(),
+        logData: jest.fn(),
       }
       filePropsMetadataQuery = buildFilePropsMetadataQuery(metadataQuery)
     })

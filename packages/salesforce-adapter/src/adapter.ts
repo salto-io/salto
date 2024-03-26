@@ -31,6 +31,7 @@ import {
   PartialFetchData,
   Element,
   ProgressReporter,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -640,6 +641,21 @@ export default class SalesforceAdapter implements AdapterOperations {
         )
       }
       return { isPartial: true, deletedElements: deletedElemIds }
+    }
+
+    if (withChangesDetection) {
+      const relevantFetchedElementIds = elements
+        .filter(
+          (element) =>
+            isCustomObjectSync(element) || isInstanceElement(element),
+        )
+        .map((element) => element.elemID.getFullName())
+      const logTraceOrDebug =
+        relevantFetchedElementIds.length > 100 ? log.trace : log.debug
+      logTraceOrDebug(
+        'Fetched the following elements in quick fetch: %s',
+        safeJsonStringify(relevantFetchedElementIds),
+      )
     }
     return {
       elements,

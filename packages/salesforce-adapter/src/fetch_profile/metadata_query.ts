@@ -17,6 +17,7 @@ import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
+import { logger } from '@salto-io/logging'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -50,6 +51,7 @@ import {
 } from '../last_change_date_of_types_with_nested_instances'
 
 const { isDefined } = values
+const log = logger(module)
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
@@ -245,11 +247,30 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
       instance.metadataType,
       instance.name,
     ])
-    return isValidDateString(dateFromSingleton) &&
-      isValidDateString(instance.changedAt)
-      ? new Date(dateFromSingleton).getTime() <
-          new Date(instance.changedAt).getTime()
-      : true
+    if (
+      !isValidDateString(dateFromSingleton) ||
+      !isValidDateString(instance.changedAt)
+    ) {
+      log.trace(
+        'The instance %s of type %s will be fetched due to missing or invalid changedAt: %o',
+        instance.name,
+        instance.metadataType,
+        { dateFromSingleton, dateFromService: instance.changedAt },
+      )
+      return true
+    }
+    if (
+      new Date(dateFromSingleton).getTime() <
+      new Date(instance.changedAt).getTime()
+    ) {
+      log.trace(
+        'The instance %s of type %s will be fetched since it was updated',
+        instance.name,
+        instance.metadataType,
+      )
+      return true
+    }
+    return false
   }
   return {
     ...metadataQuery,

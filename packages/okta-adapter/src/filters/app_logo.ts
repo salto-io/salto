@@ -25,9 +25,8 @@ import {
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuardForInstance, naclCase } from '@salto-io/adapter-utils'
-import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
-import { OktaConfig } from '../config'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import { createFileType, deployLogo, getLogo } from '../logo'
@@ -90,21 +89,16 @@ const getAppLogo = async ({
   client,
   app,
   appLogoType,
-  config,
 }: {
   client: OktaClient
   app: InstanceElement
   appLogoType: ObjectType
-  config: OktaConfig
 }): Promise<InstanceElement | Error> => {
   const appLogo = app.value[LINKS_FIELD].logo[0]
   const logoLink = appLogo.href
 
-  const idFields = configUtils.getTypeTransformationConfig(
-    APPLICATION_TYPE_NAME,
-    config.apiDefinitions.types,
-    config.apiDefinitions.typeDefaults,
-  ).idFields ?? [app.value.label]
+  // TODO - use new definitions to use application IDPartsDefinition
+  const idFields = [app.value.label]
 
   const name = naclCase(getInstanceName(app.value, idFields, APP_LOGO_TYPE_NAME))
   const contentType = getLogoFileType(appLogo.type)
@@ -125,7 +119,7 @@ const getAppLogo = async ({
 /**
  * Fetches and deploys application's logos as static files.
  */
-const appLogoFilter: FilterCreator = ({ client, config }) => ({
+const appLogoFilter: FilterCreator = ({ client }) => ({
   name: 'appLogoFilter',
   onFetch: async elements => {
     const appsWithLogo = elements
@@ -135,9 +129,7 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
     const appLogoType = createFileType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
 
-    const allInstances = await Promise.all(
-      appsWithLogo.map(async app => getAppLogo({ client, app, appLogoType, config })),
-    )
+    const allInstances = await Promise.all(appsWithLogo.map(async app => getAppLogo({ client, app, appLogoType })))
 
     const [errors, appLogoInstances] = _.partition(allInstances, _.isError)
     appLogoInstances.forEach(logo => elements.push(logo))

@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { getNameMapping, createServiceIDs } from './id_utils'
-export {
-  getContainerForType,
-  markServiceIdField,
-  toNestedTypeName,
-  toPrimitiveType,
-  overrideFieldTypes,
-} from './type_utils'
-export { generateInstancesWithInitialTypes } from './instance_element'
-export { generateType } from './type_element'
-// eslint-disable-next-line import/no-cycle
-export { generateOpenApiTypes } from './openAPI/types'
+import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { ClientOptions, PaginationOptions } from '../types'
+
+const { cursorPagination, defaultPathChecker, cursorHeaderPagination } = fetchUtils.request.pagination
+
+export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
+  cursorHeader: {
+    funcCreator: () => cursorHeaderPagination({ pathChecker: defaultPathChecker }),
+  },
+  cursor: {
+    funcCreator: () => cursorPagination({ paginationField: 'nextMappingsPageUrl', pathChecker: defaultPathChecker }),
+  },
+}

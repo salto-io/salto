@@ -2940,6 +2940,7 @@ export type ChangeValidatorName =
   | 'inactiveTicketFormInView'
   | 'immutableTypeAndKeyForUserFields'
   | 'localeModification'
+  | 'appInstallation'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -3017,6 +3018,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
     immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
     localeModification: { refType: BuiltinTypes.BOOLEAN },
+    appInstallation: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

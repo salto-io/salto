@@ -85,6 +85,7 @@ import {
   inactiveTicketFormInViewValidator,
   immutableTypeAndKeyForUserFieldsValidator,
   localeModificationValidator,
+  appInstallationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -185,6 +186,7 @@ export default ({
     inactiveTicketFormInView: inactiveTicketFormInViewValidator,
     immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
     localeModification: localeModificationValidator,
+    appInstallation: appInstallationValidator(client),
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

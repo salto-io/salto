@@ -26,7 +26,7 @@ import {
   isInstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { createSchemeGuard, inspectValue } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -41,20 +41,58 @@ const log = logger(module)
 const MAX_RETRIES = 60
 const INTERVAL_TIME = 2000
 
+const STR_PLACEHOLDER = '12345'
+// Secure fields can have different types
+const APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE: Record<string, unknown> = {
+  text: STR_PLACEHOLDER,
+  checkbox: true,
+  url: STR_PLACEHOLDER,
+  oauth: STR_PLACEHOLDER,
+  password: STR_PLACEHOLDER,
+  hidden: STR_PLACEHOLDER,
+  multiline: STR_PLACEHOLDER,
+  number: 123,
+}
+
 type JobStatus = {
   status: string
   message?: string
 }
 
+type ValidApp = {
+  installation: { settings: Array<{ secure: boolean; required: boolean; key: string; type: string }> }
+}
+
 const EXPECTED_APP_SCHEMA = Joi.object({
+  installation: Joi.object({
+    settings: Joi.array()
+      .items(
+        Joi.object({
+          secure: Joi.bool(),
+          required: Joi.bool(),
+          key: Joi.string().required(),
+          type: Joi.string().required(),
+        }).unknown(true),
+      )
+      .required(),
+  })
+    .unknown(true)
+    .optional(),
+})
+  .unknown(true)
+  .required()
+
+const EXPECTED_APP_STATUS_SCHEMA = Joi.object({
   status: Joi.string().required(),
   message: Joi.string().optional().allow(''),
 })
   .unknown(true)
   .required()
 
+export const isValidApp = createSchemeGuard<ValidApp>(EXPECTED_APP_SCHEMA, 'Received an invalid value for app response')
+
 const isJobStatus = (value: unknown): value is JobStatus => {
-  const { error } = EXPECTED_APP_SCHEMA.validate(value)
+  const { error } = EXPECTED_APP_STATUS_SCHEMA.validate(value)
   if (error !== undefined) {
     log.error(`Received an invalid response for the job status: ${error.message}, ${inspectValue(value)}`)
     return false
@@ -130,6 +168,37 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         isAdditionOrModificationChange(change) && getChangeData(change).elemID.typeName === APP_INSTALLATION_TYPE_NAME,
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
+      if (isAdditionChange(change)) {
+        /* If we are creating an app installation, we need to make sure that we include all required fields.
+         * If those fields are "secure", they wouldn't show up in nacls, and so if we duplicate another installation
+         * the deployment would fail.
+         */
+        const changeData = getChangeData(change)
+        try {
+          const res = (
+            await client.get({
+              url: `/api/support/apps/${changeData.value.app_id}/installations/new`,
+              responseType: 'json',
+            })
+          ).data
+          if (isValidApp(res) && res.installation.settings !== undefined) {
+            const fieldsToAdd = res.installation.settings.filter(
+              field => field.secure === true && field.required === true,
+            )
+            fieldsToAdd.forEach(field => {
+              if (!(field.key in changeData.value.settings)) {
+                const placeholder =
+                  field.key in APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE
+                    ? APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE[field.key]
+                    : STR_PLACEHOLDER
+                changeData.value.settings[field.key] = placeholder
+              }
+            })
+          }
+        } catch (e) {
+          log.warn(`Failed to fetch app installation details. error: ${e}`)
+        }
+      }
       const response = await deployChange(change, client, config.apiDefinitions, [
         'app',
         'settings.title',

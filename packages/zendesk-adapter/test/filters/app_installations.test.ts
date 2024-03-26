@@ -105,7 +105,7 @@ describe('app installation filter', () => {
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
       })
-      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledTimes(2)
       expect(mockGet).toHaveBeenCalledWith({
         url: '/api/v2/apps/job_statuses/123',
       })
@@ -176,7 +176,7 @@ describe('app installation filter', () => {
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
       })
-      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledTimes(2)
       expect(mockGet).toHaveBeenCalledWith({
         url: '/api/v2/apps/job_statuses/123',
       })
@@ -198,7 +198,7 @@ describe('app installation filter', () => {
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
       })
-      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledTimes(2)
       expect(mockGet).toHaveBeenCalledWith({
         url: '/api/v2/apps/job_statuses/123',
       })
@@ -220,7 +220,7 @@ describe('app installation filter', () => {
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
       })
-      expect(mockGet).toHaveBeenCalledTimes(0)
+      expect(mockGet).toHaveBeenCalledTimes(1)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

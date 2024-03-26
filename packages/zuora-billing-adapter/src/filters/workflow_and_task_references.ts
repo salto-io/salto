@@ -46,7 +46,7 @@ const log = logger(module)
 const { flatMapAsync, toAsyncIterable } = collections.asynciterable
 
 const WORKFLOW_PARAMS_REF = 'Workflow'
-const WORKFLOW_PARAMS_PATH = ['additionalProperties', 'parameters', 'fields']
+const WORKFLOW_PARAMS_PATH = ['parameters', 'fields']
 const TASK_PARAM_FIELDS_PATH = ['parameters', 'fields']
 const TASK_REFS_REGEX = /(\w+\.)*(?<typeName>\w+)\.(?<fieldName>\w+)/g
 

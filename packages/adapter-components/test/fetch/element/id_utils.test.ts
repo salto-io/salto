@@ -151,6 +151,17 @@ describe('id utils', () => {
         'parent_b__A_A@fuus',
       )
     })
+    it('should avoid extra delimiter when extending parent and no parts', () => {
+      const func = createElemIDFunc({
+        elemIDDef: {
+          extendsParent: true,
+        },
+        typeID,
+        customNameMappingFunctions: {},
+      })
+      const parent = new InstanceElement('parent:b', new ObjectType({ elemID: typeID }))
+      expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b@f')
+    })
     it('should set name to _config for singleton', () => {
       const func = createElemIDFunc({
         elemIDDef: {

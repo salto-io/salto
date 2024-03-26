@@ -280,6 +280,22 @@ describe('issue layouts validator', () => {
     )
     expect(errors).toHaveLength(1)
   })
+  it('should return error if the issue layout linked linked to issueType from the issueTypeScreenScheme that is not linked to the project', async () => {
+    issueTypeScreenSchemeInstance2.value.issueTypeMappings[1].issueTypeId = new ReferenceExpression(
+      issueTypeInstance2.elemID,
+      issueTypeInstance2,
+    )
+    projectInstance.value.issueTypeScreenScheme = new ReferenceExpression(
+      issueTypeScreenSchemeInstance2.elemID,
+      issueTypeScreenSchemeInstance2,
+    )
+
+    const errors = await validator(
+      [toChange({ after: issueLayoutInstance })],
+      buildElementsSourceFromElements(elements),
+    )
+    expect(errors).toHaveLength(1)
+  })
   it('Passes if the issue layout links to a default issueTypeScreenScheme for unaddressed projects issue types', async () => {
     projectInstance.value.issueTypeScreenScheme = new ReferenceExpression(
       issueTypeScreenSchemeInstance2.elemID,

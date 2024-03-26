@@ -135,6 +135,21 @@ const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
+const autoResponseRulesResolver: UrlResolver = async (element, baseUrl) => {
+  const apiName = await safeApiName(element)
+  if (apiName === undefined) {
+    return undefined
+  }
+
+  if (
+    isInstanceOfTypeSync('AutoResponseRules')(element) &&
+    ['Lead', 'Case'].includes(apiName)
+  ) {
+    return new URL(`${baseUrl}lightning/setup/${apiName}Responses/home`)
+  }
+  return undefined
+}
+
 const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (
@@ -282,6 +297,7 @@ export const resolvers: UrlResolver[] = [
   generalConstantsResolver,
   settingsConstantsResolver,
   assignmentRulesResolver,
+  autoResponseRulesResolver,
   metadataTypeResolver,
   objectResolver,
   fieldResolver,

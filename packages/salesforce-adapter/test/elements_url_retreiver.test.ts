@@ -145,6 +145,24 @@ describe('lightningElementsUrlRetriever', () => {
         )
       })
 
+      it('AutoResponseRulesResolver', async () => {
+        const element = new InstanceElement(
+          'Case',
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'AutoResponseRules'),
+            annotations: { metadataType: 'AutoResponseRules' },
+          }),
+          { fullName: 'Case' },
+        )
+        await expect(
+          elementUrlRetriever?.retrieveUrl(element),
+        ).resolves.toEqual(
+          new URL(
+            'https://salto5-dev-ed.lightning.force.com/lightning/setup/CaseResponses/home',
+          ),
+        )
+      })
+
       it('standard object', async () => {
         await expect(
           elementUrlRetriever?.retrieveUrl(standardObject),

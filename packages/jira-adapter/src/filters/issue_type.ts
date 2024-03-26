@@ -47,6 +47,10 @@ const deployIcon = async (
   client: JiraClient,
 ): Promise<void> => {
   const instance = getChangeData(change)
+  if (instance.value.avatar === undefined) {
+    // We still want to deploy the issue type even if it doesn't have an icon
+   return
+  }
   try {
     const headers = { ...PRIVATE_API_HEADERS, 'Content-Type': 'image/png' }
     const url = `/rest/api/3/universal_avatar/type/issuetype/owner/${instance.value.id}`

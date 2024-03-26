@@ -71,6 +71,10 @@ describe('deployActions', () => {
       beforeEach(async () => {
         const instance = new InstanceElement('Instance1', objectType)
         const deployPlan: Plan = await createDeployPlanFromElements([objectType, instance])
+        const accountToServiceNameMap = {
+          adapter: 'adapter',
+        }
+
         const mockAdapterOperations: AdapterOperations = {
           fetch: jest.fn().mockResolvedValue({}),
           deploy: jest.fn().mockImplementation(async deployParams => ({
@@ -93,6 +97,7 @@ describe('deployActions', () => {
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           async () => {},
           false,
+          accountToServiceNameMap,
         )
       })
       it('Should produce the correct errors', () => {
@@ -107,6 +112,9 @@ describe('deployActions', () => {
       beforeEach(async () => {
         const instance1 = new InstanceElement('Instance1', objectType)
         const instance2 = new InstanceElement('Instance2', objectType)
+        const accountToServiceNameMap = {
+          adapter: 'adapter',
+        }
         const deployPlan: Plan = await createDeployPlanFromElements([objectType, instance1, instance2])
         const mockAdapterOperations: AdapterOperations = {
           fetch: jest.fn().mockResolvedValue({}),
@@ -138,6 +146,7 @@ describe('deployActions', () => {
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           async () => {},
           false,
+          accountToServiceNameMap,
         )
       })
       it('Should produce the correct error', () => {

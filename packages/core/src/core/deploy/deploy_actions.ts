@@ -83,6 +83,7 @@ const deployAction = async (
   adapterByAccountName: Record<string, AdapterOperations>,
   checkOnly: boolean,
   progressReporter: ProgressReporter,
+  accountToServiceNameMap: Record<string, string>,
 ): Promise<AdapterDeployResult> => {
   const changes = [...planItem.changes()]
   const accountName = planItem.account
@@ -90,7 +91,7 @@ const deployAction = async (
   if (!adapter) {
     throw new Error(`Missing adapter for ${accountName}`)
   }
-  const opts = { changeGroup: { groupID: planItem.groupKey, changes }, progressReporter }
+  const opts = { changeGroup: { groupID: planItem.groupKey, changes }, progressReporter, accountToServiceNameMap }
   return deployOrValidate({ adapter, adapterName: accountName, opts, checkOnly })
 }
 
@@ -134,6 +135,7 @@ export const deployActions = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
   checkOnly: boolean,
+  accountToServiceNameMap: Record<string, string>,
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: GroupProperties[] = []
@@ -150,7 +152,7 @@ export const deployActions = async (
         const progressReporter = {
           reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
         }
-        const result = await deployAction(item, adapters, checkOnly, progressReporter)
+        const result = await deployAction(item, adapters, checkOnly, progressReporter, accountToServiceNameMap)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         makeArray(result.extraProperties?.groups).forEach(group =>
           groups.push({

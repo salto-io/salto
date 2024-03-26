@@ -176,12 +176,13 @@ export const deploy = async (
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, accounts)
   const adapters = await getAdapters(
     accounts,
     await workspace.accountCredentials(accounts),
     workspace.accountConfig.bind(workspace),
     adaptersElementSource,
-    getAccountToServiceNameMap(workspace, accounts),
+    accountToServiceNameMap,
   )
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> =>
@@ -209,6 +210,7 @@ export const deploy = async (
     reportProgress,
     postDeployAction,
     checkOnly,
+    accountToServiceNameMap,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve

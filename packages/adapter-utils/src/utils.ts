@@ -1118,8 +1118,13 @@ export const getSubtypes = (types: ObjectType[], validateUniqueness = false): Ob
   const subtypes: Record<string, ObjectType> = {}
 
   const findSubtypes = (type: ObjectType): void => {
-    Object.values(type.fields).forEach(field => {
-      const fieldContainerOrType = field.getTypeSync()
+    const additionalPropertiesRefType =
+      type.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType?.getResolvedValueSync?.()
+    const fieldsTypes = Object.values(type.fields).map(field => field.getTypeSync())
+    const allSubtypes = isType(additionalPropertiesRefType)
+      ? [...fieldsTypes, additionalPropertiesRefType]
+      : fieldsTypes
+    allSubtypes.forEach(fieldContainerOrType => {
       const fieldType = isContainerType(fieldContainerOrType)
         ? fieldContainerOrType.getInnerTypeSync()
         : fieldContainerOrType

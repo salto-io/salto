@@ -71,7 +71,16 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     createPrioritySchemeValues(randomString, fetchedElements),
   )
 
-  return [[fieldConfiguration], [automation], [workflow], [kanbanBoard], [issueType], [scrumBoard], [filter], [priorityScheme]]
+  return [
+    [fieldConfiguration],
+    [automation],
+    [workflow],
+    [kanbanBoard],
+    [issueType],
+    [scrumBoard],
+    [filter],
+    [priorityScheme],
+  ]
 }
 
 export const modifyDataCenterInstances = (_fetchedElements: Element[]): ModificationChange<InstanceElement>[][] => []

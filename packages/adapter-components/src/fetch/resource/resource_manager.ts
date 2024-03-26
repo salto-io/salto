@@ -98,7 +98,7 @@ export const createResourceManager = <ClientOptions extends string>({
           typeFetcherCreator: createTypeFetcher, // used for recurseInto calls
         })
         if (!res.success) {
-          log.warn('failed to fetch type %s:%s: %s', adapterName, typeName)
+          log.warn('failed to fetch type %s:%s:', adapterName, typeName)
           return
         }
         elementGenerator.pushEntries({

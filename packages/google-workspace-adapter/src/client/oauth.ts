@@ -22,7 +22,7 @@ import {
   OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import { Credentials, OAuth2Client } from 'google-auth-library'
+import { OAuth2Client } from 'google-auth-library'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../constants'
 
@@ -39,7 +39,8 @@ const REQUIRED_OAUTH_SCOPES = [
 export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
   // create an oAuth client to authorize the API call.  Secrets are kept in a `keys.json` file,
   // which should be downloaded from the Google Developers Console.
-  const { clientId, clientSecret, redirectUri } = userInput.value
+  const { clientId, clientSecret, port } = userInput.value
+  const redirectUri = `http://localhost:${port}`
   const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
 
   // Generate the url that will be used for the consent dialog.
@@ -57,30 +58,14 @@ export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestPara
 export type OauthRequestParameters = {
   clientId: string
   clientSecret: string
-  redirectUri: string
   port: number
 }
 
-export type OauthAccessTokenCredentials = Required<
-  Pick<Credentials, 'access_token' | 'refresh_token' | 'expiry_date'>
-> &
-  Omit<OauthRequestParameters, 'port'>
+export type OauthAccessTokenCredentials = Omit<OauthRequestParameters, 'port'> & { refreshToken: string }
 
 export const oauthAccessTokenCredentialsType = createMatchingObjectType<OauthAccessTokenCredentials>({
   elemID: new ElemID(ADAPTER_NAME),
   fields: {
-    access_token: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
-    },
-    refresh_token: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
-    },
-    expiry_date: {
-      refType: BuiltinTypes.NUMBER,
-      annotations: { _required: true },
-    },
     clientId: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
@@ -89,7 +74,7 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<OauthAcc
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
-    redirectUri: {
+    refreshToken: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
@@ -113,13 +98,6 @@ export const oauthRequestParametersType = createMatchingObjectType<OauthRequestP
         _required: true,
       },
     },
-    redirectUri: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        message: 'Redirect URI',
-        _required: true,
-      },
-    },
     port: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
@@ -134,12 +112,13 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
   input: Values,
   response: OauthAccessTokenResponse,
 ) => {
-  const { clientId, clientSecret, redirectUri } = input
+  const { clientId, clientSecret, port } = input
+  const redirectUri = `http://localhost:${port}`
   const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
   const { code } = response.fields
   const { tokens } = await oAuth2Client.getToken(code)
   return {
-    ...tokens,
+    refreshToken: tokens.refresh_token,
     clientId,
     clientSecret,
   }

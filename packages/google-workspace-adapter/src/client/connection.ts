@@ -16,6 +16,7 @@
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { OAuth2Client } from 'google-auth-library'
 import { Credentials } from '../auth'
 
 const log = logger(module)
@@ -38,10 +39,15 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
   clientUtils.axiosConnection({
     retryOptions,
     baseURLFunc: async () => '',
-    authParamsFunc: async ({ accessToken }: Credentials) => ({
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }),
+    authParamsFunc: async ({ clientId, clientSecret, refreshToken }: Credentials) => {
+      const oAuth2Client = new OAuth2Client(clientId, clientSecret)
+      oAuth2Client.setCredentials({ refresh_token: refreshToken })
+      const { token } = await oAuth2Client.getAccessToken()
+      return {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    },
     credValidateFunc: validateCredentials,
   })

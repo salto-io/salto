@@ -75,6 +75,7 @@ describe('issue layout filter', () => {
   let issueTypeScreenSchemeType: ObjectType
   let issueTypeScreenSchemeInstance1: InstanceElement
   let issueTypeScreenSchemeInstance2: InstanceElement
+  let issueTypeScreenSchemeInstance3: InstanceElement
   let issueTypeScreenSchemeInstance: InstanceElement
   let projectType: ObjectType
   let projectInstance: InstanceElement
@@ -281,6 +282,20 @@ describe('issue layout filter', () => {
           },
         ],
       })
+      issueTypeScreenSchemeInstance3 = new InstanceElement('issueTypeScreenScheme3', issueTypeScreenSchemeType, {
+        id: 3333,
+        issueTypeMappings: [
+          {
+            issueTypeId: '100',
+            screenSchemeId: 333,
+          },
+          {
+            issueTypeId: '200',
+            screenSchemeId: 222,
+          },
+        ],
+      })
+
 
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
@@ -309,6 +324,7 @@ describe('issue layout filter', () => {
         issueTypeScreenSchemeType,
         issueTypeScreenSchemeInstance1,
         issueTypeScreenSchemeInstance2,
+        issueTypeScreenSchemeInstance3,
         projectType,
         projectInstance,
       ]
@@ -429,6 +445,15 @@ describe('issue layout filter', () => {
         expect(Object.entries(res)).toHaveLength(1)
         expect(res['11111'][11]).toBeDefined()
         expect(res['11111'][12]).toBeUndefined()
+      })
+      it('do not return the screen of issueType that is in the issueTypeScreenScheme but not in the project issueTypeScheme', async () => {
+        projectInstance.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 3333 } }
+        projectInstance.value.issueTypeScheme = { issueTypeScheme: { id: '10' } }
+
+        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        expect(Object.entries(res)).toHaveLength(1)
+        expect(res['11111'][12]).toBeDefined()
+        expect(res['11111'][11]).toBeUndefined()
       })
     })
   })

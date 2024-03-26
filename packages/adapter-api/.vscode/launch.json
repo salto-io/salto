@@ -8,11 +8,35 @@
       "type": "node",
       "request": "launch",
       "name": "adapter-api Debug Jest Tests",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/../packages/core",
       "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
       "outFiles": [],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "salto fetch izib",
+      "program": "${workspaceFolder}/../../node_modules/.bin/salto",
+      "args": ["fetch", "-f"],
+      "env": {
+        "SALTO_LOG_FILE": "logsalto.log",
+        "SALTO_LOG_LEVEL": "debug"
+      },
+      "cwd": "/Users/israelbraverman/Desktop/quickstart"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "salto deploy izib",
+      "program": "${workspaceFolder}/../../node_modules/.bin/salto",
+      "args": ["deploy", "-f"],
+      "env": {
+        "SALTO_LOG_FILE": "logsalto.log",
+        "SALTO_LOG_LEVEL": "debug"
+      },
+      "cwd": "/Users/israelbraverman/Desktop/quickstart"
     }
   ]
 }

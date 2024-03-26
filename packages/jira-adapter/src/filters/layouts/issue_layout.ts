@@ -20,7 +20,6 @@ import {
   Change,
   Element,
   InstanceElement,
-  ReferenceExpression,
   getChangeData,
   isInstanceChange,
   isInstanceElement,
@@ -31,7 +30,13 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { ISSUE_LAYOUT_TYPE, ISSUE_TYPE_SCREEN_SCHEME_TYPE, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../constants'
+import {
+  ISSUE_LAYOUT_TYPE,
+  ISSUE_TYPE_SCHEMA_NAME,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
+  PROJECT_TYPE,
+  SCREEN_SCHEME_TYPE,
+} from '../../constants'
 import { FilterCreator } from '../../filter'
 import { createLayoutType, LayoutConfigItem } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
@@ -45,30 +50,60 @@ const { isDefined } = lowerDashValues
 
 type issueTypeMappingStruct = {
   issueTypeId: string
-  screenSchemeId: ReferenceExpression
+  screenSchemeId: string
 }
 
 type ResponsesRecord = Record<string, Record<string, Promise<graphQLResponseType>>>
 
+const viewOrDefaultScreen = (screenScheme: InstanceElement): string =>
+  screenScheme.value.screens.view ?? screenScheme.value.screens.default
+
+// Filters and deletes from the issueTypeMapping the issue layouts that are not in the issueTypeScheme of the project
+const intersectionOfIssueType = (
+  struct: issueTypeMappingStruct,
+  issueTypeSchemesToIssueTypeList: { [key: string]: string[] },
+  project: InstanceElement,
+): boolean =>
+  struct.issueTypeId === 'default'
+    ? struct.issueTypeId === 'default'
+    : issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].includes(struct.issueTypeId)
+
+// It only leaves the deductive issueTypeScreenScheme if there is an issueType found in the project's issueTypeScheme but not in the issueTypeMapping
+// If there is such a case, it means that the length of the issueTypeScheme is greater than the length of the issueTypeMapping (after the last filter)
+const isScreenOfViewOrDefaultIssueTypeScreenScheme = (
+  struct: issueTypeMappingStruct,
+  issueTypeScreenSchemesToiIssueTypeMappings: { [key: string]: string[] },
+  issueTypeSchemesToIssueTypeList: { [key: string]: string[] },
+  project: InstanceElement,
+): boolean =>
+  struct.issueTypeId !== 'default' ||
+  issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id].length <=
+    issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length
+
 const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string, number[]> => {
-  const screensSchemesToDefaultScreens = Object.fromEntries(
+  const screensSchemesToDefaultOrViewScreens = Object.fromEntries(
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SCREEN_SCHEME_TYPE)
-      .filter(screenScheme => screenScheme.value.screens?.default !== undefined)
-      .map(screenScheme => [screenScheme.value.id, screenScheme.value.screens.default]),
+      .filter(
+        screenScheme =>
+          screenScheme.value.screens?.default !== undefined || screenScheme.value.screens?.view !== undefined,
+      )
+      .map(screenScheme => [screenScheme.value.id, viewOrDefaultScreen(screenScheme)]),
   )
 
-  const issueTypeScreenSchemesToScreens = Object.fromEntries(
+  const issueTypeScreenSchemesToiIssueTypeMappings = Object.fromEntries(
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === ISSUE_TYPE_SCREEN_SCHEME_TYPE)
-      .map(issueTypeScreenScheme => [
-        issueTypeScreenScheme.value.id,
-        issueTypeScreenScheme.value.issueTypeMappings
-          ?.map((struct: issueTypeMappingStruct) => struct.screenSchemeId)
-          ?.map((screenSchemeId: number) => screensSchemesToDefaultScreens[screenSchemeId]),
-      ]),
+      .map(issueTypeScreenScheme => [issueTypeScreenScheme.value.id, issueTypeScreenScheme.value.issueTypeMappings]),
+  )
+
+  const issueTypeSchemesToIssueTypeList = Object.fromEntries(
+    elements
+      .filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
+      .map(issueTypeScheme => [issueTypeScheme.value.id, issueTypeScheme.value.issueTypeIds]),
   )
 
   return Object.fromEntries(
@@ -78,38 +113,25 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
       .filter(project => project.value.issueTypeScreenScheme?.issueTypeScreenScheme?.id !== undefined)
       .map(project => [
         project.value.id,
-        issueTypeScreenSchemesToScreens[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id],
+        [
+          ...new Set(
+            issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
+              .filter((struct: issueTypeMappingStruct) =>
+                intersectionOfIssueType(struct, issueTypeSchemesToIssueTypeList, project),
+              )
+              .filter((struct: issueTypeMappingStruct) =>
+                isScreenOfViewOrDefaultIssueTypeScreenScheme(
+                  struct,
+                  issueTypeScreenSchemesToiIssueTypeMappings,
+                  issueTypeSchemesToIssueTypeList,
+                  project,
+                ),
+              )
+              .map((struct: issueTypeMappingStruct) => screensSchemesToDefaultOrViewScreens[struct.screenSchemeId]),
+          ),
+        ],
       ]),
   )
-}
-
-const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
-  const projectToScreenId: Record<string, number[]> = Object.fromEntries(
-    await Promise.all(
-      elements
-        .filter(e => e.elemID.typeName === PROJECT_TYPE)
-        .filter(isInstanceElement)
-        .filter(project => isResolvedReferenceExpression(project.value.issueTypeScreenScheme))
-        .map(async project => {
-          const screenSchemes = (
-            project.value.issueTypeScreenScheme.value.value.issueTypeMappings.flatMap(
-              (struct: issueTypeMappingStruct) => struct.screenSchemeId.value,
-            ) as unknown[]
-          ).filter(isInstanceElement)
-
-          const screens = Array.from(
-            new Set(
-              screenSchemes
-                .map(screenScheme => screenScheme.value.screens.default)
-                .filter(isResolvedReferenceExpression)
-                .map(defaultScreen => defaultScreen.value.value.id),
-            ),
-          )
-          return [project.value.id, screens]
-        }),
-    ),
-  )
-  return projectToScreenId
 }
 
 const verifyProjectDeleted = async (projectId: string, client: JiraClient): Promise<boolean> => {
@@ -253,11 +275,6 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
       return
     }
     const projectIdToProject = await getProjectIdToProjectDict(elements)
-    const projectToScreenId = Object.fromEntries(
-      Object.entries(await getProjectToScreenMapping(elements)).filter(([key]) =>
-        Object.keys(projectIdToProject).includes(key),
-      ),
-    )
     const { subTypes, layoutType: issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
@@ -265,9 +282,9 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
 
     const issueLayouts = (
       await Promise.all(
-        Object.entries(projectToScreenId).flatMap(([projectId, screenIds]) =>
-          screenIds.map(async screenId => {
-            const response = await responses[projectId][screenId]
+        Object.entries(responses).flatMap(([projectId, projectScreens]) =>
+          Object.entries(projectScreens).map(async ([screenId, responsePromise]) => {
+            const response = await responsePromise
             const layoutInstance = await getLayout({
               extraDefinerId: screenId,
               response,

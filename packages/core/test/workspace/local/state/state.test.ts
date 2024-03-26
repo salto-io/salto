@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import path from 'path'
 import _ from 'lodash'
 import { Readable } from 'stream'
 import { createGzip } from 'zlib'
@@ -30,7 +31,7 @@ import {
   ProviderOptionsS3,
 } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
-import { mockFunction } from '@salto-io/test-utils'
+import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
 import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
@@ -380,11 +381,11 @@ describe('localState', () => {
       const clone = mockElement.clone()
       const newField = Object.values(mockElement.fields)[0]
       newField.name = 'new_field'
-      clone.fields.newfield = newField
+      clone.fields.newField = newField
       await state.set(clone)
 
       const fromState = (await state.get(mockElement.elemID)) as ObjectType
-      expect(fromState.fields.newfield).toBeDefined()
+      expect(fromState.fields.newField).toBeDefined()
     })
 
     it('should add to state', async () => {
@@ -465,13 +466,22 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     let overridingStateFilesSource: staticFiles.StateStaticFilesSource
     let instanceWithStaticFile: InstanceElement
+
+    const testDir = setupTmpDir()
+
     beforeEach(() => {
       instanceWithStaticFile = new InstanceElement('inst', mockElement, {
         content: new StaticFile({ filepath: 'path', content: Buffer.from('asd') }),
       })
       overridingStateFilesSource = mockStaticFilesSource([])
       contentProvider = mockContentProvider({})
-      state = localState('empty', '', inMemRemoteMapCreator(), contentProvider, overridingStateFilesSource)
+      state = localState(
+        path.join(testDir.name(), 'empty'),
+        '',
+        inMemRemoteMapCreator(),
+        contentProvider,
+        overridingStateFilesSource,
+      )
     })
     it('should use the overriding files source and not the one from the content provider', async () => {
       await state.set(instanceWithStaticFile)

@@ -21,7 +21,7 @@ describe('config', () => {
     describe('without deploy support', () => {
       it('should include extended_schema in fieldToOmit', () => {
         const config = getDefaultConfig(false)
-        expect(config[ENABLE_DEPLOY_SUPPORT_FLAG]).toBe(false)
+        expect(config[ENABLE_DEPLOY_SUPPORT_FLAG]).toBe(false) // TODO - add ENABLE_DEPLOY_WITH_REFERENCES_SUPPORT_FLAG test
         expect(config[API_DEFINITIONS_CONFIG].typeDefaults.transformation?.fieldsToOmit).toBeDefined()
         expect(config[API_DEFINITIONS_CONFIG].typeDefaults.transformation?.fieldsToOmit).toContainEqual({
           fieldName: 'extended_input_schema',

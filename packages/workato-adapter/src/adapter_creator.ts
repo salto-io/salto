@@ -26,7 +26,6 @@ import {
   FETCH_CONFIG,
   getDefaultConfig,
   WorkatoFetchConfig,
-  ENABLE_DEPLOY_SUPPORT_FLAG,
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
@@ -56,6 +55,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     apiDefinitions,
     deploy: configValue.deploy,
     enableDeploySupport: configValue.enableDeploySupport,
+    enableDeployWithReferencesSupport: configValue.enableDeployWithReferencesSupport,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
@@ -73,7 +73,7 @@ export const adapter: Adapter = {
     const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
       // Creating new instance is required because the type is not resolved in context.config
       new InstanceElement(ElemID.CONFIG_NAME, configType, context.config?.value),
-      getDefaultConfig(context.config?.value.fetch?.[ENABLE_DEPLOY_SUPPORT_FLAG]),
+      getDefaultConfig(), // the migrateDeprecatedIncludeList use only apiDefinitions.supportedTypes from the default config
     )
 
     const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)

@@ -256,16 +256,18 @@ const filterCreator: FilterCreator = () => ({
       guideGrouped[SECTION_TYPE_NAME] ?? [],
       inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME,
     )
-    sectionWithCategoryParent.forEach(instance => {
-      const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
-      const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
-      instance.path = pathForOtherLevels({
-        instance,
-        needTypeDirectory: true,
-        needOwnFolder: true,
-        parent,
+
+    sectionWithCategoryParent.filter(instance => instance.value.direct_parent_id?.elemID !== undefined)
+      .forEach(instance => {
+        const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
+        const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: true,
+          needOwnFolder: true,
+          parent,
+        })
       })
-    })
 
     const sectionsWithSectionParentNames = new Set(
       sectionsWithSectionParent.map(section => section.elemID.getFullName()),
@@ -300,15 +302,16 @@ const filterCreator: FilterCreator = () => ({
 
     // articles
     const articles = guideGrouped[ARTICLE_TYPE_NAME] ?? []
-    articles.forEach(instance => {
-      const parentId = nameByIdParents[instance.value.section_id?.elemID.getFullName()]
-      instance.path = pathForOtherLevels({
-        instance,
-        needTypeDirectory: true,
-        needOwnFolder: true,
-        parent: parentsById[parentId],
+    articles.filter(instance => instance.value.section_id?.elemID !== undefined)
+      .forEach(instance => {
+        const parentId = nameByIdParents[instance.value.section_id?.elemID.getFullName()]
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: true,
+          needOwnFolder: true,
+          parent: parentsById[parentId],
+        })
       })
-    })
 
     // others (translations, article attachments)
     OTHER_TYPES.flatMap(type => guideGrouped[type])

@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 import { filters } from '@salto-io/adapter-components'
+import { ARTICLE_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
+
+
+export const ADDITIONAL_PARENT_FIELDS: Record<string, string[]> = {
+  [CATEGORY_TYPE_NAME]: ['brand'],
+  [SECTION_TYPE_NAME]: ['direct_parent_id', 'category_id', 'brand'],
+  [ARTICLE_TYPE_NAME]: ['section_id', 'brand'],
+}
 
 /**
  * Filter creators of all the common filters
@@ -33,6 +41,7 @@ const filterCreators: Record<string, FilterCreator> = {
       'view_order',
       'workspace_order',
     ],
+    additionalParentFields: ADDITIONAL_PARENT_FIELDS,
   }),
 }
 

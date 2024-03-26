@@ -529,6 +529,7 @@ export default class SalesforceAdapter implements AdapterOperations {
             separateFieldToFiles:
               config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
             flsProfiles: getFLSProfiles(config),
+            deletedCustomFields: [],
             ...contextOverrides,
           },
         },
@@ -627,7 +628,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     })
     const fetchFiltersRunner = this.createFiltersRunner({
       fetchProfile,
-      contextOverrides: { lastChangeDateOfTypesWithNestedInstances },
+      contextOverrides: { lastChangeDateOfTypesWithNestedInstances, deletedCustomFields: this.deletedCustomFields },
     })
     const onFetchFilterResult = (await fetchFiltersRunner.onFetch(
       elements,

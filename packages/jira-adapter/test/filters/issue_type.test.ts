@@ -138,7 +138,9 @@ describe('issueTypeFilter', () => {
         const res = await filter.onFetch?.([instance])
         expect(instance.value.avatar).toBeUndefined()
         expect(res).toEqual({
-          errors: [{ message: 'Failed to fetch attachment content from Jira API. error: Err', severity: 'Error' }],
+          errors: [
+            { message: 'Failed to fetch attachment content from Jira API. error: Error: Err', severity: 'Error' },
+          ],
         })
       })
     })
@@ -275,7 +277,8 @@ describe('issueTypeFilter', () => {
       expect(instance.value.avatarId).toEqual(101)
       expect(mockPut).toHaveBeenCalledTimes(1) // For updating the instance with the avatarId
     })
-    it('should deploy modification of issueType with avatar', async () => {
+    it('should deploy addition of issueType without avatar', async () => {
+      delete instance.value.avatar
       mockPost.mockImplementation(async params => {
         if (params.url === '/rest/api/3/universal_avatar/type/issuetype/owner/3') {
           return {
@@ -287,19 +290,58 @@ describe('issueTypeFilter', () => {
         }
         throw new Error('Unexpected url')
       })
+      const res = await filter.deploy([{ action: 'add', data: { after: instance } }])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockDeployChange).toHaveBeenCalledTimes(1) // For adding the issueType
+      expect(mockPost).toHaveBeenCalledTimes(0) // For not loading the icon
+      expect(mockPut).toHaveBeenCalledTimes(0) // For not updating the instance with the avatarId
+    })
+    it('should deploy modification of issueType with avatar', async () => {
+      mockPost.mockImplementation(async params => {
+        if (params.url === '/rest/api/3/universal_avatar/type/issuetype/owner/3') {
+          return {
+            status: 200,
+            data: {
+              id: '99',
+            },
+          }
+        }
+        throw new Error('Unexpected url')
+      })
       instance.value.avatarId = 101
       const instsnceAfter = instance.clone()
-      instsnceAfter.value.content = new StaticFile({
+      instsnceAfter.value.avatar = new StaticFile({
         filepath: 'jira/issueTypeIcon/changed.png',
         encoding: 'binary',
-        content: Buffer.from('changes!'),
+        content: Buffer.from('more and more changes!'),
       })
       const res = await filter.deploy([{ action: 'modify', data: { before: instance, after: instsnceAfter } }])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockPost).toHaveBeenCalledTimes(1) // For loading the icon
       expect(mockDeployChange).toHaveBeenCalledTimes(1) // For updating the issueType
-      expect(mockPut).toHaveBeenCalledTimes(0)
+    })
+    it('should deploy modification of issueType without avatar', async () => {
+      mockPost.mockImplementation(async params => {
+        if (params.url === '/rest/api/3/universal_avatar/type/issuetype/owner/3') {
+          return {
+            status: 200,
+            data: {
+              id: '99',
+            },
+          }
+        }
+        throw new Error('Unexpected url')
+      })
+      instance.value.avatarId = 101
+      const instsnceAfter = instance.clone()
+      instsnceAfter.value.description = 'changed description'
+      const res = await filter.deploy([{ action: 'modify', data: { before: instance, after: instsnceAfter } }])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockPost).toHaveBeenCalledTimes(0) // For not loading the icon
+      expect(mockDeployChange).toHaveBeenCalledTimes(1) // For updating the issueType
     })
     it('should not deploy issueType if !isIconResponse ', async () => {
       mockPost.mockImplementation(async () => ({
@@ -308,10 +350,10 @@ describe('issueTypeFilter', () => {
       }))
       instance.value.avatarId = 101
       const instsnceAfter = instance.clone()
-      instsnceAfter.value.content = new StaticFile({
+      instsnceAfter.value.avatar = new StaticFile({
         filepath: 'jira/issueTypeIcon/changed.png',
         encoding: 'binary',
-        content: Buffer.from('changes!'),
+        content: Buffer.from('more changes!'),
       })
       const res = await filter.deploy([{ action: 'modify', data: { before: instance, after: instsnceAfter } }])
       expect(res.deployResult.errors).toHaveLength(1)

@@ -104,7 +104,7 @@ export const createInstances = (
       content: fs.readFileSync(path.resolve(`${__dirname}/../../../e2e_test/images/nacl.png`)),
     }),
   })
-  
+
   const dashboardGadget1 = new InstanceElement(
     naclCase(`${randomString}__${randomString}-1_2_0`),
     findType('DashboardGadget', fetchedElements),

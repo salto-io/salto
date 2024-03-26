@@ -47,10 +47,6 @@ const deployIcon = async (
   client: JiraClient,
 ): Promise<void> => {
   const instance = getChangeData(change)
-  if (instance.value.avatar === undefined) {
-    // We still want to deploy the issue type even if it doesn't have an icon
-   return
-  }
   try {
     const headers = { ...PRIVATE_API_HEADERS, 'Content-Type': 'image/png' }
     const url = `/rest/api/3/universal_avatar/type/issuetype/owner/${instance.value.id}`
@@ -64,8 +60,9 @@ const deployIcon = async (
   }
 }
 
-/**
- * Align the DC issue types values with the Cloud
+/*
+ * This filter is responsible to align the DC issue types values with the Cloud,
+ * and deploy cloud addition and modifications issue types with their icons.
  */
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'issueTypeFilter',
@@ -139,16 +136,22 @@ const filter: FilterCreator = ({ client, config }) => ({
           apiDefinitions: config.apiDefinitions,
         })
         // Load the avatar to get avatarId
-        await deployIcon(change, client)
-        // update the issueTpype with the avatarId
         const instance = getChangeData(change)
-        await client.put({
-          url: `/rest/api/3/issuetype/${instance.value.id}`,
-          data: { avatarId: instance.value.avatarId },
-        })
+        if (instance.value.avatar !== undefined) {
+          await deployIcon(change, client)
+          // update the issueTpype with the avatarId
+          await client.put({
+            url: `/rest/api/3/issuetype/${instance.value.id}`,
+            data: { avatarId: instance.value.avatarId },
+          })
+        }
       } else {
         // Load the avatar to get avatarId
-        await deployIcon(change, client)
+        const avatarBefore = change.data.before.value.avatar
+        const avatarAfter = change.data.after.value.avatar
+        if (avatarBefore !== undefined && avatarAfter !== undefined && !avatarBefore.isEqual(avatarAfter)) {
+          await deployIcon(change, client)
+        }
         // update the issueTpype with the avatarId
         await defaultDeployChange({
           change,

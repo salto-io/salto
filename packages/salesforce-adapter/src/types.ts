@@ -1019,6 +1019,7 @@ export type MetadataQuery<T = MetadataInstance> = {
   isFetchWithChangesDetection: () => boolean
   isPartialFetch: () => boolean
   getFolderPathsByName: (folderType: string) => Record<string, string>
+  logData: () => void
 }
 
 export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'

@@ -31,6 +31,7 @@ import {
   PartialFetchData,
   Element,
   ProgressReporter,
+  Field,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -51,6 +52,7 @@ import {
   isMetadataObjectType,
   MetadataObjectType,
   createInstanceElement,
+  isCustom,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -414,6 +416,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
   private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
+  private deletedCustomFields: Field[]
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [
@@ -480,6 +483,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
+    this.deletedCustomFields = []
     this.client = new Proxy(client, {
       get: (target, propertyKey) => {
         if (propertyKey === 'listMetadataObjects') {
@@ -536,6 +540,17 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
+  private async getDeletedCustomFields(): Promise<Field[]> {
+    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const fieldsFromElementsSource = await awu(await this.elementsSource.getAll())
+    .filter(isCustomObjectSync)
+    .flatMap(obj => Object.values(obj.fields))
+      .filter(field => isCustom(apiNameSync(field)))
+    .toArray()
+    return fieldsFromElementsSource.filter(field => !listedFields.has(apiNameSync(field) ?? ''))
+  }
+
+
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
@@ -552,6 +567,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         client: this.client,
         metadataQuery: buildFilePropsMetadataQuery(baseQuery),
       })
+    // Must be executed after the CustomFields were listed, which happens in getLastChangeDateOfTypesWithNestedInstances
+    this.deletedCustomFields = await this.getDeletedCustomFields()
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
@@ -929,7 +946,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       (type) => apiNameSync(type) ?? 'unknown',
     )
     const elemIdsByTypeFromSource = await this.getElemIdsByTypeFromSource()
-    const deletedElemIds = new Set<ElemID>()
+    const deletedElemIds = new Set<ElemID>(this.deletedCustomFields.map(field => field.elemID))
     Object.entries(elemIdsByTypeFromSource)
       // We only want to check types that are included. This is especially relevant for targeted fetch
       .filter(([typeName]) => fetchProfile.metadataQuery.isTypeMatch(typeName))

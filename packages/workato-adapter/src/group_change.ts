@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element } from '@salto-io/adapter-api'
-import { references as referenceUtils } from '@salto-io/adapter-components'
-import { fieldNameToTypeMappingDefs } from '../reference_mapping'
-import { FilterCreator } from '../filter'
 
-/**
- * Convert field values into references, based on predefined rules.
- *
- */
-const filter: FilterCreator = () => ({
-  name: 'fieldReferencesFilter',
-  onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
-  },
-})
+import { deployment } from '@salto-io/adapter-components'
+import { isInstanceChange, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
+import { DEPLOY_USING_RLM_GROUP, RLM_DEPLOY_SUPPORTED_TYPES } from './constants'
 
-export default filter
+export const getRLMGroupId: deployment.grouping.ChangeIdFunction = async change =>
+  isAdditionOrModificationChange(change) &&
+  isInstanceChange(change) &&
+  RLM_DEPLOY_SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName)
+    ? DEPLOY_USING_RLM_GROUP
+    : undefined
+
+export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([getRLMGroupId])

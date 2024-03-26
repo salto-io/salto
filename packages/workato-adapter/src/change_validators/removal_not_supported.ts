@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element } from '@salto-io/adapter-api'
-import { references as referenceUtils } from '@salto-io/adapter-components'
-import { fieldNameToTypeMappingDefs } from '../reference_mapping'
-import { FilterCreator } from '../filter'
 
-/**
- * Convert field values into references, based on predefined rules.
- *
- */
-const filter: FilterCreator = () => ({
-  name: 'fieldReferencesFilter',
-  onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
-  },
-})
+import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 
-export default filter
+export const removalNotSupportedValidator: ChangeValidator = async changes =>
+  changes
+    .filter(isInstanceChange)
+    .filter(isRemovalChange)
+    .map(getChangeData)
+    .map(element => ({
+      elemID: element.elemID,
+      severity: 'Error',
+      message: 'Operation not supported',
+      detailedMessage: `Salto does not support removal of ${element.elemID.getFullName()}.`,
+    }))

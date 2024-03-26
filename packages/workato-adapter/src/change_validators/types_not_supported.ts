@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element } from '@salto-io/adapter-api'
-import { references as referenceUtils } from '@salto-io/adapter-components'
-import { fieldNameToTypeMappingDefs } from '../reference_mapping'
-import { FilterCreator } from '../filter'
 
-/**
- * Convert field values into references, based on predefined rules.
- *
- */
-const filter: FilterCreator = () => ({
-  name: 'fieldReferencesFilter',
-  onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
-  },
-})
+import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { RLM_DEPLOY_SUPPORTED_TYPES } from '../constants'
 
-export default filter
+export const typesNotSupportedValidator: ChangeValidator = async changes =>
+  changes
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(elem => !RLM_DEPLOY_SUPPORTED_TYPES.includes(elem.elemID.typeName))
+    .map(element => ({
+      elemID: element.elemID,
+      severity: 'Error',
+      message: 'Operation not supported',
+      detailedMessage: `Salto does not support deployment of ${element.elemID.typeName}.`,
+    }))

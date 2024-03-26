@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Element } from '@salto-io/adapter-api'
-import { references as referenceUtils } from '@salto-io/adapter-components'
-import { fieldNameToTypeMappingDefs } from '../reference_mapping'
-import { FilterCreator } from '../filter'
 
-/**
- * Convert field values into references, based on predefined rules.
- *
- */
-const filter: FilterCreator = () => ({
-  name: 'fieldReferencesFilter',
-  onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
-  },
-})
+import { InstanceElement } from '@salto-io/adapter-api'
 
-export default filter
+export const getRootFolderID = (folder: InstanceElement): number =>
+  folder.value.parent_id !== undefined ? getRootFolderID(folder.value.parent_id.value) : folder.value.id
+
+export const getFolderPath = (folder: InstanceElement): string[] =>
+  folder.value.parent_id !== undefined ? [...getFolderPath(folder.value.parent_id.value), folder.value.name] : []

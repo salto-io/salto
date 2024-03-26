@@ -34,8 +34,12 @@ export const ROLE_TYPE = 'role'
 export const CONNECTION_TYPE = 'connection'
 export const RECIPE_TYPE = 'recipe'
 export const RECIPE_CODE_TYPE = 'recipe__code'
+export const RECIPE_CONFIG_TYPE = 'recipe__config'
 export const FOLDER_TYPE = 'folder'
 export const API_COLLECTION_TYPE = 'api_collection'
 export const API_ENDPOINT_TYPE = 'api_endpoint'
 export const API_CLIENT_TYPE = 'api_client'
 export const API_ACCESS_PROFILE_TYPE = 'api_access_profile'
+export const DEPLOY_USING_RLM_GROUP = 'RLM'
+
+export const RLM_DEPLOY_SUPPORTED_TYPES = [RECIPE_TYPE, RECIPE_CODE_TYPE, CONNECTION_TYPE]

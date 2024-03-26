@@ -67,6 +67,7 @@ import {
   isAdditionOrModificationWorkflowChange,
   CONDITION_GROUPS_PATH_NAME_TO_RECURSE,
   WorkflowStatus,
+  EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
@@ -150,6 +151,24 @@ export const convertParametersFieldsToList = (parameters: Values, listFields: Se
     })
 }
 
+const removeParametersEmptyStrings: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  if (_.isPlainObject(value) && path.name === 'parameters') {
+    _.forOwn(value, (val, key) => {
+      if (val === '') {
+        delete value[key]
+      }
+    })
+  }
+  if (
+    isInstanceElement(value) ||
+    EMPTY_STRINGS_PATH_NAME_TO_RECURSE.has(path.name) ||
+    (_.isPlainObject(value) && (value.conditions || value.parameters))
+  ) {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const createWorkflowInstances = async ({
   client,
   workflowIds,
@@ -191,13 +210,15 @@ const createWorkflowInstances = async ({
             errors.push(error)
             return undefined
           }
-          return toBasicInstance({
+          const instance = await toBasicInstance({
             entry: workflow,
             type: workflowConfigurationType,
             transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
             transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
             defaultName: workflow.name,
           })
+          walkOnElement({ element: instance, func: removeParametersEmptyStrings })
+          return instance
         }),
       )
     ).filter(values.isDefined)

@@ -509,15 +509,15 @@ describe('workflow filter', () => {
         ).toBeUndefined()
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters).toBeUndefined()
       })
-      it('should not convert parameters if it is an empty string', async () => {
+      it('should remove empty strings', async () => {
         await filter.onFetch(elements)
         expect(elements).toHaveLength(3)
         const workflow = elements[2] as unknown as InstanceElement
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters).toEqual({
-          groupIds: '',
+          groupIds: undefined,
         })
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters).toEqual({
-          fieldsRequired: '',
+          fieldsRequired: undefined,
         })
       })
     })

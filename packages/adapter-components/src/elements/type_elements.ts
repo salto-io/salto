@@ -103,7 +103,7 @@ export const filterTypes = async (
     .filter(isObjectType)
     .toArray()
 
-  const subtypes = await getSubtypes([...relevantTypes.filter(isObjectType), ...innerObjectTypes])
+  const subtypes = getSubtypes([...relevantTypes.filter(isObjectType), ...innerObjectTypes])
   subtypes
     .filter(t => t.path === undefined)
     .forEach(t => {

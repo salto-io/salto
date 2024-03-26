@@ -14,4 +14,16 @@
  * limitations under the License.
  */
 
-export { OpenAPIDefinition } from './openapi'
+import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+
+export const removalNotSupportedValidator: ChangeValidator = async changes =>
+  changes
+    .filter(isInstanceChange)
+    .filter(isRemovalChange)
+    .map(getChangeData)
+    .map(element => ({
+      elemID: element.elemID,
+      severity: 'Error',
+      message: 'Operation not supported',
+      detailedMessage: `Salto does not support removal of ${element.elemID.getFullName()}.`,
+    }))

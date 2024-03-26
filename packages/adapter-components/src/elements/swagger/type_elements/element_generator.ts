@@ -71,13 +71,14 @@ type TypeAdderType = (
  * Helper function for creating type elements for the given swagger definitions.
  * Keeps track of already-generated subtypes to reuse existing elements and avoid duplications.
  */
-const typeAdder = ({
+export const typeAdder = ({
   adapterName,
   schemas,
   toUpdatedResourceName,
   definedTypes,
   parsedConfigs,
   refs,
+  naclCaseFields = true,
 }: {
   adapterName: string
   toUpdatedResourceName: (origResourceName: string) => string
@@ -85,6 +86,7 @@ const typeAdder = ({
   definedTypes: Record<string, ObjectType>
   parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
   refs: SwaggerRefs
+  naclCaseFields?: boolean
 }): TypeAdderType => {
   // keep track of the top-level schemas, so that even if they are reached from another
   // endpoint before being reached directly, they will be treated as top-level
@@ -147,10 +149,10 @@ const typeAdder = ({
     definedTypes[naclObjName] = type
 
     const { allProperties, additionalProperties } = extractProperties(schemaDef, refs)
-
+    const properties = naclCaseFields ? _.mapKeys(allProperties, (_value, key) => naclCase(key)) : allProperties
     Object.assign(
       type.fields,
-      _.mapValues(allProperties, (fieldSchema, fieldName) => {
+      _.mapValues(properties, (fieldSchema, fieldName) => {
         const toNestedTypeName = ({ allOf, anyOf, oneOf }: SchemaObject): string => {
           const xOf = [allOf, anyOf, oneOf].filter(isDefined).flat()
           if (xOf.length > 0 && isArrayOfType(xOf, isReferenceObject)) {
@@ -309,6 +311,7 @@ export const generateTypes = async (
     definedTypes,
     parsedConfigs,
     refs,
+    naclCaseFields: false,
   })
 
   Object.entries(schemas).forEach(([endpointName, schema]) => addType(schema, toTypeName(endpointName), endpointName))

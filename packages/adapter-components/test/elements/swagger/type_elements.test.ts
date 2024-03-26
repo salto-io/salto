@@ -33,7 +33,7 @@ jest.mock('@salto-io/lowerdash', () => {
 })
 
 const ADAPTER_NAME = 'myAdapter'
-const BASE_DIR = __dirname.replace('/dist', '')
+const BASE_DIR = __dirname.replace('elements/swagger', 'fetch/element/openAPI')
 
 describe('swagger_type_elements', () => {
   describe('generateTypes', () => {

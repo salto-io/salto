@@ -137,6 +137,7 @@ const errorMessagesToRetry = [
   'ECONNREFUSED',
   'Internal_Error',
   'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
+  'no healthy upstream',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

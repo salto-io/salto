@@ -14,4 +14,15 @@
  * limitations under the License.
  */
 
-export { OpenAPIDefinition } from './openapi'
+import { deployment } from '@salto-io/adapter-components'
+import { isInstanceChange, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
+import { DEPLOY_USING_RLM_GROUP, RLM_DEPLOY_SUPPORTED_TYPES } from './constants'
+
+export const getRLMGroupId: deployment.grouping.ChangeIdFunction = async change =>
+  isAdditionOrModificationChange(change) &&
+  isInstanceChange(change) &&
+  RLM_DEPLOY_SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName)
+    ? DEPLOY_USING_RLM_GROUP
+    : undefined
+
+export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([getRLMGroupId])

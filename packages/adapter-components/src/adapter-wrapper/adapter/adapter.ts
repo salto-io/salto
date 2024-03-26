@@ -31,6 +31,7 @@ import {
   isSaltoError,
   ChangeValidator,
   DependencyChanger,
+  TypeMap,
 } from '@salto-io/adapter-api'
 import { logDuration, restoreChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -57,7 +58,7 @@ import {
   deployNotSupportedValidator,
   getDefaultChangeValidators,
 } from '../../deployment/change_validators'
-import { ParsedTypes, generateTypes } from '../../elements/swagger' // TODO switch to new infra (SALTO-5422)
+import { generateOpenApiTypes } from '../../fetch/element/openAPI/types'
 import { generateLookupFunc } from '../../references'
 import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../deployment'
 import { createChangeElementResolver } from '../../resolve_utils'
@@ -133,23 +134,16 @@ export class AdapterImpl<
   }
 
   @logDuration('generating types from swagger')
-  private async getAllSwaggerTypes(): Promise<ParsedTypes> {
+  private async getAllSwaggerTypes(): Promise<TypeMap> {
     return _.defaults(
       {},
       ...(await Promise.all(
         collections.array.makeArray(this.definitions.sources?.openAPI).map(def =>
-          generateTypes(
-            this.adapterName,
-            // TODO re-implement with definitions and add missing functionality (SALTO-5422)
-            {
-              supportedTypes: {},
-              typeDefaults: { transformation: { idFields: [] } },
-              types: {},
-              swagger: {
-                url: def.url,
-              },
-            },
-          ),
+          generateOpenApiTypes({
+            adapterName: this.adapterName,
+            openApiDefs: def,
+            defQuery: queryWithDefault(this.definitions.fetch.instances),
+          }),
         ),
       )),
     )

@@ -169,8 +169,8 @@ describe('adapters.ts', () => {
       })
     })
 
-    it('should return the config type and its sub-types', async () => {
-      const types = await getAdaptersConfigTypesMap()
+    it('should return the config type and its sub-types', () => {
+      const types = getAdaptersConfigTypesMap()
       expect(types.mockAdapter).toContain(mockConfigType)
       expect(types.mockAdapter).toContain(mockConfigSubType)
     })

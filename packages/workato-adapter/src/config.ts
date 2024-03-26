@@ -237,15 +237,24 @@ export const getDefaultConfig = (deploySupported = false): WorkatoConfig => {
   }
   return defaultConfig
 }
+export type ChangeValidatorsDeploySupportedName =
+  | 'deployTypesNotSupported'
+  | 'notSupportedTypes'
+  | 'notSupportedRemoval'
+  | 'notSupportedRecipeSettings'
 
-export type ChangeValidatorName = 'deployNotSupported'
+export type ChangeValidatorName = ChangeValidatorsDeploySupportedName | 'deployNotSupported'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(WORKATO, 'changeValidatorConfig'),
   fields: {
+    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedTypes: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedRemoval: { refType: BuiltinTypes.BOOLEAN },
     deployNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedRecipeSettings: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

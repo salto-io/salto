@@ -62,7 +62,7 @@ export const generateInstancesWithInitialTypes = <Options extends FetchApiDefini
     getElemIdFunc,
     customNameMappingFunctions,
   })
-  // TODO should also nacl-case field names on predefined fields similarly (SALTO-5422)
+
   const instances = entries
     .map(value => recursiveNaclCase(value))
     .map((entry, index) =>

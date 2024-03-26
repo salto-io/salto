@@ -14,4 +14,10 @@
  * limitations under the License.
  */
 
-export { OpenAPIDefinition } from './openapi'
+import { InstanceElement } from '@salto-io/adapter-api'
+
+export const getRootFolderID = (folder: InstanceElement): number =>
+  folder.value.parent_id !== undefined ? getRootFolderID(folder.value.parent_id.value) : folder.value.id
+
+export const getFolderPath = (folder: InstanceElement): string[] =>
+  folder.value.parent_id !== undefined ? [...getFolderPath(folder.value.parent_id.value), folder.value.name] : []

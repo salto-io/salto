@@ -14,4 +14,17 @@
  * limitations under the License.
  */
 
-export { OpenAPIDefinition } from './openapi'
+import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { RLM_DEPLOY_SUPPORTED_TYPES } from '../constants'
+
+export const typesNotSupportedValidator: ChangeValidator = async changes =>
+  changes
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(elem => !RLM_DEPLOY_SUPPORTED_TYPES.includes(elem.elemID.typeName))
+    .map(element => ({
+      elemID: element.elemID,
+      severity: 'Error',
+      message: 'Operation not supported',
+      detailedMessage: `Salto does not support deployment of ${element.elemID.typeName}.`,
+    }))

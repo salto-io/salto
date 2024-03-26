@@ -133,7 +133,7 @@ export enum SwaggerVersion {
   V3,
 }
 
-const getSwaggerVersion = (swagger: LoadedSwagger): SwaggerVersion => {
+export const getSwaggerVersion = (swagger: LoadedSwagger): SwaggerVersion => {
   if (!(isV2(swagger.document) || isV3(swagger.document))) {
     // unreachable because of the swagger-parser validations
     throw new Error(

@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
-import { ISSUE_TYPE_NAME, JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
+import { JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createContextValues, createFieldValues } from './field'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
@@ -39,12 +39,6 @@ import { createInstances as createCloudInstances, modifyCloudInstances } from '.
 export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
   const uuid = uuidv4()
-
-  const issueType = new InstanceElement(randomString, findType(ISSUE_TYPE_NAME, fetchedElements), {
-    description: randomString,
-    name: randomString,
-    hierarchyLevel: 0,
-  })
 
   const field = new InstanceElement(
     `${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}`,
@@ -128,7 +122,6 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     ...(isDataCenter
       ? createDataCenterInstances(randomString, fetchedElements)
       : createCloudInstances(randomString, uuid, fetchedElements)),
-    [issueType],
     [field],
     [fieldContext],
     [screen],

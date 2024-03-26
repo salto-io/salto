@@ -296,7 +296,6 @@ describe('issue layout filter', () => {
         ],
       })
 
-
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -330,6 +329,34 @@ describe('issue layout filter', () => {
       ]
     })
 
+    it('should return the correct request', async () => {
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res['11111'][11]).toBeDefined()
+      const resolvedRes = await res['11111'][11]
+      expect(resolvedRes.data).toBeDefined()
+    })
+    it('should be empty answer if it is a bad response', async () => {
+      mockGet.mockImplementation(() => ({
+        status: 200,
+        data: {},
+      }))
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res['11111'][11]).toBeDefined()
+      const resolvedRes = await res['11111'][11]
+      expect(resolvedRes.data).toBeEmpty()
+    })
+    it('should catch an error if gql post throws an error and return empty', async () => {
+      mockGet.mockImplementation(() => {
+        throw new Error('err')
+      })
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res['11111'][11]).toBeDefined()
+      const resolvedRes = await res['11111'][11]
+      expect(resolvedRes.data).toBeUndefined()
+    })
     it('should return empty if there are no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined
       const res = await getLayoutRequestsAsync(client, config, fetchQuery, [projectInstance])
@@ -359,34 +386,6 @@ describe('issue layout filter', () => {
       ) as FilterType
       await getLayoutRequestsAsync(mockClient(true).client, configWithDataCenterTrue, fetchQuery, elements)
       expect(connection.post).not.toHaveBeenCalled()
-    })
-    it('should be empty answer if it is a bad response', async () => {
-      mockGet.mockImplementation(() => ({
-        status: 200,
-        data: {},
-      }))
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res['11111'][11]).toBeDefined()
-      const resolvedRes = await res['11111'][11]
-      expect(resolvedRes.data).toBeEmpty()
-    })
-    it('should catch an error if gql post throws an error and return empty', async () => {
-      mockGet.mockImplementation(() => {
-        throw new Error('err')
-      })
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res['11111'][11]).toBeDefined()
-      const resolvedRes = await res['11111'][11]
-      expect(resolvedRes.data).toBeUndefined()
-    })
-    it('should return the correct request', async () => {
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
-      expect(Object.entries(res)).toHaveLength(1)
-      expect(res['11111'][11]).toBeDefined()
-      const resolvedRes = await res['11111'][11]
-      expect(resolvedRes.data).toBeDefined()
     })
 
     describe('get the correct screen for the issue Layouts', () => {

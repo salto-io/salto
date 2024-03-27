@@ -63,6 +63,7 @@ import {
   WorkflowVersion,
   CONDITION_LIST_FIELDS,
   VALIDATOR_LIST_FIELDS,
+  TRIGGER_LIST_FIELDS,
   ID_TO_UUID_PATH_NAME_TO_RECURSE,
   isAdditionOrModificationWorkflowChange,
   CONDITION_GROUPS_PATH_NAME_TO_RECURSE,
@@ -135,6 +136,9 @@ const convertTransitionParametersFields = (
     })
     transition.validators?.forEach((validator: Values) => {
       convertFunc(validator?.parameters, VALIDATOR_LIST_FIELDS)
+    })
+    transition.triggers?.forEach((trigger: Values) => {
+      convertFunc(trigger?.parameters, TRIGGER_LIST_FIELDS)
     })
   })
 }

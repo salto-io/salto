@@ -528,6 +528,9 @@ const fetchAndProcessMergeErrors = async (
     )
     const fetchResults = await Promise.all(
       Object.entries(accountsToAdapters).map(async ([accountName, adapter]) => {
+        if (withChangesDetection) {
+          log.debug('Running fetch with changes detection for account %s', accountName)
+        }
         const fetchResult = await adapter.fetch({
           progressReporter: progressReporters[accountName],
           withChangesDetection,

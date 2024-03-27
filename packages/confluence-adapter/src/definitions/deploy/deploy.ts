@@ -15,27 +15,27 @@
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
-import { Change, InstanceElement, Value, isModificationChange } from '@salto-io/adapter-api'
+import { isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
-const getPermissionsDiff = (
-  change: Change<InstanceElement>,
-): { deletedPermissions: Value[]; addedPermissions: Value[] } => {
-  if (!isModificationChange(change)) {
-    return { deletedPermissions: [], addedPermissions: [] }
-  }
-  const { permissions: beforePermissions } = _.pick(change.data.before.value, 'permissions')
-  const { permissions: afterPermissions } = _.pick(change.data.after.value, 'permissions')
-  if (!Array.isArray(beforePermissions) || !Array.isArray(afterPermissions)) {
-    return { deletedPermissions: [], addedPermissions: [] }
-  }
-  return {
-    deletedPermissions: beforePermissions.filter(before => !afterPermissions.some(after => _.isEqual(after, before))),
-    addedPermissions: afterPermissions.filter(after => !beforePermissions.some(before => _.isEqual(after, before))),
-  }
-}
+// const getPermissionsDiff = (
+//   change: Change<InstanceElement>,
+// ): { deletedPermissions: Value[]; addedPermissions: Value[] } => {
+//   if (!isModificationChange(change)) {
+//     return { deletedPermissions: [], addedPermissions: [] }
+//   }
+//   const { permissions: beforePermissions } = _.pick(change.data.before.value, 'permissions')
+//   const { permissions: afterPermissions } = _.pick(change.data.after.value, 'permissions')
+//   if (!Array.isArray(beforePermissions) || !Array.isArray(afterPermissions)) {
+//     return { deletedPermissions: [], addedPermissions: [] }
+//   }
+//   return {
+//     deletedPermissions: beforePermissions.filter(before => !afterPermissions.some(after => _.isEqual(after, before))),
+//     addedPermissions: afterPermissions.filter(after => !beforePermissions.some(before => _.isEqual(after, before))),
+//   }
+// }
 
 const isSpaceChange = ({ change }: definitions.deploy.ChangeAndContext): boolean => {
   if (!isModificationChange(change)) {
@@ -49,7 +49,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     AdditionalAction,
     ClientOptions
   >({
-    space: { bulkPath: '/wiki/rest/api/space', idField: 'key' },
     blogpost: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
   })
   // TODO_F each definition in its own file
@@ -142,50 +141,50 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
             },
-            {
-              condition: {
-                custom:
-                  () =>
-                  ({ change }) => {
-                    const { addedPermissions } = getPermissionsDiff(change)
-                    return addedPermissions.length > 0
-                  },
-              },
-              request: {
-                endpoint: {
-                  path: '/wiki/rest/api/space/{key}/permission',
-                  method: 'post',
-                },
-                transformation: {
-                  adjust: ({ context }) => {
-                    const { addedPermissions } = getPermissionsDiff(context.change)
-                    return { value: addedPermissions }
-                  },
-                },
-              },
-            },
-            {
-              condition: {
-                custom:
-                  () =>
-                  ({ change }) => {
-                    const { deletedPermissions } = getPermissionsDiff(change)
-                    return deletedPermissions.length > 0
-                  },
-              },
-              request: {
-                endpoint: {
-                  path: '/wiki/rest/api/space/{key}/permission/{id}',
-                  method: 'delete',
-                },
-                transformation: {
-                  adjust: ({ context }) => {
-                    const { deletedPermissions } = getPermissionsDiff(context.change)
-                    return { value: deletedPermissions }
-                  },
-                },
-              },
-            },
+            // {
+            //   condition: {
+            //     custom:
+            //       () =>
+            //       ({ change }) => {
+            //         const { addedPermissions } = getPermissionsDiff(change)
+            //         return addedPermissions.length > 0
+            //       },
+            //   },
+            //   request: {
+            //     endpoint: {
+            //       path: '/wiki/rest/api/space/{key}/permission',
+            //       method: 'post',
+            //     },
+            //     transformation: {
+            //       adjust: ({ context }) => {
+            //         const { addedPermissions } = getPermissionsDiff(context.change)
+            //         return { value: addedPermissions }
+            //       },
+            //     },
+            //   },
+            // },
+            // {
+            //   condition: {
+            //     custom:
+            //       () =>
+            //       ({ change }) => {
+            //         const { deletedPermissions } = getPermissionsDiff(change)
+            //         return deletedPermissions.length > 0
+            //       },
+            //   },
+            //   request: {
+            //     endpoint: {
+            //       path: '/wiki/rest/api/space/{key}/permission/{id}',
+            //       method: 'delete',
+            //     },
+            //     transformation: {
+            //       adjust: ({ context }) => {
+            //         const { deletedPermissions } = getPermissionsDiff(context.change)
+            //         return { value: deletedPermissions }
+            //       },
+            //     },
+            //   },
+            // },
           ],
           remove: [
             {
@@ -196,6 +195,63 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['permissions'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    settings: {
+      requestsByAction: {
+        customizations: {
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/settings/lookandfeel/custom',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    template: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'put',
+                },
+                context: {
+                  queryArgs: {
+                    spaceKey: '{space.key}',
+                  },
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template/{templateId}',
+                  method: 'delete',
                 },
               },
             },

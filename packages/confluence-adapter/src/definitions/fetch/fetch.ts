@@ -42,6 +42,9 @@ const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCusto
   _links: {
     omit: true,
   },
+  _expandable: {
+    omit: true,
+  },
 }
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -54,71 +57,74 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
 )
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  group: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/rest/api/group',
-        },
-        transformation: {
-          root: 'results',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-      },
-    },
-  },
-  label: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/rest/api/label',
-        },
-        transformation: {
-          root: 'results',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-      },
-    },
-  },
-  system_info: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/rest/settings/systemInfo',
-        },
-        transformation: {
-          root: 'results',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-      },
-    },
-  },
+  // group: {
+  //   requests: [
+  //     {
+  //       endpoint: {
+  //         path: '/wiki/rest/api/group',
+  //       },
+  //       transformation: {
+  //         root: 'results',
+  //       },
+  //     },
+  //   ],
+  //   resource: {
+  //     directFetch: true,
+  //   },
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //     },
+  //   },
+  // },
+  // label: {
+  //   requests: [
+  //     {
+  //       endpoint: {
+  //         path: '/wiki/rest/api/label',
+  //       },
+  //       transformation: {
+  //         root: 'results',
+  //       },
+  //     },
+  //   ],
+  //   resource: {
+  //     directFetch: true,
+  //   },
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //     },
+  //   },
+  // },
+  // system_info: {
+  //   requests: [
+  //     {
+  //       endpoint: {
+  //         path: '/wiki/rest/settings/systemInfo',
+  //       },
+  //       transformation: {
+  //         root: 'results',
+  //       },
+  //     },
+  //   ],
+  //   resource: {
+  //     directFetch: true,
+  //   },
+  //   element: {
+  //     topLevel: {
+  //       isTopLevel: true,
+  //     },
+  //   },
+  // },
   space: {
     requests: [
       {
         endpoint: {
           path: '/wiki/rest/api/space',
+          queryArgs: {
+            expand: 'metadata,description,description.plain,metadata.labels,description.view',
+          },
         },
         transformation: {
           root: 'results',
@@ -139,7 +145,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           },
         },
         templates: {
-          typeName: 'template',
+          typeName: 'space_template',
           context: {
             args: {
               key: {
@@ -160,8 +166,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         templates: {
           standalone: {
-            typeName: 'template',
-            addParentAnnotation: true,
+            typeName: 'space_template',
+            addParentAnnotation: false,
             referenceFromParent: false,
             nestPathUnderParent: true,
           },
@@ -186,26 +192,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         id: {
           hide: true,
         },
-      },
-    },
-  },
-  template_page: {
-    requests: [
-      {
-        endpoint: {
-          path: '/wiki/rest/api/template/page',
-        },
-        transformation: {
-          root: 'results',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
       },
     },
   },
@@ -254,6 +240,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
               parts: [{ fieldName: 'title' }],
             },
           ],
+        },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+        version: {
+          omit: true,
         },
       },
     },
@@ -354,14 +348,39 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
   },
-  // TODO_F not working, do I have templates?
-  template: {
+  // how can I get global templates?
+  space_template: {
     requests: [
       {
         endpoint: {
           path: '/wiki/rest/api/template/page',
           queryArgs: {
             spaceKey: '{key}',
+            expand: 'body',
+          },
+        },
+        transformation: {
+          root: 'results',
+          omit: ['space'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  template: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/template/page',
+          queryArgs: {
+            expand: 'body',
           },
         },
         transformation: {
@@ -378,6 +397,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
+  // TODO_F what about whiteboards?
 })
 
 export const createFetchDefinitions = (

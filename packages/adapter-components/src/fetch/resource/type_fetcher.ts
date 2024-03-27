@@ -139,7 +139,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         itemsWithContext.map(async item => {
           const nestedResources = await recurseIntoFetcher(item)
           const fieldValues = Object.entries(nestedResources).map(([fieldName, fieldItems]) => ({
-            [fieldName]: fieldItems.map(({ value }) => value),
+            [fieldName]: Array.isArray(fieldItems) ? fieldItems.map(({ value }) => value) : fieldItems.value,
           }))
           return {
             ...item,

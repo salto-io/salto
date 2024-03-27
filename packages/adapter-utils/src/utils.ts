@@ -1118,8 +1118,7 @@ export const getSubtypes = (types: ObjectType[], validateUniqueness = false): Ob
   const subtypes: Record<string, ObjectType> = {}
 
   const findSubtypes = (type: ObjectType): void => {
-    const additionalPropertiesRefType =
-      type.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType?.getResolvedValueSync?.()
+    const additionalPropertiesRefType = type.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType?.value
     const fieldsTypes = Object.values(type.fields).map(field => field.getTypeSync())
     const allSubtypes = isType(additionalPropertiesRefType)
       ? [...fieldsTypes, additionalPropertiesRefType]

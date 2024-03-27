@@ -915,6 +915,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           brandId: 'id',
         },
       },
+      remove: {
+        url: '/api/v1/brands/{brandId}',
+        method: 'delete',
+        urlParamsToFields: {
+          brandId: 'id',
+        },
+      },
     },
   },
   BrandTheme: {

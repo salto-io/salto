@@ -31,10 +31,10 @@ import {
   isFieldOfCustomObject,
 } from '../transformers/transformer'
 import {
+  apiNameSync,
   getInternalId,
   isInstanceOfTypeSync,
   isInstanceOfCustomObjectSync,
-  safeApiName,
 } from '../filters/utils'
 import {
   CUSTOM_METADATA_SUFFIX,
@@ -89,17 +89,15 @@ const METADATA_TYPE_TO_URI: Record<string, string> = {
   FieldSet: 'FieldSets',
 }
 
-const getTypeIdentifier = async (
-  element?: Element,
-): Promise<string | undefined> =>
+const getTypeIdentifier = (element?: Element): string | undefined =>
   element === undefined
     ? undefined
-    : getInternalId(element) ?? safeApiName(element)
+    : getInternalId(element) ?? apiNameSync(element)
 
-const getFieldIdentifier = async (element: Field): Promise<string> =>
+const getFieldIdentifier = (element: Field): string =>
   getInternalId(element) ??
   element.annotations.relationshipName ??
-  safeApiName(element, true)
+  apiNameSync(element, true)
 
 const generalConstantsResolver: UrlResolver = async (element, baseUrl) => {
   if (
@@ -121,7 +119,7 @@ const settingsConstantsResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
-  const apiName = await safeApiName(element)
+  const apiName = apiNameSync(element)
   if (apiName === undefined) {
     return undefined
   }
@@ -136,7 +134,7 @@ const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const autoResponseRulesResolver: UrlResolver = async (element, baseUrl) => {
-  const apiName = await safeApiName(element)
+  const apiName = apiNameSync(element)
   if (apiName === undefined) {
     return undefined
   }
@@ -154,7 +152,7 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (
     isType(element) &&
-    (await safeApiName(element))?.endsWith(CUSTOM_METADATA_SUFFIX) &&
+    apiNameSync(element)?.endsWith(CUSTOM_METADATA_SUFFIX) &&
     internalId !== undefined
   ) {
     return new URL(
@@ -165,7 +163,7 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const objectResolver: UrlResolver = async (element, baseUrl) => {
-  const typeIdentfier = await getTypeIdentifier(element)
+  const typeIdentfier = getTypeIdentifier(element)
   if ((await isCustomObject(element)) && typeIdentfier !== undefined) {
     return new URL(
       `${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/Details/view`,
@@ -176,8 +174,8 @@ const objectResolver: UrlResolver = async (element, baseUrl) => {
 
 const fieldResolver: UrlResolver = async (element, baseUrl) => {
   if (isField(element) && (await isFieldOfCustomObject(element))) {
-    const fieldIdentifier = await getFieldIdentifier(element)
-    const typeIdentfier = await getTypeIdentifier(element.parent)
+    const fieldIdentifier = getFieldIdentifier(element)
+    const typeIdentfier = getTypeIdentifier(element.parent)
     if (fieldIdentifier !== undefined && typeIdentfier !== undefined) {
       return new URL(
         `${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/FieldsAndRelationships/${fieldIdentifier}/view`,
@@ -237,7 +235,7 @@ const customObjectSubInstanceResolver: UrlResolver = async (
     return undefined
   }
 
-  const instanceType = await safeApiName(await element.getType())
+  const instanceType = apiNameSync(await element.getType())
   if (instanceType === undefined) {
     return undefined
   }
@@ -254,7 +252,7 @@ const customObjectSubInstanceResolver: UrlResolver = async (
     return undefined
   }
   const parent = await elementIDResolver(parentRef.elemID)
-  const parentIdentifier = await getTypeIdentifier(parent)
+  const parentIdentifier = getTypeIdentifier(parent)
   if (parentIdentifier !== undefined) {
     return new URL(
       `${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`,
@@ -282,9 +280,9 @@ const pathAssistantResolver: UrlResolver = async (element, baseUrl) => {
 
 const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
   if (isInstanceOfCustomObjectSync(element)) {
-    const instanceId = await safeApiName(element)
+    const instanceId = apiNameSync(element)
     const typeId = isInstanceElement(element)
-      ? await safeApiName(await element.getType())
+      ? apiNameSync(await element.getType())
       : undefined
     return isDefined(typeId)
       ? new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`)

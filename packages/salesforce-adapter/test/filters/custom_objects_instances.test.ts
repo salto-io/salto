@@ -44,7 +44,6 @@ import {
 import {
   buildSelectQueries,
   getFieldNamesForQuery,
-  isInstanceOfCustomObjectSync,
   QueryOperator,
   SoqlQuery,
 } from '../../src/filters/utils'
@@ -2275,29 +2274,14 @@ describe('Custom Object Instances filter', () => {
         }) as FilterType
 
         const testType = createCustomObject(testTypeName)
-        const existingInstanceThatDoesntExistInSalesforce = new InstanceElement(
-          'DeletedInstance',
-          testType,
-          {
-            [CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
-          },
-        )
-        elements = [
-          testType,
-          existingInstanceThatDoesntExistInSalesforce,
-          changedAtSingleton,
-        ]
+        elements = [testType, changedAtSingleton]
+        await filter.onFetch(elements)
       })
       describe('Without allowReferenceTo', () => {
         beforeEach(async () => {
           const testType = createCustomObject(testTypeName)
-          const existingInstanceThatDoesntExistInSalesforce =
-            new InstanceElement('DeletedInstance', testType, {
-              [CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
-            })
           elements = [
             testType,
-            existingInstanceThatDoesntExistInSalesforce,
             createCustomObject(refToTypeName),
             changedAtSingleton,
           ]
@@ -2315,18 +2299,6 @@ describe('Custom Object Instances filter', () => {
             expect.objectContaining({
               [CUSTOM_OBJECT_ID_FIELD]: testInstanceId,
             }),
-          )
-        })
-        it('Should query for deleted items', () => {
-          expect(basicQueryImplementation).toHaveBeenCalledWith(
-            expect.stringContaining("Id IN ('deletedId')"),
-          )
-        })
-        it('Should remove deleted instance', () => {
-          expect(elements).not.toSatisfyAny(
-            (element) =>
-              isInstanceOfCustomObjectSync(element) &&
-              element.value[CUSTOM_OBJECT_ID_FIELD] === 'deletedId',
           )
         })
       })

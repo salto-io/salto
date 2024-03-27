@@ -46,7 +46,6 @@ import {
   UNLIMITED_INSTANCES_VALUE,
   DETECTS_PARENTS_INDICATOR,
   API_NAME_SEPARATOR,
-  LAST_MODIFIED_DATE,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import { FilterContext, FilterResult, RemoteFilterCreator } from '../filter'
@@ -63,18 +62,15 @@ import {
   isReferenceField,
   referenceFieldTargetTypes,
   queryClient,
-  buildSelectQueries,
-  getFieldNamesForQuery,
   apiNameSync,
   isQueryableField,
   isHiddenField,
   isReadOnlyField,
   isCustomObjectSync,
-  SoqlQuery,
   buildElementsSourceForFetch,
   getChangedAtSingletonInstance,
+  buildDataRecordsSoqlQueries,
   isInstanceOfCustomObjectSync,
-  instanceInternalId,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -110,44 +106,6 @@ const aliasSeparator = ' '
 const getQueryableFields = (object: ObjectType): Field[] =>
   Object.values(object.fields).filter(isQueryableField)
 
-const buildQueryStrings = async (
-  typeName: string,
-  fields: Field[],
-  ids?: string[],
-  managedBySaltoField?: string,
-  changedSince?: string,
-): Promise<string[]> => {
-  const fieldNames = await awu(fields).flatMap(getFieldNamesForQuery).toArray()
-  const queryConditions: SoqlQuery[][] = [
-    ...makeArray(ids).map((id) => [
-      { fieldName: 'Id', operator: 'IN' as const, value: `'${id}'` },
-    ]),
-    ...(managedBySaltoField !== undefined
-      ? [
-          [
-            {
-              fieldName: managedBySaltoField,
-              operator: '=' as const,
-              value: 'TRUE',
-            },
-          ],
-        ]
-      : []),
-    ...(changedSince
-      ? [
-          [
-            {
-              fieldName: LAST_MODIFIED_DATE,
-              operator: '>' as const,
-              value: changedSince,
-            },
-          ],
-        ]
-      : []),
-  ]
-  return buildSelectQueries(typeName, fieldNames, queryConditions)
-}
-
 type GetRecordsParams = {
   client: SalesforceClient
   customObjectFetchSettings: CustomObjectFetchSetting
@@ -182,7 +140,7 @@ const getRecords = async ({
     managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '',
     changedSince ? `, changed since ${changedSince}` : '',
   )
-  const queries = await buildQueryStrings(
+  const queries = await buildDataRecordsSoqlQueries(
     typeName,
     queryableFields,
     ids,
@@ -867,40 +825,6 @@ const createInaccessibleFieldsFetchWarning = (
   severity: 'Info',
 })
 
-const querySalesforceForRecordIdsOfElementSourceInstances = async (
-  elementsSource: ReadOnlyElementsSource,
-  client: SalesforceClient,
-  knownExistingIds: string[],
-): Promise<string[]> => {
-  // We implement a small optimization of not querying for IDs we just fetched, because we know these IDs couldn't
-  // have been deleted.
-  const fetchedIds = new Set(knownExistingIds)
-  const workspaceInstancesByType = await awu(await elementsSource.getAll())
-    .filter(isInstanceOfCustomObjectSync)
-    .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
-  const workspaceIdsByType = _(workspaceInstancesByType)
-    .mapValues((instances) => ({
-      type: instances[0].getTypeSync(),
-      ids: instances
-        .map(instanceInternalId)
-        .filter((id) => !fetchedIds.has(id)),
-    }))
-    .value()
-  const queries = awu(Object.values(workspaceIdsByType))
-    .filter(({ type }) => apiNameSync(type) !== undefined)
-    .map(async ({ type, ids }) =>
-      buildQueryStrings(
-        apiNameSync(type) ?? '',
-        [type.fields[CUSTOM_OBJECT_ID_FIELD]],
-        ids,
-      ),
-    )
-  return awu(queries)
-    .flatMap(async (typeQueries) => queryClient(client, typeQueries))
-    .map((record) => record[CUSTOM_OBJECT_ID_FIELD])
-    .toArray()
-}
-
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
@@ -1039,24 +963,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ),
       )
       .toArray()
-
-    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
-      // In this case we won't know if a record was deleted on the Salesforce side so we need to explicitly look for
-      // deleted records.
-      const idsInSalesforce = new Set(
-        await querySalesforceForRecordIdsOfElementSourceInstances(
-          elementsSource,
-          client,
-          instances.map(instanceInternalId),
-        ),
-      )
-      _.remove(
-        elements,
-        (element) =>
-          isInstanceOfCustomObjectSync(element) &&
-          !idsInSalesforce.has(instanceInternalId(element)),
-      )
-    }
 
     const typesOfFetchedInstances = new Set(
       elements

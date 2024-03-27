@@ -28,6 +28,9 @@ import {
   ObjectType,
   ServiceIds,
   isInstanceElement,
+  FieldDefinition,
+  PrimitiveType,
+  PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
@@ -46,6 +49,7 @@ import {
   createCustomObjectType,
   findElements,
   mockFetchOpts,
+  nullProgressReporter,
   ZipFile,
 } from './utils'
 import mockAdapter from './adapter'
@@ -58,6 +62,7 @@ import {
   MockDescribeValueResultInput,
   mockFileProperties,
   MockFilePropertiesInput,
+  mockQueryResult,
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
@@ -71,8 +76,15 @@ import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import {
   APEX_CLASS_METADATA_TYPE,
+  API_NAME,
+  CHANGED_AT_SINGLETON,
   CUSTOM_OBJECT,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
   DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  FIELD_ANNOTATIONS,
+  LABEL,
+  METADATA_TYPE,
+  OBJECTS_PATH,
   PROFILE_METADATA_TYPE,
   SALESFORCE,
   SALESFORCE_ERRORS,
@@ -3104,6 +3116,155 @@ describe('Fetch via retrieve API', () => {
             },
           }),
         ])
+      })
+    })
+  })
+})
+
+const createCustomObject = (
+  name: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => {
+  const stringType = new PrimitiveType({
+    elemID: new ElemID(SALESFORCE, 'string'),
+    primitive: PrimitiveTypes.STRING,
+  })
+  const basicFields = {
+    Id: {
+      refType: stringType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [LABEL]: 'Id',
+        [API_NAME]: `${name}.Id`,
+      },
+    },
+    Name: {
+      refType: stringType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [LABEL]: 'description label',
+        [API_NAME]: `${name}.Name`,
+      },
+    },
+  }
+  const obj = new ObjectType({
+    elemID: new ElemID(SALESFORCE, name),
+    annotations: {
+      [API_NAME]: name,
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+    },
+    fields: additionalFields
+      ? Object.assign(basicFields, additionalFields)
+      : basicFields,
+  })
+  obj.path = [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
+  return obj
+}
+
+describe('Fetch data records', () => {
+  const testTypeName = 'TestType'
+  const testType = createCustomObject(testTypeName)
+  let fetchResult: FetchResult
+  let connection: MockInterface<Connection>
+  let adapter: SalesforceAdapter
+
+  const adapterConfig = {
+    fetch: {
+      metadata: {
+        include: [{ metadataType: '.*' }],
+      },
+      data: {
+        includeObjects: [testTypeName],
+        saltoIDSettings: {
+          defaultIdFields: ['Name'],
+        },
+      },
+    },
+  }
+
+  describe('Fetch with changes detection', () => {
+    const changedAtCutoff = new Date(2024, 3, 27).toISOString()
+    let changedAtSingleton: InstanceElement
+    beforeEach(() => {
+      changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+      _.set(
+        changedAtSingleton.value,
+        [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
+        changedAtCutoff,
+      )
+    })
+    describe('When a record was deleted', () => {
+      const existingInstanceThatDoesntExistInSalesforce = new InstanceElement(
+        'DeletedInstance',
+        testType,
+        {
+          [constants.CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
+        },
+      )
+      beforeEach(async () => {
+        const elements = [
+          testType,
+          existingInstanceThatDoesntExistInSalesforce,
+          changedAtSingleton,
+        ]
+        const elementsSource = buildElementsSourceFromElements(elements)
+        ;({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            config: adapterConfig,
+            elementsSource,
+          },
+        }))
+        fetchResult = await adapter.fetch({
+          progressReporter: nullProgressReporter,
+          withChangesDetection: true,
+        })
+      })
+      it('Should return the elemID of the deleted record', () => {
+        expect(fetchResult.partialFetchData?.deletedElements).toContainEqual(
+          existingInstanceThatDoesntExistInSalesforce.elemID,
+        )
+      })
+    })
+    describe('When a record was modified', () => {
+      const testInstance = new InstanceElement('SomeInstance', testType, {
+        [constants.CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+      })
+      beforeEach(async () => {
+        const elements = [testType, testInstance, changedAtSingleton]
+        const elementsSource = buildElementsSourceFromElements(elements)
+        ;({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            config: adapterConfig,
+            elementsSource,
+          },
+        }))
+        connection.query.mockResolvedValue(
+          mockQueryResult({
+            records: [
+              {
+                Id: 'SomeId',
+                Name: 'SomeInstance',
+              },
+            ],
+            totalSize: 1,
+          }),
+        )
+        fetchResult = await adapter.fetch({
+          progressReporter: nullProgressReporter,
+          withChangesDetection: true,
+        })
+      })
+      it('should not return any deleted elements', () => {
+        expect(fetchResult.partialFetchData?.deletedElements).toBeEmpty()
+      })
+      it('should return the modified instance', () => {
+        expect(fetchResult.elements).toContainEqual(
+          expect.objectContaining({
+            elemID: testInstance.elemID,
+          }),
+        )
       })
     })
   })

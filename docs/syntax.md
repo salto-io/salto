@@ -455,10 +455,10 @@ salto.example_type_long_id example_instance_id_with_long_prefix {
 
 #### `_important_values` / `_self_important_values`
 
-This annotation is used to define what are these elements' most important values. This list may be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. `_important_values` refer to fields in instances of the type whereas `_self_important_values` refers to fields of the type itself.
+This annotation is used to define what are these elements' most important values. This list may be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. Important values are selected from annotations for types and from fields for instances. `_important_values` refer to fields in instances of the type whereas `_self_important_values` refers to fields of the type itself.
 
 Type: `Array` of objects of type:
-- value: `string` - A name of a field defined for the type.
+- value: `string` - A name of a field or annotation.
 - indexed: `boolean` - Specifies if the value should be indexed for easy searchability.
 - highlighted: `boolean` - Specifies if the value should be highlighted in the display.
 

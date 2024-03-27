@@ -55,7 +55,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/roles',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles',
         },
         transformation: {
           root: 'items',
@@ -79,7 +79,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   //   requests: [
   //     {
   //       endpoint: {
-  //         path: '/customer/my_customer/roles/ALL/privileges',
+  //         path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles/ALL/privileges',
   //       },
   //       transformation: {
   //         root: 'items',
@@ -104,7 +104,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/roleassignments',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments',
         },
         transformation: {
           root: 'items',
@@ -126,7 +126,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/domains',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/domains',
         },
         transformation: {
           root: 'domains',
@@ -186,24 +186,65 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/groups?domain={domain}',
+          path: 'https://admin.googleapis.com/admin/directory/v1/groups?domain={domain}',
         },
         transformation: {
           root: 'groups',
         },
       },
     ],
+    resource: {
+      directFetch: false,
+      recurseInto: {
+        groupSettings: {
+          typeName: 'groupSetting',
+          // single: true,
+          context: {
+            args: {
+              groupKey: {
+                fromField: 'email',
+              },
+            },
+          },
+        },
+      },
+    },
     element: {
       topLevel: {
         isTopLevel: true,
       },
     },
   },
+  groupSetting: {
+    requests: [
+      {
+        endpoint: {
+          path: 'https://www.googleapis.com/groups/v1/groups/{groupKey}?alt=json',
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    // element: {
+    //   fieldCustomizations: {
+    //     email: {
+    //       omit: true,
+    //     },
+    //     name: {
+    //       omit: true,
+    //     },
+    //     description: {
+    //       omit: true,
+    //     },
+    //   },
+    // },
+  },
   orgUnit: {
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/orgunits?type=ALL_INCLUDING_PARENT',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits?type=ALL_INCLUDING_PARENT',
         },
         transformation: {
           root: 'organizationUnits',
@@ -224,7 +265,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/schemas',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/schemas',
         },
         transformation: {
           root: 'schemas',
@@ -246,7 +287,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/resources/buildings',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings',
         },
         transformation: {
           root: 'buildings',
@@ -264,11 +305,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  calenderResource: {
+  calendarResource: {
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/resources/calendars',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/calendars',
         },
         transformation: {
           root: 'items',
@@ -290,7 +331,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     requests: [
       {
         endpoint: {
-          path: '/customer/my_customer/resources/features',
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/features',
         },
         transformation: {
           root: 'features',

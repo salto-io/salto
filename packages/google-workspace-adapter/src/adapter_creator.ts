@@ -45,6 +45,7 @@ const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/admin.directory.orgunit',
   'https://www.googleapis.com/auth/admin.directory.userschema',
   'https://www.googleapis.com/auth/admin.directory.resource.calendar',
+  'https://www.googleapis.com/auth/apps.groups.settings',
 ]
 
 // TODO adjust if needed. if the config is the same as the credentials, just use it

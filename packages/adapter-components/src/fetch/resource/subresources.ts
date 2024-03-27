@@ -21,7 +21,7 @@ import { shouldRecurseIntoEntry } from '../../elements/instance_elements' // TOD
 
 const log = logger(module)
 
-type NestedResourceFetcher = (item: ValueGeneratedItem) => Promise<Record<string, ValueGeneratedItem[]>>
+type NestedResourceFetcher = (item: ValueGeneratedItem) => Promise<Record<string, ValueGeneratedItem[] | ValueGeneratedItem>>
 
 // TODO remove the old code when possible - originally called getExtraFieldValues
 export const recurseIntoSubresources =

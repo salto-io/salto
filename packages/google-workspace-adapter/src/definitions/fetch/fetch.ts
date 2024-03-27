@@ -71,6 +71,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'roleName' }] },
       },
+      fieldCustomizations: {
+        roleId: {
+          hide: true,
+        },
+      },
     },
   },
   // TODO need to make sure that the privilege is a closed list
@@ -97,31 +102,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   //     },
   //   },
   // },
-
-  // RoleAssignment is assigned to a user/group we need to decide on a strategy
-  // After we do so we need to implement the deploy for it
-  roleAssignment: {
-    requests: [
-      {
-        endpoint: {
-          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments',
-        },
-        transformation: {
-          root: 'items',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-      serviceIDFields: ['roleAssignmentId'],
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'roleAssignmentId' }] },
-      },
-    },
-  },
   domain: {
     requests: [
       {
@@ -174,14 +154,15 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  // domain__domainAliases: {
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //       elemID: { parts: [{ fieldName: 'domainAliasName' }] },
-  //     },
-  //   },
-  // },
+  domain__domainAliases: {
+    element: {
+      fieldCustomizations: {
+        parentDomainName: {
+          omit: true,
+        },
+      },
+    },
+  },
   group: {
     requests: [
       {
@@ -207,11 +188,68 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             },
           },
         },
+        roleAssignments: {
+          typeName: 'roleAssignment',
+          context: {
+            args: {
+              groupId: {
+                fromField: 'id',
+              },
+            },
+          },
+        },
       },
     },
     element: {
       topLevel: {
         isTopLevel: true,
+      },
+      fieldCustomizations: {
+        roleAssignments: {
+          standalone: {
+            typeName: 'roleAssignment',
+            addParentAnnotation: false,
+            referenceFromParent: false,
+            nestPathUnderParent: false,
+          },
+        },
+        id: {
+          hide: true,
+        },
+        directMembersCount: {
+          omit: true,
+        },
+      },
+    },
+  },
+  // RoleAssignment is assigned to a user/group we currently fetch the groups only
+  roleAssignment: {
+    requests: [
+      {
+        endpoint: {
+          path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments?userKey={groupId}',
+        },
+        transformation: {
+          root: 'items',
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+      serviceIDFields: ['roleAssignmentId'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'roleAssignmentId' }] },
+      },
+      fieldCustomizations: {
+        roleAssignmentId: {
+          hide: true,
+        },
+        assigneeType: {
+          omit: true,
+        },
       },
     },
   },
@@ -226,19 +264,19 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     resource: {
       directFetch: false,
     },
-    // element: {
-    //   fieldCustomizations: {
-    //     email: {
-    //       omit: true,
-    //     },
-    //     name: {
-    //       omit: true,
-    //     },
-    //     description: {
-    //       omit: true,
-    //     },
-    //   },
-    // },
+    element: {
+      fieldCustomizations: {
+        email: {
+          omit: true,
+        },
+        name: {
+          omit: true,
+        },
+        description: {
+          omit: true,
+        },
+      },
+    },
   },
   orgUnit: {
     requests: [
@@ -253,11 +291,30 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: true,
-      serviceIDFields: ['orgUnitPath'],
+      serviceIDFields: ['orgUnitId'],
     },
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'orgUnitPath' }] },
+        path: {
+          pathParts: [
+            { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
+            { parts: [{ fieldName: 'orgUnitPath' }] },
+          ],
+        },
+      },
+
+      fieldCustomizations: {
+        orgUnitId: {
+          hide: true,
+        },
+        orgUnitPath: {
+          hide: true,
+        },
+        parentOrgUnitPath: {
+          omit: true,
+        },
       },
     },
   },
@@ -280,6 +337,36 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'schemaName' }] },
+      },
+      fieldCustomizations: {
+        schemaId: {
+          hide: true,
+        },
+        fields: {
+          standalone: {
+            typeName: 'schema__fields',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  schema__fields: {
+    resource: {
+      directFetch: false,
+      serviceIDFields: ['fieldId'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'fieldName' }], extendsParent: true },
+      },
+      fieldCustomizations: {
+        fieldId: {
+          hide: true,
+        },
       },
     },
   },

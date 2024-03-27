@@ -37,9 +37,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles',
                   method: 'post',
                 },
-                transformation: {
-                  omit: ['roleId'],
-                },
               },
             },
           ],
@@ -80,6 +77,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   omit: ['verified', 'isPrimary'],
                 },
               },
+              copyFromResponse: {
+                pick: ['verified', 'isPrimary'],
+              },
             },
           ],
           remove: [
@@ -118,11 +118,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  omit: ['id', 'directMembersCount', 'adminCreated', 'groupSettings'],
+                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
                 },
               },
               copyFromResponse: {
-                pick: ['directMembersCount', 'adminCreated'],
+                pick: ['adminCreated', 'nonEditableAliases'],
               },
             },
             {
@@ -132,7 +132,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  pick: ['groupSettings'],
+                  root: 'groupSettings',
                 },
               },
             },
@@ -155,7 +155,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  omit: ['directMembersCount', 'adminCreated', 'nonEditableAliases'],
+                  omit: ['adminCreated', 'nonEditableAliases'],
                 },
               },
             },
@@ -166,7 +166,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  pick: ['groupSettings'],
+                  root: 'groupSettings',
                 },
               },
             },
@@ -184,9 +184,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits',
                   method: 'post',
                 },
-                transformation: {
-                  omit: ['orgUnitPath', 'orgUnitId'],
-                },
               },
             },
           ],
@@ -207,9 +204,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'put',
                 },
-                transformation: {
-                  omit: ['orgUnitId'],
-                },
               },
             },
           ],
@@ -219,17 +213,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     roleAssignment: {
       requestsByAction: {
         customizations: {
-          // At the moment we did not decide how to handle the user reference
-          // But we aer only able to create role assignment reference to security groups
+          // We are only able to create role assignment for security groups
           add: [
             {
               request: {
                 endpoint: {
                   path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments',
                   method: 'post',
-                },
-                transformation: {
-                  omit: ['roleAssignmentId'],
                 },
               },
             },
@@ -257,9 +247,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/schemas',
                   method: 'post',
-                },
-                transformation: {
-                  omit: ['schemaId'],
                 },
               },
             },

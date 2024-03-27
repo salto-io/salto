@@ -865,7 +865,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       filteredChangesFetchSettings,
-      config.deletedCustomFields,
+      config,
     )
     instances.forEach((instance) => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)

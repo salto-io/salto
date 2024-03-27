@@ -103,8 +103,9 @@ const filter: FilterCreator = () => {
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME)
         .forEach(async instance => {
+          // restore actions to its original value
           if (originalChangeByElemID[instance.elemID.getFullName()] !== undefined) {
-            instance.value = originalChangeByElemID[instance.elemID.getFullName()].value
+            instance.value.actions = originalChangeByElemID[instance.elemID.getFullName()].value.actions
           }
         })
     },

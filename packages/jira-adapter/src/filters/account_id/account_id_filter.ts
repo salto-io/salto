@@ -164,6 +164,7 @@ const accountIdsScenarios = (
   // main scenario, sub branch of multiple account ids
   accountIdsFields.forEach(accountIds => {
     const accountIdsValue = value[accountIds]
+    // there is a scenario where accountIds is a string which should not fall under any scenario
     if (_.isArray(accountIdsValue)) {
       accountIdsValue.forEach((_value, index) => {
         callback({ value: value[accountIds], path: path.createNestedID(accountIds), fieldName: index.toString() })

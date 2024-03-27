@@ -99,7 +99,7 @@ describe('account_id_filter', () => {
         accountId: 'acc5',
       },
     })
-
+    // breaking the test style because it becomes too complicated
     workflowInstance = new InstanceElement('workflowInstance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
       transitions: {
         transition1: {

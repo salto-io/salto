@@ -67,6 +67,7 @@ import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
+import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
@@ -118,6 +119,7 @@ const DEFAULT_FILTERS = [
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
   addImportantValues,
+  accessPolicyRuleConstraintsFilter,
   defaultPolicyRuleDeployment,
   schemaFieldsRemovalFilter,
   appLogoFilter,

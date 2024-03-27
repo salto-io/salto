@@ -2212,17 +2212,37 @@ describe('Custom Object Instances filter', () => {
   describe('Fetch with changes detection', () => {
     let fetchProfile: FetchProfile
     const testTypeName = 'TestType'
+    const testInstanceId = 'TestInstanceId'
+    const refToTypeName = 'RefToType'
+    const refToInstanceId = 'RefToInstanceId'
     const changedAtCutoff = new Date(2023, 12, 21).toISOString()
+    const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+    _.set(
+      changedAtSingleton.value,
+      [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
+      changedAtCutoff,
+    )
+
+    const testRecords: SalesforceRecord[] = [
+      {
+        attributes: {
+          type: testTypeName,
+        },
+        Id: testInstanceId,
+        referenceField: refToInstanceId,
+      },
+      {
+        attributes: {
+          type: refToTypeName,
+        },
+        Id: refToInstanceId,
+      },
+    ]
 
     describe('When enabled', () => {
+      let elements: Element[]
       beforeEach(async () => {
-        const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-        _.set(
-          changedAtSingleton.value,
-          [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
-          changedAtCutoff,
-        )
-
+        setMockQueryResults(testRecords)
         const elementsSource = buildElementsSourceFromElements([
           changedAtSingleton,
         ])
@@ -2234,6 +2254,12 @@ describe('Custom Object Instances filter', () => {
               excluded: false,
               allowRef: false,
             },
+            {
+              typeName: refToTypeName,
+              included: false,
+              excluded: false,
+              allowRef: true,
+            },
           ],
           elementsSourceForQuickFetch: elementsSource,
         })
@@ -2244,15 +2270,171 @@ describe('Custom Object Instances filter', () => {
             fetchProfile,
           },
         }) as FilterType
-        await filter.onFetch([
-          createCustomObject(testTypeName),
-          changedAtSingleton,
-        ])
       })
-      it('Should query using the changed-at value', () => {
-        expect(basicQueryImplementation).toHaveBeenLastCalledWith(
-          expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`),
-        )
+      describe('Without allowReferenceTo', () => {
+        beforeEach(async () => {
+          elements = [
+            createCustomObject(testTypeName),
+            createCustomObject(refToTypeName),
+            changedAtSingleton,
+          ]
+          await filter.onFetch(elements)
+        })
+        it('Should query using the changed-at value', () => {
+          expect(basicQueryImplementation).toHaveBeenLastCalledWith(
+            expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`),
+          )
+        })
+        it('Should return the correct elements', () => {
+          expect(elements).toHaveLength(4)
+          expect(elements[3]).toHaveProperty(
+            'value',
+            expect.objectContaining({
+              [CUSTOM_OBJECT_ID_FIELD]: testInstanceId,
+            }),
+          )
+        })
+      })
+      describe('With allowReferenceTo', () => {
+        const objectType = createCustomObject(testTypeName, {
+          referenceField: {
+            refType: Types.primitiveDataTypes.Lookup,
+            annotations: {
+              [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToTypeName],
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            },
+          },
+        })
+        describe('When the referring element is fetched', () => {
+          beforeEach(async () => {
+            elements = [
+              objectType,
+              createCustomObject(refToTypeName),
+              changedAtSingleton,
+            ]
+            await filter.onFetch(elements)
+          })
+          it('Should query for the correct types', () => {
+            expect(basicQueryImplementation).toHaveBeenCalledWith(
+              expect.stringContaining(testTypeName),
+            )
+            expect(basicQueryImplementation).toHaveBeenCalledWith(
+              expect.stringContaining(refToTypeName),
+            )
+          })
+          it('Should return the correct elements', () => {
+            expect(elements).toHaveLength(5)
+            expect(elements).toSatisfyAny(
+              (element) =>
+                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === testInstanceId,
+            )
+            expect(elements).toSatisfyAny(
+              (element) =>
+                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+            )
+          })
+        })
+        describe('When the referring element is in the element source', () => {
+          beforeEach(async () => {
+            setMockQueryResults(
+              testRecords.filter(
+                (record) => record.attributes.type !== testTypeName,
+              ),
+            )
+            const refToType = createCustomObject(refToTypeName)
+            const refToInstance = new InstanceElement(
+              'RefToInstanceFromWorkspace',
+              refToType,
+              {
+                [CUSTOM_OBJECT_ID_FIELD]: refToInstanceId,
+              },
+            )
+            const referringInstance = new InstanceElement(
+              'ReferringInstance',
+              objectType,
+              {
+                [CUSTOM_OBJECT_ID_FIELD]: testInstanceId,
+                referenceField: new ReferenceExpression(refToInstance.elemID),
+              },
+            )
+            filter = filterCreator({
+              client,
+              config: {
+                ...defaultFilterContext,
+                fetchProfile,
+                elementsSource: buildElementsSourceFromElements([
+                  referringInstance,
+                  refToInstance,
+                ]),
+              },
+            }) as FilterType
+
+            elements = [objectType, refToType, changedAtSingleton]
+            await filter.onFetch(elements)
+          })
+          it('Should query for the correct types', () => {
+            expect(basicQueryImplementation).toHaveBeenCalledWith(
+              expect.stringContaining(testTypeName),
+            )
+            expect(basicQueryImplementation).toHaveBeenCalledWith(
+              expect.stringContaining(refToTypeName),
+            )
+          })
+          it('Should return the correct elements', () => {
+            // In this case the referring instance is from the workspace, so will not be added to the 'elements' param
+            expect(elements).toHaveLength(4)
+            expect(elements).toSatisfyAny(
+              (element) =>
+                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+            )
+          })
+        })
+        describe('When the referring element is in the element source and updated by the fetch', () => {
+          beforeEach(async () => {
+            const refToType = createCustomObject(refToTypeName)
+            const referringInstance = new InstanceElement(
+              'ReferringInstance',
+              objectType,
+              {
+                [CUSTOM_OBJECT_ID_FIELD]: testInstanceId,
+                referenceField: `${refToInstanceId}__BAD`,
+              },
+            )
+            filter = filterCreator({
+              client,
+              config: {
+                ...defaultFilterContext,
+                fetchProfile,
+                elementsSource: buildElementsSourceFromElements([
+                  referringInstance,
+                ]),
+              },
+            }) as FilterType
+
+            elements = [objectType, refToType, changedAtSingleton]
+            await filter.onFetch(elements)
+          })
+          it('Should query for the correct types', () => {
+            expect(basicQueryImplementation).toHaveBeenCalledWith(
+              expect.stringContaining(testTypeName),
+            )
+            expect(basicQueryImplementation).toHaveBeenCalledWith(
+              expect.stringContaining(refToTypeName),
+            )
+          })
+          it('Should return the correct elements', () => {
+            // We fetched an update to the referring instance as well as the referred instance
+            expect(elements).toHaveLength(5)
+            expect(elements).toSatisfyAny(
+              (element) =>
+                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === testInstanceId,
+            )
+            expect(elements).toSatisfyAny(
+              (element) =>
+                element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+            )
+          })
+        })
       })
     })
 

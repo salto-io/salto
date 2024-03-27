@@ -470,6 +470,18 @@ describe('workflow filter', () => {
                         },
                       },
                     ],
+                    triggers: [
+                      {
+                        parameters: {
+                          enabledTriggers: 'firstTrigger,secondTrigger',
+                        },
+                      },
+                      {
+                        parameters: {
+                          anotherParam: 'firstTrigger,secondTrigger',
+                        },
+                      },
+                    ],
                   },
                 ],
                 statuses: [],
@@ -488,6 +500,9 @@ describe('workflow filter', () => {
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[0].parameters).toEqual({
           statusIds: ['1', '2'],
         })
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].triggers[0].parameters).toEqual({
+          enabledTriggers: ['firstTrigger', 'secondTrigger'],
+        })
       })
       it('should do nothing if parameters field not in the relevant list', async () => {
         await filter.onFetch(elements)
@@ -498,6 +513,9 @@ describe('workflow filter', () => {
         })
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[1].parameters).toEqual({
           fieldKey: 'fieldKey',
+        })
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].triggers[1].parameters).toEqual({
+          anotherParam: 'firstTrigger,secondTrigger',
         })
       })
       it('should do nothing if parameters is undefined', async () => {

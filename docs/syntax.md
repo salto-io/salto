@@ -297,12 +297,15 @@ Currently the following core annotations are supported:
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
-Instances without a value for a required field will cause a validation warning
+Instances without a value for a required field will cause a validation warning.
 
 Type: `boolean`
+
 Default: `false`
+
 Applicable to: Fields
-Example:
+
+###### Example
 ```HCL
 type salto.example_type {
   string mandatory_field {
@@ -317,11 +320,11 @@ salto.example_type example_instance {
 
 #### `_restriction`
 This annotation is used on field blocks to specify restrictions on the values that are valid for this field.
-Instances with values that do not comply with these restrictions will cause a validation warning
+Instances with values that do not comply with these restrictions will cause a validation warning.
 
 Type:
 - enforce_value: `boolean` - when true, the restriction should be enforced and will create a validation warning, when false, the restriction is just a hint.
-- values: `list<string | number>` - a list of possible values, when this is specified, only these values are valid. the type of values is the list is determined by the type of the field.
+- values: `list<string | number>` - a list of possible values, when this is specified, only these values are valid. The type of values is the list is determined by the type of the field.
 - min: `number` - relevant for number fields, specifies the minimum valid value (inclusive).
 - max: `number`- relevant for number fields, specifies the maximum valid value (inclusive).
 - regex: `string` - relevant for string fields, specifies a pattern that values must match.
@@ -329,8 +332,10 @@ Type:
 - max_list_length: `number` - relevant for list fields, specifies the maximum allowed values in the list.
 
 Default: `undefined`
+
 Applicable to: Fields
-Example:
+
+###### Example
 ```HCL
 type salto.example_type {
   number restricted_num {
@@ -356,12 +361,15 @@ These annotations are used to control which values appear in NaCl files and whic
 hidden values are still part of the Salto element graph, but will not be represented in NaCl.
 
 `_hidden` can be set on types to omit them completely from NaCl, this will not actually be seen in NaCl files because it will omit the type which contains its definition.
-`_hidden_value` can be set on fields or annotation types to omit the field values from instances or the annotation values
+`_hidden_value` can be set on fields or annotation types to omit the field values from instances or the annotation values.
 
 Type: `boolean`
+
 Default: `false`
+
 Applicable to: Fields, Types
-Example:
+
+###### Example
 ```HCL
 type salto.hidden_number is number {
   _hidden_value = true
@@ -390,12 +398,15 @@ salto.example example_instance {
 ```
 
 #### `_parent`
-This is an annotation that can hold references to other elements to represent a parent-child relationship
+This is an annotation that can hold references to other elements to represent a parent-child relationship.
 
 Type: `List<reference>`
+
 Default: `[]`
+
 Applicable to: Types, Instances
-Example:
+
+###### Example
 ```HCL
 salto.example parent1 {
   name = "a parent configuration element"
@@ -425,28 +436,37 @@ salto.example child2 {
 
 This annotation is used to define a user-friendly alias for the element. The alias can be used in Salto enabled editors to display a shorter, clearer element name to users. Unlike the element ID, it does not have to be unique.
 
-Type: `string` Default: `undefined` Applicable to: Types, Instances, Fields
-Example:
+Type: `string`
+
+Default: `undefined`
+
+Applicable to: Types, Instances, Fields
+
+###### Example
 ```HCL
 type salto.example_type_long_id {
-_alias = "Example Type"
+  _alias = "Example Type"
 }
 
 salto.example_type_long_id example_instance_id_with_long_prefix {
-_alias = "Example Instance"
+  _alias = "Example Instance"
 }
 ```
 
 #### `_important_values` / `_self_important_values`
 
-This annotation is used to define what are these element's most important values. This list will be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. The list should include objects with the key of the element's important values and if it is indexed.
-Type: `Array` of objects of type
-- value: `string` - The name of the important value.
-- indexed: `boolean` - Specifies if the value is index for easy searchability.
-- highlighted: `boolean` - Specifies if the value is highlighted in the display.
+This annotation is used to define what are these elements' most important values. This list may be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. Important values are selected from annotations for types and from fields for instances. `_important_values` refer to fields in instances of the type whereas `_self_important_values` refers to fields of the type itself.
 
-Default: `undefined` Applicable to: Types
-Example:
+Type: `Array` of objects of type:
+- value: `string` - A name of a field or annotation.
+- indexed: `boolean` - Specifies if the value should be indexed for easy searchability.
+- highlighted: `boolean` - Specifies if the value should be highlighted in the display.
+
+Default: `undefined`
+
+Applicable to: Types
+
+###### Example
 ```HCL
 type salto.example {
   _important_values = [
@@ -468,16 +488,19 @@ type salto.example {
 
 
 #### `_generated_dependencies` / `_depends_on`
-These are place holders for additional references from one element to another.
+These are placeholders for additional references from one element to another.
 They are needed for cases where the dependency is not derived directly from the configuration.
 
 `_generated_dependencies` is used for references that are detected automatically by Salto.
 `_depends_on` can be used by the user to add references that Salto did not automatically detect.
 
 Type: `List<reference>`
+
 Default: `[]`
+
 Applicable to: Types, Instances, Fields
-Example:
+
+###### Example
 ```HCL
 type salto.example {
   number field1 {
@@ -502,9 +525,12 @@ Elements that have this annotation can support the "Go To Service" feature in Sa
 This boolean annotation is used to identify fields or types as ServiceId. a ServiceId is a value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields). 
 
 Type: `boolean`
+
 Default: `false`
+
 Applicable to: Types, Fields
-Example:
+
+###### Example
 ```HCL
 type serviceIdTypeExample {
   _is_service_id = true
@@ -519,13 +545,15 @@ type salto.example {
 
 
 #### `_created_by`
-This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.\
+This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.
 
 Type: `string`
+
 Default: `false`
+
 Applicable to: Types, Instances, Fields
 
-Example:
+###### Example
 ```HCL
 type salto.example {
   number field1 {
@@ -539,13 +567,15 @@ type salto.example {
 ```
 #### `_created_at`
 This is a hidden string annotation (will not be seen in NaCl) that is used to store the time the element was created.
-The time format is ISO-8601
+The time format is ISO-8601.
 
 Type: `string`
+
 Default: `false`
+
 Applicable to: Types, Instances, Fields
 
-Example:
+###### Example
 ```HCL
 type salto.example {
   number field1 {
@@ -562,10 +592,12 @@ type salto.example {
 This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who last changed this element.
 
 Type: `string`
+
 Default: `false`
+
 Applicable to: Types, Instances, Fields
 
-Example:
+###### Example
 ```HCL
 type salto.example {
   number field1 {
@@ -580,13 +612,15 @@ type salto.example {
 
 #### `_changed_at`
 This is a hidden string annotation (will not be seen in NaCl) that is used to store the last time this element was changed.
-The time format is ISO-8601
+The time format is ISO-8601.
 
 Type: `string`
+
 Default: `false`
+
 Applicable to: Types, Instances, Fields
 
-Example:
+###### Example
 ```HCL
 type salto.example {
   number field1 {
@@ -603,12 +637,13 @@ type salto.example {
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether creating instances of a type or certain value in it is supported.
 
 Type: `boolean`
+
 Default: `true`
+
 Applicable to: Types, Fields
 
-Example:
-
-For the type
+##### Example
+For the type:
 ```HCL
 type salto.example {
   number nonCreatableField {
@@ -640,11 +675,13 @@ salto.example invalid {
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a modification of an instance or a certain value in an instance is supported.
 
 Type: `boolean`
+
 Default: `true`
+
 Applicable to: Types, Fields
 
-Example:
-For the types
+###### Example
+For the types:
 ```HCL
 type salto.updatable {
   number nonUpdatableField {
@@ -722,11 +759,13 @@ salto.notUpdatable invalid {
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a deletion of an instance is supported.
 
 Type: `boolean`
+
 Default: `true`
+
 Applicable to: Types
 
-Example:
-For the types
+###### Example
+For the types:
 ```HCL
 type salto.deletable {
   number someField {
@@ -757,12 +796,15 @@ salto.notDeletable instance {
 
 #### `_additional_properties`
 This annotation can be used on types to specify whether the type allows additional properties.
-When it is set to false, values of this type may only contain the fields that this type allows, any additional value would cause a validation warning.
+When it is set to false, values of this type may only contain the fields that this type allows, any additional value will cause a validation warning.
 
 Type: `boolean`
+
 Default: `true`
+
 Applicable to: Types
-Example:
+
+###### Example
 ```HCL
 type salto.example_type {
   number field {
@@ -825,9 +867,10 @@ Currently the following functions are available:
 
 #### The `file` function
 Function signature: `file(path, encoding)`
+
 Arguments:
-  - `path`: The path of the file to load content from, relative to the `static-files` folder in the workspace
-  - `encoding`: The encoding used to load the content of the file (default is `binary` - meaning, no encoding), this is usually useful for text files
+  - `path`: The path of the file to load content from, relative to the `static-files` folder in the workspace.
+  - `encoding`: The encoding used to load the content of the file (default is `binary` - meaning, no encoding), this is usually useful for text files.
 
 
 ## Merge rules
@@ -879,8 +922,8 @@ salto.test my_test {
 When an instance is created it does not have to set values to all of the type fields.
 It's possible to create an instance in partial blocks, as long as:
 
-- All blocks have the same identifier (type and name)
-- There are no collisions, i.e. each value is set only once across all definitions (specifically each primitive or list value can be set only once)
+- All blocks have the same identifier (type and name).
+- There are no collisions, i.e. each value is set only once across all definitions (specifically each primitive or list value can be set only once).
 
 In the example below we're creating only one `salto.employee` instance, using two separate blocks that have the same identifier and do not collide:
 
@@ -902,6 +945,7 @@ salto.employee john_doe {
   }
 }
 ```
+
 Note that `office` was set in both instance blocks but is still valid because `office` is not a primitive value and inside the different definitions of `office` there were no conflicts between primitive value keys.
 In the above example, if we added a `name = "Salto TLV"` to the second office definition it would become invalid as it would attempt to define the primitive value of `name` in multiple blocks.
 
@@ -922,4 +966,3 @@ In the case of `settings` types the same rules apply, and since there are no ins
 When multiple type definitions have the same name we will attempt to merge them in the following way:
 - The type will contain field definitions from all blocks, as long as each field is defined once. if the same field name has more than one definition it will be considered an error.
 - Annotation values on the type itself will follow the same rules as [instance values](#value-merging-limitations).
-

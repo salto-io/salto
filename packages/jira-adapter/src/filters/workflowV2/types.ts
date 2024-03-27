@@ -33,6 +33,7 @@ const log = logger(module)
 
 export const CHUNK_SIZE = 25
 export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
+export const TRIGGER_LIST_FIELDS = new Set(['enabledTriggers'])
 export const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
 export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set([
   'statuses',

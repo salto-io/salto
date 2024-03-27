@@ -41,7 +41,7 @@ import {
 } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
-import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightining_url_resolvers'
+import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightning_url_resolvers'
 
 const { awu } = collections.asynciterable
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false

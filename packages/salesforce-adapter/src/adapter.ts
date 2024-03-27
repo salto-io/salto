@@ -179,7 +179,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
-const {isDefined} = values
+const { isDefined } = values
 
 const log = logger(module)
 
@@ -539,7 +539,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
     const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
     const fieldsFromElementsSource = await awu(
@@ -549,10 +548,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       .flatMap((obj) => Object.values(obj.fields))
       .filter((field) => isCustom(apiNameSync(field)))
       .toArray()
-    return new Set(fieldsFromElementsSource.filter(
-      (field) => !listedFields.has(apiNameSync(field) ?? ''),
-    ).map(field => apiNameSync(field.parent))
-    .filter(isDefined))
+    return new Set(
+      fieldsFromElementsSource
+        .filter((field) => !listedFields.has(apiNameSync(field) ?? ''))
+        .map((field) => apiNameSync(field.parent))
+        .filter(isDefined),
+    )
   }
 
   /**
@@ -570,13 +571,14 @@ export default class SalesforceAdapter implements AdapterOperations {
       await getLastChangeDateOfTypesWithNestedInstances({
         client: this.client,
         metadataQuery: buildFilePropsMetadataQuery(baseQuery),
-      })  
+      })
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
-          customObjectsWithDeletedFields: await this.getCustomObjectsWithDeletedFields()
+          customObjectsWithDeletedFields:
+            await this.getCustomObjectsWithDeletedFields(),
         })
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({

@@ -21,6 +21,7 @@ import {
   Element,
   ElemID,
   FetchResult,
+  Field,
   FieldDefinition,
   InstanceElement,
   isInstanceElement,
@@ -148,6 +149,7 @@ describe('Custom Object Instances filter', () => {
   let client: SalesforceClient
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
+  let deletedCustomFields: Field[]
 
   const createNamespaceRegexFromString = (namespace: string): string =>
     `${namespace}__.*`
@@ -326,6 +328,9 @@ describe('Custom Object Instances filter', () => {
       (e) => isInstanceElement(e) && e.getTypeSync().isEqual(type),
     ) as InstanceElement[]
 
+  beforeEach(() => {
+    deletedCustomFields = []
+  })
   describe('config interactions', () => {
     // ref: https://salto-io.atlassian.net/browse/SALTO-4579?focusedCommentId=97852
     const testTypeName = 'TestType'
@@ -686,6 +691,7 @@ describe('Custom Object Instances filter', () => {
         client,
         config: {
           ...defaultFilterContext,
+          deletedCustomFields,
           fetchProfile,
         },
       }) as FilterType
@@ -867,9 +873,20 @@ describe('Custom Object Instances filter', () => {
     })
 
     describe('When some CustomObjects fit the configured regex (namespace)', () => {
+      const DELETED_FIELD_NAME = 'DeletedField__c'
+
       let elements: Element[]
       const simpleName = `${testNamespace}__simple__c`
-      const simpleObject = createCustomObject(simpleName)
+      const simpleObject = createCustomObject(simpleName, {
+        [DELETED_FIELD_NAME]: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [LABEL]: 'Deleted Field',
+            [API_NAME]: `${simpleName}.${DELETED_FIELD_NAME}`,
+          },
+        },
+      })
 
       const noFieldsName = `${testNamespace}__noQueryablefields`
       const objWithNoFields = new ObjectType({
@@ -926,6 +943,10 @@ describe('Custom Object Instances filter', () => {
           objWithAddressField,
           objNotInNamespace,
         ]
+        // Make sure we don't attempt to query fields that were deleted.
+        // This is a possible scenario in fetch with changes detection, where we get the non modified ObjectTypes
+        // from the elements source
+        deletedCustomFields.push(simpleObject.fields[DELETED_FIELD_NAME])
         await filter.onFetch(elements)
       })
 

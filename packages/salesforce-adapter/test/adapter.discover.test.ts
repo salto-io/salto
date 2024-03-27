@@ -28,6 +28,7 @@ import {
   ObjectType,
   ServiceIds,
   isInstanceElement,
+  Field,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
@@ -513,9 +514,36 @@ describe('SalesforceAdapter fetch', () => {
     })
 
     describe('partial fetch deletions detection', () => {
+      const DELETED_FIELD_NAME = 'DeletedField__c'
+      const NON_DELETED_FIELD_NAME = 'NonDeletedField__c'
+
+      const DELETED_FIELD_API_NAME = `Account.${DELETED_FIELD_NAME}`
+      const NON_DELETED_FIELD_API_NAME = `Account.${NON_DELETED_FIELD_NAME}`
       let testAdapter: SalesforceAdapter
       let testConnection: MockInterface<Connection>
       beforeEach(() => {
+        const accountType = mockTypes.Account.clone()
+        const deletedField = new Field(
+          accountType,
+          DELETED_FIELD_NAME,
+          BuiltinTypes.STRING,
+          {
+            [constants.API_NAME]: DELETED_FIELD_API_NAME,
+            [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+          },
+        )
+        const nonDeletedField = new Field(
+          accountType,
+          NON_DELETED_FIELD_NAME,
+          BuiltinTypes.STRING,
+          {
+            [constants.API_NAME]: NON_DELETED_FIELD_API_NAME,
+            [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+          },
+        )
+        accountType.fields[DELETED_FIELD_NAME] = deletedField
+        accountType.fields[NON_DELETED_FIELD_NAME] = nonDeletedField
+
         const existingElements = [
           mockInstances().ChangedAtSingleton,
           mockTypes.Layout,
@@ -533,7 +561,7 @@ describe('SalesforceAdapter fetch', () => {
             { fullName: 'DeletedApex' },
             mockTypes.ApexClass,
           ),
-          createCustomObjectType('Account', {}),
+          accountType,
           createCustomObjectType('Deleted__c', {}),
         ]
         const elementsSource = buildElementsSourceFromElements(existingElements)
@@ -579,6 +607,14 @@ describe('SalesforceAdapter fetch', () => {
                 }),
               ]
             }
+            if (query.type === 'CustomField') {
+              return [
+                mockFileProperties({
+                  type: 'CustomField',
+                  fullName: NON_DELETED_FIELD_API_NAME,
+                }),
+              ]
+            }
             return []
           }),
         )
@@ -592,10 +628,11 @@ describe('SalesforceAdapter fetch', () => {
           makeArray(fetchResult.partialFetchData?.deletedElements).map((id) =>
             id.getFullName(),
           ),
-        ).toEqual([
+        ).toIncludeSameMembers([
           'salesforce.Layout.instance.DeletedLayout',
           'salesforce.ApexClass.instance.DeletedApex',
           'salesforce.Deleted__c',
+          'salesforce.Account.field.DeletedField__c',
         ])
       })
     })

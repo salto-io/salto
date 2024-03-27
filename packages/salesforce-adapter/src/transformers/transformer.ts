@@ -1186,7 +1186,7 @@ const transformCompoundValues = async (
   )
 }
 
-const toRecord = async (
+export const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
   withNulls: boolean,

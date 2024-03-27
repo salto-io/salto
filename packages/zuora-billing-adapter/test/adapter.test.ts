@@ -22,11 +22,11 @@ import {
   InstanceElement,
   isInstanceElement,
   ListType,
-  MapType,
   ObjectType,
   isObjectType,
   CORE_ANNOTATIONS,
   ProgressReporter,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -67,9 +67,10 @@ const getObjectDefTypes = (): Record<string, ObjectType> => {
   })
   const customObjectDefinitionsType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'CustomObjectDefinitions'),
-    fields: {
-      additionalProperties: {
-        refType: new MapType(customObjectDefType),
+    fields: {},
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+        refType: new ReferenceExpression(customObjectDefType.elemID, customObjectDefType),
       },
     },
   })

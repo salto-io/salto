@@ -20,9 +20,9 @@ import {
   ElemID,
   BuiltinTypes,
   ListType,
-  MapType,
   InstanceElement,
   ReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
@@ -44,8 +44,10 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
-          additionalProperties: {
-            refType: new MapType(BuiltinTypes.UNKNOWN),
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN),
           },
         },
       })
@@ -63,7 +65,11 @@ describe('swagger_instance_elements', () => {
           name: { refType: BuiltinTypes.STRING },
           owners: { refType: new ListType(Owner) },
           primaryOwner: { refType: Owner },
-          additionalProperties: { refType: new MapType(Food) },
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(Food.elemID, Food),
+          },
         },
       })
       const Status = new ObjectType({
@@ -945,16 +951,19 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinition'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
-          additionalProperties: {
-            refType: new MapType(BuiltinTypes.UNKNOWN),
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN),
           },
         },
       })
       const CustomObjectDefinitionMapping = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinitionMapping'),
-        fields: {
-          additionalProperties: {
-            refType: new MapType(CustomObjectDefinition),
+        fields: {},
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(CustomObjectDefinition.elemID, CustomObjectDefinition),
           },
         },
       })
@@ -1544,8 +1553,10 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
-          additionalProperties: {
-            refType: new MapType(BuiltinTypes.UNKNOWN),
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN),
           },
         },
         isSettings: true,

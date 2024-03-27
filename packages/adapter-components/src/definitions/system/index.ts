@@ -20,10 +20,10 @@ export {
   ResolveClientOptionsType,
   ResolvePaginationOptionsType,
   ResolveCustomNameMappingOptionsType,
+  ResolveContextStrategiesType,
 } from './api'
 export * as deploy from './deploy'
 export * as fetch from './fetch'
-export * as sources from './sources'
 export * from './requests'
 export {
   DATA_FIELD_ENTIRE_OBJECT,
@@ -37,5 +37,4 @@ export {
   AdjustFunction,
   ContextParams,
 } from './shared'
-export { RequiredDefinitions } from './types'
 export * from './utils'

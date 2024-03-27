@@ -18,7 +18,7 @@ import { filter } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { AdapterFilterCreator } from '../filter_utils'
 import { FieldReferenceDefinition, addReferences } from '../references'
-import { APIDefinitionsOptions } from '../definitions'
+import { APIDefinitionsOptions, ResolveContextStrategiesType } from '../definitions'
 
 const { makeArray } = collections.array
 
@@ -26,15 +26,16 @@ const { makeArray } = collections.array
  * replace values with references based on a set of rules
  */
 export const fieldReferencesFilterCreator =
-  <TResult extends void | filter.FilterResult, Options extends APIDefinitionsOptions = {}>(
-    referenceRules?: FieldReferenceDefinition<never>[],
-  ): AdapterFilterCreator<{}, TResult, {}, Options> =>
+  <TResult extends void | filter.FilterResult, TOptions extends APIDefinitionsOptions = {}>(
+    referenceRules?: FieldReferenceDefinition<ResolveContextStrategiesType<TOptions>>[],
+  ): AdapterFilterCreator<{}, TResult, {}, TOptions> =>
   ({ definitions }) => ({
     name: 'fieldReferencesFilter',
     onFetch: async (elements: Element[]) => {
       await addReferences({
         elements,
         defs: makeArray(referenceRules).concat(makeArray(definitions.references?.rules)),
+        contextStrategyLookup: definitions.references?.contextStrategyLookup,
       })
     },
   })

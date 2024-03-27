@@ -70,5 +70,43 @@
       "url": "https://localhost:80/api/v2/business_hours/schedules/4442604931859/holidays"
     },
     "headers": { "x-rate-limit": "700", "x-rate-limit-remaining": "696" }
+  },
+  {
+    "url": "/api/v2/made_up_type_a",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "made_up_type_a": [
+        {
+          "id": 1,
+          "name": "made up 1"
+        },
+        {
+          "id": 2,
+          "name": "made up 2",
+          "parent_id": "1",
+          "parent_type": "made_up_type_a"
+        },
+        {
+          "id": 3,
+          "name": "made up 3",
+          "parent_id": "1",
+          "parent_type": "made_up_type_b"
+        }
+      ]
+    }
+  },
+  {
+    "url": "/api/v2/made_up_type_b",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "made_up_type_b": [
+        {
+          "id": 1,
+          "name": "made up 1"
+        }
+      ]
+    }
   }
 ]

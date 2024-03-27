@@ -539,7 +539,9 @@ export const getAllInstances = async (
   configChangeSuggestions: ConfigChangeSuggestion[]
 }> => {
   const deletedCustomFieldsApiNames = new Set(
-    config.deletedCustomFields.map((field) => apiNameSync(field)).filter(isDefined),
+    config.deletedCustomFields
+      .map((field) => apiNameSync(field))
+      .filter(isDefined),
   )
   const baseTypesSettings = _.pickBy(
     customObjectFetchSetting,

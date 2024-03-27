@@ -76,7 +76,7 @@ import {
   CONDITION_GROUPS_PATH_NAME_TO_RECURSE,
   WorkflowStatus,
   Workflow,
-  isWorkflowPayload,
+  isDeploymentWorkflowPayload,
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
@@ -379,6 +379,17 @@ const getNewVersionFromService = async (
   return response.data.workflows[0].version
 }
 
+const getNewVersion = async ({
+  workflow,
+  isNewVersion,
+  client,
+}: {
+  workflow: Workflow & { version: WorkflowVersion }
+  isNewVersion: boolean
+  client: JiraClient
+}): Promise<WorkflowVersion> =>
+  isNewVersion ? (await getNewVersionFromService(workflow.name, client)) ?? workflow.version : workflow.version
+
 const getWorkflowPayload = (
   isAddition: boolean,
   resolvedWorkflowInstance: InstanceElement,
@@ -401,7 +412,7 @@ const getWorkflowsFromWorkflowScheme = async (
   workflowSchemeInstance: InstanceElement,
 ): Promise<ReferenceExpression[]> => {
   const { defaultWorkflow } = workflowSchemeInstance.value
-  const workflows = makeArray(workflowSchemeInstance.value?.items)
+  const workflows = makeArray(workflowSchemeInstance.value.items)
     .filter(isWorkflowSchemeItem)
     .map(item => item.workflow)
     .filter(values.isDefined)
@@ -409,7 +420,7 @@ const getWorkflowsFromWorkflowScheme = async (
 }
 
 // active workflow is a workflow that is associated with a project using a workflow scheme
-const getActiveWorkflows = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
+const calculateActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
   const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
   const activeWorkflows = await awu(projects)
     .filter(projectHasWorkflowSchemeReference)
@@ -430,14 +441,16 @@ const getWorkflowStepsUrl = (baseUrl: string, workflowName: string): URL => {
 
 const deploySteps = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  activeWorkflows: Set<string>,
+  activeWorkflowsNames: Set<string>,
   client: JiraClient,
-): Promise<void> => {
+): Promise<boolean> => {
+  let isDeployedSteps = false
   const workflowPayload = getChangeData(change).value
-  if (!isWorkflowPayload(workflowPayload)) {
+  if (!isDeploymentWorkflowPayload(workflowPayload)) {
     log.debug('Received unexpected workflow payload: %o', workflowPayload)
     throw new Error('failed to deploy workflow steps')
   }
+  // the workflow that deployed is the first element in the workflows array in the payload
   const workflow = workflowPayload.workflows[0]
   const workflowStatuses = workflow.statuses
   const payloadStatuses = workflowPayload.statuses
@@ -446,15 +459,18 @@ const deploySteps = async (
   const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
 
   await awu(workflowStatuses)
-    .filter(status => payloadStatusesByReference[status.statusReference].name !== status.name)
+    .filter(status => payloadStatusesByReference[status.statusReference]?.name !== status.name)
     .forEach(async status => {
-      if (payloadStatusesByReference[status.statusReference]?.name === undefined) {
+      const payloadStatus = payloadStatusesByReference[status.statusReference]
+      if (payloadStatus?.name === undefined) {
         log.error(`status name is missing from the status with id ${status.id} in workflow ${workflowName}`)
         throw new Error('failed to deploy workflow steps')
       }
-      const stepStatus = payloadStatusesByReference[status.statusReference].id
-      const workflowStep = statusIdToStepId[payloadStatusesByReference[status.statusReference].id]
-      if (activeWorkflows.has(change.data.after.elemID.getFullName())) {
+      isDeployedSteps = true
+      const stepStatus = payloadStatus.id
+      const workflowStep = statusIdToStepId[stepStatus]
+
+      if (activeWorkflowsNames.has(change.data.after.elemID.getFullName())) {
         // create draft
         await client.jspGet({
           url: '/secure/admin/workflows/EditWorkflowDispatcher.jspa',
@@ -495,17 +511,18 @@ const deploySteps = async (
         })
       }
     })
+  return isDeployedSteps
 }
 
 const deployWorkflow = async ({
   change,
-  activeWorkflows,
+  activeWorkflowsNames,
   client,
   config,
   elementsSource,
 }: {
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
-  activeWorkflows: Set<string>
+  activeWorkflowsNames: Set<string>
   client: JiraClient
   config: JiraConfig
   elementsSource: ReadOnlyElementsSource
@@ -534,13 +551,7 @@ const deployWorkflow = async ({
     return
   }
   const instance = getChangeData(change)
-  const responseWorkflow = response.workflows[0]
-  instance.value.workflows[0] = {
-    ...instance.value.workflows[0],
-    id: responseWorkflow.id,
-    version: responseWorkflow.version,
-    scope: responseWorkflow.scope,
-  }
+  const isMigration = response.taskId !== undefined
   if (response.taskId) {
     await awaitSuccessfulMigration({
       client,
@@ -550,10 +561,12 @@ const deployWorkflow = async ({
       workflowName: instance.elemID.name,
     })
   }
+  let isDeployedSteps = false
   if (config.client.usePrivateAPI) {
     try {
-      await deploySteps(change, activeWorkflows, client)
+      isDeployedSteps = await deploySteps(change, activeWorkflowsNames, client)
     } catch (error) {
+      // need to update the version
       const workflowName = getChangeData(change).value.workflows[0].name
       const workflowStepsLink = getWorkflowStepsUrl(client.baseUrl, workflowName)
       const deployStepsError: SaltoError = {
@@ -562,6 +575,19 @@ const deployWorkflow = async ({
       }
       throw deployStepsError
     }
+  }
+  const version = await getNewVersion({
+    workflow: response.workflows[0],
+    // the version is not up to date if we deployed steps or if we had a migration
+    isNewVersion: isDeployedSteps || isMigration,
+    client,
+  })
+  const responseWorkflow = response.workflows[0]
+  instance.value.workflows[0] = {
+    ...instance.value.workflows[0],
+    id: responseWorkflow.id,
+    version,
+    scope: responseWorkflow.scope,
   }
 }
 
@@ -640,7 +666,14 @@ const getWorkflowForDeploy = async (
  * if there is a modification that removes a status from an active workflow we need status mappings to migrate the issues
  */
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elementsSource }) => {
+  let activeWorkflowsNames: Set<string>
   const originalInstances: Record<string, InstanceElement> = {}
+  const getActiveWorkflowsNames = async (): Promise<Set<string>> => {
+    if (activeWorkflowsNames === undefined) {
+      return calculateActiveWorkflowsNames(elementsSource)
+    }
+    return activeWorkflowsNames
+  }
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
@@ -704,11 +737,11 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(changes, isAdditionOrModificationWorkflowChange)
-      const activeWorkflows = _.isEmpty(relevantChanges) ? new Set<string>() : await getActiveWorkflows(elementsSource)
+      activeWorkflowsNames = await getActiveWorkflowsNames()
       const deployResult = await deployChanges(relevantChanges, async change =>
         deployWorkflow({
           change,
-          activeWorkflows,
+          activeWorkflowsNames,
           client,
           config,
           elementsSource,
@@ -726,11 +759,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           const instance = getChangeData(change)
           const originalInstance = originalInstances[instance.elemID.getFullName()]
           const workflow = getChangeData(change).value.workflows[0]
-          const version = (await getNewVersionFromService(workflow.name, client)) ?? workflow.version
           instance.value = {
             ...originalInstance.value,
             id: workflow.id,
-            version,
+            version: workflow.version,
           }
         })
     },

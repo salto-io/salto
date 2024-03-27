@@ -173,14 +173,14 @@ export const isWorkflowV2Instance = (instance: InstanceElement): instance is Wor
 export const isWorkflowInstance = (instance: InstanceElement): instance is WorkflowV1Instance | WorkflowV2Instance =>
   isWorkflowV1Instance(instance) || isWorkflowV2Instance(instance)
 
-type WorkflowPayload = {
+type DeploymentWorkflowPayload = {
   statuses: PayloadWorkflowStatus[]
   workflows: Workflow[]
   scope?: WorkflowScope
 }
 
 type WorkflowResponse = {
-  workflows: Workflow[]
+  workflows: (Workflow & { version: WorkflowVersion })[]
   statuses: PayloadWorkflowStatus[]
   taskId?: string
 }
@@ -228,25 +228,23 @@ const WORKFLOW_DATA_RESPONSE_SCHEMA = Joi.array()
   )
   .required()
 
-const WORKFLOWS_SCHEME = Joi.array()
-  .items(
-    Joi.object({
-      name: Joi.string().required(),
-      id: Joi.string(),
-      version: Joi.object({
-        versionNumber: Joi.number().required(),
-        id: Joi.string().required(),
-      }).unknown(true),
-      scope: Joi.object({
-        project: Joi.string(),
-        type: Joi.string().required(),
-      })
-        .unknown(true)
-        .required(),
-      statuses: Joi.array().items(Joi.object().unknown(true)).required(),
-      transitions: Joi.array().items(TRANSITION_SCHEME).required(),
-    }).unknown(true),
-  )
+const WORKFLOW_SCHEME = Joi.object({
+  name: Joi.string().required(),
+  id: Joi.string(),
+  version: Joi.object({
+    versionNumber: Joi.number().required(),
+    id: Joi.string().required(),
+  }).unknown(true),
+  scope: Joi.object({
+    project: Joi.string(),
+    type: Joi.string().required(),
+  })
+    .unknown(true)
+    .required(),
+  statuses: Joi.array().items(Joi.object().unknown(true)).required(),
+  transitions: Joi.array().items(TRANSITION_SCHEME).required(),
+})
+  .unknown(true)
   .required()
 
 const STATUSES_SCHEME = Joi.array()
@@ -262,16 +260,29 @@ const STATUSES_SCHEME = Joi.array()
   .required()
 
 const WORKFLOW_RESPONSE_SCHEME = Joi.object({
-  workflows: WORKFLOWS_SCHEME,
+  workflows: Joi.array()
+    .items(
+      WORKFLOW_SCHEME.concat(
+        Joi.object({
+          version: Joi.object({
+            versionNumber: Joi.number().required(),
+            id: Joi.string().required(),
+          })
+            .unknown(true)
+            .required(),
+        }),
+      ),
+    )
+    .required(),
   statuses: STATUSES_SCHEME,
   taskId: Joi.string(),
 })
   .unknown(true)
   .required()
 
-const WORKFLOW_PAYLOAD_SCHEME = Joi.object({
+const DEPLOYMENT_WORKFLOW_PAYLOAD_SCHEME = Joi.object({
   statuses: STATUSES_SCHEME,
-  workflows: WORKFLOWS_SCHEME,
+  workflows: Joi.array().items(WORKFLOW_SCHEME).required(),
   scope: Joi.object({
     project: Joi.string(),
     type: Joi.string().required(),
@@ -280,8 +291,8 @@ const WORKFLOW_PAYLOAD_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-export const isWorkflowPayload = createSchemeGuard<WorkflowPayload>(
-  WORKFLOW_PAYLOAD_SCHEME,
+export const isDeploymentWorkflowPayload = createSchemeGuard<DeploymentWorkflowPayload>(
+  DEPLOYMENT_WORKFLOW_PAYLOAD_SCHEME,
   'Received an invalid workflow payload',
 )
 

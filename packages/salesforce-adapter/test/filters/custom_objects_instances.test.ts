@@ -2342,12 +2342,19 @@ describe('Custom Object Instances filter', () => {
               ),
             )
             const refToType = createCustomObject(refToTypeName)
+            const refToInstance = new InstanceElement(
+              'RefToInstanceFromWorkspace',
+              refToType,
+              {
+                [CUSTOM_OBJECT_ID_FIELD]: refToInstanceId,
+              },
+            )
             const referringInstance = new InstanceElement(
               'ReferringInstance',
               objectType,
               {
                 [CUSTOM_OBJECT_ID_FIELD]: testInstanceId,
-                referenceField: refToInstanceId,
+                referenceField: new ReferenceExpression(refToInstance.elemID),
               },
             )
             filter = filterCreator({
@@ -2357,6 +2364,7 @@ describe('Custom Object Instances filter', () => {
                 fetchProfile,
                 elementsSource: buildElementsSourceFromElements([
                   referringInstance,
+                  refToInstance,
                 ]),
               },
             }) as FilterType

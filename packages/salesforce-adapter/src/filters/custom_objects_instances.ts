@@ -546,12 +546,27 @@ export const getAllInstances = async (
   ): Promise<SalesforceRecordsByTypeAndId> => {
     const instancesToRecords = async (
       instances: ReadonlyArray<InstanceElement>,
-    ): Promise<SalesforceRecord[]> =>
-      awu(instances)
+    ): Promise<SalesforceRecord[]> => {
+      const resolveRecordReferences = async (
+        record: SalesforceRecord,
+      ): Promise<void> =>
+        awu(Object.entries(record))
+          .filter(([, value]) => isReferenceExpression(value))
+          .forEach(async ([fieldName, refExpr]) => {
+            record[fieldName] = apiNameSync(
+              await refExpr.getResolvedValue(elementsSource),
+            )
+          })
+
+      const records = await awu(instances)
         .map((instance) =>
           toRecord(instance, FIELD_ANNOTATIONS.QUERYABLE, true),
         )
         .toArray()
+
+      await awu(records).forEach(resolveRecordReferences)
+      return records
+    }
 
     const elementSourceRecordsByType: Record<string, Values> = {}
     const elementSourceInstancesByType = await awu(

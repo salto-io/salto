@@ -25,7 +25,7 @@ import {
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { JIRA } from '../constants'
 import JiraClient from '../client/client'
 
@@ -60,13 +60,11 @@ const getIconContent = async (link: string, client: JiraClient): Promise<Buffer>
     return content
   } catch (e) {
     if (e instanceof clientUtils.HTTPError) {
-      throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e.message}`)
+      throw new Error(`Failed to fetch attachment content from Jira API. error: ${e.message}`)
     }
-    throw new Error(`Failed to fetch attachment content from Jira API. error: %o ${e}`)
+    throw new Error(`Failed to fetch attachment content from Jira API. error: ${e}`)
   }
 }
-// replace spaces and [] to underscore
-export const convertName = (pathName: string): string => pathName.replace(/[\s[\]]/g, '_')
 
 export const setIconContent = async ({
   client,
@@ -81,7 +79,7 @@ export const setIconContent = async ({
 }): Promise<void> => {
   const iconContent = await getIconContent(link, client)
   instance.value[fieldName] = new StaticFile({
-    filepath: `${JIRA}/${instance.elemID.typeName}/${convertName(instance.value.name)}.png`,
+    filepath: `${JIRA}/${instance.elemID.typeName}/${pathNaclCase(naclCase(instance.value.name))}.png`,
     content: iconContent,
   })
 }

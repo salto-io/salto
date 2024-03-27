@@ -18,12 +18,12 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  ModificationChange,
   AdditionChange,
   SaltoError,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
@@ -32,10 +32,11 @@ import { FilterCreator } from '../../filter'
 import { OBJECT_TYPE_ICON_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { convertName, isIconResponse, sendIconRequest, setIconContent } from '../icon_utils'
-import { getWorkspaceId } from '../../workspace_id'
+import { isIconResponse, sendIconRequest, setIconContent } from '../icon_utils'
+import { getWorkspaceId, getWorkspaceIdMissingErrors } from '../../workspace_id'
 import { createLogoConnection } from '../../client/connection'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
 type AuthorizationToken = {
@@ -79,13 +80,13 @@ const ICON_CREATION_RESPONSE_SCHEME = Joi.object({
 const isIconCreationResponseScheme = createSchemeGuard<IconCreationResponse>(ICON_CREATION_RESPONSE_SCHEME)
 
 const deployAdditionIcon = async (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  change: AdditionChange<InstanceElement>,
   logoClient: JiraClient,
   workspaceId: string,
   client: JiraClient,
 ): Promise<void> => {
   const instance = getChangeData(change)
-  const url = `/file/binary?collection=insight_${workspaceId}_icons&name=${convertName(instance.value.name)}.png&deletable=true`
+  const url = `/file/binary?collection=insight_${workspaceId}_icons&name=${pathNaclCase(naclCase(instance.value.name))}.png&deletable=true`
   try {
     const resp = await sendIconRequest({ client: logoClient, change, url, fieldName: 'icon' })
     if (!isIconCreationResponseScheme(resp)) {
@@ -110,19 +111,28 @@ const deployAdditionIcon = async (
   }
 }
 
-/* Fetch object type icons and deploy addition of object type icons */
-const filter: FilterCreator = ({ client, config }) => ({
+/* This filter responsible to add icons to object type icons nacls and deploy addition of object type icons */
+const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   name: 'objectTypeIconFilter',
   onFetch: async elements => {
     if (!config.fetch.enableJSM || !config.fetch.enableJSMPremium) {
       return { errors: [] }
     }
     const objectTypeIcons = elements.filter(e => e.elemID.typeName === OBJECT_TYPE_ICON_TYPE).filter(isInstanceElement)
-    const workSpaceId = await getWorkspaceId(client, config)
+    if (objectTypeIcons.length === 0) {
+      return { errors: [] }
+    }
+    const workspaceId = await getWorkspaceId(client, config)
+    if (workspaceId === undefined) {
+      log.error(`Skip fetching of ${OBJECT_TYPE_ICON_TYPE} types because workspaceId is undefined`)
+      return {
+        errors: [{ message: 'Failed to fetch object type icons because workspaceId is undefined', severity: 'Error' }],
+      }
+    }
     const errors: SaltoError[] = []
     await awu(objectTypeIcons).forEach(async objectTypeIcon => {
       try {
-        const link = `/gateway/api/jsm/insight/workspace/${workSpaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
+        const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
         await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
       } catch (e) {
         errors.push({ message: e.message, severity: 'Error' })
@@ -148,27 +158,32 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
+      log.error(`Skip deployment of ${OBJECT_TYPE_ICON_TYPE} types because workspaceId is undefined`)
+      const errors = getWorkspaceIdMissingErrors(objectTypeIconAdditionChanges)
       return {
-        deployResult: { appliedChanges: [], errors: [] },
-        leftoverChanges: changes,
+        deployResult: { appliedChanges: [], errors },
+        leftoverChanges,
       }
     }
-    const authorizationToken = await client.get({
-      url: `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/icon/token-for-uploading-icon`,
-    })
-    if (!isAuthorizationTokenResponse(authorizationToken)) {
-      return {
-        deployResult: { appliedChanges: [], errors: [] },
-        leftoverChanges: changes,
+    if (adapterContext.authorizationToken === undefined) {
+      const authorizationToken = await client.get({
+        url: `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/icon/token-for-uploading-icon`,
+      })
+      if (!isAuthorizationTokenResponse(authorizationToken)) {
+        return {
+          deployResult: { appliedChanges: [], errors: [] },
+          leftoverChanges: changes,
+        }
       }
+      adapterContext.authorizationToken = authorizationToken.data.mediaJwtToken
     }
     const baseUrl = 'https://api.media.atlassian.com'
     const logoConnection = createLogoConnection(createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS))
-    await logoConnection.login({ token: authorizationToken.data.mediaJwtToken, baseUrl, user: '' })
+    await logoConnection.login({ token: adapterContext.authorizationToken, baseUrl, user: '' })
     const logoClient = new JiraClient({
       connection: logoConnection,
       isDataCenter: false,
-      credentials: { baseUrl, token: authorizationToken.data.mediaJwtToken, user: '' },
+      credentials: { baseUrl, token: adapterContext.authorizationToken, user: '' },
     })
 
     const deployResult = await deployChanges(objectTypeIconAdditionChanges.filter(isAdditionChange), async change => {

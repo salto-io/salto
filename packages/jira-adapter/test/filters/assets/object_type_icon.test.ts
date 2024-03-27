@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { InstanceElement, Element, StaticFile } from '@salto-io/adapter-api'
+import { InstanceElement, Element, StaticFile, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AuthenticatedAPIConnection } from '@salto-io/adapter-components/src/client'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
@@ -24,6 +24,7 @@ import { OBJECT_TYPE_ICON_TYPE } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 import * as connection from '../../../src/client/connection'
 import * as clientModule from '../../../src/client/client'
+import { FilterResult } from '../../../src/filter'
 
 jest.mock('../../../src/client/connection')
 const mockedConnection = jest.mocked(connection)
@@ -32,12 +33,13 @@ describe('object type icon filter', () => {
   let mockGet: jest.SpyInstance
   let mockPost: jest.SpyInstance
   let mockConstructClient: jest.SpyInstance
-  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
   let filter: FilterType
   let elements: Element[]
   const objectTypeIconType = createEmptyType(OBJECT_TYPE_ICON_TYPE)
   let objectTypeIconInstance: InstanceElement
   const content = Buffer.from('test')
+  const adapterContext: Values = {}
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
   config.fetch.enableJSM = true
   config.fetch.enableJSMPremium = true
@@ -45,7 +47,7 @@ describe('object type icon filter', () => {
   beforeEach(async () => {
     const { client: cli } = mockClient(false)
     client = cli
-    filter = objectTypeIconFilter(getFilterParams({ client, config })) as typeof filter
+    filter = objectTypeIconFilter(getFilterParams({ client, config, adapterContext })) as typeof filter
     mockGet = jest.spyOn(client, 'get')
   })
   describe('on fetch', () => {
@@ -93,20 +95,39 @@ describe('object type icon filter', () => {
     })
     it('should not add icon content if it is a bad response', async () => {
       mockGet.mockClear()
-      mockGet.mockImplementation(() => ({
-        status: 200,
-        data: {},
-      }))
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/servicedeskapi/assets/workspace') {
+          return {
+            status: 200,
+            data: {
+              values: [
+                {
+                  workspaceId: 'workspaceId',
+                },
+              ],
+            },
+          }
+        }
+        if (params.url === '/gateway/api/jsm/insight/workspace/workspaceId/v1/icon/12/icon.png') {
+          return {
+            status: 200,
+            data: {},
+          }
+        }
+        throw new Error('Err')
+      })
       await filter.onFetch(elements)
       expect(objectTypeIconInstance.value.icon).toBeUndefined()
     })
     it('should not add object type icon if error has been thrown from client', async () => {
       mockGet.mockClear()
       mockGet.mockImplementation(() => {
-        throw new Error('Error')
+        throw new clientUtils.HTTPError('Failed', { data: {}, status: 403 })
       })
-      await filter.onFetch(elements)
+      const res = (await filter.onFetch(elements)) as FilterResult
       expect(objectTypeIconInstance.value.icon).toBeUndefined()
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0].message).toEqual('Failed to fetch object type icons because workspaceId is undefined')
     })
   })
   describe('on deploy', () => {
@@ -149,6 +170,7 @@ describe('object type icon filter', () => {
       })
       mockConstructClient = jest.spyOn(clientModule, 'default')
       mockConstructClient.mockReturnValue(client)
+      adapterContext.authorizationToken = undefined
     })
     afterEach(() => {
       jest.clearAllMocks()
@@ -177,6 +199,56 @@ describe('object type icon filter', () => {
         }
         throw new Error('Unexpected url')
       })
+      const res = await filter.deploy([{ action: 'add', data: { after: objectTypeIconInstance } }])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockPost).toHaveBeenCalledTimes(2)
+      expect(objectTypeIconInstance.value.id).toEqual(101)
+    })
+    it('should add object type icon to elements when adapterContext.authorizationToken is set', async () => {
+      mockPost.mockImplementation(params => {
+        if (
+          params.url === '/file/binary?collection=insight_workspaceId_icons&name=objectTypeIconName.png&deletable=true'
+        ) {
+          return {
+            status: 200,
+            data: {
+              data: {
+                id: '101',
+              },
+            },
+          }
+        }
+        if (params.url === 'gateway/api/jsm/assets/workspace/workspaceId/v1/icon/create') {
+          return {
+            status: 200,
+            data: {
+              id: '101',
+            },
+          }
+        }
+        throw new Error('Unexpected url')
+      })
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/servicedeskapi/assets/workspace') {
+          return {
+            status: 200,
+            data: {
+              values: [
+                {
+                  workspaceId: 'workspaceId',
+                },
+              ],
+            },
+          }
+        }
+        if (params.url === '/gateway/api/jsm/assets/workspace/workspaceId/v1/icon/token-for-uploading-icon') {
+          throw new Error("Wasn't supposed to be called")
+        }
+        throw new Error('Err')
+      })
+      adapterContext.authorizationToken = 'token'
+
       const res = await filter.deploy([{ action: 'add', data: { after: objectTypeIconInstance } }])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -257,9 +329,45 @@ describe('object type icon filter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
+    it('should not deploy icon if content is undefined', async () => {
+      mockPost.mockImplementation(params => {
+        if (
+          params.url === '/file/binary?collection=insight_workspaceId_icons&name=objectTypeIconName.png&deletable=true'
+        ) {
+          return {
+            status: 200,
+            data: {
+              data: {
+                id: '101',
+              },
+            },
+          }
+        }
+        if (params.url === 'gateway/api/jsm/assets/workspace/workspaceId/v1/icon/create') {
+          return {
+            status: 200,
+            data: {
+              id: '101',
+            },
+          }
+        }
+        throw new Error('Unexpected url')
+      })
+      objectTypeIconInstance = new InstanceElement('objectType1', objectTypeIconType, {
+        name: 'objectTypeIconName',
+        id: 12,
+        icon: undefined,
+      })
+      const res = await filter.deploy([{ action: 'add', data: { after: objectTypeIconInstance } }])
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0].message).toEqual(
+        'Error: Failed to deploy icon to Jira object type: Error: Failed to fetch attachment content from icon objectType1',
+      )
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
     it('should not call anything if no addition change of object type icon', async () => {
       const afterIconInstance = objectTypeIconInstance.clone()
-      afterIconInstance.value.content = new StaticFile({
+      afterIconInstance.value.icon = new StaticFile({
         filepath: 'jira/objectTypeIcon/changed.png',
         encoding: 'binary',
         content: Buffer.from('changes!'),
@@ -277,7 +385,10 @@ describe('object type icon filter', () => {
         throw new Error('Error')
       })
       const res = await filter.deploy([{ action: 'add', data: { after: objectTypeIconInstance } }])
-      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0].message).toEqual(
+        'The following changes were not deployed, due to error with the workspaceId: jira.ObjectTypeIcon.instance.objectType1',
+      )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockPost).toHaveBeenCalledTimes(0)
     })

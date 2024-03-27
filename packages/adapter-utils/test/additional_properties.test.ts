@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extractAdditionalPropertiesField, setAdditionalPropertiesAnnotation } from '../src/additional_properties'
 
 describe('additional_properties', () => {
@@ -28,7 +28,7 @@ describe('additional_properties', () => {
         elemID: new ElemID('test', 'type.additionalProperties'),
         fields: { field: { refType: BuiltinTypes.STRING } },
       })
-      const annotation = { refType: new TypeReference(typeAdditionalProperties.elemID, typeAdditionalProperties) }
+      const annotation = { refType: new ReferenceExpression(typeAdditionalProperties.elemID, typeAdditionalProperties) }
       expect(
         setAdditionalPropertiesAnnotation(type, annotation).annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES],
       ).toEqual(annotation)

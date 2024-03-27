@@ -291,7 +291,7 @@ const getEntriesForType = async (params: GetEntriesParams): Promise<{ entries: V
 
     // special case - should probably move to adapter-specific filter if does not recur
     if (dataField !== undefined && isObjectType(dataFieldType) && isAdditionalPropertiesOnlyObjectType(dataFieldType)) {
-      const propsType = await dataFieldType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType?.value
+      const propsType = dataFieldType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType?.value
       if (isObjectType(propsType)) {
         return {
           objType: propsType,

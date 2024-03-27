@@ -23,7 +23,7 @@ import {
   ListType,
   TypeMap,
   CORE_ANNOTATIONS,
-  TypeReference,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { types as lowerdashTypes, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -176,7 +176,7 @@ export const typeAdder = ({
       )
       type.annotate({
         [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
-          refType: new TypeReference(additionalPropertiesType.elemID, additionalPropertiesType),
+          refType: new ReferenceExpression(additionalPropertiesType.elemID, additionalPropertiesType),
         },
       })
     }

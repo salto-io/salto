@@ -47,7 +47,7 @@ import {
   LAST_MODIFIED_DATE,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterContext, FilterResult, RemoteFilterCreator } from '../filter'
 import {
   apiName,
   Types,
@@ -533,13 +533,13 @@ const getReferencedRecords = async (
 export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
-  deletedCustomFields: Field[],
+  config: FilterContext,
 ): Promise<{
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
 }> => {
   const deletedCustomFieldsApiNames = new Set(
-    deletedCustomFields.map((field) => apiNameSync(field)).filter(isDefined),
+    config.deletedCustomFields.map((field) => apiNameSync(field)).filter(isDefined),
   )
   const baseTypesSettings = _.pickBy(
     customObjectFetchSetting,

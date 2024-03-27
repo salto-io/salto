@@ -99,6 +99,7 @@ type BuildFetchWithChangesDetectionMetadataQueryParams =
   BuildMetadataQueryParams & {
     elementsSource: ReadOnlyElementsSource
     lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
+    customObjectsWithDeletedFields: Set<string>
   }
 
 export const buildMetadataQuery = ({
@@ -260,6 +261,9 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         return false
       }
       const { metadataType, name } = instance
+      if (metadataType === CUSTOM_OBJECT && params.customObjectsWithDeletedFields.has(name)) {
+        return true
+      }
       if (isTypeWithNestedInstances(metadataType)) {
         return isInstanceWithNestedInstancesIncluded(metadataType)
       }

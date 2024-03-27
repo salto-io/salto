@@ -51,6 +51,7 @@ import {
   isMetadataObjectType,
   MetadataObjectType,
   createInstanceElement,
+  isCustom,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -177,6 +178,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
+const {isDefined} = values
 
 const log = logger(module)
 
@@ -536,6 +538,22 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
+  
+  private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
+    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const fieldsFromElementsSource = await awu(
+      await this.elementsSource.getAll(),
+    )
+      .filter(isCustomObjectSync)
+      .flatMap((obj) => Object.values(obj.fields))
+      .filter((field) => isCustom(apiNameSync(field)))
+      .toArray()
+    return new Set(fieldsFromElementsSource.filter(
+      (field) => !listedFields.has(apiNameSync(field) ?? ''),
+    ).map(field => apiNameSync(field.parent))
+    .filter(isDefined))
+  }
+
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
@@ -551,12 +569,13 @@ export default class SalesforceAdapter implements AdapterOperations {
       await getLastChangeDateOfTypesWithNestedInstances({
         client: this.client,
         metadataQuery: buildFilePropsMetadataQuery(baseQuery),
-      })
+      })  
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
+          customObjectsWithDeletedFields: await this.getCustomObjectsWithDeletedFields()
         })
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({

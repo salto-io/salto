@@ -66,7 +66,7 @@ describe('fetch', () => {
         if (url === '/api/v1/fields/456/default_option') {
           return {
             data: {
-              name: 'opt1'
+              name: 'opt1',
             },
             status: 200,
             statusText: 'OK',
@@ -218,7 +218,7 @@ describe('fetch', () => {
                   resource: {
                     directFetch: false,
                   },
-                }
+                },
               },
             },
             customNameMappingFunctions: {
@@ -240,7 +240,11 @@ describe('fetch', () => {
         'myAdapter.option.instance.opt1Custom',
         'myAdapter.option.instance.opt2Custom',
       ])
-      expect(res.elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'myAdapter.field.instance.field1Custom')?.value.default).toEqual({ name: 'opt1' })
+      expect(
+        res.elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName() === 'myAdapter.field.instance.field1Custom')?.value.default,
+      ).toEqual({ name: 'opt1' })
       // TODO continue
     })
   })

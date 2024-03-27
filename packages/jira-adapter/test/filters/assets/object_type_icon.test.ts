@@ -203,7 +203,7 @@ describe('object type icon filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockPost).toHaveBeenCalledTimes(2)
-      expect(objectTypeIconInstance.value.id).toEqual(101)
+      expect(objectTypeIconInstance.value.id).toEqual('101')
     })
     it('should add object type icon to elements when adapterContext.authorizationToken is set', async () => {
       mockPost.mockImplementation(params => {
@@ -248,12 +248,12 @@ describe('object type icon filter', () => {
         throw new Error('Err')
       })
       adapterContext.authorizationToken = 'token'
-
+      filter = objectTypeIconFilter(getFilterParams({ client, config, adapterContext })) as typeof filter
       const res = await filter.deploy([{ action: 'add', data: { after: objectTypeIconInstance } }])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockPost).toHaveBeenCalledTimes(2)
-      expect(objectTypeIconInstance.value.id).toEqual(101)
+      expect(objectTypeIconInstance.value.id).toEqual('101')
     })
     it('should not deploy icon if !isIconCreationResponseScheme response from post', async () => {
       mockPost.mockImplementation(params => {

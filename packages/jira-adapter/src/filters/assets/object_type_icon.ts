@@ -102,7 +102,7 @@ const deployAdditionIcon = async (
     if (!isIconResponse(response)) {
       throw new Error(`Failed to deploy object type icon with response: ${response}`)
     }
-    instance.value.id = Number(response.data.id)
+    instance.value.id = response.data.id
   } catch (e) {
     if (e instanceof clientUtils.HTTPError) {
       throw new Error(`Failed to deploy icon to Jira object type: ${e.message}`)

@@ -908,6 +908,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {
+      add: {
+        url: '/api/v1/brands',
+        method: 'post',
+      },
       modify: {
         url: '/api/v1/brands/{brandId}',
         method: 'put',

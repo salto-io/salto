@@ -669,6 +669,7 @@ export default class JiraAdapter implements AdapterOperations {
           getElemIdFunc: this.getElemIdFunc,
           additionalRequestContext: serviceDeskProjRecord,
           getEntriesResponseValuesFunc: jiraJSMEntriesFunc(projectInstance),
+          shouldIgnorePermissionsError: true,
         })
       }),
     )

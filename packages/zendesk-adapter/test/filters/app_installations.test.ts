@@ -94,13 +94,15 @@ describe('app installation filter', () => {
     it('should pass the correct params to deployChange and client on create and wait until the job is done', async () => {
       const id = 2
       const clonedApp = app.clone()
+      const expectedClonedApp = app.clone()
+      expectedClonedApp.value.id = id
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
       mockGet = jest.spyOn(client, 'get')
       mockGet.mockResolvedValue({ status: 200, data: { status: 'completed' } })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: clonedApp } },
+        change: { action: 'add', data: { after: expectedClonedApp } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
@@ -159,6 +161,8 @@ describe('app installation filter', () => {
     it('should return error if client request failed', async () => {
       const id = 2
       const clonedApp = app.clone()
+      const expectedClonedApp = app.clone()
+      expectedClonedApp.value.id = id
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
       mockGet = jest.spyOn(client, 'get')
       mockGet.mockImplementation(async () => {
@@ -171,7 +175,7 @@ describe('app installation filter', () => {
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: clonedApp } },
+        change: { action: 'add', data: { after: expectedClonedApp } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
@@ -187,13 +191,15 @@ describe('app installation filter', () => {
     it('should return error if job status is failed', async () => {
       const id = 2
       const clonedApp = app.clone()
+      const expectedClonedApp = app.clone()
+      expectedClonedApp.value.id = id
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
       mockGet = jest.spyOn(client, 'get')
       mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: clonedApp } },
+        change: { action: 'add', data: { after: expectedClonedApp } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
@@ -206,16 +212,66 @@ describe('app installation filter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
+    it('should prefill missing fields', async () => {
+      const id = 2
+      const clonedApp = app.clone()
+      const expectedClonedApp = app.clone()
+      expectedClonedApp.value.settings.fourth_field = 123
+      expectedClonedApp.value.settings.last_field = '12345'
+      expectedClonedApp.value.id = id
+      mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
+      mockGet = jest.spyOn(client, 'get')
+      mockGet.mockImplementation(params => {
+        if (params.url === '/api/v2/apps/job_statuses/123') {
+          return { status: 200, data: { status: 'failed' } }
+        }
+        if (params.url === '/api/support/apps/1/installations/new') {
+          return {
+            status: 200,
+            data: {
+              installation: {
+                settings: [
+                  { key: 'name', secure: false, required: true, type: 'text' },
+                  { key: 'title', secure: false, required: true, type: 'number' },
+                  { key: 'third_field', secure: false, required: false, type: 'text' },
+                  { key: 'fourth_field', secure: true, required: true, type: 'number' },
+                  { key: 'last_field', secure: true, required: true, type: 'text' },
+                ],
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: expectedClonedApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(2)
+      expect(mockGet).toHaveBeenCalledWith({
+        url: '/api/v2/apps/job_statuses/123',
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+
     it('should return error if create did not return job id', async () => {
       const id = 2
       const clonedApp = app.clone()
+      const expectedClonedApp = app.clone()
+      expectedClonedApp.value.id = id
       mockDeployChange.mockImplementation(async () => ({ id }))
       mockGet = jest.spyOn(client, 'get')
       mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: clonedApp } },
+        change: { action: 'add', data: { after: expectedClonedApp } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
         fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],

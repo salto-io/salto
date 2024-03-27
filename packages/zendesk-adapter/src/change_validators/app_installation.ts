@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import {
   ChangeError,
   ChangeValidator,
@@ -26,7 +25,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from '../client/client'
 import { APP_INSTALLATION_TYPE_NAME } from '../constants'
-import { isValidApp } from '../filters/app_installations'
+import { isValidApp } from '../filters/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -35,11 +34,7 @@ const { isDefined } = lowerDashValues
 
 const APPS_SECTION_URL = 'admin/apps-integrations/apps/support-apps'
 
-export const createChangeError = (
-  instanceElemId: ElemID,
-  prefilledFields: Array<string>,
-  baseUrl: string,
-): ChangeError => ({
+export const createChangeError = (instanceElemId: ElemID, prefilledFields: string[], baseUrl: string): ChangeError => ({
   elemID: instanceElemId,
   severity: 'Info',
   message: 'App installation creation detected',
@@ -65,12 +60,19 @@ export const createChangeError = (
   },
 })
 
+/*
+ * If we are creating an app installation, we need to make sure that we include all required fields.
+ * If those fields are "secure", they wouldn't show up in nacls, and so if we duplicate another installation
+ * the deployment would fail.
+ */
 export const appInstallationValidator: (client: ZendeskClient) => ChangeValidator = client => async changes => {
   const potentialChanges = changes
     .filter(isAdditionChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(changeData => changeData.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
+    .filter(
+      changeData => changeData.elemID.typeName === APP_INSTALLATION_TYPE_NAME && changeData.value.app_id !== undefined,
+    )
 
   const errors = await awu(potentialChanges)
     .flatMap(async changeData => {

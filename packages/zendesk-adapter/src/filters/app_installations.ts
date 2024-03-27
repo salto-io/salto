@@ -26,13 +26,14 @@ import {
   isInstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, inspectValue } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import ZendeskClient from '../client/client'
 import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME } from '../constants'
+import { isValidApp } from './utils'
 
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies
@@ -59,37 +60,12 @@ type JobStatus = {
   message?: string
 }
 
-type ValidApp = {
-  installation: { settings: Array<{ secure: boolean; required: boolean; key: string; type: string }> }
-}
-
-const EXPECTED_APP_SCHEMA = Joi.object({
-  installation: Joi.object({
-    settings: Joi.array()
-      .items(
-        Joi.object({
-          secure: Joi.bool(),
-          required: Joi.bool(),
-          key: Joi.string().required(),
-          type: Joi.string().required(),
-        }).unknown(true),
-      )
-      .required(),
-  })
-    .unknown(true)
-    .optional(),
-})
-  .unknown(true)
-  .required()
-
 const EXPECTED_APP_STATUS_SCHEMA = Joi.object({
   status: Joi.string().required(),
   message: Joi.string().optional().allow(''),
 })
   .unknown(true)
   .required()
-
-export const isValidApp = createSchemeGuard<ValidApp>(EXPECTED_APP_SCHEMA, 'Received an invalid value for app response')
 
 const isJobStatus = (value: unknown): value is JobStatus => {
   const { error } = EXPECTED_APP_STATUS_SCHEMA.validate(value)
@@ -168,12 +144,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         isAdditionOrModificationChange(change) && getChangeData(change).elemID.typeName === APP_INSTALLATION_TYPE_NAME,
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
+      let clonedChange
       if (isAdditionChange(change)) {
-        /* If we are creating an app installation, we need to make sure that we include all required fields.
+        /*
+         * If we are creating an app installation, we need to make sure that we include all required fields.
          * If those fields are "secure", they wouldn't show up in nacls, and so if we duplicate another installation
          * the deployment would fail.
          */
-        const changeData = getChangeData(change)
+        clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
+        const changeData = getChangeData(clonedChange)
         try {
           const res = (
             await client.get({
@@ -187,19 +166,24 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             )
             fieldsToAdd.forEach(field => {
               if (!(field.key in changeData.value.settings)) {
-                const placeholder =
-                  field.key in APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE
-                    ? APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE[field.key]
-                    : STR_PLACEHOLDER
+                let placeholder
+                if (field.type in APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE) {
+                  placeholder = APP_FIELD_TYPE_TO_PLACEHOLDER_VALUE[field.type]
+                } else {
+                  placeholder = STR_PLACEHOLDER
+                  log.trace(`App Installation has a required field with an unknown type: ${field.type}`)
+                }
                 changeData.value.settings[field.key] = placeholder
               }
             })
           }
         } catch (e) {
-          log.warn(`Failed to fetch app installation details. error: ${e}`)
+          log.warn(
+            `Failed to fetch app installation details, missing required fields are not added to the app ${changeData.elemID.name}. error: ${e}`,
+          )
         }
       }
-      const response = await deployChange(change, client, config.apiDefinitions, [
+      const response = await deployChange(clonedChange ?? change, client, config.apiDefinitions, [
         'app',
         'settings.title',
         'settings_objects',

@@ -145,7 +145,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           },
         },
         templates: {
-          typeName: 'space_template',
+          typeName: 'template',
           context: {
             args: {
               key: {
@@ -166,10 +166,10 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         templates: {
           standalone: {
-            typeName: 'space_template',
-            addParentAnnotation: false,
+            typeName: 'template',
+            addParentAnnotation: true,
             referenceFromParent: false,
-            nestPathUnderParent: true,
+            nestPathUnderParent: false,
           },
         },
       },
@@ -231,23 +231,13 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           // Confluence does not allow pages with the same title in the same space
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
         },
-        path: {
-          pathParts: [
-            {
-              parts: [{ fieldName: 'spaceId', isReference: true }],
-            },
-            {
-              parts: [{ fieldName: 'title' }],
-            },
-          ],
-        },
       },
       fieldCustomizations: {
         id: {
           hide: true,
         },
         version: {
-          omit: true,
+          hide: true,
         },
       },
     },
@@ -322,7 +312,15 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: {
-          parts: [{ fieldName: 'title' }],
+          parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
+        },
+      },
+      fieldCustomizations: {
+        version: {
+          hide: true,
+        },
+        id: {
+          hide: true,
         },
       },
     },
@@ -348,8 +346,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
   },
-  // how can I get global templates?
-  space_template: {
+  template: {
     requests: [
       {
         endpoint: {
@@ -365,16 +362,25 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
-    resource: {
-      directFetch: true,
-    },
+    // resource: {
+    //   directFetch: true,
+    // },
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [{ fieldName: 'name' }],
+        },
+      },
+      fieldCustomizations: {
+        templateId: {
+          hide: true,
+        },
       },
     },
   },
-  template: {
+  global_template: {
     requests: [
       {
         endpoint: {
@@ -394,10 +400,17 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'name' }],
+        },
+      },
+      fieldCustomizations: {
+        templateId: {
+          hide: true,
+        },
       },
     },
   },
-  // TODO_F what about whiteboards?
 })
 
 export const createFetchDefinitions = (

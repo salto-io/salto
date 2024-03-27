@@ -62,7 +62,7 @@ describe('additional_properties', () => {
           fields: { field: { refType: BuiltinTypes.STRING } },
         })
         objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = {
-          refType: additionalPropertiesObjType,
+          refType: new ReferenceExpression(additionalPropertiesObjType.elemID, additionalPropertiesObjType),
           annotations: { someUniqueAnnotation: 'unique' },
         }
         expect(extractAdditionalPropertiesField(objType, fieldName)).toEqual(

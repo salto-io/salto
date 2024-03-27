@@ -148,6 +148,7 @@ type GetRecordsParams = {
   client: SalesforceClient
   customObjectFetchSettings: CustomObjectFetchSetting
   ids?: string[]
+  deletedCustomFieldsApiNames: Set<string>
 }
 
 const getRecords = async ({
@@ -159,6 +160,7 @@ const getRecords = async ({
     changedSince,
   },
   ids,
+  deletedCustomFieldsApiNames,
 }: GetRecordsParams): Promise<RecordById> => {
   const typeName = apiNameSync(objectType)
   if (!typeName) {
@@ -166,9 +168,11 @@ const getRecords = async ({
     return {}
   }
 
-  const queryableFields = getQueryableFields(objectType).filter(
-    (field) => !omittedFields.includes(apiNameSync(field) ?? ''),
-  )
+  const queryableFields = getQueryableFields(objectType)
+    .filter((field) => !omittedFields.includes(apiNameSync(field) ?? ''))
+    .filter(
+      (field) => !deletedCustomFieldsApiNames.has(apiNameSync(field) ?? ''),
+    )
   // queryableFields can't be empty - at least the ID fields are queryable and not omitted or we'll consider the config
   // for the object to be invalid and won't get here.
 
@@ -463,6 +467,7 @@ const getReferencedRecords = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
   baseRecordByIdAndType: RecordsByTypeAndId,
+  deletedCustomFieldsApiNames: Set<string>,
 ): Promise<RecordsByTypeAndId> => {
   const allReferenceRecords = {} as RecordsByTypeAndId
   const allowedRefToTypeNames = Object.keys(
@@ -511,6 +516,7 @@ const getReferencedRecords = async (
           client,
           customObjectFetchSettings: fetchSettings,
           ids,
+          deletedCustomFieldsApiNames,
         })
       },
     )
@@ -527,10 +533,14 @@ const getReferencedRecords = async (
 export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
+  deletedCustomFields: Field[],
 ): Promise<{
   instances: InstanceElement[]
   configChangeSuggestions: ConfigChangeSuggestion[]
 }> => {
+  const deletedCustomFieldsApiNames = new Set(
+    deletedCustomFields.map((field) => apiNameSync(field)).filter(isDefined),
+  )
   const baseTypesSettings = _.pickBy(
     customObjectFetchSetting,
     (setting) => setting.isBase,
@@ -538,13 +548,19 @@ export const getAllInstances = async (
   log.debug('Base types: %o', _.keys(baseTypesSettings))
   const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesSettings,
-    (setting) => getRecords({ client, customObjectFetchSettings: setting }),
+    (setting) =>
+      getRecords({
+        client,
+        customObjectFetchSettings: setting,
+        deletedCustomFieldsApiNames,
+      }),
   )
   // Get reference to records
   const referencedRecordsByTypeAndId = await getReferencedRecords(
     client,
     customObjectFetchSetting,
     baseRecordByTypeAndId,
+    deletedCustomFieldsApiNames,
   )
   const mergedRecords = {
     ...referencedRecordsByTypeAndId,
@@ -846,10 +862,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
         client,
       })
-
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       filteredChangesFetchSettings,
+      config.deletedCustomFields,
     )
     instances.forEach((instance) => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)

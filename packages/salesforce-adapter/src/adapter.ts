@@ -543,14 +543,17 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   private async getDeletedCustomFields(): Promise<Field[]> {
     const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
-    const fieldsFromElementsSource = await awu(await this.elementsSource.getAll())
-    .filter(isCustomObjectSync)
-    .flatMap(obj => Object.values(obj.fields))
-      .filter(field => isCustom(apiNameSync(field)))
-    .toArray()
-    return fieldsFromElementsSource.filter(field => !listedFields.has(apiNameSync(field) ?? ''))
+    const fieldsFromElementsSource = await awu(
+      await this.elementsSource.getAll(),
+    )
+      .filter(isCustomObjectSync)
+      .flatMap((obj) => Object.values(obj.fields))
+      .filter((field) => isCustom(apiNameSync(field)))
+      .toArray()
+    return fieldsFromElementsSource.filter(
+      (field) => !listedFields.has(apiNameSync(field) ?? ''),
+    )
   }
-
 
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
@@ -628,7 +631,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     })
     const fetchFiltersRunner = this.createFiltersRunner({
       fetchProfile,
-      contextOverrides: { lastChangeDateOfTypesWithNestedInstances, deletedCustomFields: this.deletedCustomFields },
+      contextOverrides: {
+        lastChangeDateOfTypesWithNestedInstances,
+        deletedCustomFields: this.deletedCustomFields,
+      },
     })
     const onFetchFilterResult = (await fetchFiltersRunner.onFetch(
       elements,
@@ -947,7 +953,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       (type) => apiNameSync(type) ?? 'unknown',
     )
     const elemIdsByTypeFromSource = await this.getElemIdsByTypeFromSource()
-    const deletedElemIds = new Set<ElemID>(this.deletedCustomFields.map(field => field.elemID))
+    const deletedElemIds = new Set<ElemID>(
+      this.deletedCustomFields.map((field) => field.elemID),
+    )
     Object.entries(elemIdsByTypeFromSource)
       // We only want to check types that are included. This is especially relevant for targeted fetch
       .filter(([typeName]) => fetchProfile.metadataQuery.isTypeMatch(typeName))

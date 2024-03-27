@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Field, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
 import SalesforceClient from './client/client'
@@ -32,6 +32,7 @@ export type FilterContext = {
   separateFieldToFiles?: string[]
   flsProfiles: string[]
   lastChangeDateOfTypesWithNestedInstances?: LastChangeDateOfTypesWithNestedInstances
+  deletedCustomFields: Field[]
 }
 
 type FilterFilesContext = {

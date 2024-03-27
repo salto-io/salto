@@ -445,6 +445,7 @@ export const defaultFilterContext: FilterContext = {
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
   flsProfiles: [constants.ADMIN_PROFILE],
+  deletedCustomFields: [],
 }
 
 export const mockFetchOpts: MockInterface<FetchOptions> = {

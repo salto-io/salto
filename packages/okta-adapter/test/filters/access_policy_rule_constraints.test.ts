@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { getFilterParams } from '../utils'
 import accessPolicyRuleConstraintsFilter from '../../src/filters/access_policy_rule_constraints'
 import { ACCESS_POLICY_RULE_TYPE_NAME, OKTA } from '../../src/constants'
@@ -38,12 +40,12 @@ describe('accessPolicyRuleConstraintsFilter', () => {
     it('should remove "required" field from the constraints if it is true and "excludedAuthenticationMethods" is not configured', async () => {
       const rule = baseRuleInstace.clone()
       rule.value.actions.appSignOn.verificationMethod.constraints = [
-         {
-            knowledge: { reauthenticateIn: 'PT0S', additionalProperties: { required: true } },
-            possession: { deviceBound: 'REQUIRED', additionalProperties: { required: true } },
-         },
-         { possession: { additionalProperties: { required: true }, type: ['password'] } },
-       ]
+        {
+          knowledge: { reauthenticateIn: 'PT0S', additionalProperties: { required: true } },
+          possession: { deviceBound: 'REQUIRED', additionalProperties: { required: true } },
+        },
+        { possession: { additionalProperties: { required: true }, type: ['password'] } },
+      ]
       const changes = [toChange({ after: rule })]
       filter = accessPolicyRuleConstraintsFilter(getFilterParams()) as typeof filter
       await filter.preDeploy(changes)
@@ -174,17 +176,23 @@ describe('accessPolicyRuleConstraintsFilter', () => {
     it('should restore instance values', async () => {
       const rule = baseRuleInstace.clone()
       rule.value.actions.appSignOn.verificationMethod.constraints = [
-         {
-            knowledge: { reauthenticateIn: 'PT0S', additionalProperties: { required: true } },
-            possession: { deviceBound: 'REQUIRED', additionalProperties: { required: true } },
-         },
-         { possession: { additionalProperties: { required: true }, type: ['password'] } },
-       ]
+        {
+          knowledge: { reauthenticateIn: 'PT0S', additionalProperties: { required: true } },
+          possession: { deviceBound: 'REQUIRED', additionalProperties: { required: true } },
+        },
+        { possession: { additionalProperties: { required: true }, type: ['password'] } },
+      ]
       const changes = [toChange({ after: rule })]
       await filter.preDeploy(changes) // pre deploy sets the mappings
+      await Promise.all(
+        changes.map(change => applyFunctionToChangeData(change, inst => _.set(inst, 'value.id', 'ruleId'))),
+      ) // update ids by deployment
       await filter.onDeploy(changes)
       const instances = changes.map(getChangeData).filter(isInstanceElement)
-      expect(instances[0].value).toEqual(rule.value)
+      expect(instances[0].value).toEqual({
+        ...rule.value,
+        id: 'ruleId',
+      })
     })
   })
 })

@@ -26,13 +26,16 @@ import {
 import { getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import {
-  apiName,
   metadataType,
   isCustomObject,
   isFieldOfCustomObject,
-  isInstanceOfCustomObject,
 } from '../transformers/transformer'
-import { getInternalId, isInstanceOfType } from '../filters/utils'
+import {
+  apiNameSync,
+  getInternalId,
+  isInstanceOfTypeSync,
+  isInstanceOfCustomObjectSync,
+} from '../filters/utils'
 import {
   CUSTOM_METADATA_SUFFIX,
   PATH_ASSISTANT_METADATA_TYPE,
@@ -86,15 +89,15 @@ const METADATA_TYPE_TO_URI: Record<string, string> = {
   FieldSet: 'FieldSets',
 }
 
-const getTypeIdentifier = async (
-  element?: Element,
-): Promise<string | undefined> =>
-  element === undefined ? undefined : getInternalId(element) ?? apiName(element)
+const getTypeIdentifier = (element?: Element): string | undefined =>
+  element === undefined
+    ? undefined
+    : getInternalId(element) ?? apiNameSync(element)
 
-const getFieldIdentifier = async (element: Field): Promise<string> =>
+const getFieldIdentifier = (element: Field): string =>
   getInternalId(element) ??
   element.annotations.relationshipName ??
-  apiName(element, true)
+  apiNameSync(element, true)
 
 const generalConstantsResolver: UrlResolver = async (element, baseUrl) => {
   if (
@@ -116,13 +119,31 @@ const settingsConstantsResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
+  const apiName = apiNameSync(element)
+  if (apiName === undefined) {
+    return undefined
+  }
+
   if (
-    (await isInstanceOfType('AssignmentRules')(element)) &&
-    ['Lead', 'Case'].includes(await apiName(element))
+    isInstanceOfTypeSync('AssignmentRules')(element) &&
+    ['Lead', 'Case'].includes(apiName)
   ) {
-    return new URL(
-      `${baseUrl}lightning/setup/${await apiName(element)}Rules/home`,
-    )
+    return new URL(`${baseUrl}lightning/setup/${apiName}Rules/home`)
+  }
+  return undefined
+}
+
+const autoResponseRulesResolver: UrlResolver = async (element, baseUrl) => {
+  const apiName = apiNameSync(element)
+  if (apiName === undefined) {
+    return undefined
+  }
+
+  if (
+    isInstanceOfTypeSync('AutoResponseRules')(element) &&
+    ['Lead', 'Case'].includes(apiName)
+  ) {
+    return new URL(`${baseUrl}lightning/setup/${apiName}Responses/home`)
   }
   return undefined
 }
@@ -131,7 +152,7 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (
     isType(element) &&
-    (await apiName(element))?.endsWith(CUSTOM_METADATA_SUFFIX) &&
+    apiNameSync(element)?.endsWith(CUSTOM_METADATA_SUFFIX) &&
     internalId !== undefined
   ) {
     return new URL(
@@ -142,7 +163,7 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const objectResolver: UrlResolver = async (element, baseUrl) => {
-  const typeIdentfier = await getTypeIdentifier(element)
+  const typeIdentfier = getTypeIdentifier(element)
   if ((await isCustomObject(element)) && typeIdentfier !== undefined) {
     return new URL(
       `${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/Details/view`,
@@ -153,8 +174,8 @@ const objectResolver: UrlResolver = async (element, baseUrl) => {
 
 const fieldResolver: UrlResolver = async (element, baseUrl) => {
   if (isField(element) && (await isFieldOfCustomObject(element))) {
-    const fieldIdentifier = await getFieldIdentifier(element)
-    const typeIdentfier = await getTypeIdentifier(element.parent)
+    const fieldIdentifier = getFieldIdentifier(element)
+    const typeIdentfier = getTypeIdentifier(element.parent)
     if (fieldIdentifier !== undefined && typeIdentfier !== undefined) {
       return new URL(
         `${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/FieldsAndRelationships/${fieldIdentifier}/view`,
@@ -168,7 +189,7 @@ const flowResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (
     isInstanceElement(element) &&
-    (await isInstanceOfType('Flow')(element)) &&
+    isInstanceOfTypeSync('Flow')(element) &&
     (element.value.processType === 'Flow' ||
       element.value.processType === 'AutoLaunchedFlow') &&
     internalId !== undefined
@@ -183,7 +204,7 @@ const flowResolver: UrlResolver = async (element, baseUrl) => {
 const workflowResolver: UrlResolver = async (element, baseUrl) => {
   if (
     isInstanceElement(element) &&
-    (await isInstanceOfType('Flow')(element)) &&
+    isInstanceOfTypeSync('Flow')(element) &&
     element.value.processType === 'Workflow'
   ) {
     // It seems all the process builder flows has the same url so we return the process buider home
@@ -195,7 +216,7 @@ const workflowResolver: UrlResolver = async (element, baseUrl) => {
 const queueResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (
-    (await isInstanceOfType('Queue')(element)) &&
+    isInstanceOfTypeSync('Queue')(element) &&
     getInternalId(element) !== undefined
   ) {
     return new URL(
@@ -214,7 +235,10 @@ const customObjectSubInstanceResolver: UrlResolver = async (
     return undefined
   }
 
-  const instanceType = await apiName(await element.getType())
+  const instanceType = apiNameSync(await element.getType())
+  if (instanceType === undefined) {
+    return undefined
+  }
   const instanceUri = METADATA_TYPE_TO_URI[instanceType]
 
   const internalId = getInternalId(element)
@@ -228,7 +252,7 @@ const customObjectSubInstanceResolver: UrlResolver = async (
     return undefined
   }
   const parent = await elementIDResolver(parentRef.elemID)
-  const parentIdentifier = await getTypeIdentifier(parent)
+  const parentIdentifier = getTypeIdentifier(parent)
   if (parentIdentifier !== undefined) {
     return new URL(
       `${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`,
@@ -246,7 +270,7 @@ const internalIdResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const pathAssistantResolver: UrlResolver = async (element, baseUrl) => {
-  if (await isInstanceOfType(PATH_ASSISTANT_METADATA_TYPE)(element)) {
+  if (isInstanceOfTypeSync(PATH_ASSISTANT_METADATA_TYPE)(element)) {
     return new URL(
       `${baseUrl}lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1`,
     )
@@ -255,10 +279,10 @@ const pathAssistantResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
-  if (await isInstanceOfCustomObject(element)) {
-    const instanceId = await apiName(element)
+  if (isInstanceOfCustomObjectSync(element)) {
+    const instanceId = apiNameSync(element)
     const typeId = isInstanceElement(element)
-      ? await apiName(await element.getType())
+      ? apiNameSync(await element.getType())
       : undefined
     return isDefined(typeId)
       ? new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`)
@@ -271,6 +295,7 @@ export const resolvers: UrlResolver[] = [
   generalConstantsResolver,
   settingsConstantsResolver,
   assignmentRulesResolver,
+  autoResponseRulesResolver,
   metadataTypeResolver,
   objectResolver,
   fieldResolver,

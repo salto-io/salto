@@ -23,6 +23,9 @@ const { cursorPagination } = fetchUtils.request.pagination
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {
     funcCreator: () =>
-      cursorPagination({ pathChecker: fetchUtils.request.pagination.defaultPathChecker, paginationField: 'next' }),
+      cursorPagination({
+        pathChecker: fetchUtils.request.pagination.defaultPathChecker,
+        paginationField: 'nextPageToken',
+      }),
   },
 }

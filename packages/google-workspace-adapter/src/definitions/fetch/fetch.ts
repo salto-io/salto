@@ -179,7 +179,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       recurseInto: {
         groupSettings: {
           typeName: 'groupSetting',
-          // single: true,
+          single: true,
           context: {
             args: {
               groupKey: {
@@ -241,7 +241,12 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'roleAssignmentId' }] },
+        elemID: {
+          parts: [
+            { fieldName: 'roleId', isReference: true },
+            { fieldName: 'assignedTo', isReference: true },
+          ],
+        },
       },
       fieldCustomizations: {
         roleAssignmentId: {
@@ -370,7 +375,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  buildingResource: {
+  building: {
     requests: [
       {
         endpoint: {
@@ -392,7 +397,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  calendarResource: {
+  room: {
     requests: [
       {
         endpoint: {
@@ -414,7 +419,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  featuresResource: {
+  feature: {
     requests: [
       {
         endpoint: {

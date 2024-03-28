@@ -274,7 +274,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    buildingResource: {
+    building: {
       requestsByAction: {
         customizations: {
           add: [
@@ -283,9 +283,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings',
                   method: 'post',
-                },
-                transformation: {
-                  omit: ['buildingId'],
                 },
               },
             },
@@ -313,7 +310,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    calendarResource: {
+    room: {
       requestsByAction: {
         customizations: {
           add: [
@@ -324,7 +321,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  omit: ['calenderId'],
+                  // we should run over the current resource id and change it to the resource name
                 },
               },
             },
@@ -349,6 +346,47 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
+        },
+      },
+    },
+    feature: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/features',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/features/{name}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          // modify: [
+          //   {
+          //     request: {
+          //       endpoint: {
+          //         path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/features/{name}/rename',
+          //         method: 'put',
+          //       },
+          //       transformation: {
+          //         root: 'name',
+          //         nestUnderField: 'newName',
+          //         adjust: item => ({ value: { nawName: item.value.name } }),
+          //       },
+          //     },
+          //   },
+          // ],
         },
       },
     },

@@ -20,7 +20,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import ZendeskClient from '../src/client/client'
 import { ZendeskDeployConfig } from '../src/config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
-import * as usersUtilsModule from '../src/user_utils'
+import * as usersUtilsModule from '../src/users/user_utils'
 
 const logError = jest.fn()
 jest.mock('@salto-io/logging', () => {
@@ -38,7 +38,7 @@ describe('userUtils', () => {
     beforeEach(() => {
       jest.isolateModules(() => {
         // eslint-disable-next-line global-require
-        userUtils = require('../src/user_utils')
+        userUtils = require('../src/users/user_utils')
       })
     })
 
@@ -66,33 +66,6 @@ describe('userUtils', () => {
         { id: 2, email: 'e@e.com', role: 'agent', name: 'e', locale: 'en-US', custom_role_id: undefined },
       ])
     })
-    it('should cache results when between getUsers calls', async () => {
-      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
-        yield [
-          {
-            users: [
-              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
-              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
-              { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
-            ],
-          },
-        ]
-      })
-      const { users } = await userUtils.getUsers(mockPaginator, true)
-      expect(users).toEqual([
-        { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
-        { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
-        { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
-      ])
-      const { users: getUsersAfterCache } = await userUtils.getUsers(mockPaginator, true)
-      expect(getUsersAfterCache).toEqual([
-        { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
-        { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
-        { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
-      ])
-      await userUtils.getUsers(mockPaginator, true)
-      expect(mockPaginator).toHaveBeenCalledTimes(1)
-    })
     it('should return empty list if users are in invalid format', async () => {
       const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
         yield [
@@ -119,7 +92,7 @@ describe('userUtils', () => {
     beforeEach(() => {
       jest.isolateModules(() => {
         // eslint-disable-next-line global-require
-        userUtils = require('../src/user_utils')
+        userUtils = require('../src/users/user_utils')
       })
     })
     it('should return valid id-email record when called', async () => {
@@ -134,8 +107,8 @@ describe('userUtils', () => {
           },
         ]
       })
-
-      const idByEmail = await userUtils.getIdByEmail(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByEmail = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmail).toEqual({
         1: 'a@a.com',
         2: 'b@b.com',
@@ -153,17 +126,18 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByEmail = await userUtils.getIdByEmail(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByEmail = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmail).toEqual({
         1: 'a@a.com',
         2: 'b@b.com',
       })
-      const idByEmailAfterCache = await userUtils.getIdByEmail(mockPaginator, true)
+      const idByEmailAfterCache = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmailAfterCache).toEqual({
         1: 'a@a.com',
         2: 'b@b.com',
       })
-      await userUtils.getIdByEmail(mockPaginator, true)
+      await userUtils.getIdByEmail(getUsersPromise)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
     it('should return empty object if users are in invalid format, getIdByEmail', async () => {
@@ -174,7 +148,8 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByEmail = await userUtils.getIdByEmail(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByEmail = await userUtils.getIdByEmail(getUsersPromise)
       expect(idByEmail).toEqual({})
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
@@ -185,7 +160,7 @@ describe('userUtils', () => {
     beforeEach(() => {
       jest.isolateModules(() => {
         // eslint-disable-next-line global-require
-        userUtils = require('../src/user_utils')
+        userUtils = require('../src/users/user_utils')
       })
     })
     it('should return valid id-name record when called', async () => {
@@ -200,8 +175,8 @@ describe('userUtils', () => {
           },
         ]
       })
-
-      const idByName = await userUtils.getIdByName(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByName = await userUtils.getIdByName(getUsersPromise)
       expect(idByName).toEqual({
         1: 'a',
         2: 'b',
@@ -219,17 +194,18 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByName = await userUtils.getIdByName(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByName = await userUtils.getIdByName(getUsersPromise)
       expect(idByName).toEqual({
         1: 'a',
         2: 'b',
       })
-      const idByEmailAfterCache = await userUtils.getIdByName(mockPaginator, true)
+      const idByEmailAfterCache = await userUtils.getIdByName(getUsersPromise)
       expect(idByEmailAfterCache).toEqual({
         1: 'a',
         2: 'b',
       })
-      await userUtils.getIdByName(mockPaginator, true)
+      await userUtils.getIdByName(getUsersPromise)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
     it('should return empty object if users are in invalid format, getIdByName', async () => {
@@ -240,7 +216,8 @@ describe('userUtils', () => {
           },
         ]
       })
-      const idByName = await userUtils.getIdByName(mockPaginator, true)
+      const getUsersPromise = userUtils.getUsers(mockPaginator, true)
+      const idByName = await userUtils.getIdByName(getUsersPromise)
       expect(idByName).toEqual({})
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })

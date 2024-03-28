@@ -149,7 +149,7 @@ import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
-import { isCurrentUserResponse } from './user_utils'
+import { isCurrentUserResponse, getUsers } from './users/user_utils'
 import addAliasFilter from './filters/add_alias'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
@@ -165,6 +165,7 @@ import customObjectFieldsOrderFilter from './filters/custom_objects/custom_objec
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
+import { GetUsersResponse } from './users/types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -457,14 +458,17 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
+  private usersPromise: Promise<GetUsersResponse> | undefined
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
     brandIdToClient,
+    usersPromise,
   }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
+    usersPromise: Promise<GetUsersResponse>
   }) => Promise<Required<Filter>>
 
   public constructor({
@@ -484,6 +488,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
     this.brandsList = undefined
+    this.usersPromise = undefined
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -516,10 +521,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient,
       paginator,
       brandIdToClient = {},
+      usersPromise,
     }: {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
+      usersPromise: Promise<GetUsersResponse>
     }) =>
       filtersRunner(
         {
@@ -530,6 +537,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           fetchQuery: this.fetchQuery,
           elementsSource,
           brandIdToClient,
+          usersPromise,
         },
         filterCreators,
         concatObjects,
@@ -540,6 +548,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         client,
         config,
         elementsSource,
+        usersPromise: this.getUsersPromise(),
       }),
     )
   }
@@ -707,7 +716,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       ]),
     )
     // This exposes different subdomain clients for Guide related types filters
-    const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
+    const result = (await (
+      await this.createFiltersRunner({ brandIdToClient, usersPromise: this.getUsersPromise() })
+    ).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
         ? configUtils.getUpdatedCofigFromConfigChanges({
@@ -726,6 +737,13 @@ export default class ZendeskAdapter implements AdapterOperations {
       this.logIdsFunc()
     }
     return { elements, errors: fetchErrors, updatedConfig: configWithOmitInactive }
+  }
+
+  private getUsersPromise(): Promise<GetUsersResponse> {
+    if (this.usersPromise === undefined) {
+      this.usersPromise = getUsers(this.paginator, this.userConfig[FETCH_CONFIG].resolveUserIDs)
+    }
+    return this.usersPromise
   }
 
   private getBrandsFromElementsSource(): Promise<InstanceElement[]> {
@@ -764,6 +782,7 @@ export default class ZendeskAdapter implements AdapterOperations {
               client,
               paginationFuncCreator: paginate,
             }),
+            usersPromise: this.getUsersPromise(),
           })
           await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
           const { deployResult: brandDeployResults } = await brandRunner.deploy(subdomainToGuideChanges[subdomain])
@@ -816,7 +835,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       ),
     })) as Change<InstanceElement>[]
     const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
-    const runner = await this.createFiltersRunner({})
+    const runner = await this.createFiltersRunner({ usersPromise: this.getUsersPromise() })
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
@@ -875,6 +894,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         config: this.userConfig,
+        usersPromise: this.getUsersPromise(),
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],

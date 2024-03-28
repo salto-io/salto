@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
+import { User } from '../../src/users/types'
 import ZendeskClient from '../../src/client/client'
 import {
   ARTICLE_TYPE_NAME,
@@ -23,13 +24,11 @@ import {
   ZENDESK,
 } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
-import * as userUtils from '../../src/user_utils'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { FixElementsArgs } from '../../src/fix_elements/types'
 
 describe('fallbackUsersHandler', () => {
   let client: ZendeskClient
-  const mockGetUsers = jest.spyOn(userUtils, 'getUsers')
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
   const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) })
 
@@ -71,13 +70,6 @@ describe('fallbackUsersHandler', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGetUsers.mockResolvedValue({
-      users: [
-        { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
-      ],
-    })
-
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
@@ -94,6 +86,12 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
           [FETCH_CONFIG]: { resolveUserIDs: true },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
     })
     it('should replace missing user emails or ids', () => {
@@ -157,6 +155,12 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'non-existing-user@.com' },
           [FETCH_CONFIG]: { resolveUserIDs: true },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
     })
     it('should not replace missing user emails or ids', () => {
@@ -191,6 +195,12 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined },
           [FETCH_CONFIG]: { resolveUserIDs: true },
         },
+        usersPromise: Promise.resolve({
+          users: [
+            { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+            { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+          ],
+        }),
       } as FixElementsArgs)(instances)
       expect(fixedElements).toEqual([])
       expect(errors).toEqual([])
@@ -201,14 +211,18 @@ describe('fallbackUsersHandler', () => {
     let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      jest.clearAllMocks()
       const instances = [macroInstance, articleInstance].map(e => e.clone())
+      const users: User[] = []
       fallbackResponse = await fallbackUsersHandler({
         client,
         config: {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'notDeployer@.com' },
           [FETCH_CONFIG]: { resolveUserIDs: false },
         },
+        usersPromise: Promise.resolve({
+          users,
+        }),
       } as FixElementsArgs)(instances)
     })
 
@@ -222,7 +236,6 @@ describe('fallbackUsersHandler', () => {
     let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       jest.spyOn(client, 'get').mockImplementation(({ url }) => {
         if (url === '/api/v2/users/me') {
@@ -239,6 +252,10 @@ describe('fallbackUsersHandler', () => {
           [DEPLOY_CONFIG]: { defaultMissingUserFallback: '##DEPLOYER##' },
           [FETCH_CONFIG]: { resolveUserIDs: false },
         },
+        usersPromise: Promise.resolve({
+          users: [{}],
+          errors: [{ message: 'No users here!', severity: 'Warning' }],
+        }),
       } as FixElementsArgs)(instances)
     })
 
@@ -267,6 +284,12 @@ describe('fallbackUsersHandler', () => {
         [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
         [FETCH_CONFIG]: { resolveUserIDs: true },
       },
+      usersPromise: Promise.resolve({
+        users: [
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+          { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+        ],
+      }),
     } as FixElementsArgs)(instances)
     expect(fallbackResponse.fixedElements).toEqual([])
   })

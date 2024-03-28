@@ -35,16 +35,22 @@ import filterCreator from '../../../src/filters/custom_objects/custom_object_fie
 import { createFilterCreatorParams } from '../../utils'
 import { DEFAULT_CONFIG, DEPLOY_CONFIG } from '../../../src/config'
 
-const USER = { id: 111, email: 'User' }
-const DEFAULT_USER = { id: 222, email: 'DefaultUser' }
-jest.mock('../../../src/user_utils', () => ({
-  ...jest.requireActual<{}>('../../../src/user_utils'),
+const USER = { id: 111, email: 'User', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' }
+const DEFAULT_USER = { id: 222, email: 'DefaultUser', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' }
+jest.mock('../../../src/users/user_utils', () => ({
+  ...jest.requireActual<{}>('../../../src/users/user_utils'),
   getIdByEmail: () => ({ [USER.id]: USER.email }),
   getUsers: () => ({ users: [USER, DEFAULT_USER], errors: [] }),
 }))
 
 type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
-const customObjectFieldsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
+const customObjectFieldsFilter = filterCreator(
+  createFilterCreatorParams({
+    usersPromise: Promise.resolve({
+      users: [USER, DEFAULT_USER],
+    }),
+  }),
+) as FilterType
 
 const missingRef = (type: string, id: string): ReferenceExpression => {
   const missingInstance = referenceUtils.createMissingInstance(ZENDESK, type, id)

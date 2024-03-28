@@ -28,22 +28,17 @@ import { resolvePath } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { client as clientUtils, resolveValues } from '@salto-io/adapter-components'
+import { resolveValues } from '@salto-io/adapter-components'
 import {
-  getUsers,
   MISSING_USERS_DOC_LINK,
   MISSING_USERS_ERROR_MSG,
   TYPE_NAME_TO_REPLACER,
-  User,
   VALID_USER_VALUES,
-} from '../user_utils'
+} from '../users/user_utils'
 import { lookupFunc } from '../filters/field_references'
-import { paginate } from '../client/pagination'
-import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
-import { ZendeskFetchConfig } from '../config'
+import { GetUsersResponse, User } from '../users/types'
 
-const { createPaginator } = clientUtils
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -107,8 +102,8 @@ const handleExistingUsers = ({
  *  1. If we could not use user fallback value for some reason, we will return an error.
  *  2. If the user has no permissions to its field, we will return a warning (default user included).
  */
-export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) => ChangeValidator =
-  (client, fetchConfig) => async (changes, elementSource) => {
+export const usersValidator: (usersPromise: Promise<GetUsersResponse>) => ChangeValidator =
+  usersPromise => async (changes, elementSource) => {
     const relevantInstances = await awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
@@ -121,11 +116,7 @@ export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchCo
       return []
     }
 
-    const paginator = createPaginator({
-      client,
-      paginationFuncCreator: paginate,
-    })
-    const { users } = await getUsers(paginator, fetchConfig.resolveUserIDs)
+    const { users } = await usersPromise
 
     const existingUsersEmails = new Set(users.map(user => user.email))
     const instancesUserPaths = relevantInstances.flatMap(instance => {

@@ -2617,10 +2617,9 @@ describe('adapter', () => {
             },
           }),
         })
-
         expect(createClientSpy).toHaveBeenCalledTimes(2)
         expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
-        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
+        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, { usersPromise: Promise.resolve({}) }) // Regular deploy
         expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
         expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
       })

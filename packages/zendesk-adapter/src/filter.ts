@@ -17,6 +17,7 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
 import { FilterContext } from './config'
+import { GetUsersResponse } from './users/types'
 
 export const { filtersRunner } = filterUtils
 
@@ -28,6 +29,7 @@ export type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
   brandIdToClient?: BrandIdToClient
   fetchQuery: elementUtils.query.ElementQuery
+  usersPromise?: Promise<GetUsersResponse>
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

@@ -25,6 +25,7 @@ export type APIDefinitionsOptions = {
   paginationOptions?: string
   customNameMappingOptions?: string
   additionalAction?: string
+  referenceContextStrategies?: string
 }
 
 export type ResolveClientOptionsType<Options extends Pick<APIDefinitionsOptions, 'clientOptions'>> =
@@ -39,6 +40,10 @@ export type ResolveCustomNameMappingOptionsType<
 
 export type ResolveAdditionalActionType<Options extends Pick<APIDefinitionsOptions, 'additionalAction'>> =
   Options['additionalAction'] extends string ? Options['additionalAction'] : never
+
+export type ResolveReferenceContextStrategiesType<
+  Options extends Pick<APIDefinitionsOptions, 'referenceContextStrategies'>,
+> = Options['referenceContextStrategies'] extends string ? Options['referenceContextStrategies'] : never
 
 export type ApiDefinitions<Options extends APIDefinitionsOptions = {}> = {
   // sources are processed and used to populate initial options for clients and components, in order of definition,
@@ -61,7 +66,7 @@ export type ApiDefinitions<Options extends APIDefinitionsOptions = {}> = {
   pagination: Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
 
   // rules for reference extraction (during fetch) and serialization (during deploy)
-  references?: ReferenceDefinitions
+  references?: ReferenceDefinitions<ResolveReferenceContextStrategiesType<Options>>
 
   fetch?: FetchApiDefinitions<Options>
   deploy?: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>

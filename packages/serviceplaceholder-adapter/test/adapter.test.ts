@@ -117,6 +117,8 @@ describe('adapter', () => {
           'business_hours_schedule',
           'business_hours_schedule_holiday',
           'group',
+          'made_up_type_a',
+          'made_up_type_b',
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'serviceplaceholder.business_hours_schedule',
@@ -127,6 +129,12 @@ describe('adapter', () => {
           'serviceplaceholder.group',
           'serviceplaceholder.group.instance.group_1@s',
           'serviceplaceholder.group.instance.group_2@s',
+          'serviceplaceholder.made_up_type_a',
+          'serviceplaceholder.made_up_type_a.instance.made_up_1@s',
+          'serviceplaceholder.made_up_type_a.instance.made_up_2@s',
+          'serviceplaceholder.made_up_type_a.instance.made_up_3@s',
+          'serviceplaceholder.made_up_type_b',
+          'serviceplaceholder.made_up_type_b.instance.made_up_1@s',
         ])
         expect(
           elements
@@ -144,6 +152,18 @@ describe('adapter', () => {
           start_date: '2024-02-20',
           start_year: '2024',
         })
+        const madeUp2Values = elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName() === 'serviceplaceholder.made_up_type_a.instance.made_up_2@s')?.value
+        expect(madeUp2Values?.parent_id?.elemID?.fullName).toEqual(
+          'serviceplaceholder.made_up_type_a.instance.made_up_1@s',
+        )
+        const madeUp3Values = elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName() === 'serviceplaceholder.made_up_type_a.instance.made_up_3@s')?.value
+        expect(madeUp3Values?.parent_id?.elemID?.fullName).toEqual(
+          'serviceplaceholder.made_up_type_b.instance.made_up_1@s',
+        )
       })
 
       describe('deploy', () => {

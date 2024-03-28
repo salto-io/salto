@@ -17,36 +17,30 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {
-  // AdapterOperations,
-  // Change,
-  // DeployResult,
-  // ElemID,
-  // getChangeData,
+  AdapterOperations,
+  Change,
+  DeployResult,
+  ElemID,
+  getChangeData,
   InstanceElement,
   isInstanceElement,
   ObjectType,
-  // ProgressReporter,
-  // toChange,
+  ProgressReporter,
+  ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/config'
-// import { ADAPTER_NAME } from '../src/constants'
-// TODO update mock file -
-// for fetch: run fetch with trace-level logs:
-//  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
-// then run
-//  > python3 <path-to-repo>/packages/adapter-components/scripts/client/mock_replies.py <log file> fetch_mock_replies.json
-// for deploy: same as above, replace fetch with deploy
-// make sure to minimize and sanitize the mocks - they may contain sensitive information!
+import { ADAPTER_NAME } from '../src/constants'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
-// const nullProgressReporter: ProgressReporter = {
-//   reportProgress: () => '',
-// }
+const nullProgressReporter: ProgressReporter = {
+  reportProgress: () => '',
+}
 
 type MockReply = {
   url: string
@@ -103,10 +97,9 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', credentialsType, {
-              // TODO adjust
-              username: 'user',
-              password: 'pass',
-              subdomain: 'SOME_SUBDOMAIN',
+              email: 'user',
+              token: 'pass',
+              subdomain: 'subdomain',
             }),
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),
@@ -156,117 +149,89 @@ describe('adapter', () => {
         })
       })
 
-      // describe.skip('deploy', () => {
-      //   let operations: AdapterOperations
-      //   let groupType: ObjectType
-      //   let businessHoursScheduleType: ObjectType
-      //   let group1: InstanceElement
-      //   let schedule1: InstanceElement
+      describe('deploy', () => {
+        let operations: AdapterOperations
+        let spaceType: ObjectType
+        let pageType: ObjectType
+        let space1: InstanceElement
+        let page1: InstanceElement
+        let page2: InstanceElement
 
-      //   beforeEach(() => {
-      //     // TODO update to relevant changes
-      //     groupType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'group') })
-      //     businessHoursScheduleType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'business_hours_schedule') })
-      //     group1 = new InstanceElement('group1', groupType, { name: 'group1', is_public: 'false', id: 1234 })
-      //     schedule1 = new InstanceElement('My_Schedule@s', businessHoursScheduleType, {
-      //       name: 'My Schedule',
-      //       time_zone: 'Pacific Time (US & Canada)',
-      //       intervals: [
-      //         {
-      //           start_time: 1980,
-      //           end_time: 2460,
-      //         },
-      //         {
-      //           start_time: 3420,
-      //           end_time: 3900,
-      //         },
-      //         {
-      //           start_time: 4860,
-      //           end_time: 5340,
-      //         },
-      //         {
-      //           start_time: 6300,
-      //           end_time: 6780,
-      //         },
-      //         {
-      //           start_time: 7740,
-      //           end_time: 8220,
-      //         },
-      //       ],
-      //     })
+        beforeEach(() => {
+          spaceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'space') })
+          pageType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
+          // globalTemplateType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'global_template') })
+          space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
+          page1 = new InstanceElement('My_page@s', pageType, {
+            title: 'My page',
+            id: 22,
+            spaceId: new ReferenceExpression(space1.elemID),
+          })
+          page2 = new InstanceElement('page2', pageType, {
+            title: 'page2',
+            id: 33,
+            spaceId: new ReferenceExpression(space1.elemID),
+          })
 
-      //     operations = adapter.operations({
-      //       credentials: new InstanceElement('config', credentialsType, {
-      //         username: 'user123',
-      //         password: 'pwd456',
-      //         subdomain: 'myBrand',
-      //       }),
-      //       config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-      //       elementsSource: buildElementsSourceFromElements([groupType, businessHoursScheduleType, group1, schedule1]),
-      //     })
-      //   })
+          operations = adapter.operations({
+            credentials: new InstanceElement('config', credentialsType, {
+              email: 'user123',
+              token: 'pwd456',
+              subdomain: 'subdomain',
+            }),
+            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+            elementsSource: buildElementsSourceFromElements([spaceType, pageType, space1, page1, page2]),
+          })
+        })
 
-      //   it('should return the applied changes', async () => {
-      //     const results: DeployResult[] = []
-      //     results.push(
-      //       await operations.deploy({
-      //         changeGroup: {
-      //           groupID: 'group',
-      //           changes: [toChange({ after: new InstanceElement('new_group@s', groupType, { name: 'new group' }) })],
-      //         },
-      //         progressReporter: nullProgressReporter,
-      //       }),
-      //     )
-      //     const updatedGroup1 = group1.clone()
-      //     updatedGroup1.value.name = 'new name'
-      //     results.push(
-      //       await operations.deploy({
-      //         changeGroup: {
-      //           groupID: 'group',
-      //           changes: [
-      //             toChange({
-      //               before: group1,
-      //               after: updatedGroup1,
-      //             }),
-      //           ],
-      //         },
-      //         progressReporter: nullProgressReporter,
-      //       }),
-      //     )
+        it('should return the applied changes', async () => {
+          const results: DeployResult[] = []
+          results.push(
+            await operations.deploy({
+              changeGroup: {
+                groupID: 'page',
+                changes: [toChange({ after: new InstanceElement('new_page@s', pageType, { title: 'new page' }) })],
+              },
+              progressReporter: nullProgressReporter,
+            }),
+          )
+          const updatedSpace1 = space1.clone()
+          updatedSpace1.value.name = 'new name'
+          results.push(
+            await operations.deploy({
+              changeGroup: {
+                groupID: 'space',
+                changes: [
+                  toChange({
+                    before: space1,
+                    after: updatedSpace1,
+                  }),
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            }),
+          )
 
-      //     results.push(
-      //       await operations.deploy({
-      //         changeGroup: {
-      //           groupID: 'group',
-      //           changes: [
-      //             toChange({
-      //               after: new InstanceElement('schedule2', businessHoursScheduleType, {
-      //                 name: 'schedule2',
-      //                 time_zone: 'Pacific Time (US & Canada)',
-      //                 intervals: [
-      //                   {
-      //                     start_time: 1980,
-      //                     end_time: 2460,
-      //                   },
-      //                   {
-      //                     start_time: 3420,
-      //                     end_time: 3900,
-      //                   },
-      //                 ],
-      //               }),
-      //             }),
-      //           ],
-      //         },
-      //         progressReporter: nullProgressReporter,
-      //       }),
-      //     )
+          results.push(
+            await operations.deploy({
+              changeGroup: {
+                groupID: 'group',
+                changes: [
+                  toChange({
+                    before: page2,
+                  }),
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            }),
+          )
 
-      //     expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
-      //     expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
-      //     const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-      //     expect(getChangeData(addRes).value.id).toEqual(12345)
-      //   })
-      // })
+          expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
+          expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
+          const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
+          expect(getChangeData(addRes).value.id).toEqual('12345')
+        })
+      })
     })
   })
 })

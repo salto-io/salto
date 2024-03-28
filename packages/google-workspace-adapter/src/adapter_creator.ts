@@ -15,7 +15,7 @@
  */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
-import { Credentials, credentialsType } from './auth'
+import { Credentials, basicCredentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
 import { ADAPTER_NAME } from './constants'
@@ -40,7 +40,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
   authenticationMethods: {
     basic: {
-      credentialsType,
+      credentialsType: basicCredentialsType,
     },
     oauth: {
       createOAuthRequest,

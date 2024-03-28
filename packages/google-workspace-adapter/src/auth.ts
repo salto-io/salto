@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
+import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { OauthAccessTokenCredentials, oauthAccessTokenCredentialsType } from './client/oauth'
+import * as constants from './constants'
 
-// TODO: define basic credentials type here
+export type BasicCredentials = {
+  accessToken: string
+}
 
-// import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
-// import { createMatchingObjectType } from '@salto-io/adapter-utils'
-// import * as constants from './constants'
+export const basicCredentialsType = createMatchingObjectType<BasicCredentials>({
+  elemID: new ElemID(constants.ADAPTER_NAME),
+  fields: {
+    accessToken: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'Access Token', _required: true },
+    },
+  },
+})
 
-// export type Credentials = {
-//   accessToken: string
-// }
+export const credentialsType = oauthAccessTokenCredentialsType || basicCredentialsType
 
-// export const credentialsType = createMatchingObjectType<Credentials>({
-//   elemID: new ElemID(constants.ADAPTER_NAME),
-//   fields: {
-//     accessToken: {
-//       refType: BuiltinTypes.STRING,
-//       annotations: { _required: true },
-//     },
-//   },
-// })
-export const credentialsType = oauthAccessTokenCredentialsType
-
-export type Credentials = OauthAccessTokenCredentials
+export type Credentials = OauthAccessTokenCredentials | BasicCredentials

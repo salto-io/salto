@@ -20,7 +20,7 @@ export {
   ResolveClientOptionsType,
   ResolvePaginationOptionsType,
   ResolveCustomNameMappingOptionsType,
-  ResolveContextStrategiesType,
+  ResolveReferenceContextStrategiesType,
 } from './api'
 export * as deploy from './deploy'
 export * as fetch from './fetch'

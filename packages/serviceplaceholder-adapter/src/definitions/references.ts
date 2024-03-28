@@ -15,9 +15,9 @@
  */
 import _ from 'lodash'
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
-import { ContextStrategies, Options } from './types'
+import { ReferenceContextStrategies, Options } from './types'
 
-const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ContextStrategies>[] = [
+const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ReferenceContextStrategies>[] = [
   // TODO adjust and remove unneeded examples and documentation
 
   // all fields called group_id or group_ids are assumed to reference group instances by their id field
@@ -45,7 +45,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ContextStrategies
     serializationStrategy: 'id',
     sourceTransformation: 'asString',
     target: {
-      typeContext: 'useParentType',
+      typeContext: 'parentType',
     },
   },
 
@@ -66,6 +66,6 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ContextStrategies
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
   contextStrategyLookup: {
-    useParentType: ({ instance }) => _.get(instance.value, 'parent_type'),
+    parentType: ({ instance }) => _.get(instance.value, 'parent_type'),
   },
 }

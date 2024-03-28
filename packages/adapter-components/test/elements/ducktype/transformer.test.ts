@@ -36,7 +36,6 @@ import { findDataField } from '../../../src/elements/field_finder'
 import { createElementQuery } from '../../../src/fetch/query'
 import { AdapterFetchError, InvalidSingletonType } from '../../../src/config/shared'
 import { computeGetArgs, simpleGetArgs } from '../../../src/fetch/resource'
-import { before } from 'lodash'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {

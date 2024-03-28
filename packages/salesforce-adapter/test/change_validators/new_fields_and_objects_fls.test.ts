@@ -42,7 +42,14 @@ describe('new Fields and Objects FLS Change Validator', () => {
     addedObject = createCustomObjectType('TestType__c', {
       annotations: { [API_NAME]: 'TestType__c' },
     })
-    changes = [addedField, addedObject].map((element) =>
+    // Make sure we don't create info on Field that is added alongside it's parent
+    const addedObjectField = new Field(
+      addedObject,
+      'TestField__c',
+      BuiltinTypes.STRING,
+      { [API_NAME]: 'TestType__c.TestField__c' },
+    )
+    changes = [addedField, addedObject, addedObjectField].map((element) =>
       toChange({ after: element }),
     )
   })

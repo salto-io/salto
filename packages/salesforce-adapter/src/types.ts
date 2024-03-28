@@ -162,6 +162,7 @@ export type ChangeValidatorName =
   | 'artificialTypes'
   | 'metadataTypes'
   | 'taskOrEventFieldsModifications'
+  | 'newFieldsAndObjectsFLS'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -879,6 +880,7 @@ const changeValidatorConfigType =
       artificialTypes: { refType: BuiltinTypes.BOOLEAN },
       metadataTypes: { refType: BuiltinTypes.BOOLEAN },
       taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
+      newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

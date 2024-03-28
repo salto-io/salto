@@ -16,7 +16,13 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, walkOnElement } from '@salto-io/adapter-utils'
+import {
+  WALK_NEXT_STEP,
+  WalkOnFunc,
+  isResolvedReferenceExpression,
+  walkOnElement,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
 import {
   elements as adapterElements,
   config as configUtils,
@@ -70,7 +76,7 @@ import {
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
+import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -160,9 +166,8 @@ const removeParametersEmptyStrings: WalkOnFunc = ({ value, path }): WALK_NEXT_ST
     })
   }
   if (
-    isInstanceElement(value) ||
     EMPTY_STRINGS_PATH_NAME_TO_RECURSE.has(path.name) ||
-    (_.isPlainObject(value) && (value.conditions || value.parameters))
+    (_.isPlainObject(value) && (value.transitions || value.conditions || value.parameters || value.actions))
   ) {
     return WALK_NEXT_STEP.RECURSE
   }
@@ -210,15 +215,18 @@ const createWorkflowInstances = async ({
             errors.push(error)
             return undefined
           }
-          const instance = await toBasicInstance({
+          walkOnValue({
+            elemId: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE, 'instance', workflow.name),
+            value: workflow,
+            func: removeParametersEmptyStrings,
+          })
+          return toBasicInstance({
             entry: workflow,
             type: workflowConfigurationType,
             transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
             transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
             defaultName: workflow.name,
           })
-          walkOnElement({ element: instance, func: removeParametersEmptyStrings })
-          return instance
         }),
       )
     ).filter(values.isDefined)

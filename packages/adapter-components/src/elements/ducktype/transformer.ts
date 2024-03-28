@@ -382,6 +382,7 @@ export const getAllElements = async ({
   isErrorTurnToConfigSuggestion,
   customInstanceFilter,
   additionalRequestContext,
+  shouldIgnorePermissionsError = false,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -397,6 +398,7 @@ export const getAllElements = async ({
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
   customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
   additionalRequestContext?: Record<string, unknown>
+  shouldIgnorePermissionsError?: boolean
 }): Promise<FetchElements<Element[]>> => {
   const supportedTypesWithEndpoints = _.mapValues(supportedTypes, typeNames =>
     typeNames.filter(typeName => types[typeName].request?.url !== undefined),
@@ -448,6 +450,10 @@ export const getAllElements = async ({
           return { elements: [], errors: [] }
         }
         if (e.response?.status === 403 || e.response?.status === 401) {
+          if (shouldIgnorePermissionsError) {
+            log.debug(`Ignoring permissions error for ${args.typeName} type`)
+            return { elements: [], errors: [] }
+          }
           const newError: SaltoError = {
             message: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',

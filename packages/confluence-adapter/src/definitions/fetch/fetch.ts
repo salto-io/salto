@@ -28,6 +28,9 @@ const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCusto
   created_at: {
     hide: true,
   },
+  createdAt: {
+    hide: true,
+  },
   updated_at: {
     hide: true,
   },

@@ -32,7 +32,7 @@ export type OauthAccessTokenResponse = {
 export type OAuthMethod = AuthMethod & {
   oauthRequestParameters: ObjectType
   createOAuthRequest: (userInput: InstanceElement) => OAuthRequestParameters
-  createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => Values
+  createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => Promise<Values> | Values
 }
 
 export type AdapterAuthentication = {

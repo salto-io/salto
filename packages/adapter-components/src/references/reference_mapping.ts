@@ -50,8 +50,13 @@ export type ReferenceSerializationStrategy = {
   getReferenceId: GetReferenceIdFunc
 }>
 export const basicLookUp: LookupFunc = val => val
-
-export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
+type GoogleWorkspaceReferenceSerializationStrategyName = 'roleId' | 'orgUnitId' | 'buildingId'
+export type ReferenceSerializationStrategyName =
+  | 'fullValue'
+  | 'id'
+  | 'name'
+  | 'nameWithPath'
+  | GoogleWorkspaceReferenceSerializationStrategyName
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -74,6 +79,21 @@ export const ReferenceSerializationStrategyLookup: Record<
     lookup: basicLookUp,
     lookupIndexName: 'name',
     getReferenceId: topLevelId => topLevelId.createNestedID('name'),
+  },
+  roleId: {
+    serialize: ({ ref }) => ref.value.value.roleId,
+    lookup: basicLookUp,
+    lookupIndexName: 'roleId',
+  },
+  buildingId: {
+    serialize: ({ ref }) => ref.value.value.buildingId,
+    lookup: basicLookUp,
+    lookupIndexName: 'buildingId',
+  },
+  orgUnitId: {
+    serialize: ({ ref }) => ref.value.value.orgUnitId,
+    lookup: basicLookUp,
+    lookupIndexName: 'orgUnitId',
   },
 }
 

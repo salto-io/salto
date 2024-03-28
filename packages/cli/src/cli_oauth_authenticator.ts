@@ -32,7 +32,7 @@ export const createServer = (
   const app = express()
   app.get('/', (_req: Request, res: Response) => {
     res.send(
-      `<script>url = window.location.href;window.location.replace("http://localhost:${port}/extract/?" + url.substring(url.search("#") + 1, url.length));</script>`,
+      `<script>url = window.location.href;window.location.replace("http://localhost:${port}/extract/?" + url.substring(url.includes("#") ? url.indexOf("#") + 1 : url.indexOf("?") + 1));</script>`,
     )
   })
   app.get('/extract', (req: Request, res: Response) => {

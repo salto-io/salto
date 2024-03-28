@@ -94,6 +94,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           // Wea are only able to edit the domainAliases
           // For that we are waiting for a new infra func that dills with changes inside of field array
+          // maybe we need CV as well here to be sure we are not changing anything else
           // modify: [
           //   {
           //     request: {
@@ -321,7 +322,17 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // we should run over the current resource id and change it to the resource name
+                  adjust: item => {
+                    if (!_.isObject(item.value)) {
+                      throw new Error('Can not deploy when the value is not an object')
+                    }
+                    return {
+                      value: {
+                        ...item.value,
+                        resourceId: '123',
+                      },
+                    }
+                  },
                 },
               },
             },
@@ -382,7 +393,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           //       transformation: {
           //         root: 'name',
           //         nestUnderField: 'newName',
-          //         adjust: item => ({ value: { nawName: item.value.name } }),
           //       },
           //     },
           //   },

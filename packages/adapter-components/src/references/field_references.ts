@@ -242,7 +242,7 @@ export const addReferences = async <
   elements,
   contextElements = elements,
   defs,
-  fieldsToGroupBy = ['id', 'domainName'],
+  fieldsToGroupBy = ['id', 'roleId', 'buildingId', 'orgUnitId', 'name'],
   contextStrategyLookup,
   fieldReferenceResolverCreator,
 }: {

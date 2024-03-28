@@ -219,6 +219,12 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         directMembersCount: {
           omit: true,
         },
+        adminCreated: {
+          omit: true,
+        },
+        nonEditableAliases: {
+          omit: true,
+        },
       },
     },
   },
@@ -301,13 +307,13 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'orgUnitPath' }] },
-        path: {
-          pathParts: [
-            { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
-            { parts: [{ fieldName: 'orgUnitPath' }] },
-          ],
-        },
+        elemID: { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }, { fieldName: 'name' }] },
+        // path: {
+        //   pathParts: [
+        //     { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
+        //     { parts: [{ fieldName: 'orgUnitPath' }] },
+        //   ],
+        // },
       },
 
       fieldCustomizations: {
@@ -416,6 +422,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'resourceName' }] },
+      },
+      fieldCustomizations: {
+        resourceId: {
+          hide: true,
+        },
+        generatedResourceName: {
+          omit: true,
+        },
       },
     },
   },

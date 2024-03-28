@@ -16,15 +16,30 @@
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
 
 const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
-  // {
-  //   src: { field: 'serviceId', parentTypes: ['role__rolePrivileges', 'privilege__childPrivileges'] },
-  //   serializationStrategy: 'serviceId',
-  //   target: { type: 'privilege' },
-  // },
   {
-    src: { field: 'parentDomainName' },
-    serializationStrategy: 'domainName',
-    target: { type: 'domain' },
+    src: { field: 'roleId', parentTypes: ['roleAssignment'] },
+    serializationStrategy: 'roleId',
+    target: { type: 'role' },
+  },
+  {
+    src: { field: 'assignTo', parentTypes: ['roleAssignment'] },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+  },
+  {
+    src: { field: 'parentOrgUnitId', parentTypes: ['orgUnit'] },
+    serializationStrategy: 'orgUnitId',
+    target: { type: 'orgUnit' },
+  },
+  {
+    src: { field: 'buildingId', parentTypes: ['room'] },
+    serializationStrategy: 'buildingId',
+    target: { type: 'building' },
+  },
+  {
+    src: { field: 'name', parentTypes: ['room__featureInstances__feature'] },
+    serializationStrategy: 'name',
+    target: { type: 'feature' },
   },
 ]
 

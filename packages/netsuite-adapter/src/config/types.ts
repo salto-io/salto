@@ -282,6 +282,7 @@ export type NetsuiteValidatorName =
   | 'analyticsSilentFailure'
   | 'undeployableBundleChanges'
   | 'removeListItemWithoutScriptID'
+  | 'customRecordEmptyPermissionList'
 
 export type NonSuiteAppValidatorName = 'removeFileCabinet' | 'removeStandardTypes'
 
@@ -645,6 +646,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     analyticsSilentFailure: { refType: BuiltinTypes.BOOLEAN },
     undeployableBundleChanges: { refType: BuiltinTypes.BOOLEAN },
     removeListItemWithoutScriptID: { refType: BuiltinTypes.BOOLEAN },
+    customRecordEmptyPermissionList: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

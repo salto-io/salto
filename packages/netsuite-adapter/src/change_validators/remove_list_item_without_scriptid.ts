@@ -18,25 +18,21 @@ import {
   isModificationChange,
   InstanceElement,
   isInstanceChange,
-  ReferenceExpression,
   ModificationChange,
   ChangeError,
-  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
 import { PERMISSIONS, ROLE } from '../constants'
+import {
+  RolePermissionObject,
+  isRolePermissionObject,
+} from '../custom_references/weak_references/permissions_references'
 
 const log = logger(module)
 
 const PERMISSION = 'permission'
-
-type RolePermissionObject = {
-  permkey: string | ReferenceExpression
-  permlevel: string
-  restriction?: string
-}
 
 export type ItemInList = RolePermissionObject
 
@@ -59,18 +55,6 @@ export type ItemListGetters = {
   getItemString: GetItemString
   getListPath: GetListPath
   getDetailedMessage: GetMessage
-}
-
-const isRolePermissionObject = (obj: unknown): obj is RolePermissionObject => {
-  const returnVal =
-    values.isPlainRecord(obj) &&
-    (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey)) &&
-    typeof obj.permlevel === 'string' &&
-    (typeof obj.restriction === 'string' || obj.restriction === undefined)
-  if (!returnVal) {
-    log.warn('There is a role permission with a different shape: %o', obj)
-  }
-  return returnVal
 }
 
 const getRoleListPath: GetListPath = () => [PERMISSIONS, PERMISSION]

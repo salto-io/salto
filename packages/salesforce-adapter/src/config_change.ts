@@ -240,9 +240,14 @@ export const createListMetadataObjectsConfigChange = (
 ): ConfigChangeSuggestion =>
   createSkippedListConfigChange({ type: res.type, instance: res.folder })
 
+type ConfigChangeCreationResult = {
+  configChanges: ConfigChangeSuggestion[]
+  errorsWithoutConfigChanges: string[]
+}
+
 export const createRetrieveConfigChange = (
   result: RetrieveResult,
-): ConfigChangeSuggestion[] => {
+): ConfigChangeCreationResult => {
   const configChanges = makeArray(result.messages)
     .map((msg: Values) =>
       constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''),
@@ -256,7 +261,18 @@ export const createRetrieveConfigChange = (
       }),
     )
   log.debug('Created the config changes %o', configChanges)
-  return configChanges
+  return {
+    configChanges,
+    errorsWithoutConfigChanges: makeArray(result.messages)
+      .filter(
+        (message) =>
+          message.problem &&
+          !constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.test(
+            message.problem ?? '',
+          ),
+      )
+      .map((message) => message.problem),
+  }
 }
 
 export type ConfigChange = {

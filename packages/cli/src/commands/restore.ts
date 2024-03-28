@@ -30,7 +30,6 @@ import {
   formatRestoreFinish,
   formatStepCompleted,
   formatStepFailed,
-  formatStateRecencies,
   formatAppliedChanges,
   formatShowWarning,
   formatListRecord,
@@ -174,9 +173,6 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   }
   await validateAndSetEnv(workspace, input, output)
   const activeAccounts = getAndValidateActiveAccounts(workspace, accounts)
-  const stateRecencies = await Promise.all(activeAccounts.map(account => workspace.getStateRecency(account)))
-  // Print state recencies
-  outputLine(formatStateRecencies(stateRecencies), output)
 
   const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {

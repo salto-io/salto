@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import wu from 'wu'
 import semver from 'semver'
 import { EOL } from 'os'
 import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Workspace, nacl, StateRecency, validator as wsValidator } from '@salto-io/workspace'
+import { Workspace, nacl, validator as wsValidator } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   formatWorkspaceError,
@@ -28,8 +27,6 @@ import {
   formatDetailedChanges,
   formatFinishedLoading,
   formatWorkspaceAbort,
-  formatShouldCancelWithOldState,
-  formatShouldCancelWithNonexistentState,
 } from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import {
@@ -51,7 +48,6 @@ export const MAX_WORKSPACE_ERRORS_TO_LOG = 30
 export type LoadWorkspaceResult = {
   workspace: Workspace
   errored: boolean
-  stateRecencies: StateRecency[]
 }
 type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 type WorkspaceStatusErrors = {
@@ -143,7 +139,6 @@ const logWorkspaceUpdates = async (ws: Workspace, changes: readonly FetchChange[
 
 export const shouldRecommendFetch = async (
   stateSaltoVersion: string | undefined,
-  invalidRecencies: StateRecency[],
   cliOutput: CliOutput,
 ): Promise<boolean> => {
   if (!stateSaltoVersion) {
@@ -158,12 +153,6 @@ export const shouldRecommendFetch = async (
   }
   if (semver.gt(currentVersion, maxStateSupportedVersion)) {
     return shouldCancelCommand(Prompts.OLD_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
-  }
-  if (!_.isEmpty(invalidRecencies)) {
-    const prompt = invalidRecencies.find(recency => recency.status !== 'Nonexistent')
-      ? formatShouldCancelWithOldState
-      : formatShouldCancelWithNonexistentState
-    return shouldCancelCommand(prompt, cliOutput)
   }
   return false
 }

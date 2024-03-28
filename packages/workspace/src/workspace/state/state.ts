@@ -32,8 +32,7 @@ export type UpdateStateElementsArgs = {
 
 export type StateData = {
   elements: RemoteElementSource
-  // The date of the last fetch
-  accountsUpdateDate: RemoteMap<Date>
+  accounts: string[]
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
@@ -47,7 +46,6 @@ type UpdateConfigArgs = {
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
-  getAccountsUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
@@ -95,12 +93,7 @@ export const buildStateData = async (
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  accountsUpdateDate: await remoteMapCreator<Date>({
-    namespace: createStateNamespace(envName, 'service_update_date'),
-    serialize: async date => date.toISOString(),
-    deserialize: async data => new Date(data),
-    persistent,
-  }),
+  accounts: [],
   saltoMetadata: await remoteMapCreator<string, 'version'>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: async data => data,

@@ -50,7 +50,7 @@ const log = logger(module)
 type PathEntry = [string, string[][]]
 type ParsedState = {
   elements: Element[]
-  updateDates: Record<string, string>[]
+  accounts: string[]
   pathIndices: PathEntry[]
   versions: string[]
 }
@@ -58,7 +58,7 @@ type ParsedState = {
 const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
   const res: ParsedState = {
     elements: [],
-    updateDates: [],
+    accounts: [],
     pathIndices: [],
     versions: [],
   }
@@ -77,7 +77,7 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
           } else if (key === 1) {
             // line 2 - update dates, e.g.
             //   {"dummy":"2023-01-09T15:57:59.322Z"}
-            res.updateDates.push(value)
+            res.accounts.push(value)
           } else if (key === 2) {
             // line 3 - path index, e.g.
             //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]
@@ -155,17 +155,10 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    const updateDatesByAccount = _.mapValues(
-      res.updateDates
-        .map(entry => entry ?? {})
-        .filter(entry => !_.isEmpty(entry))
-        .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
-      dateStr => new Date(dateStr),
-    )
-    const stateUpdateDate = stateData.accountsUpdateDate
-    if (stateUpdateDate !== undefined) {
-      await stateUpdateDate.clear()
-      await stateUpdateDate.setAll(awu(Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))))
+    const accounts = res.accounts ?? []
+    const stateAccounts = stateData.accounts
+    if (stateAccounts !== undefined) {
+      stateAccounts.push(...accounts)
     }
     const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
     if (currentVersion) {
@@ -211,7 +204,6 @@ export const localState = (
     const accountToElementStreams = await promises.object.mapValuesAsync(elementsByAccount, accountElements =>
       serializeStream(_.sortBy(accountElements, element => element.elemID.getFullName())),
     )
-    const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray(),
     )
@@ -224,7 +216,7 @@ export const localState = (
       }
       yield* yieldWithEOL([
         accountToElementStreams[account],
-        awu([safeJsonStringify({ [account]: accountToDates[account] } || {})]),
+        awu([safeJsonStringify(account)]),
         accountToPathIndex[account] || '[]',
         awu([safeJsonStringify(version)]),
       ])

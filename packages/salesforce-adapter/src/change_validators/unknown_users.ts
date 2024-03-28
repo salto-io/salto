@@ -24,6 +24,9 @@ import {
   Values,
   Value,
   ElemID,
+  Change,
+  isFieldChange,
+  Field,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -33,6 +36,7 @@ import {
   queryClient,
 } from '../filters/utils'
 import SalesforceClient from '../client/client'
+import { isFieldOfCustomObject } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -263,6 +267,77 @@ const unknownUserError = ({ elemId, field, user }: UserRef): ChangeError => ({
   detailedMessage: `The field ${field} in '${elemId.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment`,
 })
 
+const unknownUserInCustomFieldAnnotationError = ({
+  field,
+  user,
+}: {
+  field: Field
+  user: string
+}): ChangeError => ({
+  elemID: field.elemID,
+  severity: 'Error',
+  message: 'Data Owner user does not exist',
+  detailedMessage: `The "Data Owner" property of the field ${field.elemID.getFullName()} refers to the user ${user} which does not exist in this Salesforce environment`,
+})
+
+const validateInstances = async (
+  changes: ReadonlyArray<Change>,
+  client: SalesforceClient,
+): Promise<ChangeError[]> => {
+  const instancesOfInterest = await awu(changes)
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(isInstanceOfType(...Object.keys(USER_GETTERS)))
+    .toArray()
+
+  const userRefs = await getUsersFromInstances(
+    USER_GETTERS,
+    instancesOfInterest,
+  )
+  const existingUsers = new Set(
+    await getSalesforceUsers(
+      client,
+      userRefs.map(({ user }) => user),
+    ),
+  )
+
+  return userRefs
+    .filter(({ user }) => !existingUsers.has(user))
+    .map(unknownUserError)
+}
+
+const validateCustomFields = async (
+  changes: ReadonlyArray<Change>,
+  client: SalesforceClient,
+): Promise<ChangeError[]> => {
+  const changedCustomField = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isFieldChange)
+    .filter((change) => isFieldOfCustomObject(getChangeData(change)))
+    .map(getChangeData)
+
+  const userRefs = changedCustomField
+    .filter(
+      (customField) => customField.annotations?.businessOwnerUser !== undefined,
+    )
+    .flatMap((customField) => ({
+      user: customField.annotations.businessOwnerUser as string,
+      field: customField,
+    }))
+
+  const existingUsers = new Set(
+    await getSalesforceUsers(
+      client,
+      userRefs.map(({ user }) => user),
+    ),
+  )
+
+  return userRefs
+    .filter(({ user }) => !existingUsers.has(user))
+    .map(unknownUserInCustomFieldAnnotationError)
+}
+
 /**
  * Fields that reference users may refer to users that don't exist. The most common case would be when deploying
  * between different environment, as users by definition can't exist in multiple environments.
@@ -270,27 +345,9 @@ const unknownUserError = ({ elemId, field, user }: UserRef): ChangeError => ({
 const changeValidator =
   (client: SalesforceClient): ChangeValidator =>
   async (changes) => {
-    const instancesOfInterest = await awu(changes)
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(isInstanceOfType(...Object.keys(USER_GETTERS)))
-      .toArray()
-
-    const userRefs = await getUsersFromInstances(
-      USER_GETTERS,
-      instancesOfInterest,
-    )
-    const existingUsers = new Set(
-      await getSalesforceUsers(
-        client,
-        userRefs.map(({ user }) => user),
-      ),
-    )
-
-    return userRefs
-      .filter(({ user }) => !existingUsers.has(user))
-      .map(unknownUserError)
+    const instancesErrors = await validateInstances(changes, client)
+    const customFieldsErrors = await validateCustomFields(changes, client)
+    return instancesErrors.concat(customFieldsErrors)
   }
 
 export default changeValidator

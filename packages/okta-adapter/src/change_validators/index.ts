@@ -36,6 +36,7 @@ import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactiv
 import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
 import { profileMappingRemovalValidator } from './profile_mapping_removal'
+import { brandRemovalValidator } from './brand_removal'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -74,6 +75,7 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     appGroupAssignment: appGroupAssignmentValidator,
     appUrls: appUrlsValidator,
     profileMappingRemoval: profileMappingRemovalValidator,
+    brandRemoval: brandRemovalValidator,
   }
 
   return createChangeValidator({

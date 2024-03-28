@@ -112,26 +112,24 @@ describe('adapter', () => {
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'confluence.blogpost',
-          'confluence.blogpost.instance.Hey__I_m_am_a_first_blog_post@lstsssss',
-          'confluence.blogpost.instance.This_is_My_super_blog@s',
-          'confluence.blogpost___links',
+          'confluence.blogpost.instance.22_This_is_My_super_blog@ussss',
+          'confluence.blogpost.instance.65539_Hey__I_m_am_a_first_blog_post@ulstsssss',
           'confluence.blogpost__body',
           'confluence.blogpost__version',
+          'confluence.global_template',
           'confluence.page',
           'confluence.page.instance.22_Getting_started_in_Confluence@usss',
           'confluence.page.instance.22_Overview',
           'confluence.page.instance.22_This_is_my_page_yay@ussss',
-          'confluence.page___links',
           'confluence.page__body',
           'confluence.page__restriction',
           'confluence.page__restriction__restrictions',
           'confluence.page__version',
-          'confluence.template_page',
         ])
         expect(
           elements
             .filter(isInstanceElement)
-            .find(e => e.elemID.getFullName() === 'confluence.blogpost.instance.This_is_My_super_blog@s')?.value,
+            .find(e => e.elemID.getFullName() === 'confluence.blogpost.instance.22_This_is_My_super_blog@ussss')?.value,
         ).toEqual({
           authorId: 'mockId22',
           createdAt: '2024-03-20T10:30:12.473Z',

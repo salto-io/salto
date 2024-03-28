@@ -51,7 +51,7 @@ export const hideFields = (fieldsToHide: FieldToHideType[], type: ObjectType): v
   fieldsToHide.forEach(({ fieldName, fieldType }) => {
     if (fieldType !== undefined && fieldType !== typeFields[fieldName]?.refType.elemID.name) {
       if (typeFields[fieldName] === undefined) {
-        log.debug(
+        log.trace(
           `Cannot hide field ${type.elemID.name}.${fieldName} - override type is ${fieldType} while field is not defined`,
         )
       } else {
@@ -66,7 +66,7 @@ export const hideFields = (fieldsToHide: FieldToHideType[], type: ObjectType): v
       typeFields[fieldName] = new Field(type, fieldName, BuiltinTypes.UNKNOWN)
     }
     const field = typeFields[fieldName]
-    log.debug(`Hiding values for field ${type.elemID.name}.${fieldName}`)
+    log.trace(`Hiding values for field ${type.elemID.name}.${fieldName}`)
     field.annotations = {
       ...field.annotations,
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,

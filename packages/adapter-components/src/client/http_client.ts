@@ -240,7 +240,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logResponse = (res: Response<any>, error?: any): void => {
-      log.debug('Received response for %s on %s', method.toUpperCase(), url)
+      log.trace('Received response for %s on %s', method.toUpperCase(), url)
 
       const responseText = safeJsonStringify({
         url,
@@ -282,13 +282,24 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
             url,
             isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
           )
-      log.debug(
-        'Received response for %s on %s (%s) with status %d',
-        method.toUpperCase(),
-        url,
-        safeJsonStringify({ url, queryParams }),
-        res.status,
-      )
+      if (method.toUpperCase() === 'GET'){
+        log.trace(
+          'Received response for %s on %s (%s) with status %d',
+          method.toUpperCase(),
+          url,
+          safeJsonStringify({ url, queryParams }),
+          res.status,
+        )
+      } else {
+        log.debug(
+          'Received response for %s on %s (%s) with status %d',
+          method.toUpperCase(),
+          url,
+          safeJsonStringify({ url, queryParams }),
+          res.status,
+        )
+      }
+
       logResponse(res)
       return {
         data: res.data,

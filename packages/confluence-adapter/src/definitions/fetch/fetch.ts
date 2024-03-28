@@ -80,26 +80,29 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   //     },
   //   },
   // },
-  // label: {
-  //   requests: [
-  //     {
-  //       endpoint: {
-  //         path: '/wiki/rest/api/label',
-  //       },
-  //       transformation: {
-  //         root: 'results',
-  //       },
-  //     },
-  //   ],
-  //   resource: {
-  //     directFetch: true,
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //     },
-  //   },
-  // },
+  label: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/api/v2/labels',
+        },
+        transformation: {
+          root: 'results',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'prefix' }, { fieldName: 'name' }],
+        },
+      },
+    },
+  },
   // system_info: {
   //   requests: [
   //     {

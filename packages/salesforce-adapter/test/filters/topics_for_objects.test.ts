@@ -157,6 +157,7 @@ describe('Topics for objects filter', () => {
                   elementsSource,
                   lastChangeDateOfTypesWithNestedInstances:
                     emptyLastChangeDateOfTypesWithNestedInstances(),
+                  customObjectsWithDeletedFields: new Set(),
                 }),
             }),
           },

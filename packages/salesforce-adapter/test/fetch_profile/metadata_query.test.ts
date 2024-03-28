@@ -676,6 +676,7 @@ describe('buildMetadataQuery', () => {
         elementsSource,
         lastChangeDateOfTypesWithNestedInstances:
           emptyLastChangeDateOfTypesWithNestedInstances(),
+        customObjectsWithDeletedFields: new Set(),
       })
     })
     describe('when is first fetch', () => {
@@ -696,6 +697,7 @@ describe('buildMetadataQuery', () => {
             elementsSource: buildElementsSourceFromElements([]),
             lastChangeDateOfTypesWithNestedInstances:
               emptyLastChangeDateOfTypesWithNestedInstances(),
+            customObjectsWithDeletedFields: new Set(),
           }),
         ).rejects.toThrow()
       })
@@ -725,6 +727,7 @@ describe('buildMetadataQuery', () => {
             ]),
             lastChangeDateOfTypesWithNestedInstances:
               emptyLastChangeDateOfTypesWithNestedInstances(),
+            customObjectsWithDeletedFields: new Set(),
           })
         })
         it('should return true', () => {

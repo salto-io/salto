@@ -16,6 +16,7 @@
 
 import {
   ChangeError,
+  ElemID,
   FixElementsFunc,
   GetCustomReferencesFunc,
   InstanceElement,
@@ -33,7 +34,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
-import { CUSTOM_RECORD_TYPE, PERMISSIONS, ROLE, SCRIPT_ID } from '../../constants'
+import { CUSTOM_RECORD_TYPE, PERMISSIONS, ROLE } from '../../constants'
 import { isCustomRecordType } from '../../types'
 
 const { awu } = collections.asynciterable
@@ -50,7 +51,7 @@ type CustomRecordPermissionObject = {
   restriction?: string
 }
 
-type permissionObject = RolePermissionObject | CustomRecordPermissionObject
+type PermissionObject = RolePermissionObject | CustomRecordPermissionObject
 
 type RoleOrCustomRecord = 'role' | 'customrecordtype'
 
@@ -74,15 +75,15 @@ const isCustomRecordPermissionObject = (val: Value): val is CustomRecordPermissi
   createSchemeGuard<CustomRecordPermissionObject>(CUSTOM_RECORD_PERMISSION_SCHEME)(val) &&
   (isReferenceExpression(val.permittedrole) || _.isString(val.permittedrole))
 
-const isPermissionObject = (obj: unknown, permissionType: RoleOrCustomRecord): obj is permissionObject =>
+const isPermissionObject = (obj: unknown, permissionType: RoleOrCustomRecord): obj is PermissionObject =>
   permissionType === ROLE ? isRolePermissionObject(obj) : isCustomRecordPermissionObject(obj)
 
 export const getPermissionsListPath = (): string[] => [PERMISSIONS, 'permission']
 
-const getPermissionWeakElementReferences = (
+const getPermissionReferences = (
   roleOrCustomRecord: ObjectType | InstanceElement,
 ): Record<string, ReferenceExpression> => {
-  const permissionRecord: Record<string, ReferenceExpression> = {}
+  const permissionReferences: Record<string, ReferenceExpression> = {}
   const listPathValue = _.get(
     isInstanceElement(roleOrCustomRecord) ? roleOrCustomRecord.value : roleOrCustomRecord.annotations,
     getPermissionsListPath(),
@@ -90,53 +91,45 @@ const getPermissionWeakElementReferences = (
   if (values.isPlainRecord(listPathValue)) {
     Object.entries(listPathValue).forEach(([key, value]) => {
       if (isRolePermissionObject(value) && isReferenceExpression(value.permkey)) {
-        permissionRecord[key] = value.permkey
+        permissionReferences[key] = value.permkey
       } else if (isCustomRecordPermissionObject(value) && isReferenceExpression(value.permittedrole)) {
-        permissionRecord[key] = value.permittedrole
+        permissionReferences[key] = value.permittedrole
       }
     })
   }
-  return permissionRecord
+  return permissionReferences
 }
 
-const getWeakElementReferences = (roleOrCustomRecord: ObjectType | InstanceElement): ReferenceInfo[] => {
-  const rolePermissionReferences = getPermissionWeakElementReferences(roleOrCustomRecord)
-  const permissionPath = isInstanceElement(roleOrCustomRecord)
+const getWeakElementReferences = (roleOrCustomRecordType: ObjectType | InstanceElement): ReferenceInfo[] => {
+  const permissionReferences = getPermissionReferences(roleOrCustomRecordType)
+  const permissionPath = isInstanceElement(roleOrCustomRecordType)
     ? getPermissionsListPath()
     : ['attr', ...getPermissionsListPath()]
-  return Object.entries(rolePermissionReferences).flatMap(([name, referenceElement]) => ({
-    source: roleOrCustomRecord.elemID.createNestedID(...permissionPath, name),
+  return Object.entries(permissionReferences).flatMap(([name, referenceElement]) => ({
+    source: roleOrCustomRecordType.elemID.createNestedID(...permissionPath, name),
     target: referenceElement.elemID,
     type: 'weak' as const,
   }))
 }
 
-const isRoleOrCustomRecordElement = (element: Value): element is InstanceElement | ObjectType =>
+const isRoleOrCustomRecordTypeElement = (element: Value): element is InstanceElement | ObjectType =>
   (isInstanceElement(element) && element.elemID.typeName === ROLE) ||
   (isObjectType(element) && isCustomRecordType(element))
 
 const getPermissionsReferences: GetCustomReferencesFunc = async elements =>
-  elements.filter(isRoleOrCustomRecordElement).flatMap(getWeakElementReferences)
+  elements.filter(isRoleOrCustomRecordTypeElement).flatMap(getWeakElementReferences)
 
 const getValidPermissions = (
   permissionField: Record<string, unknown>,
   permissionType: RoleOrCustomRecord,
-): Record<string, permissionObject> =>
-  Object.entries(permissionField).reduce(
-    (acc, [key, value]) => {
-      if (isPermissionObject(value, permissionType)) {
-        acc[key] = value
-      }
-      return acc
-    },
-    {} as Record<string, permissionObject>,
-  )
+): Record<string, PermissionObject> =>
+  _.pickBy(permissionField, (value): value is PermissionObject => isPermissionObject(value, permissionType))
 
 const getFixedPermissionField = async (
   permissions: Record<string, unknown>,
   elementsSource: ReadOnlyElementsSource,
   permissionType: RoleOrCustomRecord,
-): Promise<Record<string, permissionObject>> => {
+): Promise<Record<string, PermissionObject>> => {
   const validPermissions = getValidPermissions(permissions, permissionType)
   return awu(Object.entries(validPermissions)).reduce(
     async (acc, [key, value]) => {
@@ -149,7 +142,7 @@ const getFixedPermissionField = async (
       }
       return acc
     },
-    {} as Record<string, permissionObject>,
+    {} as Record<string, PermissionObject>,
   )
 }
 
@@ -181,15 +174,11 @@ const getFixedElementsAndUpdatedPaths = async (
   return fixedObject
 }
 
-const getMessageByPathAndElemTypeName = (
-  elem: InstanceElement | ObjectType,
-  fullPath: string,
-  elementTypeName: string,
-): ChangeError => ({
-  elemID: elem.elemID,
+const getMessageByPathAndElemTypeName = (elemID: ElemID, fullPath: string, elementTypeName: string): ChangeError => ({
+  elemID,
   severity: 'Info',
-  message: `Deploying ${fullPath} without all attached ${elementTypeName}`,
-  detailedMessage: `This ${fullPath} is attached to some ${elementTypeName} that do not exist in the target environment. It will be deployed without referencing these ${elementTypeName}.`,
+  message: 'Deploying without all attached permissions',
+  detailedMessage: `This ${fullPath} is referenced by certain ${elementTypeName} that do not exist in the target environment. As a result, it will be deployed without those references.`,
 })
 
 const removeUnresolvedPermissionElements: WeakReferencesHandler<{
@@ -201,28 +190,40 @@ const removeUnresolvedPermissionElements: WeakReferencesHandler<{
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ROLE)
       .map(role => getFixedElementsAndUpdatedPaths(role, elementsSource, ROLE))
-      .filter(isInstanceElement)
+      .filter(values.isDefined)
       .toArray()
 
     const roleErrors: ChangeError[] = fixedRoles.map(role => {
-      const fullPath = `${role.value[SCRIPT_ID]}.${getPermissionsListPath().join('.')}`
+      const fullPath = `${role.elemID.name}.${getPermissionsListPath().join('.')}`
       const elementTypeName = `${CUSTOM_RECORD_TYPE}s`
-      return getMessageByPathAndElemTypeName(role, fullPath, elementTypeName)
+      return getMessageByPathAndElemTypeName(
+        role.elemID.createNestedID(...getPermissionsListPath()),
+        fullPath,
+        elementTypeName,
+      )
     })
 
-    const fixedCustomRecords = await awu(elements)
+    const fixedCustomRecordTypes = await awu(elements)
       .filter(isObjectType)
       .filter(isCustomRecordType)
-      .map(custRecord => getFixedElementsAndUpdatedPaths(custRecord, elementsSource, CUSTOM_RECORD_TYPE))
+      .map(custRecordType => getFixedElementsAndUpdatedPaths(custRecordType, elementsSource, CUSTOM_RECORD_TYPE))
       .filter(values.isDefined)
       .toArray()
-    const customRecordErrors: ChangeError[] = fixedCustomRecords.map(custRecord => {
-      const fullPath = `${custRecord.annotations.scriptid}.annotations.${getPermissionsListPath().join('.')}`
+
+    const customRecordTypeErrors: ChangeError[] = fixedCustomRecordTypes.map(custRecordType => {
+      const fullPath = `${custRecordType.annotations.scriptid}.annotations.${getPermissionsListPath().join('.')}`
       const elementTypeName = `${ROLE}s`
-      return getMessageByPathAndElemTypeName(custRecord, fullPath, elementTypeName)
+      return getMessageByPathAndElemTypeName(
+        custRecordType.elemID.createNestedID('annotation', ...getPermissionsListPath()),
+        fullPath,
+        elementTypeName,
+      )
     })
 
-    return { fixedElements: [...fixedRoles, ...fixedCustomRecords], errors: [...roleErrors, ...customRecordErrors] }
+    return {
+      fixedElements: [...fixedRoles, ...fixedCustomRecordTypes],
+      errors: [...roleErrors, ...customRecordTypeErrors],
+    }
   }
 
 export const permissionsHandler: WeakReferencesHandler<{

@@ -37,10 +37,10 @@ describe('custom record empty permission list validator', () => {
     expect(errors[0]).toEqual({
       elemID: customRecord.elemID,
       severity: 'Error',
-      message: 'Access type is permission list with no permissions specified',
+      message: 'Access Type is "Permission List" with No Permissions Specified',
       detailedMessage:
-        "Cannot deploy a Custom Record Type without permissions when the access type is set to 'USEPERMISSIONLIST'." +
-        "To deploy this Custom Record Type, either add permissions or change the access type to 'CUSTRECORDENTRYPERM' or 'NONENEEDED'.",
+        "Cannot deploy a Custom Record Type without specifying permissions when the access type is set to 'USEPERMISSIONLIST'." +
+        "To deploy this Custom Record Type, you must either add permissions or change the access type to 'CUSTRECORDENTRYPERM' or 'NONENEEDED'.",
     })
   })
   it('should not return an error when there are permissions', async () => {

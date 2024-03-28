@@ -22,12 +22,12 @@ const USE_PERMISSION_LIST = 'USEPERMISSIONLIST'
 const REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION = 'CUSTRECORDENTRYPERM'
 const NO_PERMISSION_REQUIRED = 'NONENEEDED'
 
-const hasPermissions = (customRecord: ObjectType): boolean =>
-  values.isPlainRecord(customRecord.annotations.permissions?.permission) &&
-  Object.keys(customRecord.annotations.permissions.permission).length > 0
+const hasPermissions = (customRecordType: ObjectType): boolean =>
+  values.isPlainRecord(customRecordType.annotations.permissions?.permission) &&
+  Object.keys(customRecordType.annotations.permissions.permission).length > 0
 
-const usePermissionOnListWithEmptyList = (customRecord: ObjectType): boolean =>
-  customRecord.annotations.accesstype === USE_PERMISSION_LIST && !hasPermissions(customRecord)
+const usePermissionOnListWithEmptyList = (customRecordType: ObjectType): boolean =>
+  customRecordType.annotations.accesstype === USE_PERMISSION_LIST && !hasPermissions(customRecordType)
 
 const changeValidator: NetsuiteChangeValidator = async changes =>
   changes
@@ -36,13 +36,13 @@ const changeValidator: NetsuiteChangeValidator = async changes =>
     .filter(isObjectType)
     .filter(isCustomRecordType)
     .filter(usePermissionOnListWithEmptyList)
-    .map(customRecord => ({
-      elemID: customRecord.elemID,
+    .map(customRecordType => ({
+      elemID: customRecordType.elemID,
       severity: 'Error',
-      message: 'Access type is permission list with no permissions specified',
+      message: 'Access Type is "Permission List" with No Permissions Specified',
       detailedMessage:
-        `Cannot deploy a Custom Record Type without permissions when the access type is set to '${USE_PERMISSION_LIST}'.` +
-        `To deploy this Custom Record Type, either add permissions or change the access type to '${REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION}' or '${NO_PERMISSION_REQUIRED}'.`,
+        `Cannot deploy a Custom Record Type without specifying permissions when the access type is set to '${USE_PERMISSION_LIST}'.` +
+        `To deploy this Custom Record Type, you must either add permissions or change the access type to '${REQUIRE_CUSTOM_RECORD_ENTRIES_PERMISSION}' or '${NO_PERMISSION_REQUIRED}'.`,
     }))
 
 export default changeValidator

@@ -151,7 +151,7 @@ describe('permissions_references', () => {
   roleInstance1.value.permissions.permission.customrecord_2.permkey = new ReferenceExpression(
     custRecordObject2.elemID.createNestedID('attr', SCRIPT_ID),
     custRecordObject2.annotations.scriptid,
-    custRecordObject1,
+    custRecordObject2,
   )
 
   roleInstance2.value.permissions.permission.customrecord_1.permkey = new ReferenceExpression(
@@ -162,7 +162,7 @@ describe('permissions_references', () => {
   roleInstance2.value.permissions.permission.customrecord_2.permkey = new ReferenceExpression(
     custRecordObject2.elemID.createNestedID('attr', SCRIPT_ID),
     custRecordObject2.annotations.scriptid,
-    custRecordObject1,
+    custRecordObject2,
   )
 
   custRecordObject1.annotations.permissions.permission.customrole_1.permittedrole = new ReferenceExpression(
@@ -239,11 +239,11 @@ describe('permissions_references', () => {
 
       expect(fixes.errors).toEqual([
         {
-          elemID: role1.elemID,
+          elemID: role1.elemID.createNestedID(...getPermissionsListPath()),
           severity: 'Info',
-          message: 'Deploying customrole_1.permissions.permission without all attached customrecordtypes',
+          message: 'Deploying without all attached permissions',
           detailedMessage:
-            'This customrole_1.permissions.permission is attached to some customrecordtypes that do not exist in the target environment. It will be deployed without referencing these customrecordtypes.',
+            'This customrole_1.permissions.permission is referenced by certain customrecordtypes that do not exist in the target environment. As a result, it will be deployed without those references.',
         },
       ])
 
@@ -265,11 +265,11 @@ describe('permissions_references', () => {
 
       expect(fixes.errors).toEqual([
         {
-          elemID: custRecord1.elemID,
+          elemID: custRecord1.elemID.createNestedID('annotation', ...getPermissionsListPath()),
           severity: 'Info',
-          message: 'Deploying customrecord_1.annotations.permissions.permission without all attached roles',
+          message: 'Deploying without all attached permissions',
           detailedMessage:
-            'This customrecord_1.annotations.permissions.permission is attached to some roles that do not exist in the target environment. It will be deployed without referencing these roles.',
+            'This customrecord_1.annotations.permissions.permission is referenced by certain roles that do not exist in the target environment. As a result, it will be deployed without those references.',
         },
       ])
 

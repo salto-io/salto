@@ -60,26 +60,6 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
 )
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  // group: {
-  //   requests: [
-  //     {
-  //       endpoint: {
-  //         path: '/wiki/rest/api/group',
-  //       },
-  //       transformation: {
-  //         root: 'results',
-  //       },
-  //     },
-  //   ],
-  //   resource: {
-  //     directFetch: true,
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //     },
-  //   },
-  // },
   label: {
     requests: [
       {
@@ -103,26 +83,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  // system_info: {
-  //   requests: [
-  //     {
-  //       endpoint: {
-  //         path: '/wiki/rest/settings/systemInfo',
-  //       },
-  //       transformation: {
-  //         root: 'results',
-  //       },
-  //     },
-  //   ],
-  //   resource: {
-  //     directFetch: true,
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //     },
-  //   },
-  // },
   space: {
     requests: [
       {
@@ -160,6 +120,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             },
           },
         },
+        settings: {
+          typeName: 'space_settings',
+          context: {
+            args: {
+              key: {
+                fromField: 'key',
+              },
+            },
+          },
+        },
       },
     },
     element: {
@@ -176,6 +146,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: false,
+          },
+        },
+        settings: {
+          standalone: {
+            typeName: 'space_settings',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
           },
         },
       },
@@ -197,6 +175,26 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       fieldCustomizations: {
         id: {
           hide: true,
+        },
+      },
+    },
+  },
+  space_settings: {
+    requests: [
+      {
+        endpoint: {
+          path: '/wiki/rest/api/settings/lookandfeel',
+          queryArgs: {
+            spaceKey: '{key}',
+          },
+        },
+      },
+    ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
         },
       },
     },
@@ -259,40 +257,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     resource: {
       directFetch: true,
     },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        singleton: true,
-      },
-      fieldCustomizations: {
-        global: {
-          standalone: {
-            typeName: 'settings_global',
-            addParentAnnotation: false,
-            referenceFromParent: false,
-            nestPathUnderParent: false,
-          },
-        },
-        custom: {
-          standalone: {
-            typeName: 'settings_custom',
-            addParentAnnotation: false,
-            referenceFromParent: false,
-            nestPathUnderParent: false,
-          },
-        },
-      },
-    },
-  },
-  settings_global: {
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        singleton: true,
-      },
-    },
-  },
-  settings_custom: {
     element: {
       topLevel: {
         isTopLevel: true,
@@ -369,7 +333,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
     resource: {
-      directFetch: false,
+      directFetch: true,
       serviceIDFields: ['templateId'],
     },
     element: {

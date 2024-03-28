@@ -15,15 +15,58 @@
  */
 import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { extractTemplate } from '@salto-io/adapter-utils'
+import { DOMAIN_REGEX } from '../utils'
+
+const extractIdIfElementExists = (
+  idsToElements: Record<string, InstanceElement>,
+  expression: string,
+): string | ReferenceExpression => {
+  const element = idsToElements[expression]
+  if (element !== undefined) {
+    return new ReferenceExpression(element.elemID, element)
+  }
+  return expression
+}
 
 export const extractGreedyIdsFromScripts = (
   idsToElements: Record<string, InstanceElement>,
   script: string,
 ): string | TemplateExpression =>
-  extractTemplate(script, [/(\d{6,})/], expression => {
-    const element = idsToElements[expression]
-    if (element !== undefined) {
-      return new ReferenceExpression(element.elemID, element)
-    }
-    return expression
-  })
+  extractTemplate(script, [/(\d{6,})/], expression => extractIdIfElementExists(idsToElements, expression))
+
+export const extractDomainsAndFieldsFromScripts = (
+  idsToElements: Record<string, InstanceElement>,
+  matchBrandSubdomain: (url: string) => InstanceElement | undefined,
+  script: string,
+): string | TemplateExpression => {
+  const locators = [
+    {
+      locatorRegex: /(request_custom_fields_\d+)/,
+      elementFunc: (expression: string) => {
+        const potentialId = expression.match(/(\d+)/)
+        if (potentialId === null) {
+          return expression
+        }
+        return ['request_custom_fields_', extractIdIfElementExists(idsToElements, potentialId[0])]
+      },
+    },
+    {
+      locatorRegex: DOMAIN_REGEX,
+      elementFunc: (expression: string) => {
+        const element = matchBrandSubdomain(expression)
+        if (element !== undefined) {
+          return new ReferenceExpression(element.elemID, element)
+        }
+        return expression
+      },
+    },
+  ]
+  return extractTemplate(
+    script,
+    locators.map(locator => locator.locatorRegex),
+    expression => {
+      const locator = locators.find(loc => expression.match(loc.locatorRegex) !== null)
+      return locator !== undefined ? locator.elementFunc(expression) : expression
+    },
+  )
+}

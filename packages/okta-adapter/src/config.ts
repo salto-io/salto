@@ -1890,6 +1890,7 @@ export type ChangeValidatorName =
   | 'appGroupAssignment'
   | 'appUrls'
   | 'profileMappingRemoval'
+  | 'brandRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1917,6 +1918,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appGroupAssignment: { refType: BuiltinTypes.BOOLEAN },
     appUrls: { refType: BuiltinTypes.BOOLEAN },
     profileMappingRemoval: { refType: BuiltinTypes.BOOLEAN },
+    brandRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

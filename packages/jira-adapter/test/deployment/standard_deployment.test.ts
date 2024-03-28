@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, SaltoError, toChange } from '@salto-io/adapter-api'
 import { deployChanges } from '../../src/deployment/standard_deployment'
 import { JIRA } from '../../src/constants'
 
@@ -36,6 +36,25 @@ describe('deployChanges', () => {
       {
         message: 'Error: failed',
         severity: 'Error',
+        elemID: instance.elemID,
+      },
+    ])
+  })
+
+  it('should return the applied change and an error when the error severity is not Error', async () => {
+    const warningError: SaltoError = {
+      message: 'warning message',
+      severity: 'Warning',
+    }
+    const res = await deployChanges([toChange({ after: instance })], () => {
+      throw warningError
+    })
+    expect(res.appliedChanges).toHaveLength(1)
+    expect(res.appliedChanges[0]).toEqual(toChange({ after: instance }))
+    expect(res.errors).toEqual([
+      {
+        message: 'warning message',
+        severity: 'Warning',
         elemID: instance.elemID,
       },
     ])

@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.json",
+    "test/**/*",
+    "test/**/*.json",
+    "index.ts",
+    "../adapter-components/src/definitions/system/helpers/utils.ts"
+  ],
+  "references": [
+    { "path": "../adapter-api" },
+    { "path": "../adapter-components" },
+    { "path": "../adapter-utils" },
+    { "path": "../logging" },
+    { "path": "../lowerdash" },
+    { "path": "../test-utils" }
+  ]
+}

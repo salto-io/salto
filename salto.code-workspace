@@ -117,6 +117,10 @@
 			"path": "packages/serviceplaceholder-adapter"
 		},
 		{
+			"name": "confluence-adapter",
+			"path": "packages/confluence-adapter"
+		},
+		{
 			"name": "aws-utils",
 			"path": "packages/aws-utils"
 		}

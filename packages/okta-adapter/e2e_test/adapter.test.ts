@@ -503,7 +503,13 @@ describe('Okta adapter E2E', () => {
 
       deployInstances.forEach(deployedInstance => {
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
-        expect(instance).toBeDefined()
+        try {
+          expect(instance).toBeDefined()
+        } catch (e) {
+          throw new Error(
+            `Instance ${deployedInstance.elemID.getFullName()} was deployed but not found in the subsuequent fetch`,
+          )
+        }
         // Omit '_links' as this field is hidden
         expect(isEqualValues(_.omit(instance?.value, '_links'), deployedInstance.value)).toBeTruthy()
       })

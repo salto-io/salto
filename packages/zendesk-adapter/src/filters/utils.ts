@@ -63,6 +63,9 @@ export type SubjectCondition = {
   value?: unknown
 }
 
+export type ValidApp = {
+  installation: { settings: { secure: boolean; required: boolean; key: string; type: string }[] }
+}
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
@@ -124,6 +127,27 @@ const CONDITION_SUBJECT_SCHEMA = Joi.array()
     }).unknown(true),
   )
   .required()
+
+const EXPECTED_APP_SCHEMA = Joi.object({
+  installation: Joi.object({
+    settings: Joi.array()
+      .items(
+        Joi.object({
+          secure: Joi.bool(),
+          required: Joi.bool(),
+          key: Joi.string().required(),
+          type: Joi.string().required(),
+        }).unknown(true),
+      )
+      .required(),
+  })
+    .unknown(true)
+    .optional(),
+})
+  .unknown(true)
+  .required()
+
+export const isValidApp = createSchemeGuard<ValidApp>(EXPECTED_APP_SCHEMA, 'Received an invalid value for app response')
 
 export const isConditions = createSchemeGuard<Condition[]>(CONDITION_SCHEMA, 'Found invalid values for conditions')
 export const isSubjectConditions = createSchemeGuard<SubjectCondition[]>(

@@ -50,11 +50,18 @@ type HasLoggerFuncs = {
   [level in LogLevel]: LogMethod
 }
 
+type timeMethodParams<T> = {
+  inner: () => T | Promise<T>,
+  desc: string,
+  descArgs?: unknown[]
+  level?: LogLevel
+}
+
 export type Logger = BaseLogger &
   GlobalTags &
   HasLoggerFuncs & {
     readonly namespace: Namespace
-    readonly time: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
+    readonly time: <T>(inner: timeMethodParams<T> | (() => T), desc?: string, ...descArgs: unknown[]) => T
     assignGlobalLogTimeDecorator: <T>(decorator: LogTimeDecorator<T>) => void
   }
 
@@ -72,22 +79,40 @@ export const resolveConfig = (c: Config): ResolvedConfig => ({
 
 function timeMethod<T>(
   this: BaseLogger,
-  inner: () => T | Promise<T>,
-  desc: string,
+  inner: timeMethodParams<T> | (() => T | Promise<T>),
+  desc?: string,
   ...descArgs: unknown[]
 ): T | Promise<T> {
+  let finalInner: () => T | Promise<T>
+  let finalDesc: string
+  let finalDescArgs: unknown[]
+  let finalLevel: LogLevel
+  if( typeof inner === 'function'){
+    if (desc === undefined){
+      throw new Error('inner is a function therefore desc cannot be undefined')
+    }
+    finalInner = inner
+    finalDesc = desc
+    finalDescArgs = descArgs
+    finalLevel = 'debug'
+  } else {
+    finalInner = inner.inner
+    finalDesc = inner.desc
+    finalDescArgs = inner.descArgs ?? []
+    finalLevel = inner.level ?? 'debug'
+  }
   const before = Date.now()
-  const formattedDescription = format(desc, ...descArgs)
+  const formattedDescription = format(finalDesc, ...finalDescArgs)
   const logDuration = (): void => {
-    this.log('debug', `${formattedDescription} took %o ms`, Date.now() - before)
+    this.log(finalLevel, `${formattedDescription} took %o ms`, Date.now() - before)
   }
 
-  this.log('debug', `${formattedDescription} starting`)
+  this.log(finalLevel, `${formattedDescription} starting`)
   let result: T | Promise<T>
   if (global.globalLogTimeDecorator) {
-    result = global.globalLogTimeDecorator(inner, formattedDescription)()
+    result = global.globalLogTimeDecorator(finalInner, formattedDescription)()
   } else {
-    result = inner()
+    result = finalInner()
   }
   if (result instanceof Promise) {
     return result.finally(logDuration)

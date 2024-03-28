@@ -59,7 +59,9 @@ const getIconContent = async (link: string, client: JiraClient): Promise<Buffer>
     }
     return content
   } catch (e) {
-    throw new Error(`Failed to fetch attachment content from Jira API. error: ${e instanceof clientUtils.HTTPError ? e.message : e}`)
+    throw new Error(
+      `Failed to fetch attachment content from Jira API. error: ${e instanceof clientUtils.HTTPError ? e.message : e}`,
+    )
   }
 }
 

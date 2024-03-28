@@ -397,6 +397,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: true,
+      serviceIDFields: ['templateId'],
     },
     element: {
       topLevel: {

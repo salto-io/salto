@@ -19,6 +19,7 @@ import { deployment } from '@salto-io/adapter-components'
 import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
+  OBJECT_TYPE_ICON_TYPE,
   QUEUE_TYPE,
   SCRIPT_FRAGMENT_TYPE,
   SCRIPT_RUNNER_LISTENER_TYPE,
@@ -81,6 +82,12 @@ const getAttributeAdditionByObjectTypeGroup: deployment.grouping.ChangeIdFunctio
   }
   return undefined
 }
+const getObjectTypeIconAdditionGroup: deployment.grouping.ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+  return isAdditionChange(change) && instance.elemID.typeName === OBJECT_TYPE_ICON_TYPE
+    ? 'Object Type Icons addtion'
+    : undefined
+}
 
 export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getWorkflowGroup,
@@ -90,4 +97,5 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getScriptedFragmentsGroup,
   getQueuesAdditionByProjectGroup,
   getAttributeAdditionByObjectTypeGroup,
+  getObjectTypeIconAdditionGroup,
 ])

@@ -46,9 +46,7 @@ describe('Object defs filter', () => {
     })
 
     const account = new InstanceElement('account', standardObjectDefType, {
-      additionalProperties: {
-        type: 'account',
-      },
+      type: 'account',
       schema: {
         $schema: 'http://json-schema.org/draft-04/schema#',
         title: 'Account',
@@ -63,19 +61,13 @@ describe('Object defs filter', () => {
             type: 'string',
             format: 'uuid',
           },
-          additionalProperties: {
-            AccountNumber: {
-              type: 'string',
-              additionalProperties: {
-                maxLength: 512,
-              },
-            },
-            Name: {
-              type: 'string',
-              additionalProperties: {
-                maxLength: 512,
-              },
-            },
+          AccountNumber: {
+            type: 'string',
+            maxLength: 512,
+          },
+          Name: {
+            type: 'string',
+            maxLength: 512,
           },
         },
         relationships: [
@@ -84,9 +76,7 @@ describe('Object defs filter', () => {
             namespace: 'default',
             object: 'Custom1',
             fields: {
-              additionalProperties: {
-                Id: 'AccountId__c',
-              },
+              Id: 'AccountId__c',
             },
             recordConstraints: {
               create: {
@@ -98,23 +88,19 @@ describe('Object defs filter', () => {
       },
     })
     const accountingcode = new InstanceElement('AccountingCode', standardObjectDefType, {
-      additionalProperties: {
-        type: 'AccountingCode',
-      },
+      type: 'AccountingCode',
       schema: {
         $schema: 'http://json-schema.org/draft-04/schema#',
         title: 'AccountingCode',
         type: 'object',
         required: ['Name', 'Id'],
         properties: {
-          additionalProperties: {
-            deleted: {
-              type: 'boolean',
-            },
-            Category: {
-              type: 'string',
-              maxLength: 512,
-            },
+          deleted: {
+            type: 'boolean',
+          },
+          Category: {
+            type: 'string',
+            maxLength: 512,
           },
           Id: {
             type: 'string',
@@ -124,10 +110,8 @@ describe('Object defs filter', () => {
       },
     })
     const Custom1 = new InstanceElement('Custom1', customObjectDefType, {
-      additionalProperties: {
-        Id: 'some id',
-        type: 'Custom1',
-      },
+      Id: 'some id',
+      type: 'Custom1',
       CreatedById: 'id1',
       UpdatedById: 'id1',
       CreatedDate: '2021-01-01T01:23:45.678Z',
@@ -136,44 +120,36 @@ describe('Object defs filter', () => {
         object: 'Custom1',
         label: 'Custom1',
         properties: {
-          additionalProperties: {
-            field1__c: {
-              format: 'uuid',
-              label: 'field1 label',
-              origin: 'custom',
-              type: 'string',
-              additionalProperties: {
-                description: 'some description',
-              },
-            },
-            field2__c: {
-              label: 'field2 label',
-              type: 'number',
-            },
-            SubscriptionId__c: {
-              format: 'uuid',
-              label: 'Subscription',
-              origin: 'custom',
-              type: 'string',
-              additionalProperties: {
-                description: 'The subscription that is associated with the record.',
-              },
-            },
-            AccountId__c: {
-              format: 'uuid',
-              label: 'Account',
-              origin: 'custom',
-              type: 'string',
-              additionalProperties: {
-                description: 'The account that is associated with the record.',
-              },
-            },
-            Custom2Id__c: {
-              format: 'uuid',
-              label: 'Custom2',
-              origin: 'custom',
-              type: 'string',
-            },
+          field1__c: {
+            format: 'uuid',
+            label: 'field1 label',
+            origin: 'custom',
+            type: 'string',
+            description: 'some description',
+          },
+          field2__c: {
+            label: 'field2 label',
+            type: 'number',
+          },
+          SubscriptionId__c: {
+            format: 'uuid',
+            label: 'Subscription',
+            origin: 'custom',
+            type: 'string',
+            description: 'The subscription that is associated with the record.',
+          },
+          AccountId__c: {
+            format: 'uuid',
+            label: 'Account',
+            origin: 'custom',
+            type: 'string',
+            description: 'The account that is associated with the record.',
+          },
+          Custom2Id__c: {
+            format: 'uuid',
+            label: 'Custom2',
+            origin: 'custom',
+            type: 'string',
           },
           Id: {
             format: 'uuid',
@@ -191,9 +167,7 @@ describe('Object defs filter', () => {
             namespace: 'com_zuora',
             object: 'subscription',
             fields: {
-              additionalProperties: {
-                SubscriptionId__c: 'Id',
-              },
+              SubscriptionId__c: 'Id',
             },
             recordConstraints: {
               create: {
@@ -206,9 +180,7 @@ describe('Object defs filter', () => {
             namespace: 'com_zuora',
             object: 'account',
             fields: {
-              additionalProperties: {
-                AccountId__c: 'Id',
-              },
+              AccountId__c: 'Id',
             },
             recordConstraints: {
               create: {
@@ -221,9 +193,7 @@ describe('Object defs filter', () => {
             namespace: 'com_zuora',
             object: 'account',
             fields: {
-              additionalProperties: {
-                Id: 'Id',
-              },
+              Id: 'Id',
             },
           },
           {
@@ -231,9 +201,7 @@ describe('Object defs filter', () => {
             namespace: 'default',
             object: 'Custom2',
             fields: {
-              additionalProperties: {
-                Custom2Id__c: 'Id',
-              },
+              Custom2Id__c: 'Id',
             },
             recordConstraints: {
               create: {
@@ -245,10 +213,8 @@ describe('Object defs filter', () => {
       },
     })
     const Custom2 = new InstanceElement('Custom2', customObjectDefType, {
-      additionalProperties: {
-        Id: 'some other id',
-        type: 'Custom2',
-      },
+      Id: 'some other id',
+      type: 'Custom2',
       CreatedById: 'id1',
       UpdatedById: 'id1',
       CreatedDate: '2021-01-01T01:23:45.678Z',
@@ -357,6 +323,7 @@ describe('Object defs filter', () => {
       })
       expect(account.annotations).toEqual({
         metadataType: 'StandardObject',
+        objectType: 'account',
       })
     })
     it('should create custom objects and fields correctly, with the __c suffix', () => {
@@ -441,6 +408,7 @@ describe('Object defs filter', () => {
         id: 'some id',
         label: 'Custom1',
         metadataType: 'CustomObject',
+        objectType: 'Custom1',
       })
       // eslint-disable-next-line no-underscore-dangle
       const objRefs = custom1.annotations._generated_dependencies as DetailedDependency[]

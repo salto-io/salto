@@ -20,9 +20,9 @@ import {
   ElemID,
   BuiltinTypes,
   ListType,
-  MapType,
   InstanceElement,
   ReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
@@ -44,8 +44,10 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
-          additionalProperties: {
-            refType: new MapType(BuiltinTypes.UNKNOWN),
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN),
           },
         },
       })
@@ -63,7 +65,11 @@ describe('swagger_instance_elements', () => {
           name: { refType: BuiltinTypes.STRING },
           owners: { refType: new ListType(Owner) },
           primaryOwner: { refType: Owner },
-          additionalProperties: { refType: new MapType(Food) },
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(Food.elemID, Food),
+          },
         },
       })
       const Status = new ObjectType({
@@ -289,17 +295,13 @@ describe('swagger_instance_elements', () => {
               owners: [
                 {
                   name: 'o1',
-                  additionalProperties: {
-                    bla: 'BLA',
-                    x: { nested: 'value' },
-                  },
+                  bla: 'BLA',
+                  x: { nested: 'value' },
                 },
               ],
               primaryOwner: { name: 'primary' },
-              additionalProperties: {
-                food1: { id: 'f1' },
-                food2: { id: 'f2' },
-              },
+              food1: { id: 'f1' },
+              food2: { id: 'f2' },
             },
             [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
           ),
@@ -526,10 +528,8 @@ describe('swagger_instance_elements', () => {
             objectTypes.Owner,
             {
               name: 'o1',
-              additionalProperties: {
-                bla: 'BLA',
-                x: { nested: 'value' },
-              },
+              bla: 'BLA',
+              x: { nested: 'value' },
             },
             // path has no effect on equality
             [],
@@ -565,10 +565,8 @@ describe('swagger_instance_elements', () => {
               name: 'def',
               owners: [new ReferenceExpression(dogO1Inst.elemID)],
               primaryOwner: new ReferenceExpression(primaryOInst.elemID),
-              additionalProperties: {
-                food1: { id: 'f1' },
-                food2: { id: 'f2' },
-              },
+              food1: { id: 'f1' },
+              food2: { id: 'f2' },
             },
             // path has no effect on equality
             [],
@@ -704,16 +702,12 @@ describe('swagger_instance_elements', () => {
               owners: [
                 {
                   name: 'o1',
-                  additionalProperties: {
-                    bla: 'BLA',
-                    x: { nested: 'value' },
-                  },
+                  bla: 'BLA',
+                  x: { nested: 'value' },
                 },
               ],
-              additionalProperties: {
-                food1: { id: 'f1' },
-                food2: { id: 'f2' },
-              },
+              food1: { id: 'f1' },
+              food2: { id: 'f2' },
             },
             [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
           ),
@@ -796,10 +790,8 @@ describe('swagger_instance_elements', () => {
             objectTypes.Owner,
             {
               name: 'o1',
-              additionalProperties: {
-                bla: 'BLA',
-                x: { nested: 'value' },
-              },
+              bla: 'BLA',
+              x: { nested: 'value' },
             },
             [ADAPTER_NAME, 'Records', 'Owner', 'o1'],
           ),
@@ -940,17 +932,13 @@ describe('swagger_instance_elements', () => {
               owners: [
                 {
                   name: 'o1',
-                  additionalProperties: {
-                    bla: 'BLA',
-                    x: { nested: 'value' },
-                  },
+                  bla: 'BLA',
+                  x: { nested: 'value' },
                 },
               ],
               primaryOwner: { name: 'primary' },
-              additionalProperties: {
-                food1: { id: 'f1' },
-                food2: { id: 'f2' },
-              },
+              food1: { id: 'f1' },
+              food2: { id: 'f2' },
             },
             [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
           ),
@@ -963,16 +951,19 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinition'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
-          additionalProperties: {
-            refType: new MapType(BuiltinTypes.UNKNOWN),
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN),
           },
         },
       })
       const CustomObjectDefinitionMapping = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinitionMapping'),
-        fields: {
-          additionalProperties: {
-            refType: new MapType(CustomObjectDefinition),
+        fields: {},
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(CustomObjectDefinition.elemID, CustomObjectDefinition),
           },
         },
       })
@@ -1060,9 +1051,7 @@ describe('swagger_instance_elements', () => {
             objectTypes.CustomObjectDefinition,
             {
               name: 'Pet',
-              additionalProperties: {
-                something: 'else',
-              },
+              something: 'else',
             },
             [ADAPTER_NAME, 'CustomObjectDefinition', 'Owner', 'Pet'],
           ),
@@ -1133,86 +1122,10 @@ describe('swagger_instance_elements', () => {
               primaryOwner: [
                 {
                   name: 'o3',
-                  additionalProperties: {
-                    bla: 'BLA',
-                    x: { nested: 'value' },
-                  },
-                },
-              ],
-            },
-            [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
-          ),
-        ),
-      ).toBeTruthy()
-    })
-
-    it('should not put existing field values under additionalProperties even if they unexpectedly contain single values', async () => {
-      const objectTypes = generateObjectTypes()
-
-      mockPaginator = mockFunction<Paginator>().mockImplementation(
-        async function* getAll(getParams, extractPageEntries) {
-          if (getParams.url === '/pet') {
-            yield [
-              {
-                id: 'mouse',
-                name: 'def',
-                owners: { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
-              },
-            ].flatMap(extractPageEntries)
-          }
-        },
-      )
-      const res = await getAllInstances({
-        paginator: mockPaginator,
-        apiConfig: {
-          typeDefaults: {
-            transformation: {
-              idFields: ['id'],
-            },
-          },
-          types: {
-            Pet: {
-              request: {
-                url: '/pet',
-              },
-            },
-          },
-        },
-        fetchQuery: createElementQuery({
-          include: [{ type: 'Pet' }],
-          exclude: [],
-        }),
-        supportedTypes: {
-          Pet: ['Pet'],
-        },
-        objectTypes,
-        computeGetArgs: simpleGetArgs,
-        nestedFieldFinder: returnFullEntry,
-      })
-      expect(res.elements).toHaveLength(1)
-      const petInst = res.elements[0]
-      expect(petInst.elemID.getFullName()).toEqual(`${ADAPTER_NAME}.Pet.instance.mouse`)
-      expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith(
-        { url: '/pet', recursiveQueryParams: undefined, paginationField: undefined },
-        expect.anything(),
-      )
-
-      expect(
-        petInst.isEqual(
-          new InstanceElement(
-            'mouse',
-            objectTypes.Pet,
-            {
-              id: 'mouse',
-              name: 'def',
-              owners: {
-                name: 'o3',
-                additionalProperties: {
                   bla: 'BLA',
                   x: { nested: 'value' },
                 },
-              },
+              ],
             },
             [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
           ),
@@ -1384,23 +1297,19 @@ describe('swagger_instance_elements', () => {
         expect(dog.value).toHaveProperty('owners', [
           {
             name: 'o1',
-            additionalProperties: {
-              nicknames: [{ names: ['n1', 'n2'] }],
-              info: { numOfPets: 2 },
-            },
+            nicknames: [{ names: ['n1', 'n2'] }],
+            info: { numOfPets: 2 },
           },
           {
             name: 'o2',
-            additionalProperties: {
-              nicknames: [{ names: ['n3'] }],
-              info: { numOfPets: 2 },
-            },
+            nicknames: [{ names: ['n3'] }],
+            info: { numOfPets: 2 },
           },
         ])
         expect(cat.value).not.toHaveProperty('owners')
         expect(fish.value).toHaveProperty('owners', [
-          { name: 'o1', additionalProperties: { info: { numOfPets: 2 } } },
-          { name: 'o2', additionalProperties: { info: { numOfPets: 2 } } },
+          { name: 'o1', info: { numOfPets: 2 } },
+          { name: 'o2', info: { numOfPets: 2 } },
         ])
       })
 
@@ -1440,17 +1349,13 @@ describe('swagger_instance_elements', () => {
         expect(dog.value).toHaveProperty('owners', [
           {
             name: 'o1',
-            additionalProperties: {
-              nicknames: [{ names: ['n1', 'n2'] }],
-              info: { numOfPets: 2 },
-            },
+            nicknames: [{ names: ['n1', 'n2'] }],
+            info: { numOfPets: 2 },
           },
           {
             name: 'o2',
-            additionalProperties: {
-              nicknames: [{ names: ['n3'] }],
-              info: { numOfPets: 2 },
-            },
+            nicknames: [{ names: ['n3'] }],
+            info: { numOfPets: 2 },
           },
         ])
         expect(cat.value).not.toHaveProperty('owners')
@@ -1496,17 +1401,13 @@ describe('swagger_instance_elements', () => {
         expect(dog.value).toHaveProperty('owners', [
           {
             name: 'o1',
-            additionalProperties: {
-              nicknames: [{ names: ['n1', 'n2'] }],
-              info: { numOfPets: 2 },
-            },
+            nicknames: [{ names: ['n1', 'n2'] }],
+            info: { numOfPets: 2 },
           },
           {
             name: 'o2',
-            additionalProperties: {
-              nicknames: [{ names: ['n3'] }],
-              info: { numOfPets: 2 },
-            },
+            nicknames: [{ names: ['n3'] }],
+            info: { numOfPets: 2 },
           },
         ])
         expect(cat.value).not.toHaveProperty('owners')
@@ -1652,8 +1553,10 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
-          additionalProperties: {
-            refType: new MapType(BuiltinTypes.UNKNOWN),
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: {
+            refType: new ReferenceExpression(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN),
           },
         },
         isSettings: true,

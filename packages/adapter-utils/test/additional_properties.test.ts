@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extractAdditionalPropertiesField, setAdditionalPropertiesAnnotation } from '../src/additional_properties'
 
 describe('additional_properties', () => {
   describe('setAdditionalPropertiesAnnotation', () => {
     it('should set additional properties annotation', () => {
       const type = new ObjectType({
-        elemID: new ElemID('test'),
+        elemID: new ElemID('test', 'type'),
         fields: { field: { refType: BuiltinTypes.STRING } },
       })
-      const annotation = { refType: BuiltinTypes.STRING }
+      const typeAdditionalProperties = new ObjectType({
+        elemID: new ElemID('test', 'type.additionalProperties'),
+        fields: { field: { refType: BuiltinTypes.STRING } },
+      })
+      const annotation = { refType: new ReferenceExpression(typeAdditionalProperties.elemID, typeAdditionalProperties) }
       expect(
         setAdditionalPropertiesAnnotation(type, annotation).annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES],
       ).toEqual(annotation)
@@ -58,7 +62,7 @@ describe('additional_properties', () => {
           fields: { field: { refType: BuiltinTypes.STRING } },
         })
         objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = {
-          refType: additionalPropertiesObjType,
+          refType: new ReferenceExpression(additionalPropertiesObjType.elemID, additionalPropertiesObjType),
           annotations: { someUniqueAnnotation: 'unique' },
         }
         expect(extractAdditionalPropertiesField(objType, fieldName)).toEqual(

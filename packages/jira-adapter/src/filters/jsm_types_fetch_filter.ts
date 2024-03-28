@@ -15,6 +15,7 @@
  */
 
 import { isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
   OBJECT_SCHEMA_TYPE,
@@ -30,9 +31,11 @@ import {
   SLA_TYPE_NAME,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
+  OBJECT_TYPE_ICON_TYPE,
 } from '../constants'
-import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
+import { setTypeDeploymentAnnotations, addAnnotationRecursively, findObject } from '../utils'
 
+const { awu } = collections.asynciterable
 const jsmSupportedTypes = [
   CUSTOMER_PERMISSIONS_TYPE,
   QUEUE_TYPE,
@@ -50,6 +53,7 @@ const assetsSupportedTypes = [
   OBJECT_TYPE_ATTRIBUTE_TYPE,
   OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
+  OBJECT_TYPE_ICON_TYPE,
 ]
 
 const filterCreator: FilterCreator = ({ config }) => ({
@@ -58,10 +62,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
     if (!config.fetch.enableJSM) {
       return
     }
-    elements
+    await awu(elements)
       .filter(e => jsmSupportedTypes.includes(e.elemID.typeName) || assetsSupportedTypes.includes(e.elemID.typeName))
       .filter(isObjectType)
-      .map(async obj => {
+      .forEach(async obj => {
         setTypeDeploymentAnnotations(obj)
         await addAnnotationRecursively(obj, CORE_ANNOTATIONS.CREATABLE)
         await addAnnotationRecursively(obj, CORE_ANNOTATIONS.UPDATABLE)
@@ -74,6 +78,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
         inst.annotations[CORE_ANNOTATIONS.PARENT] = [inst.value.projectKey]
         delete inst.value.projectKey
       })
+    const objectTypeIconType = findObject(elements, OBJECT_TYPE_ICON_TYPE)
+    if (objectTypeIconType !== undefined) {
+      objectTypeIconType.fields.icon.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+    }
   },
 })
 export default filterCreator

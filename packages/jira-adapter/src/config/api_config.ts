@@ -2419,6 +2419,29 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
+  ObjectTypeIcon: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/global',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: [{ fieldName: 'url16' }, { fieldName: 'url48' }],
+      fieldTypeOverrides: [{ fieldName: 'icon', fieldType: 'unknown' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/{id}',
+        method: 'put',
+        fieldsToIgnore: ['icon'],
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
 }
 
 export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
@@ -2432,6 +2455,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Form: [], // being fetched by a filter.
   ObjectSchema: [],
   ObjectSchemaDefaultReferenceType: [],
+  ObjectTypeIcon: [],
   ObjectSchemaStatus: [], // being fetched by recurseInto.
   ObjectType: [], // being fetched by recurseInto.
   ObjectTypeAttribute: [], // being fetched by recurseInto.
@@ -2440,6 +2464,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectSchema: ['ObjectSchemas'],
   ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
+  ObjectTypeIcon: ['ObjectTypeIcon'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

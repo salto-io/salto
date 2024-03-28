@@ -20,7 +20,7 @@ import {
   loadLocalWorkspace,
   fetchFromWorkspace,
 } from '@salto-io/core'
-import { Workspace, nacl, StateRecency, createElementSelectors, ElementSelector } from '@salto-io/workspace'
+import { Workspace, nacl } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -32,18 +32,13 @@ import {
   formatFetchHeader,
   formatFetchFinish,
   formatStateChanges,
-  formatStateRecencies,
   formatAppliedChanges,
   formatFetchWarnings,
   formatAdapterProgress,
   formatInvalidFilters,
   error,
 } from '../formatter'
-import {
-  getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig as cliShouldUpdateConfig,
-  getChangeToAlignAction,
-} from '../callbacks'
+import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
 import { updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
@@ -256,21 +251,6 @@ export const fetchCommand = async ({
   return CliExitCode.AppError
 }
 
-const shouldRecommendAlignMode = async (
-  workspace: Workspace,
-  stateRecencies: StateRecency[],
-  inputAccounts?: ReadonlyArray<string>,
-): Promise<boolean> => {
-  const newlyAddedAccounts = stateRecencies.filter(
-    recency => inputAccounts === undefined || inputAccounts.includes(recency.accountName ?? recency.serviceName),
-  )
-
-  return (
-    newlyAddedAccounts.every(recency => recency.status === 'Nonexistent') &&
-    workspace.hasElementsInAccounts(newlyAddedAccounts.map(recency => recency.accountName ?? recency.serviceName))
-  )
-}
-
 type FetchArgs = {
   force: boolean
   stateOnly: boolean
@@ -330,27 +310,10 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
   const activeAccounts = getAndValidateActiveAccounts(workspace, accounts)
-  const stateRecencies = await Promise.all(activeAccounts.map(account => workspace.getStateRecency(account)))
-  // Print state recencies
-  outputLine(formatStateRecencies(stateRecencies), output)
 
   const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
     return CliExitCode.AppError
-  }
-
-  let useAlignMode = false
-  if (!force && mode !== 'align' && (await shouldRecommendAlignMode(workspace, stateRecencies, activeAccounts))) {
-    const userChoice = await getChangeToAlignAction(mode, output)
-    if (userChoice === 'cancel operation') {
-      log.info('Canceling operation based on user input')
-      return CliExitCode.UserInputError
-    }
-    if (userChoice === 'yes') {
-      log.info(`Changing fetch mode from '${mode}' to 'align' based on user input`)
-      useAlignMode = true
-    }
-    log.info('Not changing fetch mode based on user input')
   }
 
   return fetchCommand({
@@ -365,7 +328,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
     accounts: activeAccounts,
-    mode: useAlignMode ? 'align' : mode,
+    mode,
     shouldCalcTotalSize,
     stateOnly,
     withChangesDetection,

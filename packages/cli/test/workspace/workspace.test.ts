@@ -37,12 +37,6 @@ const mockWsFunctions = {
     Promise.resolve({ ...error, sourceLocations: [] }),
   ),
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
-  getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
-    accountName: 'salesforce',
-    serviceName: 'salesforce',
-    date: new Date(),
-    status: 'Valid',
-  }),
   state: mockFunction<Workspace['state']>().mockReturnValue({
     getStateSaltoVersion: () => Promise.resolve(version),
   } as state.State),

@@ -170,14 +170,6 @@ describe('localState', () => {
         await expect(state.existingAccounts()).resolves.toHaveLength(2)
       })
     })
-    describe('getAccountsUpdateDates', () => {
-      it('should return account update dates', async () => {
-        expect(await state.getAccountsUpdateDates()).toEqual({
-          netsuite: nsUpdateDate,
-          salesforce: sfUpdateDate,
-        })
-      })
-    })
 
     it('should return the lowest version of any state file', async () => {
       await expect(state.getStateSaltoVersion()).resolves.toEqual('0.0.1')
@@ -448,12 +440,6 @@ describe('localState', () => {
       await state.remove(mockElement.elemID)
       fromState = await awu(await state.getAll()).toArray()
       expect(fromState.length).toBe(0)
-    })
-
-    describe('getUpdateDate', () => {
-      it('should return an empty object', async () => {
-        await expect(state.getAccountsUpdateDates()).resolves.toEqual({})
-      })
     })
 
     describe('calculateHash', () => {

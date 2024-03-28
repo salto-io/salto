@@ -109,8 +109,6 @@ const { awu } = collections.asynciterable
 const { partition } = promises.array
 
 export const COMMON_ENV_PREFIX = ''
-
-const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
 
@@ -137,14 +135,6 @@ export type WorkspaceError<T extends SaltoError> = Readonly<
     sourceLocations: SourceLocation[]
   }
 >
-
-type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
-export type StateRecency = {
-  serviceName: string
-  accountName?: string
-  status: RecencyStatus
-  date: Date | undefined
-}
 
 export type WorkspaceComponents = {
   nacl: boolean
@@ -300,7 +290,6 @@ export type Workspace = {
     account?: string,
   ) => Promise<void>
   getServiceFromAccountName: (account: string) => string
-  getStateRecency(accounts: string): Promise<StateRecency>
   promote(idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>): Promise<void>
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
@@ -1588,22 +1577,6 @@ export const loadWorkspace = async (
       } else {
         overrideEnv = env
       }
-    },
-
-    getStateRecency: async (accountName: string): Promise<StateRecency> => {
-      const staleStateThresholdMs =
-        (workspaceConfig.staleStateThresholdMinutes || DEFAULT_STALE_STATE_THRESHOLD_MINUTES) * 60 * 1000
-      const date = (await state().getAccountsUpdateDates())[accountName]
-      const status = (() => {
-        if (date === undefined) {
-          return 'Nonexistent'
-        }
-        if (Date.now() - date.getTime() >= staleStateThresholdMs) {
-          return 'Old'
-        }
-        return 'Valid'
-      })()
-      return { serviceName: accountName, accountName, status, date }
     },
 
     updateStateProvider: async stateConfig => {

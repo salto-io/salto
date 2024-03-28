@@ -44,16 +44,21 @@ const log = logger(module)
 type PathEntry = [string, string[][]]
 type ParsedState = {
   elements: Element[]
-  updateDates: Record<string, string>[]
+  accounts: string[]
   pathIndices: PathEntry[]
   versions: string[]
 }
 
-const parsedStateKeys: types.TypeKeysEnum<ParsedState> = {
+type DeprecatedParsedState = {
+  updateDates: Record<string, string>[]
+}
+
+const parsedStateKeys: types.TypeKeysEnum<ParsedState & DeprecatedParsedState> = {
   elements: 'elements',
-  updateDates: 'updateDates',
+  accounts: 'accounts',
   pathIndices: 'pathIndices',
   versions: 'versions',
+  updateDates: 'updateDates',
 }
 
 const elementsStreamSerializer = serialize.createStreamSerializer({
@@ -69,23 +74,26 @@ const pathIndicesStreamSerializer = serialize.createStreamSerializer({
 export const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
   let elements: unknown[] = []
   const res: Omit<ParsedState, 'elements'> = {
-    updateDates: [],
+    accounts: [],
     pathIndices: [],
     versions: [],
   }
 
-  const updateWithParsedStateData = (data: Partial<ParsedState>): void => {
+  const updateWithParsedStateData = (data: Partial<ParsedState & DeprecatedParsedState>): void => {
     if (data.versions !== undefined) {
       res.versions = res.versions.concat(data.versions)
     }
-    if (data.updateDates !== undefined) {
-      res.updateDates = res.updateDates.concat(data.updateDates)
+    if (data.accounts !== undefined) {
+      res.accounts = res.accounts.concat(data.accounts)
     }
     if (data.elements !== undefined) {
       elements = elements.concat(data.elements)
     }
     if (data.pathIndices !== undefined) {
       res.pathIndices = res.pathIndices.concat(data.pathIndices)
+    }
+    if (data.pathIndices !== undefined) {
+      log.debug('ignoring deprecated state data: update dates')
     }
   }
 
@@ -103,10 +111,10 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
               updateWithParsedStateData({ elements: value })
             }
           } else if (key === 1) {
-            // line 2 - update dates, e.g.
+            // line 2 - deprecated - update dates
             //   {"dummy":"2023-01-09T15:57:59.322Z"}
             if (!_.isEmpty(value)) {
-              updateWithParsedStateData({ updateDates: [value] })
+              log.debug('ignoring deprecated state data: update dates')
             }
           } else if (key === 2) {
             // line 3 - path index, e.g.
@@ -193,17 +201,10 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    const updateDatesByAccount = _.mapValues(
-      res.updateDates
-        .map(entry => entry ?? {})
-        .filter(entry => !_.isEmpty(entry))
-        .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
-      dateStr => new Date(dateStr),
-    )
-    const stateUpdateDate = stateData.accountsUpdateDate
-    if (stateUpdateDate !== undefined) {
-      await stateUpdateDate.clear()
-      await stateUpdateDate.setAll(awu(Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))))
+    const accounts = res.accounts ?? []
+    const stateAccounts = stateData.accounts
+    if (stateAccounts !== undefined) {
+      stateAccounts.push(...accounts)
     }
     const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
     if (currentVersion) {
@@ -254,7 +255,6 @@ export const localState = (
           : elementsStreamSerializer,
       }),
     )
-    const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray(),
       getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
@@ -272,7 +272,7 @@ export const localState = (
         getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
           ? [
               accountToElementStreams[account],
-              awu([safeJsonStringify({ [account]: accountToDates[account] })]),
+              awu([safeJsonStringify(account)]),
               accountToPathIndex[account] || '[]',
               awu([safeJsonStringify(version)]),
             ]
@@ -282,7 +282,7 @@ export const localState = (
               awu(['[]']), // deprecated: path indices
               awu(['""']), // deprecated: version
               awu([safeJsonStringify({ [parsedStateKeys.versions]: [version] })]),
-              awu([safeJsonStringify({ [parsedStateKeys.updateDates]: [{ [account]: accountToDates[account] }] })]),
+              awu([safeJsonStringify({ [parsedStateKeys.accounts]: [account] })]),
               accountToElementStreams[account],
               accountToPathIndex[account] || safeJsonStringify({ [parsedStateKeys.pathIndices]: [] }),
             ],

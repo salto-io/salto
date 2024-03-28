@@ -36,7 +36,6 @@ import {
   formatActionInProgress,
   formatActionStart,
   deployPhaseEpilogue,
-  formatStateRecencies,
   formatDeployActions,
   formatGroups,
   deployErrorsOutput,
@@ -232,9 +231,6 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const { force, dryRun, detailedPlan, accounts, checkOnly } = input
   await validateAndSetEnv(workspace, input, output)
   const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
-  const stateRecencies = await Promise.all(actualAccounts.map(account => workspace.getStateRecency(account)))
-  // Print state recencies
-  outputLine(formatStateRecencies(stateRecencies), output)
 
   const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
@@ -243,8 +239,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 
   // Validate state recencies
   const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
-  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
-  if (!force && (await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output))) {
+  if (!force && (await shouldRecommendFetch(stateSaltoVersion, output))) {
     return CliExitCode.AppError
   }
 

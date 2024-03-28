@@ -36,8 +36,6 @@ describe('state', () => {
   const elem = new ObjectType({ elemID, path: ['test', 'new'] })
   let pathIndex: PathIndex
   let topLevelPathIndex: PathIndex
-  const updateDate = new Date()
-  const accountsUpdateDate = { [adapter]: updateDate }
 
   let loadStateData: () => Promise<StateData>
   let stateStaticFilesSource: MockInterface<StaticFilesSource>
@@ -55,7 +53,7 @@ describe('state', () => {
     stateStaticFilesSource = mockStaticFilesSource() as MockInterface<StaticFilesSource>
     loadStateData = async () => ({
       elements: createInMemoryElementSource([elem]),
-      accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
+      accounts: [adapter],
       pathIndex,
       topLevelPathIndex,
       saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
@@ -135,9 +133,6 @@ describe('state', () => {
       it('should set element such that get would return it', async () => {
         expect(await state.get(newElemID)).toEqual(newElem)
       })
-      it('should not change account update date', async () => {
-        expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
-      })
     })
     it('remove', async () => {
       await state.set(newElem)
@@ -149,9 +144,6 @@ describe('state', () => {
     it('setAll', async () => {
       await state.setAll(awu([newElem]))
       expect(await state.get(newElemID)).toEqual(newElem)
-    })
-    it('getAccountsUpdateDates', async () => {
-      expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
     })
     it('existingAccounts', async () => {
       expect(await state.existingAccounts()).toEqual([adapter])
@@ -167,7 +159,6 @@ describe('state', () => {
       expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
       expect((await awu((await state.getPathIndex()).keys()).toArray()).length).toEqual(0)
       expect((await awu((await state.getTopLevelPathIndex()).keys()).toArray()).length).toEqual(0)
-      expect(await state.getAccountsUpdateDates()).toEqual({})
       expect(stateStaticFilesSource.clear).toHaveBeenCalled()
     })
 
@@ -306,15 +297,6 @@ describe('state', () => {
           expect(updatePathSpyIndex).not.toHaveBeenCalled()
           expect(updateTopLevelPathSpyIndex).not.toHaveBeenCalled()
         })
-      })
-      it('should update the accounts update dates', async () => {
-        const accountsUpdateDates = await state.getAccountsUpdateDates()
-        await state.updateStateFromChanges({
-          changes: [],
-          fetchAccounts: [adapter],
-        })
-        const newAccountsUpdateDates = await state.getAccountsUpdateDates()
-        expect(accountsUpdateDates[adapter] < newAccountsUpdateDates[adapter]).toBeTruthy()
       })
       it('should call removal of static file that was removed', async () => {
         const beforeElem = new InstanceElement('elem', new ObjectType({ elemID: new ElemID('salesforce', 'type') }), {

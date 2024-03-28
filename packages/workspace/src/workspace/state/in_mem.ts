@@ -46,8 +46,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
 
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
     const data = await stateData()
-    const newAccounts = accounts ?? (await awu(data.accountsUpdateDate.keys()).toArray())
-    return data.accountsUpdateDate.setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+    data.accounts = accounts ?? data.accounts
   }
 
   const updateStatePathIndex = async (
@@ -137,11 +136,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    getAccountsUpdateDates: async () => {
-      const stateDataVal = await awu((await stateData()).accountsUpdateDate.entries()).toArray()
-      return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
-    },
-    existingAccounts: async (): Promise<string[]> => awu((await stateData()).accountsUpdateDate.keys()).toArray(),
+    existingAccounts: async (): Promise<string[]> => (await stateData()).accounts,
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {
@@ -149,7 +144,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
       await currentStateData.topLevelPathIndex.clear()
-      await currentStateData.accountsUpdateDate.clear()
+      currentStateData.accounts.length = 0
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },
@@ -161,7 +156,6 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
       await currentStateData.topLevelPathIndex.flush()
-      await currentStateData.accountsUpdateDate.flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
     },

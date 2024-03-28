@@ -302,7 +302,7 @@ export const mockWorkspace = ({
     elements: createInMemoryElementSource(getElements()),
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-    accountsUpdateDate: new InMemoryRemoteMap(),
+    accounts: [],
     saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: currentVersion }] as {
       key: wsState.StateMetadataKey
       value: string
@@ -381,12 +381,7 @@ export const mockWorkspace = ({
     updateServiceCredentials: mockFunction<Workspace['updateServiceCredentials']>(),
     updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),
     updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
-    getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(async accountName => ({
-      serviceName: accountName,
-      accountName,
-      status: 'Nonexistent',
-      date: undefined,
-    })),
+
     getAllChangedByAuthors: mockFunction<Workspace['getAllChangedByAuthors']>(),
     getChangedElementsByAuthors: mockFunction<Workspace['getChangedElementsByAuthors']>(),
     promote: mockFunction<Workspace['promote']>(),

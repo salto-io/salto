@@ -17,7 +17,7 @@ export const mockState = (elements: Element[] = []): State =>
     elements: createInMemoryElementSource(elements),
     pathIndex: new InMemoryRemoteMap<Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<Path[]>(),
-    accountsUpdateDate: new InMemoryRemoteMap(),
+    accounts: [],
     saltoVersion: '0.0.1',
     saltoMetadata: new InMemoryRemoteMap(),
     staticFilesSource: mockStaticFilesSource(),

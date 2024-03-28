@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import semver from 'semver'
-import moment from 'moment'
 import { DeployResult, GroupProperties } from '@salto-io/core'
 import * as saltoCoreModule from '@salto-io/core'
 import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
@@ -70,12 +69,6 @@ describe('deploy command', () => {
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
     workspace = mocks.mockWorkspace({})
-    workspace.getStateRecency.mockImplementation(async accountName => ({
-      serviceName: accountName,
-      accountName,
-      status: 'Valid',
-      date: new Date(),
-    }))
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
   })
@@ -515,7 +508,7 @@ describe('deploy command', () => {
         elements: createInMemoryElementSource(),
         pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
         topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-        accountsUpdateDate: data.accountsUpdateDate ?? new InMemoryRemoteMap(),
+        accounts: data.accounts ?? [],
         saltoMetadata,
         staticFilesSource: mocks.mockStateStaticFilesSource(),
       }))
@@ -571,42 +564,6 @@ describe('deploy command', () => {
         })
         it('should not recommend cancel', () => {
           expect(callbacks.shouldCancelCommand).not.toHaveBeenCalled()
-        })
-      })
-      describe('when some accounts were never fetched', () => {
-        beforeEach(async () => {
-          workspace.getStateRecency.mockImplementationOnce(async accountName => ({
-            serviceName: accountName,
-            accountName,
-            status: 'Nonexistent',
-            date: undefined,
-          }))
-          await action({
-            ...cliCommandArgs,
-            input: inputOptions,
-            workspace,
-          })
-        })
-        it('should recommend cancel', () => {
-          expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
-        })
-      })
-      describe('when some services are old', () => {
-        beforeEach(async () => {
-          workspace.getStateRecency.mockImplementationOnce(async accountName => ({
-            serviceName: accountName,
-            accountName,
-            status: 'Old',
-            date: moment(new Date()).subtract(1, 'month').toDate(),
-          }))
-          await action({
-            ...cliCommandArgs,
-            input: inputOptions,
-            workspace,
-          })
-        })
-        it('should recommend cancel', () => {
-          expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
         })
       })
     })

@@ -2427,6 +2427,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: '.',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: [{ fieldName: 'url16' }, { fieldName: 'url48' }],
+      fieldTypeOverrides: [{ fieldName: 'icon', fieldType: 'unknown' }],
     },
     deployRequests: {
       modify: {

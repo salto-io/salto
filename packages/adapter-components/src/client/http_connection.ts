@@ -16,6 +16,8 @@
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
+import { wrapper } from 'axios-cookiejar-support'
+import { CookieJar } from 'tough-cookie'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
@@ -172,6 +174,7 @@ export const validateCredentials = async <TCredentials>(
 export type AuthParams = {
   auth?: AxiosBasicCredentials
   headers?: AxiosRequestHeaders
+  jar?: CookieJar
 }
 
 type AxiosConnectionParams<TCredentials> = {
@@ -196,17 +199,19 @@ export const axiosConnection = <TCredentials>({
   timeout = 0,
 }: AxiosConnectionParams<TCredentials>): Connection<TCredentials> => {
   const login = async (creds: TCredentials): Promise<AuthenticatedAPIConnection> => {
+    const authParams = await authParamsFunc(creds)
     const httpClient = axios.create({
       baseURL: await baseURLFunc(creds),
-      ...(await authParamsFunc(creds)),
+      ...authParams,
       maxBodyLength: Infinity,
       timeout,
     })
     axiosRetry(httpClient, retryOptions)
+    const wrappedClient = authParams.jar !== undefined ? wrapper(httpClient) : httpClient
 
     try {
-      const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
-      return Object.assign(httpClient, { accountInfo })
+      const accountInfo = await credValidateFunc({ credentials: creds, connection: wrappedClient })
+      return Object.assign(wrappedClient, { accountInfo })
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {

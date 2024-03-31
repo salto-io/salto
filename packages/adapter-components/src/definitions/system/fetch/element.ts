@@ -77,6 +77,10 @@ type StandaloneFieldDefinition = {
   nestPathUnderParent?: boolean
 }
 
+type SortFieldDefinition = {
+  sortByProperties: string[]
+}
+
 // TODO add safeties (e.g. standalone.referencFromParent=false means omit)
 export type ElementFieldCustomization = types.XOR<
   {
@@ -84,6 +88,7 @@ export type ElementFieldCustomization = types.XOR<
     hide?: boolean
     standalone?: StandaloneFieldDefinition
     restrictions?: RestrictionAnnotationType
+    sort?: SortFieldDefinition
   },
   types.OneOf<{
     // omit the field

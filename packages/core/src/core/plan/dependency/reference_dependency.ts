@@ -60,7 +60,7 @@ const isReferenceValueChanged = (change: Change<ChangeDataType>, refElemId: Elem
 }
 
 export const addReferencesDependency: DependencyChanger = async changes =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     const changesById = collections.iterable.groupBy(changes, ([_id, change]) => getChangeElemId(change))
 
     const addChangeDependency = async ([id, change]: ChangeEntry): Promise<Iterable<DependencyChange>> => {

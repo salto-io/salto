@@ -185,7 +185,7 @@ export const deploy = async (
   )
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       // This function is inside 'postDeployAction' because it assumes the state is already updated
       const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
         const changeElem = getChangeData(change)

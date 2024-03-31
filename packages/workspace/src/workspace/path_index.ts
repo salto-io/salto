@@ -204,12 +204,12 @@ const updateIndex = async ({
 }
 
 export const updatePathIndex = async (args: PathIndexArgs): Promise<void> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     await updateIndex({ ...args, getHintsFunction: getElementsPathHints })
   }, 'updatePathIndex')
 
 export const updateTopLevelPathIndex = async (args: PathIndexArgs): Promise<void> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     await updateIndex({ ...args, getHintsFunction: getTopLevelPathHints })
   }, 'updateTopLevelPathIndex')
 

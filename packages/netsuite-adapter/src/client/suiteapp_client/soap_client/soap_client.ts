@@ -456,7 +456,7 @@ export default class SoapClient {
     const client = await this.getClient()
     try {
       return await this.callsLimiter(async () =>
-        log.time(
+        log.timeDebug(
           () => SoapClient.soapRequestWithRetries(client, operation, body, this.timeout),
           `${operation}-soap-request`,
         ),

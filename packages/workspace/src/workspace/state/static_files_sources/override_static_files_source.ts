@@ -58,7 +58,7 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
   delete: file => dirStore.delete(file.filepath),
   clear: dirStore.clear,
   flush: () =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       await dirStore.flush()
     }, 'Flushing override static state files source'),
 })

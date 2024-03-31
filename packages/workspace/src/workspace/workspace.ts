@@ -391,8 +391,8 @@ export const listElementsDependenciesInWorkspace = async ({
   elemIDsToSkip?: ElemID[]
   envToListFrom?: string
 }): Promise<{ dependencies: Record<string, ElemID[]>; missing: ElemID[] }> =>
-  log.time(async () => {
-    const workspaceBaseLevelIds = await log.time(
+  log.timeDebug(async () => {
+    const workspaceBaseLevelIds = await log.timeDebug(
       async () => new Set(await workspace.getSearchableNamesOfEnv(envToListFrom)),
       `getSearchableNames for env: ${envToListFrom}`,
     )

@@ -89,15 +89,15 @@ const deployIcon = async (
 }
 const getSystemAvatarsIds = async (client: JiraClient): Promise<Record<string, StaticFile | undefined>> => {
   try {
-  const systemAvatars = await client.get({
-    url: '/rest/api/3/avatar/issuetype/system',
-  })
-  if (!isSystemAvatarsResponse(systemAvatars)) {
-   return {} 
-  }
-  return Object.fromEntries(systemAvatars.data.system.map(avatar => [avatar.id, undefined]))
-} catch (e) {
-  return {}
+    const systemAvatars = await client.get({
+      url: '/rest/api/3/avatar/issuetype/system',
+    })
+    if (!isSystemAvatarsResponse(systemAvatars)) {
+      return {}
+    }
+    return Object.fromEntries(systemAvatars.data.system.map(avatar => [avatar.id, undefined]))
+  } catch (e) {
+    return {}
   }
 }
 
@@ -133,7 +133,13 @@ const filter: FilterCreator = ({ client, config }) => ({
         if (Object.keys(systemAvatarsIds).includes(issueType.value.avatarId.toString())) {
           if (systemAvatarsIds[issueType.value.avatarId] === undefined) {
             const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
-            await setIconContent({ client, instance: issueType, link, fieldName: 'avatar', fileName: issueType.value.avatarId })
+            await setIconContent({
+              client,
+              instance: issueType,
+              link,
+              fieldName: 'avatar',
+              fileName: issueType.value.avatarId,
+            })
             systemAvatarsIds[issueType.value.avatarId] = issueType.value.avatar
           } else {
             issueType.value.avatar = systemAvatarsIds[issueType.value.avatarId]
@@ -141,7 +147,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           return
         }
         const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
-        await setIconContent({ client, instance: issueType, link, fieldName: 'avatar'  })
+        await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
       } catch (e) {
         errors.push({ message: e.message, severity: 'Error' })
       }

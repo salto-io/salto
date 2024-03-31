@@ -98,7 +98,7 @@ export const createInstances = (
     description: randomString,
     name: `IT_${randomString}`,
     hierarchyLevel: 0,
-    untranslatedName: randomString,
+    untranslatedName: `IT_${randomString}`,
     avatar: new StaticFile({
       filepath: `${JIRA}/${ISSUE_TYPE_NAME}/${randomString}.png`,
       content: fs.readFileSync(path.resolve(`${__dirname}/../../../e2e_test/images/nacl.png`)),

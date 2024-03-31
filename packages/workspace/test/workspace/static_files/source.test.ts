@@ -130,7 +130,7 @@ describe('Static Files', () => {
         })
       })
       describe('hashing', () => {
-        describe('invalidateOnModify true', () => {
+        describe('ignoreFileChanges true', () => {
           it('should not hash if in cache and file not modified', async () => {
             const filepathFromCache = 'filepathfromcache'
             mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
@@ -188,7 +188,7 @@ describe('Static Files', () => {
           })
         })
       })
-      describe('invalidateOnModify false', () => {
+      describe('ignoreFileChanges false', () => {
         beforeEach(() => {
           staticFilesSource = buildStaticFilesSource(mockDirStore, mockCacheStore, false)
         })

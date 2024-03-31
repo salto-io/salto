@@ -50,12 +50,11 @@ import { createRemoteMapCreator } from './remote_map'
 import { adapterCreators, getAdaptersConfigTypesMap } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
 import { WorkspaceMetadataConfig } from './workspace_config_types'
-import { getCacheName } from '@salto-io/workspace/src/workspace/static_files'
 
 const { awu } = collections.asynciterable
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
-const { buildStaticFilesSource } = staticFiles
+const { buildStaticFilesSource, getCacheName } = staticFiles
 const log = logger(module)
 
 export const STATES_DIR_NAME = 'states'

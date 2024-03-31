@@ -28,7 +28,7 @@ describe('brandRemovalValidator', () => {
         severity: 'Warning',
         message: 'Brand removal includes all of its theme assets, custom code, emails, pages, and settings',
         detailedMessage:
-          'Deleting brand mybrand will remove all of its theme assets, custom code, emails, pages, and settings. This action is not reversible.',
+          'Deleting this brand will remove all of its theme assets, custom code, emails, pages, and settings. This action is not reversible.',
       },
     ])
   })

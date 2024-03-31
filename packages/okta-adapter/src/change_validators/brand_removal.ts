@@ -27,5 +27,6 @@ export const brandRemovalValidator: ChangeValidator = async changes =>
       elemID: instance.elemID,
       severity: 'Warning',
       message: 'Brand removal includes all of its theme assets, custom code, emails, pages, and settings',
-      detailedMessage: `Deleting brand ${instance.elemID.name} will remove all of its theme assets, custom code, emails, pages, and settings. This action is not reversible.`,
+      detailedMessage:
+        'Deleting this brand will remove all of its theme assets, custom code, emails, pages, and settings. This action is not reversible.',
     }))

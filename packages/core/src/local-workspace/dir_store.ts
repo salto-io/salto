@@ -291,7 +291,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
             READ_CONCURRENCY,
           ),
         desc: 'getFiles for %d files with read concurrency %d',
-        descArgs: [filenames.length, READ_CONCURRENCY]
+        descArgs: [filenames.length, READ_CONCURRENCY],
       }),
 
     getTotalSize: async (): Promise<number> => {

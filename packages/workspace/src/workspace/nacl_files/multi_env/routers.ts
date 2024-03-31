@@ -176,49 +176,52 @@ const addToSource = async ({
   log.time({
     desc: 'addToSource',
     inner: async () => {
-    const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
-    const fullChanges = await awu(Object.values(idsByParent))
-      .flatMap(async gids => {
-        const topLevelGid = gids[0].createTopLevelParentID().parent
-        const topLevelElement = valuesOverrides[topLevelGid.getFullName()] ?? (await originSource.get(topLevelGid))
-        const before = await targetSource.get(topLevelGid)
-        if (!values.isDefined(topLevelElement)) {
-          if (values.isDefined(before)) {
-            return []
+      const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
+      const fullChanges = await awu(Object.values(idsByParent))
+        .flatMap(async gids => {
+          const topLevelGid = gids[0].createTopLevelParentID().parent
+          const topLevelElement = valuesOverrides[topLevelGid.getFullName()] ?? (await originSource.get(topLevelGid))
+          const before = await targetSource.get(topLevelGid)
+          if (!values.isDefined(topLevelElement)) {
+            if (values.isDefined(before)) {
+              return []
+            }
+            throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
           }
-          throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
-        }
-        const topLevelIds = gids.filter(id => id.isTopLevel())
-        const wrappedElement = !_.isEmpty(topLevelIds)
-          ? topLevelElement
-          : wrapNestedValues(
-              gids.map(id => ({
-                id,
-                value: valuesOverrides[id.getFullName()] ?? resolvePath(topLevelElement, id),
-              })),
-              topLevelElement,
+          const topLevelIds = gids.filter(id => id.isTopLevel())
+          const wrappedElement = !_.isEmpty(topLevelIds)
+            ? topLevelElement
+            : wrapNestedValues(
+                gids.map(id => ({
+                  id,
+                  value: valuesOverrides[id.getFullName()] ?? resolvePath(topLevelElement, id),
+                })),
+                topLevelElement,
+              )
+          if (!values.isDefined(before)) {
+            return [createAddChange(wrappedElement, topLevelElement.elemID)]
+          }
+          if (overrideTargetElements) {
+            // we want to override, not merge - so we need to wrap each gid individually
+            return gids.flatMap(id =>
+              overrideIdInSource(id, before as ChangeDataType, topLevelElement as ChangeDataType),
             )
-        if (!values.isDefined(before)) {
-          return [createAddChange(wrappedElement, topLevelElement.elemID)]
-        }
-        if (overrideTargetElements) {
-          // we want to override, not merge - so we need to wrap each gid individually
-          return gids.flatMap(id => overrideIdInSource(id, before as ChangeDataType, topLevelElement as ChangeDataType))
-        }
+          }
 
-        const mergeResult = await mergeElements(awu([before, wrappedElement]))
-        if (!(await awu(mergeResult.errors.values()).flat().isEmpty())) {
-          // If either the origin or the target source is the common folder, all elements should be
-          // mergeable and we shouldn't see merge errors
-          throw new Error(`Failed to add ${gids.map(id => id.getFullName())} - unmergeable element fragments.`)
-        }
-        const after = (await awu(mergeResult.merged.values()).peek()) as ChangeDataType
-        return detailedCompare(before, after, { createFieldChanges: true })
-      })
-      .flatMap(change => separateChangeByFiles(change, change.action === 'remove' ? targetSource : originSource))
-      .toArray()
-    return fullChanges
-  }, })
+          const mergeResult = await mergeElements(awu([before, wrappedElement]))
+          if (!(await awu(mergeResult.errors.values()).flat().isEmpty())) {
+            // If either the origin or the target source is the common folder, all elements should be
+            // mergeable and we shouldn't see merge errors
+            throw new Error(`Failed to add ${gids.map(id => id.getFullName())} - unmergeable element fragments.`)
+          }
+          const after = (await awu(mergeResult.merged.values()).peek()) as ChangeDataType
+          return detailedCompare(before, after, { createFieldChanges: true })
+        })
+        .flatMap(change => separateChangeByFiles(change, change.action === 'remove' ? targetSource : originSource))
+        .toArray()
+      return fullChanges
+    },
+  })
 
 const createUpdateChanges = async (
   changes: DetailedChange[],

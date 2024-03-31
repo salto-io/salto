@@ -119,7 +119,10 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
   return async (): Promise<UserMap | undefined> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
-        usersCallPromise = log.time<Promise<clientUtils.ResponseValue[][]>>({inner: async () => paginateUsers(paginator, isDataCenter), desc:'users pagination'})
+        usersCallPromise = log.time<Promise<clientUtils.ResponseValue[][]>>({
+          inner: async () => paginateUsers(paginator, isDataCenter),
+          desc: 'users pagination',
+        })
       }
       try {
         idMap = Object.fromEntries(

@@ -414,7 +414,7 @@ export default class NetsuiteClient {
         log.debug('deploying %d changes', dependencyGraph.nodes.size)
         // eslint-disable-next-line no-await-in-loop
         await log.time<Promise<void>>({
-          inner: () => this.sdfClient.deploy(suiteAppId, {manifestDependencies, validateOnly}, dependencyGraph),
+          inner: () => this.sdfClient.deploy(suiteAppId, { manifestDependencies, validateOnly }, dependencyGraph),
           desc: 'sdfDeploy',
         })
         return { errors, appliedChanges: changesToApply }
@@ -621,7 +621,7 @@ export default class NetsuiteClient {
       const desc = `client.${name}`
       try {
         // eslint-disable-next-line @typescript-eslint/return-await
-        return await log.time({inner:call, desc})
+        return await log.time({ inner: call, desc })
       } catch (e) {
         log.error('failed to run Netsuite client command on: %o', e)
         throw e

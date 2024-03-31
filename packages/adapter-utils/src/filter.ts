@@ -112,7 +112,8 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
       const filterResults = (
         await promises.array.series(
           filtersWith('onFetch').map(
-            filter => () => log.time<Promise<void | R>>({inner:() => filter.onFetch(elements), desc:`(${filter.name}):onFetch`}),
+            filter => () =>
+              log.time<Promise<void | R>>({ inner: () => filter.onFetch(elements), desc: `(${filter.name}):onFetch` }),
           ),
         )
       ).filter(isDefined)
@@ -127,7 +128,10 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
       await promises.array.series(
         filtersWith('preDeploy')
           .reverse()
-          .map(filter => () => log.time<Promise<void>>({inner:() => filter.preDeploy(changes), desc:`(${filter.name}):preDeploy`})),
+          .map(
+            filter => () =>
+              log.time<Promise<void>>({ inner: () => filter.preDeploy(changes), desc: `(${filter.name}):preDeploy` }),
+          ),
       )
     },
     /**
@@ -136,7 +140,9 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
     deploy: async (changes, changeGroup) =>
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
-          const { deployResult, leftoverChanges } = await log.time<Promise<{deployResult: DeployResult, leftoverChanges: Change[]}>>({
+          const { deployResult, leftoverChanges } = await log.time<
+            Promise<{ deployResult: DeployResult; leftoverChanges: Change[] }>
+          >({
             inner: () => current.deploy(total.leftoverChanges, changeGroup),
             desc: `(${current.name}):deploy`,
           })
@@ -161,7 +167,11 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
     onDeploy: async (changes, deployResult) => {
       await promises.array.series(
         filtersWith('onDeploy').map(
-          filter => () => log.time<Promise<void>>({inner: () => filter.onDeploy(changes, deployResult), desc:`(${filter.name}):onDeploy`}),
+          filter => () =>
+            log.time<Promise<void>>({
+              inner: () => filter.onDeploy(changes, deployResult),
+              desc: `(${filter.name}):onDeploy`,
+            }),
         ),
       )
     },
@@ -176,7 +186,8 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
     onPostFetch: async args => {
       await promises.array.series(
         filtersWith('onPostFetch').map(
-          filter => () => log.time<Promise<void>>({inner: () => filter.onPostFetch(args), desc:`(${filter.name}):onPostFetch`}),
+          filter => () =>
+            log.time<Promise<void>>({ inner: () => filter.onPostFetch(args), desc: `(${filter.name}):onPostFetch` }),
         ),
       )
     },

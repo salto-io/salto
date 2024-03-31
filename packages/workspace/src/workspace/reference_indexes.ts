@@ -294,39 +294,40 @@ export const updateReferenceIndexes = async (
   log.time({
     desc: 'updating references indexes',
     inner: async () => {
-    let relevantChanges = changes
-    let initialIndex = false
-    const isVersionMatch = (await mapVersions.get(REFERENCE_INDEXES_KEY)) === REFERENCE_INDEXES_VERSION
-    if (!isCacheValid || !isVersionMatch) {
-      if (!isVersionMatch) {
-        relevantChanges = await getAllElementsChanges(changes, elementsSource)
-        log.info('references indexes maps are out of date, re-indexing')
-      }
-      if (!isCacheValid) {
-        // When cache is invalid, changes will include all of the elements in the workspace.
-        log.info('cache is invalid, re-indexing references indexes')
-      }
-      await Promise.all([
-        referenceTargetsIndex.clear(),
-        referenceSourcesIndex.clear(),
-        mapVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
-      ])
-      initialIndex = true
-    }
-
-    const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
-
-    const changeToReferences = Object.fromEntries(
-      await awu(relevantChanges)
-        .map(async change => [
-          getChangeData(change).elemID.getFullName(),
-          await getReferencesFromChange(change, customReferences),
+      let relevantChanges = changes
+      let initialIndex = false
+      const isVersionMatch = (await mapVersions.get(REFERENCE_INDEXES_KEY)) === REFERENCE_INDEXES_VERSION
+      if (!isCacheValid || !isVersionMatch) {
+        if (!isVersionMatch) {
+          relevantChanges = await getAllElementsChanges(changes, elementsSource)
+          log.info('references indexes maps are out of date, re-indexing')
+        }
+        if (!isCacheValid) {
+          // When cache is invalid, changes will include all of the elements in the workspace.
+          log.info('cache is invalid, re-indexing references indexes')
+        }
+        await Promise.all([
+          referenceTargetsIndex.clear(),
+          referenceSourcesIndex.clear(),
+          mapVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
         ])
-        .toArray(),
-    )
+        initialIndex = true
+      }
 
-    // Outgoing references
-    await updateReferenceTargetsIndex(relevantChanges, referenceTargetsIndex, changeToReferences)
-    // Incoming references
-    await updateReferenceSourcesIndex(relevantChanges, referenceSourcesIndex, changeToReferences, initialIndex)
-  }, })
+      const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
+
+      const changeToReferences = Object.fromEntries(
+        await awu(relevantChanges)
+          .map(async change => [
+            getChangeData(change).elemID.getFullName(),
+            await getReferencesFromChange(change, customReferences),
+          ])
+          .toArray(),
+      )
+
+      // Outgoing references
+      await updateReferenceTargetsIndex(relevantChanges, referenceTargetsIndex, changeToReferences)
+      // Incoming references
+      await updateReferenceSourcesIndex(relevantChanges, referenceSourcesIndex, changeToReferences, initialIndex)
+    },
+  })

@@ -110,7 +110,7 @@ export const buildS3DirectoryStore = ({
           do {
             // eslint-disable-next-line no-await-in-loop
             currentPage = await listPage(currentPage?.NextContinuationToken)
-            currentPage.Contents?.map(({Key}) => Key && path.posix.relative(baseDir, Key))
+            currentPage.Contents?.map(({ Key }) => Key && path.posix.relative(baseDir, Key))
               .filter(values.isDefined)
               .forEach(key => paths.add(key))
           } while (currentPage?.NextContinuationToken !== undefined)

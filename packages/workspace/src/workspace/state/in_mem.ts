@@ -90,33 +90,34 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
 
   const updateStateElements = async (changes: DetailedChange[]): Promise<void> =>
     log.time({
-      desc:'updateStateElements',
+      desc: 'updateStateElements',
       inner: async () => {
-      const state = (await stateData()).elements
-      const changesByTopLevelElement = _.groupBy(changes, change =>
-        change.id.createTopLevelParentID().parent.getFullName(),
-      )
-      await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
-        const elemID = elemChanges[0].id
-        // If the first change is top level, it means the element was added or removed, and it will include all changes
-        if (elemID.isTopLevel()) {
-          if (isRemovalChange(elemChanges[0])) {
-            await removeId(elemID)
-          } else if (isAdditionChange(elemChanges[0])) {
-            await state.set(getChangeData(elemChanges[0]))
+        const state = (await stateData()).elements
+        const changesByTopLevelElement = _.groupBy(changes, change =>
+          change.id.createTopLevelParentID().parent.getFullName(),
+        )
+        await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
+          const elemID = elemChanges[0].id
+          // If the first change is top level, it means the element was added or removed, and it will include all changes
+          if (elemID.isTopLevel()) {
+            if (isRemovalChange(elemChanges[0])) {
+              await removeId(elemID)
+            } else if (isAdditionChange(elemChanges[0])) {
+              await state.set(getChangeData(elemChanges[0]))
+            }
+            return
           }
-          return
-        }
 
-        // If the first change is not top level, it means this is a modification of an existing element
-        // We need to get that element, apply the changes and set it back
-        const elemTopLevel = elemID.createTopLevelParentID().parent
-        const updatedElem = (await state.get(elemTopLevel)).clone()
-        applyDetailedChanges(updatedElem, elemChanges)
-        await state.set(updatedElem)
-      })
-      await deleteRemovedStaticFiles(changes)
-    }, })
+          // If the first change is not top level, it means this is a modification of an existing element
+          // We need to get that element, apply the changes and set it back
+          const elemTopLevel = elemID.createTopLevelParentID().parent
+          const updatedElem = (await state.get(elemTopLevel)).clone()
+          applyDetailedChanges(updatedElem, elemChanges)
+          await state.set(updatedElem)
+        })
+        await deleteRemovedStaticFiles(changes)
+      },
+    })
 
   // Sets the element and delete all the static files that no longer exists on it
   // should not be used in case of regenerate salto ids since it looks only at one element

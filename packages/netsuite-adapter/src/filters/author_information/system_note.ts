@@ -187,7 +187,10 @@ const fetchSystemNotes = async (
   employeeNames: Record<string, string>,
   timeZone: string | undefined,
 ): Promise<Record<string, ModificationInformation>> => {
-  const systemNotes = await log.time<Promise<SystemNoteResult[]>>({inner:() => querySystemNotes(client, queryIds, lastFetchTime), desc:'querySystemNotes'})
+  const systemNotes = await log.time<Promise<SystemNoteResult[]>>({
+    inner: () => querySystemNotes(client, queryIds, lastFetchTime),
+    desc: 'querySystemNotes',
+  })
   if (_.isEmpty(systemNotes)) {
     log.warn('System note query failed')
     return {}

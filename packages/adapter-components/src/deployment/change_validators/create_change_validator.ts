@@ -35,7 +35,7 @@ export const createChangeValidator =
     return _.flatten(
       await Promise.all(
         activeValidators.map(([name, validator]) =>
-          log.time({inner: () => validator(changes, elementSource), desc:`validator ${name}`}),
+          log.time({ inner: () => validator(changes, elementSource), desc: `validator ${name}` }),
         ),
       ),
     )

@@ -180,22 +180,23 @@ export const getEnvsDeletionsDiff = async (
   log.time({
     desc: 'getEnvsDeletionsDiff',
     inner: async () => {
-    const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(
-      await awu(envs)
-        .map(async env => [
-          env,
-          await awu(
-            await workspace.getElementIdsBySelectors(selectors, { source: 'env', envName: env }, true),
-          ).toArray(),
-        ])
-        .toArray(),
-    )
+      const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(
+        await awu(envs)
+          .map(async env => [
+            env,
+            await awu(
+              await workspace.getElementIdsBySelectors(selectors, { source: 'env', envName: env }, true),
+            ).toArray(),
+          ])
+          .toArray(),
+      )
 
-    const sourceElemIdsSet = new Set(sourceElemIds.map(id => id.getFullName()))
-    return _(envsElemIds)
-      .mapValues(ids => ids.filter(id => !sourceElemIdsSet.has(id.getFullName())))
-      .entries()
-      .filter(([_env, ids]) => ids.length !== 0)
-      .fromPairs()
-      .value()
-  }, })
+      const sourceElemIdsSet = new Set(sourceElemIds.map(id => id.getFullName()))
+      return _(envsElemIds)
+        .mapValues(ids => ids.filter(id => !sourceElemIdsSet.has(id.getFullName())))
+        .entries()
+        .filter(([_env, ids]) => ids.length !== 0)
+        .fromPairs()
+        .value()
+    },
+  })

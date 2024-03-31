@@ -206,14 +206,18 @@ const updateIndex = async ({
 export const updatePathIndex = async (args: PathIndexArgs): Promise<void> =>
   log.time({
     inner: async () => {
-    await updateIndex({ ...args, getHintsFunction: getElementsPathHints })
-  }, desc: 'updatePathIndex'})
+      await updateIndex({ ...args, getHintsFunction: getElementsPathHints })
+    },
+    desc: 'updatePathIndex',
+  })
 
 export const updateTopLevelPathIndex = async (args: PathIndexArgs): Promise<void> =>
   log.time({
     inner: async () => {
-    await updateIndex({ ...args, getHintsFunction: getTopLevelPathHints })
-  }, desc: 'updateTopLevelPathIndex'})
+      await updateIndex({ ...args, getHintsFunction: getTopLevelPathHints })
+    },
+    desc: 'updateTopLevelPathIndex',
+  })
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>
   parsedEntries.flatMap(e => ({ key: e[0], value: e[1] }))

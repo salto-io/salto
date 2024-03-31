@@ -53,15 +53,15 @@ export const addNodeDependencies =
     log.time<Promise<DataNodeMap<DiffNode<ChangeDataType>>>>({
       desc: 'add dependencies to graph',
       inner: async () => {
-      if (changers.length === 0) {
-        // If there are no changers we return here to avoid creating changeData for no reason
-        return graph
-      }
-      const changeData = new Map(wu(graph.keys()).map(id => [id, graph.getData(id)]))
-      const outputDependencies = changers.reduce(
-        async (deps, changer) => updateDeps(await deps, await changer(changeData, await deps)),
-        Promise.resolve(new Map(graph)),
-      )
-      return new DataNodeMap<DiffNode<ChangeDataType>>(await outputDependencies, changeData)
-    },
+        if (changers.length === 0) {
+          // If there are no changers we return here to avoid creating changeData for no reason
+          return graph
+        }
+        const changeData = new Map(wu(graph.keys()).map(id => [id, graph.getData(id)]))
+        const outputDependencies = changers.reduce(
+          async (deps, changer) => updateDeps(await deps, await changer(changeData, await deps)),
+          Promise.resolve(new Map(graph)),
+        )
+        return new DataNodeMap<DiffNode<ChangeDataType>>(await outputDependencies, changeData)
+      },
     })

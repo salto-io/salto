@@ -90,20 +90,21 @@ export const updateIndex = async <T>({
   updateChanges: (changes: Change<Element>[], index: RemoteMap<T>) => Promise<void>
 }): Promise<void> =>
   log.time({
-    desc:`updating ${indexName} index`,
+    desc: `updating ${indexName} index`,
     inner: async () => {
-    let relevantChanges = changes
-    const isVersionMatch = (await mapVersions.get(indexVersionKey)) === indexVersion
-    if (!isCacheValid || !isVersionMatch) {
-      if (!isVersionMatch) {
-        relevantChanges = await getAllElementsChanges(changes, elementsSource)
-        log.info(`${indexName} index map is out of date, re-indexing`)
+      let relevantChanges = changes
+      const isVersionMatch = (await mapVersions.get(indexVersionKey)) === indexVersion
+      if (!isCacheValid || !isVersionMatch) {
+        if (!isVersionMatch) {
+          relevantChanges = await getAllElementsChanges(changes, elementsSource)
+          log.info(`${indexName} index map is out of date, re-indexing`)
+        }
+        if (!isCacheValid) {
+          // When cache is invalid, changes will include all of the elements in the workspace.
+          log.info(`cache is invalid, re-indexing ${indexName} index`)
+        }
+        await Promise.all([index.clear(), mapVersions.set(indexVersionKey, indexVersion)])
       }
-      if (!isCacheValid) {
-        // When cache is invalid, changes will include all of the elements in the workspace.
-        log.info(`cache is invalid, re-indexing ${indexName} index`)
-      }
-      await Promise.all([index.clear(), mapVersions.set(indexVersionKey, indexVersion)])
-    }
-    await updateChanges(relevantChanges, index)
-  }, })
+      await updateChanges(relevantChanges, index)
+    },
+  })

@@ -100,34 +100,35 @@ export const getUsers = async (
   log.time({
     desc: 'getUsers function',
     inner: async () => {
-    const paginationArgs = {
-      url: '/api/v1/users',
-      paginationField: 'after',
-      // omit credentials and other unnecessary fields from the response
-      headers: { 'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks' },
-    }
+      const paginationArgs = {
+        url: '/api/v1/users',
+        paginationField: 'after',
+        // omit credentials and other unnecessary fields from the response
+        headers: { 'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks' },
+      }
 
-    if (searchUsersParams) {
-      log.debug('getUsers called with searchQuery strategy')
-      const userChunks = _.chunk(searchUsersParams.userIds, USER_CHUNK_SIZE)
-      const allUsers = (
-        await Promise.all(
-          userChunks.map(async userIdsChunk => {
-            const usersQueryParam = { search: getUsersQuery(userIdsChunk, searchUsersParams.property) }
-            _.set(paginationArgs, 'queryParams', usersQueryParam)
-            const users = (
-              await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
-            ).flat()
-            return users
-          }),
-        )
+      if (searchUsersParams) {
+        log.debug('getUsers called with searchQuery strategy')
+        const userChunks = _.chunk(searchUsersParams.userIds, USER_CHUNK_SIZE)
+        const allUsers = (
+          await Promise.all(
+            userChunks.map(async userIdsChunk => {
+              const usersQueryParam = { search: getUsersQuery(userIdsChunk, searchUsersParams.property) }
+              _.set(paginationArgs, 'queryParams', usersQueryParam)
+              const users = (
+                await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
+              ).flat()
+              return users
+            }),
+          )
+        ).flat()
+        return areUsers(allUsers) ? allUsers : []
+      }
+
+      log.debug('getUsers called with allUsers strategy')
+      const users = (
+        await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
       ).flat()
-      return areUsers(allUsers) ? allUsers : []
-    }
-
-    log.debug('getUsers called with allUsers strategy')
-    const users = (
-      await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
-    ).flat()
-    return areUsers(users) ? users : []
-  }, })
+      return areUsers(users) ? users : []
+    },
+  })

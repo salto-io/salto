@@ -60,6 +60,8 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
   flush: () =>
     log.time<Promise<void>>({
       inner: async () => {
-      await dirStore.flush()
-    }, desc: 'Flushing override static state files source'}),
+        await dirStore.flush()
+      },
+      desc: 'Flushing override static state files source',
+    }),
 })

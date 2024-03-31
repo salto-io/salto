@@ -380,7 +380,7 @@ const processMergeErrors = async (
     descArgs: [errors.length],
     inner: async () => {
       const mergeErrsByElemID = _(errors)
-        .map(me => [me.elemID.createTopLevelParentID().parent.getFullName(), {error: me, elements: []}])
+        .map(me => [me.elemID.createTopLevelParentID().parent.getFullName(), { error: me, elements: [] }])
         .fromPairs()
         .value() as Record<string, MergeErrorWithElements>
       const errorsWithDroppedElements: MergeErrorWithElements[] = []
@@ -718,7 +718,9 @@ export const calcFetchChanges = async (
 
   const calculateChangesWithState = async (): Promise<DetailedChangeTreesResults> => {
     // Changes from the service that are not in the state
-    const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time<Promise<DetailedChangeTreeResult>>({
+    const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time<
+      Promise<DetailedChangeTreeResult>
+    >({
       inner: () =>
         getDetailedChangeTree(
           stateElements,
@@ -1061,7 +1063,10 @@ export const fetchChangesFromWorkspace = async (
     )
   }
 
-  const differentConfig = await log.time<Promise<InstanceElement[]>>({inner: async () => getDifferentConfigs(), desc:'Getting workspace configs'})
+  const differentConfig = await log.time<Promise<InstanceElement[]>>({
+    inner: async () => getDifferentConfigs(),
+    desc: 'Getting workspace configs',
+  })
   if (!_.isEmpty(differentConfig)) {
     const configsByAdapter = _.groupBy([...differentConfig, ...currentConfigs], config => config.elemID.adapter)
     Object.entries(configsByAdapter).forEach(([adapter, configs]) => {
@@ -1071,7 +1076,10 @@ export const fetchChangesFromWorkspace = async (
   }
   if (
     !fromState &&
-    (await log.time<Promise<boolean>>({inner:async () => (await otherWorkspace.errors()).hasErrors('Error'), desc:'Checking workspace errors'}))
+    (await log.time<Promise<boolean>>({
+      inner: async () => (await otherWorkspace.errors()).hasErrors('Error'),
+      desc: 'Checking workspace errors',
+    }))
   ) {
     return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
   }
@@ -1144,9 +1152,9 @@ export const fetchChangesFromWorkspace = async (
   // This will not be needed anymore once we have access to the state static file content
   return fromState
     ? log.time({
-      inner: async () => fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env),
-      desc: 'Fix state static files',
-    })
+        inner: async () => fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env),
+        desc: 'Fix state static files',
+      })
     : fetchChangesResult
 }
 

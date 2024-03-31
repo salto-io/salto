@@ -82,7 +82,9 @@ const removeRedundantFieldNodes = (graph: DataNodeMap<Change>, groupKey: GroupKe
   log.time({
     desc: 'removeRedundantFieldNodes',
     inner: () => {
-      const groupIdToAddedOrRemovedTypesMap = new DefaultMap<string, Map<string, collections.set.SetId>>(() => new Map())
+      const groupIdToAddedOrRemovedTypesMap = new DefaultMap<string, Map<string, collections.set.SetId>>(
+        () => new Map(),
+      )
       wu(graph.keys()).forEach(nodeId => {
         const change = graph.getData(nodeId)
         if (isAdditionOrRemovalChange(change) && isObjectTypeChange(change)) {

@@ -301,31 +301,32 @@ export const applyListChanges = (element: ChangeDataType, changes: DetailedChang
   log.time({
     desc: `applyListChanges - ${element.elemID.getFullName()}`,
     inner: () => {
-    const ids = changes.map(change => change.id)
-    if (
-      ids.some(id => !isIndexPathPart(id.name)) ||
-      new Set(ids.map(id => id.createParentID().getFullName())).size > 1
-    ) {
-      throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
-    }
+      const ids = changes.map(change => change.id)
+      if (
+        ids.some(id => !isIndexPathPart(id.name)) ||
+        new Set(ids.map(id => id.createParentID().getFullName())).size > 1
+      ) {
+        throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
+      }
 
-    const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
-    const list = resolvePath(element, parentId)
-    changes.filter(isRemovalOrModificationChange).forEach(change => {
-      list[Number(change.elemIDs?.before?.name)] = undefined
-    })
-
-    _(changes)
-      .filter(isAdditionOrModificationChange)
-      .sortBy(change => Number(change.elemIDs?.after?.name))
-      .forEach(change => {
-        const index = Number(change.elemIDs?.after?.name)
-        if (list[index] === undefined) {
-          list[index] = change.data.after
-        } else {
-          list.splice(index, 0, change.data.after)
-        }
+      const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
+      const list = resolvePath(element, parentId)
+      changes.filter(isRemovalOrModificationChange).forEach(change => {
+        list[Number(change.elemIDs?.before?.name)] = undefined
       })
 
-    setPath(element, parentId, list.filter(values.isDefined))
-  }, })
+      _(changes)
+        .filter(isAdditionOrModificationChange)
+        .sortBy(change => Number(change.elemIDs?.after?.name))
+        .forEach(change => {
+          const index = Number(change.elemIDs?.after?.name)
+          if (list[index] === undefined) {
+            list[index] = change.data.after
+          } else {
+            list.splice(index, 0, change.data.after)
+          }
+        })
+
+      setPath(element, parentId, list.filter(values.isDefined))
+    },
+  })

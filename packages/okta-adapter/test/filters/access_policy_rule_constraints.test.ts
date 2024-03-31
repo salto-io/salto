@@ -258,10 +258,10 @@ describe('accessPolicyRuleConstraintsFilter', () => {
       const rule = baseRuleInstace.clone()
       rule.value.actions.appSignOn.verificationMethod.constraints = [
         {
-          knowledge: { reauthenticateIn: 'PT0S', required: true},
+          knowledge: { reauthenticateIn: 'PT0S', required: true },
           possession: { deviceBound: 'REQUIRED', required: true },
         },
-        { possession: { required: true , type: ['password'] } },
+        { possession: { required: true, type: ['password'] } },
       ]
       const changes = [toChange({ after: rule })]
       await filter.preDeploy(changes) // pre deploy sets the mappings

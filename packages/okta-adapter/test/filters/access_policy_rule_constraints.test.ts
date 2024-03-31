@@ -37,7 +37,7 @@ describe('accessPolicyRuleConstraintsFilter', () => {
     },
   })
   describe('preDeploy', () => {
-    it('should remove "required" field from the constraints if it is true and "excludedAuthenticationMethods" is not configured', async () => {
+    it('should remove "required" field from the constraints if it is true and "excludedAuthenticationMethods" is not configured (with additional properties)', async () => {
       const rule = baseRuleInstace.clone()
       rule.value.actions.appSignOn.verificationMethod.constraints = [
         {
@@ -62,6 +62,37 @@ describe('accessPolicyRuleConstraintsFilter', () => {
                   possession: { deviceBound: 'REQUIRED', additionalProperties: {} },
                 },
                 { possession: { additionalProperties: {}, type: ['password'] } },
+              ],
+            },
+          },
+        },
+      })
+    })
+    it('should remove "required" field from the constraints if it is true and "excludedAuthenticationMethods" is not configured', async () => {
+      const rule = baseRuleInstace.clone()
+      rule.value.actions.appSignOn.verificationMethod.constraints = [
+        {
+          knowledge: { reauthenticateIn: 'PT0S', required: true },
+          possession: { deviceBound: 'REQUIRED', required: true },
+        },
+        { possession: { required: true, type: ['password'] } },
+      ]
+      const changes = [toChange({ after: rule })]
+      filter = accessPolicyRuleConstraintsFilter(getFilterParams()) as typeof filter
+      await filter.preDeploy(changes)
+      const inst = changes.map(getChangeData).filter(isInstanceElement)
+      expect(inst[0].value).toEqual({
+        name: 'rule',
+        status: 'ACTIVE',
+        actions: {
+          appSignOn: {
+            verificationMethod: {
+              constraints: [
+                {
+                  knowledge: { reauthenticateIn: 'PT0S' },
+                  possession: { deviceBound: 'REQUIRED' },
+                },
+                { possession: { type: ['password'] } },
               ],
             },
           },
@@ -119,7 +150,7 @@ describe('accessPolicyRuleConstraintsFilter', () => {
         },
       })
     })
-    it('should not remove "required" field from the constraints if it is set to false', async () => {
+    it('should not remove "required" field from the constraints if it is set to false (with additional properties)', async () => {
       const rule = baseRuleInstace.clone()
       rule.value.actions.appSignOn.verificationMethod.constraints = [
         {
@@ -141,6 +172,35 @@ describe('accessPolicyRuleConstraintsFilter', () => {
                 {
                   knowledge: { reauthenticateIn: 'PT0S', additionalProperties: { required: false } },
                   possession: { deviceBound: 'REQUIRED', additionalProperties: { required: false } },
+                },
+              ],
+            },
+          },
+        },
+      })
+    })
+    it('should not remove "required" field from the constraints if it is set to false', async () => {
+      const rule = baseRuleInstace.clone()
+      rule.value.actions.appSignOn.verificationMethod.constraints = [
+        {
+          knowledge: { reauthenticateIn: 'PT0S', required: false },
+          possession: { deviceBound: 'REQUIRED', required: false },
+        },
+      ]
+      const changes = [toChange({ after: rule })]
+      filter = accessPolicyRuleConstraintsFilter(getFilterParams()) as typeof filter
+      await filter.preDeploy(changes)
+      const inst = changes.map(getChangeData).filter(isInstanceElement)
+      expect(inst[0].value).toEqual({
+        name: 'rule',
+        status: 'ACTIVE',
+        actions: {
+          appSignOn: {
+            verificationMethod: {
+              constraints: [
+                {
+                  knowledge: { reauthenticateIn: 'PT0S', required: false },
+                  possession: { deviceBound: 'REQUIRED', required: false },
                 },
               ],
             },
@@ -173,7 +233,7 @@ describe('accessPolicyRuleConstraintsFilter', () => {
   })
 
   describe('onDeploy', () => {
-    it('should restore instance values', async () => {
+    it('should restore instance values (with additionalProperties)', async () => {
       const rule = baseRuleInstace.clone()
       rule.value.actions.appSignOn.verificationMethod.constraints = [
         {
@@ -181,6 +241,27 @@ describe('accessPolicyRuleConstraintsFilter', () => {
           possession: { deviceBound: 'REQUIRED', additionalProperties: { required: true } },
         },
         { possession: { additionalProperties: { required: true }, type: ['password'] } },
+      ]
+      const changes = [toChange({ after: rule })]
+      await filter.preDeploy(changes) // pre deploy sets the mappings
+      await Promise.all(
+        changes.map(change => applyFunctionToChangeData(change, inst => _.set(inst, 'value.id', 'ruleId'))),
+      ) // update ids by deployment
+      await filter.onDeploy(changes)
+      const instances = changes.map(getChangeData).filter(isInstanceElement)
+      expect(instances[0].value).toEqual({
+        ...rule.value,
+        id: 'ruleId',
+      })
+    })
+    it('should restore instance values', async () => {
+      const rule = baseRuleInstace.clone()
+      rule.value.actions.appSignOn.verificationMethod.constraints = [
+        {
+          knowledge: { reauthenticateIn: 'PT0S', required: true},
+          possession: { deviceBound: 'REQUIRED', required: true },
+        },
+        { possession: { required: true , type: ['password'] } },
       ]
       const changes = [toChange({ after: rule })]
       await filter.preDeploy(changes) // pre deploy sets the mappings

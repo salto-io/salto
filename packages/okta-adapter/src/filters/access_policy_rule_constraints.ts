@@ -22,7 +22,7 @@ import {
   isInstanceElement,
   Values,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, resolvePath } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { ACCESS_POLICY_RULE_TYPE_NAME } from '../constants'
@@ -31,12 +31,12 @@ const log = logger(module)
 const AUTHENTICATOR_CONSTRAINTS_PATH = ['actions', 'appSignOn', 'verificationMethod', 'constraints']
 
 type ConstraintsEntry = {
-  knowledge: Values
-  possession: Values
+  knowledge?: Values
+  possession?: Values
 }
 const CONSTRAINTS_ENTRY_SCHEMA = Joi.object({
-  knowledge: Joi.object(),
-  possession: Joi.object(),
+  knowledge: Joi.object().optional(),
+  possession: Joi.object().optional(),
 }).unknown(true)
 
 const CONSTRAINTS_ARRAY_SCHEMA = Joi.array().items(CONSTRAINTS_ENTRY_SCHEMA).required()
@@ -47,7 +47,7 @@ const isConstraintsArray = createSchemeGuard<ConstraintsEntry[]>(
 )
 
 /**
- * Removes the `required` field from `possession` or `knowledge` object when it is optionl.
+ * Removes the `required` field from `possession` or `knowledge` object when it is optional.
  * By default, this field is true. If the `knowledge` or `possession` constraint has values for excludedAuthenticationMethods then the required value is false.
  * (source: https://developer.okta.com/docs/reference/api/policy/#constraints)
  */
@@ -70,27 +70,43 @@ const filter: FilterCreator = () => {
           if (isConstraintsArray(constraintsArray)) {
             constraintsArray.forEach(constraint => {
               const { possession, knowledge } = constraint
-              if (
-                possession?.additionalProperties?.required === true &&
-                possession?.excludedAuthenticationMethods === undefined
-              ) {
-                log.debug(
-                  'omitting "required" field from possession object %o in instance %s',
-                  possession,
-                  instance.elemID.getFullName(),
-                )
-                delete possession.additionalProperties.required
+              if (possession?.excludedAuthenticationMethods === undefined) {
+                // TODO - can remove after SALTO-5332 merged
+                if (possession?.additionalProperties?.required === true) {
+                  delete possession.additionalProperties.required
+                  log.debug(
+                    'omitting "required" field from possession object %s in instance %s',
+                    safeJsonStringify(possession),
+                    instance.elemID.getFullName(),
+                  )
+                }
+                if (possession?.required === true) {
+                  delete possession.required
+                  log.debug(
+                    'omitting "required" field from possession object %s in instance %s',
+                    safeJsonStringify(possession),
+                    instance.elemID.getFullName(),
+                  )
+                }
               }
-              if (
-                knowledge?.additionalProperties?.required === true &&
-                knowledge?.excludedAuthenticationMethods === undefined
-              ) {
-                log.debug(
-                  'omitting "required" field from knowledge object %o in instance %s',
-                  knowledge,
-                  instance.elemID.getFullName(),
-                )
-                delete knowledge.additionalProperties.required
+              if (knowledge?.excludedAuthenticationMethods === undefined) {
+                // TODO - can remove after SALTO-5332 merged
+                if (knowledge?.additionalProperties?.required === true) {
+                  delete knowledge.additionalProperties.required
+                  log.debug(
+                    'omitting "required" field from knowledge object %o in instance %s',
+                    safeJsonStringify(knowledge),
+                    instance.elemID.getFullName(),
+                  )
+                }
+                if (knowledge?.required === true) {
+                  delete knowledge.required
+                  log.debug(
+                    'omitting "required" field from knowledge object %o in instance %s',
+                    safeJsonStringify(knowledge),
+                    instance.elemID.getFullName(),
+                  )
+                }
               }
             })
           }

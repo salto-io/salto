@@ -652,7 +652,10 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
         const nonModifiedProfilesProps = profileProps.filter(
           (props) => !metadataQuery.isInstanceMatch(props),
         )
-        log.debug('Profiles modified related props: %s', safeJsonStringify(modifiedProfilesRelatedProps))
+        log.debug(
+          'Profiles modified related props: %s',
+          safeJsonStringify(modifiedProfilesRelatedProps),
+        )
         log.debug(
           'going to retrieve %d Profiles with related props of the following types: %s',
           profileProps.length,

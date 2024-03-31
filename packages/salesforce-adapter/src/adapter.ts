@@ -162,7 +162,6 @@ import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
   CUSTOM_OBJECT,
-  FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
@@ -417,10 +416,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [
-      FLOW_METADATA_TYPE,
-      FLOW_DEFINITION_METADATA_TYPE,
-    ],
+    metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {

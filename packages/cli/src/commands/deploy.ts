@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { EOL } from 'os'
 import { collections, promises } from '@salto-io/lowerdash'
 import {
   PlanItem,
@@ -184,7 +183,6 @@ const deployPlan = async (
   )
   outputLine(deployErrorsOutput(result.errors), output)
   outputLine(deployPhaseEpilogue(nonErroredActions.length, result.errors.length, checkOnly), output)
-  output.stdout.write(EOL)
   log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.message).join('\n')}`)
 
   if (executingDeploy) {

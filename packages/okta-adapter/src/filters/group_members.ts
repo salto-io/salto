@@ -55,7 +55,7 @@ type GroupMembershipInstance = InstanceElement & {
 }
 
 type GroupMembershipDeployResult = {
-  appliedChange?: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  appliedChange?: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
   error?: SaltoElementError
 }
 
@@ -101,8 +101,8 @@ const createGroupMembershipInstance = async (
     : undefined
 }
 
-
-const isValidGroupMembershipInstance = (instance: InstanceElement): instance is GroupMembershipInstance => Array.isArray(instance.value.members) && instance.value.members.every(m => _.isString(m))
+const isValidGroupMembershipInstance = (instance: InstanceElement): instance is GroupMembershipInstance =>
+  Array.isArray(instance.value.members) && instance.value.members.every(m => _.isString(m))
 
 const deployGroupAssignment = async ({
   groupId,
@@ -114,7 +114,7 @@ const deployGroupAssignment = async ({
   userId: string
   action: 'add' | 'remove'
   client: OktaClient
-}): Promise<{ userId: string, result: 'success' | 'failure' }> => {
+}): Promise<{ userId: string; result: 'success' | 'failure' }> => {
   const endpoint = `/api/v1/groups/${groupId}/users/${userId}`
   try {
     await client[action === 'add' ? 'put' : 'delete']({
@@ -123,13 +123,18 @@ const deployGroupAssignment = async ({
     })
     return { userId, result: 'success' }
   } catch (err) {
-    log.error('Failed to deploy group assignment for user %s to group %s with error: %s', userId, groupId, safeJsonStringify(err))
+    log.error(
+      'Failed to deploy group assignment for user %s to group %s with error: %s',
+      userId,
+      groupId,
+      safeJsonStringify(err),
+    )
     return { userId, result: 'failure' }
   }
 }
 
 const updateChangeWithFailedAssignments = async (
-  change:  AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   failedAdditions: string[],
   failedRemovals?: string[],
 ): Promise<AdditionChange<InstanceElement> | ModificationChange<InstanceElement>> => {
@@ -160,9 +165,19 @@ const deployGroupMembershipChange = async (
   if (isAdditionChange(change)) {
     const instance = getChangeData(change)
     if (!isValidGroupMembershipInstance(instance)) {
-      return { error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Invalid group membership instance' } }
+      return {
+        error: {
+          elemID: getChangeData(change).elemID,
+          severity: 'Error',
+          message: 'Invalid group membership instance',
+        },
+      }
     }
-    const res = await Promise.all(instance.value.members.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client })))
+    const res = await Promise.all(
+      instance.value.members.map(member =>
+        deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client }),
+      ),
+    )
     const failedAssignments = res.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
     log.error('failed to add the following group assignments: %s', failedAssignments.join(', '))
 
@@ -171,18 +186,24 @@ const deployGroupMembershipChange = async (
 
   const [before, after] = [change.data.before, change.data.after]
   if (!isValidGroupMembershipInstance(before) || !isValidGroupMembershipInstance(after)) {
-    return { error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Invalid group membership instance' } }
+    return {
+      error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Invalid group membership instance' },
+    }
   }
   const [membersBefore, membersAfter] = [before.value.members, after.value.members]
   const [membersBeforeSet, membersAfterSet] = [new Set(membersBefore), new Set(membersAfter)]
 
-  const additions = (membersAfter).filter(member => !membersBeforeSet.has(member))
-  const removals = (membersBefore).filter(member => !membersAfterSet.has(member))
-  const additionsResult = await Promise.all(additions.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client })))
+  const additions = membersAfter.filter(member => !membersBeforeSet.has(member))
+  const removals = membersBefore.filter(member => !membersAfterSet.has(member))
+  const additionsResult = await Promise.all(
+    additions.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client })),
+  )
   const failedAdditions = additionsResult.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
   log.error('failed to add the following group assignments: %s', failedAdditions.join(', '))
 
-  const removalResult = await Promise.all(removals.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'remove', client })))
+  const removalResult = await Promise.all(
+    removals.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'remove', client })),
+  )
   const failedRemovals = removalResult.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
   log.error('failed to remove the following group assignments: %s', failedRemovals.join(', '))
 
@@ -241,8 +262,14 @@ const groupMembersFilter: FilterCreator = ({ config, paginator, client }) => ({
         },
       }
     }
-    const deployResult = await Promise.all(relevantChanges  
-      .map(async change=> deployGroupMembershipChange(change as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>, client)))
+    const deployResult = await Promise.all(
+      relevantChanges.map(async change =>
+        deployGroupMembershipChange(
+          change as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+          client,
+        ),
+      ),
+    )
 
     return {
       leftoverChanges,

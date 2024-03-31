@@ -133,20 +133,18 @@ describe('groupMembersFilter', () => {
     const groupMembersInstance = new InstanceElement(
       'groupTest',
       groupMembersType,
-      { members: ['a', 'c']},
+      { members: ['a', 'c'] },
       undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)]
-    })
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)] },
+    )
     beforeEach(() => {
       jest.clearAllMocks()
       const { client: cli, connection } = mockClient()
       mockConnection = connection
       client = cli
-      const includeGroupMembershipsEnabled = { ...DEFAULT_CONFIG}
+      const includeGroupMembershipsEnabled = { ...DEFAULT_CONFIG }
       includeGroupMembershipsEnabled[FETCH_CONFIG].includeGroupMemberships = true
-      filter = groupMembersFilter(
-        getFilterParams({ client, config: includeGroupMembershipsEnabled }),
-      ) as typeof filter
+      filter = groupMembersFilter(getFilterParams({ client, config: includeGroupMembershipsEnabled })) as typeof filter
     })
     it('should return error when includeGroupMemberships config flag is disabled', async () => {
       const includeGroupMembershipsDisabled = _.cloneDeep(DEFAULT_CONFIG)
@@ -156,12 +154,18 @@ describe('groupMembersFilter', () => {
       expect(leftoverChanges).toHaveLength(0)
       expect(deployResult.appliedChanges).toHaveLength(0)
       expect(deployResult.errors).toHaveLength(1)
-      expect(deployResult.errors[0].message).toEqual('Group membership is disabled. To apply this change, change fetch.includeGroupMemberships flag to “true” in your Okta environment configuration.')
+      expect(deployResult.errors[0].message).toEqual(
+        'Group membership is disabled. To apply this change, change fetch.includeGroupMemberships flag to “true” in your Okta environment configuration.',
+      )
     })
     it('should deploy group membership instance', async () => {
       const modification = toChange({
-        before: new InstanceElement('groupTestB', groupMembersType, { members: ['a', 'b'] }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(anotherGroup.elemID, anotherGroup)] }),
-        after: new InstanceElement('groupTestB', groupMembersType, { members: ['b', 'c'] }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(anotherGroup.elemID, anotherGroup)] }),
+        before: new InstanceElement('groupTestB', groupMembersType, { members: ['a', 'b'] }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(anotherGroup.elemID, anotherGroup)],
+        }),
+        after: new InstanceElement('groupTestB', groupMembersType, { members: ['b', 'c'] }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(anotherGroup.elemID, anotherGroup)],
+        }),
       })
       const { deployResult, leftoverChanges } = await filter.deploy([
         modification, // modification change
@@ -182,12 +186,15 @@ describe('groupMembersFilter', () => {
         { members: ['a', 'c'] },
       ])
       expect(deployResult.errors).toHaveLength(0)
-
     })
     it('should update change with the actual results in case some assignments failed', async () => {
       const modification = toChange({
-        before: new InstanceElement('groupTestB', groupMembersType, { members: ['a', 'b', 'c'] }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)] }),
-        after: new InstanceElement('groupTestB', groupMembersType, { members: ['c', 'd', 'e'] }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)] }),
+        before: new InstanceElement('groupTestB', groupMembersType, { members: ['a', 'b', 'c'] }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+        }),
+        after: new InstanceElement('groupTestB', groupMembersType, { members: ['c', 'd', 'e'] }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+        }),
       })
       mockConnection.put.mockImplementation(async url => {
         if (url === '/api/v1/groups/123/users/e') {
@@ -206,13 +213,15 @@ describe('groupMembersFilter', () => {
       expect(leftoverChanges).toHaveLength(0)
       expect(deployResult.appliedChanges).toHaveLength(1)
       expect((getChangeData(deployResult.appliedChanges[0]) as InstanceElement).value).toEqual({
-        members: ['c', 'd', 'b']
+        members: ['c', 'd', 'b'],
       })
       expect(deployResult.errors).toHaveLength(0)
     })
     it('should return error if parent group id is missing', async () => {
       const groupNoId = new InstanceElement('noID', groupType, {})
-      const groupMembers = new InstanceElement('A', groupMembersType, { members: ['a'] }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupNoId.elemID, groupNoId)] })
+      const groupMembers = new InstanceElement('A', groupMembersType, { members: ['a'] }, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupNoId.elemID, groupNoId)],
+      })
       const { deployResult, leftoverChanges } = await filter.deploy([toChange({ after: groupMembers })])
       expect(leftoverChanges).toHaveLength(0)
       expect(deployResult.appliedChanges).toHaveLength(0)

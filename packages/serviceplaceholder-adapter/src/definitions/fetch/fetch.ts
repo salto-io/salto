@@ -164,6 +164,47 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
+
+  made_up_type_a: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v2/made_up_type_a',
+        },
+        transformation: {
+          root: 'made_up_type_a',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
+  made_up_type_b: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v2/made_up_type_b',
+        },
+        transformation: {
+          root: 'made_up_type_b',
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+    },
+  },
 })
 
 export const createFetchDefinitions = (

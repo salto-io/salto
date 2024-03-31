@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
+import { ReferenceContextStrategies, Options } from './types'
 
-const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
+const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ReferenceContextStrategies>[] = [
   // TODO adjust and remove unneeded examples and documentation
 
   // all fields called group_id or group_ids are assumed to reference group instances by their id field
@@ -37,6 +39,16 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
     target: { type: 'ticket_form' },
   },
 
+  // The parent_id type can differ based on the parent_type field
+  {
+    src: { instanceTypes: ['made_up_type_a'], field: 'parent_id' },
+    serializationStrategy: 'id',
+    sourceTransformation: 'asString',
+    target: {
+      typeContext: 'parentType',
+    },
+  },
+
   // the field id under the (nested) types
   // ticket_form__end_user_conditions__child_fields, ticket_form__agent_conditions__child_fields
   // (in practice, these are in nested fields of ticket_form instances)
@@ -51,6 +63,9 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
   },
 ]
 
-export const REFERENCES: definitions.ApiDefinitions['references'] = {
+export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
+  contextStrategyLookup: {
+    parentType: ({ instance }) => _.get(instance.value, 'parent_type'),
+  },
 }

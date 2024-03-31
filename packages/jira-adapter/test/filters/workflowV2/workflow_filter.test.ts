@@ -402,6 +402,55 @@ describe('workflow filter', () => {
       expect(errors[0].severity).toEqual('Error')
     })
 
+    it('should return a warning when there are two transitions with the same key', async () => {
+      connection.post.mockResolvedValue({
+        status: 200,
+        data: {
+          workflows: [
+            {
+              id: '1',
+              name: 'workflow',
+              version: {
+                versionNumber: 1,
+                id: '1',
+              },
+              scope: {
+                type: 'global',
+              },
+              transitions: [
+                {
+                  id: '1',
+                  name: 'Create',
+                  to: {
+                    statusReference: 'uuid1',
+                  },
+                  type: 'INITIAL',
+                },
+                {
+                  id: '2',
+                  name: 'Create',
+                  to: {
+                    statusReference: 'uuid2',
+                  },
+                  type: 'INITIAL',
+                },
+              ],
+              statuses: [],
+            },
+          ],
+        },
+      })
+      const filterResult = (await filter.onFetch(elements)) as FilterResult
+      const errors = filterResult?.errors ?? []
+      expect(elements).toHaveLength(3)
+      expect(errors).toHaveLength(1)
+      expect(errors[0].severity).toEqual('Warning')
+      expect(errors[0].message).toEqual(
+        `The following transitions of workflow workflow are not unique: Create.
+It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
+      )
+    })
+
     describe('transition parameters', () => {
       beforeEach(() => {
         connection.post.mockResolvedValue({
@@ -444,6 +493,7 @@ describe('workflow filter', () => {
                         },
                         {
                           parameters: {
+                            accountIds: 'quack quack',
                             groupIds: '',
                           },
                         },
@@ -467,6 +517,7 @@ describe('workflow filter', () => {
                       {
                         parameters: {
                           fieldsRequired: '',
+                          accountIds: 'quack quack',
                         },
                       },
                     ],
@@ -527,16 +578,16 @@ describe('workflow filter', () => {
         ).toBeUndefined()
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters).toBeUndefined()
       })
-      it('should not convert parameters if it is an empty string', async () => {
+      it('should remove empty strings', async () => {
         await filter.onFetch(elements)
         expect(elements).toHaveLength(3)
         const workflow = elements[2] as unknown as InstanceElement
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters).toEqual({
-          groupIds: '',
-        })
-        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters).toEqual({
-          fieldsRequired: '',
-        })
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters.groupIds,
+        ).toBeUndefined()
+        expect(
+          workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters.fieldsRequired,
+        ).toBeUndefined()
       })
     })
   })

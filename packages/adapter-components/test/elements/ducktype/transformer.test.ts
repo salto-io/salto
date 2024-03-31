@@ -938,6 +938,38 @@ describe('ducktype_transformer', () => {
       const { errors } = res
       expect(errors).toEqual([{ message: 'singleton err', severity: 'Warning' }])
     })
+    it('should return empty array if shouldIgnorePermissionsError is true and the error is a permission error', async () => {
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+        throw new HTTPError('err', { data: {}, status: 403 })
+      })
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        fetchQuery: createElementQuery({
+          include: [{ type: 'folder' }],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folders'],
+        },
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folders: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+        shouldIgnorePermissionsError: true,
+      })
+      const { errors } = res
+      expect(errors).toEqual([])
+    })
     test.each<{ severity: SeverityLevel }>([{ severity: 'Error' }, { severity: 'Warning' }])(
       'should return fetch errors correctly with severity %s',
       async ({ severity }) => {

@@ -17,6 +17,7 @@
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { Change, SaltoError, SaltoElementError, createSaltoElementError, getChangeData } from '@salto-io/adapter-api'
 import JiraClient from './client/client'
 import { JiraConfig } from './config/config'
 
@@ -63,3 +64,12 @@ export const getWorkspaceId = async (client: JiraClient, config: JiraConfig): Pr
     return undefined
   }
 }
+
+export const getWorkspaceIdMissingErrors = (changes: Change[]): (SaltoError | SaltoElementError)[] =>
+  changes.map(change =>
+    createSaltoElementError({
+      message: `The following changes were not deployed, due to error with the workspaceId: ${changes.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    }),
+  )

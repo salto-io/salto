@@ -16,7 +16,13 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, walkOnElement } from '@salto-io/adapter-utils'
+import {
+  WALK_NEXT_STEP,
+  WalkOnFunc,
+  isResolvedReferenceExpression,
+  walkOnElement,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
 import {
   elements as adapterElements,
   config as configUtils,
@@ -68,9 +74,10 @@ import {
   isAdditionOrModificationWorkflowChange,
   CONDITION_GROUPS_PATH_NAME_TO_RECURSE,
   WorkflowStatus,
+  EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
+import { JIRA, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
@@ -154,6 +161,23 @@ export const convertParametersFieldsToList = (parameters: Values, listFields: Se
     })
 }
 
+const removeParametersEmptyStrings: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  if (_.isPlainObject(value) && path.name === 'parameters') {
+    _.forOwn(value, (val, key) => {
+      if (val === '') {
+        delete value[key]
+      }
+    })
+  }
+  if (
+    EMPTY_STRINGS_PATH_NAME_TO_RECURSE.has(path.name) ||
+    (_.isPlainObject(value) && (value.transitions || value.conditions || value.parameters || value.actions))
+  ) {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const createWorkflowInstances = async ({
   client,
   workflowIds,
@@ -193,8 +217,12 @@ const createWorkflowInstances = async ({
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)
-            return undefined
           }
+          walkOnValue({
+            elemId: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE, 'instance', workflow.name),
+            value: workflow,
+            func: removeParametersEmptyStrings,
+          })
           return toBasicInstance({
             entry: workflow,
             type: workflowConfigurationType,

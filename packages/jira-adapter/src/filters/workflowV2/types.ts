@@ -42,6 +42,13 @@ export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set([
   'statusMigrations',
 ])
 export const CONDITION_GROUPS_PATH_NAME_TO_RECURSE = new Set(['transitions', 'conditions', 'conditionGroups'])
+export const EMPTY_STRINGS_PATH_NAME_TO_RECURSE = new Set([
+  'transitions',
+  'conditions',
+  'validators',
+  'actions',
+  'triggers',
+])
 
 export enum TASK_STATUS {
   COMPLETE = 'COMPLETE',

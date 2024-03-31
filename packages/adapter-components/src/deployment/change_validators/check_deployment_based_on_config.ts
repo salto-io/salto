@@ -62,16 +62,21 @@ export const createCheckDeploymentBasedOnConfigValidator =
     typesConfig,
     typesDeployedViaParent = [],
     typesWithNoDeploy = [],
+    typesToSkip = [],
   }: {
     typesConfig: Record<string, TypeConfig>
     typesDeployedViaParent?: string[]
     typesWithNoDeploy?: string[]
+    typesToSkip?: string[]
   }): ChangeValidator =>
   async changes =>
     awu(changes)
       .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
         const element = getChangeData(change)
         if (!isInstanceElement(element)) {
+          return []
+        }
+        if (typesToSkip.includes(element.elemID.typeName)) {
           return []
         }
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {

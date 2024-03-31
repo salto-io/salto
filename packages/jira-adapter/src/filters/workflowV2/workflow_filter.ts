@@ -217,7 +217,6 @@ const createWorkflowInstances = async ({
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)
-            return undefined
           }
           walkOnValue({
             elemId: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE, 'instance', workflow.name),

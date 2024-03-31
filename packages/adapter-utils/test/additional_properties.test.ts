@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { extractAdditionalPropertiesField, setAdditionalPropertiesAnnotation } from '../src/additional_properties'
 
 describe('additional_properties', () => {
@@ -45,6 +53,16 @@ describe('additional_properties', () => {
         expect(extractAdditionalPropertiesField(baseObj, fieldName)).toEqual(
           new Field(baseObj, fieldName, BuiltinTypes.UNKNOWN),
         )
+      })
+    })
+    describe('when additional properties refType references something other than a type (should not happen)', () => {
+      it('should return undefined', () => {
+        const objType = baseObj.clone()
+        const someInst = new InstanceElement('mockInst', baseObj)
+        objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = {
+          refType: new ReferenceExpression(someInst.elemID, someInst),
+        }
+        expect(extractAdditionalPropertiesField(objType, fieldName)).toBeUndefined()
       })
     })
     describe('when additional properties annotation is false', () => {

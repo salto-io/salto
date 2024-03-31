@@ -43,7 +43,9 @@ export const setAdditionalPropertiesAnnotation = <T extends Element>(
 }
 
 const isAdditionalPropertiesAnnotation = (value: Value): value is AdditionalPropertiesAnnotation =>
-  (value?.annotations === undefined || _.isPlainObject(value?.annotations)) && isReferenceExpression(value?.refType)
+  (value?.annotations === undefined || _.isPlainObject(value?.annotations)) &&
+  isReferenceExpression(value?.refType) &&
+  value.refType.elemID.idType === 'type'
 
 export const extractAdditionalPropertiesField = (objType: ObjectType, name: string): Field | undefined => {
   const additionalProperties = objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]

@@ -27,7 +27,7 @@ import {
   WorkspaceComponents,
   UnresolvedElemIDs,
   FromSourceWithEnv,
-  COMMON_ENV_PREFIX,
+  getBaseDirFromEnvName,
   UpdateNaclFilesResult,
   listElementsDependenciesInWorkspace,
 } from './src/workspace/workspace'
@@ -41,6 +41,7 @@ import {
   StateConfig,
   ProviderOptionsS3,
   ProviderOptionsFile,
+  COMMON_ENV_PREFIX,
 } from './src/workspace/config/workspace_config_types'
 import * as state from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
@@ -102,6 +103,7 @@ export {
   EnvironmentsSources,
   initWorkspace,
   COMMON_ENV_PREFIX,
+  getBaseDirFromEnvName,
   state,
   workspaceConfigSource,
   adaptersConfigSource,

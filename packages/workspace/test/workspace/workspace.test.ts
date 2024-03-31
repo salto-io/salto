@@ -60,7 +60,6 @@ import {
   Workspace,
   initWorkspace,
   EnvironmentSource,
-  COMMON_ENV_PREFIX,
   UnresolvedElemIDs,
   UpdateNaclFilesResult,
   isValidEnvName,
@@ -80,7 +79,7 @@ import {
 } from '../../src/workspace/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
 import { mockDirStore } from '../common/nacl_file_store'
-import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
+import { COMMON_ENV_PREFIX, EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'

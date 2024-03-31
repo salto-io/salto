@@ -78,19 +78,24 @@ export class LazyStaticFile extends AbsoluteStaticFile {
 export const buildStaticFilesSource = (
   staticFilesDirStore: DirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
+  invalidateOnModify = true,
 ): Required<StaticFilesSource> => {
   const getStaticFileData = async (
     filepath: string,
   ): Promise<{ hasChanged: boolean; buffer?: Buffer } & StaticFilesData> => {
     const cachedResult = await staticFilesCache.get(filepath)
     let modified: number | undefined
-    try {
-      modified = await staticFilesDirStore.mtimestamp(filepath)
-    } catch (err) {
-      throw new StaticFileAccessDeniedError(filepath)
-    }
-    if (modified === undefined) {
-      throw new MissingStaticFileError(filepath)
+    if (invalidateOnModify) {
+      try {
+        modified = await staticFilesDirStore.mtimestamp(filepath)
+      } catch (err) {
+        throw new StaticFileAccessDeniedError(filepath)
+      }
+      if (modified === undefined) {
+        throw new MissingStaticFileError(filepath)
+      }
+    } else {
+      modified = 0
     }
 
     const cacheModified = cachedResult ? cachedResult.modified : undefined

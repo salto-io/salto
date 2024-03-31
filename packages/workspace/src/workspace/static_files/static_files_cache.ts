@@ -17,10 +17,13 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import * as remoteMap from '../remote_map'
 import * as staticFiles from './cache'
+import { COMMON_ENV_PREFIX } from '../config/workspace_config_types'
 
 const { awu } = collections.asynciterable
 
 type StaticFilesCacheState = remoteMap.RemoteMap<staticFiles.StaticFilesData>
+
+export const getCacheName = (name: string): string => (name === COMMON_ENV_PREFIX ? 'common' : name)
 
 export const buildStaticFilesCache = (
   name: string,

@@ -130,6 +130,68 @@ describe('Static Files', () => {
         })
       })
       describe('hashing', () => {
+        describe('invalidateOnModify true', () => {
+          it('should not hash if in cache and file not modified', async () => {
+            const filepathFromCache = 'filepathfromcache'
+            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
+            mockDirStore.mtimestamp = jest.fn(
+              (filepath: string): Promise<number | undefined> =>
+                Promise.resolve(filepath.endsWith('bb') ? 100 : undefined),
+            )
+            mockCacheStore.get = jest.fn().mockResolvedValue({
+              filepath: filepathFromCache,
+              modified: 1000,
+              hash: 'aaa',
+            })
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(0)
+            expect(result).toHaveProperty('hash', 'aaa')
+            expect(mockDirStore.get).not.toHaveBeenCalled()
+            const staticFileRes = result as StaticFile
+            expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
+            expect(mockDirStore.get).toHaveBeenCalled()
+          })
+          it('should hash if in cache and file modified is newer', async () => {
+            const filepathFromCache = 'filepathfromcache'
+            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
+            mockDirStore.mtimestamp = jest.fn(
+              (filepath: string): Promise<number | undefined> =>
+                Promise.resolve(filepath.endsWith('bb') ? 1000 : undefined),
+            )
+            mockCacheStore.get = jest.fn().mockResolvedValue({
+              filepath: filepathFromCache,
+              modified: 100,
+              hash: 'aaa',
+            })
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(1)
+            return expect(result).toHaveProperty('hash', hashedContent)
+          })
+          it('should hash if not cache', async () => {
+            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
+            mockDirStore.mtimestamp = jest.fn(
+              (filepath: string): Promise<number | undefined> =>
+                Promise.resolve(filepath.endsWith('bb') ? 1000 : undefined),
+            )
+            mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(1)
+            return expect(result).toHaveProperty('hash', hashedContent)
+          })
+          it('should return undefined if not able to read file for hash', async () => {
+            mockDirStore.get = jest.fn().mockResolvedValue(undefined)
+            mockDirStore.mtimestamp = jest.fn().mockResolvedValue(Promise.resolve(42))
+            mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
+
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            return expect(result).toBeInstanceOf(InvalidStaticFile)
+          })
+        })
+      })
+      describe('invalidateOnModify false', () => {
+        beforeEach(() => {
+          staticFilesSource = buildStaticFilesSource(mockDirStore, mockCacheStore, false)
+        })
         it('should not hash if in cache and file not modified', async () => {
           const filepathFromCache = 'filepathfromcache'
           mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
@@ -150,7 +212,7 @@ describe('Static Files', () => {
           expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
           expect(mockDirStore.get).toHaveBeenCalled()
         })
-        it('should hash if in cache and file modified is newer', async () => {
+        it('should not hash if in cache and file modified is newer', async () => {
           const filepathFromCache = 'filepathfromcache'
           mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
           mockDirStore.mtimestamp = jest.fn(
@@ -163,8 +225,12 @@ describe('Static Files', () => {
             hash: 'aaa',
           })
           const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
-          expect(mockDirStore.get).toHaveBeenCalledTimes(1)
-          return expect(result).toHaveProperty('hash', hashedContent)
+          expect(mockDirStore.get).toHaveBeenCalledTimes(0)
+          expect(result).toHaveProperty('hash', 'aaa')
+          expect(mockDirStore.get).not.toHaveBeenCalled()
+          const staticFileRes = result as StaticFile
+          expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
+          expect(mockDirStore.get).toHaveBeenCalled()
         })
         it('should hash if not cache', async () => {
           mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)

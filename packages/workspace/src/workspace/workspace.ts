@@ -52,6 +52,7 @@ import {
   MultiEnvSource,
   EnvsChanges,
   FromSource,
+  ENVS_PREFIX,
 } from './nacl_files/multi_env/multi_env_source'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
@@ -67,7 +68,7 @@ import {
   UnknownAccountError,
   InvalidAccountNameError,
 } from './errors'
-import { EnvConfig, StateConfig } from './config/workspace_config_types'
+import { COMMON_ENV_PREFIX, EnvConfig, StateConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
@@ -102,11 +103,12 @@ const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 
-export const ADAPTERS_CONFIGS_PATH = 'adapters'
-export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
+
+export const getBaseDirFromEnvName = (envName: string): string =>
+  envName === COMMON_ENV_PREFIX ? envName : path.join(ENVS_PREFIX, envName)
 
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN

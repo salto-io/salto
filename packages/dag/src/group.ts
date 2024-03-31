@@ -215,11 +215,11 @@ export const buildAcyclicGroupedGraph = <T>(
   groupKey: GroupKeyFunc,
   disjointGroups?: Set<NodeId>,
 ): GroupDAG<T> =>
-  log.time(
-    () => {
+  log.time({
+    inner: () => {
       const updatedGroupKey = breakToDisjointGroups(source, groupKey, disjointGroups)
       return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, groupKey)
     },
-    'build grouped graph for %o nodes',
-    source.size,
-  )
+    desc: 'build grouped graph for %o nodes',
+    descArgs: [source.size],
+  })

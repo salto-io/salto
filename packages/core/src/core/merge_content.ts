@@ -56,8 +56,10 @@ export const mergeStrings = (
     incoming: string
   },
 ): string | undefined =>
-  log.time(
-    () => {
+  log.time({
+    desc: 'mergeStrings for %s',
+    descArgs: [changeId],
+    inner:() => {
       const contents = [current, base ?? '', incoming]
       log.debug(
         'trying to merge contents of %s - sizes: %s',
@@ -92,9 +94,7 @@ export const mergeStrings = (
       }
       return undefined
     },
-    'mergeStrings for %s',
-    changeId,
-  )
+})
 
 export const mergeStaticFiles = async (
   changeId: string,

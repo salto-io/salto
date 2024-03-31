@@ -173,7 +173,9 @@ const addToSource = async ({
   overrideTargetElements?: boolean
   valuesOverrides?: Record<string, Value>
 }): Promise<DetailedChange[]> =>
-  log.time(async () => {
+  log.time({
+    desc: 'addToSource',
+    inner: async () => {
     const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
     const fullChanges = await awu(Object.values(idsByParent))
       .flatMap(async gids => {
@@ -216,7 +218,7 @@ const addToSource = async ({
       .flatMap(change => separateChangeByFiles(change, change.action === 'remove' ? targetSource : originSource))
       .toArray()
     return fullChanges
-  }, 'addToSource')
+  }, })
 
 const createUpdateChanges = async (
   changes: DetailedChange[],

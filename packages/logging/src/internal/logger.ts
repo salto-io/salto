@@ -51,8 +51,8 @@ type HasLoggerFuncs = {
 }
 
 type timeMethodParams<T> = {
-  inner: () => T | Promise<T>,
-  desc: string,
+  inner: () => T | Promise<T>
+  desc: string
   descArgs?: unknown[]
   level?: LogLevel
 }
@@ -87,8 +87,8 @@ function timeMethod<T>(
   let finalDesc: string
   let finalDescArgs: unknown[]
   let finalLevel: LogLevel
-  if( typeof inner === 'function'){
-    if (desc === undefined){
+  if (typeof inner === 'function') {
+    if (desc === undefined) {
       throw new Error('inner is a function therefore desc cannot be undefined')
     }
     finalInner = inner

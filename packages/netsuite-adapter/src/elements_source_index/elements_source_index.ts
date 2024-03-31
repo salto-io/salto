@@ -196,10 +196,10 @@ export const createElementsSourceIndex = (
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await log.time(
-          () => createIndexes(elementsSource, isPartial, deletedElements ?? []),
-          'createIndexes',
-        )
+        cachedIndex = await log.time<Promise<ElementsSourceIndexes>>({
+          inner: () => createIndexes(elementsSource, isPartial, deletedElements ?? []),
+          desc: 'createIndexes',
+        })
       }
       return cachedIndex
     },

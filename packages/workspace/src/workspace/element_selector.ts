@@ -290,7 +290,9 @@ export const selectElementIdsByTraversal = async ({
   referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
   compact?: boolean
 }): Promise<AsyncIterable<ElemID>> =>
-  log.time(async () => {
+  log.time({
+    desc: 'selectElementIdsByTraversal',
+    inner: async () => {
     const determinedSelectors = selectors.filter(
       selector => !isWildcardSelector(selector.origin) && !hasReferencedBy(selector),
     )
@@ -385,4 +387,4 @@ export const selectElementIdsByTraversal = async ({
       MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY,
     )
     return awu(topLevelIDs.concat(Array.from(subElementIDs).map(ElemID.fromFullName))).uniquify(id => id.getFullName())
-  }, 'selectElementIdsByTraversal')
+  }, })

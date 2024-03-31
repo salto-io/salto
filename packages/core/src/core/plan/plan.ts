@@ -231,8 +231,10 @@ const addDifferentElements =
     compareOptions?: CompareOptions,
   ): PlanTransformer =>
   graph =>
-    log.time(
-      async () => {
+    log.time<Promise<DiffGraph<ChangeDataType>>>({
+      desc: 'add nodes to graph with for %d elements',
+      descArgs: [numElements],
+      inner: async () => {
         const outputGraph = graph.clone()
         const sieve = new Set<string>()
 
@@ -244,21 +246,21 @@ const addDifferentElements =
             return {
               originalId: beforeElem.elemID.getFullName(),
               action: 'modify',
-              data: { before: beforeElem, after: afterElem },
+              data: {before: beforeElem, after: afterElem},
             }
           }
           if (beforeElem !== undefined) {
             return {
               originalId: beforeElem.elemID.getFullName(),
               action: 'remove',
-              data: { before: beforeElem },
+              data: {before: beforeElem},
             }
           }
           if (afterElem !== undefined) {
             return {
               originalId: afterElem.elemID.getFullName(),
               action: 'add',
-              data: { after: afterElem },
+              data: {after: afterElem},
             }
           }
           throw new Error('either before or after needs to be defined')
@@ -325,8 +327,8 @@ const addDifferentElements =
           (topLevelFilters.length === 0
             ? await source.getAll()
             : awu(await source.list())
-                .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
-                .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
+              .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
+              .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
 
         const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => {
           if (e1.elemID.getFullName() < e2.elemID.getFullName()) {
@@ -343,15 +345,15 @@ const addDifferentElements =
           .forEach(addElementsNodes)
         return outputGraph
       },
-      'add nodes to graph with for %d elements',
-      numElements,
-    )
+    })
 
 const resolveNodeElements =
   (before: ReadOnlyElementsSource, after: ReadOnlyElementsSource): PlanTransformer =>
   graph =>
-    log.time(
-      async () => {
+    log.time<Promise<DiffGraph<ChangeDataType>>>({
+      desc:'resolve node elements for %d nodes',
+      descArgs: [graph.size],
+      inner: async () => {
         const beforeItemsToResolve: ChangeDataType[] = []
         const afterItemsToResolve: ChangeDataType[] = []
         wu(graph.keys()).forEach(id => {
@@ -365,12 +367,12 @@ const resolveNodeElements =
         })
 
         const resolvedBefore = _.keyBy(
-          await log.time(() => resolve(beforeItemsToResolve, before), 'Resolving before items'),
+          await log.time<Promise<Element[]>>({inner: () => resolve(beforeItemsToResolve, before), desc: 'Resolving before items'}),
           e => e.elemID.getFullName(),
         ) as Record<string, ChangeDataType>
 
         const resolvedAfter = _.keyBy(
-          await log.time(() => resolve(afterItemsToResolve, after), 'Resolving after items'),
+          await log.time<Promise<Element[]>>({inner: () => resolve(afterItemsToResolve, after), desc: 'Resolving after items'}),
           e => e.elemID.getFullName(),
         ) as Record<string, ChangeDataType>
 
@@ -391,9 +393,7 @@ const resolveNodeElements =
 
         return graph
       },
-      'resolve node elements for %d nodes',
-      graph.size,
-    )
+    })
 
 export type Plan = GroupDAG<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
@@ -459,8 +459,10 @@ export const getPlan = async ({
 }: GetPlanParameters): Promise<Plan> => {
   const numBeforeElements = await awu(await before.list()).length()
   const numAfterElements = await awu(await after.list()).length()
-  return log.time(
-    async () => {
+  return log.time({
+    desc: 'get plan with %o -> %o elements',
+    descArgs: [numBeforeElements, numAfterElements],
+    inner: async () => {
       const diffGraph = await buildDiffGraph(
         addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements, compareOptions),
         resolveNodeElements(before, after),
@@ -476,7 +478,7 @@ export const getPlan = async ({
         await resolveNodeElements(before, after)(filterResult.validDiffGraph)
       }
 
-      const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(
+      const {changeGroupIdMap, disjointGroups} = await getCustomGroupIds(
         filterResult.validDiffGraph,
         customGroupIdFunctions,
       )
@@ -485,8 +487,5 @@ export const getPlan = async ({
       // build plan
       return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
     },
-    'get plan with %o -> %o elements',
-    numBeforeElements,
-    numAfterElements,
-  )
+  })
 }

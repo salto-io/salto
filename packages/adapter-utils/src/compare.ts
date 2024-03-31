@@ -64,7 +64,9 @@ const compareListWithOrderMatching = ({
   afterId: ElemID | undefined
   options: DetailedCompareOptions | undefined
 }): DetailedChange[] =>
-  log.time(() => {
+  log.time({
+    desc:`compareListWithOrderMatching - ${id.getFullName()}`,
+    inner: () => {
     const indexMapping = getArrayIndexMapping(before, after)
 
     const itemsChanges = _.flatten(
@@ -106,7 +108,7 @@ const compareListWithOrderMatching = ({
     )
 
     return itemsChanges
-  }, `compareListWithOrderMatching - ${id.getFullName()}`)
+  }, })
 
 /**
  * Create detailed changes from change data (before and after values)

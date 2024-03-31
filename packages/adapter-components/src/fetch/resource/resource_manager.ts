@@ -63,9 +63,11 @@ export const createResourceManager = <ClientOptions extends string>({
   elementGenerator: ElementGenerator
   initialRequestContext?: Record<string, unknown>
 }): ResourceManager => ({
-  fetch: log.time(
-    () => async query => {
-      const createTypeFetcher: TypeFetcherCreator = ({ typeName, context }) =>
+  fetch: log.time({
+    desc:'[%s] fetching resources for account',
+    descArgs: [adapterName],
+    inner: () => async query => {
+      const createTypeFetcher: TypeFetcherCreator = ({typeName, context}) =>
         createTypeResourceFetcher({
           adapterName,
           typeName,
@@ -76,7 +78,7 @@ export const createResourceManager = <ClientOptions extends string>({
         })
       const directFetchResourceDefs = _.pickBy(resourceDefQuery.getAll(), def => def.directFetch)
       const resourceFetchers = _.pickBy(
-        _.mapValues(directFetchResourceDefs, (_def, typeName) => createTypeFetcher({ typeName })),
+        _.mapValues(directFetchResourceDefs, (_def, typeName) => createTypeFetcher({typeName})),
         lowerdashValues.isDefined,
       )
       const graph = createDependencyGraph(resourceDefQuery.getAll())
@@ -107,7 +109,5 @@ export const createResourceManager = <ClientOptions extends string>({
         })
       })
     },
-    '[%s] fetching resources for account',
-    adapterName,
-  ),
+  }),
 })

@@ -50,7 +50,9 @@ const updateDeps = (
 export const addNodeDependencies =
   (changers: ReadonlyArray<DependencyChanger>): PlanTransformer =>
   graph =>
-    log.time(async () => {
+    log.time<Promise<DataNodeMap<DiffNode<ChangeDataType>>>>({
+      desc: 'add dependencies to graph',
+      inner: async () => {
       if (changers.length === 0) {
         // If there are no changers we return here to avoid creating changeData for no reason
         return graph
@@ -61,4 +63,5 @@ export const addNodeDependencies =
         Promise.resolve(new Map(graph)),
       )
       return new DataNodeMap<DiffNode<ChangeDataType>>(await outputDependencies, changeData)
-    }, 'add dependencies to graph')
+    },
+    })

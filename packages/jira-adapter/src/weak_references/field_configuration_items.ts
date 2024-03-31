@@ -80,13 +80,14 @@ const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
  * Marks each field reference in field configuration as a weak reference.
  */
 const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
-  log.time(
-    () =>
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .flatMap(getFieldReferences),
-    'getFieldConfigurationItemsReferences',
+  log.time({
+      inner: () =>
+        elements
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+          .flatMap(getFieldReferences),
+      desc: 'getFieldConfigurationItemsReferences',
+    }
   )
 
 const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSource): Promise<boolean> => {
@@ -100,7 +101,9 @@ const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSou
 const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements =>
-    log.time(async () => {
+    log.time({
+      desc:'removeMissingFields',
+      inner: async () => {
       const fixedElements = await awu(elements)
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
@@ -134,7 +137,7 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
           'This field configuration references some fields that do not exist in the target environment. It will be deployed without them.',
       }))
       return { fixedElements, errors }
-    }, 'removeMissingFields')
+    }, })
 
 export const fieldConfigurationsHandler: WeakReferencesHandler = {
   findWeakReferences: getFieldConfigurationItemsReferences,

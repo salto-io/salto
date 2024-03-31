@@ -101,29 +101,32 @@ export const buildS3DirectoryStore = ({
     })
 
   const list = async (): Promise<string[]> =>
-    log.time(async () => {
-      const paths = new Set<string>(Object.keys(updated))
-      let currentPage: AWS.ListObjectsV2CommandOutput | undefined
-      try {
-        do {
-          // eslint-disable-next-line no-await-in-loop
-          currentPage = await listPage(currentPage?.NextContinuationToken)
-          currentPage.Contents?.map(({ Key }) => Key && path.posix.relative(baseDir, Key))
-            .filter(values.isDefined)
-            .forEach(key => paths.add(key))
-        } while (currentPage?.NextContinuationToken !== undefined)
-      } catch (err) {
-        log.warn(
-          'Failed listing %s in S3 bucket %s with token %s',
-          baseDir,
-          bucketName,
-          currentPage?.NextContinuationToken,
-        )
-        throw err
-      }
+    log.time({
+      desc: `listing s3 objects for ${baseDir}`,
+      inner: async () => {
+        const paths = new Set<string>(Object.keys(updated))
+        let currentPage: AWS.ListObjectsV2CommandOutput | undefined
+        try {
+          do {
+            // eslint-disable-next-line no-await-in-loop
+            currentPage = await listPage(currentPage?.NextContinuationToken)
+            currentPage.Contents?.map(({Key}) => Key && path.posix.relative(baseDir, Key))
+              .filter(values.isDefined)
+              .forEach(key => paths.add(key))
+          } while (currentPage?.NextContinuationToken !== undefined)
+        } catch (err) {
+          log.warn(
+            'Failed listing %s in S3 bucket %s with token %s',
+            baseDir,
+            bucketName,
+            currentPage?.NextContinuationToken,
+          )
+          throw err
+        }
 
-      return Array.from(paths)
-    }, `listing s3 objects for ${baseDir}`)
+        return Array.from(paths)
+      },
+    })
 
   const flush = async (): Promise<void> => {
     const files = Object.values(updated)

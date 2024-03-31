@@ -513,7 +513,7 @@ describe('pino based logger', () => {
       let startLine: string
 
       beforeEach(async () => {
-        result = logger.time(() => expectedResult, 'hello func %o', 12)
+        result = logger.time({ inner: () => expectedResult, desc: 'hello func %o', descArgs: [12] })
         await repo.end()
         ;[startLine, line] = consoleStream.contents().split(EOL)
       })
@@ -534,7 +534,11 @@ describe('pino based logger', () => {
       let startLine: string
 
       beforeEach(async () => {
-        result = await logger.time(async () => expectedResult, 'hello func %o', 12)
+        result = await logger.time<Promise<{}>>({
+          inner: async () => expectedResult,
+          desc: 'hello func %o',
+          descArgs: [12],
+        })
         await repo.end()
         ;[startLine, line] = consoleStream.contents().split('\n')
       })
@@ -565,7 +569,7 @@ describe('pino based logger', () => {
         let startLine: string
 
         beforeEach(async () => {
-          result = logger.time(() => expectedResult, 'hello func %o', 12)
+          result = logger.time({ inner: () => expectedResult, desc: 'hello func %o', descArgs: [12] })
           await repo.end()
           ;[startLine, line] = consoleStream.contents().split(EOL)
         })
@@ -590,7 +594,11 @@ describe('pino based logger', () => {
         let startLine: string
 
         beforeEach(async () => {
-          result = await logger.time(async () => expectedResult, 'hello func %o', 12)
+          result = await logger.time<Promise<{}>>({
+            inner: async () => expectedResult,
+            desc: 'hello func %o',
+            descArgs: [12],
+          })
           await repo.end()
           ;[startLine, line] = consoleStream.contents().split('\n')
         })

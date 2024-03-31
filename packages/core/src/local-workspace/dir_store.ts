@@ -284,16 +284,15 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       filenames: string[],
       options: dirStore.GetFileOptions,
     ): Promise<(dirStore.File<T> | undefined)[]> =>
-      log.time(
-        () =>
+      log.time({
+        inner: () =>
           withLimitedConcurrency(
             filenames.map(f => () => get(f, options)),
             READ_CONCURRENCY,
           ),
-        'getFiles for %d files with read concurrency %d',
-        filenames.length,
-        READ_CONCURRENCY,
-      ),
+        desc: 'getFiles for %d files with read concurrency %d',
+        descArgs: [filenames.length, READ_CONCURRENCY]
+      }),
 
     getTotalSize: async (): Promise<number> => {
       const allFiles = (await list()).map(f => getAbsFileName(f))

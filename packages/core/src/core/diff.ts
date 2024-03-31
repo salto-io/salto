@@ -30,8 +30,9 @@ const getFilteredIds = (
   source: elementSource.ElementsSource,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
 ): Promise<ElemID[]> =>
-  log.time(
-    async () =>
+  log.time<Promise<ElemID[]>>({
+    desc: 'diff.getFilteredIds',
+    inner: async () =>
       awu(
         await selectElementIdsByTraversal({
           selectors,
@@ -39,8 +40,7 @@ const getFilteredIds = (
           referenceSourcesIndex,
         }),
       ).toArray(),
-    'diff.getFilteredIds',
-  )
+  })
 
 const createMatchers = async (
   beforeElementsSrc: elementSource.ElementsSource,
@@ -177,7 +177,9 @@ export const getEnvsDeletionsDiff = async (
   envs: ReadonlyArray<string>,
   selectors: ElementSelector[],
 ): Promise<Record<string, ElemID[]>> =>
-  log.time(async () => {
+  log.time({
+    desc: 'getEnvsDeletionsDiff',
+    inner: async () => {
     const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(
       await awu(envs)
         .map(async env => [
@@ -196,4 +198,4 @@ export const getEnvsDeletionsDiff = async (
       .filter(([_env, ids]) => ids.length !== 0)
       .fromPairs()
       .value()
-  }, 'getEnvsDeletionsDiff')
+  }, })

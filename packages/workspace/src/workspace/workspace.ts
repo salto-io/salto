@@ -391,53 +391,58 @@ export const listElementsDependenciesInWorkspace = async ({
   elemIDsToSkip?: ElemID[]
   envToListFrom?: string
 }): Promise<{ dependencies: Record<string, ElemID[]>; missing: ElemID[] }> =>
-  log.time(async () => {
-    const workspaceBaseLevelIds = await log.time(
-      async () => new Set(await workspace.getSearchableNamesOfEnv(envToListFrom)),
-      `getSearchableNames for env: ${envToListFrom}`,
-    )
-    const elemIdsToSkipSet = new Set(elemIDsToSkip.map(id => id.getFullName()))
-    const baseLevelIds = elemIDsToFind.map(id => id.createBaseID().parent)
-    const [foundIds, missingIds] = _.partition(baseLevelIds, elemID => workspaceBaseLevelIds.has(elemID.getFullName()))
-
-    const result: Record<string, ElemID[]> = {}
-    const elemIDsToProcess = [...foundIds]
-    const visited: Set<string> = new Set()
-    while (elemIDsToProcess.length > 0) {
-      const currentLevelIds = elemIDsToProcess
-        .splice(0, elemIDsToProcess.length)
-        .filter(currentId => !visited.has(currentId.getFullName()))
-      currentLevelIds.forEach(currentId => visited.add(currentId.getFullName()))
-
-      log.trace('Proccessing %d elements references', currentLevelIds.length)
-      // eslint-disable-next-line no-await-in-loop
-      const currentLevelResult = await Promise.all(
-        currentLevelIds.map(async currentId => {
-          // eslint-disable-next-line no-await-in-loop
-          const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
-          const relevantElemIds = references
-            .map(ref => ref.id.createBaseID().parent)
-            .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName()))
-
-          const [foundElemIDs, missingElemIDs] = _.partition(relevantElemIds, elemID =>
-            workspaceBaseLevelIds.has(elemID.getFullName()),
-          )
-          result[currentId.getFullName()] = foundElemIDs
-          return { foundElemIDs, missingElemIDs }
-        }),
+  log.time({
+    desc: 'List dependencies in workspace',
+    inner: async () => {
+      const workspaceBaseLevelIds = await log.time<Promise<Set<string>>>({
+        inner: async () => new Set(await workspace.getSearchableNamesOfEnv(envToListFrom)),
+        desc: `getSearchableNames for env: ${envToListFrom}`,
+      })
+      const elemIdsToSkipSet = new Set(elemIDsToSkip.map(id => id.getFullName()))
+      const baseLevelIds = elemIDsToFind.map(id => id.createBaseID().parent)
+      const [foundIds, missingIds] = _.partition(baseLevelIds, elemID =>
+        workspaceBaseLevelIds.has(elemID.getFullName()),
       )
-      currentLevelResult.flatMap(entry => entry.missingElemIDs).forEach(id => missingIds.push(id))
 
-      _(currentLevelResult)
-        .flatMap(entry => entry.foundElemIDs)
-        .uniqBy(id => id.getFullName())
-        .forEach(id => elemIDsToProcess.push(id))
+      const result: Record<string, ElemID[]> = {}
+      const elemIDsToProcess = [...foundIds]
+      const visited: Set<string> = new Set()
+      while (elemIDsToProcess.length > 0) {
+        const currentLevelIds = elemIDsToProcess
+          .splice(0, elemIDsToProcess.length)
+          .filter(currentId => !visited.has(currentId.getFullName()))
+        currentLevelIds.forEach(currentId => visited.add(currentId.getFullName()))
 
-      log.trace('Done proccessing references for %d elements', currentLevelIds.length)
-    }
+        log.trace('Proccessing %d elements references', currentLevelIds.length)
+        // eslint-disable-next-line no-await-in-loop
+        const currentLevelResult = await Promise.all(
+          currentLevelIds.map(async currentId => {
+            // eslint-disable-next-line no-await-in-loop
+            const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
+            const relevantElemIds = references
+              .map(ref => ref.id.createBaseID().parent)
+              .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName()))
 
-    return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
-  }, 'List dependencies in workspace')
+            const [foundElemIDs, missingElemIDs] = _.partition(relevantElemIds, elemID =>
+              workspaceBaseLevelIds.has(elemID.getFullName()),
+            )
+            result[currentId.getFullName()] = foundElemIDs
+            return { foundElemIDs, missingElemIDs }
+          }),
+        )
+        currentLevelResult.flatMap(entry => entry.missingElemIDs).forEach(id => missingIds.push(id))
+
+        _(currentLevelResult)
+          .flatMap(entry => entry.foundElemIDs)
+          .uniqBy(id => id.getFullName())
+          .forEach(id => elemIDsToProcess.push(id))
+
+        log.trace('Done proccessing references for %d elements', currentLevelIds.length)
+      }
+
+      return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
+    },
+  })
 
 type GetCustomReferencesFunc = (
   elements: Element[],

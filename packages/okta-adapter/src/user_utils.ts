@@ -97,7 +97,9 @@ export const getUsers = async (
   paginator: clientUtils.Paginator,
   searchUsersParams?: SearchUsersParams,
 ): Promise<User[]> =>
-  log.time(async () => {
+  log.time({
+    desc: 'getUsers function',
+    inner: async () => {
     const paginationArgs = {
       url: '/api/v1/users',
       paginationField: 'after',
@@ -128,4 +130,4 @@ export const getUsers = async (
       await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
     ).flat()
     return areUsers(users) ? users : []
-  }, 'getUsers function')
+  }, })

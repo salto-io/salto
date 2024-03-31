@@ -89,7 +89,9 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
   }
 
   const updateStateElements = async (changes: DetailedChange[]): Promise<void> =>
-    log.time(async () => {
+    log.time({
+      desc:'updateStateElements',
+      inner: async () => {
       const state = (await stateData()).elements
       const changesByTopLevelElement = _.groupBy(changes, change =>
         change.id.createTopLevelParentID().parent.getFullName(),
@@ -114,7 +116,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
         await state.set(updatedElem)
       })
       await deleteRemovedStaticFiles(changes)
-    }, 'updateStateElements')
+    }, })
 
   // Sets the element and delete all the static files that no longer exists on it
   // should not be used in case of regenerate salto ids since it looks only at one element

@@ -209,11 +209,13 @@ export const filterInvalidChanges = (
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
 ): Promise<FilterResult> =>
-  log.time(
-    async () => {
+  log.time<Promise<FilterResult>>({
+    desc: 'filterInvalidChanges for %d changes with %d validators',
+    descArgs: [diffGraph.size, Object.keys(changeValidators).length],
+    inner: async () => {
       if (Object.keys(changeValidators).length === 0) {
         // Shortcut to avoid grouping all changes if there are no validators to run
-        return { changeErrors: [], validDiffGraph: diffGraph, replacedGraph: false }
+        return {changeErrors: [], validDiffGraph: diffGraph, replacedGraph: false}
       }
 
       const changesByAdapter = collections.iterable.groupBy(
@@ -229,7 +231,7 @@ export const filterInvalidChanges = (
       const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
       if (invalidChanges.length === 0) {
         // Shortcut to avoid replacing the graph if there are no errors
-        return { changeErrors, validDiffGraph: diffGraph, replacedGraph: false }
+        return {changeErrors, validDiffGraph: diffGraph, replacedGraph: false}
       }
 
       const validAfterTypeElementsMap = await createValidAfterOfInvalidTypesMap(
@@ -237,7 +239,7 @@ export const filterInvalidChanges = (
         afterElements,
         invalidChanges,
       )
-      const { validDiffGraph, dependencyErrors } = buildValidDiffGraph(
+      const {validDiffGraph, dependencyErrors} = buildValidDiffGraph(
         diffGraph,
         invalidChanges,
         validAfterTypeElementsMap,
@@ -249,7 +251,4 @@ export const filterInvalidChanges = (
         replacedGraph: true,
       }
     },
-    'filterInvalidChanges for %d changes with %d validators',
-    diffGraph.size,
-    Object.keys(changeValidators).length,
-  )
+  })

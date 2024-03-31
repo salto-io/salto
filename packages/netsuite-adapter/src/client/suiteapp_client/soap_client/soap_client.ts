@@ -418,7 +418,6 @@ export default class SoapClient {
       log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
       throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
     }
-
     return response.writeResponseList.writeResponse.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
@@ -456,10 +455,10 @@ export default class SoapClient {
     const client = await this.getClient()
     try {
       return await this.callsLimiter(async () =>
-        log.time(
-          () => SoapClient.soapRequestWithRetries(client, operation, body, this.timeout),
-          `${operation}-soap-request`,
-        ),
+        log.time({
+          inner: () => SoapClient.soapRequestWithRetries(client, operation, body, this.timeout),
+          desc: `${operation}-soap-request`,
+        }),
       )
     } catch (e) {
       log.warn(

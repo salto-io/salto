@@ -761,8 +761,10 @@ export const validateElements = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ValidationError[]> =>
-  log.time(
-    async () => {
+  log.time({
+    desc: 'validateElements with %d elements',
+    descArgs: [elements.length],
+    inner: async () => {
       const resolved = await resolve(elements, elementsSource)
       const errors = resolved.flatMap(e => {
         if (isInstanceElement(e)) {
@@ -779,6 +781,4 @@ export const validateElements = async (
 
       return errors
     },
-    'validateElements with %d elements',
-    elements.length,
-  )
+  })

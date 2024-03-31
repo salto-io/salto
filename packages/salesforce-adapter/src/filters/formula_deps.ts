@@ -155,20 +155,20 @@ const addDependenciesAnnotation = async (
   log.debug(`Extracting formula refs from ${field.elemID.getFullName()}`)
 
   try {
-    const formulaIdentifiers: string[] = log.time(
-      () => extractFormulaIdentifiers(formula),
-      `Parse formula '${formula.slice(0, 15)}'`,
-    )
+    const formulaIdentifiers: string[] = log.time({
+      inner: () => extractFormulaIdentifiers(formula),
+      desc: `Parse formula '${formula.slice(0, 15)}'`,
+    })
 
-    const identifiersInfo = await log.time(
-      () =>
+    const identifiersInfo = await log.time<Promise<FormulaIdentifierInfo[][]>>({
+      inner: () =>
         Promise.all(
           formulaIdentifiers.map(async (identifier) =>
             parseFormulaIdentifier(identifier, field.parent.elemID.typeName),
           ),
         ),
-      'Convert formula identifiers to references',
-    )
+      desc: 'Convert formula identifiers to references',
+    })
 
     // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
     // filtering.

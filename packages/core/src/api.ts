@@ -185,23 +185,26 @@ export const deploy = async (
   )
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> =>
-    log.time(async () => {
-      // This function is inside 'postDeployAction' because it assumes the state is already updated
-      const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
-        const changeElem = getChangeData(change)
-        // Because this function is called after we updated the state, the top level is already update with the field
-        return isField(changeElem) ? workspace.state().get(changeElem.parent.elemID) : changeElem
-      }
+    log.time({
+      desc: 'postDeployAction',
+      inner: async () => {
+        // This function is inside 'postDeployAction' because it assumes the state is already updated
+        const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
+          const changeElem = getChangeData(change)
+          // Because this function is called after we updated the state, the top level is already update with the field
+          return isField(changeElem) ? workspace.state().get(changeElem.parent.elemID) : changeElem
+        }
 
-      const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChange(change))
-      await workspace.state().updateStateFromChanges({ changes: detailedChanges })
+        const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChange(change))
+        await workspace.state().updateStateFromChanges({ changes: detailedChanges })
 
-      const updatedElements = await awu(appliedChanges)
-        .filter(change => isAdditionOrModificationChange(change) || isFieldChange(change))
-        .map(getUpdatedElement)
-        .toArray()
-      await changedElements.setAll(updatedElements)
-    }, 'postDeployAction')
+        const updatedElements = await awu(appliedChanges)
+          .filter(change => isAdditionOrModificationChange(change) || isFieldChange(change))
+          .map(getUpdatedElement)
+          .toArray()
+        await changedElements.setAll(updatedElements)
+      },
+    })
 
   const { errors, appliedChanges, extraProperties } = await deployActions(
     actionPlan,

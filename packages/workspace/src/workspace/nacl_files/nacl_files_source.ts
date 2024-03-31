@@ -446,7 +446,9 @@ const buildNaclFilesState = async ({
     currentState.parsedNaclFiles.get(file.filename)
 
   const handleAdditionsOrModifications = (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> =>
-    log.time(async () => {
+    log.time<Promise<void>>({
+      desc: 'handle additions/modifications of nacl files',
+      inner: async () => {
       await naclFiles.forEach(async naclFile => {
         const parsedFile = await getNaclFile(naclFile)
         log.trace('Updating indexes of %s nacl file: %s', !parsedFile ? 'added' : 'modified', naclFile.filename)
@@ -489,10 +491,12 @@ const buildNaclFilesState = async ({
         }
         log.trace('Finished updating indexes of %s', naclFile.filename)
       })
-    }, 'handle additions/modifications of nacl files')
+    }, })
 
   const handleDeletions = (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> =>
-    log.time(async () => {
+    log.time<Promise<void>>({
+      desc: 'handle deletions of nacl files',
+      inner: async () => {
       const toDelete: string[] = []
       await naclFiles.forEach(async naclFile => {
         const oldNaclFile = await getNaclFile(naclFile)
@@ -516,7 +520,7 @@ const buildNaclFilesState = async ({
         log.trace('Finished updating indexes of %s', naclFile.filename)
       })
       await currentState.parsedNaclFiles.deleteAll(toDelete)
-    }, 'handle deletions of nacl files')
+    }, })
 
   await handleDeletions(awu(Object.values(newParsed)).filter(isEmptyNaclFile))
   await handleAdditionsOrModifications(

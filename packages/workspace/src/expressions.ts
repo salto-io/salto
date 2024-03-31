@@ -305,117 +305,118 @@ export const resolve = (
   elementsSource: ReadOnlyElementsSource,
   { shouldResolveReferences = true }: ResolveOpts = {},
 ): Promise<Element[]> =>
-  log.time(
-    async () => {
-      // Create a clone of the input elements to ensure we do not modify the input
-      const elementsToResolve = getClonedElements(elements)
+  log.time<Promise<Element[]>>({
+    desc: 'resolve %d elements',
+    descArgs: [elements.length],
+      inner: async () => {
+        // Create a clone of the input elements to ensure we do not modify the input
+        const elementsToResolve = getClonedElements(elements)
 
-      // Since fields technically reference their parent type with the .parent property
-      // we need to make sure to resolve all field parents as well
-      const fieldParents = elementsToResolve.filter(isField).map(field => field.parent)
+        // Since fields technically reference their parent type with the .parent property
+        // we need to make sure to resolve all field parents as well
+        const fieldParents = elementsToResolve.filter(isField).map(field => field.parent)
 
-      // We assume that if we got a field and its parent type in the same resolve call, the field's
-      // parent will point to the same object type that we got to resolve, so we don't need to resolve
-      // both.
-      const allElementsToResolve = _.uniqBy(elementsToResolve.concat(fieldParents), elem => elem.elemID.getFullName())
+        // We assume that if we got a field and its parent type in the same resolve call, the field's
+        // parent will point to the same object type that we got to resolve, so we don't need to resolve
+        // both.
+        const allElementsToResolve = _.uniqBy(elementsToResolve.concat(fieldParents), elem => elem.elemID.getFullName())
 
-      const resolvedElements = new Map(
-        allElementsToResolve
-          .concat(Object.values(BuiltinTypes))
-          .concat(Object.values(CoreAnnotationTypes))
-          .map(elem => [elem.elemID.getFullName(), elem]),
-      )
+        const resolvedElements = new Map(
+          allElementsToResolve
+            .concat(Object.values(BuiltinTypes))
+            .concat(Object.values(CoreAnnotationTypes))
+            .map(elem => [elem.elemID.getFullName(), elem]),
+        )
 
-      // This graph will hold references that depend on other references
-      // this will be used to find reference cycles once we finished resolving all references
-      const referenceDependencies = new DataNodeMap<Expression>()
+        // This graph will hold references that depend on other references
+        // this will be used to find reference cycles once we finished resolving all references
+        const referenceDependencies = new DataNodeMap<Expression>()
 
-      const resolveElementGroup = async (elementGroup: Element[]): Promise<void> => {
-        // This map will hold a promise for each async resolve that is required in this element group
-        const pendingAsyncResolves = new Map<string, Promise<Element | undefined>>()
-        const pendingAsyncOperations: Promise<unknown>[] = []
+        const resolveElementGroup = async (elementGroup: Element[]): Promise<void> => {
+          // This map will hold a promise for each async resolve that is required in this element group
+          const pendingAsyncResolves = new Map<string, Promise<Element | undefined>>()
+          const pendingAsyncOperations: Promise<unknown>[] = []
 
-        const { resolveTypeReference, resolveReferenceExpression, resolveTemplateExpression } = getResolveFunctions({
-          resolvedElements,
-          elementsSource,
-          referenceDependencies,
-          pendingAsyncResolves,
-          pendingAsyncOperations,
-        })
+          const {resolveTypeReference, resolveReferenceExpression, resolveTemplateExpression} = getResolveFunctions({
+            resolvedElements,
+            elementsSource,
+            referenceDependencies,
+            pendingAsyncResolves,
+            pendingAsyncOperations,
+          })
 
-        const resolveSingleElement = (element: Element): void => {
-          if (isInstanceElement(element)) {
-            resolveTypeReference(element.refType)
-          }
-          if (isType(element)) {
-            Object.values(element.annotationRefTypes).forEach(resolveTypeReference)
-          }
-          if (isObjectType(element)) {
-            Object.values(element.fields).forEach(field => resolveTypeReference(field.refType))
-          }
-          if (isContainerType(element)) {
-            resolveTypeReference(element.refInnerType)
-          }
-          if (isField(element)) {
-            // Note - we don't need to resolve the field's parent here because it will be passed
-            // as a separate element to resolve
-            resolveTypeReference(element.refType)
-          }
+          const resolveSingleElement = (element: Element): void => {
+            if (isInstanceElement(element)) {
+              resolveTypeReference(element.refType)
+            }
+            if (isType(element)) {
+              Object.values(element.annotationRefTypes).forEach(resolveTypeReference)
+            }
+            if (isObjectType(element)) {
+              Object.values(element.fields).forEach(field => resolveTypeReference(field.refType))
+            }
+            if (isContainerType(element)) {
+              resolveTypeReference(element.refInnerType)
+            }
+            if (isField(element)) {
+              // Note - we don't need to resolve the field's parent here because it will be passed
+              // as a separate element to resolve
+              resolveTypeReference(element.refType)
+            }
 
-          if (shouldResolveReferences) {
-            walkOnElement({
-              element,
-              func: ({ value, path }) => {
-                try {
-                  if (isReferenceExpression(value)) {
-                    resolveReferenceExpression(value, path)
-                    return WALK_NEXT_STEP.SKIP
+            if (shouldResolveReferences) {
+              walkOnElement({
+                element,
+                func: ({value, path}) => {
+                  try {
+                    if (isReferenceExpression(value)) {
+                      resolveReferenceExpression(value, path)
+                      return WALK_NEXT_STEP.SKIP
+                    }
+                    if (isTemplateExpression(value)) {
+                      resolveTemplateExpression(value, path)
+                      return WALK_NEXT_STEP.SKIP
+                    }
+                  } catch (err) {
+                    log.error(
+                      `Failed to resolve path ${path.getFullName()}. value: ${safeJsonStringify(value, undefined, 2)}`,
+                    )
+                    throw err
                   }
-                  if (isTemplateExpression(value)) {
-                    resolveTemplateExpression(value, path)
-                    return WALK_NEXT_STEP.SKIP
-                  }
-                } catch (err) {
-                  log.error(
-                    `Failed to resolve path ${path.getFullName()}. value: ${safeJsonStringify(value, undefined, 2)}`,
-                  )
-                  throw err
-                }
-                return WALK_NEXT_STEP.RECURSE
-              },
-            })
+                  return WALK_NEXT_STEP.RECURSE
+                },
+              })
+            }
+          }
+
+          // Note - this fills pendingAsyncResolves and pendingAsyncOperations as a side effect
+          elementGroup.forEach(resolveSingleElement)
+
+          // Note, not using Promise.all here because this might be a very long list and go over the
+          // allowed limits of V8
+          const nextLevelToResolve = (
+            await awu(pendingAsyncResolves.values())
+              .map(promise => promise)
+              .toArray()
+          ).filter(values.isDefined)
+          // Wait for all pending operations, not just the resolves
+          await awu(pendingAsyncOperations).forEach(promise => promise)
+
+          if (nextLevelToResolve.length > 0) {
+            nextLevelToResolve.forEach(elem => resolvedElements.set(elem.elemID.getFullName(), elem))
+            await resolveElementGroup(nextLevelToResolve)
           }
         }
 
-        // Note - this fills pendingAsyncResolves and pendingAsyncOperations as a side effect
-        elementGroup.forEach(resolveSingleElement)
+        await resolveElementGroup(allElementsToResolve)
+        log.debug('resolve handled a total of %d elements', resolvedElements.size)
 
-        // Note, not using Promise.all here because this might be a very long list and go over the
-        // allowed limits of V8
-        const nextLevelToResolve = (
-          await awu(pendingAsyncResolves.values())
-            .map(promise => promise)
-            .toArray()
-        ).filter(values.isDefined)
-        // Wait for all pending operations, not just the resolves
-        await awu(pendingAsyncOperations).forEach(promise => promise)
+        // Note - resolveElementGroup fills referenceDependencies as a side effect
+        // now that referenceDependencies contains all the dependencies, we can find cycles
+        // and mark them as circular references
+        markCircularReferences(referenceDependencies)
 
-        if (nextLevelToResolve.length > 0) {
-          nextLevelToResolve.forEach(elem => resolvedElements.set(elem.elemID.getFullName(), elem))
-          await resolveElementGroup(nextLevelToResolve)
-        }
-      }
-
-      await resolveElementGroup(allElementsToResolve)
-      log.debug('resolve handled a total of %d elements', resolvedElements.size)
-
-      // Note - resolveElementGroup fills referenceDependencies as a side effect
-      // now that referenceDependencies contains all the dependencies, we can find cycles
-      // and mark them as circular references
-      markCircularReferences(referenceDependencies)
-
-      return elementsToResolve
-    },
-    'resolve %d elements',
-    elements.length,
+        return elementsToResolve
+      },
+    }
   )

@@ -94,9 +94,9 @@ export const createInstances = (
     findType('Dashboard', fetchedElements),
     createDashboardValues(randomString),
   )
-  const issueType = new InstanceElement(randomString, findType(ISSUE_TYPE_NAME, fetchedElements), {
+  const issueType = new InstanceElement(`IT_${randomString}`, findType(ISSUE_TYPE_NAME, fetchedElements), {
     description: randomString,
-    name: randomString,
+    name: `IT_${randomString}`,
     hierarchyLevel: 0,
     untranslatedName: randomString,
     avatar: new StaticFile({

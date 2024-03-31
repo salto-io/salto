@@ -113,7 +113,12 @@ describe('issueTypeFilter', () => {
         mockGet.mockClear()
       })
       it('should set icon content', async () => {
+        const anotherInstance = instance.clone()
+        anotherInstance.value.name = 'anotherInstance'
         mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/avatar/issuetype/system') {
+            return {}
+          }
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
               status: 200,
@@ -122,11 +127,26 @@ describe('issueTypeFilter', () => {
           }
           throw new Error('Err')
         })
-        await filter.onFetch?.([instance])
+        await filter.onFetch?.([instance, anotherInstance])
         expect(instance.value.avatar).toBeDefined()
+        expect(instance.value.avatar).toEqual(new StaticFile({
+          filepath: 'jira/IssueType/instanceName.png',
+          encoding: 'binary',
+          content,
+        }))
+        expect(anotherInstance.value.avatar).toBeDefined()
+        expect(anotherInstance.value.avatar).toEqual(new StaticFile({
+          filepath: 'jira/IssueType/anotherInstance.png',
+          encoding: 'binary',
+          content,
+        }))
+        expect(mockGet).toHaveBeenCalledTimes(3) // 2 for fetching the icon and 1 for fetching the system icons
       })
       it('should set icon content when its a string', async () => {
         mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/avatar/issuetype/system') {
+            return {}
+          }
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
               status: 200,
@@ -137,6 +157,11 @@ describe('issueTypeFilter', () => {
         })
         await filter.onFetch?.([instance])
         expect(instance.value.avatar).toBeDefined()
+        expect(instance.value.avatar).toEqual(new StaticFile({
+          filepath: 'jira/IssueType/instanceName.png',
+          encoding: 'binary',
+          content: Buffer.from('a string, not a buffer.'),
+        }))
       })
 
       it('should not set icon content if avatarId is undefined', async () => {
@@ -145,7 +170,10 @@ describe('issueTypeFilter', () => {
         expect(instance.value.avatar).toBeUndefined()
       })
       it('should not set icon content and add error if failed to fetch icon due to an http error', async () => {
-        mockGet.mockImplementation(() => {
+        mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/avatar/issuetype/system') {
+            return {}
+          }
           throw new clientUtils.HTTPError('404 Item not found', {
             status: 404,
             data: {
@@ -157,12 +185,18 @@ describe('issueTypeFilter', () => {
         expect(instance.value.avatar).toBeUndefined()
         expect(res).toEqual({
           errors: [
-            { message: 'Failed to fetch attachment content from Jira API. error: 404 Item not found', severity: 'Error' },
+            {
+              message: 'Failed to fetch attachment content from Jira API. error: 404 Item not found',
+              severity: 'Error',
+            },
           ],
         })
       })
-      it('should not set icon content and add error if failed to fetch icon due to an not httpe error', async () => {
+      it('should not set icon content and add error if failed to fetch icon due to a bad contnet format', async () => {
         mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/avatar/issuetype/system') {
+            return {}
+          }
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
               status: 200,
@@ -182,6 +216,45 @@ describe('issueTypeFilter', () => {
             },
           ],
         })
+      })
+      it('should set icon contnet when its a system icon', async () => {
+        mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/avatar/issuetype/system') {
+            return {
+              status: 200,
+                data: {
+                  system: [
+                    {
+                      id: '1',
+                    },
+                  ],
+              },
+            }
+          }
+          if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
+            return {
+              status: 200,
+              data: content,
+            }
+          }
+          throw new Error('Err')
+        })
+        const anotherInstance = instance.clone()
+        anotherInstance.value.name = 'anotherInstance'
+        await filter.onFetch?.([instance, anotherInstance])
+        expect(instance.value.avatar).toBeDefined()
+        expect(instance.value.avatar).toEqual(new StaticFile({
+          filepath: 'jira/IssueType/1.png',
+          encoding: 'binary',
+          content,
+        }))
+        expect(anotherInstance.value.avatar).toBeDefined()
+        expect(anotherInstance.value.avatar).toEqual(new StaticFile({
+          filepath: 'jira/IssueType/1.png',
+          encoding: 'binary',
+          content,
+        }))
+        expect(mockGet).toHaveBeenCalledTimes(2) // 1 for fetching the system icons and 1 for fetching the icon for the instance
       })
     })
   })
@@ -314,8 +387,23 @@ describe('issueTypeFilter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(mockDeployChange).toHaveBeenCalledTimes(1) // For adding the issueType
       expect(mockPost).toHaveBeenCalledTimes(1) // For loading the icon
+      expect(mockPost).toHaveBeenCalledWith({
+        url: '/rest/api/3/universal_avatar/type/issuetype/owner/3',
+        data: content,
+        headers: {
+          'Content-Type': 'image/png',
+          'X-Atlassian-Token': 'no-check',
+        },
+      })
       expect(instance.value.avatarId).toEqual(101)
       expect(mockPut).toHaveBeenCalledTimes(1) // For updating the instance with the avatarId
+      expect(mockPut).toHaveBeenCalledWith({
+        url: '/rest/api/3/issuetype/3',
+        data: {
+          avatarId: 101,
+        },
+        undefined,
+      })
     })
     it('should deploy addition of issueType without avatar', async () => {
       delete instance.value.avatar
@@ -397,6 +485,7 @@ describe('issueTypeFilter', () => {
       })
       const res = await filter.deploy([{ action: 'modify', data: { before: instance, after: instsnceAfter } }])
       expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0].message).toEqual('Error: Failed to deploy icon to Jira issue type: Failed to deploy icon to Jira issue type: Invalid response from Jira API')
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockPost).toHaveBeenCalledTimes(1) // For loading the icon
       expect(mockDeployChange).toHaveBeenCalledTimes(0) // Since the icon response is invalid

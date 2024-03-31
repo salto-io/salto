@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, StaticFile, toChange } from '@salto-io/adapter-api'
 import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
@@ -125,21 +125,61 @@ describe('issueTypeFilter', () => {
         await filter.onFetch?.([instance])
         expect(instance.value.avatar).toBeDefined()
       })
+      it('should set icon content when its a string', async () => {
+        mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
+            return {
+              status: 200,
+              data: 'a string, not a buffer.',
+            }
+          }
+          throw new Error('Err')
+        })
+        await filter.onFetch?.([instance])
+        expect(instance.value.avatar).toBeDefined()
+      })
 
       it('should not set icon content if avatarId is undefined', async () => {
         instance.value.avatarId = undefined
         await filter.onFetch?.([instance])
         expect(instance.value.avatar).toBeUndefined()
       })
-      it('should not set icon content and add error if failed to fetch icon due to an error', async () => {
+      it('should not set icon content and add error if failed to fetch icon due to an http error', async () => {
         mockGet.mockImplementation(() => {
+          throw new clientUtils.HTTPError('404 Item not found', {
+            status: 404,
+            data: {
+              errorMessages: ['The content was not found.'],
+            },
+          })
+        })
+        const res = await filter.onFetch?.([instance])
+        expect(instance.value.avatar).toBeUndefined()
+        expect(res).toEqual({
+          errors: [
+            { message: 'Failed to fetch attachment content from Jira API. error: 404 Item not found', severity: 'Error' },
+          ],
+        })
+      })
+      it('should not set icon content and add error if failed to fetch icon due to an not httpe error', async () => {
+        mockGet.mockImplementation(params => {
+          if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
+            return {
+              status: 200,
+              data: 55 as unknown as Buffer,
+            }
+          }
           throw new Error('Err')
         })
         const res = await filter.onFetch?.([instance])
         expect(instance.value.avatar).toBeUndefined()
         expect(res).toEqual({
           errors: [
-            { message: 'Failed to fetch attachment content from Jira API. error: Error: Err', severity: 'Error' },
+            {
+              message:
+                'Failed to fetch attachment content from Jira API. error: Error: Failed to fetch attachment content, response is not a buffer.',
+              severity: 'Error',
+            },
           ],
         })
       })

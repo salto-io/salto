@@ -46,12 +46,8 @@ const notTeamBoard = (obj: clientUtils.ResponseValue): boolean =>
   !(_.isPlainObject(obj) && 'type' in obj && obj.type === 'simple' && 'self' in obj && isBoardSelfUrl(obj.self))
 
 // filters out calendars that are unrelated to the porject.
-const notRelatedCalendars = (obj: clientUtils.ResponseValue): boolean => {
-  const a = !(_.isPlainObject(obj) && 'canCreate' in obj && obj.canCreate === false && 'calendars' in obj)
-  // eslint-disable-next-line no-console
-  // console.log(`isPlainObject(obj): ${_.isPlainObject(obj)} and 'canCreate' in obj: ${'canCreate' in obj} and obj.canCreate === false: ${obj.canCreate === false} and 'calendars' in obj: ${'calendars' in obj} and a: ${a}`)
-  return a
-}
+const notRelatedCalendars = (obj: clientUtils.ResponseValue): boolean =>
+  !(_.isPlainObject(obj) && 'canCreate' in obj && obj.canCreate === false && 'calendars' in obj)
 
 const filterResponseEntriesRecursively = <T extends clientUtils.ResponseValue>(response: T | T[]): T | T[] => {
   if (Array.isArray(response)) {

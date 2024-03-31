@@ -129,17 +129,21 @@ describe('issueTypeFilter', () => {
         })
         await filter.onFetch?.([instance, anotherInstance])
         expect(instance.value.avatar).toBeDefined()
-        expect(instance.value.avatar).toEqual(new StaticFile({
-          filepath: 'jira/IssueType/instanceName.png',
-          encoding: 'binary',
-          content,
-        }))
+        expect(instance.value.avatar).toEqual(
+          new StaticFile({
+            filepath: 'jira/IssueType/instanceName.png',
+            encoding: 'binary',
+            content,
+          }),
+        )
         expect(anotherInstance.value.avatar).toBeDefined()
-        expect(anotherInstance.value.avatar).toEqual(new StaticFile({
-          filepath: 'jira/IssueType/anotherInstance.png',
-          encoding: 'binary',
-          content,
-        }))
+        expect(anotherInstance.value.avatar).toEqual(
+          new StaticFile({
+            filepath: 'jira/IssueType/anotherInstance.png',
+            encoding: 'binary',
+            content,
+          }),
+        )
         expect(mockGet).toHaveBeenCalledTimes(3) // 2 for fetching the icon and 1 for fetching the system icons
       })
       it('should set icon content when its a string', async () => {
@@ -157,11 +161,13 @@ describe('issueTypeFilter', () => {
         })
         await filter.onFetch?.([instance])
         expect(instance.value.avatar).toBeDefined()
-        expect(instance.value.avatar).toEqual(new StaticFile({
-          filepath: 'jira/IssueType/instanceName.png',
-          encoding: 'binary',
-          content: Buffer.from('a string, not a buffer.'),
-        }))
+        expect(instance.value.avatar).toEqual(
+          new StaticFile({
+            filepath: 'jira/IssueType/instanceName.png',
+            encoding: 'binary',
+            content: Buffer.from('a string, not a buffer.'),
+          }),
+        )
       })
 
       it('should not set icon content if avatarId is undefined', async () => {
@@ -222,12 +228,12 @@ describe('issueTypeFilter', () => {
           if (params.url === '/rest/api/3/avatar/issuetype/system') {
             return {
               status: 200,
-                data: {
-                  system: [
-                    {
-                      id: '1',
-                    },
-                  ],
+              data: {
+                system: [
+                  {
+                    id: '1',
+                  },
+                ],
               },
             }
           }
@@ -243,17 +249,21 @@ describe('issueTypeFilter', () => {
         anotherInstance.value.name = 'anotherInstance'
         await filter.onFetch?.([instance, anotherInstance])
         expect(instance.value.avatar).toBeDefined()
-        expect(instance.value.avatar).toEqual(new StaticFile({
-          filepath: 'jira/IssueType/1.png',
-          encoding: 'binary',
-          content,
-        }))
+        expect(instance.value.avatar).toEqual(
+          new StaticFile({
+            filepath: 'jira/IssueType/1.png',
+            encoding: 'binary',
+            content,
+          }),
+        )
         expect(anotherInstance.value.avatar).toBeDefined()
-        expect(anotherInstance.value.avatar).toEqual(new StaticFile({
-          filepath: 'jira/IssueType/1.png',
-          encoding: 'binary',
-          content,
-        }))
+        expect(anotherInstance.value.avatar).toEqual(
+          new StaticFile({
+            filepath: 'jira/IssueType/1.png',
+            encoding: 'binary',
+            content,
+          }),
+        )
         expect(mockGet).toHaveBeenCalledTimes(2) // 1 for fetching the system icons and 1 for fetching the icon for the instance
       })
     })
@@ -485,7 +495,9 @@ describe('issueTypeFilter', () => {
       })
       const res = await filter.deploy([{ action: 'modify', data: { before: instance, after: instsnceAfter } }])
       expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0].message).toEqual('Error: Failed to deploy icon to Jira issue type: Failed to deploy icon to Jira issue type: Invalid response from Jira API')
+      expect(res.deployResult.errors[0].message).toEqual(
+        'Error: Failed to deploy icon to Jira issue type: Failed to deploy icon to Jira issue type: Invalid response from Jira API',
+      )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockPost).toHaveBeenCalledTimes(1) // For loading the icon
       expect(mockDeployChange).toHaveBeenCalledTimes(0) // Since the icon response is invalid

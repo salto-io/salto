@@ -2940,6 +2940,7 @@ export type ChangeValidatorName =
   | 'inactiveTicketFormInView'
   | 'immutableTypeAndKeyForUserFields'
   | 'localeModification'
+  | 'guideDefaultTranslationChange'
   | 'emptyAutomationOrder'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -3018,6 +3019,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
     immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
     localeModification: { refType: BuiltinTypes.BOOLEAN },
+    guideDefaultTranslationChange: { refType: BuiltinTypes.BOOLEAN },
     emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

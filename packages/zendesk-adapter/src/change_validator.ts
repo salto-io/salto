@@ -85,6 +85,7 @@ import {
   inactiveTicketFormInViewValidator,
   immutableTypeAndKeyForUserFieldsValidator,
   localeModificationValidator,
+  guideDefaultTranslationChangeValidator,
   emptyAutomationOrderValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -186,6 +187,7 @@ export default ({
     inactiveTicketFormInView: inactiveTicketFormInViewValidator,
     immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
     localeModification: localeModificationValidator,
+    guideDefaultTranslationChange: guideDefaultTranslationChangeValidator,
     emptyAutomationOrder: emptyAutomationOrderValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,

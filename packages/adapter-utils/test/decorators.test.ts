@@ -51,13 +51,13 @@ describe('decorators', () => {
     it('should log the time it took to run sync functions', () => {
       inst.syncFunc()
       expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'running sync')
+      expect(logging.time).toHaveBeenCalledWith({ inner: expect.anything(), desc: 'running sync' })
     })
 
     it('should log the time it took to run async functions', async () => {
       await inst.asyncFunc()
       expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'running async')
+      expect(logging.time).toHaveBeenCalledWith({ inner: expect.anything(), desc: 'running async' })
     })
   })
 })

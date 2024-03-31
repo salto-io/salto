@@ -72,13 +72,16 @@ describe('client_decorators', () => {
     it('should log', async () => {
       await inst.doSomethingElse()
       expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'cli:client.doSomethingElse()')
+      expect(logging.time).toHaveBeenCalledWith({ inner: expect.anything(), desc: 'cli:client.doSomethingElse()' })
     })
 
     it('should log with arguments', async () => {
       await inst.doSomethingWithDetails({ str: 'bla', num: 123, arr: [{ str: 'str' }, { str: 'STR' }] })
       expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'cli:client.doSomethingWithDetails(bla, str)')
+      expect(logging.time).toHaveBeenCalledWith({
+        inner: expect.anything(),
+        desc: 'cli:client.doSomethingWithDetails(bla, str)',
+      })
     })
   })
 

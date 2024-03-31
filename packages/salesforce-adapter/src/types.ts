@@ -1059,3 +1059,6 @@ export type LastChangeDateOfTypesWithNestedInstances = {
 } & {
   [key in TypeWithNestedInstances]: string | undefined
 }
+
+export type ProfileRelatedMetadataType =
+  (typeof constants.PROFILE_RELATED_METADATA_TYPES)[number]

@@ -588,6 +588,66 @@ describe('pino based logger', () => {
         })
       })
 
+      describe('log time test', () => {
+        describe('when old args are given', () => {
+          const expectedResult = { hello: 'world' }
+          let result: unknown
+          let startLine: string
+
+          beforeEach(async () => {
+            result = logger.time(() => expectedResult, 'hello func %o', 12)
+            await repo.end()
+            ;[startLine, line] = consoleStream.contents().split(EOL)
+          })
+
+          it('should return the original value', () => {
+            expect(result).toBe(expectedResult)
+          })
+
+          it('should log the time correctly', () => {
+            expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
+            expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+          })
+
+          it('expect decoratorCalled should be true', () => {
+            expect(decoratorCalled).toBeTruthy()
+          })
+        })
+        describe('when log level is given', () => {
+          const expectedResult = { hello: 'world' }
+          let result: unknown
+          let startLine: string
+
+          beforeEach(async () => {
+            repo.setMinLevel('trace')
+            result = logger.time({ inner: () => expectedResult, desc: 'hello func', level: 'trace' })
+            await repo.end()
+            ;[startLine, line] = consoleStream.contents().split(EOL)
+          })
+
+          it('should return the original value', () => {
+            expect(result).toBe(expectedResult)
+          })
+
+          it('should log the time correctly', () => {
+            expect(startLine).toContain(`trace ${NAMESPACE} hello func starting`)
+            expect(line).toContain(`trace ${NAMESPACE} hello func took`)
+          })
+
+          it('expect decoratorCalled should be true', () => {
+            expect(decoratorCalled).toBeTruthy()
+          })
+        })
+        describe('when invalid args are given', () => {
+          const expectedResult = { hello: 'world' }
+          it('should throw when args are invalid', () => {
+            expect(() => logger.time(() => expectedResult)).toThrow(
+              'inner is a function therefore desc cannot be undefined',
+            )
+          })
+        })
+      })
+
       describe('when an async method is given', () => {
         const expectedResult = { hello: 'world' }
         let result: unknown

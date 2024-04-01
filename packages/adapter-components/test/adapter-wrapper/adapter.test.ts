@@ -251,7 +251,9 @@ describe('createAdapter', () => {
                         },
                       },
                       copyFromResponse: {
-                        root: 'schedule',
+                        additional: {
+                          root: 'schedule',
+                        },
                       },
                     },
                     {

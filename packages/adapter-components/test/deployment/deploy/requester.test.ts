@@ -44,7 +44,7 @@ describe('DeployRequester', () => {
     type = new ObjectType({
       elemID: new ElemID('adapter', 'test'),
       fields: {
-        id: { refType: BuiltinTypes.STRING },
+        id: { refType: BuiltinTypes.SERVICE_ID },
         creatableField: {
           refType: BuiltinTypes.STRING,
           annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
@@ -148,7 +148,9 @@ describe('DeployRequester', () => {
                         },
                       },
                       copyFromResponse: {
-                        pick: ['stop'],
+                        additional: {
+                          pick: ['stop'],
+                        },
                       },
                     },
                     {
@@ -185,7 +187,9 @@ describe('DeployRequester', () => {
                         },
                       },
                       copyFromResponse: {
-                        pick: ['stop'],
+                        additional: {
+                          pick: ['stop'],
+                        },
                       },
                     },
                     {
@@ -316,6 +320,84 @@ describe('DeployRequester', () => {
       data: {
         creatableField: 'creatableValue',
       },
+    })
+  })
+
+  it('should copy back service id', async () => {
+    client.post.mockResolvedValue({
+      status: 200,
+      data: {
+        id: 1234,
+      },
+    })
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ after: instance })
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+    })
+
+    expect(getChangeData(change).value.id).toEqual(1234)
+  })
+  it('should copy back service id from nested value if sent as nested, and extract additional values if defined', async () => {
+    client.post.mockResolvedValue({
+      status: 200,
+      data: {
+        a: {
+          id: 1234,
+        },
+        stop: true,
+      },
+    })
+    const defs: (typeof definitions)['deploy']['instances'] = _.merge({}, definitions.deploy.instances, {
+      customizations: {
+        test: {
+          requestsByAction: {
+            customizations: {
+              add: [
+                {
+                  request: {
+                    transformation: {
+                      // TODO the "old infra" test had a fieldsToIgnore recursive function - this can now be done using adjust
+                      nestUnderField: 'a',
+                    },
+                  },
+                  copyFromResponse: {
+                    additional: {
+                      pick: ['stop'],
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    })
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(defs),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ after: instance })
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+    })
+
+    expect(getChangeData(change).value).toEqual({
+      creatableField: 'creatableValue',
+      ignored: 'ignored',
+      id: 1234,
+      stop: true,
     })
   })
 

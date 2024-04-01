@@ -83,9 +83,6 @@ export const createStandardItemDeployDefinition = <AdditionalAction extends stri
             nestUnderField,
           },
         },
-        copyFromResponse: {
-          root: nestUnderField,
-        },
       },
       customizations: _.omit(standardCustomizationsByAction, withoutActions ?? []),
     },

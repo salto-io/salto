@@ -44,7 +44,6 @@ import {
   OktaConfig,
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
-import { GROUP_MEMBERSHIP_TYPE_NAME } from '../constants'
 
 const { createCheckDeploymentBasedOnConfigValidator, getDefaultChangeValidators, createChangeValidator } =
   deployment.changeValidators
@@ -54,7 +53,6 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
       typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
-      typesToSkip: [GROUP_MEMBERSHIP_TYPE_NAME],
     }),
     application: applicationValidator,
     appGroup: appGroupValidator,

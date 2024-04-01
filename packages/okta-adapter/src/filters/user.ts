@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
 import { getUsers, USER_MAPPING, getUsersFromInstances, DEFAULT_CONVERT_USERS_IDS_VALUE } from '../user_utils'
@@ -87,7 +87,13 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
         log.debug('Converting user ids was disabled (preDeploy)')
         return
       }
-      const usersToReplace = getUsersFromInstances(changes.map(getChangeData))
+
+      // for modification change, get users from both before and after values
+      const usersToReplace = getUsersFromInstances(
+        changes.flatMap(change =>
+          isModificationChange(change) ? [change.data.before, change.data.after] : [getChangeData(change)],
+        ),
+      )
 
       if (_.isEmpty(usersToReplace)) {
         return

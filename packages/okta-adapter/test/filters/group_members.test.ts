@@ -161,15 +161,24 @@ describe('groupMembersFilter', () => {
     it('should deploy group membership instance', async () => {
       const modification = toChange({
         before: new InstanceElement('groupTestB', groupMembersType, { members: ['a', 'b'] }, undefined, {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(anotherGroup.elemID, anotherGroup)],
+          [CORE_ANNOTATIONS.PARENT]: [anotherGroup.value], // references are already resolved
         }),
         after: new InstanceElement('groupTestB', groupMembersType, { members: ['b', 'c'] }, undefined, {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(anotherGroup.elemID, anotherGroup)],
+          [CORE_ANNOTATIONS.PARENT]: [anotherGroup.value], // references are already resolved
         }),
+      })
+      const addition = toChange({
+        after: new InstanceElement(
+          'groupTest',
+          groupMembersType,
+          { members: ['a', 'c'] },
+          undefined,
+          { [CORE_ANNOTATIONS.PARENT]: [groupInstance.value] }, // references are already resolved
+        ),
       })
       const { deployResult, leftoverChanges } = await filter.deploy([
         modification, // modification change
-        toChange({ after: groupMembersInstance }), // addition change
+        addition, // addition change
       ])
 
       expect(mockConnection.put).toHaveBeenCalledTimes(3)
@@ -190,10 +199,10 @@ describe('groupMembersFilter', () => {
     it('should update change with the actual results in case some assignments failed', async () => {
       const modification = toChange({
         before: new InstanceElement('groupTestB', groupMembersType, { members: ['a', 'b', 'c'] }, undefined, {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+          [CORE_ANNOTATIONS.PARENT]: [groupInstance.value], // references are already resolved
         }),
         after: new InstanceElement('groupTestB', groupMembersType, { members: ['c', 'd', 'e'] }, undefined, {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+          [CORE_ANNOTATIONS.PARENT]: [groupInstance.value], // references are already resolved
         }),
       })
       mockConnection.put.mockImplementation(async url => {
@@ -220,13 +229,13 @@ describe('groupMembersFilter', () => {
     it('should return error if parent group id is missing', async () => {
       const groupNoId = new InstanceElement('noID', groupType, {})
       const groupMembers = new InstanceElement('A', groupMembersType, { members: ['a'] }, undefined, {
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(groupNoId.elemID, groupNoId)],
+        [CORE_ANNOTATIONS.PARENT]: [groupNoId.value], // references are already resolved
       })
       const { deployResult, leftoverChanges } = await filter.deploy([toChange({ after: groupMembers })])
       expect(leftoverChanges).toHaveLength(0)
       expect(deployResult.appliedChanges).toHaveLength(0)
       expect(deployResult.errors).toHaveLength(1)
-      expect(deployResult.errors[0].message).toEqual('Group noID is not found')
+      expect(deployResult.errors[0].message).toEqual('Failed to get group ID')
     })
   })
 })

@@ -159,7 +159,7 @@ const deployGroupMembershipChange = async (
       getChangeData(change).elemID.getFullName(),
       safeJsonStringify(getChangeData(change)),
     )
-    return { error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Failed to get group id' } }
+    return { error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Failed to get group ID' } }
   }
 
   if (isAdditionChange(change)) {
@@ -263,12 +263,10 @@ const groupMembersFilter: FilterCreator = ({ config, paginator, client }) => ({
       }
     }
     const deployResult = await Promise.all(
-      relevantChanges.map(async change =>
-        deployGroupMembershipChange(
-          change as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-          client,
-        ),
-      ),
+      relevantChanges
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .map(async change => deployGroupMembershipChange(change, client)),
     )
 
     return {

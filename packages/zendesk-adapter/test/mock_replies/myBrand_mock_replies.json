@@ -403,13 +403,7 @@
           "is_deleted": false,
           "logo": null,
           "ticket_form_ids": [
-            1500000859362,
-            1500002488461,
-            1500002488481,
-            1500002488501,
-            1900000172165,
-            1900000882985,
-            1900000911005
+            1500000859362, 1500002488461, 1500002488481, 1500002488501, 1900000172165, 1900000882985, 1900000911005
           ],
           "signature_template": "{{agent.signature}}",
           "created_at": "2021-05-18T19:00:43Z",
@@ -429,13 +423,7 @@
           "is_deleted": false,
           "logo": null,
           "ticket_form_ids": [
-            1500000859362,
-            1500002488461,
-            1500002488481,
-            1500002488501,
-            1900000172165,
-            1900000882985,
-            1900000911005
+            1500000859362, 1500002488461, 1500002488481, 1500002488501, 1900000172165, 1900000882985, 1900000911005
           ],
           "signature_template": "{{agent.signature}}",
           "created_at": "2021-05-18T19:00:43Z",
@@ -455,13 +443,7 @@
           "is_deleted": false,
           "logo": null,
           "ticket_form_ids": [
-            1500000859362,
-            1500002488461,
-            1500002488481,
-            1500002488501,
-            1900000172165,
-            1900000882985,
-            1900000911005
+            1500000859362, 1500002488461, 1500002488481, 1500002488501, 1900000172165, 1900000882985, 1900000911005
           ],
           "signature_template": "{{agent.signature}}",
           "created_at": "2021-05-18T19:00:43Z",
@@ -519,9 +501,7 @@
           "identifier": "myBrand_test",
           "company": "myBrand",
           "description": "this client is used in the test environment",
-          "redirect_uri": [
-            "http://localhost:8080/zendesk-oauth2-redirect"
-          ],
+          "redirect_uri": ["http://localhost:8080/zendesk-oauth2-redirect"],
           "secret": "d4445e7ab9",
           "created_at": "2021-12-02T14:41:26Z",
           "updated_at": "2021-12-02T14:42:35Z",
@@ -536,9 +516,7 @@
           "identifier": "myBrand_test_oauth",
           "company": "myBrand",
           "description": "",
-          "redirect_uri": [
-            "http://localhost:8080/zendesk-oauth2-redirect"
-          ],
+          "redirect_uri": ["http://localhost:8080/zendesk-oauth2-redirect"],
           "secret": "9aec4f0114",
           "created_at": "2021-12-15T08:10:45Z",
           "updated_at": "2021-12-15T08:10:45Z",
@@ -553,9 +531,7 @@
           "identifier": "myBrand_zendesk_client",
           "company": "myBrand",
           "description": "",
-          "redirect_uri": [
-            "http://localhost:8000"
-          ],
+          "redirect_uri": ["http://localhost:8000"],
           "secret": "6767266ae6",
           "created_at": "2021-11-29T15:00:18Z",
           "updated_at": "2021-12-13T14:02:15Z",
@@ -594,9 +570,7 @@
           "details": "Test details",
           "notes": "",
           "group_id": 1500002894482,
-          "tags": [
-            "123"
-          ],
+          "tags": ["123"],
           "organization_fields": {
             "dropdown_26": "123",
             "org_field301": null,
@@ -617,10 +591,7 @@
           "external_id": null,
           "created_at": "2021-08-08T05:21:33Z",
           "updated_at": "2021-08-08T05:21:33Z",
-          "domain_names": [
-            "test1.myBrand.io",
-            "test2.myBrand.io"
-          ],
+          "domain_names": ["test1.myBrand.io", "test2.myBrand.io"],
           "details": "",
           "notes": "",
           "group_id": null,
@@ -966,9 +937,7 @@
             }
           ],
           "restriction": null,
-          "attachments": [
-            4621166392467
-          ]
+          "attachments": [4621166392467]
         },
         {
           "url": "https://myBrand.zendesk.com/api/v2/macros/1500027465822.json",
@@ -1112,9 +1081,7 @@
   {
     "url": "/api/v2/macros/categories",
     "response": {
-      "categories": [
-        "MacroCategory"
-      ]
+      "categories": ["MacroCategory"]
     }
   },
   {
@@ -2063,9 +2030,7 @@
         "rule": {
           "macro_most_used": true,
           "macro_order": "alphabetical",
-          "skill_based_filtered_views": [
-            1500027465742
-          ],
+          "skill_based_filtered_views": [1500027465742],
           "using_skill_based_routing": true,
           "enable_macro_suggestions": false
         },
@@ -2102,10 +2067,7 @@
           "support_addresses": []
         },
         "localization": {
-          "locale_ids": [
-            2,
-            30
-          ]
+          "locale_ids": [2, 30]
         },
         "knowledge": {
           "search_articles": true,
@@ -2912,10 +2874,7 @@
           "updated": "20210713144937",
           "updated_at": "2021-08-08T05:25:01Z",
           "created_at": "2021-08-08T05:24:57Z",
-          "role_restrictions": [
-            2,
-            1500001601021
-          ],
+          "role_restrictions": [2, 1500001601021],
           "recurring_payment": false,
           "collapsible": true,
           "plan_information": {
@@ -2926,9 +2885,7 @@
           "has_incomplete_subscription": false,
           "stripe_publishable_key": null,
           "stripe_account": null,
-          "group_restrictions": [
-            1500002894482
-          ]
+          "group_restrictions": [1500002894482]
         }
       ]
     }
@@ -4106,11 +4063,7 @@
           "id": 1500001200962,
           "title": "New Workspace 123",
           "description": "",
-          "macro_ids": [
-            1500016953922,
-            1500016953942,
-            1900002626825
-          ],
+          "macro_ids": [1500016953922, 1500016953942, 1900002626825],
           "ticket_form_id": 1500000859362,
           "apps": [],
           "position": 1,
@@ -4300,16 +4253,8 @@
           "end_user_visible": true,
           "position": 1,
           "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500004937722,
-            1500004937742,
-            1900000813305,
-            1500009152882,
-            1500009152902,
-            1500009152922,
-            1500004937802
+            1500004937762, 1500004937822, 1500004937842, 1500004937722, 1500004937742, 1900000813305, 1500009152882,
+            1500009152902, 1500009152922, 1500004937802
           ],
           "active": true,
           "default": true,
@@ -4330,13 +4275,7 @@
           "end_user_visible": false,
           "position": 2,
           "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500004937722,
-            1500009152922,
-            1500004937742,
-            1500009152882
+            1500004937762, 1500004937822, 1500004937842, 1500004937722, 1500009152922, 1500004937742, 1500009152882
           ],
           "active": true,
           "default": false,
@@ -4356,13 +4295,7 @@
           "raw_display_name": "",
           "end_user_visible": false,
           "position": 3,
-          "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500004937722,
-            1500004937742
-          ],
+          "ticket_field_ids": [1500004937762, 1500004937822, 1500004937842, 1500004937722, 1500004937742],
           "active": true,
           "default": false,
           "created_at": "2021-08-08T05:42:03Z",
@@ -4381,13 +4314,7 @@
           "raw_display_name": "",
           "end_user_visible": false,
           "position": 4,
-          "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500004937722,
-            1500004937742
-          ],
+          "ticket_field_ids": [1500004937762, 1500004937822, 1500004937842, 1500004937722, 1500004937742],
           "active": true,
           "default": false,
           "created_at": "2021-08-08T05:42:09Z",
@@ -4407,12 +4334,7 @@
           "end_user_visible": false,
           "position": 5,
           "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500009152882,
-            1500004937722,
-            1500004937742
+            1500004937762, 1500004937822, 1500004937842, 1500009152882, 1500004937722, 1500004937742
           ],
           "active": true,
           "default": false,
@@ -4433,13 +4355,7 @@
           "end_user_visible": false,
           "position": 6,
           "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500004937722,
-            1500004937742,
-            1900004086785,
-            1500004937802,
+            1500004937762, 1500004937822, 1500004937842, 1500004937722, 1500004937742, 1900004086785, 1500004937802,
             1500012620641
           ],
           "active": true,
@@ -4461,13 +4377,7 @@
           "end_user_visible": true,
           "position": 7,
           "ticket_field_ids": [
-            1500004937762,
-            1500004937822,
-            1500004937842,
-            1500004937722,
-            1500004937742,
-            1500004937802,
-            1900004086785,
+            1500004937762, 1500004937822, 1500004937842, 1500004937722, 1500004937742, 1500004937802, 1900004086785,
             1500004937782
           ],
           "active": true,
@@ -11390,9 +11300,7 @@
           "restriction": {
             "type": "Group",
             "id": 1500002894482,
-            "ids": [
-              1500002894482
-            ]
+            "ids": [1500002894482]
           },
           "watchable": false,
           "raw_title": "Custom view 123"
@@ -11677,9 +11585,7 @@
           "restriction": {
             "type": "Group",
             "id": 1500002894482,
-            "ids": [
-              1500002894482
-            ]
+            "ids": [1500002894482]
           },
           "watchable": false,
           "raw_title": "Custom view 1234"
@@ -11812,9 +11718,7 @@
           "restriction": {
             "type": "Group",
             "id": 1500002894482,
-            "ids": [
-              1500002894482
-            ]
+            "ids": [1500002894482]
           },
           "watchable": false,
           "raw_title": "Test"
@@ -11902,9 +11806,7 @@
           "restriction": {
             "type": "Group",
             "id": 1500002894482,
-            "ids": [
-              1500002894482
-            ]
+            "ids": [1500002894482]
           },
           "watchable": false,
           "raw_title": "Test2"
@@ -11947,9 +11849,7 @@
           "framework_version": "2.0",
           "featured": false,
           "promoted": false,
-          "products": [
-            "support"
-          ],
+          "products": ["support"],
           "categories": [],
           "version": "1.0",
           "marketing_only": false,
@@ -25765,9 +25665,7 @@
           "name": "test",
           "description": "",
           "status": "active",
-          "subscriptions": [
-            "conditional_ticket_events"
-          ],
+          "subscriptions": ["conditional_ticket_events"],
           "created_at": "2022-01-26T13:50:25Z",
           "created_by": "1523341727741",
           "updated_at": "2022-01-26T13:53:11Z",
@@ -26018,10 +25916,7 @@
         {
           "id": 7243702759187,
           "user_type": "staff",
-          "group_ids": [
-            6120409509651,
-            6120315606419
-          ],
+          "group_ids": [6120409509651, 6120315606419],
           "organization_ids": [],
           "tags": [],
           "or_tags": [],
@@ -26035,18 +25930,13 @@
           "id": 7243628455955,
           "user_type": "signed_in_users",
           "group_ids": [],
-          "organization_ids": [
-            6121341780755,
-            6121380831635
-          ],
+          "organization_ids": [6121341780755, 6121380831635],
           "tags": [],
           "or_tags": [],
           "created_at": "2022-06-24T10:23:36Z",
           "updated_at": "2022-06-24T10:23:41Z",
           "built_in": false,
-          "added_user_ids": [
-            1534261810821
-          ],
+          "added_user_ids": [1534261810821],
           "name": "VIP Customers"
         }
       ]

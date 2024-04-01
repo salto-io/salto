@@ -1478,6 +1478,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   dynamic_content_item: {
     request: {
       url: '/api/v2/dynamic_content/items',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: '.',

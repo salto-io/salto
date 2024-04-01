@@ -30,7 +30,6 @@ import {
   isReferenceExpression,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
 import { GUIDE_ITEM_TYPE_NAMES, TRANSLATION_TYPE_NAMES } from '../constants'
 
 const getLocaleChange = (
@@ -76,12 +75,12 @@ export const createErrorMessageForDefaultTranslationValidator = (
  * 3. Remove the translation that used to be the item's source local
  * This CV is meant to block these deployments, and explain that they should be split into separate deployments
  */
-export const guideDefaultTranslationChangeValidator: ChangeValidator = async changes => {
-  const guideItemErrors = changes
+export const guideDefaultTranslationChangeValidator: ChangeValidator = async changes =>
+  changes
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(change => change.data.before.value.source_locale !== change.data.after.value.source_locale)
     .filter(change => GUIDE_ITEM_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+    .filter(change => change.data.before.value.source_locale !== change.data.after.value.source_locale)
     .flatMap(change => {
       const instance = getChangeData(change)
       const newSourceLocaleID = isReferenceExpression(instance.value.source_locale)
@@ -96,9 +95,17 @@ export const guideDefaultTranslationChangeValidator: ChangeValidator = async cha
       const removedSourceLocale =
         oldSourceLocaleID !== undefined ? getLocaleChange(changes, oldSourceLocaleID, 'removed') : undefined
       if (addedSourceLocale !== undefined && removedSourceLocale !== undefined) {
+        // Out of the 3 interlinked changes, we want to "block" 2 of them: modification to the parent and removal of the translation.
+        // This way, the user can deploy the creation of the new translation immediately
         return [
           createErrorMessageForDefaultTranslationValidator(
             instance,
+            instance,
+            getChangeData(addedSourceLocale),
+            getChangeData(removedSourceLocale),
+          ),
+          createErrorMessageForDefaultTranslationValidator(
+            getChangeData(removedSourceLocale) as InstanceElement,
             instance,
             getChangeData(addedSourceLocale),
             getChangeData(removedSourceLocale),
@@ -107,51 +114,3 @@ export const guideDefaultTranslationChangeValidator: ChangeValidator = async cha
       }
       return []
     })
-
-  const translationErrors = changes
-    .filter(isRemovalChange)
-    .filter(isInstanceChange)
-    .filter(change => TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
-    .flatMap(change => {
-      const instance = getChangeData(change)
-      const parent = getParent(instance)
-
-      const localeID = isReferenceExpression(instance.value.locale) ? instance.value.locale.elemID : undefined
-      const parentSourceLocaleID = isReferenceExpression(parent.value.source_locale)
-        ? parent.value.source_locale.elemID
-        : undefined
-
-      if (localeID && parentSourceLocaleID && !localeID.isEqual(parentSourceLocaleID)) {
-        return []
-      }
-      const parentModificationChange = changes.find(subChange => getChangeData(subChange).elemID.isEqual(parent.elemID))
-      if (
-        parentModificationChange &&
-        isModificationChange(parentModificationChange) &&
-        isInstanceChange(parentModificationChange) &&
-        parentModificationChange?.data.before.value.source_locale !==
-          parentModificationChange?.data.after.value.source_locale
-      ) {
-        const newSourceLocaleRef = parentModificationChange?.data.after.value.source_locale
-        const newSourceLocaleID = isReferenceExpression(newSourceLocaleRef) ? newSourceLocaleRef.elemID : undefined
-
-        const addedSourceLocale =
-          newSourceLocaleID !== undefined ? getLocaleChange(changes, newSourceLocaleID, 'added') : undefined
-        if (addedSourceLocale !== undefined) {
-          return [
-            createErrorMessageForDefaultTranslationValidator(
-              instance,
-              parent,
-              getChangeData(addedSourceLocale),
-              instance,
-            ),
-          ]
-        }
-      }
-      return []
-    })
-
-  // Out of the 3 interlinked changes, we want to "block" 2 of them: modification to the parent and removal of the translation.
-  // This way, the user can deploy the creation of the new translation immediately
-  return [...guideItemErrors, ...translationErrors]
-}

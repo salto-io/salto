@@ -97,7 +97,7 @@ export const getUsers = async (
   paginator: clientUtils.Paginator,
   searchUsersParams?: SearchUsersParams,
 ): Promise<User[]> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     const paginationArgs = {
       url: '/api/v1/users',
       paginationField: 'after',

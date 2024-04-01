@@ -155,12 +155,12 @@ const addDependenciesAnnotation = async (
   log.debug(`Extracting formula refs from ${field.elemID.getFullName()}`)
 
   try {
-    const formulaIdentifiers: string[] = log.time(
+    const formulaIdentifiers: string[] = log.timeDebug(
       () => extractFormulaIdentifiers(formula),
       `Parse formula '${formula.slice(0, 15)}'`,
     )
 
-    const identifiersInfo = await log.time(
+    const identifiersInfo = await log.timeDebug(
       () =>
         Promise.all(
           formulaIdentifiers.map(async (identifier) =>

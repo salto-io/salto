@@ -290,7 +290,7 @@ export const selectElementIdsByTraversal = async ({
   referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
   compact?: boolean
 }): Promise<AsyncIterable<ElemID>> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     const determinedSelectors = selectors.filter(
       selector => !isWildcardSelector(selector.origin) && !hasReferencedBy(selector),
     )

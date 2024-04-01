@@ -298,7 +298,7 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
  *   Here we chose the results for such case to be ['a', 'b'].
  */
 export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void =>
-  log.time(() => {
+  log.timeDebug(() => {
     const ids = changes.map(change => change.id)
     if (
       ids.some(id => !isIndexPathPart(id.name)) ||

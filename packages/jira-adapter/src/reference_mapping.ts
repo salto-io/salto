@@ -655,6 +655,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
     serializationStrategy: 'name',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: WORKFLOW_TYPE_NAME },
   },
   {
@@ -672,6 +673,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
     serializationStrategy: 'name',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: WORKFLOW_CONFIGURATION_TYPE },
   },
   {

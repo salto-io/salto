@@ -264,6 +264,7 @@ describe('Custom Object Instances filter', () => {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
+    jest.spyOn(client, 'countInstances')
     setMockQueryResults(TestCustomRecords, false)
   })
 
@@ -2331,6 +2332,12 @@ describe('Custom Object Instances filter', () => {
             expect(elements).toSatisfyAny(
               (element) =>
                 element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+            )
+          })
+          it('should not count types in allowReferenceTo', () => {
+            expect(client.countInstances).toHaveBeenCalledWith(testTypeName)
+            expect(client.countInstances).not.toHaveBeenCalledWith(
+              refToTypeName,
             )
           })
         })

@@ -460,6 +460,13 @@ describe('workflow filter', () => {
               statuses: [],
             },
           ],
+          statuses: [
+            {
+              id: '1',
+              name: 'status1',
+              statusReference: '1',
+            },
+          ],
         },
       })
       const filterResult = (await filter.onFetch(elements)) as FilterResult

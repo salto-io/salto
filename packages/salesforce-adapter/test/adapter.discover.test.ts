@@ -393,6 +393,16 @@ describe('SalesforceAdapter fetch', () => {
               content: testData.anotherApexClass.zipFileContent,
             })
           }
+          if (
+            fullNamesByType[constants.CUSTOM_METADATA]?.includes(
+              CUSTOM_METADATA_FULL_NAME,
+            )
+          ) {
+            zipFiles.push({
+              path: `unpackaged/${testData[CUSTOM_METADATA_FULL_NAME].zipFileName}-meta.xml`,
+              content: testData[CUSTOM_METADATA_FULL_NAME].zipFileContent,
+            })
+          }
           return mockRetrieveLocator({ zipFiles })
         })
       }

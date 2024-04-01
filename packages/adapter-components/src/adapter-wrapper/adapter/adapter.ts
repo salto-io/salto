@@ -64,6 +64,18 @@ import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '..
 import { createChangeElementResolver } from '../../resolve_utils'
 import { getChangeGroupIdsFuncWithDefinitions } from '../../deployment/grouping'
 import { combineDependencyChangers } from '../../deployment/dependency'
+import {
+  FieldReferenceResolver,
+  FieldReferenceDefinition,
+  ReferenceSerializationStrategy,
+  ReferenceSerializationStrategyLookup,
+  ReferenceSerializationStrategyName,
+} from '../../references/reference_mapping'
+import {
+  ResolveReferenceContextStrategiesType,
+  ResolveReferenceIndexNames,
+  ResolveReferenceSerializationStrategyLookup,
+} from '../../definitions/system/api'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -86,6 +98,16 @@ export class AdapterImpl<
   protected changeValidators: Record<string, ChangeValidator>
   protected dependencyChangers: DependencyChanger[]
   protected definitions: RequiredDefinitions<Options>
+  protected referenceResolver: (
+    def: FieldReferenceDefinition<
+      ResolveReferenceContextStrategiesType<Options>,
+      ResolveReferenceSerializationStrategyLookup<Options>
+    >,
+  ) => FieldReferenceResolver<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>,
+    ResolveReferenceIndexNames<Options>
+  >
 
   public constructor({
     adapterName,
@@ -131,6 +153,26 @@ export class AdapterImpl<
     }
     // TODO combine with infra changers after SALTO-5571
     this.dependencyChangers = dependencyChangers ?? []
+
+    if (this.definitions.references?.serializationStrategyLookup !== undefined) {
+      const serializationStrategyLookup: Record<
+        ReferenceSerializationStrategyName | ResolveReferenceSerializationStrategyLookup<Options>,
+        ReferenceSerializationStrategy<ResolveReferenceIndexNames<Options>>
+      > = _.merge({}, this.definitions.references?.serializationStrategyLookup, ReferenceSerializationStrategyLookup)
+      this.referenceResolver = def =>
+        FieldReferenceResolver.create<
+          ResolveReferenceContextStrategiesType<Options>,
+          ResolveReferenceSerializationStrategyLookup<Options>,
+          ResolveReferenceIndexNames<Options>
+        >(def, serializationStrategyLookup)
+    } else {
+      this.referenceResolver = def =>
+        FieldReferenceResolver.create<
+          ResolveReferenceContextStrategiesType<Options>,
+          ResolveReferenceSerializationStrategyLookup<Options>,
+          ResolveReferenceIndexNames<Options>
+        >(def)
+    }
   }
 
   @logDuration('generating types from swagger')
@@ -229,8 +271,10 @@ export class AdapterImpl<
       }
     }
 
-    // TODO SALTO-5406 allow passing in a custom fieldReferenceResolverCreator
-    const lookupFunc = generateLookupFunc(this.definitions.references?.rules ?? [])
+    const lookupFunc =
+      this.definitions.references === undefined
+        ? generateLookupFunc([])
+        : generateLookupFunc(this.definitions.references?.rules ?? [], def => this.referenceResolver(def))
 
     const changesToDeploy = instanceChanges.map(change => ({
       action: change.action,

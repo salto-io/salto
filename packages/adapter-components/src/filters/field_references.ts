@@ -17,8 +17,9 @@ import { Element } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { AdapterFilterCreator } from '../filter_utils'
-import { FieldReferenceDefinition, addReferences } from '../references'
+import { FieldReferenceDefinition, addReferences, FieldReferenceResolver } from '../references'
 import { APIDefinitionsOptions, ResolveReferenceContextStrategiesType } from '../definitions'
+import { ResolveReferenceIndexNames, ResolveReferenceSerializationStrategyLookup } from '../definitions/system/api'
 
 const { makeArray } = collections.array
 
@@ -26,16 +27,35 @@ const { makeArray } = collections.array
  * replace values with references based on a set of rules
  */
 export const fieldReferencesFilterCreator =
-  <TResult extends void | filter.FilterResult, TOptions extends APIDefinitionsOptions = {}>(
-    referenceRules?: FieldReferenceDefinition<ResolveReferenceContextStrategiesType<TOptions>>[],
-  ): AdapterFilterCreator<{}, TResult, {}, TOptions> =>
+  <TResult extends void | filter.FilterResult, Options extends APIDefinitionsOptions = {}>(
+    referenceRules?: FieldReferenceDefinition<
+      ResolveReferenceContextStrategiesType<Options>,
+      ResolveReferenceSerializationStrategyLookup<Options>
+    >[],
+    fieldReferenceResolverCreator?: (
+      def: FieldReferenceDefinition<
+        ResolveReferenceContextStrategiesType<Options>,
+        ResolveReferenceSerializationStrategyLookup<Options>
+      >,
+    ) => FieldReferenceResolver<ResolveReferenceContextStrategiesType<Options>>,
+  ): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions }) => ({
     name: 'fieldReferencesFilter',
     onFetch: async (elements: Element[]) => {
-      await addReferences({
+      await addReferences<
+        ResolveReferenceContextStrategiesType<Options>,
+        ResolveReferenceSerializationStrategyLookup<Options>,
+        ResolveReferenceIndexNames<Options>,
+        FieldReferenceDefinition<
+          ResolveReferenceContextStrategiesType<Options>,
+          ResolveReferenceSerializationStrategyLookup<Options>
+        >
+      >({
         elements,
         defs: makeArray(referenceRules).concat(makeArray(definitions.references?.rules)),
         contextStrategyLookup: definitions.references?.contextStrategyLookup,
+        fieldsToGroupBy: definitions.references?.fieldsToGroupBy,
+        fieldReferenceResolverCreator,
       })
     },
   })

@@ -13,11 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ContextFunc, FieldReferenceDefinition } from '../../references'
+import { types } from '@salto-io/lowerdash'
+import { ContextFunc, FieldReferenceDefinition, ReferenceSerializationStrategy } from '../../references'
+import { ReferenceIndexField } from '../../references/reference_mapping'
 
-export type ReferenceDefinitions<T extends string = never> = {
-  // rules for finding references - converting values to references in fetch, and references to values in deploy.
-  // this is an array of arrays because rules can be run in multiple iterations during fetch
-  rules: FieldReferenceDefinition<T>[]
-  contextStrategyLookup?: Record<T, ContextFunc>
-}
+export type ReferenceDefinitions<
+  ContextStrategy extends string = never,
+  SerializationStrategyName extends string = never,
+  CustomIndexField extends string = never,
+> = types.PickyRequired<
+  {
+    // rules for finding references - converting values to references in fetch, and references to values in deploy.
+    // this is an array of arrays because rules can be run in multiple iterations during fetch
+    rules: FieldReferenceDefinition<ContextStrategy, SerializationStrategyName>[]
+    contextStrategyLookup?: Record<ContextStrategy, ContextFunc>
+    serializationStrategyLookup?: Record<SerializationStrategyName, ReferenceSerializationStrategy<CustomIndexField>>
+    fieldsToGroupBy?: (ReferenceIndexField | CustomIndexField)[]
+  },
+  | (ContextStrategy extends never ? never : 'contextStrategyLookup')
+  | (SerializationStrategyName extends never ? never : 'serializationStrategyLookup')
+  | (CustomIndexField extends never ? never : 'fieldsToGroupBy')
+>

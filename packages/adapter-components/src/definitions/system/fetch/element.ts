@@ -150,7 +150,7 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
 
   // customize the service-url annotation used to define go-to-service
   // TODO use
-  serviceUrl?: ArgsWithCustomizer<string, { path: string }, Values>
+  serviceUrl?: ArgsWithCustomizer<string, { path: string; baseUrl?: string }, Values>
 
   // when true, instances of this type will be hidden (_hidden_value = true on type)
   hide?: boolean

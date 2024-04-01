@@ -353,7 +353,7 @@ describe('createAdapter', () => {
           'test.business_hours_schedule.instance.Some_schedule@s',
           'test.business_hours_schedule__intervals',
           'test.business_hours_schedule_holiday',
-          'test.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
+          'test.business_hours_schedule_holiday.instance.Some_schedule_New_holiday1@sus',
           'test.group',
           'test.group.instance.group_1@s',
           'test.group.instance.group_2@s',
@@ -364,7 +364,7 @@ describe('createAdapter', () => {
             .find(
               e =>
                 e.elemID.getFullName() ===
-                'test.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
+                'test.business_hours_schedule_holiday.instance.Some_schedule_New_holiday1@sus',
             )?.value,
         ).toEqual({
           end_date: '2024-02-21',

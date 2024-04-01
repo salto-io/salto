@@ -125,7 +125,7 @@ describe('adapter', () => {
           'serviceplaceholder.business_hours_schedule.instance.Some_schedule@s',
           'serviceplaceholder.business_hours_schedule__intervals',
           'serviceplaceholder.business_hours_schedule_holiday',
-          'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
+          'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule_New_holiday1@sus',
           'serviceplaceholder.group',
           'serviceplaceholder.group.instance.group_1@s',
           'serviceplaceholder.group.instance.group_2@s',
@@ -142,7 +142,7 @@ describe('adapter', () => {
             .find(
               e =>
                 e.elemID.getFullName() ===
-                'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
+                'serviceplaceholder.business_hours_schedule_holiday.instance.Some_schedule_New_holiday1@sus',
             )?.value,
         ).toEqual({
           end_date: '2024-02-21',

@@ -71,7 +71,7 @@ export type WorkflowStatus = {
   name: string
 }
 
-type PayloadWorkflowStatus = WorkflowStatus & {
+export type PayloadWorkflowStatus = WorkflowStatus & {
   statusReference: string
 }
 

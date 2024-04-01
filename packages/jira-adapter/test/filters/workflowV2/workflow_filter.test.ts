@@ -1290,6 +1290,18 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             'Failed to deploy step names for workflow workflow; step names will be identical to status names. If required, you can manually edit the step names in Jira: https://ori-salto-test.atlassian.net/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName=workflow',
           )
         })
+        it('should return a warning when there is a status that does not exists in the payload', async () => {
+          workflowInstance.value.statuses.pop()
+          const result = await filter.deploy([toChange({ after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(1)
+          expect(result.deployResult.errors[0].severity).toEqual('Warning')
+          expect(result.deployResult.errors[0].message).toEqual(
+            'Failed to deploy step names for workflow workflow; step names will be identical to status names. If required, you can manually edit the step names in Jira: https://ori-salto-test.atlassian.net/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName=workflow',
+          )
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'status reference of status stepName2 is missing from the payload status list in workflow workflow',
+          )
+        })
 
         it('should not insert id and version when workflow response is invalid', async () => {
           deployChangeMock.mockResolvedValueOnce({ workflows: [{ name: 'workflow' }] })

@@ -77,6 +77,7 @@ import {
   WorkflowStatus,
   Workflow,
   isDeploymentWorkflowPayload,
+  PayloadWorkflowStatus,
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
@@ -420,7 +421,7 @@ const getWorkflowsFromWorkflowScheme = async (
 }
 
 // active workflow is a workflow that is associated with a project using a workflow scheme
-const calculateActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
+const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
   const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
   const activeWorkflows = await awu(projects)
     .filter(projectHasWorkflowSchemeReference)
@@ -437,6 +438,25 @@ const getWorkflowStepsUrl = (baseUrl: string, workflowName: string): URL => {
   url.searchParams.append('workflowMode', 'live')
   url.searchParams.append('workflowName', workflowName)
   return url
+}
+
+const filterWorkflowStatuses = (
+  status: Values,
+  payloadStatusesByReference: _.Dictionary<PayloadWorkflowStatus>,
+  workflowName: string,
+): boolean => {
+  const payloadStatus = payloadStatusesByReference[status.statusReference]
+  if (payloadStatus === undefined) {
+    log.error(
+      `status reference of status ${status.name} is missing from the payload status list in workflow ${workflowName}`,
+    )
+    throw new Error('failed to deploy workflow steps')
+  }
+  if (payloadStatus.name === undefined) {
+    log.error(`status name is missing from the status with id ${status.id} in workflow ${workflowName}`)
+    throw new Error('failed to deploy workflow steps')
+  }
+  return payloadStatus.name !== status.name
 }
 
 const deploySteps = async (
@@ -459,15 +479,10 @@ const deploySteps = async (
   const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
 
   await awu(workflowStatuses)
-    .filter(status => payloadStatusesByReference[status.statusReference]?.name !== status.name)
+    .filter(status => filterWorkflowStatuses(status, payloadStatusesByReference, workflowName))
     .forEach(async status => {
-      const payloadStatus = payloadStatusesByReference[status.statusReference]
-      if (payloadStatus?.name === undefined) {
-        log.error(`status name is missing from the status with id ${status.id} in workflow ${workflowName}`)
-        throw new Error('failed to deploy workflow steps')
-      }
       isDeployedSteps = true
-      const stepStatus = payloadStatus.id
+      const stepStatus = payloadStatusesByReference[status.statusReference].id
       const workflowStep = statusIdToStepId[stepStatus]
 
       if (activeWorkflowsNames.has(change.data.after.elemID.getFullName())) {
@@ -566,7 +581,6 @@ const deployWorkflow = async ({
     try {
       isDeployedSteps = await deploySteps(change, activeWorkflowsNames, client)
     } catch (error) {
-      // need to update the version
       const workflowName = getChangeData(change).value.workflows[0].name
       const workflowStepsLink = getWorkflowStepsUrl(client.baseUrl, workflowName)
       const deployStepsError: SaltoError = {
@@ -666,13 +680,13 @@ const getWorkflowForDeploy = async (
  * if there is a modification that removes a status from an active workflow we need status mappings to migrate the issues
  */
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elementsSource }) => {
-  let activeWorkflowsNames: Set<string>
+  let activeWorkflowsNamesPromise: Promise<Set<string>>
   const originalInstances: Record<string, InstanceElement> = {}
-  const getActiveWorkflowsNames = async (): Promise<Set<string>> => {
-    if (activeWorkflowsNames === undefined) {
-      return calculateActiveWorkflowsNames(elementsSource)
+  const getActiveWorkflowsNamesPromise = async (): Promise<Set<string>> => {
+    if (activeWorkflowsNamesPromise === undefined) {
+      activeWorkflowsNamesPromise = getActiveWorkflowsNames(elementsSource)
     }
-    return activeWorkflowsNames
+    return activeWorkflowsNamesPromise
   }
   return {
     name: 'workflowFilter',
@@ -737,7 +751,7 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(changes, isAdditionOrModificationWorkflowChange)
-      activeWorkflowsNames = await getActiveWorkflowsNames()
+      const activeWorkflowsNames = await getActiveWorkflowsNamesPromise()
       const deployResult = await deployChanges(relevantChanges, async change =>
         deployWorkflow({
           change,

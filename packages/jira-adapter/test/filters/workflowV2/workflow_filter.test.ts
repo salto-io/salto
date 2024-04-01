@@ -24,9 +24,10 @@ import {
   ReferenceExpression,
   toChange,
   MapType,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { naclCase } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { logger } from '@salto-io/logging'
 import { FilterResult } from '../../../src/filter'
@@ -42,6 +43,7 @@ import {
   STATUS_CATEGORY_TYPE_NAME,
   STATUS_TYPE_NAME,
 } from '../../../src/constants'
+import { JSP_API_HEADERS } from '../../../src/client/headers'
 import { TASK_STATUS } from '../../../src/filters/workflowV2/types'
 
 const uuidMock = jest.fn()
@@ -155,13 +157,13 @@ describe('workflow filter', () => {
               ],
               statuses: [
                 {
-                  id: '11',
                   properties: {
                     'jira.issue.editable': 'true',
                   },
+                  statusReference: '11',
                 },
                 {
-                  id: '2',
+                  statusReference: '2',
                 },
               ],
             },
@@ -177,10 +179,10 @@ describe('workflow filter', () => {
               },
               statuses: [
                 {
-                  id: '22',
                   properties: {
                     'jira.issue.editable': 'true',
                   },
+                  statusReference: '22',
                 },
               ],
               transitions: [
@@ -192,6 +194,23 @@ describe('workflow filter', () => {
                   },
                 },
               ],
+            },
+          ],
+          statuses: [
+            {
+              id: '11',
+              name: 'Create',
+              statusReference: '11',
+            },
+            {
+              id: '2',
+              name: 'another one',
+              statusReference: '2',
+            },
+            {
+              id: '22',
+              name: 'Quack Quack',
+              statusReference: '22',
             },
           ],
         },
@@ -241,16 +260,18 @@ describe('workflow filter', () => {
         },
         statuses: [
           {
-            id: '11',
+            statusReference: '11',
             properties: [
               {
                 key: 'jira.issue.editable',
                 value: 'true',
               },
             ],
+            name: 'Create',
           },
           {
-            id: '2',
+            statusReference: '2',
+            name: 'another one',
           },
         ],
       })
@@ -277,13 +298,14 @@ describe('workflow filter', () => {
         },
         statuses: [
           {
-            id: '22',
+            statusReference: '22',
             properties: [
               {
                 key: 'jira.issue.editable',
                 value: 'true',
               },
             ],
+            name: 'Quack Quack',
           },
         ],
       })
@@ -438,6 +460,13 @@ describe('workflow filter', () => {
               statuses: [],
             },
           ],
+          statuses: [
+            {
+              id: '1',
+              name: 'status1',
+              statusReference: '1',
+            },
+          ],
         },
       })
       const filterResult = (await filter.onFetch(elements)) as FilterResult
@@ -538,6 +567,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 statuses: [],
               },
             ],
+            statuses: [
+              {
+                id: '1',
+                name: 'status1',
+                statusReference: '1',
+              },
+            ],
           },
         })
       })
@@ -611,13 +647,8 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         {
           description: 'description',
           name: 'workflow',
-          id: '1',
           scope: {
             type: 'global',
-          },
-          version: {
-            id: '1',
-            versionNumber: 1,
           },
           startPointLayout: {
             x: 12,
@@ -630,6 +661,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 y: 34,
               },
               statusReference: 'uuid1',
+              name: 'stepName1',
               properties: {
                 'jira.issue.editable': 'true',
               },
@@ -640,6 +672,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 y: 67,
               },
               statusReference: 'uuid2',
+              name: 'stepName2',
             },
           ],
           transitions: [
@@ -690,7 +723,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       },
     }
     const MODIFICATION_WORKFLOW_PAYLOAD = {
-      ...WORKFLOW_PAYLOAD,
+      statuses: WORKFLOW_PAYLOAD.statuses,
       scope: undefined,
       workflows: [
         {
@@ -730,19 +763,28 @@ It is strongly recommended to rename these transitions so they are unique in Jir
     let conditionGroupConfigurationType: ObjectType
     let workflowInstance: InstanceElement
     let workflowInstanceBefore: InstanceElement
-    let preDeployWorkflowInstance: InstanceElement
     let statusCategory1: InstanceElement
     let status1: InstanceElement
     let status2: InstanceElement
+    let projectInstance: InstanceElement
+    let issueTypeInstance: InstanceElement
+    let workflowSchemeInstance: InstanceElement
+    let defaultWorkflowInstance: InstanceElement
+    let elementsSource: ReadOnlyElementsSource
 
     const modificationSetup = (): void => {
+      workflowInstance.value.id = '1'
+      workflowInstance.value.version = {
+        id: '1',
+        versionNumber: 1,
+      }
       workflowInstanceBefore = _.cloneDeep(workflowInstance)
-      const issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME), { id: '11' })
-      const projectInstance = new InstanceElement('project', createEmptyType(PROJECT_TYPE), { id: '22' })
+      issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME), { id: '11' })
+      const projectInstance2 = new InstanceElement('project', createEmptyType(PROJECT_TYPE), { id: '22' })
       const statusMapping = [
         {
           issueTypeId: new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          projectId: new ReferenceExpression(projectInstance2.elemID, projectInstance2),
           statusMigrations: [
             {
               newStatusReference: new ReferenceExpression(status1.elemID, status1),
@@ -845,11 +887,6 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         scope: {
           type: 'global',
         },
-        version: {
-          versionNumber: 1,
-          id: '1',
-        },
-        id: '1',
         startPointLayout: {
           x: 12,
           y: 34,
@@ -861,6 +898,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               x: 12,
               y: 34,
             },
+            name: 'stepName1',
             properties: [
               {
                 key: 'jira.issue.editable',
@@ -874,6 +912,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               x: 45,
               y: 67,
             },
+            name: 'stepName2',
           },
         ],
         transitions: {
@@ -919,15 +958,129 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           },
         },
       })
+      issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME))
+      defaultWorkflowInstance = new InstanceElement('defaultWorkflow', workflowType)
+      workflowSchemeInstance = new InstanceElement('workflowScheme', createEmptyType('WorkflowScheme'), {
+        id: '1',
+        name: 'workflowScheme',
+        defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
+        items: [
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
+          },
+        ],
+      })
+      projectInstance = new InstanceElement('project', createEmptyType(PROJECT_TYPE), {
+        name: 'project',
+        workflowScheme: new ReferenceExpression(workflowSchemeInstance.elemID, workflowSchemeInstance),
+      })
       const { client: cli, connection: conn } = mockClient()
       client = cli
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          layout: {
+            statuses: [
+              {
+                statusId: 1,
+                stepId: 4,
+              },
+              {
+                statusId: 2,
+                stepId: 5,
+              },
+            ],
+          },
+        },
+      })
+      deployChangeMock.mockResolvedValue({
+        workflows: [
+          {
+            id: '1',
+            name: 'workflow',
+            version: {
+              versionNumber: 1,
+              id: '1',
+            },
+            statuses: [
+              {
+                statusReference: 'uuid1',
+              },
+              {
+                statusReference: 'uuid2',
+              },
+            ],
+            transitions: [
+              {
+                id: '1',
+                name: 'Create',
+                to: {
+                  statusReference: 'uuid1',
+                },
+                type: 'INITIAL',
+                conditions: {
+                  operation: 'ALL',
+                  conditionGroups: [],
+                },
+                properties: [
+                  {
+                    key: 'jira.issue.editable',
+                    value: 'true',
+                  },
+                ],
+              },
+              {
+                id: '2',
+                name: 'toStatus2',
+                from: [
+                  {
+                    port: 3,
+                    statusReference: 'uuid1',
+                  },
+                ],
+                to: {
+                  port: 7,
+                  statusReference: 'uuid2',
+                },
+                type: 'DIRECTED',
+                conditions: {
+                  operation: 'ALL',
+                  conditionGroups: [
+                    {
+                      operation: 'ALL',
+                    },
+                  ],
+                },
+              },
+            ],
+            scope: {
+              type: 'global',
+            },
+          },
+        ],
+        statuses: [
+          {
+            id: '1',
+            name: 'status1',
+            statusReference: 'uuid1',
+          },
+          {
+            id: '2',
+            name: 'status2',
+            statusReference: 'uuid2',
+          },
+        ],
+      })
       config.deploy.taskMaxRetries = 3
+      elementsSource = buildElementsSourceFromElements([projectInstance, workflowSchemeInstance])
       filter = workflowFilter(
         getFilterParams({
           client,
           config,
+          elementsSource,
         }),
       ) as typeof filter
     })
@@ -940,23 +1093,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
         groupType = createEmptyType('Group')
         group1 = new InstanceElement('group1', groupType, { groupId: '1' })
         group2 = new InstanceElement('group2', groupType, { groupId: '2' })
-        preDeployWorkflowInstance = workflowInstance.clone()
         uuidMock.mockReturnValueOnce('uuid1').mockReturnValueOnce('uuid2')
-        deployChangeMock.mockResolvedValue({
-          workflows: [
-            {
-              id: '1',
-              name: 'workflow',
-              version: {
-                versionNumber: 1,
-                id: '1',
-              },
-              scope: {
-                type: 'global',
-              },
-            },
-          ],
-        })
       })
       describe('addition', () => {
         it('should create workflow payload correctly', async () => {
@@ -1046,11 +1183,68 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       })
     })
     describe('deploy', () => {
+      beforeEach(() => {
+        connection.post.mockResolvedValue({
+          status: 200,
+          data: {
+            workflows: [
+              {
+                id: '1',
+                name: 'workflow',
+                version: {
+                  versionNumber: 2,
+                  id: '1',
+                },
+                scope: {
+                  type: 'global',
+                },
+                statuses: [],
+                transitions: [
+                  {
+                    type: 'INITIAL',
+                    name: 'Create',
+                  },
+                ],
+              },
+            ],
+            statuses: [
+              {
+                id: '1',
+                name: 'status1',
+                statusReference: '1',
+              },
+            ],
+          },
+        })
+      })
       describe('addition', () => {
         beforeEach(() => {
-          workflowInstance.value = WORKFLOW_PAYLOAD
+          workflowInstance.value = {
+            ...WORKFLOW_PAYLOAD,
+            workflows: [
+              {
+                ...WORKFLOW_PAYLOAD.workflows[0],
+                statuses: [
+                  {
+                    ...WORKFLOW_PAYLOAD.workflows[0].statuses[0],
+                    name: 'stepName1',
+                  },
+                  {
+                    ...WORKFLOW_PAYLOAD.workflows[0].statuses[1],
+                    name: 'stepName2',
+                  },
+                ],
+                version: undefined,
+                id: undefined,
+              },
+            ],
+          }
+          workflowSchemeInstance.value.items = undefined
         })
         it('should add the new id, version and scope to the workflow instance', async () => {
+          // without steps deployment
+          workflowInstance.value.workflows[0].statuses[0].name = 'status1'
+          workflowInstance.value.workflows[0].statuses[1].name = 'status2'
           await filter.deploy([toChange({ after: workflowInstance })])
           expect(workflowInstance.value.workflows[0].id).toEqual('1')
           expect(workflowInstance.value.workflows[0].version).toEqual({
@@ -1061,6 +1255,61 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             type: 'global',
           })
         })
+
+        it('should deploy workflow steps', async () => {
+          await filter.deploy([toChange({ after: workflowInstance })])
+          // one call for the version update
+          expect(connection.post).toHaveBeenCalledTimes(3)
+          expect(connection.post).toHaveBeenCalledWith(
+            '/secure/admin/workflows/EditWorkflowStep.jspa',
+            new URLSearchParams({
+              stepName: 'stepName1',
+              workflowStep: '4',
+              stepStatus: '1',
+              workflowName: 'workflow',
+              workflowMode: 'live',
+            }),
+            {
+              headers: JSP_API_HEADERS,
+            },
+          )
+          expect(connection.post).toHaveBeenCalledWith(
+            '/secure/admin/workflows/EditWorkflowStep.jspa',
+            new URLSearchParams({
+              stepName: 'stepName2',
+              workflowStep: '5',
+              stepStatus: '2',
+              workflowName: 'workflow',
+              workflowMode: 'live',
+            }),
+            {
+              headers: JSP_API_HEADERS,
+            },
+          )
+        })
+
+        it('should return a warning when workflow steps deployment fails', async () => {
+          workflowInstance.value.workflows[0].statuses = undefined
+          const result = await filter.deploy([toChange({ after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(1)
+          expect(result.deployResult.errors[0].severity).toEqual('Warning')
+          expect(result.deployResult.errors[0].message).toEqual(
+            'Failed to deploy step names for workflow workflow; step names will be identical to status names. If required, you can manually edit the step names in Jira: https://ori-salto-test.atlassian.net/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName=workflow',
+          )
+        })
+        it('should return a warning when there is a status that does not exists in the payload', async () => {
+          workflowInstance.value.statuses.pop()
+          const result = await filter.deploy([toChange({ after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(1)
+          expect(result.deployResult.errors[0].severity).toEqual('Warning')
+          expect(result.deployResult.errors[0].message).toEqual(
+            'Failed to deploy step names for workflow workflow; step names will be identical to status names. If required, you can manually edit the step names in Jira: https://ori-salto-test.atlassian.net/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName=workflow',
+          )
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'status reference of status stepName2 is missing from the payload status list in workflow workflow',
+          )
+        })
+
         it('should not insert id and version when workflow response is invalid', async () => {
           deployChangeMock.mockResolvedValueOnce({ workflows: [{ name: 'workflow' }] })
           workflowInstance.value.workflows[0].id = undefined
@@ -1094,9 +1343,33 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 ],
               },
             ],
+            statuses: [
+              {
+                id: '1',
+                name: 'status1',
+                statusReference: '1',
+              },
+            ],
             taskId: '1',
           })
-          workflowInstance.value = MODIFICATION_WORKFLOW_PAYLOAD
+          workflowInstance.value = {
+            ...MODIFICATION_WORKFLOW_PAYLOAD,
+            workflows: [
+              {
+                ...MODIFICATION_WORKFLOW_PAYLOAD.workflows[0],
+                statuses: [
+                  {
+                    ...MODIFICATION_WORKFLOW_PAYLOAD.workflows[0].statuses[0],
+                    name: 'stepName1',
+                  },
+                ],
+                version: {
+                  id: '1',
+                  versionNumber: 1,
+                },
+              },
+            ],
+          }
         })
         it('should wait for successful status migration', async () => {
           connection.get
@@ -1116,74 +1389,74 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             })
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          expect(connection.get).toHaveBeenCalledTimes(2)
-          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
-        })
-        it('should not fail the deployment if the migration fails', async () => {
-          connection.get.mockResolvedValueOnce({
-            status: 200,
-            data: {
-              status: TASK_STATUS.CANCELLED,
-              progress: 50,
-            },
-          })
-          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
-          expect(result.deployResult.errors).toHaveLength(0)
-          expect(connection.get).toHaveBeenCalledTimes(1)
-          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
-          expect(logErrorSpy).toHaveBeenCalledWith(
-            'Status migration failed for workflow: workflow, with status CANCELLED',
-          )
-        })
-        it('should not fail the deployment when the migration timeout pass', async () => {
-          connection.get.mockResolvedValue({
-            status: 200,
-            data: {
-              status: TASK_STATUS.RUNNING,
-              progress: 50,
-            },
-          })
-          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
-          expect(result.deployResult.errors).toHaveLength(0)
+          // two calls are for steps deployment
           expect(connection.get).toHaveBeenCalledTimes(4)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
-          expect(logErrorSpy).toHaveBeenCalledWith(
-            'Failed to run status migration for workflow: workflow - did not receive success response after await timeout',
-          )
         })
-        it('should not fail the deployment statusMigration task response have unknown status', async () => {
-          connection.get.mockResolvedValue({
-            status: 200,
-            data: {
-              status: 'UNKNOWN',
-              progress: 50,
-            },
-          })
+
+        it('should deploy workflow steps', async () => {
           const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           expect(result.deployResult.errors).toHaveLength(0)
-          expect(connection.get).toHaveBeenCalledTimes(1)
-          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
-          expect(logErrorSpy).toHaveBeenCalledWith(
-            'Status migration failed for workflow: workflow, with unknown status UNKNOWN',
+          expect(connection.get).toHaveBeenCalledTimes(3)
+          expect(connection.get).toHaveBeenCalledWith('/secure/admin/workflows/EditWorkflowDispatcher.jspa', {
+            params: {
+              wfName: 'workflow',
+            },
+            headers: JSP_API_HEADERS,
+          })
+          // one call is for the version update
+          expect(connection.post).toHaveBeenCalledTimes(3)
+          expect(connection.post).toHaveBeenCalledWith(
+            '/secure/admin/workflows/EditWorkflowStep.jspa',
+            new URLSearchParams({
+              stepName: 'stepName1',
+              workflowStep: '4',
+              stepStatus: '1',
+              workflowName: 'workflow',
+              workflowMode: 'draft',
+            }),
+            {
+              headers: JSP_API_HEADERS,
+            },
+          )
+          expect(connection.post).toHaveBeenCalledWith(
+            '/secure/admin/workflows/PublishDraftWorkflow.jspa',
+            new URLSearchParams({
+              enableBackup: 'false',
+              workflowName: 'workflow',
+              workflowMode: 'draft',
+            }),
+            {
+              headers: JSP_API_HEADERS,
+            },
           )
         })
-        it('should not fail the deployment if task response is invalid', async () => {
-          connection.get.mockResolvedValueOnce({
+
+        it('should update workflow version number', async () => {
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(0)
+          expect(workflowInstance.value.workflows[0].version).toEqual({
+            versionNumber: 2,
+            id: '1',
+          })
+        })
+
+        it('should not update version when the workflow response is invalid', async () => {
+          connection.post.mockResolvedValue({
             status: 200,
             data: {},
           })
-          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
-          expect(result.deployResult.errors).toHaveLength(0)
-          expect(connection.get).toHaveBeenCalledTimes(1)
-          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(workflowInstance.value.workflows[0].version).toEqual({
+            versionNumber: 1,
+            id: '1',
+          })
         })
-      })
-    })
-    describe('onDeploy', () => {
-      describe('addition', () => {
-        beforeEach(async () => {
-          preDeployWorkflowInstance = _.cloneDeep(workflowInstance)
-          uuidMock.mockReturnValueOnce('uuid1').mockReturnValueOnce('uuid2')
+
+        it('should not update version when there is no migration nor steps deployment', async () => {
+          workflowInstance.value.workflows[0].statusMappings = undefined
+          workflowInstance.value.workflows[0].statuses[0].name = 'status1'
+          // without taskId
           deployChangeMock.mockResolvedValue({
             workflows: [
               {
@@ -1196,84 +1469,131 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 scope: {
                   type: 'global',
                 },
+                statuses: [],
+                transitions: [
+                  {
+                    name: 'Create',
+                    type: 'INITIAL',
+                  },
+                ],
+              },
+            ],
+            statuses: [
+              {
+                id: '1',
+                name: 'status1',
+                statusReference: '1',
               },
             ],
           })
-          await filter.preDeploy([toChange({ after: workflowInstance })])
-          await filter.deploy([toChange({ after: workflowInstance })])
-          await filter.onDeploy([toChange({ after: workflowInstance })])
-        })
-        it('should undo the preDeploy changes', async () => {
-          expect(workflowInstance).toEqual(preDeployWorkflowInstance)
-        })
-      })
-      describe('modification', () => {
-        beforeEach(async () => {
-          modificationSetup()
-          connection.post.mockResolvedValueOnce({
-            status: 200,
-            data: {
-              workflows: [
-                {
-                  id: '1',
-                  name: 'workflow',
-                  version: {
-                    versionNumber: 2,
-                    id: '1',
-                  },
-                  scope: {
-                    type: 'global',
-                  },
-                  statuses: [],
-                  transitions: [
-                    {
-                      type: 'INITIAL',
-                      name: 'Create',
-                    },
-                  ],
-                },
-              ],
-            },
-          })
-          connection.get.mockResolvedValueOnce({
-            status: 200,
-            data: {
-              status: TASK_STATUS.COMPLETE,
-              progress: 100,
-            },
-          })
-          await filter.preDeploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
           await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
-          await filter.onDeploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
-        })
-        it('should undo the preDeploy changes', async () => {
-          workflowInstanceBefore.value.statuses.pop()
-          delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
-          const { statuses: statusesBefore, transitions: transitionsBefore } = workflowInstanceBefore.value
-          const { statuses: statusesAfter, transitions: transitionsAfter } = workflowInstance.value
-          expect(statusesAfter).toEqual(statusesBefore)
-          expect(transitionsAfter).toEqual(transitionsBefore)
-        })
-        it('should update workflow version number', async () => {
-          const { version } = workflowInstance.value
-          expect(version).toEqual({
-            versionNumber: 2,
-            id: '1',
-          })
-        })
-        it('should not update version when the workflow response is invalid', async () => {
-          connection.post.mockResolvedValueOnce({
-            status: 200,
-            data: {},
-          })
-          workflowInstance.value = MODIFICATION_WORKFLOW_PAYLOAD
-          await filter.onDeploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
-          const { version } = workflowInstance.value
-          expect(version).toEqual({
+          expect(workflowInstance.value.workflows[0].version).toEqual({
             versionNumber: 1,
             id: '1',
           })
         })
+
+        it('should not fail the deployment if the migration fails', async () => {
+          connection.get.mockResolvedValueOnce({
+            status: 200,
+            data: {
+              status: TASK_STATUS.CANCELLED,
+              progress: 50,
+            },
+          })
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(0)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(3)
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'Status migration failed for workflow: workflow, with status CANCELLED',
+          )
+        })
+        it('should not fail the deployment when the migration timeout pass', async () => {
+          connection.get
+            .mockResolvedValueOnce({
+              status: 200,
+              data: {
+                status: TASK_STATUS.RUNNING,
+                progress: 50,
+              },
+            })
+            .mockResolvedValueOnce({
+              status: 200,
+              data: {
+                status: TASK_STATUS.RUNNING,
+                progress: 50,
+              },
+            })
+            .mockResolvedValueOnce({
+              status: 200,
+              data: {
+                status: TASK_STATUS.RUNNING,
+                progress: 50,
+              },
+            })
+            .mockResolvedValueOnce({
+              status: 200,
+              data: {
+                status: TASK_STATUS.RUNNING,
+                progress: 50,
+              },
+            })
+
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(0)
+          // two calls is for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(6)
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'Failed to run status migration for workflow: workflow - did not receive success response after await timeout',
+          )
+        })
+        it('should not fail the deployment statusMigration task response have unknown status', async () => {
+          connection.get.mockResolvedValueOnce({
+            status: 200,
+            data: {
+              status: 'UNKNOWN',
+              progress: 50,
+            },
+          })
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(0)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(3)
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'Status migration failed for workflow: workflow, with unknown status UNKNOWN',
+          )
+        })
+        it('should not fail the deployment if task response is invalid', async () => {
+          connection.get.mockResolvedValueOnce({
+            status: 200,
+            data: {},
+          })
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(0)
+          // two calls are for steps deployment
+          expect(connection.get).toHaveBeenCalledTimes(3)
+          expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+        })
+      })
+    })
+    describe('onDeploy', () => {
+      beforeEach(async () => {
+        modificationSetup()
+        await filter.preDeploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+        await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+        await filter.onDeploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+      })
+      it('should undo the preDeploy changes', async () => {
+        workflowInstanceBefore.value.statuses.pop()
+        delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
+        const { statuses: statusesBefore, transitions: transitionsBefore } = workflowInstanceBefore.value
+        const { statuses: statusesAfter, transitions: transitionsAfter } = workflowInstance.value
+        expect(statusesAfter).toEqual(statusesBefore)
+        expect(transitionsAfter).toEqual(transitionsBefore)
       })
     })
   })

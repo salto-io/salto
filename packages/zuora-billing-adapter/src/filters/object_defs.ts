@@ -114,7 +114,14 @@ const addRelationships = (
       }
       const refObjectNames = new Set<string>()
       // sort in order to keep relationship fields list stable
-      _.sortBy(relationships, 'object', ({ fields }) => Object.values(fields ?? {})[0]).forEach(rel => {
+      _.sortBy(
+        relationships,
+        'object',
+        ({ fields }) =>
+          Object.entries(fields ?? {})
+            .filter(([key]) => obj.fields[key] === undefined)
+            .map(([_key, value]) => value)[0],
+      ).forEach(rel => {
         const { cardinality, namespace, object, fields, recordConstraints: constraints, ...additionalDetails } = rel
         // the only cardinalities currently in use are oneToMany / manyToOne
         if (cardinality === 'oneToMany') {

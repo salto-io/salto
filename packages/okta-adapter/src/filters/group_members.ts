@@ -174,7 +174,7 @@ const deployGroupMembershipChange = async (
       }
     }
     const res = await Promise.all(
-      instance.value.members.map(member =>
+      instance.value.members.map(async member =>
         deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client }),
       ),
     )

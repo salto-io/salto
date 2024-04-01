@@ -389,8 +389,8 @@ const retryErrorsByCodeWrapper =
       return true
     }
     if (errorCodesToRetry.some((code) => response.statusCode === code)) {
-      log.trace(
-        `Retrying on ${response.statusCode} due to known salesforce issues. Err: ${err}`,
+      log.warn(
+        `Retrying on ${response.statusCode} due to known salesforce issues. Err: ${err}, headers: ${response.headers}, status message: ${response.statusMessage}`,
       )
       return true
     }

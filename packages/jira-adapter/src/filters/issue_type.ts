@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Joi from 'joi'
 import {
   Change,
   getChangeData,
@@ -25,10 +24,9 @@ import {
   ModificationChange,
   AdditionChange,
   SaltoError,
-  StaticFile,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { applyFunctionToChangeData, createSchemeGuard } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ISSUE_TYPE_NAME } from '../constants'
@@ -44,31 +42,6 @@ const SUBTASK_TYPE = 'subtask'
 const STANDARD_HIERARCHY_LEVEL = 0
 const SUBTASK_HIERARCHY_LEVEL = -1
 
-type SystemAvatarResponse = {
-  id: string
-}
-type SystemAvatarsResponse = {
-  data: {
-    system: SystemAvatarResponse[]
-  }
-}
-const SYSTEM_AVATARS_RESPONSE_SCHEMA = Joi.object({
-  data: Joi.object({
-    system: Joi.array()
-      .items(
-        Joi.object({
-          id: Joi.string().required(),
-        }).unknown(true),
-      )
-      .required(),
-  })
-    .required()
-    .unknown(true),
-})
-  .required()
-  .unknown(true)
-
-const isSystemAvatarsResponse = createSchemeGuard<SystemAvatarsResponse>(SYSTEM_AVATARS_RESPONSE_SCHEMA)
 
 const deployIcon = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
@@ -85,19 +58,6 @@ const deployIcon = async (
     instance.value.avatarId = Number(resp.data.id)
   } catch (e) {
     throw new Error(`Failed to deploy icon to Jira issue type: ${e.message}`)
-  }
-}
-const getSystemAvatarsIds = async (client: JiraClient): Promise<Record<string, StaticFile | undefined>> => {
-  try {
-    const systemAvatars = await client.get({
-      url: '/rest/api/3/avatar/issuetype/system',
-    })
-    if (!isSystemAvatarsResponse(systemAvatars)) {
-      return {}
-    }
-    return Object.fromEntries(systemAvatars.data.system.map(avatar => [avatar.id, undefined]))
-  } catch (e) {
-    return {}
   }
 }
 
@@ -123,27 +83,10 @@ const filter: FilterCreator = ({ client, config }) => ({
     if (client.isDataCenter) {
       return { errors: [] }
     }
-    const systemAvatarsIds = await getSystemAvatarsIds(client)
     const errors: SaltoError[] = []
     await awu(issueTypes).forEach(async issueType => {
       try {
         if (issueType.value.avatarId === undefined) {
-          return
-        }
-        if (Object.keys(systemAvatarsIds).includes(issueType.value.avatarId.toString())) {
-          if (systemAvatarsIds[issueType.value.avatarId] === undefined) {
-            const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
-            await setIconContent({
-              client,
-              instance: issueType,
-              link,
-              fieldName: 'avatar',
-              fileName: issueType.value.avatarId,
-            })
-            systemAvatarsIds[issueType.value.avatarId] = issueType.value.avatar
-          } else {
-            issueType.value.avatar = systemAvatarsIds[issueType.value.avatarId]
-          }
           return
         }
         const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
@@ -151,7 +94,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       } catch (e) {
         errors.push({ message: e.message, severity: 'Error' })
       }
-    })
+  })
     return { errors }
   },
 

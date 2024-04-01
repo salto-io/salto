@@ -116,9 +116,6 @@ describe('issueTypeFilter', () => {
         const anotherInstance = instance.clone()
         anotherInstance.value.name = 'anotherInstance'
         mockGet.mockImplementation(params => {
-          if (params.url === '/rest/api/3/avatar/issuetype/system') {
-            return {}
-          }
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
               status: 200,
@@ -144,13 +141,10 @@ describe('issueTypeFilter', () => {
             content,
           }),
         )
-        expect(mockGet).toHaveBeenCalledTimes(3) // 2 for fetching the icon and 1 for fetching the system icons
+        expect(mockGet).toHaveBeenCalledTimes(2)
       })
       it('should set icon content when its a string', async () => {
         mockGet.mockImplementation(params => {
-          if (params.url === '/rest/api/3/avatar/issuetype/system') {
-            return {}
-          }
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
               status: 200,
@@ -176,10 +170,7 @@ describe('issueTypeFilter', () => {
         expect(instance.value.avatar).toBeUndefined()
       })
       it('should not set icon content and add error if failed to fetch icon due to an http error', async () => {
-        mockGet.mockImplementation(params => {
-          if (params.url === '/rest/api/3/avatar/issuetype/system') {
-            return {}
-          }
+        mockGet.mockImplementation(() => {
           throw new clientUtils.HTTPError('404 Item not found', {
             status: 404,
             data: {
@@ -200,9 +191,6 @@ describe('issueTypeFilter', () => {
       })
       it('should not set icon content and add error if failed to fetch icon due to a bad contnet format', async () => {
         mockGet.mockImplementation(params => {
-          if (params.url === '/rest/api/3/avatar/issuetype/system') {
-            return {}
-          }
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
               status: 200,
@@ -222,49 +210,6 @@ describe('issueTypeFilter', () => {
             },
           ],
         })
-      })
-      it('should set icon contnet when its a system icon', async () => {
-        mockGet.mockImplementation(params => {
-          if (params.url === '/rest/api/3/avatar/issuetype/system') {
-            return {
-              status: 200,
-              data: {
-                system: [
-                  {
-                    id: '1',
-                  },
-                ],
-              },
-            }
-          }
-          if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
-            return {
-              status: 200,
-              data: content,
-            }
-          }
-          throw new Error('Err')
-        })
-        const anotherInstance = instance.clone()
-        anotherInstance.value.name = 'anotherInstance'
-        await filter.onFetch?.([instance, anotherInstance])
-        expect(instance.value.avatar).toBeDefined()
-        expect(instance.value.avatar).toEqual(
-          new StaticFile({
-            filepath: 'jira/IssueType/1.png',
-            encoding: 'binary',
-            content,
-          }),
-        )
-        expect(anotherInstance.value.avatar).toBeDefined()
-        expect(anotherInstance.value.avatar).toEqual(
-          new StaticFile({
-            filepath: 'jira/IssueType/1.png',
-            encoding: 'binary',
-            content,
-          }),
-        )
-        expect(mockGet).toHaveBeenCalledTimes(2) // 1 for fetching the system icons and 1 for fetching the icon for the instance
       })
     })
   })

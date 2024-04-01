@@ -98,37 +98,23 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
   }
 }
 
-const extractResponseDataToApply = async <ClientOptions extends string>({
-  requestDef,
+const extractDataToApply = ({
+  definition,
+  changeAndContext,
   response,
-  change,
-  changeGroup,
-  elementSource,
 }: {
-  requestDef: DeployableRequestDefinition<ClientOptions>
+  definition: TransformDefinition<ChangeAndContext, Values>
+  changeAndContext: ChangeAndContext
   response: Response<ResponseValue | ResponseValue[]>
-} & ChangeAndContext): Promise<Values | undefined> => {
-  const { copyFromResponse } = requestDef
-  const extractionDef = _.omit(copyFromResponse, 'updateServiceIDs')
-  if (copyFromResponse?.updateServiceIDs !== false) {
-    const type = await getChangeData(change).getType()
-    const serviceIDFieldNames = Object.keys(
-      _.pickBy(
-        await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
-        val => val,
-      ),
-    )
-    if (serviceIDFieldNames.length > 0) {
-      extractionDef.pick = _.concat(extractionDef.pick ?? [], serviceIDFieldNames)
-    }
-  }
+}): Values | undefined => {
+  const { change } = changeAndContext
   const { elemID } = getChangeData(change)
-  const extractor = createValueTransformer(extractionDef)
+  const extractor = createValueTransformer(definition)
   const dataToApply = collections.array.makeArray(
     extractor({
       value: response.data,
       typeName: getChangeData(change).elemID.typeName,
-      context: { change, changeGroup, elementSource },
+      context: changeAndContext,
     }),
   )[0]?.value
   if (!lowerdashValues.isPlainObject(dataToApply)) {
@@ -138,6 +124,52 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
       safeJsonStringify(dataToApply),
     )
     return undefined
+  }
+  return dataToApply
+}
+
+const extractResponseDataToApply = async <ClientOptions extends string>({
+  requestDef,
+  response,
+  ...context
+}: {
+  requestDef: DeployableRequestDefinition<ClientOptions>
+  response: Response<ResponseValue | ResponseValue[]>
+} & ChangeAndContext): Promise<Values | undefined> => {
+  const { copyFromResponse } = requestDef
+  const dataToApply = {}
+  if (copyFromResponse?.additional !== undefined) {
+    _.assign(
+      dataToApply,
+      extractDataToApply({
+        definition: copyFromResponse.additional,
+        changeAndContext: context,
+        response,
+      }),
+    )
+  }
+  if (copyFromResponse?.updateServiceIDs !== false) {
+    const type = await getChangeData(context.change).getType()
+    const serviceIDFieldNames = Object.keys(
+      _.pickBy(
+        await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
+        val => val,
+      ),
+    )
+    if (serviceIDFieldNames.length > 0) {
+      _.assign(
+        dataToApply,
+        extractDataToApply({
+          definition: {
+            pick: serviceIDFieldNames,
+            // reverse the transformation used for the request
+            root: requestDef.request.transformation?.nestUnderField,
+          },
+          changeAndContext: context,
+          response,
+        }),
+      )
+    }
   }
 
   return dataToApply

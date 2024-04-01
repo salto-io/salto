@@ -62,7 +62,7 @@ export const hideFields = (fieldsToHide: FieldToHideType[], type: ObjectType): v
       return
     }
     if (!Object.prototype.hasOwnProperty.call(typeFields, fieldName)) {
-      log.debug(`Creating hidden field ${type.elemID.name}.${fieldName} with type unknown`)
+      log.trace(`Creating hidden field ${type.elemID.name}.${fieldName} with type unknown`)
       typeFields[fieldName] = new Field(type, fieldName, BuiltinTypes.UNKNOWN)
     }
     const field = typeFields[fieldName]

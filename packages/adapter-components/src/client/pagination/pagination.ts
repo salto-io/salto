@@ -97,7 +97,7 @@ export const traverseRequests: (
       }
     }
     // the number of results may be lower than actual if the instances are under a nested field
-    log.info('Received %d results for endpoint %s', numResults, url)
+    log.trace('Received %d results for endpoint %s', numResults, url)
   }
 
 /**

@@ -16,8 +16,6 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 
-export const COMMON_ENV_PREFIX = ''
-
 export type EnvConfig = {
   name: string
   services?: string[]

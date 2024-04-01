@@ -28,8 +28,10 @@ import {
   UnresolvedElemIDs,
   FromSourceWithEnv,
   getBaseDirFromEnvName,
+  getStaticFileCacheName,
   UpdateNaclFilesResult,
   listElementsDependenciesInWorkspace,
+  COMMON_ENV_PREFIX,
 } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
@@ -41,7 +43,6 @@ import {
   StateConfig,
   ProviderOptionsS3,
   ProviderOptionsFile,
-  COMMON_ENV_PREFIX,
 } from './src/workspace/config/workspace_config_types'
 import * as state from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
@@ -104,6 +105,7 @@ export {
   initWorkspace,
   COMMON_ENV_PREFIX,
   getBaseDirFromEnvName,
+  getStaticFileCacheName,
   state,
   workspaceConfigSource,
   adaptersConfigSource,

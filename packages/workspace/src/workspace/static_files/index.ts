@@ -22,4 +22,4 @@ export {
   StateStaticFilesStore,
   StateStaticFilesSource,
 } from './common'
-export { buildStaticFilesCache, getCacheName } from './static_files_cache'
+export { buildStaticFilesCache } from './static_files_cache'

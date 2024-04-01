@@ -39,6 +39,7 @@ import {
   createAdapterReplacedID,
   buildStaticFilesCache,
   getBaseDirFromEnvName,
+  getStaticFileCacheName,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -54,7 +55,7 @@ import { WorkspaceMetadataConfig } from './workspace_config_types'
 const { awu } = collections.asynciterable
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
-const { buildStaticFilesSource, getCacheName } = staticFiles
+const { buildStaticFilesSource } = staticFiles
 const log = logger(module)
 
 export const STATES_DIR_NAME = 'states'
@@ -118,7 +119,7 @@ const getNaclFilesSourceParams = ({
 
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildStaticFilesCache(getCacheName(name), remoteMapCreator, persistent),
+    buildStaticFilesCache(getStaticFileCacheName(name), remoteMapCreator, persistent),
   )
   return {
     naclFilesStore,

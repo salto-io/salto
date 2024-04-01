@@ -66,6 +66,7 @@ import {
   serializeReferenceTree,
   deserializeReferenceTree,
   listElementsDependenciesInWorkspace,
+  COMMON_ENV_PREFIX,
 } from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,
@@ -79,7 +80,7 @@ import {
 } from '../../src/workspace/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
 import { mockDirStore } from '../common/nacl_file_store'
-import { COMMON_ENV_PREFIX, EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
+import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'

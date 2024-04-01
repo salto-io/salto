@@ -42,7 +42,6 @@ const SUBTASK_TYPE = 'subtask'
 const STANDARD_HIERARCHY_LEVEL = 0
 const SUBTASK_HIERARCHY_LEVEL = -1
 
-
 const deployIcon = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
@@ -94,7 +93,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       } catch (e) {
         errors.push({ message: e.message, severity: 'Error' })
       }
-  })
+    })
     return { errors }
   },
 

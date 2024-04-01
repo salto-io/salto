@@ -27,6 +27,7 @@ import {
   CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
+  UNIX_TIME_ZERO_STRING,
 } from '../src/constants'
 import { mockInstances, mockTypes } from './mock_elements'
 import {
@@ -79,6 +80,8 @@ describe('Salesforce Fetch With Changes Detection', () => {
 
     const UPDATED_OBJECT_NAME = 'Updated__c'
     const NON_UPDATED_OBJECT_NAME = 'NonUpdated__c'
+    // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
+    const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
 
     let retrieveRequest: RetrieveRequest
 
@@ -131,6 +134,11 @@ describe('Salesforce Fetch With Changes Detection', () => {
             fullName: NON_UPDATED_OBJECT_NAME,
             type: CUSTOM_OBJECT,
             lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: NON_UPDATED_STANDARD_OBJECT,
+            type: CUSTOM_OBJECT,
+            lastModifiedDate: UNIX_TIME_ZERO_STRING,
           }),
         ],
         FieldSet: [],

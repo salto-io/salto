@@ -247,6 +247,7 @@ describe('SalesforceAdapter fetch', () => {
       const NON_UPDATED_PROFILE_FULL_NAME = 'nonUpdatedProfile'
       const APEX_CLASS_FULL_NAME = 'apexClass'
       const ANOTHER_APEX_CLASS_FULL_NAME = 'anotherApexClass'
+      const CUSTOM_METADATA_FULL_NAME = 'CustomMetadataType.Record1'
 
       const testData = {
         [UPDATED_PROFILE_FULL_NAME]: {
@@ -276,6 +277,13 @@ describe('SalesforceAdapter fetch', () => {
                           <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
                               <apiVersion>58.0</apiVersion>
                           </ApexClass>`,
+        },
+        [CUSTOM_METADATA_FULL_NAME]: {
+          zipFileName: `customMetadataTypes/${CUSTOM_METADATA_FULL_NAME}.customMetadata`,
+          zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
+                          <CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <fullName>${CUSTOM_METADATA_FULL_NAME}</fullName>
+                          </CustomMetadata>`,
         },
       } as const
 
@@ -321,6 +329,16 @@ describe('SalesforceAdapter fetch', () => {
                   fullName: ANOTHER_APEX_CLASS_FULL_NAME,
                   lastModifiedDate: DATE,
                   fileName: testData.anotherApexClass.zipFileName,
+                }),
+              ]
+            }
+            if (query.type === constants.CUSTOM_METADATA) {
+              return [
+                mockFileProperties({
+                  type: constants.CUSTOM_METADATA,
+                  fullName: CUSTOM_METADATA_FULL_NAME,
+                  lastModifiedDate: '',
+                  fileName: testData[CUSTOM_METADATA_FULL_NAME].zipFileName,
                 }),
               ]
             }

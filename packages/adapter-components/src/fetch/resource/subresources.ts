@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
 import { shouldRecurseIntoEntry } from '../../elements/instance_elements' // TODO move
+import { createValueTransformer } from '../utils'
 
 const log = logger(module)
 
@@ -43,9 +44,13 @@ export const recurseIntoSubresources =
           Object.entries(def.recurseInto ?? {})
             .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
             .map(async ([fieldName, recurseDef]) => {
-              const nestedRequestContext = _.mapValues(recurseDef.context.args, contextDef =>
-                _.get(item.value, contextDef.fromField),
-              )
+              const nestedRequestContext = _.mapValues(recurseDef.context.args, contextDef => {
+                if (contextDef.fromField !== undefined) {
+                  return _.get(item.value, contextDef.fromField)
+                }
+                const transformer = createValueTransformer({ ...contextDef.transformation, single: true }) // transformer should return a single string value
+                return _.get(transformer(item), 'value')
+              })
               // TODO avoid crashing if fails on sub-element (SALTO-5427)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,

@@ -104,14 +104,19 @@ describe('flows filter', () => {
         expect(
           flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN],
         ).toBeTrue()
-        expect(flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
+        expect(
+          flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN],
+        ).toBeTrue()
       })
 
       it('Should call fetchMetadataInstances once', async () => {
         expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
       })
       it('should invoke createActiveVersionFileProperties with the FlowDefinition instances', async () => {
-        expect(createActiveVersionFileProperties).toHaveBeenCalledWith(expect.anything(), [flowDefinitionInstance])
+        expect(createActiveVersionFileProperties).toHaveBeenCalledWith(
+          expect.anything(),
+          [flowDefinitionInstance],
+        )
       })
     })
     describe('with preferActiveFlowVersions false', () => {

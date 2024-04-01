@@ -247,7 +247,7 @@ describe('SalesforceAdapter fetch', () => {
       const NON_UPDATED_PROFILE_FULL_NAME = 'nonUpdatedProfile'
       const APEX_CLASS_FULL_NAME = 'apexClass'
       const ANOTHER_APEX_CLASS_FULL_NAME = 'anotherApexClass'
-      const CUSTOM_METADATA_FULL_NAME = 'CustomMetadataType.Record1'
+      const CUSTOM_METADATA_FULL_NAME = 'MDType.Record1'
 
       const testData = {
         [UPDATED_PROFILE_FULL_NAME]: {
@@ -279,7 +279,7 @@ describe('SalesforceAdapter fetch', () => {
                           </ApexClass>`,
         },
         [CUSTOM_METADATA_FULL_NAME]: {
-          zipFileName: `customMetadataTypes/${CUSTOM_METADATA_FULL_NAME}.customMetadata`,
+          zipFileName: `customMetadata/${CUSTOM_METADATA_FULL_NAME}.md`,
           zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
                           <CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata">
                               <fullName>${CUSTOM_METADATA_FULL_NAME}</fullName>
@@ -294,6 +294,7 @@ describe('SalesforceAdapter fetch', () => {
           mockDescribeResult([
             { xmlName: PROFILE_METADATA_TYPE, metaFile: false },
             { xmlName: APEX_CLASS_METADATA_TYPE, metaFile: false },
+            { xmlName: constants.CUSTOM_METADATA, metaFile: false },
           ]),
         )
         connection.metadata.list.mockImplementation(async (queries) =>
@@ -399,7 +400,7 @@ describe('SalesforceAdapter fetch', () => {
             )
           ) {
             zipFiles.push({
-              path: `unpackaged/${testData[CUSTOM_METADATA_FULL_NAME].zipFileName}-meta.xml`,
+              path: `unpackaged/${testData[CUSTOM_METADATA_FULL_NAME].zipFileName}`,
               content: testData[CUSTOM_METADATA_FULL_NAME].zipFileContent,
             })
           }
@@ -450,6 +451,8 @@ describe('SalesforceAdapter fetch', () => {
         const elementsSource = buildElementsSourceFromElements([
           mockTypes.ApexClass,
           mockTypes.Profile,
+          mockTypes.CustomMetadata,
+          mockTypes.CustomMetadataRecordType,
           apexClassInstance,
           anotherApexClassInstance,
           updatedProfileInstance,
@@ -496,6 +499,10 @@ describe('SalesforceAdapter fetch', () => {
             fullName: UPDATED_PROFILE_FULL_NAME,
             apiVersion: 58,
           })
+          // Make sure we fetch the CustomMetadata instance
+          expect(fetchedInstances).toSatisfyAny(
+            (instance) => apiNameSync(instance) === CUSTOM_METADATA_FULL_NAME,
+          )
         })
       })
 

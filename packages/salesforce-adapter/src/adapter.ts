@@ -162,6 +162,7 @@ import nestedInstancesAuthorInformation from './filters/author_information/neste
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
+  CUSTOM_FIELD,
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
@@ -540,6 +541,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
+    await listMetadataObjects(this.client, CUSTOM_FIELD)
     const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
     const fieldsFromElementsSource = await awu(
       await this.elementsSource.getAll(),

@@ -213,7 +213,7 @@ export const traverseRequestsAsync: (
       }
     }
     // the number of results may be lower than actual if the instances are under a nested field
-    log.trace('Received %d results for endpoint %s', numResults, getParams.url)
+    log.info('Received %d results for endpoint %s', numResults, getParams.url)
   }
 
 type PageResponse = {

@@ -35,7 +35,7 @@ export const isConditionByField = (condition: Condition): condition is Condition
 
 type RecurseIntoContextParamDefinition<TContext = ContextParams> = types.OneOf<{
   fromField: string
-  transformation: TransformDefinition<TContext, string> & { single?: true } // set single to true as transform func should return a single string
+  transformation: TransformDefinition<TContext, string | string[]>
 }>
 
 type RecurseIntoContext = {

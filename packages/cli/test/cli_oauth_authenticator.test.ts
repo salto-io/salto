@@ -50,34 +50,37 @@ describe('cli oauth server', () => {
 
     // The actual behavior of the server will be tested in e2e,
     // because it's too specific to tailor a test to. Important thing is that oauth succeeds
-    it('should process the credentials through the server', async () => {
-      await waitForExpect(() => {
-        expect(createServer.mock.results[0].value.address().port).toBeDefined()
-      })
-      const newLocal = createServer.mock.results.filter(result =>
-        result ? result.value.address().port === 8080 : false,
-      )
-      const app = newLocal[0].value
-      await supertest(app)
-        .get('/#instance_url=testInstanceUrl&access_token_field=accessTokenThing')
-        .expect(response => {
-          const responseText = response.text
-          expect(responseText).toContain('window.location.replace')
+    it.each(['#', '?'])(
+      'should process the credentials through the server when the separator is %s',
+      async separator => {
+        await waitForExpect(() => {
+          expect(createServer.mock.results[0].value.address().port).toBeDefined()
         })
-      await supertest(app)
-        .get('/extract?instance_url=testInstanceUrl2&access_token_field=accessTokenThing2')
-        .expect(response => {
-          expect(response.text).toContain('/done')
-        })
-      await supertest(app)
-        .get('/done')
-        .expect(response => {
-          expect(response.text).toContain('Done configuring Salto')
-        })
-      const retVal = await returnPromise
-      expect(retVal.fields.accessTokenField).toEqual('accessTokenThing2')
-      expect(retVal.fields.instanceUrl).toEqual('testInstanceUrl2')
-    })
+        const newLocal = createServer.mock.results.filter(result =>
+          result ? result.value.address().port === 8080 : false,
+        )
+        const app = newLocal[0].value
+        await supertest(app)
+          .get(`/${separator}instance_url=testInstanceUrl&access_token_field=accessTokenThing`)
+          .expect(response => {
+            const responseText = response.text
+            expect(responseText).toContain('window.location.replace')
+          })
+        await supertest(app)
+          .get('/extract?instance_url=testInstanceUrl2&access_token_field=accessTokenThing2')
+          .expect(response => {
+            expect(response.text).toContain('/done')
+          })
+        await supertest(app)
+          .get('/done')
+          .expect(response => {
+            expect(response.text).toContain('Done configuring Salto')
+          })
+        const retVal = await returnPromise
+        expect(retVal.fields.accessTokenField).toEqual('accessTokenThing2')
+        expect(retVal.fields.instanceUrl).toEqual('testInstanceUrl2')
+      },
+    )
   })
 
   describe('when oauth output is badly shapen', () => {

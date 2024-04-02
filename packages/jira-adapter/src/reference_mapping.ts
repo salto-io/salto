@@ -655,21 +655,25 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
     serializationStrategy: 'name',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: WORKFLOW_TYPE_NAME },
   },
   {
     src: { field: 'workflow', parentTypes: ['WorkflowSchemeItem'] },
     serializationStrategy: 'name',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: WORKFLOW_TYPE_NAME },
   },
   {
     src: { field: 'workflow', parentTypes: ['WorkflowSchemeItem'] },
     serializationStrategy: 'name',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: WORKFLOW_CONFIGURATION_TYPE },
   },
   {
     src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
     serializationStrategy: 'name',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: WORKFLOW_CONFIGURATION_TYPE },
   },
   {
@@ -943,7 +947,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
-    jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'workflowStatusPropertiesContext' },
   },
   {
@@ -954,7 +957,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowReferenceStatus_properties'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
-    jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'workflowStatusPropertiesContext' },
   },
   {
@@ -965,7 +967,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: ['WorkflowTransitions_properties'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
-    jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'workflowStatusPropertiesContext' },
   },
   {

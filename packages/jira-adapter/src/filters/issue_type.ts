@@ -28,6 +28,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { ISSUE_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
@@ -36,6 +37,7 @@ import { PRIVATE_API_HEADERS } from '../client/headers'
 import { isIconResponse, sendIconRequest, setIconContent } from './icon_utils'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const STANDARD_TYPE = 'standard'
 const SUBTASK_TYPE = 'subtask'
@@ -45,7 +47,7 @@ const SUBTASK_HIERARCHY_LEVEL = -1
 const deployIcon = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
-): Promise<void> => {
+): Promise<number> => {
   const instance = getChangeData(change)
   try {
     const headers = { ...PRIVATE_API_HEADERS, 'Content-Type': 'image/png' }
@@ -54,7 +56,7 @@ const deployIcon = async (
     if (!isIconResponse(resp)) {
       throw new Error('Failed to deploy icon to Jira issue type: Invalid response from Jira API')
     }
-    instance.value.avatarId = Number(resp.data.id)
+    return Number(resp.data.id)
   } catch (e) {
     throw new Error(`Failed to deploy icon to Jira issue type: ${e.message}`)
   }
@@ -83,17 +85,20 @@ const filter: FilterCreator = ({ client, config }) => ({
       return { errors: [] }
     }
     const errors: SaltoError[] = []
-    await awu(issueTypes).forEach(async issueType => {
-      try {
-        if (issueType.value.avatarId === undefined) {
-          return
+    await Promise.all(
+      issueTypes.map(async issueType => {
+        try {
+          if (issueType.value.avatarId === undefined) {
+            log.warn('No avatarId found for issue type %s', issueType.value.name)
+            return
+          }
+          const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
+          await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
+        } catch (e) {
+          errors.push({ message: e.message, severity: 'Error' })
         }
-        const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
-        await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
-      } catch (e) {
-        errors.push({ message: e.message, severity: 'Error' })
-      }
-    })
+      }),
+    )
     return { errors }
   },
 
@@ -138,7 +143,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         // Load the avatar to get avatarId
         const instance = getChangeData(change)
         if (instance.value.avatar !== undefined) {
-          await deployIcon(change, client)
+          instance.value.avatarId = await deployIcon(change, client)
           // update the issueTpype with the avatarId
           await client.put({
             url: `/rest/api/3/issuetype/${instance.value.id}`,
@@ -150,9 +155,10 @@ const filter: FilterCreator = ({ client, config }) => ({
         const avatarBefore = change.data.before.value.avatar
         const avatarAfter = change.data.after.value.avatar
         if (avatarBefore !== undefined && avatarAfter !== undefined && !avatarBefore.isEqual(avatarAfter)) {
-          await deployIcon(change, client)
+          const instance = getChangeData(change)
+          instance.value.avatarId = await deployIcon(change, client)
         }
-        // update the issueTpype with the avatarId
+        // update the issueType with the avatarId
         await defaultDeployChange({
           change,
           client,

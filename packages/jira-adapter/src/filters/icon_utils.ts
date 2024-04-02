@@ -70,17 +70,15 @@ export const setIconContent = async ({
   instance,
   link,
   fieldName,
-  fileName,
 }: {
   client: JiraClient
   instance: InstanceElement
   link: string
   fieldName: string
-  fileName?: string
 }): Promise<void> => {
   const iconContent = await getIconContent(link, client)
   instance.value[fieldName] = new StaticFile({
-    filepath: `${JIRA}/${instance.elemID.typeName}/${fileName ?? pathNaclCase(naclCase(instance.value.name))}.png`,
+    filepath: `${JIRA}/${instance.elemID.typeName}/${pathNaclCase(naclCase(instance.value.name))}.png`,
     content: iconContent,
   })
 }

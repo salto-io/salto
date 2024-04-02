@@ -55,7 +55,7 @@ export type AuthenticatedAPIConnection = APIConnection & {
 
 export type RetryOptions = Partial<IAxiosRetryConfig>
 
-type LoginFunc<TCredentials> = (creds: TCredentials) => Promise<AuthenticatedAPIConnection>
+type LoginFunc<TCredentials> = (credentials: TCredentials) => Promise<AuthenticatedAPIConnection>
 
 export interface Connection<TCredentials> {
   login: LoginFunc<TCredentials>
@@ -161,11 +161,11 @@ export const createClientConnection = <TCredentials>({
   createConnection(_.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS)), timeout)
 
 export const validateCredentials = async <TCredentials>(
-  creds: TCredentials,
+  credentials: TCredentials,
   createConnectionArgs: ConnectionParams<TCredentials>,
 ): Promise<AccountInfo> => {
   const conn = createClientConnection(createConnectionArgs)
-  const { accountInfo } = await conn.login(creds)
+  const { accountInfo } = await conn.login(credentials)
   return accountInfo
 }
 
@@ -176,8 +176,8 @@ export type AuthParams = {
 
 type AxiosConnectionParams<TCredentials> = {
   retryOptions: RetryOptions
-  authParamsFunc: (creds: TCredentials) => Promise<AuthParams>
-  baseURLFunc: (creds: TCredentials) => Promise<string>
+  authParamsFunc: (credentials: TCredentials) => Promise<AuthParams>
+  baseURLFunc: (credentials: TCredentials) => Promise<string>
   credValidateFunc: ({
     credentials,
     connection,
@@ -195,17 +195,17 @@ export const axiosConnection = <TCredentials>({
   credValidateFunc,
   timeout = 0,
 }: AxiosConnectionParams<TCredentials>): Connection<TCredentials> => {
-  const login = async (creds: TCredentials): Promise<AuthenticatedAPIConnection> => {
+  const login = async (credentials: TCredentials): Promise<AuthenticatedAPIConnection> => {
     const httpClient = axios.create({
-      baseURL: await baseURLFunc(creds),
-      ...(await authParamsFunc(creds)),
+      baseURL: await baseURLFunc(credentials),
+      ...(await authParamsFunc(credentials)),
       maxBodyLength: Infinity,
       timeout,
     })
     axiosRetry(httpClient, retryOptions)
 
     try {
-      const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
+      const accountInfo = await credValidateFunc({ credentials, connection: httpClient })
       return Object.assign(httpClient, { accountInfo })
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)

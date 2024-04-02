@@ -183,7 +183,7 @@ export const getInstanceNaclName = ({
  * Generate an instance for a single entry returned for a given type.
  *
  * - The elem id is determined based on the name field, with a fallback
- *    to a default name that might not be multienv-friendly.
+ *    to a default name that might not be multi env-friendly.
  */
 export const toBasicInstance = async ({
   entry,

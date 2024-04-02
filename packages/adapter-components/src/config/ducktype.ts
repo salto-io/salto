@@ -28,7 +28,7 @@ import {
   TransformationConfig,
   TransformationDefaultConfig,
   createTransformationConfigTypes,
-  validateTransoformationConfig,
+  validateTransformationConfig,
   getTransformationConfigByType,
 } from './transformation'
 
@@ -96,7 +96,7 @@ export const validateApiDefinitionConfig = (
       isDefined,
     ),
   )
-  validateTransoformationConfig(
+  validateTransformationConfig(
     apiDefinitionConfigPath,
     adapterApiConfig.typeDefaults.transformation,
     getTransformationConfigByType(adapterApiConfig.types),

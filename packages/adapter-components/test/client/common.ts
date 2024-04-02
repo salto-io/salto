@@ -20,7 +20,7 @@ export type Credentials = { username: string; password: string }
 
 export const BASE_URL = 'http://localhost:1234/api/v1'
 
-export const validateCreds = async ({
+export const validateCredentials = async ({
   credentials,
   connection,
 }: {
@@ -40,7 +40,7 @@ export const createConnection: ConnectionCreator<Credentials> = (retryOptions, t
     retryOptions,
     authParamsFunc: async ({ username, password }: Credentials) => ({
       headers: {
-        customheader1: username,
+        customHeader1: username,
       },
       auth: {
         username,
@@ -48,6 +48,6 @@ export const createConnection: ConnectionCreator<Credentials> = (retryOptions, t
       },
     }),
     baseURLFunc: async () => BASE_URL,
-    credValidateFunc: validateCreds,
+    credValidateFunc: validateCredentials,
     timeout,
   })

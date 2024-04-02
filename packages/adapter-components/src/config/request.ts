@@ -343,17 +343,17 @@ export const validateRequestConfig = (
     .filter(([_typeName, config]) => config.dependsOn !== undefined)
     .map(([typeName, config]) => ({
       typeName,
-      dups: findDuplicates((config.dependsOn ?? []).map(def => def.pathParam)),
+      duplicates: findDuplicates((config.dependsOn ?? []).map(def => def.pathParam)),
       unresolvedArgs: findUnresolvedArgs(
         config.url,
         new Set([...defaultDependsOnArgs, ...(config.dependsOn ?? []).map(d => d.pathParam)]),
       ),
     }))
-    .filter(({ dups, unresolvedArgs }) => dups.length > 0 || unresolvedArgs.length > 0)
-  const dependsOnDups = typesWithErrors.filter(({ dups }) => dups.length > 0)
-  if (dependsOnDups.length > 0) {
+    .filter(({ duplicates, unresolvedArgs }) => duplicates.length > 0 || unresolvedArgs.length > 0)
+  const dependsOnDuplicates = typesWithErrors.filter(({ duplicates }) => duplicates.length > 0)
+  if (dependsOnDuplicates.length > 0) {
     throw new Error(
-      `Duplicate dependsOn params found in ${configPath} for the following types: ${dependsOnDups.map(d => d.typeName)}`,
+      `Duplicate dependsOn params found in ${configPath} for the following types: ${dependsOnDuplicates.map(d => d.typeName)}`,
     )
   }
   const typesWithUnresolvedArgs = typesWithErrors.filter(({ unresolvedArgs }) => unresolvedArgs.length > 0)

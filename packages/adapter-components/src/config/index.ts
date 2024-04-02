@@ -62,7 +62,7 @@ export {
 } from './swagger'
 export {
   createTransformationConfigTypes,
-  validateTransoformationConfig,
+  validateTransformationConfig,
   TransformationDefaultConfig,
   TransformationConfig,
   StandaloneFieldConfigType,
@@ -74,5 +74,10 @@ export {
   getTypeTransformationConfig,
   shouldNestFiles,
 } from './transformation'
-export { getUpdatedCofigFromConfigChanges, ConfigChangeSuggestion } from './config_change'
+// Keeping getUpdatedCofigFromConfigChanges for backwards compatibility.
+export {
+  getUpdatedConfigFromConfigChanges,
+  getUpdatedConfigFromConfigChanges as getUpdatedCofigFromConfigChanges,
+  ConfigChangeSuggestion,
+} from './config_change'
 export * as configMigrations from './config_migrations'

@@ -30,7 +30,7 @@ describe('getChangeGroupIdsFunc', () => {
   let type: ObjectType
   let instance: InstanceElement
 
-  let instaceNameChangeGroupId: ChangeIdFunction
+  let instanceNameChangeGroupId: ChangeIdFunction
   let fullNameChangeGroupId: ChangeIdFunction
   let nothingChangeGroupId: ChangeIdFunction
 
@@ -51,7 +51,7 @@ describe('getChangeGroupIdsFunc', () => {
       ignored: 'ignored',
     })
 
-    instaceNameChangeGroupId = async change => (!isInstanceChange(change) ? 'not Instance' : undefined)
+    instanceNameChangeGroupId = async change => (!isInstanceChange(change) ? 'not Instance' : undefined)
     fullNameChangeGroupId = async change => `${getChangeData(change).elemID.getFullName()}.GROUP`
     nothingChangeGroupId = async () => undefined
   })
@@ -71,7 +71,7 @@ describe('getChangeGroupIdsFunc', () => {
   })
   it('should map above the first defined function provide when multiple are passed', async () => {
     const changeGroupIds = (
-      await getChangeGroupIdsFunc([instaceNameChangeGroupId, fullNameChangeGroupId])(
+      await getChangeGroupIdsFunc([instanceNameChangeGroupId, fullNameChangeGroupId])(
         new Map<string, Change>([
           [instance.elemID.getFullName(), toChange({ after: instance })],
           [type.elemID.getFullName(), toChange({ after: type })],

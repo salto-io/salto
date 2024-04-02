@@ -129,7 +129,7 @@ const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
   addAliasFilter,
-  // should run after fieldReferencesFilter
+  // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,

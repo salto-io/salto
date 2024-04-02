@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  Values,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { configType } from '../src/types'
-import { optionsType, configWithCPQ, getConfig } from '../src/config_creator'
+import {
+  optionsType,
+  configWithCPQ,
+  getConfig,
+  SalesforceConfigOptionsType,
+} from '../src/config_creator'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement(
   'mock name',
@@ -53,8 +53,9 @@ describe('config_creator', () => {
   let options: InstanceElement | undefined
   let resultConfig: InstanceElement
 
-  const createMockOptionsInstance = (value: Values): InstanceElement =>
-    new InstanceElement('options', optionsType, value)
+  const createMockOptionsInstance = (
+    value: SalesforceConfigOptionsType,
+  ): InstanceElement => new InstanceElement('options', optionsType, value)
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -68,6 +69,18 @@ describe('config_creator', () => {
     it('should return adapter config with cpq', async () => {
       expect(resultConfig).toEqual(configWithCPQ)
       expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains managed packages', () => {
+    describe('when managed packages include CPQ', () => {
+      it('should return adapter config with cpq', async () => {
+        options = createMockOptionsInstance({
+          managedPackages: ['sbaa, SBQQ (CPQ)'],
+        })
+        expect(await getConfig(options)).toEqual(configWithCPQ)
+        expect(mockLogError).not.toHaveBeenCalled()
+      })
     })
   })
 

@@ -16,7 +16,13 @@
 
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { GROUP_MEMBERSHIP_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, PASSWORD_RULE_TYPE_NAME } from '../../src/constants'
+import {
+  GROUP_MEMBERSHIP_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  OKTA,
+  PASSWORD_RULE_TYPE_NAME,
+} from '../../src/constants'
 import unorderedListsFilter from '../../src/filters/unordered_lists'
 import { getFilterParams } from '../utils'
 

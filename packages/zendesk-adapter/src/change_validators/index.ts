@@ -87,3 +87,4 @@ export { dynamicContentPlaceholderModificationValidator } from './dynamic_conten
 export { inactiveTicketFormInViewValidator } from './inactive_ticket_forms_in_view'
 export { immutableTypeAndKeyForUserFieldsValidator } from './immutable_fields_in_user_fields'
 export { localeModificationValidator } from './locale'
+export { emptyAutomationOrderValidator } from './empty_automation_order'

@@ -16,7 +16,14 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, walkOnElement } from '@salto-io/adapter-utils'
+import {
+  WALK_NEXT_STEP,
+  WalkOnFunc,
+  isResolvedReferenceExpression,
+  walkOnElement,
+  walkOnValue,
+  getInstancesFromElementSource,
+} from '@salto-io/adapter-utils'
 import {
   elements as adapterElements,
   config as configUtils,
@@ -42,6 +49,7 @@ import {
   Values,
   ElemID,
   Field,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
@@ -59,7 +67,6 @@ import {
   isTaskResponse,
   STATUS_CATEGORY_ID_TO_KEY,
   TASK_STATUS,
-  WorkflowPayload,
   WorkflowVersion,
   CONDITION_LIST_FIELDS,
   VALIDATOR_LIST_FIELDS,
@@ -68,15 +75,24 @@ import {
   isAdditionOrModificationWorkflowChange,
   CONDITION_GROUPS_PATH_NAME_TO_RECURSE,
   WorkflowStatus,
+  Workflow,
+  isDeploymentWorkflowPayload,
+  PayloadWorkflowStatus,
+  EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
-import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
+import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
 import { JiraConfig } from '../../config/config'
 import { transformTransitions } from '../workflow/transition_structure'
 import { scriptRunnerObjectType } from '../workflow/post_functions_types'
+import { getStatusIdToStepId } from '../workflow/steps_deployment'
+import {
+  isWorkflowSchemeItem,
+  projectHasWorkflowSchemeReference,
+} from '../../change_validators/workflow_scheme_migration'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -154,6 +170,30 @@ export const convertParametersFieldsToList = (parameters: Values, listFields: Se
     })
 }
 
+const addNamesToWorkflowStatuses = (workflow: Workflow, statusesById: _.Dictionary<WorkflowStatus>): void => {
+  workflow.statuses = workflow.statuses.map(status => ({
+    ...status,
+    name: statusesById[status.statusReference].name,
+  }))
+}
+
+const removeParametersEmptyStrings: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  if (_.isPlainObject(value) && path.name === 'parameters') {
+    _.forOwn(value, (val, key) => {
+      if (val === '') {
+        delete value[key]
+      }
+    })
+  }
+  if (
+    EMPTY_STRINGS_PATH_NAME_TO_RECURSE.has(path.name) ||
+    (_.isPlainObject(value) && (value.transitions || value.conditions || value.parameters || value.actions))
+  ) {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const createWorkflowInstances = async ({
   client,
   workflowIds,
@@ -193,8 +233,13 @@ const createWorkflowInstances = async ({
           const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)
-            return undefined
           }
+          addNamesToWorkflowStatuses(workflow, _.keyBy(workflowIdToStatuses[workflow.id], 'id'))
+          walkOnValue({
+            elemId: new ElemID(JIRA, WORKFLOW_CONFIGURATION_TYPE, 'instance', workflow.name),
+            value: workflow,
+            func: removeParametersEmptyStrings,
+          })
           return toBasicInstance({
             entry: workflow,
             type: workflowConfigurationType,
@@ -335,11 +380,22 @@ const getNewVersionFromService = async (
   return response.data.workflows[0].version
 }
 
+const getNewVersion = async ({
+  workflow,
+  isNewVersion,
+  client,
+}: {
+  workflow: Workflow & { version: WorkflowVersion }
+  isNewVersion: boolean
+  client: JiraClient
+}): Promise<WorkflowVersion> =>
+  isNewVersion ? (await getNewVersionFromService(workflow.name, client)) ?? workflow.version : workflow.version
+
 const getWorkflowPayload = (
   isAddition: boolean,
   resolvedWorkflowInstance: InstanceElement,
   statusesPayload: Values[],
-): WorkflowPayload => {
+): Values => {
   const basicPayload = {
     statuses: statusesPayload,
     workflows: [resolvedWorkflowInstance.value],
@@ -353,13 +409,135 @@ const getWorkflowPayload = (
   return workflowPayload
 }
 
+const getWorkflowsFromWorkflowScheme = async (
+  workflowSchemeInstance: InstanceElement,
+): Promise<ReferenceExpression[]> => {
+  const { defaultWorkflow } = workflowSchemeInstance.value
+  const workflows = makeArray(workflowSchemeInstance.value.items)
+    .filter(isWorkflowSchemeItem)
+    .map(item => item.workflow)
+    .filter(values.isDefined)
+  return [defaultWorkflow, ...workflows].filter(isReferenceExpression)
+}
+
+// active workflow is a workflow that is associated with a project using a workflow scheme
+const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
+  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+  const activeWorkflows = await awu(projects)
+    .filter(projectHasWorkflowSchemeReference)
+    .map(project => project.value.workflowScheme.getResolvedValue(elementsSource))
+    .filter(isInstanceElement)
+    .flatMap(getWorkflowsFromWorkflowScheme)
+    .map(workflowRef => workflowRef.elemID.getFullName())
+    .toArray()
+  return new Set(activeWorkflows)
+}
+
+const getWorkflowStepsUrl = (baseUrl: string, workflowName: string): URL => {
+  const url = new URL('/secure/admin/workflows/ViewWorkflowSteps.jspa', baseUrl)
+  url.searchParams.append('workflowMode', 'live')
+  url.searchParams.append('workflowName', workflowName)
+  return url
+}
+
+const filterWorkflowStatuses = (
+  status: Values,
+  payloadStatusesByReference: _.Dictionary<PayloadWorkflowStatus>,
+  workflowName: string,
+): boolean => {
+  const payloadStatus = payloadStatusesByReference[status.statusReference]
+  if (payloadStatus === undefined) {
+    log.error(
+      `status reference of status ${status.name} is missing from the payload status list in workflow ${workflowName}`,
+    )
+    throw new Error('failed to deploy workflow steps')
+  }
+  if (payloadStatus.name === undefined) {
+    log.error(`status name is missing from the status with id ${status.id} in workflow ${workflowName}`)
+    throw new Error('failed to deploy workflow steps')
+  }
+  return payloadStatus.name !== status.name
+}
+
+const deploySteps = async (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  activeWorkflowsNames: Set<string>,
+  client: JiraClient,
+): Promise<boolean> => {
+  let isDeployedSteps = false
+  const workflowPayload = getChangeData(change).value
+  if (!isDeploymentWorkflowPayload(workflowPayload)) {
+    log.debug('Received unexpected workflow payload: %o', workflowPayload)
+    throw new Error('failed to deploy workflow steps')
+  }
+  // the workflow that deployed is the first element in the workflows array in the payload
+  const workflow = workflowPayload.workflows[0]
+  const workflowStatuses = workflow.statuses
+  const payloadStatuses = workflowPayload.statuses
+  const workflowName = workflow.name
+  const payloadStatusesByReference = _.keyBy(payloadStatuses, status => status.statusReference)
+  const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
+
+  await awu(workflowStatuses)
+    .filter(status => filterWorkflowStatuses(status, payloadStatusesByReference, workflowName))
+    .forEach(async status => {
+      isDeployedSteps = true
+      const stepStatus = payloadStatusesByReference[status.statusReference].id
+      const workflowStep = statusIdToStepId[stepStatus]
+
+      if (activeWorkflowsNames.has(change.data.after.elemID.getFullName())) {
+        // create draft
+        await client.jspGet({
+          url: '/secure/admin/workflows/EditWorkflowDispatcher.jspa',
+          queryParams: {
+            wfName: workflowName,
+          },
+        })
+        // edit steps
+        await client.jspPost({
+          url: '/secure/admin/workflows/EditWorkflowStep.jspa',
+          data: {
+            stepName: status.name,
+            workflowStep,
+            stepStatus,
+            workflowName,
+            workflowMode: 'draft',
+          },
+        })
+        // publish draft
+        await client.jspPost({
+          url: '/secure/admin/workflows/PublishDraftWorkflow.jspa',
+          data: {
+            enableBackup: 'false',
+            workflowName,
+            workflowMode: 'draft',
+          },
+        })
+      } else {
+        await client.jspPost({
+          url: '/secure/admin/workflows/EditWorkflowStep.jspa',
+          data: {
+            stepName: status.name,
+            workflowStep,
+            stepStatus,
+            workflowName,
+            workflowMode: 'live',
+          },
+        })
+      }
+    })
+  return isDeployedSteps
+}
+
 const deployWorkflow = async ({
   change,
+  activeWorkflowsNames,
   client,
   config,
   elementsSource,
 }: {
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+  activeWorkflowsNames: Set<string>
   client: JiraClient
   config: JiraConfig
   elementsSource: ReadOnlyElementsSource
@@ -388,13 +566,7 @@ const deployWorkflow = async ({
     return
   }
   const instance = getChangeData(change)
-  const responseWorkflow = response.workflows[0]
-  instance.value.workflows[0] = {
-    ...instance.value.workflows[0],
-    id: responseWorkflow.id,
-    version: responseWorkflow.version,
-    scope: responseWorkflow.scope,
-  }
+  const isMigration = response.taskId !== undefined
   if (response.taskId) {
     await awaitSuccessfulMigration({
       client,
@@ -403,6 +575,33 @@ const deployWorkflow = async ({
       taskId: response.taskId,
       workflowName: instance.elemID.name,
     })
+  }
+  let isDeployedSteps = false
+  if (config.client.usePrivateAPI) {
+    try {
+      isDeployedSteps = await deploySteps(change, activeWorkflowsNames, client)
+    } catch (error) {
+      const workflowName = getChangeData(change).value.workflows[0].name
+      const workflowStepsLink = getWorkflowStepsUrl(client.baseUrl, workflowName)
+      const deployStepsError: SaltoError = {
+        message: `Failed to deploy step names for workflow ${workflowName}; step names will be identical to status names. If required, you can manually edit the step names in Jira: ${workflowStepsLink.href}`,
+        severity: 'Warning',
+      }
+      throw deployStepsError
+    }
+  }
+  const version = await getNewVersion({
+    workflow: response.workflows[0],
+    // the version is not up to date if we deployed steps or if we had a migration
+    isNewVersion: isDeployedSteps || isMigration,
+    client,
+  })
+  const responseWorkflow = response.workflows[0]
+  instance.value.workflows[0] = {
+    ...instance.value.workflows[0],
+    id: responseWorkflow.id,
+    version,
+    scope: responseWorkflow.scope,
   }
 }
 
@@ -481,7 +680,14 @@ const getWorkflowForDeploy = async (
  * if there is a modification that removes a status from an active workflow we need status mappings to migrate the issues
  */
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elementsSource }) => {
+  let activeWorkflowsNamesPromise: Promise<Set<string>>
   const originalInstances: Record<string, InstanceElement> = {}
+  const getActiveWorkflowsNamesPromise = async (): Promise<Set<string>> => {
+    if (activeWorkflowsNamesPromise === undefined) {
+      activeWorkflowsNamesPromise = getActiveWorkflowsNames(elementsSource)
+    }
+    return activeWorkflowsNamesPromise
+  }
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
@@ -545,9 +751,11 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(changes, isAdditionOrModificationWorkflowChange)
+      const activeWorkflowsNames = await getActiveWorkflowsNamesPromise()
       const deployResult = await deployChanges(relevantChanges, async change =>
         deployWorkflow({
           change,
+          activeWorkflowsNames,
           client,
           config,
           elementsSource,
@@ -565,14 +773,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           const instance = getChangeData(change)
           const originalInstance = originalInstances[instance.elemID.getFullName()]
           const workflow = getChangeData(change).value.workflows[0]
-          const isMigrationDone = workflow.statusMappings !== undefined
-          const version = isMigrationDone
-            ? (await getNewVersionFromService(workflow.name, client)) ?? workflow.version
-            : workflow.version
           instance.value = {
             ...originalInstance.value,
             id: workflow.id,
-            version,
+            version: workflow.version,
           }
         })
     },

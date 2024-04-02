@@ -23,6 +23,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   AUTHORIZATION_POLICY_RULE,
+  GROUP_MEMBERSHIP_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   MFA_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
@@ -74,6 +75,7 @@ export const USER_MAPPING: Record<string, string[][]> = {
   [SIGN_ON_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [AUTHORIZATION_POLICY_RULE]: [INCLUDE_USERS_PATH],
+  [GROUP_MEMBERSHIP_TYPE_NAME]: [['members']],
   EndUserSupport: [['technicalContactId']],
 }
 
@@ -97,7 +99,7 @@ export const getUsers = async (
   paginator: clientUtils.Paginator,
   searchUsersParams?: SearchUsersParams,
 ): Promise<User[]> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     const paginationArgs = {
       url: '/api/v1/users',
       paginationField: 'after',

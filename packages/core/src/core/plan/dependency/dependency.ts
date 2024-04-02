@@ -50,7 +50,7 @@ const updateDeps = (
 export const addNodeDependencies =
   (changers: ReadonlyArray<DependencyChanger>): PlanTransformer =>
   graph =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       if (changers.length === 0) {
         // If there are no changers we return here to avoid creating changeData for no reason
         return graph

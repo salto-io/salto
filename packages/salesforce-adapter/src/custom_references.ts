@@ -300,7 +300,7 @@ const getProfilesCustomReferences = async (
   const profilesAndPermissionSets = elements
     .filter(isInstanceElement)
     .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
-  const refs = log.time(
+  const refs = log.timeDebug(
     () => profilesAndPermissionSets.flatMap(referencesFromProfile),
     `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets`,
   )

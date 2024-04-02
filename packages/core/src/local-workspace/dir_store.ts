@@ -284,7 +284,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       filenames: string[],
       options: dirStore.GetFileOptions,
     ): Promise<(dirStore.File<T> | undefined)[]> =>
-      log.time(
+      log.timeDebug(
         () =>
           withLimitedConcurrency(
             filenames.map(f => () => get(f, options)),

@@ -18,7 +18,7 @@ import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../src/client/client'
-import { removeScopedObjects } from '../../src/client/pagination'
+import { filterResponseEntries } from '../../src/client/pagination'
 
 const { toArrayAsync } = collections.asynciterable
 const { createPaginator, getAllPagesWithOffsetAndTotal } = clientUtils
@@ -65,7 +65,7 @@ describe('pageByOffset', () => {
       const paginator = createPaginator({
         client,
         paginationFuncCreator: getAllPagesWithOffsetAndTotal,
-        customEntryExtractor: removeScopedObjects,
+        customEntryExtractor: filterResponseEntries,
       })
       responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
     })
@@ -106,6 +106,39 @@ describe('pageByOffset', () => {
       )
     })
   })
+  describe('when there are unrelated calendars in the response', () => {
+    let responses: clientUtils.ResponseValue[][]
+    beforeEach(async () => {
+      mockAxios
+        .onGet()
+        .reply(200, [
+          { name: 'thing' },
+          { canCreate: false, calendars: [] },
+          { canCreate: false, anotherField: 'value' },
+          { canCreate: true, calendars: [] },
+        ])
+      const args = { url: 'http://myjira.net/thing' }
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: getAllPagesWithOffsetAndTotal,
+        customEntryExtractor: filterResponseEntries,
+      })
+      responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
+    })
+    it('should omit the global calendars response where canCreate is false', () => {
+      expect(responses).toHaveLength(1)
+      const [page] = responses
+      expect(page).not.toContainEqual(expect.objectContaining({ canCreate: false, calendars: [] }))
+    })
+    it('should keep specific calendars response where canCreate is true', () => {
+      const [page] = responses
+      expect(page).toContainEqual({ canCreate: true, calendars: [] })
+    })
+    it("should keep objects with canCreate = false if they don't have calendars", () => {
+      const [page] = responses
+      expect(page).toContainEqual({ canCreate: false, anotherField: 'value' })
+    })
+  })
 
   describe('when there is a 404 response', () => {
     let responses: clientUtils.ResponseValue[][]
@@ -115,7 +148,7 @@ describe('pageByOffset', () => {
       const paginator = createPaginator({
         client,
         paginationFuncCreator: getAllPagesWithOffsetAndTotal,
-        customEntryExtractor: removeScopedObjects,
+        customEntryExtractor: filterResponseEntries,
       })
       responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
     })
@@ -133,7 +166,7 @@ describe('pageByOffset', () => {
       const paginator = createPaginator({
         client,
         paginationFuncCreator: getAllPagesWithOffsetAndTotal,
-        customEntryExtractor: removeScopedObjects,
+        customEntryExtractor: filterResponseEntries,
       })
       responseIter = paginator(args, extractPageEntriesByNestedField())
     })

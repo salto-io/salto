@@ -38,6 +38,8 @@ import {
   adaptersConfigSource,
   createAdapterReplacedID,
   buildStaticFilesCache,
+  getBaseDirFromEnvName,
+  getStaticFileCacheName,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -115,10 +117,9 @@ const getNaclFilesSourceParams = ({
     directoryFilter: dirPathToIgnore,
   })
 
-  const cacheName = name === COMMON_ENV_PREFIX ? 'common' : name
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildStaticFilesCache(cacheName, remoteMapCreator, persistent),
+    buildStaticFilesCache(getStaticFileCacheName(name), remoteMapCreator, persistent),
   )
   return {
     naclFilesStore,
@@ -143,8 +144,6 @@ const loadNaclFileSource = async (
   return naclFilesSource(sourceName, naclFilesStore, staticFileSource, remoteMapCreator, persistent)
 }
 
-const getLocalEnvName = (env: string): string => (env === COMMON_ENV_PREFIX ? env : path.join(ENVS_PREFIX, env))
-
 export const createEnvironmentSource = async ({
   env,
   baseDir,
@@ -162,7 +161,7 @@ export const createEnvironmentSource = async ({
 }): Promise<EnvironmentSource> => {
   log.debug('Creating environment source for %s at %s', env, baseDir)
   return {
-    naclFiles: await loadNaclFileSource(baseDir, getLocalEnvName(env), persistent, remoteMapCreator),
+    naclFiles: await loadNaclFileSource(baseDir, getBaseDirFromEnvName(env), persistent, remoteMapCreator),
     state: loadState({
       workspaceId: workspaceConfig.uid,
       stateConfig: workspaceConfig.state,
@@ -209,9 +208,13 @@ export const loadLocalElementsSources = async ({
       ),
     ),
     [COMMON_ENV_PREFIX]: {
-      naclFiles: await loadNaclFileSource(baseDir, getLocalEnvName(COMMON_ENV_PREFIX), persistent, remoteMapCreator, [
-        path.join(baseDir, ENVS_PREFIX),
-      ]),
+      naclFiles: await loadNaclFileSource(
+        baseDir,
+        getBaseDirFromEnvName(COMMON_ENV_PREFIX),
+        persistent,
+        remoteMapCreator,
+        [path.join(baseDir, ENVS_PREFIX)],
+      ),
     },
   },
 })
@@ -339,7 +342,7 @@ const loadLocalWorkspaceImpl = async ({
   return {
     ...ws,
     renameEnvironment: async (envName: string, newEnvName: string): Promise<void> =>
-      ws.renameEnvironment(envName, newEnvName, getLocalEnvName(newEnvName)),
+      ws.renameEnvironment(envName, newEnvName, getBaseDirFromEnvName(newEnvName)),
     demoteAll: async (): Promise<void> => {
       const envSources = Object.values(
         _.pickBy(elemSources.sources, (_src, key) => key !== elemSources.commonSourceName),
@@ -348,7 +351,7 @@ const loadLocalWorkspaceImpl = async ({
       if (allEnvSourcesEmpty) {
         const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
         const currentEnv = ws.currentEnv()
-        return commonSource.rename(getLocalEnvName(currentEnv))
+        return commonSource.rename(getBaseDirFromEnvName(currentEnv))
       }
       return ws.demoteAll()
     },

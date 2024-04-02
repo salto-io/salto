@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FieldReferenceDefinition } from '../../references'
+import { ContextFunc, FieldReferenceDefinition } from '../../references'
 
-export type ReferenceDefinitions = {
+export type ReferenceDefinitions<T extends string = never> = {
   // rules for finding references - converting values to references in fetch, and references to values in deploy.
   // this is an array of arrays because rules can be run in multiple iterations during fetch
-  rules: FieldReferenceDefinition<never>[]
+  rules: FieldReferenceDefinition<T>[]
+  contextStrategyLookup?: Record<T, ContextFunc>
 }

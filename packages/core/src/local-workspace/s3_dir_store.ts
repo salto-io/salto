@@ -101,7 +101,7 @@ export const buildS3DirectoryStore = ({
     })
 
   const list = async (): Promise<string[]> =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       const paths = new Set<string>(Object.keys(updated))
       let currentPage: AWS.ListObjectsV2CommandOutput | undefined
       try {

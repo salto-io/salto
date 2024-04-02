@@ -116,6 +116,8 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> =
     },
   }
 
+const errorCodesToRetry = [400, 406]
+
 // This is attempting to work around issues where the Salesforce API sometimes
 // returns invalid responses for no apparent reason, causing jsforce to crash.
 // We hope retrying will help...
@@ -138,6 +140,7 @@ const errorMessagesToRetry = [
   'Internal_Error',
   'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
   'no healthy upstream',
+  'upstream connect error or disconnect/reset before headers',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -380,14 +383,16 @@ const sendChunked = async <TIn, TOut>({
 
 export class ApiLimitsTooLowError extends Error {}
 
-const retry400ErrorWrapper =
+const retryErrorsByCodeWrapper =
   (strategy: RetryStrategy): RetryStrategy =>
   (err, response, body) => {
     if (strategy(err, response, body)) {
       return true
     }
-    if (response.statusCode === 400) {
-      log.trace(`Retrying on 400 due to known salesforce issues. Err: ${err}`)
+    if (errorCodesToRetry.some((code) => response.statusCode === code)) {
+      log.warn(
+        `Retrying on ${response.statusCode} due to known salesforce issues. Err: ${err}, headers: ${response.headers}, status message: ${response.statusMessage}, body: ${body}`,
+      )
       return true
     }
     return false
@@ -396,7 +401,7 @@ const createRetryOptions = (
   retryOptions: Required<ClientRetryConfig>,
 ): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
-  retryStrategy: retry400ErrorWrapper(
+  retryStrategy: retryErrorsByCodeWrapper(
     RetryStrategies[retryOptions.retryStrategy],
   ),
   timeout: retryOptions.timeout,

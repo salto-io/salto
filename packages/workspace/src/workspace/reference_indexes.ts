@@ -291,7 +291,7 @@ export const updateReferenceIndexes = async (
   isCacheValid: boolean,
   getCustomReferences: GetCustomReferencesFunc,
 ): Promise<void> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     let relevantChanges = changes
     let initialIndex = false
     const isVersionMatch = (await mapVersions.get(REFERENCE_INDEXES_KEY)) === REFERENCE_INDEXES_VERSION

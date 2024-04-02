@@ -1478,6 +1478,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   dynamic_content_item: {
     request: {
       url: '/api/v2/dynamic_content/items',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: '.',
@@ -2940,6 +2942,7 @@ export type ChangeValidatorName =
   | 'inactiveTicketFormInView'
   | 'immutableTypeAndKeyForUserFields'
   | 'localeModification'
+  | 'emptyAutomationOrder'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -3017,6 +3020,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
     immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
     localeModification: { refType: BuiltinTypes.BOOLEAN },
+    emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

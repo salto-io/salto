@@ -908,9 +908,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {
+      add: {
+        url: '/api/v1/brands',
+        method: 'post',
+      },
       modify: {
         url: '/api/v1/brands/{brandId}',
         method: 'put',
+        urlParamsToFields: {
+          brandId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}',
+        method: 'delete',
         urlParamsToFields: {
           brandId: 'id',
         },
@@ -1788,6 +1799,13 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       },
     },
   },
+  GroupMembership: {
+    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
+    deployRequests: {
+      add: { url: '', method: 'put' },
+      modify: { url: '', method: 'put' },
+    },
+  },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
@@ -1879,6 +1897,7 @@ export type ChangeValidatorName =
   | 'appGroupAssignment'
   | 'appUrls'
   | 'profileMappingRemoval'
+  | 'brandRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1906,6 +1925,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appGroupAssignment: { refType: BuiltinTypes.BOOLEAN },
     appUrls: { refType: BuiltinTypes.BOOLEAN },
     profileMappingRemoval: { refType: BuiltinTypes.BOOLEAN },
+    brandRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

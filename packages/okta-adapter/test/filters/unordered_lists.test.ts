@@ -16,7 +16,7 @@
 
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, PASSWORD_RULE_TYPE_NAME } from '../../src/constants'
+import { GROUP_MEMBERSHIP_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, PASSWORD_RULE_TYPE_NAME } from '../../src/constants'
 import unorderedListsFilter from '../../src/filters/unordered_lists'
 import { getFilterParams } from '../utils'
 
@@ -104,6 +104,15 @@ describe('unorderedListsFilter', () => {
           selfServiceUnlock: { access: 'DENY' },
         },
       })
+    })
+  })
+
+  describe('GroupMembership instances', () => {
+    const groupMembershipType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_MEMBERSHIP_TYPE_NAME) })
+    it('should sort group membership members list', async () => {
+      const inst = new InstanceElement('inst', groupMembershipType, { members: ['c', 'a', 'b'] })
+      await filter.onFetch([inst, groupMembershipType])
+      expect(inst.value.members).toEqual(['a', 'b', 'c'])
     })
   })
 })

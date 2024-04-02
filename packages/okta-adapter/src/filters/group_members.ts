@@ -101,7 +101,7 @@ const createGroupMembershipInstance = async (
     : undefined
 }
 
-const isValidGroupMembershipInstance = (instance: InstanceElement): instance is GroupMembershipInstance =>
+export const isValidGroupMembershipInstance = (instance: InstanceElement): instance is GroupMembershipInstance =>
   Array.isArray(instance.value.members) && instance.value.members.every(m => _.isString(m))
 
 const deployGroupAssignment = async ({

@@ -24,7 +24,8 @@ import {
 import { setPath, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME } from '../constants'
+import { GROUP_MEMBERSHIP_TYPE_NAME, GROUP_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME } from '../constants'
+import { isValidGroupMembershipInstance } from './group_members'
 
 const log = logger(module)
 
@@ -59,6 +60,12 @@ const orderPasswordPolicyRuleMethods = (instance: InstanceElement): void => {
   }
 }
 
+const sortGroupMembershipMembers = (instance: InstanceElement): void => {
+  if (isValidGroupMembershipInstance(instance)) {
+    instance.value.members = instance.value.members.sort()
+  }
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -74,6 +81,10 @@ const filterCreator: FilterCreator = () => ({
     instances
       .filter(instance => instance.elemID.typeName === PASSWORD_RULE_TYPE_NAME)
       .forEach(instance => orderPasswordPolicyRuleMethods(instance))
+    
+    instances
+      .filter(instance => instance.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+      .forEach(instance => sortGroupMembershipMembers(instance))
   },
 })
 

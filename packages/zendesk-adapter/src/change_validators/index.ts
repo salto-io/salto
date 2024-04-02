@@ -88,3 +88,4 @@ export { inactiveTicketFormInViewValidator } from './inactive_ticket_forms_in_vi
 export { immutableTypeAndKeyForUserFieldsValidator } from './immutable_fields_in_user_fields'
 export { localeModificationValidator } from './locale'
 export { emptyAutomationOrderValidator } from './empty_automation_order'
+export { viewCustomStatusConditionsValidator } from './view_custom_status_conditions'

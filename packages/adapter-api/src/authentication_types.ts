@@ -19,6 +19,7 @@ import { Values } from './values'
 export type OAuthRequestParameters = {
   url: string
   oauthRequiredFields: string[]
+  directParamsExtraction?: boolean
 }
 
 export type AuthMethod = {

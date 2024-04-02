@@ -141,6 +141,7 @@ const errorMessagesToRetry = [
   'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
   'no healthy upstream',
   'upstream connect error or disconnect/reset before headers',
+  'security policies took too long to evaluate',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

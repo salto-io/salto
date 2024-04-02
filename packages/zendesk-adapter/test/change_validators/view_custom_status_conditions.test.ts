@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { Change, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { elementSource, RemoteElementSource } from '@salto-io/workspace'
 import { VIEW_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -35,27 +36,19 @@ const createElementSource = (customStatusesEnabled: boolean): RemoteElementSourc
   return createInMemoryElementSource([accountSetting])
 }
 
-const createConditions = (customConditions: number, standardConditions: number): {}[] => {
-  const conditions = []
-
-  for (let i = 0; i < customConditions; i += 1) {
-    conditions.push({
+const createConditions = (customConditions: number, standardConditions: number): {}[] =>
+  _.concat(
+    _.range(customConditions).map(i => ({
       field: 'custom_status_id',
       operator: 'includes',
       value: `custom_status_${i}`,
-    })
-  }
-
-  for (let i = 0; i < standardConditions; i += 1) {
-    conditions.push({
+    })),
+    _.range(standardConditions).map(i => ({
       field: 'status',
       operator: 'is',
       value: `status_${i}`,
-    })
-  }
-
-  return conditions
-}
+    })),
+  )
 
 const createInstance = (
   allCustomConditions: number,
@@ -106,7 +99,7 @@ describe('viewCustomStatusConditionsValidator', () => {
         severity: 'Error',
         message: "View includes a condition on field 'custom_status_id' but custom ticket statuses are disabled",
         detailedMessage:
-          "To enable custom ticket status conditions, please ensure that the custom ticket statuses feature is turned on. To do so, please update the 'custom_statuses_enabled' setting to 'true' in the account_settings.",
+          "View includes a condition on field 'custom_status_id' but custom ticket statuses are disabled. To apply conditions on custom ticket statuses, please activate this feature first. For help see: https://support.zendesk.com/hc/en-us/articles/4412575841306-Activating-custom-ticket-statuses.",
       })),
     )
   })

@@ -56,7 +56,7 @@ export const viewCustomStatusConditionsValidator: ChangeValidator = async (chang
         severity: 'Error',
         message: "View includes a condition on field 'custom_status_id' but custom ticket statuses are disabled",
         detailedMessage:
-          "To enable custom ticket status conditions, please ensure that the custom ticket statuses feature is turned on. To do so, please update the 'custom_statuses_enabled' setting to 'true' in the account_settings.",
+          "View includes a condition on field 'custom_status_id' but custom ticket statuses are disabled. To apply conditions on custom ticket statuses, please activate this feature first. For help see: https://support.zendesk.com/hc/en-us/articles/4412575841306-Activating-custom-ticket-statuses.",
       }),
     )
 }

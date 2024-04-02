@@ -17,6 +17,10 @@
 			"path": "packages/adapter-utils"
 		},
 		{
+			"name": "aws-utils",
+			"path": "packages/aws-utils"
+		},
+		{
 			"name": "cli",
 			"path": "packages/cli"
 		},
@@ -41,10 +45,6 @@
 			"path": "packages/file"
 		},
 		{
-			"name": "hubspot-adapter",
-			"path": "packages/hubspot-adapter"
-		},
-		{
 			"name": "jira-adapter",
 			"path": "packages/jira-adapter"
 		},
@@ -61,10 +61,6 @@
 			"path": "packages/lowerdash"
 		},
 		{
-			"name": "marketo-adapter",
-			"path": "packages/marketo-adapter"
-		},
-		{
 			"name": "netsuite-adapter",
 			"path": "packages/netsuite-adapter"
 		},
@@ -73,12 +69,20 @@
 			"path": "packages/okta-adapter"
 		},
 		{
+			"name": "parser",
+			"path": "packages/parser"
+		},
+		{
 			"name": "persistent-pool",
 			"path": "packages/persistent-pool"
 		},
 		{
 			"name": "salesforce-adapter",
 			"path": "packages/salesforce-adapter"
+		},
+		{
+			"name": "sap-adapter",
+			"path": "packages/sap-adapter"
 		},
                 {
                         "name": "test-utils",
@@ -97,10 +101,6 @@
 			"path": "packages/workspace"
 		},
 		{
-			"name": "graph-exporter",
-			"path": "packages/graph-exporter"
-		},
-		{
 			"name": "zendesk-adapter",
 			"path": "packages/zendesk-adapter"
 		},
@@ -115,10 +115,6 @@
 		{
 			"name": "serviceplaceholder-adapter",
 			"path": "packages/serviceplaceholder-adapter"
-		},
-		{
-			"name": "aws-utils",
-			"path": "packages/aws-utils"
 		}
 	],
 	"settings": {

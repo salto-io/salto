@@ -282,23 +282,14 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
             url,
             isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
           )
-      if (method.toUpperCase() === 'GET') {
-        log.trace(
-          'Received response for %s on %s (%s) with status %d',
-          method.toUpperCase(),
-          url,
-          safeJsonStringify({ url, queryParams }),
-          res.status,
-        )
-      } else {
-        log.debug(
-          'Received response for %s on %s (%s) with status %d',
-          method.toUpperCase(),
-          url,
-          safeJsonStringify({ url, queryParams }),
-          res.status,
-        )
-      }
+      log.log(
+        method.toUpperCase() === 'GET' ? 'trace' : 'debug',
+        'Received response for %s on %s (%s) with status %d',
+        method.toUpperCase(),
+        url,
+        safeJsonStringify({ url, queryParams }),
+        res.status,
+      )
 
       logResponse(res)
       return {

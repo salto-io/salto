@@ -92,8 +92,9 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
     if (data.pathIndices !== undefined) {
       res.pathIndices = res.pathIndices.concat(data.pathIndices)
     }
-    if (data.pathIndices !== undefined) {
-      log.debug('ignoring deprecated state data: update dates')
+    if (data.updateDates !== undefined) {
+      // use the deprecated update dates to get the accounts
+      res.accounts = res.accounts.concat(data.updateDates.flatMap(Object.keys))
     }
   }
 
@@ -111,10 +112,10 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
               updateWithParsedStateData({ elements: value })
             }
           } else if (key === 1) {
-            // line 2 - deprecated - update dates
+            // line 2 - update dates
             //   {"dummy":"2023-01-09T15:57:59.322Z"}
             if (!_.isEmpty(value)) {
-              log.debug('ignoring deprecated state data: update dates')
+              updateWithParsedStateData({ updateDates: [value] })
             }
           } else if (key === 2) {
             // line 3 - path index, e.g.

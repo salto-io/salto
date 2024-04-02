@@ -332,6 +332,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'issueSecurityLevelId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
     serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
     target: { type: SECURITY_LEVEL_TYPE },
   },
   {

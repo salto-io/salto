@@ -140,6 +140,7 @@ const errorMessagesToRetry = [
   'Internal_Error',
   'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
   'no healthy upstream',
+  'upstream connect error or disconnect/reset before headers',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

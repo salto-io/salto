@@ -22,14 +22,18 @@ import {
   ElemID,
   isInstanceElement,
   toChange,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
+import * as fs from 'fs'
+import * as path from 'path'
 import {
   AUTOMATION_TYPE,
   CALENDAR_TYPE,
   ESCALATION_SERVICE_TYPE,
   FORM_TYPE,
   ISSUE_LAYOUT_TYPE,
+  ISSUE_TYPE_NAME,
   ISSUE_TYPE_SCHEMA_NAME,
   JIRA,
   NOTIFICATION_SCHEME_TYPE_NAME,
@@ -90,6 +94,16 @@ export const createInstances = (
     findType('Dashboard', fetchedElements),
     createDashboardValues(randomString),
   )
+  const issueType = new InstanceElement(`IT_${randomString}`, findType(ISSUE_TYPE_NAME, fetchedElements), {
+    description: randomString,
+    name: `IT_${randomString}`,
+    hierarchyLevel: 0,
+    untranslatedName: `IT_${randomString}`,
+    avatar: new StaticFile({
+      filepath: `${JIRA}/${ISSUE_TYPE_NAME}/${randomString}.png`,
+      content: fs.readFileSync(path.resolve(`${__dirname}/../../../e2e_test/images/nacl.png`)),
+    }),
+  })
 
   const dashboardGadget1 = new InstanceElement(
     naclCase(`${randomString}__${randomString}-1_2_0`),
@@ -292,6 +306,7 @@ export const createInstances = (
   )
 
   return [
+    [issueType],
     [dashboard],
     [dashboardGadget1],
     [dashboardGadget2],

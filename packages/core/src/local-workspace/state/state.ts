@@ -75,9 +75,14 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
             //   [{"elemID":{...},"annotations":{...}},{"elemID":{...},"annotations":{...}},...]
             res.elements = res.elements.concat(await deserializeParsed(value))
           } else if (key === 1) {
-            // line 2 - update dates, e.g.
-            //   {"dummy":"2023-01-09T15:57:59.322Z"}
-            res.accounts.push(value)
+            // line 2 - configured accounts, e.g.
+            //   [dummy, ...]
+            if (_.isPlainObject(value)) {
+              // old-format
+              res.accounts.push(Object.keys(value)[0])
+            } else {
+              res.accounts.push(value)
+            }
           } else if (key === 2) {
             // line 3 - path index, e.g.
             //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]

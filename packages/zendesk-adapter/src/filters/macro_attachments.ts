@@ -32,6 +32,7 @@ import {
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
+  toChange,
 } from '@salto-io/adapter-api'
 import {
   normalizeFilePathPart,
@@ -50,8 +51,9 @@ import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-import { createAdditionalParentChanges } from './utils'
+// import { createAdditionalParentChanges } from './utils'
 
+const { isDefined } = values
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { isArrayOfRefExprToInstances } = references
@@ -159,9 +161,9 @@ const createAttachmentInstance = ({
       content: content
         ? new StaticFile({ filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`, content })
         : undefined,
+      macros: [new ReferenceExpression(macro.elemID, macro)],
     },
     [ZENDESK, RECORDS_PATH, MACRO_ATTACHMENT_TYPE_NAME, pathName],
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(macro.elemID, macro)] },
   )
 }
 
@@ -220,37 +222,70 @@ const getAttachmentContent = async ({
   }
 }
 
-const getMacroAttachments = async ({
-  client,
+const getAttachmentsForMacro = async ({
   macro,
+  attachments,
+  client,
   attachmentType,
+  allAttachments,
 }: {
   client: ZendeskClient
   macro: InstanceElement
+  attachments: Attachment[]
   attachmentType: ObjectType
-}): Promise<(InstanceElement | SaltoElementError)[]> => {
-  // We are ok with calling get here
-  //  because a macro can be associated with up to five attachments.
-  const response = await client.get({
-    url: `/api/v2/macros/${macro.value.id}/attachments`,
-  })
-  if (Array.isArray(response.data)) {
-    log.error(
-      `Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`,
-    )
-    return []
-  }
-  const attachments = response.data.macro_attachments
-  if (!isAttachments(attachments)) {
-    return []
-  }
-  return (
+  allAttachments: (InstanceElement | SaltoElementError)[]
+}): Promise<(InstanceElement | SaltoElementError)[]> =>
+  (
     await Promise.all(
-      attachments.map(async attachment => getAttachmentContent({ client, attachment, macro, attachmentType })),
+      attachments.map(async attachment => {
+        const existingAttachment = allAttachments.find(a => isInstanceElement(a) && a.value.id === attachment.id)
+        if (existingAttachment !== undefined) {
+          // The same attachment can be used by multiple macros
+          // Instead of creating new instances, we add references to the macros field
+          const instance = existingAttachment as InstanceElement
+          instance.value.macros = instance.value.macros.concat([new ReferenceExpression(macro.elemID, macro)])
+          return []
+        }
+        return getAttachmentContent({ client, attachment, macro, attachmentType })
+      }),
     )
   )
     .flat()
     .filter(values.isDefined)
+
+const getMacroAttachments = async ({
+  macros,
+  client,
+  attachmentType,
+}: {
+  macros: InstanceElement[]
+  client: ZendeskClient
+  attachmentType: ObjectType
+}): Promise<(InstanceElement | SaltoElementError)[]> => {
+  let allAttachments: (InstanceElement | SaltoElementError)[] = []
+  // We need to create the attachments sequentially so that we can check if
+  // different macros use the same attachments
+  for await (const macro of macros) {
+    // We are ok with calling get here
+    // because a macro can be associated with up to five attachments.
+    const response = await client.get({
+      url: `/api/v2/macros/${macro.value.id}/attachments`,
+    })
+    let currentAttachments: Attachment[]
+    if (Array.isArray(response.data)) {
+      log.error(
+        `Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`,
+      )
+      currentAttachments = []
+    } else {
+      currentAttachments = !isAttachments(response.data.macro_attachments) ? [] : response.data.macro_attachments
+    }
+    const currentMacroAttachments = (
+      await getAttachmentsForMacro({ macro, attachments: currentAttachments, client, attachmentType, allAttachments })
+    ).flat()
+    allAttachments = allAttachments.concat(currentMacroAttachments)
+  }
+  return allAttachments
 }
 
 /**
@@ -264,11 +299,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(e => e.elemID.typeName === MACRO_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[ATTACHMENTS_FIELD_NAME]))
     const attachmentType = createAttachmentType()
-    const macroAttachmentsAndErrors = (
-      await Promise.all(
-        macrosWithAttachments.map(async macro => getMacroAttachments({ client, attachmentType, macro })),
-      )
-    ).flat()
+    const macroAttachmentsAndErrors = await getMacroAttachments({
+      macros: macrosWithAttachments,
+      client,
+      attachmentType,
+    })
     const [macroAttachments, errors] = _.partition(macroAttachmentsAndErrors, isInstanceElement)
     _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
     elements.push(attachmentType, ...macroAttachments)
@@ -293,10 +328,24 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME,
     )
-    const additionalParentChanges =
-      parentChanges.length === 0 && childrenChanges.length > 0
-        ? await createAdditionalParentChanges(childrenChanges, false)
-        : []
+    let additionalParentChanges: Change<InstanceElement>[] | undefined = []
+    if (parentChanges.length === 0 && childrenChanges.length > 0) {
+      additionalParentChanges = childrenChanges
+        .flatMap(childChange => {
+          const macroParents = getChangeData(childChange).value.macros
+          if (!isArrayOfRefExprToInstances(macroParents)) {
+            return undefined
+          }
+          return macroParents.map(parent =>
+            toChange({
+              before: parent.value.clone(),
+              after: parent.value.clone(),
+            }),
+          )
+        })
+        .filter(isDefined)
+    }
+
     if (additionalParentChanges === undefined) {
       return {
         deployResult: {

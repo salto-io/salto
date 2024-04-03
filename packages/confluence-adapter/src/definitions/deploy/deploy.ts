@@ -20,23 +20,6 @@ import { AdditionalAction, ClientOptions } from '../types'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
-// const getPermissionsDiff = (
-//   change: Change<InstanceElement>,
-// ): { deletedPermissions: Value[]; addedPermissions: Value[] } => {
-//   if (!isModificationChange(change)) {
-//     return { deletedPermissions: [], addedPermissions: [] }
-//   }
-//   const { permissions: beforePermissions } = _.pick(change.data.before.value, 'permissions')
-//   const { permissions: afterPermissions } = _.pick(change.data.after.value, 'permissions')
-//   if (!Array.isArray(beforePermissions) || !Array.isArray(afterPermissions)) {
-//     return { deletedPermissions: [], addedPermissions: [] }
-//   }
-//   return {
-//     deletedPermissions: beforePermissions.filter(before => !afterPermissions.some(after => _.isEqual(after, before))),
-//     addedPermissions: afterPermissions.filter(after => !beforePermissions.some(before => _.isEqual(after, before))),
-//   }
-// }
-
 const isSpaceChange = ({ change }: definitions.deploy.ChangeAndContext): boolean => {
   if (!isModificationChange(change)) {
     return false
@@ -129,50 +112,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
             },
-            // {
-            //   condition: {
-            //     custom:
-            //       () =>
-            //       ({ change }) => {
-            //         const { addedPermissions } = getPermissionsDiff(change)
-            //         return addedPermissions.length > 0
-            //       },
-            //   },
-            //   request: {
-            //     endpoint: {
-            //       path: '/wiki/rest/api/space/{key}/permission',
-            //       method: 'post',
-            //     },
-            //     transformation: {
-            //       adjust: ({ context }) => {
-            //         const { addedPermissions } = getPermissionsDiff(context.change)
-            //         return { value: addedPermissions }
-            //       },
-            //     },
-            //   },
-            // },
-            // {
-            //   condition: {
-            //     custom:
-            //       () =>
-            //       ({ change }) => {
-            //         const { deletedPermissions } = getPermissionsDiff(change)
-            //         return deletedPermissions.length > 0
-            //       },
-            //   },
-            //   request: {
-            //     endpoint: {
-            //       path: '/wiki/rest/api/space/{key}/permission/{id}',
-            //       method: 'delete',
-            //     },
-            //     transformation: {
-            //       adjust: ({ context }) => {
-            //         const { deletedPermissions } = getPermissionsDiff(context.change)
-            //         return { value: deletedPermissions }
-            //       },
-            //     },
-            //   },
-            // },
           ],
           remove: [
             {

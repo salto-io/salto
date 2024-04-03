@@ -228,15 +228,14 @@ const orderViewCustomFields = (instances: InstanceElement[]): void => {
 }
 
 /*
-* label names are unordered in an article, sort them alphabetically to keep them consistent
-*/
+ * label names are unordered in an article, sort them alphabetically to keep them consistent
+ */
 const orderArticleLabelNames = (instances: InstanceElement[]): void => {
-  instances.filter(e => e.refType.elemID.name === ARTICLE_TYPE_NAME)
+  instances
+    .filter(e => e.refType.elemID.name === ARTICLE_TYPE_NAME)
     .forEach(article => {
       if (Array.isArray(article.value.label_names)) {
-        article.value.label_names = _.sortBy(
-          article.value.label_names,
-        )
+        article.value.label_names = _.sortBy(article.value.label_names)
       }
     })
 }

@@ -2943,6 +2943,7 @@ export type ChangeValidatorName =
   | 'immutableTypeAndKeyForUserFields'
   | 'localeModification'
   | 'emptyAutomationOrder'
+  | 'viewCustomStatusConditions'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -3021,6 +3022,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
     localeModification: { refType: BuiltinTypes.BOOLEAN },
     emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
+    viewCustomStatusConditions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -17,29 +17,33 @@ import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@sa
 import { sortListsFilterCreator } from '../../src/filters'
 import { FilterWith } from '../../src/filter_utils'
 import { ApiDefinitions } from '../../src/definitions'
-import { ADAPTER_NAME } from '@salto-io/serviceplaceholder-adapter/dist/src/constants'
+import { ElementFieldCustomization } from '../../src/definitions/system/fetch'
 
-describe('sort lists filter', () => {
-  it('should do something', async () => {
-    const filter = sortListsFilterCreator()({
-      definitions: {
-        fetch: {
-          instances: {
-            customizations: {
-              t1: {
-                element: {
-                  fieldCustomizations: {
-                    field1: {
-                      sort: { sortByProperties: ['prop1', 'prop2'] },
-                    },
-                  },
-                },
-              },
+const makeDefinitions = <TOptions>(
+  fieldCustomizations: Record<string, ElementFieldCustomization>,
+): { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> } => ({
+  definitions: {
+    fetch: {
+      instances: {
+        customizations: {
+          t1: {
+            element: {
+              fieldCustomizations,
             },
           },
         },
       },
-    }) as FilterWith<'onFetch'>
+    },
+  },
+})
+
+describe('sort lists filter', () => {
+  it('should do something', async () => {
+    const filter = sortListsFilterCreator()(
+      makeDefinitions({
+        field1: { sort: { sortByProperties: ['prop1', 'prop2'] } },
+      }),
+    ) as FilterWith<'onFetch'>
     const objType = new ObjectType({
       elemID: new ElemID('adapter', 't1'),
       fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },

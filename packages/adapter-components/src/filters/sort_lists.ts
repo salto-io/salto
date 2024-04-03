@@ -95,13 +95,5 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
         .forEach(async element =>
           sortLists(element, (defQuery.query(element.elemID.typeName) as any).fieldCustomizations),
         )
-      /*
-      await Promise.all(
-        elements.filter(isInstanceElement).map(element => async () => {
-          defQuery.query(element.elemID.typeName)
-          return sortLists(element)
-        }),
-      )
-       */
     },
   })

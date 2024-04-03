@@ -74,7 +74,7 @@ export {
   getTypeTransformationConfig,
   shouldNestFiles,
 } from './transformation'
-// Keeping getUpdatedCofigFromConfigChanges for backwards compatibility.
+// TODO(SALTO-5723): Keeping getUpdatedCofigFromConfigChanges for backwards compatibility.
 export {
   getUpdatedConfigFromConfigChanges,
   getUpdatedConfigFromConfigChanges as getUpdatedCofigFromConfigChanges,

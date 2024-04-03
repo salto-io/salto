@@ -34,7 +34,7 @@ const log = logger(module)
  * response data into a list of instances and types.
  *
  * Flow:
- * - resource fetchers use requesters to generate resource fragmets
+ * - resource fetchers use requesters to generate resource fragments
  * - resources are aggregated by service id, and when ready sent to the element generator
  * - once all resources have been produced, the element generator generates all instances and types
  */

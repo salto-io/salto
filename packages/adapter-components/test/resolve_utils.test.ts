@@ -41,7 +41,7 @@ describe('resolve utils func', () => {
     const instanceName = 'Instance'
     const objectName = 'Object'
     const newValue = 'NEW'
-    const elementID = new ElemID('salesforce', 'elememt')
+    const elementID = new ElemID('salesforce', 'element')
     const element = new ObjectType({
       elemID: elementID,
       annotationRefsOrTypes: {

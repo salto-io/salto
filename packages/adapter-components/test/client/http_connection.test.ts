@@ -36,7 +36,7 @@ describe('client_http_connection', () => {
           '/users/me',
           undefined,
           expect.objectContaining({
-            customheader1: 'user123',
+            customHeader1: 'user123',
           }),
         )
         .reply(200, {
@@ -52,7 +52,7 @@ describe('client_http_connection', () => {
       const req = mockAxiosAdapter.history.get[0]
       expect(req.url).toEqual('/users/me')
       expect(req.auth).toEqual({ username: 'user123', password: 'pass' })
-      // already verified the customheader1 header in the onGet header matcher
+      // already verified the customHeader1 header in the onGet header matcher
     })
     it('should throw Unauthorized on UnauthorizedError', async () => {
       await expect(() =>

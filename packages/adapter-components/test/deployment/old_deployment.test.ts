@@ -165,7 +165,7 @@ describe('deployChange', () => {
       queryParams: undefined,
     })
   })
-  it('should mark removal change as deployed succesfully if request throw with allowedStatusCodesOnRemoval', async () => {
+  it('should mark removal change as deployed successfully if request throw with allowedStatusCodesOnRemoval', async () => {
     httpClient.delete.mockRejectedValueOnce(
       new HTTPError('message', {
         status: 404,

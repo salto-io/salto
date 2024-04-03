@@ -36,14 +36,14 @@ describe('createDependencyGraph', () => {
         before: new InstanceElement('mod2', typeA, { a: 'before' }),
         after: new InstanceElement('mod2', typeA, { a: 'after' }),
       }),
-      toChange({ before: new InstanceElement('remo3', typeA, { a: 'before' }) }),
+      toChange({ before: new InstanceElement('remove3', typeA, { a: 'before' }) }),
       toChange({ after: new InstanceElement('add1', typeB) }),
       toChange({
         before: new InstanceElement('mod2', typeB, { a: 'before' }),
         after: new InstanceElement('mod2', typeB, { a: 'after' }),
       }),
-      toChange({ before: new InstanceElement('remo3', typeB, { a: 'before' }) }),
-      toChange({ before: new InstanceElement('remo3', typeC, { a: 'before' }) }),
+      toChange({ before: new InstanceElement('remove3', typeB, { a: 'before' }) }),
+      toChange({ before: new InstanceElement('remove3', typeC, { a: 'before' }) }),
       toChange({
         before: new InstanceElement('mod2', typeC, { a: 'before' }),
         after: new InstanceElement('mod2', typeC, { a: 'after' }),

@@ -136,7 +136,7 @@ export const mockInstance = new InstanceElement(
         },
         innerObj: {
           name: 'oren',
-          listOfNames: ['abc', 'qwe', 'opiu'],
+          listOfNames: ['abc', 'qwe', 'iop'],
           magical: {
             deepNumber: '888',
             deepName: 'innerName',

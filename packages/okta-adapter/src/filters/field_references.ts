@@ -27,7 +27,7 @@ const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
     const fixedDefs = referencesRules.map(def =>
-      config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'oktaMissingRefStrategy'),
+      config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),
     )
     await referenceUtils.addReferences({
       elements,

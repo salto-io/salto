@@ -152,7 +152,7 @@ describe('fetch', () => {
                         context: {
                           args: {
                             parent_id: {
-                              fromField: 'id',
+                              root: 'id',
                             },
                           },
                         },
@@ -163,7 +163,7 @@ describe('fetch', () => {
                         context: {
                           args: {
                             parent_id: {
-                              fromField: 'id',
+                              root: 'id',
                             },
                           },
                         },

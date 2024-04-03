@@ -69,7 +69,7 @@ const getContextInstances = (
     (contextElements[fromType] ?? [])
       .filter(isInstanceElement)
       // The relevant context instances are of the types correspond to the page type in SupportedTypes,
-      // fallback to all instances if the mapping is missing from SupportedTypess
+      // fallback to all instances if the mapping is missing from SupportedTypes
       .filter(instance => (itemTypes !== undefined ? itemTypes.includes(instance.elemID.typeName) : true))
   )
 }

@@ -39,7 +39,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { Client } from '../../client/client_creator'
 import { AdapterParams } from './types'
 import { Filter, FilterResult, filterRunner } from '../../filter_utils'
-import { getUpdatedCofigFromConfigChanges } from '../../config'
+import { getUpdatedConfigFromConfigChanges } from '../../config'
 import {
   APIDefinitionsOptions,
   ResolveClientOptionsType,
@@ -186,7 +186,7 @@ export class AdapterImpl<
 
     const updatedConfig =
       this.configInstance && configChanges
-        ? getUpdatedCofigFromConfigChanges({
+        ? getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType: createUserConfigType({ adapterName: this.adapterName }),

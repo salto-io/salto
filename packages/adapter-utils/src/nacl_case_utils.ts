@@ -41,12 +41,12 @@ export const normalizeFilePathPart = (name: string): string => {
     return name
   }
   const nameHash = hashUtils.toMD5(name)
-  let extention = path.extname(name)
-  if (extention.length > MAX_PATH_EXTENSION_LENGTH || Buffer.byteLength(extention) !== extention.length) {
-    // Heurstic guess - a valid extension must be short and ascii
-    extention = ''
+  let extension = path.extname(name)
+  if (extension.length > MAX_PATH_EXTENSION_LENGTH || Buffer.byteLength(extension) !== extension.length) {
+    // Heuristic guess - a valid extension must be short and ascii
+    extension = ''
   }
-  const suffix = `_${nameHash}${extention}`
+  const suffix = `_${nameHash}${extension}`
   return truncate(name, MAX_PATH_LENGTH - suffix.length).concat(suffix)
 }
 

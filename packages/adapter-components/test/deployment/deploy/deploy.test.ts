@@ -60,14 +60,14 @@ describe('deployChanges', () => {
         before: new InstanceElement('mod2', typeA, { a: 'before' }),
         after: new InstanceElement('mod2', typeA, { a: 'after' }),
       }),
-      toChange({ before: new InstanceElement('remo3', typeA, { a: 'before' }) }),
+      toChange({ before: new InstanceElement('remove3', typeA, { a: 'before' }) }),
       toChange({ after: new InstanceElement('add1', typeB) }),
       toChange({
         before: new InstanceElement('mod2', typeB, { a: 'before' }),
         after: new InstanceElement('mod2', typeB, { a: 'after' }),
       }),
-      toChange({ before: new InstanceElement('remo3', typeB, { a: 'before' }) }),
-      toChange({ before: new InstanceElement('remo3', typeC, { a: 'before' }) }),
+      toChange({ before: new InstanceElement('remove3', typeB, { a: 'before' }) }),
+      toChange({ before: new InstanceElement('remove3', typeC, { a: 'before' }) }),
       toChange({
         before: new InstanceElement('mod2', typeC, { a: 'before' }),
         after: new InstanceElement('mod2', typeC, { a: 'after' }),
@@ -194,7 +194,7 @@ describe('deployChanges', () => {
       'adapter.typeA.instance.add1',
       'adapter.typeA.instance.add2',
       'adapter.typeA.instance.mod2',
-      'adapter.typeA.instance.remo3',
+      'adapter.typeA.instance.remove3',
     ])
     expect(mockedRequester.getRequester).toHaveBeenCalledTimes(1)
   })

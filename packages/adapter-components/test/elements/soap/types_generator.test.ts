@@ -94,7 +94,7 @@ describe('extractTypes', () => {
   })
 
   it('should return duplicate types', async () => {
-    const typesWithDups = await extractTypes('adapterName', INVALID_WSDL_PATH, { camelCase: true })
-    expect(typesWithDups.filter(type => type.elemID.name === 'testedType')).toHaveLength(2)
+    const typesWithDuplicates = await extractTypes('adapterName', INVALID_WSDL_PATH, { camelCase: true })
+    expect(typesWithDuplicates.filter(type => type.elemID.name === 'testedType')).toHaveLength(2)
   })
 })

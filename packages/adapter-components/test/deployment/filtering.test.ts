@@ -97,7 +97,7 @@ describe('transformRemovedValuesToNull', () => {
       },
       settings: {
         url: 'http://example.com',
-        urlb: 'http://example.com',
+        url2: 'http://example.com',
       },
     })
     after = new InstanceElement('instance', type, {
@@ -131,7 +131,7 @@ describe('transformRemovedValuesToNull', () => {
       },
       settings: {
         url: 'http://example.com',
-        urlb: null,
+        url2: null,
       },
     })
   })

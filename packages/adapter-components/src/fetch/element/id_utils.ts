@@ -160,7 +160,7 @@ const computeElemIDPartsFunc =
     const res =
       elemIDDef.extendsParent && parent !== undefined
         ? // the delimiter between parent and child will be doubled
-          [invertNaclCase(parent.elemID.name), ...(nonEmptyParts.length > 0 ? nonEmptyParts : [])]
+          [invertNaclCase(parent.elemID.name), ...(nonEmptyParts.length > 0 ? ['', ...nonEmptyParts] : [])]
         : nonEmptyParts
 
     if (nonEmptyParts.length < parts.length) {

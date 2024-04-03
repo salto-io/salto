@@ -219,7 +219,7 @@ export const createFetchDefinitions = (
         topLevel: {
           elemID: { parts: DEFAULT_ID_PARTS },
           serviceUrl: {
-            // TODO put default base url for serviceUrl filter (can be override for specific type in customizations)
+            // TODO put default base url for serviceUrl filter (can override for specific types in customizations)
             baseUrl: 'https://api.example.com',
           },
         },

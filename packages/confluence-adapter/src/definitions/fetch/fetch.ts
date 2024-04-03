@@ -99,7 +99,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           context: {
             args: {
               id: {
-                fromField: 'id',
+                root: 'id',
               },
             },
           },
@@ -109,7 +109,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           context: {
             args: {
               key: {
-                fromField: 'key',
+                root: 'key',
               },
             },
           },
@@ -119,7 +119,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           context: {
             args: {
               key: {
-                fromField: 'key',
+                root: 'key',
               },
             },
           },
@@ -204,7 +204,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           context: {
             args: {
               id: {
-                fromField: 'id',
+                root: 'id',
               },
             },
           },

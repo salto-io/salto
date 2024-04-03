@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { types } from '@salto-io/lowerdash'
 import { ContextParams, TransformDefinition } from '../shared'
 
 export type DependsOnDefinition = {
@@ -33,10 +32,7 @@ export type Condition = ConditionByField | ConditionByContext
 
 export const isConditionByField = (condition: Condition): condition is ConditionByField => 'fromField' in condition
 
-type RecurseIntoContextParamDefinition<TContext = ContextParams> = types.OneOf<{
-  fromField: string
-  transformation: TransformDefinition<TContext, string | string[]>
-}>
+type RecurseIntoContextParamDefinition<TContext = ContextParams> = TransformDefinition<TContext, unknown>
 
 type RecurseIntoContext = {
   args: Record<string, RecurseIntoContextParamDefinition>

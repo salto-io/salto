@@ -29,15 +29,18 @@ describe('subresources', () => {
     beforeEach(() => {
       jest.clearAllMocks()
     })
-
-    it('should extract request arg from field using fromField', async () => {
+    it('should extract request args properly', async () => {
       const def: Record<string, FetchResourceDefinition> = {
         myType: {
           directFetch: false,
           recurseInto: {
             mySubType: {
               typeName: 'mySubType',
-              context: { args: { id: { fromField: 'id' }, name: { fromField: 'name' } } },
+              context: { args: { 
+                id: { root: 'id' },
+                domain: { adjust: () => ({ value: ['custom'] }) },
+                context: { root: 'nested', pick: ['nestedId'], single: true },
+              } },
             },
           },
         },
@@ -49,70 +52,12 @@ describe('subresources', () => {
         typeFetcherCreator,
         contextResources: {},
       })
-      const myTypeValue = { id: '123', name: 'parent' }
+      const myTypeValue = { id: '123', nested: { id: '234', nestedId: '345' } }
       await recurseIntoFunc({ typeName: 'myType', value: myTypeValue, context: {} })
-      expect(typeFetcherCreator).toHaveBeenCalledWith({ typeName: 'mySubType', context: { id: '123', name: 'parent' } })
-    })
-    it('should extract request arg from using recurseInto transformation', async () => {
-      const def: Record<string, FetchResourceDefinition> = {
-        myType: {
-          directFetch: false,
-          recurseInto: {
-            mySubType: {
-              typeName: 'mySubType',
-              context: { args: { id: { transformation: { root: 'nested', pick: ['id', 'nestedId'] } } } },
-            },
-          },
-        },
-        mySubType: { directFetch: false },
-      }
 
-      const recurseIntoFunc = recurseIntoSubresources({
-        def: def.myType,
-        typeFetcherCreator,
-        contextResources: {},
-      })
-      const myTypeValueA = { id: '123', nested: { id: '234', nestedId: '345' } }
-      await recurseIntoFunc({ typeName: 'myType', value: myTypeValueA, context: {} })
-      expect(typeFetcherCreator).toHaveBeenNthCalledWith(1, { typeName: 'mySubType', context: { id: ['234', '345'] } })
-
-      const myTypeValueB = { id: '123', nested: { id: ['234', '456'], nestedId: '345' } }
-      await recurseIntoFunc({ typeName: 'myType', value: myTypeValueB, context: {} })
-      expect(typeFetcherCreator).toHaveBeenNthCalledWith(2, {
+      expect(typeFetcherCreator).toHaveBeenCalledWith({
         typeName: 'mySubType',
-        context: { id: ['234', '456', '345'] },
-      })
-    })
-    it('should extract request arg from using recurseInto transformation with adjust function', async () => {
-      const def: Record<string, FetchResourceDefinition> = {
-        myType: {
-          directFetch: false,
-          recurseInto: {
-            mySubType: {
-              typeName: 'mySubType',
-              context: {
-                args: {
-                  id: { transformation: { adjust: () => ({ value: ['custom'] }) } },
-                  name: { fromField: 'name' },
-                },
-              },
-            },
-          },
-        },
-        mySubType: { directFetch: false },
-      }
-
-      const recurseIntoFunc = recurseIntoSubresources({
-        def: def.myType,
-        typeFetcherCreator,
-        contextResources: {},
-      })
-
-      const myTypeValue = { id: '123', name: 'foo' }
-      await recurseIntoFunc({ typeName: 'myType', value: myTypeValue, context: {} })
-      expect(typeFetcherCreator).toHaveBeenNthCalledWith(1, {
-        typeName: 'mySubType',
-        context: { id: ['custom'], name: 'foo' },
+        context: { id: ['123'], domain: [['custom']], context: { nestedId: '345' } },
       })
     })
   })

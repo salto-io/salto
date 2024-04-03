@@ -15,7 +15,6 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
 import { shouldRecurseIntoEntry } from '../../elements/instance_elements' // TODO move
@@ -31,22 +30,15 @@ type NestedResourceFetcher = (
 const extractRecurseIntoContext = (
   item: ValueGeneratedItem,
   recurseIntoDef: RecurseIntoDefinition,
-): Record<string, string | string[]> => {
+): Record<string, unknown> => {
   const { args: contextArgs } = recurseIntoDef.context
   const context = _.mapValues(contextArgs, contextDef => {
-    if (contextDef.fromField !== undefined) {
-      return _.get(item.value, contextDef.fromField)
-    }
-    const transformer = createValueTransformer(contextDef.transformation)
-    return collections.array
-      .makeArray(transformer(item))
-      .map(transformedItem => transformedItem.value)
-      .flatMap(value => {
-        if (_.isObject(value)) {
-          return Object.values(value).flatMap(val => collections.array.makeArray(val))
-        }
-        return value
-      })
+    const transformer = createValueTransformer(contextDef)
+    const transformedItem = transformer(item)
+    if (Array.isArray(transformedItem)) {
+      return transformedItem.map(({ value }) => value)
+    } 
+    return transformedItem?.value
   })
   return context
 }

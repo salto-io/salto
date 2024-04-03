@@ -108,7 +108,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           context: {
             args: {
               parent_id: {
-                fromField: 'id',
+                root: 'id',
               },
             },
           },

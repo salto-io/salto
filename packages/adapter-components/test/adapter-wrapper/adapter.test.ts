@@ -174,7 +174,7 @@ describe('createAdapter', () => {
                     context: {
                       args: {
                         parent_id: {
-                          fromField: 'id',
+                          root: 'id',
                         },
                       },
                     },

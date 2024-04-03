@@ -509,10 +509,11 @@ describe('Okta adapter E2E', () => {
         const originalValue = _.omit(instance?.value, '_links')
         const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
         if (!isEqualResult) {
-          log.error('Received unexpected result when deploying instance: %s. Deployed value: %s , Recieved value after fetch: %s',
-          deployedInstance.elemID.getFullName(),
-          inspectValue(deployedInstance.value, { depth: 7 }),
-          inspectValue(originalValue, { depth: 7 })
+          log.error(
+            'Received unexpected result when deploying instance: %s. Deployed value: %s , Received value after fetch: %s',
+            deployedInstance.elemID.getFullName(),
+            inspectValue(deployedInstance.value, { depth: 7 }),
+            inspectValue(originalValue, { depth: 7 }),
           )
         }
         expect(isEqualResult).toBeTruthy()

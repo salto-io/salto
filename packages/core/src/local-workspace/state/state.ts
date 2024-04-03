@@ -27,7 +27,6 @@ import { mkdirp, createGZipWriteStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } from '@salto-io/workspace'
 import { hash, collections, promises } from '@salto-io/lowerdash'
-import semver from 'semver'
 
 import {
   ContentAndHash,
@@ -37,7 +36,6 @@ import {
   NamedStream,
   StateContentProvider,
 } from './content_providers'
-import { version } from '../../generated/version.json'
 import { getLocalStoragePath } from '../../app_config'
 
 const { awu } = collections.asynciterable
@@ -52,7 +50,6 @@ type ParsedState = {
   elements: Element[]
   accounts: string[]
   pathIndices: PathEntry[]
-  versions: string[]
 }
 
 const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
@@ -60,7 +57,6 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
     elements: [],
     accounts: [],
     pathIndices: [],
-    versions: [],
   }
 
   await awu(contentStreams).forEach(async ({ name, stream }) =>
@@ -90,9 +86,7 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
           } else if (key === 3) {
             // line 4 - version, e.g.
             //   "0.1.2"
-            if (!_.isEmpty(value)) {
-              res.versions.push(value)
-            }
+            log.trace('Old format state file contains the OSS version information')
           } else {
             log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
           }
@@ -165,10 +159,6 @@ export const localState = (
     if (stateAccounts !== undefined) {
       stateAccounts.push(...accounts)
     }
-    const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
-    if (currentVersion) {
-      await stateData.saltoMetadata.set('version', currentVersion)
-    }
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
@@ -223,7 +213,6 @@ export const localState = (
         accountToElementStreams[account],
         awu([safeJsonStringify(account)]),
         accountToPathIndex[account] || '[]',
-        awu([safeJsonStringify(version)]),
       ])
       log.debug(`finished dumping state text [#elements=${elements.length}]`)
     }
@@ -299,7 +288,6 @@ export const localState = (
         Object.fromEntries(contents.map(({ account, contentHash }) => [account, contentHash])),
       )
       await currentContentProvider.writeContents(currentFilePrefix, contents)
-      await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
       dirty = false

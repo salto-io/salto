@@ -35,7 +35,6 @@ import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
 import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
-import { version as currentSaltoVersion } from '../../../../src/generated/version.json'
 import { mockStaticFilesSource } from '../../../common/state'
 import { inMemRemoteMapCreator } from '../../../common/helpers'
 import { getHashFromHashes, StateContentProvider } from '../../../../src/local-workspace/state/content_providers'
@@ -144,10 +143,6 @@ describe('localState', () => {
         await expect(state.existingAccounts()).resolves.toHaveLength(2)
       })
     })
-
-    it('should return the lowest version of any state file', async () => {
-      await expect(state.getStateSaltoVersion()).resolves.toEqual('0.0.1')
-    })
     describe('flush when nothing changed', () => {
       it('should not write new content', async () => {
         await state.flush()
@@ -170,11 +165,6 @@ describe('localState', () => {
             })),
           ),
         )
-      })
-      it('should update the state salto version', async () => {
-        // TODO: this is not really the correct behavior, we should only really update the salto version
-        // on fetch, and only for the services that got fetched
-        await expect(state.getStateSaltoVersion()).resolves.toEqual(currentSaltoVersion)
       })
       it('should set new hash value', async () => {
         await expect(state.getHash()).resolves.not.toEqual(initialStateHash)
@@ -331,10 +321,6 @@ describe('localState', () => {
     it('should return an undefined hash', async () => {
       const stateHash = await state.getHash()
       expect(stateHash).toBeUndefined()
-    })
-
-    it('getStateSaltoVersion should be undefined', async () => {
-      await expect(state.getStateSaltoVersion()).resolves.toBeUndefined()
     })
 
     it('existingAccounts should be an empty list', async () => {

@@ -36,9 +36,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-type InMemoryState = State & {
-  setVersion(version: string): Promise<void>
-}
+type InMemoryState = State
 
 export const buildInMemState = (loadData: () => Promise<StateData>, persistent = true): InMemoryState => {
   let innerStateData: Promise<StateData>
@@ -175,8 +173,6 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setHash: async newHash => (await stateData()).saltoMetadata.set('hash', newHash),
     // hash doesn't get calculated in memory
     calculateHash: async () => Promise.resolve(),
-    getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
-    setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
     updateStateFromChanges: async ({ changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
       await updateStateElements(changes)
       if (!_.isEmpty(fetchAccounts)) {

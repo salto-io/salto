@@ -4,7 +4,6 @@
 
 Supprted parameters are:
 
-
 - `baseUrl`
 - `user`
 - `token`

@@ -64,37 +64,35 @@ describe('Workflow and task references filter', () => {
       name: 'workflow 1',
       description: 'do things',
       type: 'Workflow::Setup',
-      additionalProperties: {
-        parameters: {
-          fields: [
-            {
-              index: '0',
-              default: '',
-              datatype: 'Text',
-              required: true,
-              callout_id: 'BillRunID',
-              field_name: 'Id',
-              object_name: 'Billingrun',
-            },
-            {
-              index: '1',
-              default: '',
-              datatype: 'Text',
-              required: true,
-              callout_id: 'workflow_param',
-              field_name: 'param',
-              object_name: 'Workflow',
-            },
-          ],
-        },
-        ondemand_trigger: true,
-        callout_trigger: true,
-        scheduled_trigger: false,
-        status: 'Active',
-        css: {
-          top: '40px',
-          left: '35px',
-        },
+      parameters: {
+        fields: [
+          {
+            index: '0',
+            default: '',
+            datatype: 'Text',
+            required: true,
+            callout_id: 'BillRunID',
+            field_name: 'Id',
+            object_name: 'Billingrun',
+          },
+          {
+            index: '1',
+            default: '',
+            datatype: 'Text',
+            required: true,
+            callout_id: 'workflow_param',
+            field_name: 'param',
+            object_name: 'Workflow',
+          },
+        ],
+      },
+      ondemand_trigger: true,
+      callout_trigger: true,
+      scheduled_trigger: false,
+      status: 'Active',
+      css: {
+        top: '40px',
+        left: '35px',
       },
       notifications: {
         emails: [],
@@ -111,15 +109,13 @@ describe('Workflow and task references filter', () => {
       name: 'workflow 2',
       description: 'do other things',
       type: 'Workflow::Setup',
-      additionalProperties: {
-        ondemand_trigger: true,
-        callout_trigger: true,
-        scheduled_trigger: false,
-        status: 'Active',
-        css: {
-          top: '40px',
-          left: '35px',
-        },
+      ondemand_trigger: true,
+      callout_trigger: true,
+      scheduled_trigger: false,
+      status: 'Active',
+      css: {
+        top: '40px',
+        left: '35px',
       },
       notifications: {
         emails: [],
@@ -136,46 +132,44 @@ describe('Workflow and task references filter', () => {
       name: 'workflow 3',
       description: 'do things',
       type: 'Workflow::Setup',
-      additionalProperties: {
-        parameters: {
-          fields: [
-            {
-              index: '0',
-              default: '',
-              datatype: 'Text',
-              required: true,
-              callout_id: 'BillRunID',
-              field_name: 'Id',
-              object_name: 'invalid',
-            },
-            {
-              index: '1',
-              default: '',
-              datatype: 'Text',
-              required: true,
-              callout_id: '',
-              field_name: '',
-              not_object_name: '',
-            },
-            {
-              index: '2',
-              default: '',
-              datatype: 'Text',
-              required: true,
-              callout_id: 'BillRunID',
-              field_name: 'not_a_field',
-              object_name: 'Billingrun',
-            },
-          ],
-        },
-        ondemand_trigger: true,
-        callout_trigger: true,
-        scheduled_trigger: false,
-        status: 'Active',
-        css: {
-          top: '40px',
-          left: '35px',
-        },
+      parameters: {
+        fields: [
+          {
+            index: '0',
+            default: '',
+            datatype: 'Text',
+            required: true,
+            callout_id: 'BillRunID',
+            field_name: 'Id',
+            object_name: 'invalid',
+          },
+          {
+            index: '1',
+            default: '',
+            datatype: 'Text',
+            required: true,
+            callout_id: '',
+            field_name: '',
+            not_object_name: '',
+          },
+          {
+            index: '2',
+            default: '',
+            datatype: 'Text',
+            required: true,
+            callout_id: 'BillRunID',
+            field_name: 'not_a_field',
+            object_name: 'Billingrun',
+          },
+        ],
+      },
+      ondemand_trigger: true,
+      callout_trigger: true,
+      scheduled_trigger: false,
+      status: 'Active',
+      css: {
+        top: '40px',
+        left: '35px',
       },
       notifications: {
         emails: [],
@@ -396,7 +390,7 @@ describe('Workflow and task references filter', () => {
       const workflows = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === WORKFLOW_DETAILED_TYPE)
       expect(workflows).toHaveLength(3)
 
-      const wf1Param0 = workflows[0].value.additionalProperties.parameters.fields[0]
+      const wf1Param0 = workflows[0].value.parameters.fields[0]
       expect(wf1Param0.object_name).toBeInstanceOf(ReferenceExpression)
       expect((wf1Param0.object_name as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.Billingrun')
       expect(wf1Param0.field_name).toBeInstanceOf(ReferenceExpression)
@@ -426,7 +420,7 @@ describe('Workflow and task references filter', () => {
         'zuora_billing.Refund.field.Id',
         'zuora_billing.Refund.field.ReasonCode',
         'zuora_billing.Refund.field.RefundDate',
-        'zuora_billing.Workflow.instance.wf1.additionalProperties.parameters.fields',
+        'zuora_billing.Workflow.instance.wf1.parameters.fields',
       ])
 
       // eslint-disable-next-line no-underscore-dangle
@@ -438,7 +432,7 @@ describe('Workflow and task references filter', () => {
       expect(elements.length).toEqual(origElements.length)
       const wf3 = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'wf3')[0]
 
-      const wf3Param0 = wf3.value.additionalProperties.parameters.fields[0]
+      const wf3Param0 = wf3.value.parameters.fields[0]
       expect(wf3Param0.object_name).not.toBeInstanceOf(ReferenceExpression)
       expect(wf3Param0.object_name).toEqual('invalid')
     })

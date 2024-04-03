@@ -22,18 +22,15 @@ import {
   ReferenceExpression,
   isReferenceExpression,
   isListType,
-  isMapType,
-  TypeElement,
-  PrimitiveType,
-  MapType,
   ElemIdGetter,
   SaltoError,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify, transformValues } from '@salto-io/adapter-utils'
+import { TransformFunc, safeJsonStringify, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
-import { InstanceCreationParams, shouldRecurseIntoEntry, toBasicInstance } from '../instance_elements'
+import { ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
+import { shouldRecurseIntoEntry, toBasicInstance } from '../instance_elements'
 import { UnauthorizedError, Paginator, PageEntriesExtractor, HTTPError } from '../../client'
 import {
   TypeSwaggerDefaultConfig,
@@ -159,60 +156,6 @@ const extractStandaloneFields = async (
   return allInstances
 }
 
-const getListDeepInnerType = async (type: TypeElement): Promise<ObjectType | PrimitiveType | MapType> => {
-  if (!isListType(type)) {
-    return type
-  }
-  return getListDeepInnerType(await type.getInnerType())
-}
-
-/**
- * Normalize the element's values, by nesting swagger additionalProperties under the
- * additionalProperties field in order to align with the type.
- *
- * Note: The reverse will need to be done pre-deploy (not implemented for fetch-only)
- */
-const normalizeElementValues = (instance: InstanceElement): Promise<InstanceElement> => {
-  const transformAdditionalProps: TransformFunc = async ({ value, field, path }) => {
-    if (!_.isPlainObject(value)) {
-      return value
-    }
-
-    const fieldType = path?.isEqual(instance.elemID) ? await instance.getType() : await field?.getType()
-
-    if (fieldType === undefined) {
-      return value
-    }
-    const fieldInnerType = await getListDeepInnerType(fieldType)
-    if (
-      !isObjectType(fieldInnerType) ||
-      fieldInnerType.fields[ADDITIONAL_PROPERTIES_FIELD] === undefined ||
-      !isMapType(await fieldInnerType.fields[ADDITIONAL_PROPERTIES_FIELD].getType())
-    ) {
-      return value
-    }
-
-    const additionalProps = _.merge(
-      _.pickBy(value, (_val, key) => !Object.keys(fieldInnerType.fields).includes(key)),
-      // if the value already has additional properties, give them precedence
-      value[ADDITIONAL_PROPERTIES_FIELD],
-    )
-    return {
-      ..._.omit(value, Object.keys(additionalProps)),
-      [ADDITIONAL_PROPERTIES_FIELD]: additionalProps,
-    }
-  }
-
-  return transformElement({
-    element: instance,
-    transformFunc: transformAdditionalProps,
-    strict: false,
-  })
-}
-
-const toInstance = async (args: InstanceCreationParams): Promise<InstanceElement> =>
-  args.normalized ? toBasicInstance(args) : normalizeElementValues(await toBasicInstance(args))
-
 /**
  * Generate instances for the specified types based on the entries from the API responses,
  * using the endpoint's specific config and the adapter's defaults.
@@ -241,7 +184,7 @@ const generateInstancesForType = ({
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
   return awu(entries)
     .map((entry, index) =>
-      toInstance({
+      toBasicInstance({
         entry,
         type: objType,
         nestName,
@@ -268,7 +211,7 @@ const generateInstancesForType = ({
 }
 
 const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean =>
-  _.isEqual(Object.keys(type.fields), [ADDITIONAL_PROPERTIES_FIELD])
+  _.isEmpty(type.fields) && type.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] !== false
 
 const isItemsOnlyObjectType = (type: ObjectType): boolean => _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
 
@@ -348,14 +291,11 @@ const getEntriesForType = async (params: GetEntriesParams): Promise<{ entries: V
 
     // special case - should probably move to adapter-specific filter if does not recur
     if (dataField !== undefined && isObjectType(dataFieldType) && isAdditionalPropertiesOnlyObjectType(dataFieldType)) {
-      const propsType = await dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].getType()
-      if (isMapType(propsType)) {
-        const propsInnerType = await propsType.getInnerType()
-        if (isObjectType(propsInnerType)) {
-          return {
-            objType: propsInnerType,
-            extractValues: true,
-          }
+      const propsType = dataFieldType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]?.refType?.value
+      if (isObjectType(propsType)) {
+        return {
+          objType: propsType,
+          extractValues: true,
         }
       }
     }

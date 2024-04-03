@@ -50,7 +50,6 @@ describe('notificationSchemeStructureFilter', () => {
               notificationType: 'type',
               parameter: 'parameter',
               user: 'user',
-              additionalProperties: 'additionalProperties',
             },
           ],
         },

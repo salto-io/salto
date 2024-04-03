@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { OpenAPIDefinition } from '../../../../src/definitions/system/sources'
 import { generateOpenApiTypes } from '../../../../src/fetch/element/openAPI/types'
 import { queryWithDefault } from '../../../../src/definitions'
@@ -71,13 +71,15 @@ describe('generateOpenApiTypes', () => {
         const pet = createdTypes.Pet as ObjectType
         expect(pet).toBeInstanceOf(ObjectType)
         expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
-          additionalProperties: 'Map<unknown>',
           category: 'myAdapter.Category',
           id: 'number',
           name: 'string',
           photoUrls: 'List<string>',
           status: 'string',
           tags: 'List<myAdapter.Tag>',
+        })
+        expect(pet.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]).toEqual({
+          refType: expect.any(ReferenceExpression),
         })
         expect(pet.path).toEqual([ADAPTER_NAME, 'Types', 'Pet'])
 
@@ -98,7 +100,6 @@ describe('generateOpenApiTypes', () => {
           middleName: 'string',
           // ref to UserAdditional2 in swagger
           middleName2: 'string',
-          additionalProperties: 'Map<myAdapter.Order>',
         })
         expect(user.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'User', 'User'])
 
@@ -108,7 +109,10 @@ describe('generateOpenApiTypes', () => {
           brand: 'string',
           id: 'number',
           storage: 'List<string>',
-          additionalProperties: 'Map<unknown>',
+          additionalProperties: 'myAdapter.Category',
+        })
+        expect(food.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]).toEqual({
+          refType: expect.any(ReferenceExpression),
         })
         expect(food.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'Food', 'Food'])
 
@@ -129,10 +133,12 @@ describe('generateOpenApiTypes', () => {
         const location = createdTypes.Location as ObjectType
         expect(location).toBeInstanceOf(ObjectType)
         expect(_.mapValues(location.fields, f => f.refType.elemID.name)).toEqual({
-          additionalProperties: 'Map<unknown>',
           name: 'string',
           // address is defined as anyOf combining primitive and object - should use unknown
           address: 'unknown',
+        })
+        expect(location.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]).toEqual({
+          refType: expect.any(ReferenceExpression),
         })
       },
     )
@@ -160,13 +166,15 @@ describe('generateOpenApiTypes', () => {
       const pet = createdTypes.Pet as ObjectType
       expect(pet).toBeInstanceOf(ObjectType)
       expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
-        additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
         id: 'number',
         name: 'string',
         photoUrls: 'List<string>',
         status: 'string',
         tags: 'List<myAdapter.Tag>',
+      })
+      expect(pet.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]).toEqual({
+        refType: expect.any(ReferenceExpression),
       })
       expect(pet.path).toEqual([ADAPTER_NAME, 'Types', 'Pet'])
 
@@ -187,7 +195,9 @@ describe('generateOpenApiTypes', () => {
         middleName: 'string',
         // ref to UserAdditional2 in swagger
         middleName2: 'string',
-        additionalProperties: 'Map<myAdapter.Order>',
+      })
+      expect(user.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]).toEqual({
+        refType: expect.any(ReferenceExpression),
       })
       expect(user.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'User', 'User'])
 
@@ -197,7 +207,7 @@ describe('generateOpenApiTypes', () => {
         brand: 'string',
         id: 'number',
         storage: 'List<string>',
-        additionalProperties: 'Map<unknown>',
+        additionalProperties: 'myAdapter.Category',
       })
       expect(food.path).toEqual([ADAPTER_NAME, 'Types', 'Subtypes', 'Food', 'Food'])
     })
@@ -214,7 +224,6 @@ describe('generateOpenApiTypes', () => {
       }
       const createdTypes = await generateOpenApiTypes({ adapterName: ADAPTER_NAME, openApiDefs, defQuery })
       const expectedPetFields = {
-        additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
         id: 'number',
         name: 'string',
@@ -248,13 +257,15 @@ describe('generateOpenApiTypes', () => {
       const renamedPet = createdTypes.RenamedPet as ObjectType
       expect(renamedPet).toBeInstanceOf(ObjectType)
       expect(_.mapValues(renamedPet.fields, f => f.refType.elemID.getFullName())).toEqual({
-        additionalProperties: 'Map<unknown>',
         category: 'myAdapter.Category',
         id: 'number',
         name: 'string',
         photoUrls: 'List<string>',
         status: 'string',
         tags: 'List<myAdapter.Tag>',
+      })
+      expect(renamedPet.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]).toEqual({
+        refType: expect.any(ReferenceExpression),
       })
     })
 

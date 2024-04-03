@@ -30,7 +30,7 @@ import {
   oauthRequestParametersType,
 } from './client/oauth'
 
-const { validateCredentials } = clientUtils
+const { validateCredentials, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
 const { defaultCredentialsFromConfig } = credentials
 
@@ -54,10 +54,10 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       createConnection,
     }),
   defaultConfig: DEFAULT_CONFIG,
-  definitionsCreator: ({ clients, userConfig }) => ({
+  definitionsCreator: ({ clients }) => ({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,
-    fetch: createFetchDefinitions(userConfig.fetch),
+    fetch: createFetchDefinitions(),
     deploy: createDeployDefinitions(),
     references: REFERENCES,
   }),
@@ -67,5 +67,14 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   },
   initialClients: {
     main: undefined,
+  },
+  clientDefaults: {
+    rateLimit: {
+      total: 100,
+      get: 100,
+      deploy: 100,
+    },
+    maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+    retry: DEFAULT_RETRY_OPTS,
   },
 })

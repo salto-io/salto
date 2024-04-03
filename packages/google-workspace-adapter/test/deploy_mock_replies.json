@@ -5,7 +5,7 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#orgUnit",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/U_aCBD52pMaaM3hCzPWI5IWoDy0\"",
+      "etag": "abc",
       "name": "top",
       "description": "forreal",
       "orgUnitPath": "/uri/neta/top",
@@ -27,7 +27,7 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#orgUnit",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/U_aCBD52pMaaM3hCzPWI5IWoDy0\"",
+      "etag": "abc",
       "name": "macabi1"
     },
     "headers": {},
@@ -39,7 +39,7 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#resources#buildings#Building",
-      "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/smAg0UZBwLFlxHIP_CttbpRhdzI\"",
+      "etags": "abc",
       "buildingId": "salto-office",
       "buildingName": "salto office",
       "description": "new desc",

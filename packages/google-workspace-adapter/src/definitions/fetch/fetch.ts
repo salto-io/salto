@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
 
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
@@ -66,7 +65,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'roleName' }] },
-        serviceUrl: { path: 'https://admin.google.com/ac/roles/{roleId}' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/roles/{roleId}' },
         alias: { aliasComponents: [NAME_ID_FIELD] },
       },
       fieldCustomizations: {
@@ -77,28 +76,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   // privilege is a closed list so we do not need to fetch it
-  // privilege: {
-  //   requests: [
-  //     {
-  //       endpoint: {
-  //         path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles/ALL/privileges',
-  //       },
-  //       transformation: {
-  //         root: 'items',
-  //       },
-  //     },
-  //   ],
-  //   resource: {
-  //     directFetch: true,
-  //     serviceIDFields: ['serviceId'],
-  //   },
-  //   element: {
-  //     topLevel: {
-  //       isTopLevel: true,
-  //       elemID: { parts: [{ fieldName: 'privilegeName' }] },
-  //     },
-  //   },
-  // },
   domain: {
     requests: [
       {
@@ -130,7 +107,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'domainName' }] },
-        serviceUrl: { path: 'https://admin.google.com/ac/domains' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/domains' },
         alias: { aliasComponents: [{ fieldName: 'domainName' }] },
       },
       fieldCustomizations: {
@@ -202,7 +179,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: { path: 'https://admin.google.com/ac/groups/{id}' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/groups/{id}' },
         elemID: { parts: [NAME_ID_FIELD] },
       },
       fieldCustomizations: {
@@ -279,9 +256,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     ],
-    resource: {
-      directFetch: false,
-    },
     element: {
       fieldCustomizations: {
         email: {
@@ -315,7 +289,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }, { fieldName: 'name' }] },
-        serviceUrl: { path: 'https://admin.google.com/ac/orgunits' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/orgunits' },
         alias: {
           aliasComponents: [
             {
@@ -377,7 +351,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'schemaName' }] },
-        serviceUrl: { path: 'https://admin.google.com/ac/customschema' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/customschema' },
         alias: { aliasComponents: [{ fieldName: 'schemaName' }] },
       },
       fieldCustomizations: {
@@ -391,9 +365,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   schema__fields: {
-    resource: {
-      directFetch: false,
-    },
     element: {
       fieldCustomizations: {
         fieldId: {
@@ -421,7 +392,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'buildingName' }] },
-        serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'buildingName' }] },
       },
       fieldCustomizations: {
@@ -450,7 +421,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'resourceName' }] },
-        serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'resourceName' }] },
       },
       fieldCustomizations: {
@@ -481,16 +452,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
         alias: { aliasComponents: [NAME_ID_FIELD] },
       },
     },
   },
 })
 
-export const createFetchDefinitions = (
-  _fetchConfig: UserFetchConfig,
-): definitions.fetch.FetchApiDefinitions<Options> => ({
+export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {
       resource: {

@@ -5,41 +5,23 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#schemas",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/EzF2JhnLmVxnup4n_VTQVUHdB2M\"",
+      "etag": "abc",
       "schemas": [
         {
           "kind": "admin#directory#schema",
           "schemaId": "aKR62Yy0Q4K4PkhgTIlz7g==",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/qUVDLPSKRDfLU5J4Dl2asej-v9A\"",
+          "etag": "abc",
           "schemaName": "uri",
           "displayName": "uri",
           "fields": [
             {
               "kind": "admin#directory#schema#fieldspec",
               "fieldId": "K_6NO6yeQcO3VrkTubW6SQ==",
-              "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/ivA6AVwKp6IDGu2YVJHFA79WPBw\"",
+              "etag": "abc",
               "fieldType": "STRING",
               "fieldName": "roles",
               "displayName": "roles",
               "multiValued": true,
-              "readAccessType": "ALL_DOMAIN_USERS"
-            }
-          ]
-        },
-        {
-          "kind": "admin#directory#schema",
-          "schemaId": "lobRDdb1Rt2WdnFSYgIb1Q==",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/SWygk1hED2PLxy49YguLO7tRG-Y\"",
-          "schemaName": "uri2",
-          "displayName": "uri21",
-          "fields": [
-            {
-              "kind": "admin#directory#schema#fieldspec",
-              "fieldId": "fp9SGSqGR36vt_lbFfm4lA==",
-              "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/YHYmQnUH8z9n_kwUoaegxfmIB_8\"",
-              "fieldType": "STRING",
-              "fieldName": "roles",
-              "displayName": "roles",
               "readAccessType": "ALL_DOMAIN_USERS"
             }
           ]
@@ -54,11 +36,11 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#orgUnits",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/RWaUbJlat-Fk1pLkZ5iQ0gOUlbY\"",
+      "etag": "abc",
       "organizationUnits": [
         {
           "kind": "admin#directory#orgUnit",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/NVNO2VP-h9gRJuBB3m6UVIx4TWo\"",
+          "etag": "abc",
           "name": "Salto Neta test1",
           "description": "Salto Neta test1",
           "orgUnitPath": "/",
@@ -66,51 +48,11 @@
         },
         {
           "kind": "admin#directory#orgUnit",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/ARnBBHB43MdiawQ9zr8TiFwijC8\"",
-          "name": "neta",
-          "description": "the sec two",
-          "orgUnitPath": "/uri/neta",
-          "orgUnitId": "id:03ph8a2z2tgxglu",
-          "parentOrgUnitPath": "/uri",
-          "parentOrgUnitId": "id:03ph8a2z31unp74"
-        },
-        {
-          "kind": "admin#directory#orgUnit",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/FkZntgxZ32yJAkfA1BdGkgWfLOw\"",
+          "etag": "abc",
           "name": "uri",
           "description": "the one",
           "orgUnitPath": "/uri",
           "orgUnitId": "id:03ph8a2z31unp74",
-          "parentOrgUnitPath": "/",
-          "parentOrgUnitId": "id:03ph8a2z2dk12tm"
-        },
-        {
-          "kind": "admin#directory#orgUnit",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/RBTJF2fc2wWvQ_fp1l5J1gVhGF8\"",
-          "name": "besides",
-          "description": "forreal",
-          "orgUnitPath": "/uri/neta/besides",
-          "orgUnitId": "id:03ph8a2z2gffnqg",
-          "parentOrgUnitPath": "/uri/neta",
-          "parentOrgUnitId": "id:03ph8a2z2tgxglu"
-        },
-        {
-          "kind": "admin#directory#orgUnit",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/SngccEAAeDpK1mDTikxT33SDirk\"",
-          "name": "unders",
-          "description": "wow",
-          "orgUnitPath": "/uri/neta/unders",
-          "orgUnitId": "id:03ph8a2z0zlm42f",
-          "parentOrgUnitPath": "/uri/neta",
-          "parentOrgUnitId": "id:03ph8a2z2tgxglu"
-        },
-        {
-          "kind": "admin#directory#orgUnit",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/H-4ojhvIg8EwCfFqYcVztwmK-a0\"",
-          "name": "uri2",
-          "description": "the one2",
-          "orgUnitPath": "/uri2",
-          "orgUnitId": "id:03ph8a2z0wnw6lk",
           "parentOrgUnitPath": "/",
           "parentOrgUnitId": "id:03ph8a2z2dk12tm"
         }
@@ -124,41 +66,25 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#domains",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/TGbD61nrZrERVJL9f0orE65CTbQ\"",
+      "etag": "abc",
       "domains": [
         {
           "kind": "admin#directory#domain",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/nQgiraIC7uihSKVEa6JaWNgIaQU\"",
-          "domainName": "neta-test1.salto-internal-test.com",
+          "etag": "abc",
+          "domainName": "neta-test1.com",
           "domainAliases": [
             {
               "kind": "admin#directory#domainAlias",
-              "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/gy8nrU9LOr9d6iknB_pUO1OEbpg\"",
-              "domainAliasName": "neta-test1.salto-internal-test.com.test-google-a.com",
-              "parentDomainName": "neta-test1.salto-internal-test.com",
+              "etag": "abc",
+              "domainAliasName": "neta-test1.test-google-a.com",
+              "parentDomainName": "neta-test1.com",
               "verified": true,
               "creationTime": "1710066097283"
-            },
-            {
-              "kind": "admin#directory#domainAlias",
-              "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/0NJ-_bROkA-O73T_m4WoWiETxYs\"",
-              "domainAliasName": "urisalto.com",
-              "parentDomainName": "neta-test1.salto-internal-test.com",
-              "verified": false,
-              "creationTime": "1710861589514"
             }
           ],
           "isPrimary": true,
           "verified": true,
           "creationTime": "1710066097283"
-        },
-        {
-          "kind": "admin#directory#domain",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/XZQUV96KcH2XfEXie2_mqXOJQXc\"",
-          "domainName": "uri-test2.salto-internal-test.com",
-          "isPrimary": false,
-          "verified": false,
-          "creationTime": "1711884761371"
         }
       ]
     },
@@ -174,25 +100,12 @@
       "items": [
         {
           "kind": "admin#directory#resources#calendars#CalendarResource",
-          "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/U1TZAmnwqSUjtjcG1CRwYeDMVsY\"",
-          "resourceId": "642495670",
-          "resourceName": "uris room",
-          "generatedResourceName": "salto office-21-uris room (6)",
-          "resourceType": "blabla",
-          "resourceEmail": "c_188040c5515c4jvik3conmpr2s3jg@resource.calendar.google.com",
-          "capacity": 6,
-          "buildingId": "salto-office",
-          "floorName": "21",
-          "resourceCategory": "CONFERENCE_ROOM"
-        },
-        {
-          "kind": "admin#directory#resources#calendars#CalendarResource",
-          "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/kYGdFeq5-jJOz0-7iHUpw-_GY2k\"",
+          "etag": "abc",
           "resourceId": "87492684594",
           "resourceName": "zoom room",
           "generatedResourceName": "salto office-21-zoom room (4) [macabi]",
           "resourceType": "zoom room",
-          "resourceEmail": "c_1884d9073rilqg9sh7v41l3kvo21s@resource.calendar.google.com",
+          "resourceEmail": "saltosalto@resource.calendar.google.com",
           "capacity": 4,
           "buildingId": "salto-office",
           "floorName": "21",
@@ -201,14 +114,7 @@
             {
               "feature": {
                 "kind": "admin#directory#resources#features#Feature",
-                "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/_ATUfwGjCcBoShrzDaYVHav9h7A\"",
-                "name": "hapoel2"
-              }
-            },
-            {
-              "feature": {
-                "kind": "admin#directory#resources#features#Feature",
-                "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/LS0bIpOaoE1o-nKrPJTRY_8OuzI\"",
+                "etags": "abc",
                 "name": "macabi"
               }
             }
@@ -224,11 +130,11 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#roles",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/LWI8B5QvWJljxhqNevHmh09RIjc\"",
+      "etag": "abc",
       "items": [
         {
           "kind": "admin#directory#role",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/u2nJaKHorfJHTLpLw0r2V56-4vk\"",
+          "etag": "abc",
           "roleId": "65643247212429313",
           "roleName": "_SEED_ADMIN_ROLE",
           "roleDescription": "Google Workspace Administrator Seed Role",
@@ -239,73 +145,10 @@
             { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "044sinio4cntx2o" },
             { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03cqmetx1vygwki" },
             { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02szc72q136h7dm" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "037m2jsg3ckz96v" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03hv69ve4bjwe54" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "019c6y1840fzfkt" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00haapch16h1ysv" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02bn6wsx379ol8g" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00sqyw642iersp7" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01ci93xb43sd8me" },
-            { "privilegeName": "SUPER_ADMIN", "serviceId": "01ci93xb3tmzyin" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02pta16n4hxgyp2" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01egqt2p4ez7mib" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "04iylrwe1ih2v48" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "034g0dwd19r1crs" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02jxsxqh0hucks4" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "0319y80a15kueje" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02afmg282jiquyg" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01yyy98l4k9lq4l" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "0147n2zr1ynkkmf" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03dy6vkm2sk0pzo" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03whwml44f3n4vd" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01baon6m1wv6b0p" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02et92p02l9sq0n" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00meukdy0whjvor" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "039kk8xu49mji9t" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02afmg283v5nmx6" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01tuee744837sjz" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "0279ka651l5iy5q" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02u6wntf2pha1iq" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "04du1wux1mx8g4m" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01664s550kmxmin" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "037m2jsg46www3g" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03j2qqm31d4j55e" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02w5ecyt3pkeyqi" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03tbugp12newe5s" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01fob9te41qviqp" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03as4poj2zjehv7" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00tyjcwt49hs5nq" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02lwamvv18la4iw" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00vx122734tbite" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01ksv4uv2d2noaq" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "01fob9te2rj6rw9" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00upglbi0qz687j" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03fwokq01e2ht7x" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03l18frh45c63dw" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03znysh70xi7xn7" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00tyjcwt30rsnw6" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "034g0dwd213wymo" },
-            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02zbgiuw2wdxo5p" }
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "037m2jsg3ckz96v" }
           ],
           "isSystemRole": true,
           "isSuperAdminRole": true
-        },
-        {
-          "kind": "admin#directory#role",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/fDj4rr_z9O5a4Q9GnN13QSE5Ydg\"",
-          "roleId": "65643247212429314",
-          "roleName": "_GROUPS_ADMIN_ROLE",
-          "roleDescription": "Groups Administrator",
-          "rolePrivileges": [
-            { "privilegeName": "GROUPS_ALL", "serviceId": "00haapch16h1ysv" },
-            { "privilegeName": "GROUPS_MANAGE_LOCKED_LABEL", "serviceId": "00haapch16h1ysv" },
-            { "privilegeName": "GROUPS_MANAGE_SECURITY_LABEL", "serviceId": "00haapch16h1ysv" },
-            { "privilegeName": "ORGANIZATION_UNITS_RETRIEVE", "serviceId": "00haapch16h1ysv" },
-            { "privilegeName": "USERS_RETRIEVE", "serviceId": "00haapch16h1ysv" },
-            { "privilegeName": "ADMIN_DASHBOARD", "serviceId": "01ci93xb3tmzyin" }
-          ],
-          "isSystemRole": true,
-          "isSuperAdminRole": false
         }
       ]
     },
@@ -317,16 +160,11 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#resources#features#featuresList",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/_a1i5D3xRmxv3EXKq1GUiPn_Kh4\"",
+      "etag": "abc",
       "features": [
         {
           "kind": "admin#directory#resources#features#Feature",
-          "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/_ATUfwGjCcBoShrzDaYVHav9h7A\"",
-          "name": "hapoel2"
-        },
-        {
-          "kind": "admin#directory#resources#features#Feature",
-          "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/LS0bIpOaoE1o-nKrPJTRY_8OuzI\"",
+          "etags": "abc",
           "name": "macabi"
         }
       ]
@@ -339,11 +177,11 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#resources#buildings#buildingsList",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/MOsut7Jd2pYxM8OaHgEsDSaSkZI\"",
+      "etag": "abc",
       "buildings": [
         {
           "kind": "admin#directory#resources#buildings#Building",
-          "etags": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/CpjCvxeTnt9QqJRXbRLfrVBo5SE\"",
+          "etag": "abc",
           "buildingId": "salto-office",
           "buildingName": "salto office",
           "description": "wow",
@@ -354,23 +192,23 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/groups?domain=neta-test1.salto-internal-test.com",
+    "url": "https://admin.googleapis.com/admin/directory/v1/groups?domain=neta-test1.com",
     "method": "GET",
     "status": 200,
     "response": {
       "kind": "admin#directory#groups",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/5vrTKusQGoxTtbLrHhGuf8ETGRc\"",
+      "etag": "abc",
       "groups": [
         {
           "kind": "admin#directory#group",
           "id": "01tuee743bzv2ce",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/1b57RUQibZaGlHvcPfrAU0AnZx4\"",
-          "email": "blabla@neta-test1.salto-internal-test.com",
+          "etag": "abc",
+          "email": "blabla@neta-test1.com",
           "name": "blabla",
           "directMembersCount": "0",
           "description": "test test",
           "adminCreated": true,
-          "nonEditableAliases": ["blabla@neta-test1.salto-internal-test.com.test-google-a.com"]
+          "nonEditableAliases": ["blabla@neta-test1.com.test-google-a.com"]
         }
       ]
     },
@@ -382,11 +220,11 @@
     "status": 200,
     "response": {
       "kind": "admin#directory#roleAssignments",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/jGLiSQoHRdf1-JKpsz54EolIvqQ\"",
+      "etag": "abc",
       "items": [
         {
           "kind": "admin#directory#roleAssignment",
-          "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/ww8Nfdl7sAofyRpuQH_3B4o8PqE\"",
+          "etag": "abc",
           "roleAssignmentId": "65643247212429314",
           "roleId": "65643247212429314",
           "assignedTo": "01tuee743bzv2ce",
@@ -398,7 +236,7 @@
     "headers": {}
   },
   {
-    "url": "https://www.googleapis.com/groups/v1/groups/blabla@neta-test1.salto-internal-test.com?alt=json",
+    "url": "https://www.googleapis.com/groups/v1/groups/blabla@neta-test1.com?alt=json",
     "method": "GET",
     "status": 200,
     "response": {

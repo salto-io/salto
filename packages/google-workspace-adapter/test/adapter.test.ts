@@ -117,36 +117,27 @@ describe('adapter', () => {
           'google_workspace.building',
           'google_workspace.building.instance.salto_office@s',
           'google_workspace.domain',
-          'google_workspace.domain.instance.neta_test1_salto_internal_test_com@bvbbv',
-          'google_workspace.domain.instance.uri_test2_salto_internal_test_com@bvbbv',
+          'google_workspace.domain.instance.neta_test1_com@bv',
           'google_workspace.domain__domainAliases',
           'google_workspace.feature',
-          'google_workspace.feature.instance.hapoel2',
           'google_workspace.feature.instance.macabi',
           'google_workspace.group',
           'google_workspace.group.instance.blabla',
           'google_workspace.group__groupSettings',
           'google_workspace.orgUnit',
           'google_workspace.orgUnit.instance.Salto_Neta_test1@s',
-          'google_workspace.orgUnit.instance.id_03ph8a2z2dk12tm_uri2@fu',
           'google_workspace.orgUnit.instance.id_03ph8a2z2dk12tm_uri@fu',
-          'google_workspace.orgUnit.instance.id_03ph8a2z2tgxglu_besides@fu',
-          'google_workspace.orgUnit.instance.id_03ph8a2z2tgxglu_unders@fu',
-          'google_workspace.orgUnit.instance.id_03ph8a2z31unp74_neta@fu',
           'google_workspace.role',
-          'google_workspace.role.instance._GROUPS_ADMIN_ROLE',
           'google_workspace.role.instance._SEED_ADMIN_ROLE',
           'google_workspace.roleAssignment',
           'google_workspace.roleAssignment.instance.65643247212429314_01tuee743bzv2ce',
           'google_workspace.role__rolePrivileges',
           'google_workspace.room',
-          'google_workspace.room.instance.uris_room@s',
           'google_workspace.room.instance.zoom_room@s',
           'google_workspace.room__featureInstances',
           'google_workspace.room__featureInstances__feature',
           'google_workspace.schema',
           'google_workspace.schema.instance.uri',
-          'google_workspace.schema.instance.uri2',
           'google_workspace.schema__fields',
         ])
         expect(
@@ -178,27 +169,12 @@ describe('adapter', () => {
           schemaId: 'aKR62Yy0Q4K4PkhgTIlz7g==',
           schemaName: 'uri',
         })
-        // const room = elements
-        //   .filter(isInstanceElement)
-        //   .find(e => e.elemID.getFullName() === 'google_workspace.room.instance.zoom_room@s')?.value
-        // // expect(room?.buildingId?.elemID?.fullName).toEqual('google_workspace.building.instance.salto_office@s')
-        // expect(room?.featureInstances?.[0].feature.name.elemID?.fullName).toEqual(
-        //   'google_workspace.feature.instance.hapoel2',
-        // )
-        // const roleAssignment = elements
-        //   .filter(isInstanceElement)
-        //   .find(
-        //     e =>
-        //       e.elemID.getFullName() === 'google_workspace.roleAssignment.instance.65643247212429314_01tuee743bzv2ce',
-        //   )?.value
-        // expect(roleAssignment?.roleId.elemID.fullName).toEqual('google_workspace.role.instance._GROUPS_ADMIN_ROLE')
-        // expect(roleAssignment?.assignedTo.elemID.fullName).toEqual('google_workspace.group.instance.blabla')
         expect(
           elements
             .filter(isInstanceElement)
             .find(e => e.elemID.getFullName() === 'google_workspace.role.instance._SEED_ADMIN_ROLE')?.value
             .rolePrivileges.length,
-        ).toEqual(53)
+        ).toEqual(7)
       })
     })
   })

@@ -4,12 +4,10 @@
 
 Supprted parameters are:
 
-TODO adjust according to auth
-
-- `acceeToken`: The access token to use for authentication
+- `accessToken`: The access token to use for authentication
 
 ### Example
 
 ```
-salto account add google_workspace
+salto account add google_workspace --login-parameters accessToken=SomeAccessToken
 ```

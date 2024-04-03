@@ -104,8 +104,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
-          // Wea are only able to edit the domainAliases
-          // For that we are waiting for a new infra func that dills with changes inside of field array
+          // We are only able to edit the domainAliases
+          // TODO SALTO-5728 - For that we are waiting for a new infra func that deals with changes inside of field array
           // maybe we need CV as well here to be sure we are not changing anything else
           // modify: [
           //   {
@@ -315,15 +315,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    // schema_field:{
-    //   requestsByAction: {
-    //     customizations: {
-    //       add: [],
-    //       remove: [],
-    //       modify: [],
-    //     },
-    //   },
-    // },
     building: {
       requestsByAction: {
         customizations: {
@@ -451,6 +442,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
+          // waiting fir neta to check how to use the old name field in the URL
           // modify: [
           //   {
           //     request: {

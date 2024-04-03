@@ -21,6 +21,7 @@ import { hideTypesFilterCreator } from './hide_types'
 import { defaultDeployFilterCreator } from './default_deploy'
 import { fieldReferencesFilterCreator } from './field_references'
 import { queryFilterCreator } from './query'
+import { sortListsFilterCreator } from './sort_lists'
 
 /**
  * Filter creators of all the common filters
@@ -51,4 +52,5 @@ export const createCommonFilters = <
       return createSaltoElementErrorFromError({ error, severity: 'Error', elemID })
     },
   }),
+  sortListsFilter: sortListsFilterCreator(),
 })

@@ -13,17 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { collections } from '@salto-io/lowerdash'
 
-/*
-import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+const { awu } = collections.asynciterable
+
+import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { filter, isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { UserConfigAdapterFilterCreator } from '../filter_utils'
-import { UserFetchConfig, UserFetchConfigOptions } from '../definitions'
-
-type ValuesToSort = { [typeName: string]: { [fieldName: string]: string[] } }
-
+import { AdapterFilterCreator } from '../filter_utils'
+import { ApiDefinitions, APIDefinitionsOptions, getNestedWithDefault, queryWithDefault } from '../definitions'
+import { ElementFieldCustomization } from '../definitions/system/fetch'
+/*
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
+
+ */
 
 const get = (current: Value, tail: string[]): Value => {
   if (current === undefined) {
@@ -37,10 +40,16 @@ const get = (current: Value, tail: string[]): Value => {
     }
     return get(next.value, rest)
   }
+  if (rest.length === 0) {
+    return next
+  }
   return get(next, rest)
 }
 
-const sortLists = async (instance: InstanceElement, valuesToSort: ValuesToSort): Promise<void> => {
+const sortLists = async (
+  instance: InstanceElement,
+  fieldCustomization?: Record<string, ElementFieldCustomization>,
+): Promise<void> => {
   instance.value =
     (await transformValues({
       values: instance.value,
@@ -51,7 +60,7 @@ const sortLists = async (instance: InstanceElement, valuesToSort: ValuesToSort):
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
-        const sortFields = valuesToSort[field.parent.elemID.typeName]?.[field.name]
+        const sortFields = fieldCustomization?.[field.name]?.sort?.sortByProperties
 
         if (sortFields !== undefined) {
           _.assign(
@@ -68,22 +77,31 @@ const sortLists = async (instance: InstanceElement, valuesToSort: ValuesToSort):
     })) ?? {}
 }
 
-export const sortListsFilterCreator: <
-  TOptions extends UserFetchConfigOptions,
-  TContext extends { fetch: Pick<UserFetchConfig<TOptions>, 'hideTypes'> },
-  TResult extends void | filter.FilterResult = void,
->() => UserConfigAdapterFilterCreator<TContext, TResult> =
+export const sortListsFilterCreator: <TResult extends void | filter.FilterResult, TOptions>() => filter.FilterCreator<
+  TResult,
+  { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }
+> =
   () =>
-  ({ config }) => {
-    const filter: FilterCreator = (valuesToSort: ValuesToSort) => ({
-      name: 'sortListsFilter',
-      onFetch: async elements => {
-        await awu(elements).filter(isInstanceElement).forEach(sortLists)
-      },
-    })
-  }
-
-export default filter
-
-
- */
+  ({ definitions }) => ({
+    name: 'sortListsFilter',
+    onFetch: async (elements: Element[]) => {
+      const instances = definitions.fetch?.instances
+      if (instances === undefined) {
+        return
+      }
+      const defQuery = queryWithDefault(getNestedWithDefault(instances, 'element'))
+      await awu(elements)
+        .filter(isInstanceElement)
+        .forEach(async element =>
+          sortLists(element, (defQuery.query(element.elemID.typeName) as any).fieldCustomizations),
+        )
+      /*
+      await Promise.all(
+        elements.filter(isInstanceElement).map(element => async () => {
+          defQuery.query(element.elemID.typeName)
+          return sortLists(element)
+        }),
+      )
+       */
+    },
+  })

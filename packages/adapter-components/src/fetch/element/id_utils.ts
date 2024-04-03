@@ -28,7 +28,7 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { NameMappingFunction, NameMappingFunctionMap, NameMappingOptions } from '../../definitions'
 import { ElemIDCreatorArgs, ElemIDDefinition, PathDefinition } from '../../definitions/system/fetch/element'
-import { RECORDS_PATH, SETTINGS_NESTED_PATH } from '../../elements/constants'
+import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 
 export type ElemIDCreator = (args: { entry: Values; defaultName: string; parent?: InstanceElement }) => string
 

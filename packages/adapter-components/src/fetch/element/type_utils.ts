@@ -45,6 +45,8 @@ import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
+export class InvalidSingletonType extends Error {}
+
 export const NESTING_SEPARATOR = '__'
 
 export const toNestedTypeName = (parentName: string, nestedTypeName: string): string =>

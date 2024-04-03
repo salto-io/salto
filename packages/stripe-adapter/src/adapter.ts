@@ -29,6 +29,7 @@ import {
   config as configUtils,
   elements as elementUtils,
   fetch as fetchUtils,
+  openapi,
 } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -43,7 +44,7 @@ import fieldReferencesFilter from './filters/field_references'
 
 const { createPaginator, getWithCursorPagination } = clientUtils
 
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -89,7 +90,7 @@ export default class StripeAdapter implements AdapterOperations {
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.TypeSwaggerConfig>
   }> {
-    return generateTypes(STRIPE, this.userConfig[API_DEFINITIONS_CONFIG])
+    return openapi.generateTypes(STRIPE, this.userConfig[API_DEFINITIONS_CONFIG])
   }
 
   @logDuration('generating instances from service')

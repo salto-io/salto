@@ -34,7 +34,7 @@ import { AdapterFilterCreator, FilterCreator } from '../filter_utils'
 import { createUrl } from '../fetch/resource'
 import { ApiDefinitions, queryWithDefault } from '../definitions'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../definitions/system/fetch'
-import { AdapterApiConfig, TransformationConfig, TypeConfig } from '../config'
+import { AdapterApiConfig, TransformationConfig, TypeConfig } from '../config_deprecated'
 
 const log = logger(module)
 

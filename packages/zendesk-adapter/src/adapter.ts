@@ -428,7 +428,7 @@ const getGuideElements = async ({
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
-    configChanges: elementUtils.ducktype.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+    configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
     errors: guideErrors,
   }
 }
@@ -710,7 +710,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
-        ? configUtils.getUpdatedCofigFromConfigChanges({
+        ? definitions.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,

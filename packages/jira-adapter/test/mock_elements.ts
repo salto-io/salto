@@ -23,10 +23,10 @@ import {
   ListType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../src/constants'
 
-const { ADDITIONAL_PROPERTIES_FIELD } = elementsUtils.swagger
+const { ADDITIONAL_PROPERTIES_FIELD } = openapi
 
 const boardLocationType = new ObjectType({
   elemID: new ElemID(JIRA, 'Board_location'),

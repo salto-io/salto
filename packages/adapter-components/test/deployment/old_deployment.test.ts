@@ -16,8 +16,8 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPError, HTTPReadClientInterface, HTTPWriteClientInterface } from '../../src/client/http_client'
-import { deployChange } from '../../src/deployment/old_deployment'
-import { DeploymentRequestsByAction } from '../../src/config/request'
+import { deployChange } from '../../src/deployment/deployment_deprecated'
+import { DeploymentRequestsByAction } from '../../src/config_deprecated/request'
 
 describe('deployChange', () => {
   let type: ObjectType

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { AdapterOperations, ElemID, ElemIdGetter, ServiceIds, ObjectType, InstanceElement } from '@salto-io/adapter-api'
-import { elements } from '@salto-io/adapter-components'
+import { elements, openapi } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
@@ -24,7 +24,8 @@ import { OKTA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 import { oauthAccessTokenCredentialsType } from '../src/auth'
 
-const { generateTypes, getAllInstances } = elements.swagger
+const { getAllInstances } = elements.swagger
+const { generateTypes } = openapi
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -40,14 +41,17 @@ jest.mock('@salto-io/adapter-components', () => {
       ...actual.elements,
       swagger: {
         flattenAdditionalProperties: actual.elements.swagger.flattenAdditionalProperties,
-        generateTypes: jest.fn().mockImplementation(() => {
-          throw new Error('generateTypes called without a mock')
-        }),
         getAllInstances: jest.fn().mockImplementation(() => {
           throw new Error('getAllInstances called without a mock')
         }),
-        addDeploymentAnnotations: jest.fn(),
       },
+    },
+    openapi: {
+      ...actual.openapi,
+      generateTypes: jest.fn().mockImplementation(() => {
+        throw new Error('generateTypes called without a mock')
+      }),
+      addDeploymentAnnotations: jest.fn(),
     },
   }
 })

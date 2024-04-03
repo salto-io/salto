@@ -23,7 +23,7 @@ import {
   ReferenceExpression,
   BuiltinTypes,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { pathNaclCase, naclCase, extendGeneratedDependencies, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues, promises } from '@salto-io/lowerdash'
@@ -49,7 +49,7 @@ import { isInstanceOfType } from '../element_utils'
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
-const { toPrimitiveType } = elementUtils.swagger
+const { swaggerTypeToPrimitiveType } = openapi
 const { mapValuesAsync } = promises.object
 // Check whether an element is a custom/standard object definition.
 // Only relevant before the object_defs filter is run.
@@ -70,7 +70,7 @@ const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectTy
   const obj = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, typeName(inst)),
     fields: _.mapValues(properties, (prop, fieldName) => ({
-      refType: toPrimitiveType(prop.type),
+      refType: swaggerTypeToPrimitiveType(prop.type),
       annotations: {
         ...prop,
         [REQUIRED]: requiredFields.has(fieldName),

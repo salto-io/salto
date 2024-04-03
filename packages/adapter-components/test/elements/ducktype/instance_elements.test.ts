@@ -44,8 +44,8 @@ describe('ducktype_instance_elements', () => {
       field_with_complex_type: {
         number: 53,
         nested_type: {
-          val: 'agds',
-          another_val: 'dgadgasg',
+          val: 'first_val',
+          another_val: 'second_val',
         },
       },
     }
@@ -313,7 +313,7 @@ describe('ducktype_instance_elements', () => {
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
     })
     it('should convert name if nameMapping exists', async () => {
-      entry.name = 'CaPSlOCK NaMe'
+      entry.name = 'CaPS NaMe'
       const inst1 = await toInstance({
         type,
         transformationConfigByType: {
@@ -342,10 +342,10 @@ describe('ducktype_instance_elements', () => {
         defaultName: 'abc',
         entry,
       })
-      expect(inst1?.elemID.getFullName()).toEqual('myAdapter.bla.instance.capslock_name@s')
-      expect(inst1?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'capslock_name'])
-      expect(inst2?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CAPSLOCK_NAME@S')
-      expect(inst2?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CAPSLOCK_NAME'])
+      expect(inst1?.elemID.getFullName()).toEqual('myAdapter.bla.instance.caps_name@s')
+      expect(inst1?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'caps_name'])
+      expect(inst2?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CAPS_NAME@S')
+      expect(inst2?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CAPS_NAME'])
     })
   })
 })

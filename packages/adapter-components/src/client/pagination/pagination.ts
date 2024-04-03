@@ -216,7 +216,7 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified
- * as either a full URL or just the path and query prameters.
+ * as either a full URL or just the path and query parameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
 export const getWithCursorPagination = (pathChecker = defaultPathChecker): PaginationFunc => {

@@ -91,7 +91,7 @@ export const toTypeName = (endpointName: string): string =>
 
 export const toNormalizedRefName = (ref: ReferenceObject): string =>
   // conflicts can only happen if the swagger ref definitions have names that only differ
-  // in non-alnum characters - hopefully that's unlikely
+  // in non-alphanumeric characters - hopefully that's unlikely
   pathNaclCase(naclCase(_.last(ref.$ref.split('/'))))
 
 const isV2 = (doc: OpenAPI.Document): doc is OpenAPIV2.Document => {

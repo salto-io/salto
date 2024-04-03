@@ -219,7 +219,7 @@ describe('Test utils.ts', () => {
           },
           innerObj: {
             name: 'oren',
-            listOfNames: ['abc', 'qwe', 'opiu'],
+            listOfNames: ['abc', 'qwe', 'iop'],
             magical: {
               deepNumber: '888',
               deepName: 'innerName',
@@ -554,7 +554,7 @@ describe('Test utils.ts', () => {
             str: 'asd',
             num: '10',
             bool: 'true',
-            nums: ['1', '2'],
+            numbers: ['1', '2'],
             numMap: { one: 1, two: 2 },
             notExist: 'a',
           }
@@ -562,7 +562,7 @@ describe('Test utils.ts', () => {
             str: BuiltinTypes.STRING,
             num: BuiltinTypes.NUMBER,
             bool: BuiltinTypes.BOOLEAN,
-            nums: new ListType(BuiltinTypes.NUMBER),
+            numbers: new ListType(BuiltinTypes.NUMBER),
             numMap: new MapType(BuiltinTypes.NUMBER),
           }
           const result = await transformValues({
@@ -583,11 +583,11 @@ describe('Test utils.ts', () => {
               field: new Field(defaultFieldParent, name, typeMap[name]),
             }),
           )
-          origValue.nums.forEach((value: string) =>
+          origValue.numbers.forEach((value: string) =>
             expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
-              field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
+              field: new Field(defaultFieldParent, 'numbers', BuiltinTypes.NUMBER),
             }),
           )
           await awu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
@@ -641,7 +641,7 @@ describe('Test utils.ts', () => {
         })
       })
     })
-    const MAGIC_VAL = 'magix'
+    const MAGIC_VAL = 'magicX'
     const MOD_MAGIC_VAL = 'BIRD'
     const transformTest: TransformFunc = async ({ value, field }) => {
       if (value === MAGIC_VAL) {
@@ -733,11 +733,11 @@ describe('Test utils.ts', () => {
         expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
       })
 
-      it('should tranfsorm nested arrays which do not have a field', () => {
+      it('should transform nested arrays which do not have a field', () => {
         expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
       })
 
-      it('should tranfsorm nested objects which do not have a field', () => {
+      it('should transform nested objects which do not have a field', () => {
         expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
       })
     })
@@ -1110,7 +1110,7 @@ describe('Test utils.ts', () => {
             str: 'asd',
             num: '10',
             bool: 'true',
-            nums: ['1', '2'],
+            numbers: ['1', '2'],
             numMap: { one: 1, two: 2 },
             notExist: 'a',
           }
@@ -1118,7 +1118,7 @@ describe('Test utils.ts', () => {
             str: BuiltinTypes.STRING,
             num: BuiltinTypes.NUMBER,
             bool: BuiltinTypes.BOOLEAN,
-            nums: new ListType(BuiltinTypes.NUMBER),
+            numbers: new ListType(BuiltinTypes.NUMBER),
             numMap: new MapType(BuiltinTypes.NUMBER),
           }
           const result = transformValuesSync({
@@ -1139,11 +1139,11 @@ describe('Test utils.ts', () => {
               field: new Field(defaultFieldParent, name, typeMap[name]),
             }),
           )
-          origValue.nums.forEach((value: string) =>
+          origValue.numbers.forEach((value: string) =>
             expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
-              field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
+              field: new Field(defaultFieldParent, 'numbers', BuiltinTypes.NUMBER),
             }),
           )
           wu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
@@ -1197,7 +1197,7 @@ describe('Test utils.ts', () => {
         })
       })
     })
-    const MAGIC_VAL = 'magix'
+    const MAGIC_VAL = 'magicX'
     const MOD_MAGIC_VAL = 'BIRD'
     const transformTest: TransformFuncSync = ({ value, field }) => {
       if (value === MAGIC_VAL) {
@@ -1289,11 +1289,11 @@ describe('Test utils.ts', () => {
         expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
       })
 
-      it('should tranfsorm nested arrays which do not have a field', () => {
+      it('should transform nested arrays which do not have a field', () => {
         expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
       })
 
-      it('should tranfsorm nested objects which do not have a field', () => {
+      it('should transform nested objects which do not have a field', () => {
         expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
       })
     })
@@ -2049,7 +2049,7 @@ describe('Test utils.ts', () => {
   })
 
   describe('flattenElementStr function', () => {
-    it('should not modifiy an object type', () => {
+    it('should not modify an object type', () => {
       const flatObj = flattenElementStr(mockType)
       expect(flatObj).toEqual(mockType)
     })
@@ -2102,10 +2102,10 @@ describe('Test utils.ts', () => {
     it('should find for entire object predicate', () => {
       expect(valuesDeepSome({ a: 321, b: 321, c: { aha: 41 }, d: 44 }, v => v.aha === 41)).toEqual(true)
     })
-    it('should find for nested crazyness', () => {
+    it('should find for nested craziness', () => {
       expect(valuesDeepSome({ a: 321, b: [3, 2, 1], c: [{ aha: 42 }], d: 44 }, predicate)).toEqual(true)
     })
-    it('miss for nested crazyness', () => {
+    it('miss for nested craziness', () => {
       expect(valuesDeepSome({ a: 321, b: [3, 2, 1], c: [{ aha: 41 }], d: 44 }, predicate)).toEqual(false)
     })
   })
@@ -2514,7 +2514,7 @@ describe('Test utils.ts', () => {
         expect(parsed.annotations.ref.topLevelParent).toEqual('[Circular]')
         expect(parsed.fields.field.parent).toEqual('[Circular]')
       })
-      it('should not serialize and object which is accessed twice without actually being circular as [Circulr]', () => {
+      it('should not serialize and object which is accessed twice without actually being circular as [Circular]', () => {
         /*
         TODO: See what to do with this
         expect(parsed.fields.field).toEqual(undefined)
@@ -2792,10 +2792,10 @@ describe('Test utils.ts', () => {
   })
   describe('isResolvedReferenceExpression', () => {
     const inst = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('test', 'type') }))
-    it('should return false for a reference expression with undefind value', () => {
+    it('should return false for a reference expression with undefined value', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID))).toBeFalsy()
     })
-    it('should return false for a reference with uresolvedReference as value', () => {
+    it('should return false for a reference with unresolvedReference as value', () => {
       expect(
         isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, new UnresolvedReference(inst.elemID))),
       ).toBeFalsy()

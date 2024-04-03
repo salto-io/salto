@@ -1008,7 +1008,7 @@ describe('ducktype_transformer', () => {
 
   describe('getNewElementsFromInstances', () => {
     it('should create new types and instances from existing instances', () => {
-      const oldNestedestedType = new ObjectType({
+      const oldNestedType = new ObjectType({
         elemID: new ElemID('someAdapter', 'nestedType'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
@@ -1018,7 +1018,7 @@ describe('ducktype_transformer', () => {
         elemID: new ElemID('someAdapter', 'someType'),
         fields: {
           id: { refType: BuiltinTypes.NUMBER },
-          nested_type: { refType: oldNestedestedType },
+          nested_type: { refType: oldNestedType },
         },
       })
       const oldInstances = [

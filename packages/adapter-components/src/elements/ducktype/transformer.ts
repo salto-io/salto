@@ -200,7 +200,7 @@ const getEntriesForType = async (params: GetEntriesParams): Promise<Entries> => 
     .flatMap(async (entry, index) => {
       if (nestedFieldDetails !== undefined) {
         return awu(makeArray(entry[nestedFieldDetails.field.name]))
-          .map((nestedEntry, nesteIndex) => {
+          .map((nestedEntry, nestedIndex) => {
             if (!isObjectType(nestedFieldDetails.type)) {
               log.error(
                 `for typeName ${typeName} in adapter ${adapterName} nestedFieldDetails.type is not objectType returning undefined`,
@@ -212,7 +212,7 @@ const getEntriesForType = async (params: GetEntriesParams): Promise<Entries> => 
               type: nestedFieldDetails.type,
               transformationConfigByType,
               transformationDefaultConfig,
-              defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
+              defaultName: `unnamed_${index}_${nestedIndex}`, // TODO improve
               hasDynamicFields,
               getElemIdFunc,
             })
@@ -280,7 +280,7 @@ const getEntriesForType = async (params: GetEntriesParams): Promise<Entries> => 
   if (!hasExtraFields) {
     return { instances, type, nestedTypes }
   }
-  // We generare the type again since we added more fields to the instances from the recurse into
+  // We generate the type again since we added more fields to the instances from the recurse into
   const newElements = getNewElementsFromInstances({
     adapterName,
     typeName: (nestedFieldDetails?.type ?? type).elemID.typeName,

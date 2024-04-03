@@ -47,7 +47,7 @@ describe('query', () => {
     })
 
     it('isTypeMatch should return false if the type does not match the include', () => {
-      expect(query.isTypeMatch('atype11')).toBeFalsy()
+      expect(query.isTypeMatch('a_type11')).toBeFalsy()
     })
 
     it('isTypeMatch should match if include contain filter', () => {

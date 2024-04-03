@@ -181,12 +181,12 @@ export const createTransformationConfigTypes = ({
   }
 }
 
-export const validateTransoformationConfig = (
+export const validateTransformationConfig = (
   configPath: string,
   defaultConfig: TransformationDefaultConfig,
   configMap: Record<string, TransformationConfig>,
 ): void => {
-  const findNestedFieldDups = (
+  const findNestedFieldDuplicates = (
     fieldName: string,
     defaultConfigEntries: { fieldName: string }[] | undefined,
     configEntriesMap: Record<string, { fieldName: string }[] | undefined>,
@@ -197,16 +197,16 @@ export const validateTransoformationConfig = (
         throw new Error(`Duplicate ${fieldName} params found in ${configPath} default config: ${duplicates}`)
       }
     }
-    const duplicates = Object.entries(configEntriesMap)
+    const found = Object.entries(configEntriesMap)
       .filter(([_typeName, config]) => config !== undefined)
       .map(([typeName, config]) => ({
         typeName,
-        dups: findDuplicates((config ?? []).map(def => def.fieldName)),
+        duplicates: findDuplicates((config ?? []).map(def => def.fieldName)),
       }))
-      .filter(({ dups }) => dups.length > 0)
-    if (duplicates.length > 0) {
+      .filter(({ duplicates }) => duplicates.length > 0)
+    if (found.length > 0) {
       throw new Error(
-        `Duplicate ${fieldName} params found in ${configPath} for the following types: ${duplicates.map(d => d.typeName)}`,
+        `Duplicate ${fieldName} params found in ${configPath} for the following types: ${found.map(d => d.typeName)}`,
       )
     }
   }
@@ -245,22 +245,22 @@ export const validateTransoformationConfig = (
     }
   }
 
-  findNestedFieldDups(
+  findNestedFieldDuplicates(
     'fieldTypeOverrides',
     defaultConfig.fieldTypeOverrides,
     _.mapValues(configMap, c => c.fieldTypeOverrides),
   )
-  findNestedFieldDups(
+  findNestedFieldDuplicates(
     'fieldsToOmit',
     defaultConfig.fieldsToOmit,
     _.mapValues(configMap, c => c.fieldsToOmit),
   )
-  findNestedFieldDups(
+  findNestedFieldDuplicates(
     'fieldsToHide',
     defaultConfig.fieldsToHide,
     _.mapValues(configMap, c => c.fieldsToHide),
   )
-  findNestedFieldDups(
+  findNestedFieldDuplicates(
     'standaloneFields',
     defaultConfig.standaloneFields,
     _.mapValues(configMap, c => c.standaloneFields),

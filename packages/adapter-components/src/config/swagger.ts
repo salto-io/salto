@@ -37,7 +37,7 @@ import {
   getTransformationConfigByType,
   TransformationConfig,
   TransformationDefaultConfig,
-  validateTransoformationConfig,
+  validateTransformationConfig,
 } from './transformation'
 import { UserFetchConfig, UserFetchConfigOptions } from '../definitions/user'
 
@@ -231,7 +231,7 @@ export const validateApiDefinitionConfig = (
       isDefined,
     ),
   )
-  validateTransoformationConfig(
+  validateTransformationConfig(
     apiDefinitionConfigPath,
     adapterApiConfig.typeDefaults.transformation,
     getTransformationConfigByType(adapterApiConfig.types),

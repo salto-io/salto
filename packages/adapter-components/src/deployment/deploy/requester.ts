@@ -175,7 +175,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
   return dataToApply
 }
 
-const throwOnUnresolvedRefeferences = (value: unknown): void =>
+const throwOnUnresolvedReferences = (value: unknown): void =>
   _.cloneDeepWith(value, (val, key) => {
     if (isReferenceExpression(val)) {
       throw new Error(`found unresolved reference expression in ${key}`)
@@ -248,7 +248,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
           value: getChangeData(resolvedChange).value,
         })
 
-    throwOnUnresolvedRefeferences(data)
+    throwOnUnresolvedReferences(data)
 
     const callArgs = {
       queryParams: mergedEndpointDef.queryArgs,

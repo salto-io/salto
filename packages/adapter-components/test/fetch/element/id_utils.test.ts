@@ -246,7 +246,7 @@ describe('id utils', () => {
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual(['myAdapter', 'Records', 'myType', 'A', 'A'])
     })
-    it('it should nest under path if nested path provided and ignore the curent instance type name', () => {
+    it('it should nest under path if nested path provided and ignore the current instance type name', () => {
       expect(
         getElemPath({
           def: {

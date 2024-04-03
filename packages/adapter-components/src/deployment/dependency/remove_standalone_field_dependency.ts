@@ -24,7 +24,7 @@ import {
 import { getParents } from '@salto-io/adapter-utils'
 
 export const removeStandaloneFieldDependency: DependencyChanger = async (changes, deps) => {
-  const isDependnecyFromParentToChild = ([src, target]: [ChangeId, ChangeId]): boolean => {
+  const isDependencyFromParentToChild = ([src, target]: [ChangeId, ChangeId]): boolean => {
     const sourceChange = changes.get(src)
     const targetChange = changes.get(target)
     if (sourceChange === undefined || targetChange === undefined) {
@@ -46,6 +46,6 @@ export const removeStandaloneFieldDependency: DependencyChanger = async (changes
     .flatten(true)
 
   return allDependencies
-    .filter(isDependnecyFromParentToChild)
+    .filter(isDependencyFromParentToChild)
     .map(([source, target]) => dependencyChange('remove', source, target))
 }

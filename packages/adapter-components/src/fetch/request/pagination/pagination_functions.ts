@@ -135,7 +135,7 @@ export const pageOffsetAndLastPagination = ({
 }
 
 export const offsetAndLimitPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
-  // TODO allow customizing the field values (`isLastvalues`)
+  // TODO allow customizing the field values (`isLastValues`)
   type PageResponse = {
     isLast: boolean
     values: unknown[]
@@ -179,7 +179,7 @@ export const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => e
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified
- * as either a full URL or just the path and query prameters.
+ * as either a full URL or just the path and query parameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
 export const cursorPagination = ({

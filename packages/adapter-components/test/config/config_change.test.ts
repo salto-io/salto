@@ -18,7 +18,7 @@ import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import {
   createAdapterApiConfigType,
   createTransformationConfigTypes,
-  getUpdatedCofigFromConfigChanges,
+  getUpdatedConfigFromConfigChanges,
 } from '../../src/config'
 
 describe('config_change', () => {
@@ -40,10 +40,10 @@ describe('config_change', () => {
     )
   })
   it('should return undefined when no changes are suggested', () => {
-    expect(getUpdatedCofigFromConfigChanges({ configChanges: [], currentConfig: config, configType })).toBeUndefined()
+    expect(getUpdatedConfigFromConfigChanges({ configChanges: [], currentConfig: config, configType })).toBeUndefined()
   })
   it('should return new config when changes are suggested and a message', () => {
-    const configChange = getUpdatedCofigFromConfigChanges({
+    const configChange = getUpdatedConfigFromConfigChanges({
       configChanges: [
         { type: 'typeToExclude', value: 'bType', reason: 'r1' },
         { type: 'typeToExclude', value: 'cType', reason: 'r2' },
@@ -66,7 +66,7 @@ describe('config_change', () => {
   })
   describe('enableFetchFlag config suggestions', () => {
     it('should enable fetch flags when there are enableFetchFlag config suggestions', () => {
-      const updatedConfig = getUpdatedCofigFromConfigChanges({
+      const updatedConfig = getUpdatedConfigFromConfigChanges({
         configChanges: [
           { type: 'enableFetchFlag', value: 'fetchFlag1', reason: 'r1' },
           { type: 'enableFetchFlag', value: 'fetchFlag2', reason: 'r2' },
@@ -85,8 +85,8 @@ describe('config_change', () => {
         },
       })
     })
-    it('should not change fetch flags when there are no enbaleFetchFlag config suggestions', () => {
-      const updatedConfig = getUpdatedCofigFromConfigChanges({
+    it('should not change fetch flags when there are no enableFetchFlag config suggestions', () => {
+      const updatedConfig = getUpdatedConfigFromConfigChanges({
         configChanges: [{ type: 'typeToExclude', value: 'bType', reason: 'r1' }],
         currentConfig: config,
         configType,

@@ -111,7 +111,7 @@ describe('grouping functions', () => {
         expect(await groupWithFirstParent(toChange({ before: instance, after: instance }))).toBeUndefined()
         expect(await groupWithFirstParent(toChange({ after: type }))).toBeUndefined()
       })
-      it('should return undefined and not throw when parent is invalud', async () => {
+      it('should return undefined and not throw when parent is invalid', async () => {
         instance.annotations[CORE_ANNOTATIONS.PARENT] = 'abc'
         expect(await groupWithFirstParent(toChange({ after: instance }))).toBeUndefined()
       })

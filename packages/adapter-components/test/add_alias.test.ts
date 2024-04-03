@@ -245,10 +245,10 @@ describe('addAliasToElements', () => {
       },
     })
     const elementsMap = {
-      customrecordtype: [customRecordType],
+      customRecordType: [customRecordType],
     }
     const aliasMapWithType = {
-      customrecordtype: {
+      customRecordType: {
         aliasComponents: [
           {
             fieldName: 'name',

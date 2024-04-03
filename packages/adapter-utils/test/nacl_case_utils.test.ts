@@ -55,7 +55,7 @@ describe('naclCase utils', () => {
     })
 
     describe('When all special chars are same and "mapped"', () => {
-      it('Should replace special with _, add seperator and mapped val once', () => {
+      it('Should replace special with _, add separator and mapped val once', () => {
         expect(naclCase('Name Special Char')).toEqual('Name_Special_Char@s')
         expect(naclCase('Name@Special@Char')).toEqual('Name_Special_Char@m')
         expect(naclCase('Name$Special$Char')).toEqual('Name_Special_Char@zc')
@@ -64,7 +64,7 @@ describe('naclCase utils', () => {
     })
 
     describe('When there are different special chars', () => {
-      it('Should replace special with _, add seperator and add mapping', () => {
+      it('Should replace special with _, add separator and add mapping', () => {
         expect(naclCase('Name Special@Char')).toEqual('Name_Special_Char@sm')
         expect(naclCase('Name@Special_Char')).toEqual('Name_Special_Char@mu')
         expect(naclCase('NameאSpecial Char')).toEqual('Name_Special_Char@_01488s')
@@ -147,7 +147,7 @@ describe('naclCase utils', () => {
 
   describe('normalizeStaticResourcePath func', () => {
     describe('With a short path', () => {
-      const shortPaths = ['lalala.txt', 'aבגדe.טקסט', 'noExtention']
+      const shortPaths = ['lalala.txt', 'aבגדe.טקסט', 'noExtension']
       it('Should remain the same', () => {
         shortPaths.forEach(path => expect(normalizeFilePathPart(path)).toEqual(path))
       })
@@ -157,7 +157,7 @@ describe('naclCase utils', () => {
       const extension = '.extension'
       const longString = longPathPrefix.concat(extension)
       const anotherLongString = longPathPrefix.concat('a').concat(extension)
-      it('Should return at extacly 200 chars or less', () => {
+      it('Should return at exactly 200 chars or less', () => {
         expect(Buffer.from(normalizeFilePathPart(longString)).byteLength).toBeLessThanOrEqual(200)
       })
       it('Should contain the full file extension', () => {

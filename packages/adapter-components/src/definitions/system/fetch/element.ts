@@ -77,7 +77,7 @@ type StandaloneFieldDefinition = {
   nestPathUnderParent?: boolean
 }
 
-// TODO add safeties (e.g. standalone.referencFromParent=false means omit)
+// TODO add safeties (e.g. standalone.referenceFromParent=false means omit)
 export type ElementFieldCustomization = types.XOR<
   {
     fieldType?: string

@@ -319,7 +319,7 @@ describe('swagger_type_elements', () => {
         ])
       })
 
-      it('should not have anything under the original typenames', () => {
+      it('should not have anything under the original type names', () => {
         expect(allTypes.NewPet).toBeUndefined()
         expect(allTypes.pet__findByTags).toBeUndefined()
       })

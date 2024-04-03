@@ -96,8 +96,8 @@ export abstract class Element {
     const annotationTypes = mapValuesAsync(this.annotationRefTypes, refType => refType.getResolvedValue(elementsSource))
 
     // eslint-disable-next-line no-use-before-define
-    const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
-    if (nonTypeVals.length) {
+    const nonTypeValues = Object.values(annotationTypes).filter(type => !isType(type))
+    if (nonTypeValues.length) {
       throw new Error(
         `Element with ElemID ${this.elemID.getFullName()}'s has annotationType that resolves as non-TypeElement`,
       )

@@ -163,12 +163,12 @@ describe('adapter', () => {
       space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
       page1 = new InstanceElement('My_page@s', pageType, {
         title: 'My page',
-        id: 22,
+        id: '22',
         spaceId: new ReferenceExpression(space1.elemID),
       })
       page2 = new InstanceElement('page2', pageType, {
         title: 'page2',
-        id: 33,
+        id: '33',
         spaceId: new ReferenceExpression(space1.elemID),
       })
 
@@ -189,7 +189,9 @@ describe('adapter', () => {
         await operations.deploy({
           changeGroup: {
             groupID: 'page',
-            changes: [toChange({ after: new InstanceElement('new_page@s', pageType, { title: 'new page' }) })],
+            changes: [
+              toChange({ after: new InstanceElement('new_page@s', pageType, { title: 'new page', id: '1212' }) }),
+            ],
           },
           progressReporter: nullProgressReporter,
         }),

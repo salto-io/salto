@@ -110,7 +110,7 @@ export type MissingReferenceStrategy = {
 
 export type MissingReferenceStrategyName = 'typeAndValue'
 
-export const MissingReferenceStrategyLookup: Record<MissingReferenceStrategyName, MissingReferenceStrategy> = {
+export const missingReferenceStrategyLookup: Record<MissingReferenceStrategyName, MissingReferenceStrategy> = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
       if (!_.isString(typeName) || !value) {
@@ -193,7 +193,9 @@ export class FieldReferenceResolver<T extends string> {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[def.serializationStrategy ?? 'fullValue']
     this.sourceTransformation = ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'exact']
     this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
-    this.missingRefStrategy = def.missingRefStrategy ? MissingReferenceStrategyLookup[def.missingRefStrategy] : undefined
+    this.missingRefStrategy = def.missingRefStrategy
+      ? missingReferenceStrategyLookup[def.missingRefStrategy]
+      : undefined
   }
 
   static create<S extends string>(def: FieldReferenceDefinition<S>): FieldReferenceResolver<S> {

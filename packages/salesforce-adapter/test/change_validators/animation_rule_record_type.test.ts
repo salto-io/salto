@@ -19,7 +19,7 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
-import changeValidator from '../../src/change_validators/animation_rule_recordtype'
+import changeValidator from '../../src/change_validators/animation_rule_record_type'
 import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { createInstanceElement } from '../../src/transformers/transformer'
 

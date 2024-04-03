@@ -26,7 +26,7 @@ import {
   isMetadataConfigSuggestions,
   SalesforceConfig,
   DataManagementConfig,
-  isRetrieveSizeConfigSuggstion,
+  isRetrieveSizeConfigSuggestion,
   MetadataConfigSuggestion,
   MetadataQueryParams,
 } from './types'
@@ -86,7 +86,7 @@ export const createManyInstancesExcludeConfigChange = ({
   }
 }
 
-export const createInvlidIdFieldConfigChange = (
+export const createInvalidIdFieldConfigChange = (
   typeName: string,
   invalidFields: string[],
 ): ConfigChangeSuggestion => ({
@@ -282,7 +282,7 @@ export const getConfigFromConfigChanges = (
     .map((config) => config.value)
 
   const retrieveSize = configChanges
-    .filter(isRetrieveSizeConfigSuggstion)
+    .filter(isRetrieveSizeConfigSuggestion)
     .map((config) => config.value)
     .map((value) =>
       Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST),

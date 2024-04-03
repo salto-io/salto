@@ -79,11 +79,11 @@ describe('Internal IDs filter', () => {
         custom: 'bbb',
         [INSTANCE_FULL_NAME_FIELD]: 'unknownInst',
       }),
-      new InstanceElement('dontChange', objType, {
+      new InstanceElement('doNotChange', objType, {
         standard: 'aaa',
         custom: 'bbb',
         [INTERNAL_ID_FIELD]: 'already defined',
-        [INSTANCE_FULL_NAME_FIELD]: 'dontChange',
+        [INSTANCE_FULL_NAME_FIELD]: 'doNotChange',
       }),
       new InstanceElement('whenEnabledInst', objType, {
         standard: 'aaa',
@@ -137,7 +137,7 @@ describe('Internal IDs filter', () => {
             },
             {
               id: 'instance id 547',
-              fullName: 'dontChange',
+              fullName: 'doNotChange',
             },
           ],
         }))

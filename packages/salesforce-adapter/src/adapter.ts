@@ -921,7 +921,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     return _(metadataElements)
       .groupBy(metadataTypeSync)
-      .mapValues((elems) => elems.map((e) => e.elemID))
+      .mapValues((elements) => elements.map((e) => e.elemID))
       .value()
   }
 

@@ -1152,7 +1152,7 @@ describe('SalesforceAdapter fetch', () => {
           instances.slice(chunkSize).map((e) => e.values.fullName),
         )
       })
-      it('should use overrided configured chunk size', async () => {
+      it('should use overridden configured chunk size', async () => {
         const chunkSize = 2
         const type = 'Test'
         const instances = [
@@ -1779,7 +1779,7 @@ public class MyClass${index} {
       ])
     })
 
-    it('should fetch metadata instances with namespace when fullname already includes the namespace', async () => {
+    it('should fetch metadata instances with namespace when full name already includes the namespace', async () => {
       const namespaceName = 'asd'
       mockMetadataType({ xmlName: 'Test' }, { valueTypeFields: [] }, [
         {
@@ -1987,7 +1987,7 @@ public class LargeClass${index} {
       )
     })
 
-    describe('should not fetch skippedlist metadata types, instance and folders', () => {
+    describe('should not fetch skipped list metadata types, instance and folders', () => {
       let result: FetchResult
       let elements: Element[] = []
       beforeEach(async () => {
@@ -2047,20 +2047,20 @@ public class LargeClass${index} {
         expect(result.updatedConfig).toBeUndefined()
       })
 
-      it('should skip skippedlist types', () => {
+      it('should skip skipped list types', () => {
         expect(findElements(elements, 'Test1')).toHaveLength(0)
         expect(findElements(elements, 'Test2')).toHaveLength(1)
         expect(findElements(elements, 'Test3')).toHaveLength(1)
       })
 
-      it('should skip skippedlist instances', () => {
+      it('should skip skipped list instances', () => {
         expect(findElements(elements, 'Test2', 'instance1')).toHaveLength(0)
         expect(findElements(elements, 'Test3', 'instance1')).toHaveLength(1)
         expect(findElements(elements, 'Report', 'instance1')).toHaveLength(0)
       })
     })
 
-    describe('should not fetch skippedlist retrieve instance', () => {
+    describe('should not fetch skipped list retrieve instance', () => {
       let result: Element[] = []
       beforeEach(async () => {
         mockMetadataType(
@@ -2091,7 +2091,7 @@ public class LargeClass${index} {
         result = (await adapter.fetch(mockFetchOpts)).elements
       })
 
-      it('should skip skippedlist retrieve instances', () => {
+      it('should skip skipped list retrieve instances', () => {
         expect(
           findElements(
             result,

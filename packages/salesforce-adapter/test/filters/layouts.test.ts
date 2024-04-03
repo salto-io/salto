@@ -53,11 +53,11 @@ describe('Test layout filter', () => {
           },
         },
       })
-      const testSobjPath = [
+      const testSObjPath = [
         ...(await getObjectDirectoryPath(testSObj)),
         pathNaclCase(apiName),
       ]
-      testSObj.path = testSobjPath
+      testSObj.path = testSObjPath
 
       const shortName = 'Test Layout'
       const fullName = `${apiName}-${shortName}`
@@ -109,7 +109,7 @@ describe('Test layout filter', () => {
         LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)),
       )
       expect(instance.path).toEqual([
-        ...testSobjPath.slice(0, -1),
+        ...testSObjPath.slice(0, -1),
         'Layout',
         pathNaclCase(instance.elemID.name),
       ])

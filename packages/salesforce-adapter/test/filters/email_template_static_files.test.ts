@@ -27,7 +27,7 @@ import { FilterWith } from './mocks'
 
 describe('emailTemplate static files filter', () => {
   const ATTACHMENT_AS_STRING = 'attachment'
-  const EMAILCONTENT = 'email-content'
+  const EMAIL_CONTENT = 'email-content'
   const ATTACHMENT_NAME = 'attachment.txt'
 
   type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -47,7 +47,7 @@ describe('emailTemplate static files filter', () => {
 
   const staticContent = new StaticFile({
     filepath: 'salesforce/Records/emailTemplate.email',
-    content: Buffer.from(EMAILCONTENT),
+    content: Buffer.from(EMAIL_CONTENT),
   })
 
   describe('on fetch', () => {

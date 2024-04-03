@@ -69,7 +69,7 @@ describe('remove fields filter', () => {
     mockTypeWithInstance,
     {
       existing: 'existing',
-      doesntExistInType: 'doesntExistInType',
+      doesNotExistInType: 'doesNotExistInType',
       removeAlsoFromInstance: 'removeAlsoFromInstance',
       removeAlsoFromInstance2: 'removeAlsoFromInstance2',
       withNested: {
@@ -155,9 +155,9 @@ describe('remove fields filter', () => {
 
     it('should not remove values that does not exist on type', () => {
       const testInstance = testElements[3] as InstanceElement
-      expect(testInstance.value.doesntExistInType).toBeDefined()
-      expect(testInstance.value.doesntExistInType).toEqual(
-        mockInstance.value.doesntExistInType,
+      expect(testInstance.value.doesNotExistInType).toBeDefined()
+      expect(testInstance.value.doesNotExistInType).toEqual(
+        mockInstance.value.doesNotExistInType,
       )
     })
   })

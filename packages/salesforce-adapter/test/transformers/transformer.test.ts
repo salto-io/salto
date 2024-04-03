@@ -286,7 +286,7 @@ describe('transformer', () => {
         )
       })
 
-      it('should fetch masterdetail relationships', async () => {
+      it('should fetch master detail relationships', async () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
@@ -314,7 +314,7 @@ describe('transformer', () => {
         ).toBe(true)
       })
 
-      it('should fetch masterdetail relationships which are not reparentable and requires read/write access', async () => {
+      it('should fetch master detail relationships which are not reparentable and requires read/write access', async () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
@@ -1176,7 +1176,7 @@ describe('transformer', () => {
         expect(_.get(customObj, DESCRIPTION)).toEqual('MyDescription')
       })
 
-      it('should not transform skiplisted annotations', () => {
+      it('should not transform skip listed annotations', () => {
         expect(_.get(customObj, API_NAME)).toBeUndefined()
         expect(_.get(customObj, METADATA_TYPE)).toBeUndefined()
       })
@@ -1262,7 +1262,7 @@ describe('transformer', () => {
           })
           customObj = await toCustomProperties(customSettingsObj, false)
         })
-        it('should not create fields that dont exist on custom settings objects', () => {
+        it("should not create fields that don't exist on custom settings objects", () => {
           expect(customObj).not.toHaveProperty('pluralLabel')
           expect(customObj).not.toHaveProperty('sharingModel')
         })
@@ -1307,7 +1307,7 @@ describe('transformer', () => {
         expect(customField.referenceTo).toEqual(expectedReferenceTo)
       }
 
-      it('should transform masterdetail field', async () => {
+      it('should transform master detail field', async () => {
         const masterDetailField = objectType.fields[fieldName]
         masterDetailField.refType = createRefToElmWithValue(
           Types.primitiveDataTypes.MasterDetail,
@@ -1582,7 +1582,7 @@ describe('transformer', () => {
         Longitude: 222.2,
       },
       Creatable: 'Create',
-      NotCreatable: 'DontSendMeOnCreate',
+      NotCreatable: 'DoNotSendMeOnCreate',
       Updateable: 'Update',
       NotUpdateable: 'NotUpdateable',
     }
@@ -2008,7 +2008,7 @@ describe('transformer', () => {
     })
 
     it('should add a reference if the field is a foreign key with a few options', async () => {
-      // assinging foreignKeyDomain separately because the salesforce type incorrectly specifies
+      // assigning foreignKeyDomain separately because the salesforce type incorrectly specifies
       // it as string when it can also be string[]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const referenceField: any = mockValueTypeField({
@@ -2179,7 +2179,7 @@ describe('transformer', () => {
     const regValue = 'REG'
     const newValue = 'NEW'
 
-    const elementID = new ElemID('salesforce', 'elememt')
+    const elementID = new ElemID('salesforce', 'element')
 
     const typeRef = new ReferenceExpression(
       elementID.createNestedID('annotation', API_NAME),
@@ -2699,7 +2699,7 @@ describe('transformer', () => {
       })
     })
   })
-  describe('Renaming metadatatype tests', () => {
+  describe('Renaming metadata type tests', () => {
     it('Verify renaming function', () => {
       METADATA_TYPES_TO_RENAME.forEach((_value, key) => {
         const elemId: ElemID = Types.getElemId(key, false, undefined)
@@ -2766,7 +2766,7 @@ describe('transformer', () => {
         State: 'UK',
       },
       Creatable: 'Create',
-      NotCreatable: 'DontSendMeOnCreate',
+      NotCreatable: 'DoNotSendMeOnCreate',
       Updateable: 'Update',
       NotUpdateable: 'NotUpdateable',
       // Used to validate we don't parse Elements if for some reason we reach this flow.

@@ -31,7 +31,7 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
-  createInvlidIdFieldConfigChange,
+  createInvalidIdFieldConfigChange,
   createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
 } from '../config_change'
@@ -998,7 +998,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const invalidFieldSuggestions = await awu(invalidFetchSettings)
       .filter((settings) => settings.invalidIdFields.length > 0)
       .map(async (setting) =>
-        createInvlidIdFieldConfigChange(
+        createInvalidIdFieldConfigChange(
           await apiName(setting.objectType),
           makeArray(setting.invalidIdFields),
         ),

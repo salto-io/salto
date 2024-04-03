@@ -74,10 +74,10 @@ describe('picklist promote change validator', () => {
         gvsChange,
       ])
       expect(changeErrors).toHaveLength(2)
-      const errorElemsNamesSet = new Set(
+      const errorElementsNamesSet = new Set(
         changeErrors.map((changeErr) => changeErr.elemID.name),
       )
-      expect(errorElemsNamesSet).toEqual(
+      expect(errorElementsNamesSet).toEqual(
         new Set(['pick__c', 'global_value_set_test']),
       )
     })
@@ -85,10 +85,10 @@ describe('picklist promote change validator', () => {
     it("should have created just picklist error when value-set change doesn't exist", async () => {
       const changeErrors = await picklistPromoteValidator([pickListChange])
       expect(changeErrors).toHaveLength(1)
-      const errorElemsNamesSet = new Set(
+      const errorElementsNamesSet = new Set(
         changeErrors.map((changeErr) => changeErr.elemID.name),
       )
-      expect(new Set(['pick__c'])).toEqual(errorElemsNamesSet)
+      expect(new Set(['pick__c'])).toEqual(errorElementsNamesSet)
     })
 
     it("should have created just picklist error when extra change isn't reference", async () => {
@@ -98,10 +98,10 @@ describe('picklist promote change validator', () => {
         gvsChange,
       ])
       expect(changeErrors).toHaveLength(1)
-      const errorElemsNamesSet = new Set(
+      const errorElementsNamesSet = new Set(
         changeErrors.map((changeErr) => changeErr.elemID.name),
       )
-      expect(new Set(['pick__c'])).toEqual(errorElemsNamesSet)
+      expect(new Set(['pick__c'])).toEqual(errorElementsNamesSet)
     })
 
     it('should not have errors for non-custom picklist', async () => {

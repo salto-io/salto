@@ -163,10 +163,10 @@ const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const objectResolver: UrlResolver = async (element, baseUrl) => {
-  const typeIdentfier = getTypeIdentifier(element)
-  if ((await isCustomObject(element)) && typeIdentfier !== undefined) {
+  const typeIdentifier = getTypeIdentifier(element)
+  if ((await isCustomObject(element)) && typeIdentifier !== undefined) {
     return new URL(
-      `${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/Details/view`,
+      `${baseUrl}lightning/setup/ObjectManager/${typeIdentifier}/Details/view`,
     )
   }
   return undefined
@@ -175,10 +175,10 @@ const objectResolver: UrlResolver = async (element, baseUrl) => {
 const fieldResolver: UrlResolver = async (element, baseUrl) => {
   if (isField(element) && (await isFieldOfCustomObject(element))) {
     const fieldIdentifier = getFieldIdentifier(element)
-    const typeIdentfier = getTypeIdentifier(element.parent)
-    if (fieldIdentifier !== undefined && typeIdentfier !== undefined) {
+    const typeIdentifier = getTypeIdentifier(element.parent)
+    if (fieldIdentifier !== undefined && typeIdentifier !== undefined) {
       return new URL(
-        `${baseUrl}lightning/setup/ObjectManager/${typeIdentfier}/FieldsAndRelationships/${fieldIdentifier}/view`,
+        `${baseUrl}lightning/setup/ObjectManager/${typeIdentifier}/FieldsAndRelationships/${fieldIdentifier}/view`,
       )
     }
   }
@@ -207,7 +207,7 @@ const workflowResolver: UrlResolver = async (element, baseUrl) => {
     isInstanceOfTypeSync('Flow')(element) &&
     element.value.processType === 'Workflow'
   ) {
-    // It seems all the process builder flows has the same url so we return the process buider home
+    // It seems all the process builder flows has the same url so we return the process builder home
     return new URL(`${baseUrl}lightning/setup/ProcessAutomation/home`)
   }
   return undefined

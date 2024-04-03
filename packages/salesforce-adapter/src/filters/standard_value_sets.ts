@@ -59,9 +59,9 @@ export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'
 
 type StandardValuesSets = Set<string>
-type StandartValueSetsLookup = Record<string, ReferenceExpression>
+type StandardValueSetsLookup = Record<string, ReferenceExpression>
 /*
- * Standard values sets and references are specified in this API apendix:
+ * Standard values sets and references are specified in this API appendix:
  * https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/standardvalueset_names.htm
  */
 
@@ -132,7 +132,7 @@ const encodeValues = (values: string[]): string => values.sort().join(';')
 
 const svsValuesToRef = (
   svsInstances: InstanceElement[],
-): StandartValueSetsLookup =>
+): StandardValueSetsLookup =>
   _.fromPairs(
     svsInstances
       .filter((i) => i.value[STANDARD_VALUE])
@@ -157,10 +157,10 @@ const isStandardPickList = async (f: Field): Promise<boolean> => {
 }
 
 const calculatePicklistFieldsToUpdate = async (
-  custObjectFields: Record<string, Field>,
-  svsValuesToName: StandartValueSetsLookup,
+  customObjectFields: Record<string, Field>,
+  svsValuesToName: StandardValueSetsLookup,
 ): Promise<Record<string, Field>> =>
-  mapValuesAsync(custObjectFields, async (field) => {
+  mapValuesAsync(customObjectFields, async (field) => {
     if (
       !(await isStandardPickList(field)) ||
       _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])

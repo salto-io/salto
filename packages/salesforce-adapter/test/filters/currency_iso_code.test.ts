@@ -204,7 +204,7 @@ describe('currencyIsoCode filter', () => {
         targetElemID = elements[0].elemID
         await filter.onFetch(elements)
       })
-      it('should transform the currency iso code as ususal', () => {
+      it('should transform the currency iso code as usual', () => {
         const modifiedElement = [...findElementsByID(elements, targetElemID)]
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
@@ -213,7 +213,7 @@ describe('currencyIsoCode filter', () => {
         expect(annotations).not.toHaveProperty('valueSet')
         expect(annotations).toHaveProperty('valueSetName')
       })
-      it('should create an empty currrency iso codes record', () => {
+      it('should create an empty currency iso codes record', () => {
         const currencyCodeRecord = findElements(
           elements,
           CURRENCY_CODE_TYPE_NAME,

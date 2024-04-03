@@ -40,9 +40,9 @@ describe('hide read only values filter', () => {
   let filter: FilterType
   let elements: Element[]
 
-  const mockCustomElemenID = new ElemID(SALESFORCE, CPQ_TESTED_OBJECT)
+  const mockCustomElementID = new ElemID(SALESFORCE, CPQ_TESTED_OBJECT)
   const mockNotCustomObject = new ObjectType({
-    elemID: mockCustomElemenID,
+    elemID: mockCustomElementID,
     fields: {
       readOnlyField: {
         refType: Types.primitiveDataTypes.Text,
@@ -68,7 +68,7 @@ describe('hide read only values filter', () => {
     },
   })
   const mockCustomObject = new ObjectType({
-    elemID: mockCustomElemenID,
+    elemID: mockCustomElementID,
     fields: {
       readOnlyField: {
         refType: Types.primitiveDataTypes.Text,
@@ -147,7 +147,7 @@ describe('hide read only values filter', () => {
       ).toBeUndefined()
     })
     it('Should add "_hidden_value = true" to read only fields on custom object when showReadOnlyValue flag = false', async () => {
-      const dataManagmentConfig = {
+      const dataManagementConfig = {
         includeObjects: ['*'],
         saltoIDSettings: {} as SaltoIDSettings,
         showReadOnlyValues: false,
@@ -157,7 +157,7 @@ describe('hide read only values filter', () => {
         ..._.omit(defaultFilterContext, 'fetchProfile'),
         fetchProfile: {
           ...defaultFilterContext.fetchProfile,
-          dataManagement: buildDataManagement(dataManagmentConfig),
+          dataManagement: buildDataManagement(dataManagementConfig),
         },
       }
       filter = filterCreator({ config }) as FilterType
@@ -181,7 +181,7 @@ describe('hide read only values filter', () => {
       ).toBeUndefined()
     })
     it('Should do nothing to read only fields on custom object when showReadOnlyValue flag = true', async () => {
-      const dataManagmentConfig = {
+      const dataManagementConfig = {
         includeObjects: ['*'],
         saltoIDSettings: {} as SaltoIDSettings,
         showReadOnlyValues: true,
@@ -191,7 +191,7 @@ describe('hide read only values filter', () => {
         ..._.omit(defaultFilterContext, 'fetchProfile'),
         fetchProfile: {
           ...defaultFilterContext.fetchProfile,
-          dataManagement: buildDataManagement(dataManagmentConfig),
+          dataManagement: buildDataManagement(dataManagementConfig),
         },
       }
       filter = filterCreator({ config }) as FilterType

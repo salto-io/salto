@@ -61,7 +61,7 @@ describe('custom object instances change validator', () => {
     let instance: InstanceElement
     it('should have change error with warning when adding a non-creatable field', async () => {
       instance = new InstanceElement('instance', obj, {
-        nonCreatable: 'dontCreateMe',
+        nonCreatable: 'doNotCreateMe',
       })
       changeErrors = await customObjectInstancesValidator([
         toChange({ after: instance }),

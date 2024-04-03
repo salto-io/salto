@@ -28,9 +28,8 @@ export const validateCredentials = async ({
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    // TODO add isProduction flag, use Jira as a reference
     await connection.get('/wiki/rest/api/space')
-    return { accountId: credentials.subdomain }
+    return { accountId: credentials.baseUrl }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)
@@ -40,10 +39,10 @@ export const validateCredentials = async ({
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions =>
   clientUtils.axiosConnection({
     retryOptions,
-    baseURLFunc: async ({ subdomain }) => `https://${subdomain}.atlassian.net`,
-    authParamsFunc: async ({ email, token }: Credentials) => ({
+    baseURLFunc: async ({ baseUrl }) => baseUrl,
+    authParamsFunc: async ({ user, token }: Credentials) => ({
       auth: {
-        username: email,
+        username: user,
         password: token,
       },
     }),

@@ -5,9 +5,9 @@
 Supprted parameters are:
 
 
-- `subdomain`
-- `username`
-- `password`
+- `baseUrl`
+- `user`
+- `token`
 
 ### Example
 

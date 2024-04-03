@@ -19,8 +19,8 @@ import * as constants from './constants'
 
 export type Credentials = {
   token: string
-  subdomain: string
-  email: string
+  baseUrl: string
+  user: string
 }
 
 export const credentialsType = createMatchingObjectType<Credentials>({
@@ -30,11 +30,11 @@ export const credentialsType = createMatchingObjectType<Credentials>({
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
-    subdomain: {
+    baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
-    email: {
+    user: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },

@@ -195,7 +195,7 @@ export const adapter: Adapter = {
       createOAuthRequest,
       credentialsType: oauthAccessTokenCredentialsType,
       oauthRequestParameters: oauthRequestParametersType,
-      createFromOauthResponse: (inputConfig: Values, response: OauthAccessTokenResponse) => {
+      createFromOauthResponse: async (inputConfig: Values, response: OauthAccessTokenResponse) => {
         const { subdomain, domain } = inputConfig
         const { accessToken } = response.fields
         return {

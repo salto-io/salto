@@ -315,7 +315,7 @@ export const adapter: Adapter = {
       createOAuthRequest,
       credentialsType: accessTokenCredentialsType,
       oauthRequestParameters,
-      createFromOauthResponse: (
+      createFromOauthResponse: async (
         oldConfig: Values,
         response: OauthAccessTokenResponse,
       ) => ({

@@ -20,6 +20,7 @@ import http from 'http'
 import * as cliOauthAuthenticator from '../src/cli_oauth_authenticator'
 import { MockWriteStream } from './mocks'
 
+let mockWriteStream: MockWriteStream
 const createServer = jest.spyOn(cliOauthAuthenticator, 'createServer')
 
 describe('cli oauth server', () => {
@@ -32,103 +33,60 @@ describe('cli oauth server', () => {
     )
     createServer.mockClear()
   })
-
-  describe('success flow', () => {
-    const setup = async (directParamsExtraction: boolean): Promise<OauthAccessTokenResponse> => {
-      const mockWriteStream = new MockWriteStream()
-      return cliOauthAuthenticator.processOauthCredentials({
-        port: 8080,
-        oauthRequiredFields: ['access_token_field', 'instance_url'],
-        url: 'testUrl',
-        output: {
+  describe('When using the cli oauth authenticates', () => {
+    let returnPromise: Promise<OauthAccessTokenResponse>
+    beforeEach(async () => {
+      mockWriteStream = new MockWriteStream()
+      returnPromise = cliOauthAuthenticator.processOauthCredentials(
+        8080,
+        ['access_token_field', 'instance_url'],
+        'testUrl',
+        {
           stdout: mockWriteStream,
           stderr: new MockWriteStream(),
         },
-        directParamsExtraction,
-      })
-    }
-
-    describe('When using the cli oauth authenticates without directParamsExtraction', () => {
-      let returnPromise: Promise<OauthAccessTokenResponse>
-      beforeEach(async () => {
-        returnPromise = setup(false)
-      })
-
-      // The actual behavior of the server will be tested in e2e,
-      // because it's too specific to tailor a test to. Important thing is that oauth succeeds
-      it('should process the credentials through the server', async () => {
-        await waitForExpect(() => {
-          expect(createServer.mock.results[0].value.address().port).toBeDefined()
-        })
-        const newLocal = createServer.mock.results.filter(result =>
-          result ? result.value.address().port === 8080 : false,
-        )
-        const app = newLocal[0].value
-        await supertest(app)
-          .get('/#instance_url=testInstanceUrl&access_token_field=accessTokenThing')
-          .expect(response => {
-            const responseText = response.text
-            expect(responseText).toContain('window.location.replace')
-          })
-        await supertest(app)
-          .get('/extract?instance_url=testInstanceUrl2&access_token_field=accessTokenThing2')
-          .expect(response => {
-            expect(response.text).toContain('/done')
-          })
-        await supertest(app)
-          .get('/done')
-          .expect(response => {
-            expect(response.text).toContain('Done configuring Salto')
-          })
-        const retVal = await returnPromise
-        expect(retVal.fields.accessTokenField).toEqual('accessTokenThing2')
-        expect(retVal.fields.instanceUrl).toEqual('testInstanceUrl2')
-      })
+      )
     })
 
-    describe('When using the cli oauth authenticates with directParamsExtraction', () => {
-      let returnPromise: Promise<OauthAccessTokenResponse>
-      beforeEach(async () => {
-        returnPromise = setup(true)
+    // The actual behavior of the server will be tested in e2e,
+    // because it's too specific to tailor a test to. Important thing is that oauth succeeds
+    it('should process the credentials through the server', async () => {
+      await waitForExpect(() => {
+        expect(createServer.mock.results[0].value.address().port).toBeDefined()
       })
-
-      // The actual behavior of the server will be tested in e2e,
-      // because it's too specific to tailor a test to. Important thing is that oauth succeeds
-      it('should process the credentials through the server', async () => {
-        await waitForExpect(() => {
-          expect(createServer.mock.results[0].value.address().port).toBeDefined()
+      const newLocal = createServer.mock.results.filter(result =>
+        result ? result.value.address().port === 8080 : false,
+      )
+      const app = newLocal[0].value
+      await supertest(app)
+        .get('/#instance_url=testInstanceUrl&access_token_field=accessTokenThing')
+        .expect(response => {
+          const responseText = response.text
+          expect(responseText).toContain('window.location.replace')
         })
-        const app = createServer.mock.results.filter(result => result.value.address().port === 8080)[0].value
-        await supertest(app)
-          .get('?instance_url=testInstanceUrl&access_token_field=accessTokenThing')
-          .expect(response => {
-            const responseText = response.text
-            expect(responseText).toContain('window.location.replace')
-          })
-        await supertest(app)
-          .get('/done')
-          .expect(response => {
-            expect(response.text).toContain('Done configuring Salto')
-          })
-        const retVal = await returnPromise
-        expect(retVal.fields.accessTokenField).toEqual('accessTokenThing')
-        expect(retVal.fields.instanceUrl).toEqual('testInstanceUrl')
-      })
+      await supertest(app)
+        .get('/extract?instance_url=testInstanceUrl2&access_token_field=accessTokenThing2')
+        .expect(response => {
+          expect(response.text).toContain('/done')
+        })
+      await supertest(app)
+        .get('/done')
+        .expect(response => {
+          expect(response.text).toContain('Done configuring Salto')
+        })
+      const retVal = await returnPromise
+      expect(retVal.fields.accessTokenField).toEqual('accessTokenThing2')
+      expect(retVal.fields.instanceUrl).toEqual('testInstanceUrl2')
     })
   })
 
   describe('when oauth output is badly shapen', () => {
     let returnPromise: Promise<OauthAccessTokenResponse>
     beforeEach(async () => {
-      const mockWriteStream = new MockWriteStream()
-      returnPromise = cliOauthAuthenticator.processOauthCredentials({
-        port: 8081,
-        oauthRequiredFields: ['testAccessTokenField'],
-        url: 'testUrl',
-        output: {
-          stdout: mockWriteStream,
-          stderr: new MockWriteStream(),
-        },
+      mockWriteStream = new MockWriteStream()
+      returnPromise = cliOauthAuthenticator.processOauthCredentials(8081, ['testAccessTokenField'], 'testUrl', {
+        stdout: mockWriteStream,
+        stderr: new MockWriteStream(),
       })
       returnPromise.catch(() => undefined)
     })

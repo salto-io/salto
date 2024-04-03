@@ -48,9 +48,9 @@ describe('adapter creator', () => {
       Object.keys(oauthAccessTokenCredentialsType.fields),
     )
   })
-  it('should return oauth params - only accessToken and subdomain', () => {
+  it('should return oauth params - only accessToken and subdomain', async () => {
     expect(
-      (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+      await (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
         {
           clientId: 'client',
           port: 8080,

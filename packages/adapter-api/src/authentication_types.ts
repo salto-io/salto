@@ -19,7 +19,6 @@ import { Values } from './values'
 export type OAuthRequestParameters = {
   url: string
   oauthRequiredFields: string[]
-  directParamsExtraction?: boolean
 }
 
 export type AuthMethod = {
@@ -33,7 +32,7 @@ export type OauthAccessTokenResponse = {
 export type OAuthMethod = AuthMethod & {
   oauthRequestParameters: ObjectType
   createOAuthRequest: (userInput: InstanceElement) => OAuthRequestParameters
-  createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => Promise<Values> | Values
+  createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => Promise<Values>
 }
 
 export type AdapterAuthentication = {

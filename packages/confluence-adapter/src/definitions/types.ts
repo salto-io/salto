@@ -15,8 +15,6 @@
  */
 import { definitions } from '@salto-io/adapter-components'
 
-// TODO adjust
-
 export type AdditionalAction = never
 export type ClientOptions = 'main'
 export type PaginationOptions = 'cursor'

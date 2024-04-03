@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createAdapter, credentials } from '@salto-io/adapter-components'
+import { createAdapter, credentials, client } from '@salto-io/adapter-components'
 import { Credentials, credentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
@@ -23,6 +23,7 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
 
+const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
@@ -43,20 +44,19 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   operationsCustomizations: {
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
-    // TODO add other customizations if needed (check which ones are available - e.g. additional filters)
   },
-  // add names of clients that should be created (if undefined, the adapter wrapper will create them)
+
   initialClients: {
     main: undefined,
   },
-  // TODO adjust according to service rate limits, or remove to set as unlimited
-  // clientDefaults: {
-  //   rateLimit: {
-  //     total: 100,
-  //     get: 100,
-  //     deploy: 100,
-  //   },
-  //   maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  //   retry: DEFAULT_RETRY_OPTS,
-  // },
+
+  clientDefaults: {
+    rateLimit: {
+      total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      get: 60,
+      deploy: 2,
+    },
+    maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+    retry: DEFAULT_RETRY_OPTS,
+  },
 })

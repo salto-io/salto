@@ -51,7 +51,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   >({
     blogpost: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
   })
-  // TODO_F each definition in its own file
+
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
     page: {
       requestsByAction: {

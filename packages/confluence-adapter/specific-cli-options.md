@@ -4,7 +4,6 @@
 
 Supprted parameters are:
 
-TODO adjust according to auth
 
 - `subdomain`
 - `username`

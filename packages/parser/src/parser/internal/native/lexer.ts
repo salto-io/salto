@@ -116,7 +116,7 @@ export const rules: Record<string, moo.Rules> = {
   mergeConflict: {
     [TOKEN_TYPES.MERGE_CONFLICT_MID]: '=======',
     [TOKEN_TYPES.MERGE_CONFLICT_END]: { match: '>>>>>>>', pop: 1 },
-    [TOKEN_TYPES.CONFLICT_CONTENT]: { match: /.*[${NEWLINE_CHARS}]/, lineBreaks: true },
+    [TOKEN_TYPES.CONFLICT_CONTENT]: { match: MULTILINE_CONTENT, lineBreaks: true },
     [TOKEN_TYPES.ERROR]: moo.error,
   },
 }

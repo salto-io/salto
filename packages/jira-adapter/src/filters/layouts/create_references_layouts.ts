@@ -28,7 +28,7 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
     const layouts = elements.filter(isInstanceElement).filter(e => supportedLayouts.includes(e.elemID.typeName))
     const fixedDefs = referencesRules.map(def =>
-      config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy'),
+      config.fetch.enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),
     )
     await referenceUtils.addReferences({
       elements: layouts,

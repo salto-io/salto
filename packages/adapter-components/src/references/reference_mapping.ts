@@ -25,6 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { createMissingInstance } from './missing_references'
 
 const { awu } = collections.asynciterable
 
@@ -106,7 +107,19 @@ export const ReferenceSourceTransformationLookup: Record<
 export type MissingReferenceStrategy = {
   create: CreateMissingRefFunc
 }
+
 export type MissingReferenceStrategyName = 'typeAndValue'
+
+export const MissingReferenceStrategyLookup: Record<MissingReferenceStrategyName, MissingReferenceStrategy> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return createMissingInstance(adapter, typeName, value)
+    },
+  },
+}
 
 type MetadataTypeArgs<T extends string> = {
   type: string
@@ -180,6 +193,7 @@ export class FieldReferenceResolver<T extends string> {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[def.serializationStrategy ?? 'fullValue']
     this.sourceTransformation = ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'exact']
     this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
+    this.missingRefStrategy = def.missingRefStrategy ? MissingReferenceStrategyLookup[def.missingRefStrategy] : undefined
   }
 
   static create<S extends string>(def: FieldReferenceDefinition<S>): FieldReferenceResolver<S> {

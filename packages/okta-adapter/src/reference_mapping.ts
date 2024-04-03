@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
@@ -40,20 +39,6 @@ import {
 import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
-
-export const OktaMissingReferenceStrategyLookup: Record<
-  referenceUtils.MissingReferenceStrategyName,
-  referenceUtils.MissingReferenceStrategy
-> = {
-  typeAndValue: {
-    create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value) {
-        return undefined
-      }
-      return referenceUtils.createMissingInstance(adapter, typeName, value)
-    },
-  },
-}
 
 type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId'
 const OktaReferenceSerializationStrategyLookup: Record<
@@ -103,7 +88,6 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
 
 type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<ReferenceContextStrategyName> & {
   oktaSerializationStrategy?: OktaReferenceSerializationStrategyName
-  oktaMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<ReferenceContextStrategyName> {
@@ -113,9 +97,6 @@ export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceRes
       OktaReferenceSerializationStrategyLookup[
         def.oktaSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
       ]
-    this.missingRefStrategy = def.oktaMissingRefStrategy
-      ? OktaMissingReferenceStrategyLookup[def.oktaMissingRefStrategy]
-      : undefined
   }
 }
 
@@ -143,19 +124,19 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'groupIds', parentTypes: ['GroupRuleGroupAssignment'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'include', parentTypes: ['UserTypeCondition'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
     src: { field: 'exclude', parentTypes: ['UserTypeCondition'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
@@ -181,55 +162,55 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['IdpPolicyRuleActionProvider'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: IDENTITY_PROVIDER_TYPE_NAME },
   },
   {
     src: { field: 'profileEnrollment', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: PROFILE_ENROLLMENT_POLICY_TYPE_NAME },
   },
   {
     src: { field: 'accessPolicy', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: ACCESS_POLICY_TYPE_NAME },
   },
   {
     src: { field: 'targetGroupIds', parentTypes: ['ProfileEnrollmentPolicyRuleAction'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'inlineHookId', parentTypes: ['PreRegistrationInlineHook'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: INLINE_HOOK_TYPE_NAME },
   },
   {
     src: { field: 'key', parentTypes: ['MultifactorEnrollmentPolicyAuthenticatorSettings'] },
     oktaSerializationStrategy: 'key',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: AUTHENTICATOR_TYPE_NAME },
   },
   {
     src: { field: 'behaviors', parentTypes: ['RiskPolicyRuleCondition'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: BEHAVIOR_RULE_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['AppAndInstanceConditionEvaluatorAppOrInstance'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   {
     src: { field: 'enabledGroup', parentTypes: ['BrowserPlugin'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
@@ -240,55 +221,55 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['ProfileMappingSource'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { typeContext: 'profileMappingName' },
   },
   {
     src: { field: 'appInstanceId', parentTypes: ['AuthenticatorSettings'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['Group__source'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   {
     src: { field: 'include', parentTypes: ['DeviceCondition'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: 'DeviceAssurance' },
   },
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: 'EmailDomain' },
   },
   {
     src: { field: 'appInstanceId', parentTypes: ['DefaultApp'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   {
     src: { field: 'brandId', parentTypes: ['Domain'] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: BRAND_TYPE_NAME },
   },
   {
     src: { field: 'userGroupId', parentTypes: [GROUP_PUSH_TYPE_NAME] },
     serializationStrategy: 'id',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'groupPushRule', parentTypes: [GROUP_PUSH_TYPE_NAME] },
     oktaSerializationStrategy: 'mappingRuleId',
-    oktaMissingRefStrategy: 'typeAndValue',
+    missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
   },
 ]

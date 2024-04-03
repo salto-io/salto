@@ -76,8 +76,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    // TODO replace with endpoint used in validateCredentials
-    mockAxiosAdapter.onGet('/api/v2/account').reply(200)
+    mockAxiosAdapter.onGet('/wiki/rest/api/space').reply(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -125,6 +124,7 @@ describe('adapter', () => {
           'confluence.page__restriction',
           'confluence.page__restriction__restrictions',
           'confluence.page__version',
+          'confluence.space',
         ])
         expect(
           elements
@@ -146,90 +146,89 @@ describe('adapter', () => {
           },
         })
       })
+    })
+  })
+  describe('deploy', () => {
+    let operations: AdapterOperations
+    let spaceType: ObjectType
+    let pageType: ObjectType
+    let space1: InstanceElement
+    let page1: InstanceElement
+    let page2: InstanceElement
 
-      describe('deploy', () => {
-        let operations: AdapterOperations
-        let spaceType: ObjectType
-        let pageType: ObjectType
-        let space1: InstanceElement
-        let page1: InstanceElement
-        let page2: InstanceElement
-
-        beforeEach(() => {
-          spaceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'space') })
-          pageType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
-          // globalTemplateType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'global_template') })
-          space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
-          page1 = new InstanceElement('My_page@s', pageType, {
-            title: 'My page',
-            id: 22,
-            spaceId: new ReferenceExpression(space1.elemID),
-          })
-          page2 = new InstanceElement('page2', pageType, {
-            title: 'page2',
-            id: 33,
-            spaceId: new ReferenceExpression(space1.elemID),
-          })
-
-          operations = adapter.operations({
-            credentials: new InstanceElement('config', credentialsType, {
-              email: 'user123',
-              token: 'pwd456',
-              subdomain: 'subdomain',
-            }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-            elementsSource: buildElementsSourceFromElements([spaceType, pageType, space1, page1, page2]),
-          })
-        })
-
-        it('should return the applied changes', async () => {
-          const results: DeployResult[] = []
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'page',
-                changes: [toChange({ after: new InstanceElement('new_page@s', pageType, { title: 'new page' }) })],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-          const updatedSpace1 = space1.clone()
-          updatedSpace1.value.name = 'new name'
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'space',
-                changes: [
-                  toChange({
-                    before: space1,
-                    after: updatedSpace1,
-                  }),
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [
-                  toChange({
-                    before: page2,
-                  }),
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-
-          expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
-          expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
-          const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-          expect(getChangeData(addRes).value.id).toEqual('12345')
-        })
+    beforeEach(() => {
+      spaceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'space') })
+      pageType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
+      // globalTemplateType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'global_template') })
+      space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
+      page1 = new InstanceElement('My_page@s', pageType, {
+        title: 'My page',
+        id: 22,
+        spaceId: new ReferenceExpression(space1.elemID),
       })
+      page2 = new InstanceElement('page2', pageType, {
+        title: 'page2',
+        id: 33,
+        spaceId: new ReferenceExpression(space1.elemID),
+      })
+
+      operations = adapter.operations({
+        credentials: new InstanceElement('config', credentialsType, {
+          email: 'user123',
+          token: 'pwd456',
+          subdomain: 'subdomain',
+        }),
+        config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+        elementsSource: buildElementsSourceFromElements([spaceType, pageType, space1, page1, page2]),
+      })
+    })
+
+    it('should return the applied changes', async () => {
+      const results: DeployResult[] = []
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'page',
+            changes: [toChange({ after: new InstanceElement('new_page@s', pageType, { title: 'new page' }) })],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+      const updatedSpace1 = space1.clone()
+      updatedSpace1.value.name = 'new name'
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'space',
+            changes: [
+              toChange({
+                before: space1,
+                after: updatedSpace1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [
+              toChange({
+                before: page2,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+
+      expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
+      expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
+      const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
+      expect(getChangeData(addRes).value.id).toEqual('12345')
     })
   })
 })

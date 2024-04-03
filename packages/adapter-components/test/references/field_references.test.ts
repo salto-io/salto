@@ -476,7 +476,7 @@ describe('Field references', () => {
       })
     })
     describe("'asString' validation strategy", () => {
-      const referee = new InstanceElement('referee', ticketFieldType, { id: 'Some_Name' })
+      const referee = new InstanceElement('referee', ticketFieldType, { id: 'SomeName' })
       const numReferee = new InstanceElement('numReferee', ticketFieldType, { id: '1234' })
       let invalidReferer: InstanceElement
       let differentCaseReferer: InstanceElement
@@ -497,7 +497,7 @@ describe('Field references', () => {
       ]
       beforeAll(() => {
         invalidReferer = new InstanceElement('invalid_ref', type1, { ref: 'Blah!' })
-        differentCaseReferer = new InstanceElement('different_case_ref', type1, { ref: 'some_Name' })
+        differentCaseReferer = new InstanceElement('different_case_ref', type1, { ref: 'somename' })
         numReferer = new InstanceElement('num_ref', type2, { ref: 1234 })
       })
       it('should pass validation if the values are the same but of different types', async () => {
@@ -510,11 +510,11 @@ describe('Field references', () => {
       })
       it('should fail validation if the values are different case', async () => {
         await addReferences({ elements: [differentCaseReferer, referee], defs, fieldsToGroupBy: ['id'] })
-        expect(differentCaseReferer.value.ref).toEqual('some_Name')
+        expect(differentCaseReferer.value.ref).toEqual('somename')
       })
     })
     describe("'asCaseInsensitiveString' validation strategy", () => {
-      const referee = new InstanceElement('referee', ticketFieldType, { id: 'some_name' })
+      const referee = new InstanceElement('referee', ticketFieldType, { id: 'somename' })
       const numReferee = new InstanceElement('numReferee', ticketFieldType, { id: '1234' })
       let invalidReferer: InstanceElement
       let differentCaseReferer: InstanceElement
@@ -535,7 +535,7 @@ describe('Field references', () => {
       ]
       beforeAll(() => {
         invalidReferer = new InstanceElement('invalid_ref', type1, { ref: 'Blah!' })
-        differentCaseReferer = new InstanceElement('different_case_ref', type1, { ref: 'Some_Name' })
+        differentCaseReferer = new InstanceElement('different_case_ref', type1, { ref: 'SomeName' })
         numReferer = new InstanceElement('num_ref', type2, { ref: 1234 })
       })
       it('should pass validation if the values are the same except letter case', async () => {

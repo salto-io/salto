@@ -239,7 +239,7 @@ describe('addAliasToElements', () => {
   })
   it('should add alias to object type', () => {
     const customRecordType = new ObjectType({
-      elemID: new ElemID('netsuite', 'custom_record_123'),
+      elemID: new ElemID('netsuite', 'customrecord_123'),
       annotations: {
         name: 'Custom Record 123',
       },

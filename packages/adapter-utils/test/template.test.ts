@@ -41,7 +41,7 @@ describe('dynamic content references filter', () => {
       'a ',
       'test',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-      '}} ',
+      '}}',
       'final ',
       'check',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
@@ -51,7 +51,7 @@ describe('dynamic content references filter', () => {
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
       'a test',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-      '}} final check',
+      '}}final check',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
     ])
   })

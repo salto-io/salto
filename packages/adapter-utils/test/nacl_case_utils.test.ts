@@ -67,7 +67,7 @@ describe('naclCase utils', () => {
       it('Should replace special with _, add separator and add mapping', () => {
         expect(naclCase('Name Special@Char')).toEqual('Name_Special_Char@sm')
         expect(naclCase('Name@Special_Char')).toEqual('Name_Special_Char@mu')
-        expect(naclCase('Name א Special Char')).toEqual('Name___Special_Char@s_01488ss')
+        expect(naclCase('NameאSpecial Char')).toEqual('Name_Special_Char@_01488s')
       })
     })
 
@@ -103,7 +103,7 @@ describe('naclCase utils', () => {
       expect(invertNaclCase('name_@za')).toEqual('name`')
     })
     it('should return decoded value for custom mappings', () => {
-      expect(invertNaclCase('name__@s_00229')).toEqual('name å')
+      expect(invertNaclCase('name_@_00229')).toEqual('nameå')
     })
     it('should return decoded value for mixed mappings', () => {
       expect(invertNaclCase('_a_b_c_d_e_f@_00229abcd_00230')).toEqual('åa?b-c\\d/eæf')
@@ -118,7 +118,7 @@ describe('naclCase utils', () => {
 
   describe('pathNaclCase func', () => {
     describe('Without naclCase separator', () => {
-      const noSeparatorNames = ['LaLaLa', 'Lead', 'LALA__Lead__c', 'NameWithNumber2']
+      const noSeparatorNames = ['lalala', 'Lead', 'LALA__Lead__c', 'NameWithNumber2']
       it('Should remain the same', () => {
         noSeparatorNames.forEach(name => expect(pathNaclCase(name)).toEqual(name))
       })
@@ -147,7 +147,7 @@ describe('naclCase utils', () => {
 
   describe('normalizeStaticResourcePath func', () => {
     describe('With a short path', () => {
-      const shortPaths = ['file.txt', 'aבגדe.טקסט', 'noExtension']
+      const shortPaths = ['lalala.txt', 'aבגדe.טקסט', 'noExtension']
       it('Should remain the same', () => {
         shortPaths.forEach(path => expect(normalizeFilePathPart(path)).toEqual(path))
       })

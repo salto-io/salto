@@ -49,7 +49,6 @@ const orderPasswordPolicyRuleMethods = (instance: InstanceElement): void => {
   const methodsPath = instance.elemID.createNestedID(
     'actions',
     'selfServicePasswordReset',
-    'additionalProperties',
     'requirement',
     'primary',
     'methods',

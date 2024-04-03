@@ -74,20 +74,21 @@ describe('unorderedListsFilter', () => {
         actions: {
           selfServicePasswordReset: {
             access: 'ALLOW',
-            additionalProperties: {
-              requirement: {
-                primary: {
-                  methods: ['push', 'email', 'voice', 'sms'],
-                },
+            requirement: {
+              primary: {
+                methods: ['push', 'email', 'voice', 'sms'],
               },
             },
           },
         },
       })
       await filter.onFetch([policyRuleType, policyRuleInstance])
-      expect(
-        policyRuleInstance.value.actions.selfServicePasswordReset.additionalProperties.requirement.primary.methods,
-      ).toEqual(['email', 'push', 'sms', 'voice'])
+      expect(policyRuleInstance.value.actions.selfServicePasswordReset.requirement.primary.methods).toEqual([
+        'email',
+        'push',
+        'sms',
+        'voice',
+      ])
     })
 
     it('should do nothing if there are no methods defined', async () => {

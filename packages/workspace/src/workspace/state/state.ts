@@ -44,7 +44,6 @@ export interface State extends ElementsSource {
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
-  getStateSaltoVersion(): Promise<string | undefined>
   updateStateFromChanges(args: UpdateStateElementsArgs): Promise<void>
   updateConfig(args: UpdateConfigArgs): Promise<void>
 }

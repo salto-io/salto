@@ -20,8 +20,6 @@ import { mkdirp, createGZipWriteStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } from '@salto-io/workspace'
 import { hash, collections, promises, serialize, types } from '@salto-io/lowerdash'
-import semver from 'semver'
-
 import {
   ContentAndHash,
   createFileStateContentProvider,
@@ -30,7 +28,6 @@ import {
   NamedStream,
   StateContentProvider,
 } from './content_providers'
-import { version } from '../../generated/version.json'
 import { getLocalStoragePath } from '../../app_config'
 import { CORE_FLAGS, getCoreFlagBool } from '../../core/flags'
 
@@ -46,19 +43,19 @@ type ParsedState = {
   elements: Element[]
   accounts: string[]
   pathIndices: PathEntry[]
-  versions: string[]
 }
 
 type DeprecatedParsedState = {
   updateDates: Record<string, string>[]
+  versions: string[]
 }
 
 const parsedStateKeys: types.TypeKeysEnum<ParsedState & DeprecatedParsedState> = {
   elements: 'elements',
   accounts: 'accounts',
   pathIndices: 'pathIndices',
-  versions: 'versions',
   updateDates: 'updateDates',
+  versions: 'versions',
 }
 
 const elementsStreamSerializer = serialize.createStreamSerializer({
@@ -76,13 +73,9 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
   const res: Omit<ParsedState, 'elements'> = {
     accounts: [],
     pathIndices: [],
-    versions: [],
   }
 
   const updateWithParsedStateData = (data: Partial<ParsedState & DeprecatedParsedState>): void => {
-    if (data.versions !== undefined) {
-      res.versions = res.versions.concat(data.versions)
-    }
     if (data.accounts !== undefined) {
       res.accounts = res.accounts.concat(data.accounts)
     }
@@ -95,6 +88,9 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
     if (data.updateDates !== undefined) {
       // use the deprecated update dates to get the accounts
       res.accounts = res.accounts.concat(data.updateDates.flatMap(Object.keys))
+    }
+    if (data.versions !== undefined) {
+      log.trace('Old format state file contains the OSS version information')
     }
   }
 
@@ -207,10 +203,6 @@ export const localState = (
     if (stateAccounts !== undefined) {
       stateAccounts.push(...accounts)
     }
-    const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
-    if (currentVersion) {
-      await stateData.saltoMetadata.set('version', currentVersion)
-    }
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
@@ -271,18 +263,12 @@ export const localState = (
       }
       yield* yieldWithEOL(
         getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
-          ? [
-              accountToElementStreams[account],
-              awu([safeJsonStringify(account)]),
-              accountToPathIndex[account] || '[]',
-              awu([safeJsonStringify(version)]),
-            ]
+          ? [accountToElementStreams[account], awu([safeJsonStringify(account)]), accountToPathIndex[account] || '[]']
           : [
               awu(['[]']), // deprecated: serialized elements
               awu(['{}']), // deprecated: update dates
               awu(['[]']), // deprecated: path indices
               awu(['""']), // deprecated: version
-              awu([safeJsonStringify({ [parsedStateKeys.versions]: [version] })]),
               awu([safeJsonStringify({ [parsedStateKeys.accounts]: [account] })]),
               accountToElementStreams[account],
               accountToPathIndex[account] || safeJsonStringify({ [parsedStateKeys.pathIndices]: [] }),
@@ -362,7 +348,6 @@ export const localState = (
         Object.fromEntries(contents.map(({ account, contentHash }) => [account, contentHash])),
       )
       await currentContentProvider.writeContents(currentFilePrefix, contents)
-      await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
       dirty = false

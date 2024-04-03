@@ -171,10 +171,6 @@ describe('state', () => {
       await expect(state.rename('bla')).resolves.not.toThrow()
     })
 
-    it('should return the salto version that was provided in load data', async () => {
-      expect(await state.getStateSaltoVersion()).toEqual('0.0.1')
-    })
-
     describe('updateStateFromChanges', () => {
       describe('elements state', () => {
         const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove') })

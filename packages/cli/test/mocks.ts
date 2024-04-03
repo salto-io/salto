@@ -57,7 +57,6 @@ import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
 import { Spinner, SpinnerCreator } from '../src/types'
 import { getCliTelemetry } from '../src/telemetry'
-import { version as currentVersion } from '../src/generated/version.json'
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
@@ -303,10 +302,12 @@ export const mockWorkspace = ({
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     accounts: [],
-    saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: currentVersion }] as {
-      key: wsState.StateMetadataKey
-      value: string
-    }[]),
+    saltoMetadata: new InMemoryRemoteMap(
+      [] as {
+        key: wsState.StateMetadataKey
+        value: string
+      }[],
+    ),
     staticFilesSource: mockStateStaticFilesSource(),
   })
   const stateByEnv = Object.fromEntries(envs.map(env => [env, wsState.buildInMemState(mockStateData)]))

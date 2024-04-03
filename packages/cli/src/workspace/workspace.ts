@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
-import semver from 'semver'
 import { EOL } from 'os'
 import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
@@ -21,14 +20,9 @@ import {
   formatWorkspaceAbort,
 } from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
-import {
-  shouldContinueInCaseOfWarnings,
-  shouldAbortWorkspaceInCaseOfValidationError,
-  shouldCancelCommand,
-} from '../callbacks'
+import { shouldContinueInCaseOfWarnings, shouldAbortWorkspaceInCaseOfValidationError } from '../callbacks'
 import Prompts from '../prompts'
 import { groupRelatedErrors } from './errors'
-import { version as currentVersion } from '../generated/version.json'
 
 const { isUnresolvedRefError } = wsValidator
 
@@ -127,26 +121,6 @@ const logWorkspaceUpdates = async (ws: Workspace, changes: readonly FetchChange[
       .split('\n')
       .forEach(s => log.debug(s))
   }
-}
-
-export const shouldRecommendFetch = async (
-  stateSaltoVersion: string | undefined,
-  cliOutput: CliOutput,
-): Promise<boolean> => {
-  if (!stateSaltoVersion) {
-    return shouldCancelCommand(Prompts.UNKNOWN_STATE_SALTO_VERSION, cliOutput)
-  }
-  const maxStateSupportedVersion = semver.inc(stateSaltoVersion, 'patch')
-  if (semver.gt(stateSaltoVersion, currentVersion)) {
-    return shouldCancelCommand(Prompts.NEW_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
-  }
-  if (!maxStateSupportedVersion) {
-    throw new Error('invalid state version string')
-  }
-  if (semver.gt(currentVersion, maxStateSupportedVersion)) {
-    return shouldCancelCommand(Prompts.OLD_STATE_SALTO_VERSION(stateSaltoVersion), cliOutput)
-  }
-  return false
 }
 
 export const isValidWorkspaceForCommand = async ({

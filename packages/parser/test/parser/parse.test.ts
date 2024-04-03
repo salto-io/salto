@@ -230,7 +230,7 @@ multiline
 template {{$\{te@mp.late.instance.multiline_stuff@us}}}
 value
 '''
-        complex = '''
+        escapedTemplateMarker = '''
 multiline
 \${{$\{te@mp.late.instance.multiline_stuff@us}}} and {{$\{te@mp.late.instance.multiline_stuff@us}}}\${{$\{te@mp.late.instance.multiline_stuff@us}}}{{$\{te@mp.late.instance.multiline_stuff@us}}} hello
 '''
@@ -737,9 +737,9 @@ multiline
         ])
       })
 
-      it('should parse references to complex multiline template as TemplateExpression', () => {
-        expect(multilineRefObj.annotations.complex).toBeInstanceOf(TemplateExpression)
-        expect(multilineRefObj.annotations.complex.parts).toEqual([
+      it('should parse references in multiline that exists on the same line as an escaped template marker as TemplateExpression', () => {
+        expect(multilineRefObj.annotations.escapedTemplateMarker).toBeInstanceOf(TemplateExpression)
+        expect(multilineRefObj.annotations.escapedTemplateMarker.parts).toEqual([
           'multiline\n${{',
           expect.objectContaining({
             elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),

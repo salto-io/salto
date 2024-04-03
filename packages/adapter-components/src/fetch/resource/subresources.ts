@@ -37,7 +37,7 @@ const extractRecurseIntoContext = (
     const transformedItem = transformer(item)
     if (Array.isArray(transformedItem)) {
       return transformedItem.map(({ value }) => value)
-    } 
+    }
     return transformedItem?.value
   })
   return context

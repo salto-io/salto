@@ -36,11 +36,13 @@ describe('subresources', () => {
           recurseInto: {
             mySubType: {
               typeName: 'mySubType',
-              context: { args: { 
-                id: { root: 'id' },
-                domain: { adjust: () => ({ value: ['custom'] }) },
-                context: { root: 'nested', pick: ['nestedId'], single: true },
-              } },
+              context: {
+                args: {
+                  id: { root: 'id' },
+                  domain: { adjust: () => ({ value: ['custom'] }) },
+                  context: { root: 'nested', pick: ['nestedId'], single: true },
+                },
+              },
             },
           },
         },

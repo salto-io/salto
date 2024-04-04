@@ -130,6 +130,8 @@ const getInstanceNameDependencies = (
 }
 
 const isStandalone = (instance: InstanceElement, configByType: Record<string, TransformationConfig>): boolean => {
+  const singular = (name: string): string => (name.endsWith('s') ? name.slice(0, -1) : name)
+
   const parentElemID = getFirstParentElemId(instance)
   if (parentElemID === undefined) {
     return false
@@ -139,8 +141,10 @@ const isStandalone = (instance: InstanceElement, configByType: Record<string, Tr
     (nestStandaloneInstances &&
       standaloneFields?.some(
         field =>
-          toNestedTypeName(parentElemID.name, field.fieldName) === instance.elemID.typeName ||
-          field.fieldName === instance.elemID.typeName,
+          toNestedTypeName(parentElemID.typeName, field.fieldName) === instance.elemID.typeName ||
+          field.fieldName === instance.elemID.typeName ||
+          // For the case where the field name is plural and the instance name is singular, e.g. "custom_field_objects" and "custom_field_object"
+          singular(field.fieldName) === instance.elemID.typeName,
       )) ??
     false
   )
@@ -150,7 +154,7 @@ const nestedPath = (
   instance: InstanceElement,
   configByType: Record<string, TransformationConfig>,
 ): string[] | undefined => {
-  if (!isStandalone(instance, configByType || !hasValidParent(instance))) {
+  if (!isStandalone(instance, configByType) || !hasValidParent(instance)) {
     return undefined
   }
   const parent = getParent(instance)

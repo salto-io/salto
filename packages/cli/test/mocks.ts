@@ -475,11 +475,13 @@ export const mockOauthCredentialsType = (
       },
     }),
     createOAuthRequest: jest.fn().mockReturnValue(oauthParameters),
-    createFromOauthResponse: jest.fn().mockImplementation((oldConfig: Values, response: OauthAccessTokenResponse) => ({
-      sandbox: oldConfig.sandbox,
-      accessToken: response.fields.accessToken,
-      instanceUrl: response.fields.instanceUrl,
-    })),
+    createFromOauthResponse: jest
+      .fn()
+      .mockImplementation(async (oldConfig: Values, response: OauthAccessTokenResponse) => ({
+        sandbox: oldConfig.sandbox,
+        accessToken: response.fields.accessToken,
+        instanceUrl: response.fields.instanceUrl,
+      })),
   }
   return baseType
 }

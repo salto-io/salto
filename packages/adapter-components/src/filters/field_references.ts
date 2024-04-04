@@ -37,7 +37,11 @@ export const fieldReferencesFilterCreator =
         ResolveReferenceContextStrategiesType<Options>,
         ResolveReferenceSerializationStrategyLookup<Options>
       >,
-    ) => FieldReferenceResolver<ResolveReferenceContextStrategiesType<Options>>,
+    ) => FieldReferenceResolver<
+      ResolveReferenceContextStrategiesType<Options>,
+      ResolveReferenceSerializationStrategyLookup<Options>,
+      ResolveReferenceIndexNames<Options>
+    >,
   ): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions }) => ({
     name: 'fieldReferencesFilter',

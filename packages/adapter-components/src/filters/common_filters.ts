@@ -24,6 +24,7 @@ import { queryFilterCreator } from './query'
 import {
   ResolveReferenceSerializationStrategyLookup,
   ResolveReferenceContextStrategiesType,
+  ResolveReferenceIndexNames,
 } from '../definitions/system/api'
 
 /**
@@ -47,7 +48,11 @@ export const createCommonFilters = <
       ResolveReferenceContextStrategiesType<Options>,
       ResolveReferenceSerializationStrategyLookup<Options>
     >,
-  ) => FieldReferenceResolver<ResolveReferenceContextStrategiesType<Options>>
+  ) => FieldReferenceResolver<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>,
+    ResolveReferenceIndexNames<Options>
+  >
 }): Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>> => ({
   // TODO SALTO-5421 finish upgrading filters to new def structure and add remaining shared filters
   hideTypes: hideTypesFilterCreator(),

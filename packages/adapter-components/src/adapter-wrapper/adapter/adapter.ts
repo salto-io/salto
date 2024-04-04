@@ -64,13 +64,7 @@ import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '..
 import { createChangeElementResolver } from '../../resolve_utils'
 import { getChangeGroupIdsFuncWithDefinitions } from '../../deployment/grouping'
 import { combineDependencyChangers } from '../../deployment/dependency'
-import {
-  FieldReferenceResolver,
-  FieldReferenceDefinition,
-  ReferenceSerializationStrategy,
-  ReferenceSerializationStrategyLookup,
-  ReferenceSerializationStrategyName,
-} from '../../references/reference_mapping'
+import { FieldReferenceResolver, FieldReferenceDefinition } from '../../references/reference_mapping'
 import {
   ResolveReferenceContextStrategiesType,
   ResolveReferenceIndexNames,
@@ -120,6 +114,7 @@ export class AdapterImpl<
     getElemIdFunc,
     additionalChangeValidators,
     dependencyChangers,
+    referenceResolver,
   }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
@@ -154,25 +149,7 @@ export class AdapterImpl<
     // TODO combine with infra changers after SALTO-5571
     this.dependencyChangers = dependencyChangers ?? []
 
-    if (this.definitions.references?.serializationStrategyLookup !== undefined) {
-      const serializationStrategyLookup: Record<
-        ReferenceSerializationStrategyName | ResolveReferenceSerializationStrategyLookup<Options>,
-        ReferenceSerializationStrategy<ResolveReferenceIndexNames<Options>>
-      > = _.merge({}, ReferenceSerializationStrategyLookup, this.definitions.references?.serializationStrategyLookup)
-      this.referenceResolver = def =>
-        FieldReferenceResolver.create<
-          ResolveReferenceContextStrategiesType<Options>,
-          ResolveReferenceSerializationStrategyLookup<Options>,
-          ResolveReferenceIndexNames<Options>
-        >(def, serializationStrategyLookup)
-    } else {
-      this.referenceResolver = def =>
-        FieldReferenceResolver.create<
-          ResolveReferenceContextStrategiesType<Options>,
-          ResolveReferenceSerializationStrategyLookup<Options>,
-          ResolveReferenceIndexNames<Options>
-        >(def)
-    }
+    this.referenceResolver = referenceResolver
   }
 
   @logDuration('generating types from swagger')

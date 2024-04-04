@@ -158,6 +158,9 @@ describe('adapter', () => {
         expect(madeUp2Values?.parent_id?.elemID?.fullName).toEqual(
           'serviceplaceholder.made_up_type_a.instance.made_up_1@s',
         )
+        expect(madeUp2Values?.other_b?.elemID?.fullName).toEqual(
+          'serviceplaceholder.made_up_type_b.instance.made_up_1@s',
+        )
         const madeUp3Values = elements
           .filter(isInstanceElement)
           .find(e => e.elemID.getFullName() === 'serviceplaceholder.made_up_type_a.instance.made_up_3@s')?.value

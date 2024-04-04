@@ -35,6 +35,7 @@ import { defaultValidateCredentials } from '../credentials'
 import { adapterConfigFromConfig } from '../definitions/user/user_config'
 import { ClientDefaults } from '../client/http_client'
 import { AdapterImpl } from './adapter/adapter'
+import { getResolverCreator } from '../references/resolver_creator'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -99,6 +100,8 @@ export const createAdapter = <
         }),
       )
       const definitions = definitionsCreator({ clients, userConfig: config })
+      const resolverCreator = getResolverCreator(definitions)
+
       const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
           clients,
@@ -106,6 +109,7 @@ export const createAdapter = <
           getElemIdFunc: context.getElemIdFunc,
           definitions,
           elementSource: context.elementsSource,
+          referenceResolver: resolverCreator,
           filterCreators:
             customizeFilterCreators !== undefined
               ? customizeFilterCreators(config)
@@ -113,6 +117,7 @@ export const createAdapter = <
                   createCommonFilters<Options, Co>({
                     config,
                     definitions,
+                    fieldReferenceResolverCreator: resolverCreator,
                   }),
                 ),
           adapterName,

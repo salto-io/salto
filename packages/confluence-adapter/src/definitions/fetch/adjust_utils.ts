@@ -17,11 +17,15 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 
-export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
-  const { value } = item
+const assertValue = (value: unknown): Record<string, unknown> => {
   if (!lowerdashValues.isPlainRecord(value)) {
     throw new Error('Can not deploy when the value is not an object')
   }
+  return value
+}
+
+export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
+  const value = assertValue(item.value)
   const labels = _.get(value, 'labels')
   if (_.isEmpty(labels) || !Array.isArray(labels)) {
     return { ...item, value }

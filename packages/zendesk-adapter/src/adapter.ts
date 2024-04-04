@@ -62,6 +62,7 @@ import {
   isGuideThemesEnabled,
   ZendeskConfig,
   migrateOmitInactiveConfig,
+  ZendeskFetchConfig,
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -118,7 +119,7 @@ import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
-import commonFilters from './filters/common'
+import commonFilters, { ADDITIONAL_PARENT_FIELDS } from './filters/common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import brandLogoFilter from './filters/brand_logo'
@@ -613,12 +614,15 @@ export default class ZendeskAdapter implements AdapterOperations {
           }),
         ]),
       )
-
+      
+      // zendeskGuideElements exclude guide elements by itself, so we can't let fetchQuery to exclude them
+      const guideFetchConfig = _.cloneDeep<ZendeskFetchConfig>(this.userConfig[FETCH_CONFIG])
+      guideFetchConfig.exclude = guideFetchConfig.exclude.filter(entry => !Object.keys(ADDITIONAL_PARENT_FIELDS).includes(entry.type))
       const zendeskGuideElements = await getGuideElements({
         brandsList,
         brandToPaginator,
         apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
-        fetchQuery: this.fetchQuery,
+        fetchQuery: elementUtils.query.createElementQuery(guideFetchConfig, fetchCriteria),
         getElemIdFunc: this.getElemIdFunc,
       })
 

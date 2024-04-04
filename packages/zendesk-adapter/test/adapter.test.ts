@@ -1999,6 +1999,117 @@ describe('adapter', () => {
         expect(fetchRes.elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'article')).not.toBeDefined()
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
+
+      describe('exclude while fetching guide', () => {
+        const getAdapterExcluded = (exclude: Array<Record<string, unknown>>): AdapterOperations => (adapter.operations({
+          credentials: new InstanceElement('config', usernamePasswordCredentialsType,
+            { 
+              username: 'user123', 
+              password: 'token456', 
+              subdomain: 'myBrand' 
+            },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                include: [{
+                  type: '.*',
+                }],
+                exclude,
+                guide: {
+                  brands: ['.*'],
+                },
+              },
+              [API_DEFINITIONS_CONFIG]: {
+                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+                typeDefaults: {
+                  transformation: {
+                    omitInactive: false,
+                  },
+                },
+              },
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }))
+        it('should exclude all articles, section and categories when category excluded', async () => {
+          mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+          const { elements } = await getAdapterExcluded([{ type: 'category' }]).fetch({ progressReporter: { reportProgress: () => null } })
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.category.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([])
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.section.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([])
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.article.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([])
+        })
+        it('should exclude all sections and aritcles when section excluded', async () => {
+          mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+          const { elements } = await getAdapterExcluded([{ type: 'section' }]).fetch({ progressReporter: { reportProgress: () => null } })
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.category.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([
+              'zendesk.category.instance.Development_myBrand',
+              'zendesk.category.instance.General_myBrand',
+              'zendesk.category.instance.greatCategory_brandWithGuide',
+            ])
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.section.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([])
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.article.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([])
+        })
+        it('should exclude all sons when specific category excluded', async () => {
+          mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+          const { elements } = await getAdapterExcluded([{ type: 'category', criteria: { name: 'Dev.*' } }]).fetch({ progressReporter: { reportProgress: () => null } })
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.category.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([
+              // 'zendesk.category.instance.Development_myBrand',
+              'zendesk.category.instance.General_myBrand',
+              'zendesk.category.instance.greatCategory_brandWithGuide',
+            ])
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.section.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([
+              // 'zendesk.section.instance.Apex_Development_myBrand',
+              'zendesk.section.instance.Billing_and_Subscriptions_General_myBrand@ssuu',
+              'zendesk.section.instance.Internal_KB_General_myBrand@suu',
+              'zendesk.section.instance.FAQ_General_myBrand',
+              'zendesk.section.instance.Announcements_General_myBrand',
+              'zendesk.section.instance.greatSection_greatCategory_brandWithGuide',
+            ])
+          expect(elements
+            .filter(isInstanceElement)
+            .filter(e => e.elemID.getFullName().startsWith('zendesk.article.'))
+            .map(e => e.elemID.getFullName()))
+            .toEqual([
+              // 'zendesk.article.instance.How_can_agents_leverage_knowledge_to_help_customers__Apex_Development_myBrand',
+              'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+            ])
+        })
+      })
     })
 
     describe('type overrides', () => {

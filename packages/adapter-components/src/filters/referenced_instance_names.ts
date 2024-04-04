@@ -265,8 +265,10 @@ const getPathToNestUnder = <TOptions extends APIDefinitionsOptions = {}>(
   if (parent === undefined) {
     return undefined
   }
-  return fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations?.[instance.elemID.typeName]
-    ?.standalone?.nestPathUnderParent
+  const shouldNestUnderParent = Object.values(
+    fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations ?? {},
+  ).find(def => def.standalone?.typeName === instance.elemID.typeName)?.standalone?.nestPathUnderParent
+  return shouldNestUnderParent
     ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), pathNaclCase(instance.elemID.typeName)]
     : undefined
 }

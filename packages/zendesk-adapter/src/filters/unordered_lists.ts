@@ -25,6 +25,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
+  ARTICLE_TYPE_NAME,
   GROUP_TYPE_NAME,
   MACRO_TYPE_NAME,
   TICKET_FIELD_CUSTOM_FIELD_OPTION,
@@ -226,6 +227,19 @@ const orderViewCustomFields = (instances: InstanceElement[]): void => {
     })
 }
 
+/*
+ * label names are unordered in an article, sort them alphabetically to keep them consistent
+ */
+const orderArticleLabelNames = (instances: InstanceElement[]): void => {
+  instances
+    .filter(e => e.refType.elemID.name === ARTICLE_TYPE_NAME)
+    .forEach(article => {
+      if (Array.isArray(article.value.label_names)) {
+        article.value.label_names = _.sortBy(article.value.label_names)
+      }
+    })
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -238,6 +252,7 @@ const filterCreator: FilterCreator = () => ({
     orderMacroAndViewRestrictions(instances)
     orderFormCondition(instances)
     orderViewCustomFields(instances)
+    orderArticleLabelNames(instances)
   },
 })
 

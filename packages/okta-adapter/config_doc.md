@@ -90,9 +90,11 @@ okta {
 
 ## Fetch entry criteria
 
-| Name | Default when undefined | Description                                                                |
-| ---- | ---------------------- | -------------------------------------------------------------------------- |
-| name | .\*                    | A regex used to filter instances by matching the regex to their name value |
+| Name   | Default when undefined | Description                                                                                                         |
+| ------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| name   | .\*                    | A regex used to filter instances by matching the regex to their name value. Groups will be filtered by profile.name |
+| type   | .\*                    | A regex used to filter instances by matching the regex to their type value                                          |
+| status | .\*                    | A regex used to filter instances by matching the regex to their status value                                        |
 
 ### Deploy configuration options
 

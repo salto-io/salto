@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 import { elements as elementUtils } from '@salto-io/adapter-components'
+import { GROUP_TYPE_NAME } from './constants'
+
+const oktaNameCriterion: elementUtils.query.QueryCriterion = ({ instance, value }): boolean =>
+  instance.elemID.typeName === GROUP_TYPE_NAME
+    ? elementUtils.query.fieldCriterionCreator('profile.name')({ instance, value })
+    : elementUtils.query.nameCriterion({ instance, value })
 
 export default {
-  name: elementUtils.query.nameCriterion,
+  name: oktaNameCriterion,
+  type: elementUtils.query.fieldCriterionCreator('type'),
+  status: elementUtils.query.fieldCriterionCreator('status'),
 }

@@ -42,7 +42,7 @@ const createTestInstance = (type: string, field?: string): InstanceElement =>
     ],
   })
 
-describe('deflectionActionValidator', () => {
+describe('activeActionFeaturesValidator', () => {
   let deflectionTrigger: InstanceElement
   let deflectionAutomation: InstanceElement
   let deflectionMacro: InstanceElement

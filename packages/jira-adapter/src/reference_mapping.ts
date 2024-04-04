@@ -1324,6 +1324,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: OBJECT_SCHEMA_TYPE },
   },
   {
+    src: { field: 'requestType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: REQUEST_TYPE_NAME },
+  },
+  {
     src: { field: 'portalRequestTypeIds', parentTypes: ['FormPortal'] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',

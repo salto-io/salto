@@ -183,6 +183,13 @@ export const createAutomationTypes = (): {
       schemaId: { refType: BuiltinTypes.STRING },
       objectTypeLabel: { refType: BuiltinTypes.STRING },
       objectTypeId: { refType: BuiltinTypes.STRING },
+      requestType: { refType: BuiltinTypes.STRING },
+      serviceDesk: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+      },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })

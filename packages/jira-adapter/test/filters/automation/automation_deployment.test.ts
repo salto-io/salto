@@ -31,7 +31,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import { AUTOMATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
+import { AUTOMATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
@@ -43,7 +43,64 @@ describe('automationDeploymentFilter', () => {
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
-
+  const objectSchemaType = new ObjectType({
+    elemID: new ElemID(JIRA, OBJECT_SCHEMA_TYPE),
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
+      },
+      id: {
+        refType: BuiltinTypes.STRING,
+      },
+      workspaceId: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
+  const objectTypeType = new ObjectType({
+    elemID: new ElemID(JIRA, OBJECT_TYPE_TYPE),
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
+      },
+      id: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
+  const requestTypeType = new ObjectType({
+    elemID: new ElemID(JIRA, REQUEST_TYPE_NAME),
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
+      },
+      id: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
+  const objectSchemaInstance = new InstanceElement('instance', objectSchemaType, {
+    name: 'schemaName',
+    id: '25',
+    workspaceId: 'w11',
+  })
+  const objectTypeInstance = new InstanceElement(
+    'instance',
+    objectTypeType,
+    {
+      name: 'objectTypeName',
+      id: '35',
+    },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
+    },
+  )
+  const requestTypeInstance = new InstanceElement('instance', requestTypeType, {
+    name: 'requestTypeName',
+    id: '45',
+    serviceDeskId: '55',
+  })
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
@@ -768,48 +825,6 @@ describe('automationDeploymentFilter', () => {
       })
     })
     describe('preDeploy', () => {
-      const objectTypeType = new ObjectType({
-        elemID: new ElemID(JIRA, OBJECT_TYPE_TYPE),
-        fields: {
-          name: {
-            refType: BuiltinTypes.STRING,
-          },
-          id: {
-            refType: BuiltinTypes.STRING,
-          },
-        },
-      })
-      const objectSchemaType = new ObjectType({
-        elemID: new ElemID(JIRA, OBJECT_SCHEMA_TYPE),
-        fields: {
-          name: {
-            refType: BuiltinTypes.STRING,
-          },
-          id: {
-            refType: BuiltinTypes.STRING,
-          },
-          workspaceId: {
-            refType: BuiltinTypes.STRING,
-          },
-        },
-      })
-      const objectSchemaInstance = new InstanceElement('instance', objectSchemaType, {
-        name: 'schemaName',
-        id: '25',
-        workspaceId: 'w11',
-      })
-      const objectTypeInstance = new InstanceElement(
-        'instance',
-        objectTypeType,
-        {
-          name: 'objectTypeName',
-          id: '35',
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
-        },
-      )
       describe('assets components', () => {
         let automationInstance: InstanceElement
         beforeEach(() => {
@@ -887,50 +902,73 @@ describe('automationDeploymentFilter', () => {
           expect(automationInstance.value.components).toBeUndefined()
         })
       })
+      describe('requestType components', () => {
+        let automationInstance: InstanceElement
+        beforeEach(() => {
+          automationInstance = new InstanceElement('instance', type, {
+            name: 'someName',
+            state: 'ENABLED',
+            projects: [],
+            components: [
+              {
+                component: 'ACTION',
+                schemaVersion: 10,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                },
+              },
+            ],
+          })
+        })
+        it('should add missing fields to requestType components when enable JSM is true', async () => {
+          config.fetch.enableJSM = true
+          await filter.preDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+            serviceDesk: '55',
+          })
+        })
+        it('should modify only requestType components when enable JSM is true', async () => {
+          config.fetch.enableJSM = true
+          automationInstance.value.components.push({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              attribute: 'value',
+            },
+          })
+          await filter.preDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+            serviceDesk: '55',
+          })
+          expect(automationInstance.value.components[1].value).toEqual({
+            attribute: 'value',
+          })
+        })
+        it('should not add missing fields to requestType components when enable JSM is false', async () => {
+          config.fetch.enableJSM = false
+          await filter.preDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+          })
+        })
+        it('should do nothing if there are no components', async () => {
+          automationInstance.value.components.value = undefined
+          config.fetch.enableJSM = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components.value).toBeUndefined()
+        })
+        it('should do nothing if the component is not requestType component', async () => {
+          automationInstance.value.components = undefined
+          config.fetch.enableJSM = true
+          config.fetch.enableJsmExperimental = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components).toBeUndefined()
+        })
+      })
     })
     describe('onDeploy', () => {
-      const objectTypeType = new ObjectType({
-        elemID: new ElemID(JIRA, OBJECT_TYPE_TYPE),
-        fields: {
-          name: {
-            refType: BuiltinTypes.STRING,
-          },
-          id: {
-            refType: BuiltinTypes.STRING,
-          },
-        },
-      })
-      const objectSchemaType = new ObjectType({
-        elemID: new ElemID(JIRA, OBJECT_SCHEMA_TYPE),
-        fields: {
-          name: {
-            refType: BuiltinTypes.STRING,
-          },
-          id: {
-            refType: BuiltinTypes.STRING,
-          },
-          workspaceId: {
-            refType: BuiltinTypes.STRING,
-          },
-        },
-      })
-      const objectSchemaInstance = new InstanceElement('instance', objectSchemaType, {
-        name: 'schemaName',
-        id: '25',
-        workspaceId: 'w11',
-      })
-      const objectTypeInstance = new InstanceElement(
-        'instance',
-        objectTypeType,
-        {
-          name: 'objectTypeName',
-          id: '35',
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance)],
-        },
-      )
       describe('assets components', () => {
         let automationInstance: InstanceElement
         beforeEach(() => {
@@ -995,6 +1033,64 @@ describe('automationDeploymentFilter', () => {
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
             schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+          })
+          expect(automationInstance.value.components[1].value).toEqual({
+            attribute: 'value',
+          })
+        })
+      })
+      describe('requestType components', () => {
+        let automationInstance: InstanceElement
+        beforeEach(() => {
+          automationInstance = new InstanceElement('instance', type, {
+            name: 'someName',
+            state: 'ENABLED',
+            projects: [],
+            components: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                value: {
+                  requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+                  serviceDesk: '55',
+                },
+              },
+            ],
+          })
+        })
+        it('should remove extra fields for requestType components when enable JSM is true', async () => {
+          config.fetch.enableJSM = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+          })
+        })
+        it('should not remove missing fields to requestType components when enable JSM is false', async () => {
+          config.fetch.enableJSM = false
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
+            serviceDesk: '55',
+          })
+        })
+        it('should do nothing if there are no components', async () => {
+          automationInstance.value.components = undefined
+          config.fetch.enableJSM = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components).toBeUndefined()
+        })
+        it('should modify only requestType components when enable JSM is true', async () => {
+          config.fetch.enableJSM = true
+          automationInstance.value.components.push({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              attribute: 'value',
+            },
+          })
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            requestType: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
           })
           expect(automationInstance.value.components[1].value).toEqual({
             attribute: 'value',

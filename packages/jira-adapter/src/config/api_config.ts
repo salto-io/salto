@@ -1895,13 +1895,8 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['name', 'projectKey'],
       sourceTypeName: 'RequestType__values',
       dataField: 'values',
-      fieldsToOmit: [
-        { fieldName: '_expands' },
-        { fieldName: 'portalId' },
-        { fieldName: 'groupIds' },
-        { fieldName: 'serviceDeskId' },
-      ],
-      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }],
+      fieldsToOmit: [{ fieldName: '_expands' }, { fieldName: 'portalId' }, { fieldName: 'groupIds' }],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }, { fieldName: 'serviceDeskId' }],
       serviceIdField: 'id',
     },
     deployRequests: {

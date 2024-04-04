@@ -164,10 +164,10 @@ type JiraReferenceSerializationStrategyName =
   | 'groupId'
   | 'key'
   | 'dashboradGadgetsValues'
-type JiraRfererenceIndexName = 'originalName' | 'groupId' | 'key'
+type JiraReferenceIndexName = 'originalName' | 'groupId' | 'key'
 const JiraReferenceSerializationStrategyLookup: Record<
   JiraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
-  referenceUtils.ReferenceSerializationStrategy<JiraRfererenceIndexName>
+  referenceUtils.ReferenceSerializationStrategy<JiraReferenceIndexName>
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   groupStrategyById: {
@@ -205,7 +205,7 @@ type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
   ReferenceContextStrategyName,
   JiraReferenceSerializationStrategyName,
-  JiraRfererenceIndexName
+  JiraReferenceIndexName
 > {
   constructor(def: JiraFieldReferenceDefinition) {
     super(

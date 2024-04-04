@@ -158,7 +158,7 @@ export class AdapterImpl<
       const serializationStrategyLookup: Record<
         ReferenceSerializationStrategyName | ResolveReferenceSerializationStrategyLookup<Options>,
         ReferenceSerializationStrategy<ResolveReferenceIndexNames<Options>>
-      > = _.merge({}, this.definitions.references?.serializationStrategyLookup, ReferenceSerializationStrategyLookup)
+      > = _.merge({}, ReferenceSerializationStrategyLookup, this.definitions.references?.serializationStrategyLookup)
       this.referenceResolver = def =>
         FieldReferenceResolver.create<
           ResolveReferenceContextStrategiesType<Options>,

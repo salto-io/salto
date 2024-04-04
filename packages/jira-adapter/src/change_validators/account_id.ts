@@ -82,7 +82,7 @@ const replacingAccountIdChangeError = ({
   return {
     elemID: elemId,
     severity: 'Warning',
-    message: `${missingUsers.length} usernames will be overridden to ${user}`,
+    message: 'Usernames will be overridden',
     detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. If you continue, they will be set to ${user} according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
   }
 }

@@ -58,7 +58,7 @@ export const createAdapter = <
 }: {
   adapterName: string
   // helper for determining the names of all clients that should be created
-  initialClients: Record<ResolveClientOptionsType<Options>, undefined>
+  initialClients: Record<ResolveClientOptionsType<Options>, undefined | ConnectionCreator<Credentials>>
   authenticationMethods: AdapterAuthentication
   validateCredentials?: Adapter['validateCredentials']
   adapterImpl?: AdapterImplConstructor<Credentials, Options, Co>
@@ -88,10 +88,10 @@ export const createAdapter = <
     operations: context => {
       const config = configCreator(context.config)
       const credentials = credentialsFromConfig(context.credentials)
-      const clients = _.mapValues(initialClients, () =>
+      const clients = _.mapValues(initialClients, createConnection =>
         createClient<Credentials>({
           adapterName,
-          createConnection: connectionCreator(context.config),
+          createConnection: createConnection ?? connectionCreator(context.config),
           clientOpts: {
             credentials,
             config: config.client,

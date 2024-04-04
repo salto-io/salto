@@ -37,6 +37,7 @@ import {
   transformElement,
   references,
   pathNaclCase,
+  invertNaclCase,
 } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -76,9 +77,14 @@ const getInstanceNameDependencies = <TOptions extends APIDefinitionsOptions = {}
   const referencedInstances = fieldIdParts
     .filter(fieldIdPart => fieldIdPart.isReference)
     .map(fieldIdPart => {
-      const fieldValue = _.get(instance.value, fieldIdPart.fieldName)
-      if (isReferenceExpression(fieldValue) && fieldValue.elemID.idType === 'instance') {
-        return fieldValue.elemID.createTopLevelParentID().parent.getFullName()
+      if (fieldIdPart.isReference) {
+        const fieldValue = _.get(instance.value, fieldIdPart.fieldName)
+        if (isReferenceExpression(fieldValue) && fieldValue.elemID.idType === 'instance') {
+          return fieldValue.elemID.createTopLevelParentID().parent.getFullName()
+        }
+        log.warn(
+          `Instance ${instance.elemID.getFullName()} has a reference field ${fieldIdPart.fieldName} that is not a reference expression`,
+        )
       }
       return undefined
     })
@@ -219,9 +225,9 @@ const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
 
   const graph = new DAG<InstanceElement>()
   instances.forEach(instance => {
-    const def = fetchDefinitionInstanceName[instance.elemID.getFullName()]
-    const parts = def?.element?.topLevel?.elemID?.parts ?? []
-    const extendsParent = def?.element?.topLevel?.elemID?.extendsParent
+    const { elemID } = fetchDefinitionInstanceName[instance.elemID.getFullName()]?.element?.topLevel ?? {}
+    const parts = elemID?.parts ?? []
+    const extendsParent = elemID?.extendsParent
     if (extendsParent || parts.some(part => part.isReference)) {
       // removing duplicate elemIDs to create a graph
       // we can traverse based on references to unique elemIDs
@@ -249,6 +255,44 @@ export const createReferenceIndex = (
     .groupBy(({ value }) => value.elemID.createTopLevelParentID().parent.getFullName())
     .value()
   return referenceIndex
+}
+
+const getPathToNestUnder = <TOptions extends APIDefinitionsOptions = {}>(
+  fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
+  instance: InstanceElement,
+  parent?: InstanceElement,
+): string[] | undefined => {
+  if (parent === undefined) {
+    return undefined
+  }
+  return fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations?.[instance.elemID.typeName]
+    ?.standalone?.nestPathUnderParent
+    ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), pathNaclCase(instance.elemID.typeName)]
+    : undefined
+}
+
+const calculateInstanceNewNameAndPath = <TOptions extends APIDefinitionsOptions = {}>(
+  instance: InstanceElement,
+  defQuery: DefQuery<InstanceFetchApiDefinitions<TOptions>, string>,
+  getElemIdFunc?: ElemIdGetter,
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<TOptions>>,
+): { newName: string; newPath: string[] } => {
+  const parent = getFirstParent(instance)
+  const nestUnderPath = getPathToNestUnder(defQuery.getAll(), instance, parent)
+  const { toElemName, toPath } = getInstanceCreationFunctions({
+    defQuery,
+    type: instance.getTypeSync(),
+    getElemIdFunc,
+    nestUnderPath,
+    customNameMappingFunctions,
+  })
+
+  const nameAndPathCreationArgs = {
+    entry: instance.value,
+    defaultName: invertNaclCase(instance.elemID.name),
+    parent,
+  }
+  return { newName: toElemName(nameAndPathCreationArgs), newPath: toPath(nameAndPathCreationArgs) }
 }
 
 /*
@@ -280,34 +324,13 @@ export const addReferencesToInstanceNames = async <TOptions extends APIDefinitio
     if (instanceFetchDefinitions !== undefined) {
       const instance = graph.getData(graphNode)
       const originalFullName = instance.elemID.getFullName()
-      const instanceType = instance.getTypeSync()
-      const parent = getFirstParent(instance)
-      let nestUnderPath: string[] | undefined
-      if (parent !== undefined) {
-        nestUnderPath = fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations?.[
-          instance.elemID.typeName
-        ]?.standalone?.nestPathUnderParent
-          ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), pathNaclCase(instance.elemID.typeName)]
-          : undefined
-      }
-      const { toElemName, toPath } = getInstanceCreationFunctions({
-        defQuery,
-        type: instanceType,
-        getElemIdFunc,
-        nestUnderPath,
-        customNameMappingFunctions,
-      })
-
-      const nameAndPathCreationArgs = {
-        entry: instance.value,
-        defaultName: instance.elemID.name,
-        parent,
-      }
-      const newInstance = await createNewInstance(
+      const { newName, newPath } = calculateInstanceNewNameAndPath(
         instance,
-        toElemName(nameAndPathCreationArgs),
-        toPath(nameAndPathCreationArgs),
+        defQuery,
+        getElemIdFunc,
+        customNameMappingFunctions,
       )
+      const newInstance = await createNewInstance(instance, newName, newPath)
 
       updateAllReferences({
         referenceIndex,
@@ -340,13 +363,12 @@ export const referencedInstanceNamesFilterCreator =
       return () => ({})
     }
     const { instances } = definitions.fetch
-    const defQuery = queryWithDefault(instances)
     return {
       name: 'referencedInstanceNames',
       onFetch: async elements => {
         await addReferencesToInstanceNames(
           elements,
-          defQuery,
+          queryWithDefault(instances),
           getElemIdFunc,
           definitions.fetch?.customNameMappingFunctions,
         )

@@ -33,7 +33,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     ClientOptions
   >({
     blogpost: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
-    global_template: { bulkPath: 'wiki/rest/api/template', idField: 'templateId' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
@@ -179,6 +178,78 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/wiki/rest/api/template/{templateId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    global_template: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template/{templateId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    blogpost: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts/{id}',
                   method: 'delete',
                 },
               },

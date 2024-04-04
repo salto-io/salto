@@ -51,8 +51,12 @@ import {
   getConfigWithDefault,
   dereferenceFieldName,
   isReferencedIdField,
-} from '../config'
-import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
+} from '../config_deprecated'
+import {
+  joinInstanceNameParts,
+  getInstanceFilePath,
+  getInstanceNaclName,
+} from '../elements_deprecated/instance_elements'
 import { NameMappingOptions } from '../definitions'
 import { toNestedTypeName } from '../fetch/element'
 

@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { DeploymentRequestsByAction, DeployRequestConfig, TypeConfig } from '../../config'
+import { DeploymentRequestsByAction, DeployRequestConfig, TypeConfig } from '../../config_deprecated'
 
 const { awu } = collections.asynciterable
 

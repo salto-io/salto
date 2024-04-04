@@ -16,7 +16,7 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { RECORDS_PATH } from '@salto-io/adapter-components/src/elements'
+import { RECORDS_PATH } from '@salto-io/adapter-components/src/elements_deprecated'
 import { getDefaultConfig } from '../../../src/config/config'
 import addAttributesAsFieldsFilter from '../../../src/filters/assets/change_attributes_path'
 import { createEmptyType, getFilterParams } from '../../utils'

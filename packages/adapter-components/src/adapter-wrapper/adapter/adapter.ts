@@ -39,8 +39,8 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { Client } from '../../client/client_creator'
 import { AdapterParams } from './types'
 import { Filter, FilterResult, filterRunner } from '../../filter_utils'
-import { getUpdatedConfigFromConfigChanges } from '../../config'
 import {
+  getUpdatedConfigFromConfigChanges,
   APIDefinitionsOptions,
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
@@ -58,7 +58,7 @@ import {
   deployNotSupportedValidator,
   getDefaultChangeValidators,
 } from '../../deployment/change_validators'
-import { generateOpenApiTypes } from '../../fetch/element/openAPI/types'
+import { generateOpenApiTypes } from '../../openapi/type_elements/type_elements'
 import { generateLookupFunc } from '../../references'
 import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../deployment'
 import { createChangeElementResolver } from '../../resolve_utils'

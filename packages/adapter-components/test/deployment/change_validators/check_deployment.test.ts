@@ -21,7 +21,7 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { TypeConfig } from '../../../src/config/shared'
+import { TypeConfig } from '../../../src/config_deprecated/shared'
 import { createCheckDeploymentBasedOnConfigValidator } from '../../../src/deployment/change_validators/check_deployment_based_on_config'
 
 describe('checkDeploymentBasedOnConfigValidator', () => {

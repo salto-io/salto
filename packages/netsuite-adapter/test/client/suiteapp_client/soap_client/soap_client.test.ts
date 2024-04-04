@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { soap } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES } from '../../../../src/config/constants'
@@ -83,7 +83,7 @@ describe('soap_client', () => {
       getSelectValueAsync: getSelectValueAsyncMock,
       addSoapHeader: (fn: () => object) => fn(),
       wsdl,
-    } as unknown as elementUtils.soap.Client)
+    } as unknown as soap.Client)
 
     client = new SoapClient(
       {

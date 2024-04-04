@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
-import { shouldRecurseIntoEntry } from '../../elements/instance_elements' // TODO move
 import { createValueTransformer } from '../utils'
 import { RecurseIntoDefinition } from '../../definitions/system/fetch/dependencies'
 
@@ -42,6 +42,31 @@ const extractRecurseIntoContext = (
   })
   return context
 }
+
+export type RecurseIntoConditionBase = { match: string[] }
+type RecurseIntoConditionByField = RecurseIntoConditionBase & {
+  fromField: string
+}
+type RecurseIntoConditionByContext = RecurseIntoConditionBase & {
+  fromContext: string
+}
+export type RecurseIntoCondition = RecurseIntoConditionByField | RecurseIntoConditionByContext
+
+export const isRecurseIntoConditionByField = (
+  condition: RecurseIntoCondition,
+): condition is RecurseIntoConditionByField => 'fromField' in condition
+
+export const shouldRecurseIntoEntry = (
+  entry: Values,
+  context?: Record<string, unknown>,
+  conditions?: RecurseIntoCondition[],
+): boolean =>
+  (conditions ?? []).every(condition => {
+    const compareValue = isRecurseIntoConditionByField(condition)
+      ? _.get(entry, condition.fromField)
+      : _.get(context, condition.fromContext)
+    return condition.match.some(m => new RegExp(m).test(compareValue))
+  })
 
 // TODO remove the old code when possible - originally called getExtraFieldValues
 export const recurseIntoSubresources =

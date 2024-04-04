@@ -15,16 +15,16 @@
  */
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ZuoraApiConfig } from '../config'
 import { ZUORA_BILLING, SETTINGS_TYPE_PREFIX } from '../constants'
 
 const { isDefined } = lowerdashValues
-const { generateTypes } = elementUtils.swagger
+const { generateTypes } = openapi
 
-type OperationResponseType = elementUtils.swagger.SchemaOrReference & {
-  definitions?: Record<string, elementUtils.swagger.SchemaObject>
+type OperationResponseType = openapi.SchemaOrReference & {
+  definitions?: Record<string, openapi.SchemaObject>
 }
 
 type OperationInfo = {
@@ -39,7 +39,7 @@ type SettingsInfoDef = {
 
 const DEF_REF_PREFIX = '#/definitions/'
 
-const toSchemasAndRefs = (defs: SettingsInfoDef[]): elementUtils.swagger.SchemasAndRefs => {
+const toSchemasAndRefs = (defs: SettingsInfoDef[]): openapi.SchemasAndRefs => {
   const extractDetails = (settingsInfo: SettingsInfoDef): OperationInfo | undefined => {
     const getOperation = settingsInfo.httpOperations.find((op: { method: string }) => op.method === 'GET')
     if (getOperation === undefined || getOperation.url === undefined || getOperation.responseType === undefined) {
@@ -79,7 +79,7 @@ const toSchemasAndRefs = (defs: SettingsInfoDef[]): elementUtils.swagger.Schemas
 export const generateBillingSettingsTypes = async (
   settingsOpInfoInstances: InstanceElement[],
   apiDefConfig: ZuoraApiConfig,
-): Promise<elementUtils.swagger.ParsedTypes> => {
+): Promise<openapi.ParsedTypes> => {
   const settingsInfos = settingsOpInfoInstances.flatMap(inst =>
     Array.isArray(inst.value.settings) ? inst.value.settings : [],
   )

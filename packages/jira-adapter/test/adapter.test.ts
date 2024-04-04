@@ -28,7 +28,7 @@ import {
   ElemIdGetter,
   ServiceIds,
 } from '@salto-io/adapter-api'
-import { deployment, elements, client as clientUtils } from '@salto-io/adapter-components'
+import { deployment, elements, client as clientUtils, openapi } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
@@ -42,7 +42,8 @@ import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
 
 const { getAllElements, getEntriesResponseValues, addRemainingTypes } = elements.ducktype
-const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
+const { getAllInstances } = elements.swagger
+const { loadSwagger, generateTypes } = openapi
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -58,16 +59,9 @@ jest.mock('@salto-io/adapter-components', () => {
       ...actual.elements,
       swagger: {
         flattenAdditionalProperties: actual.elements.swagger.flattenAdditionalProperties,
-        generateTypes: jest.fn().mockImplementation(() => {
-          throw new Error('generateTypes called without a mock')
-        }),
         getAllInstances: jest.fn().mockImplementation(() => {
           throw new Error('getAllInstances called without a mock')
         }),
-        loadSwagger: jest.fn().mockImplementation(() => {
-          throw new Error('loadSwagger called without a mock')
-        }),
-        addDeploymentAnnotations: jest.fn(),
       },
       ducktype: {
         ...actual.elements.ducktype,
@@ -81,6 +75,16 @@ jest.mock('@salto-io/adapter-components', () => {
           throw new Error('addRemainingTypes called without a mock')
         }),
       },
+    },
+    openapi: {
+      ...actual.openapi,
+      generateTypes: jest.fn().mockImplementation(() => {
+        throw new Error('generateTypes called without a mock')
+      }),
+      loadSwagger: jest.fn().mockImplementation(() => {
+        throw new Error('loadSwagger called without a mock')
+      }),
+      addDeploymentAnnotations: jest.fn(),
     },
   }
 })
@@ -282,7 +286,7 @@ describe('adapter', () => {
       ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
         document: {},
         parser: {},
-      } as elements.swagger.LoadedSwagger)
+      } as openapi.LoadedSwagger)
       mockAxiosAdapter = new MockAdapter(axios)
       // mock as there are gets of license during fetch
       mockAxiosAdapter.onGet().reply(200, {})
@@ -389,7 +393,7 @@ describe('adapter', () => {
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
           parser: {},
-        } as elements.swagger.LoadedSwagger)
+        } as openapi.LoadedSwagger)
 
         mockAxiosAdapter = new MockAdapter(axios)
         // mock as there are gets of license during fetch
@@ -481,7 +485,7 @@ describe('adapter', () => {
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
           parser: {},
-        } as elements.swagger.LoadedSwagger)
+        } as openapi.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
         mockAxiosAdapter
           // first three requests are for login assertion
@@ -594,7 +598,7 @@ describe('adapter', () => {
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
           parser: {},
-        } as elements.swagger.LoadedSwagger)
+        } as openapi.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
         mockAxiosAdapter
           // first three requests are for login assertion
@@ -801,7 +805,7 @@ describe('adapter', () => {
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
           parser: {},
-        } as elements.swagger.LoadedSwagger)
+        } as openapi.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
         mockAxiosAdapter
           // first three requests are for login assertion
@@ -921,7 +925,7 @@ describe('adapter', () => {
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
           parser: {},
-        } as elements.swagger.LoadedSwagger)
+        } as openapi.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
         mockAxiosAdapter
           // first three requests are for login assertion

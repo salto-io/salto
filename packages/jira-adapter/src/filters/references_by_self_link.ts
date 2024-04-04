@@ -17,12 +17,12 @@ import _ from 'lodash'
 import { Element, isInstanceElement, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { multiIndex, collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 const { isPlainRecord } = lowerdashValues
-const { ADDITIONAL_PROPERTIES_FIELD } = elementUtils.swagger
+const { ADDITIONAL_PROPERTIES_FIELD } = openapi
 
 type ObjectWithSelfLink = { self: string } | { [ADDITIONAL_PROPERTIES_FIELD]: { self: string } }
 

@@ -24,7 +24,7 @@ import {
   Change,
   ListType,
 } from '@salto-io/adapter-api'
-import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements'
+import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements_deprecated'
 import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../src/deployment/placeholder_types'
 import { queryWithDefault } from '../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../src/definitions/system/fetch'

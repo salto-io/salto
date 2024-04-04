@@ -23,10 +23,6 @@ import _ from 'lodash'
 import { AdapterFilterCreator } from '../filter_utils'
 import { ApiDefinitions, APIDefinitionsOptions, getNestedWithDefault, queryWithDefault } from '../definitions'
 import { ElementFieldCustomization } from '../definitions/system/fetch'
-/*
-const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
-
- */
 
 const get = (current: Value, tail: string[]): Value => {
   if (current === undefined) {
@@ -36,7 +32,7 @@ const get = (current: Value, tail: string[]): Value => {
   const next: Value = _.get(current, head)
   if (isResolvedReferenceExpression(next)) {
     if (rest.length === 0) {
-      return next.elemID.getFullName()
+      throw new Error('Cannot sort by reference, use a property of the referenced element')
     }
     return get(next.value, rest)
   }
@@ -82,18 +78,18 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
   { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }
 > =
   () =>
-  ({ definitions }) => ({
-    name: 'sortListsFilter',
-    onFetch: async (elements: Element[]) => {
-      const instances = definitions.fetch?.instances
-      if (instances === undefined) {
-        return
-      }
-      const defQuery = queryWithDefault(getNestedWithDefault(instances, 'element'))
-      await awu(elements)
-        .filter(isInstanceElement)
-        .forEach(async element =>
-          sortLists(element, (defQuery.query(element.elemID.typeName) as any).fieldCustomizations),
-        )
-    },
-  })
+    ({ definitions }) => ({
+      name: 'sortListsFilter',
+      onFetch: async (elements: Element[]) => {
+        const instances = definitions.fetch?.instances
+        if (instances === undefined) {
+          return
+        }
+        const defQuery = queryWithDefault(getNestedWithDefault(instances, 'element'))
+        await awu(elements)
+          .filter(isInstanceElement)
+          .forEach(async element =>
+            sortLists(element, (defQuery.query(element.elemID.typeName) as any)?.fieldCustomizations),
+          )
+      },
+    })

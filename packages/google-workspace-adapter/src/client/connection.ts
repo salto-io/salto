@@ -22,7 +22,7 @@ import { OauthAccessTokenCredentials } from './oauth'
 
 const log = logger(module)
 
-export const validateCredentials = async ({
+export const validateDirectoryCredentials = async ({
   connection,
 }: {
   connection: clientUtils.APIConnection
@@ -36,14 +36,36 @@ export const validateCredentials = async ({
   }
 }
 
+// There is no endPoints for groupSettings that we can use to validate the credentials with,
+export const validateGroupSettingsCredentials = async (): Promise<AccountInfo> => ({ accountId: 'groupSettings' })
+
+const validateCredentialsPerApp: Record<
+  string,
+  ({
+    credentials,
+    connection,
+  }: {
+    credentials: Credentials
+    connection: clientUtils.APIConnection
+  }) => Promise<AccountInfo>
+> = {
+  directory: validateDirectoryCredentials,
+  groupSettings: validateGroupSettingsCredentials,
+}
+
+const baseUrlPerApp: Record<string, string> = {
+  directory: 'https://admin.googleapis.com',
+  groupSettings: 'https://www.googleapis.com',
+}
+
 const isOauthCredentials = (cred: Credentials): cred is OauthAccessTokenCredentials => 'refreshToken' in cred
 
 export const createConnectionForApp =
-  (baseUrl: string): clientUtils.ConnectionCreator<Credentials> =>
+  (app: string): clientUtils.ConnectionCreator<Credentials> =>
   retryOptions =>
     clientUtils.axiosConnection({
       retryOptions,
-      baseURLFunc: async () => baseUrl,
+      baseURLFunc: async () => baseUrlPerApp[app],
       authParamsFunc: async (creds: Credentials) => {
         if (!isOauthCredentials(creds)) {
           return {
@@ -61,5 +83,5 @@ export const createConnectionForApp =
           },
         }
       },
-      credValidateFunc: validateCredentials,
+      credValidateFunc: validateCredentialsPerApp[app],
     })

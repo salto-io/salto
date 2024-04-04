@@ -31,7 +31,8 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits?type=ALL_INCLUDING_PARENT",
+    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+    "queryParams": { "type": "ALL_INCLUDING_PARENT" },
     "method": "GET",
     "status": 200,
     "response": {
@@ -71,13 +72,13 @@
         {
           "kind": "admin#directory#domain",
           "etag": "abc",
-          "domainName": "neta-test1.com",
+          "domainName": "localhost",
           "domainAliases": [
             {
               "kind": "admin#directory#domainAlias",
               "etag": "abc",
-              "domainAliasName": "neta-test1.test-google-a.com",
-              "parentDomainName": "neta-test1.com",
+              "domainAliasName": "localhost/uri",
+              "parentDomainName": "localhost",
               "verified": true,
               "creationTime": "1710066097283"
             }
@@ -192,7 +193,8 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/groups?domain=neta-test1.com",
+    "url": "https://admin.googleapis.com/admin/directory/v1/groups",
+    "queryParams": { "domain": "localhost" },
     "method": "GET",
     "status": 200,
     "response": {
@@ -203,19 +205,20 @@
           "kind": "admin#directory#group",
           "id": "01tuee743bzv2ce",
           "etag": "abc",
-          "email": "blabla@neta-test1.com",
+          "email": "blabla@localhost",
           "name": "blabla",
           "directMembersCount": "0",
           "description": "test test",
           "adminCreated": true,
-          "nonEditableAliases": ["blabla@neta-test1.com.test-google-a.com"]
+          "nonEditableAliases": ["blabla@localhost"]
         }
       ]
     },
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments?userKey=01tuee743bzv2ce",
+    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments",
+    "queryParams": { "userKey": "01tuee743bzv2ce" },
     "method": "GET",
     "status": 200,
     "response": {
@@ -236,7 +239,8 @@
     "headers": {}
   },
   {
-    "url": "https://www.googleapis.com/groups/v1/groups/blabla@neta-test1.com?alt=json",
+    "url": "https://www.googleapis.com/groups/v1/groups/blabla@localhost",
+    "queryParams": { "alt": "json" },
     "method": "GET",
     "status": 200,
     "response": {

@@ -26,6 +26,9 @@ import { OAuth2Client } from 'google-auth-library'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../constants'
 
+export const DIRECTORY_APP_NAME = 'directory'
+export const GROUP_SETTINGS_APP_NAME = 'groupSettings'
+
 const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/admin.directory.rolemanagement',
@@ -39,8 +42,6 @@ const REQUIRED_OAUTH_SCOPES = [
 ]
 
 export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
-  // create an oAuth client to authorize the API call.  Secrets are kept in a `keys.json` file,
-  // which should be downloaded from the Google Developers Console.
   const { clientId, clientSecret, port } = userInput.value
   const redirectUri = `http://localhost:${port}`
   const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)

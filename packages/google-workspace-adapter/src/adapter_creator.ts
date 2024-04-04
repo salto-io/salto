@@ -24,6 +24,8 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { REFERENCES } from './definitions/references'
 import { Options } from './definitions/types'
 import {
+  DIRECTORY_APP_NAME,
+  GROUP_SETTINGS_APP_NAME,
   createFromOauthResponse,
   createOAuthRequest,
   oauthAccessTokenCredentialsType,
@@ -61,7 +63,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   },
   validateCredentials: async config =>
     validateCredentials(credentialsFromConfig(config), {
-      createConnection: createConnectionForApp('https://admin.googleapis.com'),
+      createConnection: createConnectionForApp(DIRECTORY_APP_NAME),
     }),
   defaultConfig: DEFAULT_CONFIG,
   definitionsCreator: ({ clients }) => ({
@@ -72,12 +74,12 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     references: REFERENCES,
   }),
   operationsCustomizations: {
-    connectionCreatorFromConfig: () => createConnectionForApp('https://admin.googleapis.com'),
+    connectionCreatorFromConfig: () => createConnectionForApp(DIRECTORY_APP_NAME),
     credentialsFromConfig: defaultCredentialsFromConfig,
   },
   initialClients: {
     main: undefined,
-    groupSettings: createConnectionForApp('https://googleapis.com'),
+    groupSettings: createConnectionForApp(GROUP_SETTINGS_APP_NAME),
   },
   clientDefaults,
 })

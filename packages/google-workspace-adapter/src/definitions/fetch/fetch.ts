@@ -157,7 +157,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       directFetch: false,
       recurseInto: {
         groupSettings: {
-          typeName: 'groupSetting',
+          typeName: 'group__groupSettings',
           single: true,
           context: {
             args: {
@@ -254,7 +254,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  groupSetting: {
+  group__groupSettings: {
     requests: [
       {
         endpoint: {

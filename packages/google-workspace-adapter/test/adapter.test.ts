@@ -117,7 +117,7 @@ describe('adapter', () => {
           'google_workspace.building',
           'google_workspace.building.instance.salto_office@s',
           'google_workspace.domain',
-          'google_workspace.domain.instance.neta_test1_com@bv',
+          'google_workspace.domain.instance.localhost',
           'google_workspace.domain__domainAliases',
           'google_workspace.feature',
           'google_workspace.feature.instance.macabi',

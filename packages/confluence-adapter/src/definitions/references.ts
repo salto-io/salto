@@ -27,6 +27,11 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
     serializationStrategy: 'id',
     target: { type: 'page' },
   },
+  {
+    src: { field: 'labels', parentTypes: ['global_template', 'template'] },
+    serializationStrategy: 'id',
+    target: { type: 'label' },
+  },
 ]
 
 export const REFERENCES: definitions.ApiDefinitions['references'] = {

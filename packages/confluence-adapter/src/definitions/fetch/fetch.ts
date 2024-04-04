@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
+import { adjustLabelsToIdsFunc } from './adjust_utils'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -315,6 +316,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         transformation: {
           root: 'results',
           omit: ['space'],
+          adjust: adjustLabelsToIdsFunc,
         },
       },
     ],
@@ -348,6 +350,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
+          adjust: adjustLabelsToIdsFunc,
         },
       },
     ],

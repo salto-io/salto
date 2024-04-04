@@ -89,16 +89,16 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
   { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }
 > =
   () =>
-  ({ definitions }) => ({
-    name: 'sortListsFilter',
-    onFetch: async (elements: Element[]) => {
-      const instances = definitions.fetch?.instances
-      if (instances === undefined) {
-        return
-      }
-      const defQuery: DefQuery<ElementFetchDefinition> = queryWithDefault(getNestedWithDefault(instances, 'element'))
-      await awu(elements)
-        .filter(isInstanceElement)
-        .forEach(async element => sortLists(element, defQuery))
-    },
-  })
+    ({ definitions }) => ({
+      name: 'sortListsFilter',
+      onFetch: async (elements: Element[]) => {
+        const instances = definitions.fetch?.instances
+        if (instances === undefined) {
+          return
+        }
+        const defQuery: DefQuery<ElementFetchDefinition> = queryWithDefault(getNestedWithDefault(instances, 'element'))
+        await awu(elements)
+          .filter(isInstanceElement)
+          .forEach(async element => sortLists(element, defQuery))
+      },
+    })

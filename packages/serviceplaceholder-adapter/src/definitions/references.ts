@@ -76,5 +76,5 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       lookupIndexName: 'otherFieldName',
     },
   },
-  fieldsToGroupBy: ['otherFieldName'],
+  fieldsToGroupBy: ['id', 'name', 'otherFieldName'],
 }

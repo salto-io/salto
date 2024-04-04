@@ -117,7 +117,7 @@ export type Component = {
 const ASSET_COMPONENT_SCHEME = Joi.object({
   value: Joi.object({
     schemaId: Joi.required(),
-  }).unknown(true),
+  }).unknown(true).required(),
 }).unknown(true)
 
 export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)

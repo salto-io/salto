@@ -162,12 +162,12 @@ describe('id utils', () => {
         }),
       ).toEqual('parent_name__A_A_refInst_name@suusus')
     })
-    it('should not avoid double nacl-case when use useOldElemIds is true', () => {
+    it('should not avoid double nacl-case when use useOldFormat is true', () => {
       const func = createElemIDFunc({
         elemIDDef: {
           parts: [{ fieldName: 'a' }, { fieldName: 'refField', isReference: true }],
           extendsParent: true,
-          useOldElemIds: true,
+          useOldFormat: true,
         },
         typeID,
         customNameMappingFunctions: {},

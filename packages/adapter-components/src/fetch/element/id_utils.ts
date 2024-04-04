@@ -112,10 +112,10 @@ export const getNameMapping = <TCustomNameMappingOptions extends string = never>
   return String(name)
 }
 
-const getFieldValue = (entry: Values, fieldName: string, useOldElemIds?: boolean): string | undefined => {
+const getFieldValue = (entry: Values, fieldName: string, useOldFormat?: boolean): string | undefined => {
   const dereferenceFieldValue = (fieldValue: ReferenceExpression): string => {
     const { parent, path } = fieldValue.elemID.createTopLevelParentID()
-    return [useOldElemIds ? parent.name : invertNaclCase(parent.name), ...path].join('.')
+    return [useOldFormat ? parent.name : invertNaclCase(parent.name), ...path].join('.')
   }
 
   const fieldValue = _.get(entry, fieldName)
@@ -146,7 +146,7 @@ const computeElemIDPartsFunc =
         if (part.custom !== undefined) {
           return part.custom(part)(entry)
         }
-        const fieldValue = getFieldValue(entry, part.fieldName, elemIDDef.useOldElemIds)
+        const fieldValue = getFieldValue(entry, part.fieldName, elemIDDef.useOldFormat)
         return fieldValue !== undefined
           ? getNameMapping({
               name: fieldValue,
@@ -161,7 +161,7 @@ const computeElemIDPartsFunc =
       elemIDDef.extendsParent && parent !== undefined
         ? // the delimiter between parent and child will be doubled
           [
-            elemIDDef.useOldElemIds ? parent.elemID.name : invertNaclCase(parent.elemID.name),
+            elemIDDef.useOldFormat ? parent.elemID.name : invertNaclCase(parent.elemID.name),
             ...(nonEmptyParts.length > 0 ? ['', ...nonEmptyParts] : []),
           ]
         : nonEmptyParts

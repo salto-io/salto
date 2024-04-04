@@ -58,7 +58,8 @@ export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
     // TODO check if still needed when implementing SALTO-5421
     extendsParent?: boolean
     // This is a temporary flag to support double nacl case for upgrading existing services to the new definitions
-    useOldElemIds?: boolean
+    // https://salto-io.atlassian.net/browse/SALTO-5743
+    useOldFormat?: boolean
   }
 
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {

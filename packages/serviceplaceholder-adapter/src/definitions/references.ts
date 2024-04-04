@@ -65,7 +65,16 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ReferenceContextS
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
+  // TODO remove if not needed
   contextStrategyLookup: {
     parentType: ({ instance }) => _.get(instance.value, 'parent_type'),
   },
+  serializationStrategyLookup: {
+    otherFieldName: {
+      serialize: ({ ref }) => ref.value.value.roleId,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'otherFieldName',
+    },
+  },
+  fieldsToGroupBy: ['otherFieldName'],
 }

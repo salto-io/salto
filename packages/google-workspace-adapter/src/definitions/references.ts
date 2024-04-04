@@ -21,11 +21,11 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
   //   serializationStrategy: 'roleId',
   //   target: { type: 'role' },
   // },
-  // {
-  //   src: { field: 'assignedTo', parentTypes: ['roleAssignment'] },
-  //   serializationStrategy: 'id',
-  //   target: { type: 'group' },
-  // },
+  {
+    src: { field: 'assignedTo', parentTypes: ['roleAssignment'] },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+  },
   // {
   //   src: { field: 'parentOrgUnitId', parentTypes: ['orgUnit'] },
   //   serializationStrategy: 'orgUnitId',

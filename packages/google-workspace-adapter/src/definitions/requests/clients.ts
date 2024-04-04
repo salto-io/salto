@@ -36,5 +36,20 @@ export const createClientDefinitions = (
         },
       },
     },
+    groupSettings: {
+      httpClient: clients.groupSettings,
+      endpoints: {
+        default: {
+          get: {
+            pagination: 'cursor',
+            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
+            readonly: true,
+          },
+          delete: {
+            omitBody: true,
+          },
+        },
+      },
+    },
   },
 })

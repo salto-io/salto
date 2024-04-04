@@ -28,7 +28,7 @@ export const validateCredentials = async ({
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    await connection.get('https://admin.googleapis.com/admin/directory/v1/users?customer=my_customer')
+    await connection.get('/admin/directory/v1/users?customer=my_customer')
     return { accountId: 'googoo' }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
@@ -38,26 +38,28 @@ export const validateCredentials = async ({
 
 const isOauthCredentials = (cred: Credentials): cred is OauthAccessTokenCredentials => 'refreshToken' in cred
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions =>
-  clientUtils.axiosConnection({
-    retryOptions,
-    baseURLFunc: async () => '',
-    authParamsFunc: async (creds: Credentials) => {
-      if (!isOauthCredentials(creds)) {
+export const createConnectionForApp =
+  (baseUrl: string): clientUtils.ConnectionCreator<Credentials> =>
+  retryOptions =>
+    clientUtils.axiosConnection({
+      retryOptions,
+      baseURLFunc: async () => baseUrl,
+      authParamsFunc: async (creds: Credentials) => {
+        if (!isOauthCredentials(creds)) {
+          return {
+            headers: {
+              Authorization: `Bearer ${creds.accessToken}`,
+            },
+          }
+        }
+        const oAuth2Client = new OAuth2Client(creds.clientId, creds.clientSecret)
+        oAuth2Client.setCredentials({ refresh_token: creds.refreshToken })
+        const { token } = await oAuth2Client.getAccessToken()
         return {
           headers: {
-            Authorization: `Bearer ${creds.accessToken}`,
+            Authorization: `Bearer ${token}`,
           },
         }
-      }
-      const oAuth2Client = new OAuth2Client(creds.clientId, creds.clientSecret)
-      oAuth2Client.setCredentials({ refresh_token: creds.refreshToken })
-      const { token } = await oAuth2Client.getAccessToken()
-      return {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    },
-    credValidateFunc: validateCredentials,
-  })
+      },
+      credValidateFunc: validateCredentials,
+    })

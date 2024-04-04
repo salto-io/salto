@@ -17,7 +17,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
 import { Credentials, basicCredentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
-import { createConnection } from './client/connection'
+import { createConnectionForApp } from './client/connection'
 import { ADAPTER_NAME } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
@@ -36,6 +36,16 @@ const { defaultCredentialsFromConfig } = credentials
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => config.value as Credentials
 
+const clientDefaults = {
+  rateLimit: {
+    total: 100,
+    get: 100,
+    deploy: 100,
+  },
+  maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  retry: DEFAULT_RETRY_OPTS,
+}
+
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
   authenticationMethods: {
@@ -51,7 +61,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   },
   validateCredentials: async config =>
     validateCredentials(credentialsFromConfig(config), {
-      createConnection,
+      createConnection: createConnectionForApp('https://admin.googleapis.com'),
     }),
   defaultConfig: DEFAULT_CONFIG,
   definitionsCreator: ({ clients }) => ({
@@ -62,19 +72,12 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     references: REFERENCES,
   }),
   operationsCustomizations: {
-    connectionCreatorFromConfig: () => createConnection,
+    connectionCreatorFromConfig: () => createConnectionForApp('https://admin.googleapis.com'),
     credentialsFromConfig: defaultCredentialsFromConfig,
   },
   initialClients: {
     main: undefined,
+    groupSettings: createConnectionForApp('https://googleapis.com'),
   },
-  clientDefaults: {
-    rateLimit: {
-      total: 100,
-      get: 100,
-      deploy: 100,
-    },
-    maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-    retry: DEFAULT_RETRY_OPTS,
-  },
+  clientDefaults,
 })

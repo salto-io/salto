@@ -27,6 +27,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     ClientOptions
   >({})
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    // TODO - SALTO-5733 - generalize the InstanceDeployApiDefinitions
     role: {
       requestsByAction: {
         customizations: {
@@ -34,10 +35,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles',
+                  path: '/admin/directory/v1/customer/my_customer/roles',
                   method: 'post',
                 },
                 transformation: {
+                  // add CV to inform the user that this fields are read-only
                   omit: ['isSuperAdminRole', 'isSystemRole'],
                 },
               },
@@ -50,7 +52,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles/{roleId}',
+                  path: '/admin/directory/v1/customer/my_customer/roles/{roleId}',
                   method: 'delete',
                 },
               },
@@ -60,10 +62,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles/{roleId}',
+                  path: '/admin/directory/v1/customer/my_customer/roles/{roleId}',
                   method: 'put',
                 },
                 transformation: {
+                  // add CV to inform the user that this fields are read-only
                   omit: ['isSuperAdminRole', 'isSystemRole'],
                 },
               },
@@ -82,10 +85,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/domains',
+                  path: '/admin/directory/v1/customer/my_customer/domains',
                   method: 'post',
                 },
                 transformation: {
+                  // add CV to inform the user that this fields are read-only
                   omit: ['verified', 'isPrimary'],
                 },
               },
@@ -98,7 +102,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/domains/{domainName}',
+                  path: '/admin/directory/v1/customer/my_customer/domains/{domainName}',
                   method: 'delete',
                 },
               },
@@ -111,7 +115,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           //   {
           //     request: {
           //       endpoint: {
-          //         path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/domains/{domainName}',
+          //         path: '/admin/directory/v1/customer/my_customer/domains/{domainName}',
           //         method: 'put',
           //       },
           //     },
@@ -127,10 +131,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/groups',
+                  path: '/admin/directory/v1/groups',
                   method: 'post',
                 },
                 transformation: {
+                  // add CV to inform the user that this fields are read-only
                   omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
                 },
               },
@@ -141,8 +146,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://www.googleapis.com/groups/v1/groups/{email}',
+                  path: '/groups/v1/groups/{email}',
                   method: 'put',
+                  client: 'groupSettings',
                 },
                 transformation: {
                   root: 'groupSettings',
@@ -154,7 +160,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/groups/{id}',
+                  path: '/admin/directory/v1/groups/{id}',
                   method: 'delete',
                 },
               },
@@ -164,10 +170,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/groups/{id}',
+                  path: '/admin/directory/v1/groups/{id}',
                   method: 'put',
                 },
                 transformation: {
+                  // add CV to inform the user that this fields are read-only
                   omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
                 },
               },
@@ -175,8 +182,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://www.googleapis.com/groups/v1/groups/{email}',
+                  path: '/groups/v1/groups/{email}',
                   method: 'put',
+                  client: 'groupSettings',
                 },
                 transformation: {
                   root: 'groupSettings',
@@ -194,7 +202,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits',
+                  path: '/admin/directory/v1/customer/my_customer/orgunits',
                   method: 'post',
                 },
               },
@@ -204,7 +212,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
+                  path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'delete',
                 },
               },
@@ -214,7 +222,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
+                  path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'put',
                 },
               },
@@ -231,7 +239,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments',
+                  path: '/admin/directory/v1/customer/my_customer/roleassignments',
                   method: 'post',
                 },
               },
@@ -242,7 +250,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments/{roleAssignmentId}',
+                  path: '/admin/directory/v1/customer/my_customer/roleassignments/{roleAssignmentId}',
                   method: 'delete',
                 },
               },
@@ -258,7 +266,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/schemas',
+                  path: '/admin/directory/v1/customer/my_customer/schemas',
                   method: 'post',
                 },
                 transformation: {
@@ -282,7 +290,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/schemas/{schemaId}',
+                  path: '/admin/directory/v1/customer/my_customer/schemas/{schemaId}',
                   method: 'delete',
                 },
               },
@@ -292,7 +300,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/schemas/{schemaId}',
+                  path: '/admin/directory/v1/customer/my_customer/schemas/{schemaId}',
                   method: 'put',
                 },
                 transformation: {
@@ -322,7 +330,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings',
+                  path: '/admin/directory/v1/customer/my_customer/resources/buildings',
                   method: 'post',
                 },
                 transformation: {
@@ -346,7 +354,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings/{buildingId}',
+                  path: '/admin/directory/v1/customer/my_customer/resources/buildings/{buildingId}',
                   method: 'delete',
                 },
               },
@@ -356,7 +364,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings/{buildingId}',
+                  path: '/admin/directory/v1/customer/my_customer/resources/buildings/{buildingId}',
                   method: 'put',
                 },
               },
@@ -372,10 +380,11 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/calendars',
+                  path: '/admin/directory/v1/customer/my_customer/resources/calendars',
                   method: 'post',
                 },
                 transformation: {
+                  // add CV to inform the user that this fields are read-only
                   omit: ['resourceEmail'],
                   adjust: item => {
                     const { value } = item
@@ -400,7 +409,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/calendars/{resourceId}',
+                  path: '/admin/directory/v1/customer/my_customer/resources/calendars/{resourceId}',
                   method: 'delete',
                 },
               },
@@ -410,7 +419,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/calendars/{resourceId}',
+                  path: '/admin/directory/v1/customer/my_customer/resources/calendars/{resourceId}',
                   method: 'put',
                 },
               },
@@ -426,7 +435,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/features',
+                  path: '/admin/directory/v1/customer/my_customer/resources/features',
                   method: 'post',
                 },
               },
@@ -436,7 +445,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/features/{name}',
+                  path: '/admin/directory/v1/customer/my_customer/resources/features/{name}',
                   method: 'delete',
                 },
               },
@@ -447,7 +456,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           //   {
           //     request: {
           //       endpoint: {
-          //         path: 'https://admin.googleapis.com/admin/directory/v1/customer/my_customer/features/{name}/rename',
+          //         path: '/admin/directory/v1/customer/my_customer/features/{name}/rename',
           //         method: 'put',
           //       },
           //       transformation: {

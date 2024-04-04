@@ -496,6 +496,7 @@ export const isRetrieveSizeConfigSuggstion = (
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]
   elements: T
+  messages: string[]
 }
 
 const configID = new ElemID('salesforce')

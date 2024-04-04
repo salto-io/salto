@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { adjustLabelsToIdsFunc } from '../../src/definitions/fetch/adjust_utils'
+import { adjustLabelsToIdsFunc } from '../src/definitions/adjust_utils'
 
 describe('Adjust utils', () => {
   describe('adjustLabelsToIdsFunc', () => {

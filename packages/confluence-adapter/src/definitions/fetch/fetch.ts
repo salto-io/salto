@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
-import { adjustLabelsToIdsFunc } from './adjust_utils'
+import { adjustLabelsToIdsFunc } from '../adjust_utils'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {

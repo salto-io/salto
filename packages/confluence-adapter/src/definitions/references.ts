@@ -27,6 +27,12 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
     serializationStrategy: 'id',
     target: { type: 'page' },
   },
+  // This rule should be defined before serializationStrategy: 'id' rule
+  {
+    src: { field: 'labels', parentTypes: ['global_template', 'template'] },
+    serializationStrategy: 'fullValue',
+    target: { type: 'label' },
+  },
   {
     src: { field: 'labels', parentTypes: ['global_template', 'template'] },
     serializationStrategy: 'id',

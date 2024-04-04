@@ -23,6 +23,12 @@ import { ElementFetchDefinition } from '../definitions/system/fetch'
 
 const { awu } = collections.asynciterable
 
+/*
+ * Resolve a string path within an instance value.
+ *
+ * This function recursively resolves the path within the instance value, including hops into
+ * values from resolved reference expressions.
+ */
 const get = (current: Value, tail: string[]): Value => {
   if (current === undefined) {
     return undefined
@@ -74,11 +80,9 @@ const sortLists = async (instance: InstanceElement, defQuery: DefQuery<ElementFe
 }
 
 /*
- * Sorts lists in instances based on the values of specific fields.
+ * Sorts list fields in instances based on the values of specific properties.
  *
  * The filter uses the field customizations of the instances to determine which fields to sort by.
- * The field customizations should include a `sort` property with a `sortByProperties` array of strings.
- * Each string in the array represents a path to a field in the list elements.
  */
 export const sortListsFilterCreator: <TResult extends void | filter.FilterResult, TOptions>() => filter.FilterCreator<
   TResult,

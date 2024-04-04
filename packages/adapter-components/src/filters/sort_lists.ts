@@ -73,6 +73,13 @@ const sortLists = async (instance: InstanceElement, defQuery: DefQuery<ElementFe
     })) ?? {}
 }
 
+/*
+ * Sorts lists in instances based on the values of specific fields.
+ *
+ * The filter uses the field customizations of the instances to determine which fields to sort by.
+ * The field customizations should include a `sort` property with a `sortByProperties` array of strings.
+ * Each string in the array represents a path to a field in the list elements.
+ */
 export const sortListsFilterCreator: <TResult extends void | filter.FilterResult, TOptions>() => filter.FilterCreator<
   TResult,
   { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }

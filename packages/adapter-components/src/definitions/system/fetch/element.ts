@@ -77,7 +77,12 @@ type StandaloneFieldDefinition = {
   nestPathUnderParent?: boolean
 }
 
+// Settings for sorting a list field.
 type SortFieldDefinition = {
+  // The fields to sort by, in order of precedence.
+  // Each string is a dot-separated path to a property of the objects in the list field.
+  // Paths can include reference expressions, e.g. `myList: ['path.to.property.refToAnotherElement.id']`
+  // Selected properties should be env-independent to avoid sorting differences between envs.
   sortByProperties: string[]
 }
 

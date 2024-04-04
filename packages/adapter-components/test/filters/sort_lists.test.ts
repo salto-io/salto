@@ -38,7 +38,7 @@ const makeDefinitions = <TOptions>(
 })
 
 describe('sort lists filter', () => {
-  it('should sort simple fields, handle multiple elements', async () => {
+  it('should sort simple fields with precedence, handle multiple elements', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
         field1: { sort: { sortByProperties: ['prop1', 'prop2'] } },

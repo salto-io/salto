@@ -60,7 +60,7 @@ const createChangeError = (field: Field): ChangeError => ({
 })
 
 /**
- * Modification of a custom field type is restriced to certain types,
+ * Modification of a custom field type is restricted to certain types,
  * as well as the type of new custom fields.
  */
 const changeValidator: ChangeValidator = async (changes) =>

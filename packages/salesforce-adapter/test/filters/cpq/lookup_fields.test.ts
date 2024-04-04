@@ -461,7 +461,7 @@ describe('lookup_object filter', () => {
               .annotations.valueSet[2].fullName,
           )
         })
-        it('Should in field modigication map back to the service name instead of api if theres mapping and keep same if not', () => {
+        it('Should in field modification map back to the service name instead of api if theres mapping and keep same if not', () => {
           const priceSchedulingFieldChange = changes.find((change) =>
             getChangeData(change).elemID.isEqual(
               mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].elemID,
@@ -658,7 +658,7 @@ describe('lookup_object filter', () => {
           )
         })
 
-        it('Should on field modificiation map to api name if theres mapping and keep same if not', () => {
+        it('Should on field modification map to api name if theres mapping and keep same if not', () => {
           const priceSchedulingChange = changes.find((change) =>
             getChangeData(change).elemID.isEqual(
               mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].elemID,

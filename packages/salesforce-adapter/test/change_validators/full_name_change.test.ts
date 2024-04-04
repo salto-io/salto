@@ -14,47 +14,47 @@
  * limitations under the License.
  */
 import { Change, getAllChangeData, toChange } from '@salto-io/adapter-api'
-import changeValidator from '../../src/change_validators/fullname_changed'
+import changeValidator from '../../src/change_validators/full_name_changed'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
-describe('fullname change validator', () => {
-  describe('when fullname changes', () => {
-    let fullnameChange: Change
+describe('fullName change validator', () => {
+  describe('when fullName changes', () => {
+    let fullNameChange: Change
     beforeEach(() => {
       const beforeRecord = createInstanceElement(
-        { fullName: 'original_fullname' },
+        { fullName: 'original_full_name' },
         mockTypes.RecordType,
       )
       const afterRecord = beforeRecord.clone()
-      afterRecord.value[INSTANCE_FULL_NAME_FIELD] = 'modified_fullname'
-      fullnameChange = toChange({ before: beforeRecord, after: afterRecord })
+      afterRecord.value[INSTANCE_FULL_NAME_FIELD] = 'modified_full_name'
+      fullNameChange = toChange({ before: beforeRecord, after: afterRecord })
     })
 
     it('should fail validation', async () => {
-      const changeErrors = await changeValidator([fullnameChange])
+      const changeErrors = await changeValidator([fullNameChange])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      const [beforeData] = getAllChangeData(fullnameChange)
+      const [beforeData] = getAllChangeData(fullNameChange)
       expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Error')
     })
   })
-  describe('when fullname does not change', () => {
-    let fullnameChange: Change
+  describe('when fullName does not change', () => {
+    let fullNameChange: Change
     beforeEach(() => {
       const beforeRecord = createInstanceElement(
-        { fullName: 'original_fullname', status: 'ACTIVE' },
+        { fullName: 'original_full_name', status: 'ACTIVE' },
         mockTypes.Flow,
       )
       const afterRecord = beforeRecord.clone()
       afterRecord.value.status = 'INACTIVE'
-      fullnameChange = toChange({ before: beforeRecord, after: afterRecord })
+      fullNameChange = toChange({ before: beforeRecord, after: afterRecord })
     })
 
     it('should pass validation', async () => {
-      const changeErrors = await changeValidator([fullnameChange])
+      const changeErrors = await changeValidator([fullNameChange])
       expect(changeErrors).toBeEmpty()
     })
   })

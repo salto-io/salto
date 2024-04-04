@@ -16,7 +16,7 @@
 
 import { ImportantValue, ImportantValues } from '@salto-io/adapter-utils'
 
-const highligheted = (value: string): ImportantValue => ({
+const highlighted = (value: string): ImportantValue => ({
   value,
   highlighted: true,
   indexed: false,
@@ -29,16 +29,16 @@ const highlightedAndIndexed = (value: string): ImportantValue => ({
 })
 
 const DEFAULT_IMPORTANT_VALUES: ImportantValues = [
-  highligheted('fullName'),
-  highligheted('label'),
-  highligheted('masterLabel'),
-  highligheted('name'),
-  highligheted('content'),
-  highligheted('description'),
-  highligheted('processType'),
-  highligheted('relatedLists'),
-  highligheted('layoutSections'),
-  highligheted('lwcResources'),
+  highlighted('fullName'),
+  highlighted('label'),
+  highlighted('masterLabel'),
+  highlighted('name'),
+  highlighted('content'),
+  highlighted('description'),
+  highlighted('processType'),
+  highlighted('relatedLists'),
+  highlighted('layoutSections'),
+  highlighted('lwcResources'),
   highlightedAndIndexed('apiVersion'),
   highlightedAndIndexed('status'),
   highlightedAndIndexed('active'),

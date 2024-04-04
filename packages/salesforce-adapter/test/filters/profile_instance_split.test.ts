@@ -108,13 +108,16 @@ describe('Profile Instance Split filter', () => {
       await filter.onFetch(elements)
     })
     it('should split each map field to its own path', () => {
-      const profElems = elements
+      const profElements = elements
         .filter(isInstanceElement)
         .filter((e) => e.elemID.name === 'profile1')
-      expect(profElems).toHaveLength(4)
+      expect(profElements).toHaveLength(4)
 
       const fieldsByPath = _.sortBy(
-        profElems.map((e) => [e.path?.join('/'), Object.keys(e.value).sort()]),
+        profElements.map((e) => [
+          e.path?.join('/'),
+          Object.keys(e.value).sort(),
+        ]),
         (item) => item[0],
       )
       expect(fieldsByPath).toEqual([
@@ -138,13 +141,16 @@ describe('Profile Instance Split filter', () => {
     })
 
     it('should only create elements for defined fields', () => {
-      const profElems = elements
+      const profElements = elements
         .filter(isInstanceElement)
         .filter((e) => e.elemID.name === 'profile2')
-      expect(profElems).toHaveLength(2)
+      expect(profElements).toHaveLength(2)
 
       const fieldsByPath = _.sortBy(
-        profElems.map((e) => [e.path?.join('/'), Object.keys(e.value).sort()]),
+        profElements.map((e) => [
+          e.path?.join('/'),
+          Object.keys(e.value).sort(),
+        ]),
         (item) => item[0],
       )
       expect(fieldsByPath).toEqual([
@@ -157,10 +163,10 @@ describe('Profile Instance Split filter', () => {
     })
 
     it('should have the default Attributes element first', () => {
-      const profElems = elements
+      const profElements = elements
         .filter(isInstanceElement)
         .filter((e) => e.elemID.name === 'profile1')
-      expect(profElems[0].path?.slice(-1)[0]).toEqual('Attributes')
+      expect(profElements[0].path?.slice(-1)[0]).toEqual('Attributes')
     })
   })
 })

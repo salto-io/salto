@@ -84,8 +84,8 @@ const LWC_RESOURCE = 'lwcResource'
 export const getManifestTypeName = (type: MetadataObjectType): string =>
   // Salesforce quirk - folder instances are listed under their content's type in the manifest
 
-  // Salesforce quirk - settings intances should be deployed under Settings type,
-  // although their recieved type is "<name>Settings"
+  // Salesforce quirk - settings instances should be deployed under Settings type,
+  // although their received type is "<name>Settings"
   type.annotations.dirName === 'settings'
     ? SETTINGS_METADATA_TYPE
     : type.annotations.folderContentType ?? type.annotations.metadataType

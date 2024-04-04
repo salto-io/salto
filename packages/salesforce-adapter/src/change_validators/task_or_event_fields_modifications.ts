@@ -31,7 +31,7 @@ const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Modifying a field of Task or Event is not allowed',
-  detailedMessage: `Modifing the field ${field.name} of the ${apiNameSync(field.parent)} object directly is forbidden. Instead, modify the corresponding field in the Activity Object`,
+  detailedMessage: `Modifying the field ${field.name} of the ${apiNameSync(field.parent)} object directly is forbidden. Instead, modify the corresponding field in the Activity Object`,
 })
 
 const changeValidator: ChangeValidator = async (changes) =>

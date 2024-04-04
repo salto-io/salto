@@ -22,7 +22,7 @@ import {
   ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { lightningElementsUrlRetriever } from '../src/elements_url_retreiver/elements_url_retreiver'
+import { lightningElementsUrlRetriever } from '../src/elements_url_retriever/elements_url_retriever'
 import { mockTypes } from './mock_elements'
 import { PATH_ASSISTANT_METADATA_TYPE } from '../src/constants'
 

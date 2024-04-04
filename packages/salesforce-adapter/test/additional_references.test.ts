@@ -345,7 +345,7 @@ describe('getAdditionalReferences', () => {
       ])
     })
 
-    it('should create a reference to addition if visisble', async () => {
+    it('should create a reference to addition if visible', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] =
         createTestInstances({
           applicationVisibilities: {},

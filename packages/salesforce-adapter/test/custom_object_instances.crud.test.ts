@@ -175,7 +175,7 @@ describe('Custom Object Instances CRUD', () => {
   })
   const existingInstance = new InstanceElement(instanceName, customObject, {
     SaltoName: 'existingInstance',
-    NotCreatable: 'DontSendMeOnCreate',
+    NotCreatable: 'DoNotSendMeOnCreate',
     NumField: 1,
     Address: {
       city: 'Tel-Aviv',
@@ -209,7 +209,7 @@ describe('Custom Object Instances CRUD', () => {
     customObject,
     {
       SaltoName: "anotherExistingInstanceWithThing'",
-      NotCreatable: 'DontSendMeOnCreate',
+      NotCreatable: 'DoNotSendMeOnCreate',
     },
   )
   const anotherExistingInstanceRecordValues = {
@@ -226,7 +226,7 @@ describe('Custom Object Instances CRUD', () => {
     customObject,
     {
       SaltoName: 'existingInstanceWithNonUpdateableField',
-      NotUpdateable: 'DontSendMeOnUpdate',
+      NotUpdateable: 'DoNotSendMeOnUpdate',
     },
   )
   const newInstanceWithRefName = 'newInstanceWithRef'
@@ -589,7 +589,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(updateCall[3][0].SaltoName).toEqual('existingInstance')
             // Because it turns into an update it should send it
             expect(updateCall[3][0].NotCreatable).toBeDefined()
-            expect(updateCall[3][0].NotCreatable).toEqual('DontSendMeOnCreate')
+            expect(updateCall[3][0].NotCreatable).toEqual('DoNotSendMeOnCreate')
             // Should deploy fields with no values as null
             expect(updateCall[3][0].FieldWithNoValue).toBeNull()
           })
@@ -1230,7 +1230,7 @@ describe('Custom Object Instances CRUD', () => {
       const instanceWithNonUpdateableFieldAfter =
         instanceWithNonUpdateableFieldBefore.clone()
       instanceWithNonUpdateableFieldAfter.value.NotUpdateable =
-        'PleaseDontUpdate'
+        'PleaseDoNotUpdate'
       const modifyDeployGroup = {
         groupID: 'modify__Test__c',
         changes: [

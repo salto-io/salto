@@ -655,7 +655,7 @@ describe('Convert maps filter', () => {
       await filter.onFetch(elements)
     })
     describe('on fetch', () => {
-      it('should convert lwcresource inner field to map ', async () => {
+      it('should convert lwc resource inner field to map ', async () => {
         const lwc = elements[0] as InstanceElement
         const fieldType = await lwc.getType()
         const lwcResourcesType = await fieldType.fields.lwcResources.getType()

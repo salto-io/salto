@@ -27,7 +27,7 @@ import {
   METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
-import validator from '../../src/change_validators/artifical_types'
+import validator from '../../src/change_validators/artificial_types'
 
 describe('artificialTypes', () => {
   let errors: ReadonlyArray<ChangeError>

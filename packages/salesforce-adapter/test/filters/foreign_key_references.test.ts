@@ -27,14 +27,14 @@ import {
   SALESFORCE,
   FOREIGN_KEY_DOMAIN,
 } from '../../src/constants'
-import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
+import referenceAnnotationFilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
 import { FilterWith } from './mocks'
 
 // Based on the instance_reference test scenarios
-describe('foregin_key_references filter', () => {
-  const refAnnotationFilter = referenceAnnotationfilterCreator({
+describe('foreign_key_references filter', () => {
+  const refAnnotationFilter = referenceAnnotationFilterCreator({
     config: defaultFilterContext,
   }) as FilterWith<'onFetch'>
   const filter = filterCreator({

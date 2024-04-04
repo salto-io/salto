@@ -20,7 +20,7 @@ import {
   InstanceElement,
   toChange,
 } from '@salto-io/adapter-api'
-import changeValidator from '../../src/change_validators/invalid_listview_filterscope'
+import changeValidator from '../../src/change_validators/invalid_list_view_filter_scope'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 

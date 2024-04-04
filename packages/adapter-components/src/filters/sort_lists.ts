@@ -21,8 +21,12 @@ import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/ad
 import { filter, isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { AdapterFilterCreator } from '../filter_utils'
-import { ApiDefinitions, APIDefinitionsOptions, getNestedWithDefault, queryWithDefault } from '../definitions'
-import { ElementFieldCustomization } from '../definitions/system/fetch'
+import { ApiDefinitions, APIDefinitionsOptions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
+import {
+  ElementFetchDefinition,
+  ElementFieldCustomization,
+  InstanceFetchApiDefinitions,
+} from '../definitions/system/fetch'
 
 const get = (current: Value, tail: string[]): Value => {
   if (current === undefined) {
@@ -44,7 +48,7 @@ const get = (current: Value, tail: string[]): Value => {
 
 const sortLists = async (
   instance: InstanceElement,
-  fieldCustomization?: Record<string, ElementFieldCustomization>,
+  defQuery: DefQuery<ElementFetchDefinition>,
 ): Promise<void> => {
   instance.value =
     (await transformValues({
@@ -56,7 +60,11 @@ const sortLists = async (
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
-        const sortFields = fieldCustomization?.[field.name]?.sort?.sortByProperties
+        const fieldCustomizations = defQuery.query(field.parent.elemID.typeName)?.fieldCustomizations
+        if (fieldCustomizations === undefined) {
+          return value
+        }
+        const sortFields = fieldCustomizations[field.name]?.sort?.sortByProperties
 
         if (sortFields !== undefined) {
           _.assign(
@@ -85,11 +93,11 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
         if (instances === undefined) {
           return
         }
-        const defQuery = queryWithDefault(getNestedWithDefault(instances, 'element'))
+        const defQuery: DefQuery<ElementFetchDefinition> = queryWithDefault(getNestedWithDefault(instances, 'element'))
         await awu(elements)
           .filter(isInstanceElement)
           .forEach(async element =>
-            sortLists(element, (defQuery.query(element.elemID.typeName) as any)?.fieldCustomizations),
+            sortLists(element, defQuery),
           )
       },
     })

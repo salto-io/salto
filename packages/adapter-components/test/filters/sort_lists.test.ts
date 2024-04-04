@@ -198,7 +198,7 @@ describe('sort lists filter', () => {
     })
     const wrappingType = new ObjectType({
       elemID: new ElemID('adapter', 't2'),
-      fields: { ref: { refType: new ListType(mainObjType)} },
+      fields: { ref: { refType: new ListType(mainObjType) } },
     })
     const instance1 = new InstanceElement('inst1', wrappingType, {
       ref: {
@@ -206,18 +206,19 @@ describe('sort lists filter', () => {
           { prop1: 2 },
           { prop1: 1 },
         ],
-      }
+      },
     })
     const elements = [instance1]
     await filter.onFetch(elements)
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
       ref: {
-      field1: [
-        { prop1: 1 },
-        { prop1: 2 },
-      ],
-    }})
+        field1: [
+          { prop1: 1 },
+          { prop1: 2 },
+        ],
+      },
+    })
   })
 
   it('should not allow to sort by a reference (require a property of the referenced element)', async () => {

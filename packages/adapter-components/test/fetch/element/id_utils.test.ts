@@ -146,8 +146,10 @@ describe('id utils', () => {
         customNameMappingFunctions: {},
       })
       const parent = new InstanceElement('parent:b', new ObjectType({ elemID: typeID }))
-      expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b_A@fu')
-      expect(func({ entry: { a: 'A A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b_A_A@fus')
+      expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b__A@fuu')
+      expect(func({ entry: { a: 'A A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual(
+        'parent_b__A_A@fuus',
+      )
     })
     it('should avoid extra delimiter when extending parent and no parts', () => {
       const func = createElemIDFunc({

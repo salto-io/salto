@@ -353,7 +353,7 @@ describe('createAdapter', () => {
           'test.business_hours_schedule.instance.Some_schedule@s',
           'test.business_hours_schedule__intervals',
           'test.business_hours_schedule_holiday',
-          'test.business_hours_schedule_holiday.instance.Some_schedule_New_holiday1@sus',
+          'test.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
           'test.group',
           'test.group.instance.group_1@s',
           'test.group.instance.group_2@s',
@@ -364,7 +364,7 @@ describe('createAdapter', () => {
             .find(
               e =>
                 e.elemID.getFullName() ===
-                'test.business_hours_schedule_holiday.instance.Some_schedule_New_holiday1@sus',
+                'test.business_hours_schedule_holiday.instance.Some_schedule__New_holiday1@suus',
             )?.value,
         ).toEqual({
           end_date: '2024-02-21',
@@ -373,118 +373,117 @@ describe('createAdapter', () => {
           start_date: '2024-02-20',
         })
       })
+    })
+  })
+  describe('deploy', () => {
+    let operations: AdapterOperations
+    let groupType: ObjectType
+    let businessHoursScheduleType: ObjectType
+    let group1: InstanceElement
+    let schedule1: InstanceElement
 
-      describe('deploy', () => {
-        let operations: AdapterOperations
-        let groupType: ObjectType
-        let businessHoursScheduleType: ObjectType
-        let group1: InstanceElement
-        let schedule1: InstanceElement
-
-        beforeEach(() => {
-          // TODO update to relevant changes
-          groupType = new ObjectType({ elemID: new ElemID('test', 'group') })
-          businessHoursScheduleType = new ObjectType({ elemID: new ElemID('test', 'business_hours_schedule') })
-          group1 = new InstanceElement('group1', groupType, { name: 'group1', is_public: 'false', id: 1234 })
-          schedule1 = new InstanceElement('My_Schedule@s', businessHoursScheduleType, {
-            name: 'My Schedule',
-            time_zone: 'Pacific Time (US & Canada)',
-            intervals: [
-              {
-                start_time: 1980,
-                end_time: 2460,
-              },
-              {
-                start_time: 3420,
-                end_time: 3900,
-              },
-              {
-                start_time: 4860,
-                end_time: 5340,
-              },
-              {
-                start_time: 6300,
-                end_time: 6780,
-              },
-              {
-                start_time: 7740,
-                end_time: 8220,
-              },
-            ],
-          })
-
-          operations = adapter.operations({
-            credentials: new InstanceElement('config', credentialsType, {
-              username: 'user123',
-              password: 'pwd456',
-              subdomain: 'myBrand',
-            }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-            elementsSource: buildElementsSourceFromElements([groupType, businessHoursScheduleType, group1, schedule1]),
-          })
-        })
-
-        it('should return the applied changes', async () => {
-          const results: DeployResult[] = []
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [toChange({ after: new InstanceElement('new_group@s', groupType, { name: 'new group' }) })],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-          const updatedGroup1 = group1.clone()
-          updatedGroup1.value.name = 'new name'
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [
-                  toChange({
-                    before: group1,
-                    after: updatedGroup1,
-                  }),
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-
-          results.push(
-            await operations.deploy({
-              changeGroup: {
-                groupID: 'group',
-                changes: [
-                  toChange({
-                    after: new InstanceElement('schedule2', businessHoursScheduleType, {
-                      name: 'schedule2',
-                      time_zone: 'Pacific Time (US & Canada)',
-                      intervals: [
-                        {
-                          start_time: 1980,
-                          end_time: 2460,
-                        },
-                        {
-                          start_time: 3420,
-                          end_time: 3900,
-                        },
-                      ],
-                    }),
-                  }),
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            }),
-          )
-
-          expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
-          expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
-          const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
-          expect(getChangeData(addRes).value.id).toEqual(12345)
-        })
+    beforeEach(() => {
+      // TODO update to relevant changes
+      groupType = new ObjectType({ elemID: new ElemID('test', 'group') })
+      businessHoursScheduleType = new ObjectType({ elemID: new ElemID('test', 'business_hours_schedule') })
+      group1 = new InstanceElement('group1', groupType, { name: 'group1', is_public: 'false', id: 1234 })
+      schedule1 = new InstanceElement('My_Schedule@s', businessHoursScheduleType, {
+        name: 'My Schedule',
+        time_zone: 'Pacific Time (US & Canada)',
+        intervals: [
+          {
+            start_time: 1980,
+            end_time: 2460,
+          },
+          {
+            start_time: 3420,
+            end_time: 3900,
+          },
+          {
+            start_time: 4860,
+            end_time: 5340,
+          },
+          {
+            start_time: 6300,
+            end_time: 6780,
+          },
+          {
+            start_time: 7740,
+            end_time: 8220,
+          },
+        ],
       })
+
+      operations = adapter.operations({
+        credentials: new InstanceElement('config', credentialsType, {
+          username: 'user123',
+          password: 'pwd456',
+          subdomain: 'myBrand',
+        }),
+        config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+        elementsSource: buildElementsSourceFromElements([groupType, businessHoursScheduleType, group1, schedule1]),
+      })
+    })
+
+    it('should return the applied changes', async () => {
+      const results: DeployResult[] = []
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [toChange({ after: new InstanceElement('new_group@s', groupType, { name: 'new group' }) })],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+      const updatedGroup1 = group1.clone()
+      updatedGroup1.value.name = 'new name'
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [
+              toChange({
+                before: group1,
+                after: updatedGroup1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+
+      results.push(
+        await operations.deploy({
+          changeGroup: {
+            groupID: 'group',
+            changes: [
+              toChange({
+                after: new InstanceElement('schedule2', businessHoursScheduleType, {
+                  name: 'schedule2',
+                  time_zone: 'Pacific Time (US & Canada)',
+                  intervals: [
+                    {
+                      start_time: 1980,
+                      end_time: 2460,
+                    },
+                    {
+                      start_time: 3420,
+                      end_time: 3900,
+                    },
+                  ],
+                }),
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        }),
+      )
+
+      expect(results.map(res => res.appliedChanges.length)).toEqual([1, 1, 1])
+      expect(results.map(res => res.errors.length)).toEqual([0, 0, 0])
+      const addRes = results[0].appliedChanges[0] as Change<InstanceElement>
+      expect(getChangeData(addRes).value.id).toEqual(12345)
     })
   })
 })

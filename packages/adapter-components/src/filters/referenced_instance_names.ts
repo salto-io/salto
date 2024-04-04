@@ -77,15 +77,13 @@ const getInstanceNameDependencies = <TOptions extends APIDefinitionsOptions = {}
   const referencedInstances = fieldIdParts
     .filter(fieldIdPart => fieldIdPart.isReference)
     .map(fieldIdPart => {
-      if (fieldIdPart.isReference) {
-        const fieldValue = _.get(instance.value, fieldIdPart.fieldName)
-        if (isReferenceExpression(fieldValue) && fieldValue.elemID.idType === 'instance') {
-          return fieldValue.elemID.createTopLevelParentID().parent.getFullName()
-        }
-        log.warn(
-          `Instance ${instance.elemID.getFullName()} has a reference field ${fieldIdPart.fieldName} that is not a reference expression`,
-        )
+      const fieldValue = _.get(instance.value, fieldIdPart.fieldName)
+      if (isReferenceExpression(fieldValue) && fieldValue.elemID.idType === 'instance') {
+        return fieldValue.elemID.createTopLevelParentID().parent.getFullName()
       }
+      log.warn(
+        `Instance ${instance.elemID.getFullName()} has a reference field ${fieldIdPart.fieldName} that is not a reference expression`,
+      )
       return undefined
     })
     .filter(isDefined)

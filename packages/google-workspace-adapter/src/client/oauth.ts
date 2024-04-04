@@ -116,7 +116,7 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
   response: OauthAccessTokenResponse,
 ) => {
   const { clientId, clientSecret, port } = input
-  const redirectUri = `http://localhost:${port}`
+  const redirectUri = `http://localhost:${port}/extract`
   const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
   const { code } = response.fields
   const { tokens } = await oAuth2Client.getToken(code)

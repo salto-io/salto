@@ -18,9 +18,15 @@ import { definitions } from '@salto-io/adapter-components'
 export type AdditionalAction = never
 export type ClientOptions = 'main' | 'groupSettings'
 export type PaginationOptions = 'cursor'
+export type ReferenceContextStrategies = never
+export type CustomReferenceSerializationStrategyName = 'roleId' | 'orgUnitId' | 'buildingId'
 
+export type CustomIndexField = CustomReferenceSerializationStrategyName
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions
   additionalAction: AdditionalAction
+  referenceContextStrategies: ReferenceContextStrategies
+  referenceSerializationStrategies: CustomReferenceSerializationStrategyName
+  referenceIndexNames: CustomIndexField
 }

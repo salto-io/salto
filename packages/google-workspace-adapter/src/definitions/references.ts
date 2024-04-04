@@ -14,35 +14,57 @@
  * limitations under the License.
  */
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
+import { ReferenceContextStrategies, Options, CustomReferenceSerializationStrategyName } from './types'
 
-const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
-  // {
-  //   src: { field: 'roleId', parentTypes: ['roleAssignment'] },
-  //   serializationStrategy: 'roleId',
-  //   target: { type: 'role' },
-  // },
+const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
+  ReferenceContextStrategies,
+  CustomReferenceSerializationStrategyName
+>[] = [
+  {
+    src: { field: 'roleId', parentTypes: ['roleAssignment'] },
+    serializationStrategy: 'roleId',
+    target: { type: 'role' },
+  },
   {
     src: { field: 'assignedTo', parentTypes: ['roleAssignment'] },
     serializationStrategy: 'id',
     target: { type: 'group' },
   },
-  // {
-  //   src: { field: 'parentOrgUnitId', parentTypes: ['orgUnit'] },
-  //   serializationStrategy: 'orgUnitId',
-  //   target: { type: 'orgUnit' },
-  // },
-  // {
-  //   src: { field: 'buildingId', parentTypes: ['room'] },
-  //   serializationStrategy: 'buildingId',
-  //   target: { type: 'building' },
-  // },
-  // {
-  //   src: { field: 'name', parentTypes: ['room__featureInstances__feature'] },
-  //   serializationStrategy: 'name',
-  //   target: { type: 'feature' },
-  // },
+  {
+    src: { field: 'parentOrgUnitId', parentTypes: ['orgUnit'] },
+    serializationStrategy: 'orgUnitId',
+    target: { type: 'orgUnit' },
+  },
+  {
+    src: { field: 'buildingId', parentTypes: ['room'] },
+    serializationStrategy: 'buildingId',
+    target: { type: 'building' },
+  },
+  {
+    src: { field: 'name', parentTypes: ['room__featureInstances__feature'] },
+    serializationStrategy: 'name',
+    target: { type: 'feature' },
+  },
 ]
 
-export const REFERENCES: definitions.ApiDefinitions['references'] = {
+export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
+  serializationStrategyLookup: {
+    roleId: {
+      serialize: ({ ref }) => ref.value.value.roleId,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'roleId',
+    },
+    buildingId: {
+      serialize: ({ ref }) => ref.value.value.buildingId,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'buildingId',
+    },
+    orgUnitId: {
+      serialize: ({ ref }) => ref.value.value.orgUnitId,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'orgUnitId',
+    },
+  },
+  fieldsToGroupBy: ['id', 'roleId', 'buildingId', 'orgUnitId', 'name'],
 }

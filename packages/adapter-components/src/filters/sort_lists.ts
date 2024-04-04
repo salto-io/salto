@@ -15,18 +15,15 @@
  */
 import { collections } from '@salto-io/lowerdash'
 
-const { awu } = collections.asynciterable
-
 import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { filter, isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { AdapterFilterCreator } from '../filter_utils'
-import { ApiDefinitions, APIDefinitionsOptions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
+import { ApiDefinitions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
 import {
   ElementFetchDefinition,
-  ElementFieldCustomization,
-  InstanceFetchApiDefinitions,
 } from '../definitions/system/fetch'
+
+const { awu } = collections.asynciterable
 
 const get = (current: Value, tail: string[]): Value => {
   if (current === undefined) {
@@ -97,7 +94,7 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
         await awu(elements)
           .filter(isInstanceElement)
           .forEach(async element =>
-            sortLists(element, defQuery),
+            sortLists(element, defQuery)
           )
       },
     })

@@ -122,9 +122,9 @@ describe('sort lists filter', () => {
     })
     const instance1 = new InstanceElement('inst1', mainObjType, {
       field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst1'), { prop1: 2 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst2'), { prop1: 3 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst3'), { prop1: 1 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 2 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 3 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 1 }) },
       ],
     })
     const elements = [instance1]
@@ -132,9 +132,9 @@ describe('sort lists filter', () => {
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
       field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst3'), { prop1: 1 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst1'), { prop1: 2 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst2'), { prop1: 3 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 1 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 2 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 3 }) },
       ],
     })
   })
@@ -152,16 +152,16 @@ describe('sort lists filter', () => {
     const instance1 = new InstanceElement('inst1', mainObjType, {
       field1: [
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst1'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3', 'ref2inst1'), { prop: 2 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
+            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }) }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3', 'ref2inst2'), { prop: 3 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
+            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }) }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst3'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3', 'ref2inst3'), { prop: 1 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
+            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }) }),
         },
       ],
     })
@@ -171,16 +171,16 @@ describe('sort lists filter', () => {
     expect(elements[0].value).toEqual({
       field1: [
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst3'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3', 'ref2inst3'), { prop: 1 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
+            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }) }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst1'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3', 'ref2inst1'), { prop: 2 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
+            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }) }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3', 'ref2inst2'), { prop: 3 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
+            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }) }),
         },
       ],
     })
@@ -233,7 +233,7 @@ describe('sort lists filter', () => {
     })
     const instance1 = new InstanceElement('inst1', mainObjType, {
       field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2', 'refinst1'), { prop1: 2 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) },
       ],
     })
     const elements = [instance1]

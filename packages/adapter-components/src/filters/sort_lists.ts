@@ -19,9 +19,7 @@ import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/ad
 import { filter, isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { ApiDefinitions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
-import {
-  ElementFetchDefinition,
-} from '../definitions/system/fetch'
+import { ElementFetchDefinition } from '../definitions/system/fetch'
 
 const { awu } = collections.asynciterable
 
@@ -43,10 +41,7 @@ const get = (current: Value, tail: string[]): Value => {
   return get(next, rest)
 }
 
-const sortLists = async (
-  instance: InstanceElement,
-  defQuery: DefQuery<ElementFetchDefinition>,
-): Promise<void> => {
+const sortLists = async (instance: InstanceElement, defQuery: DefQuery<ElementFetchDefinition>): Promise<void> => {
   instance.value =
     (await transformValues({
       values: instance.value,
@@ -83,18 +78,16 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
   { definitions: Pick<ApiDefinitions<TOptions>, 'fetch'> }
 > =
   () =>
-    ({ definitions }) => ({
-      name: 'sortListsFilter',
-      onFetch: async (elements: Element[]) => {
-        const instances = definitions.fetch?.instances
-        if (instances === undefined) {
-          return
-        }
-        const defQuery: DefQuery<ElementFetchDefinition> = queryWithDefault(getNestedWithDefault(instances, 'element'))
-        await awu(elements)
-          .filter(isInstanceElement)
-          .forEach(async element =>
-            sortLists(element, defQuery)
-          )
-      },
-    })
+  ({ definitions }) => ({
+    name: 'sortListsFilter',
+    onFetch: async (elements: Element[]) => {
+      const instances = definitions.fetch?.instances
+      if (instances === undefined) {
+        return
+      }
+      const defQuery: DefQuery<ElementFetchDefinition> = queryWithDefault(getNestedWithDefault(instances, 'element'))
+      await awu(elements)
+        .filter(isInstanceElement)
+        .forEach(async element => sortLists(element, defQuery))
+    },
+  })

@@ -122,9 +122,9 @@ describe('sort lists filter', () => {
     })
     const instance1 = new InstanceElement('inst1', mainObjType, {
       field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 2 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 3 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 1 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 3 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 1 }) },
       ],
     })
     const elements = [instance1]
@@ -132,9 +132,9 @@ describe('sort lists filter', () => {
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
       field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 1 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 2 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2' ), { prop1: 3 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 1 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) },
+        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 3 }) },
       ],
     })
   })
@@ -152,16 +152,19 @@ describe('sort lists filter', () => {
     const instance1 = new InstanceElement('inst1', mainObjType, {
       field1: [
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
+            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
+          }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
+            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
+          }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
+            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
+          }),
         },
       ],
     })
@@ -171,16 +174,19 @@ describe('sort lists filter', () => {
     expect(elements[0].value).toEqual({
       field1: [
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
+            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
+          }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
+            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
+          }),
         },
         {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'),
-            { ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }) }),
+          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
+            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
+          }),
         },
       ],
     })
@@ -202,10 +208,7 @@ describe('sort lists filter', () => {
     })
     const instance1 = new InstanceElement('inst1', wrappingType, {
       ref: {
-        field1: [
-          { prop1: 2 },
-          { prop1: 1 },
-        ],
+        field1: [{ prop1: 2 }, { prop1: 1 }],
       },
     })
     const elements = [instance1]
@@ -213,10 +216,7 @@ describe('sort lists filter', () => {
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
       ref: {
-        field1: [
-          { prop1: 1 },
-          { prop1: 2 },
-        ],
+        field1: [{ prop1: 1 }, { prop1: 2 }],
       },
     })
   })
@@ -232,9 +232,7 @@ describe('sort lists filter', () => {
       fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
     })
     const instance1 = new InstanceElement('inst1', mainObjType, {
-      field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) },
-      ],
+      field1: [{ ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) }],
     })
     const elements = [instance1]
     await expect(filter.onFetch(elements)).rejects.toThrow()

@@ -25,7 +25,7 @@ import { FilterCreator } from '../filter'
 const filter: FilterCreator = () => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
+    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs, fieldsToGroupBy: ['id'] })
   },
 })
 

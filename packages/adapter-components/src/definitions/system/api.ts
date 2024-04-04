@@ -26,6 +26,8 @@ export type APIDefinitionsOptions = {
   customNameMappingOptions?: string
   additionalAction?: string
   referenceContextStrategies?: string
+  referenceSerializationStrategies?: string
+  referenceIndexNames?: string
 }
 
 export type ResolveClientOptionsType<Options extends Pick<APIDefinitionsOptions, 'clientOptions'>> =
@@ -44,6 +46,13 @@ export type ResolveAdditionalActionType<Options extends Pick<APIDefinitionsOptio
 export type ResolveReferenceContextStrategiesType<
   Options extends Pick<APIDefinitionsOptions, 'referenceContextStrategies'>,
 > = Options['referenceContextStrategies'] extends string ? Options['referenceContextStrategies'] : never
+
+export type ResolveReferenceSerializationStrategyLookup<
+  Options extends Pick<APIDefinitionsOptions, 'referenceSerializationStrategies'>,
+> = Options['referenceSerializationStrategies'] extends string ? Options['referenceSerializationStrategies'] : never
+
+export type ResolveReferenceIndexNames<Options extends Pick<APIDefinitionsOptions, 'referenceIndexNames'>> =
+  Options['referenceIndexNames'] extends string ? Options['referenceIndexNames'] : never
 
 export type ApiDefinitions<Options extends APIDefinitionsOptions = {}> = {
   // sources are processed and used to populate initial options for clients and components, in order of definition,
@@ -66,7 +75,11 @@ export type ApiDefinitions<Options extends APIDefinitionsOptions = {}> = {
   pagination: Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
 
   // rules for reference extraction (during fetch) and serialization (during deploy)
-  references?: ReferenceDefinitions<ResolveReferenceContextStrategiesType<Options>>
+  references?: ReferenceDefinitions<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>,
+    ResolveReferenceIndexNames<Options>
+  >
 
   fetch?: FetchApiDefinitions<Options>
   deploy?: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>

@@ -19,9 +19,10 @@ import { WORKFLOW_DETAILED_TYPE, TASK_TYPE, SETTINGS_TYPE_PREFIX } from '../cons
 import { FilterCreator } from '../filter'
 
 type ZuoraReferenceSerializationStrategyName = 'currencyCode' | 'segmentName'
+type ZuoraReferenceIndexName = ZuoraReferenceSerializationStrategyName
 const ZuoraReferenceSerializationStrategyLookup: Record<
   ZuoraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
-  referenceUtils.ReferenceSerializationStrategy
+  referenceUtils.ReferenceSerializationStrategy<ZuoraReferenceIndexName>
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   currencyCode: {
@@ -36,18 +37,18 @@ const ZuoraReferenceSerializationStrategyLookup: Record<
   },
 }
 
-type ZuoraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
-  zuoraSerializationStrategy?: ZuoraReferenceSerializationStrategyName
-}
+type ZuoraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
+  never,
+  ZuoraReferenceSerializationStrategyName
+>
 
-class ZuoraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
+class ZuoraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+  never,
+  ZuoraReferenceSerializationStrategyName,
+  ZuoraReferenceIndexName
+> {
   constructor(def: ZuoraFieldReferenceDefinition) {
-    super({ src: def.src })
-    this.serializationStrategy =
-      ZuoraReferenceSerializationStrategyLookup[
-        def.zuoraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-      ]
-    this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
+    super(def, ZuoraReferenceSerializationStrategyLookup)
   }
 }
 
@@ -139,17 +140,17 @@ const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'currency', parentTypes: ['GETProductRatePlanChargePricingType'] },
-    zuoraSerializationStrategy: 'currencyCode',
+    serializationStrategy: 'currencyCode',
     target: { type: `${SETTINGS_TYPE_PREFIX}Currency` },
   },
   {
     src: { field: 'homeCurrencyCode', parentTypes: [`${SETTINGS_TYPE_PREFIX}FxCurrency`] },
-    zuoraSerializationStrategy: 'currencyCode',
+    serializationStrategy: 'currencyCode',
     target: { type: `${SETTINGS_TYPE_PREFIX}Currency` },
   },
   {
     src: { field: 'segmentName', parentTypes: [`${SETTINGS_TYPE_PREFIX}RuleDetail`] },
-    zuoraSerializationStrategy: 'segmentName',
+    serializationStrategy: 'segmentName',
     target: { type: `${SETTINGS_TYPE_PREFIX}Segment` },
   },
 

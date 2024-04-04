@@ -73,9 +73,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/wiki/api/v2/pages/{id}',
                   method: 'delete',
                 },
-                transformation: {
-                  omit: ['restriction', 'version'],
-                },
               },
             },
           ],

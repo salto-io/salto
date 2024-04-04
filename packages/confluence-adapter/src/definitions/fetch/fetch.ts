@@ -15,7 +15,6 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
 import { adjustLabelsToIdsFunc } from './adjust_utils'
 
@@ -374,9 +373,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
   },
 })
 
-export const createFetchDefinitions = (
-  _fetchConfig: UserFetchConfig,
-): definitions.fetch.FetchApiDefinitions<Options> => ({
+export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {
       requests: [

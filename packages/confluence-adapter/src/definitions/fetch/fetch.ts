@@ -193,6 +193,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
+          omit: ['position'],
         },
       },
     ],

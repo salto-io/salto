@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import {
   createServiceIDs,
   serviceIDKeyCreator,
@@ -136,20 +136,58 @@ describe('id utils', () => {
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual('unnamed')
     })
-    it('should avoid double nacl-case when extending parent', () => {
+    it('should avoid double nacl-case when extending parent or isReference is true', () => {
       const func = createElemIDFunc({
         elemIDDef: {
-          parts: [{ fieldName: 'a' }],
+          parts: [{ fieldName: 'a' }, { fieldName: 'refField', isReference: true }],
           extendsParent: true,
         },
         typeID,
         customNameMappingFunctions: {},
       })
-      const parent = new InstanceElement('parent:b', new ObjectType({ elemID: typeID }))
-      expect(func({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual('parent_b__A@fuu')
-      expect(func({ entry: { a: 'A A', b: 'B', c: 'C' }, defaultName: 'unnamed', parent })).toEqual(
-        'parent_b__A_A@fuus',
-      )
+      const parent = new InstanceElement('parent_name@s', new ObjectType({ elemID: typeID }))
+      const refInst = new InstanceElement('refInst_name@s', new ObjectType({ elemID: typeID }))
+      expect(
+        func({
+          entry: { a: 'A', b: 'B', refField: new ReferenceExpression(refInst.elemID, refInst) },
+          defaultName: 'unnamed',
+          parent,
+        }),
+      ).toEqual('parent_name__A_refInst_name@suuus')
+      expect(
+        func({
+          entry: { a: 'A A', b: 'B', refField: new ReferenceExpression(refInst.elemID, refInst) },
+          defaultName: 'unnamed',
+          parent,
+        }),
+      ).toEqual('parent_name__A_A_refInst_name@suusus')
+    })
+    it('should not avoid double nacl-case when use useOldElemIds is true', () => {
+      const func = createElemIDFunc({
+        elemIDDef: {
+          parts: [{ fieldName: 'a' }, { fieldName: 'refField', isReference: true }],
+          extendsParent: true,
+          useOldElemIds: true,
+        },
+        typeID,
+        customNameMappingFunctions: {},
+      })
+      const parent = new InstanceElement('parent_name@s', new ObjectType({ elemID: typeID }))
+      const refInst = new InstanceElement('refInst_name@s', new ObjectType({ elemID: typeID }))
+      expect(
+        func({
+          entry: { a: 'A', b: 'B', refField: new ReferenceExpression(refInst.elemID, refInst) },
+          defaultName: 'unnamed',
+          parent,
+        }),
+      ).toEqual('parent_name_s__A_refInst_name_s@umuuuum')
+      expect(
+        func({
+          entry: { a: 'A A', b: 'B', refField: new ReferenceExpression(refInst.elemID, refInst) },
+          defaultName: 'unnamed',
+          parent,
+        }),
+      ).toEqual('parent_name_s__A_A_refInst_name_s@umuusuum')
     })
     it('should avoid extra delimiter when extending parent and no parts', () => {
       const func = createElemIDFunc({

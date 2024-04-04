@@ -57,6 +57,8 @@ export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
     // default - true when parent annotation exists?
     // TODO check if still needed when implementing SALTO-5421
     extendsParent?: boolean
+    // This is a temporary flag to support double nacl case for upgrading existing services to the new definitions
+    useOldElemIds?: boolean
   }
 
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {

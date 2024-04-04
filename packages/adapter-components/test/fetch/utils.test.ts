@@ -40,7 +40,7 @@ describe('fetch utils', () => {
       }
     })
     describe('when def combines multiple args', () => {
-      it('should transform values based on the privided definitions', () => {
+      it('should transform values based on the provided definitions', () => {
         const func = createValueTransformer({ root: 'a', nestUnderField: 'b', pick: ['x', 'y', 'z'], omit: ['z'] })
         expect(func(item)).toEqual([
           {

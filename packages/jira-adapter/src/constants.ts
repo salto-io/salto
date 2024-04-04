@@ -72,7 +72,7 @@ export const PERMISSIONS = 'Permissions'
 export const PERMISSION_SCHEME_TYPE_NAME = 'PermissionScheme'
 export const ACCOUNT_ID_INFO_TYPE = 'AccountIdInfo'
 export const ACCOUNT_ID_STRING = 'ACCOUNT_ID'
-export const ACCOUNT_IDS_FIELDS_NAMES = [
+export const ACCOUNT_ID_FIELDS_NAMES = [
   'leadAccountId',
   'authorAccountId',
   'accountId',
@@ -140,6 +140,7 @@ export const OBJECT_TYPE_ORDER_TYPE = 'ObjectTypeOrder'
 export const OBJECT_SCHMEA_REFERENCE_TYPE_TYPE = 'ObjectSchemaReferenceType'
 export const OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE = 'ObjectSchemaDefaultReferenceType'
 export const OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE = 'ObjectTypeLabelAttribute'
+export const OBJECT_TYPE_ICON_TYPE = 'ObjectTypeIcon'
 export const DELETE_LINK_TYPES = 'DeleteLinkTypes'
 export const APPLICATION_PROPERTY_TYPE = 'ApplicationProperty'
 export const FIELD_TYPE = 'Field'

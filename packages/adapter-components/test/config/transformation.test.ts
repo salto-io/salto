@@ -16,7 +16,7 @@
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import {
   createTransformationConfigTypes,
-  validateTransoformationConfig,
+  validateTransformationConfig,
   dereferenceFieldName,
   shouldNestFiles,
   TransformationDefaultConfig,
@@ -136,7 +136,7 @@ describe('config_transformation', () => {
   describe('validateTransoformationConfig', () => {
     it('should validate successfully when values are valid', () => {
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b', 'c'],
@@ -163,7 +163,7 @@ describe('config_transformation', () => {
     })
     it('should fail if there are conflicts between field entries in the default config (fieldsToOmit)', () => {
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b', 'c'],
@@ -194,7 +194,7 @@ describe('config_transformation', () => {
     })
     it('should fail if there are conflicts between field entries in the default config (fieldsToHide)', () => {
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b', 'c'],
@@ -225,7 +225,7 @@ describe('config_transformation', () => {
     })
     it('should fail if there are conflicts between field entries for specific types', () => {
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b', 'c'],
@@ -260,7 +260,7 @@ describe('config_transformation', () => {
     })
     it('should fail if there are conflict between isSingleton field and idFields/fileNameFields', () => {
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b', 'c'],
@@ -288,7 +288,7 @@ describe('config_transformation', () => {
     })
     it('should fail if idFields name are invalid', () => {
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b', 'c'],
@@ -309,7 +309,7 @@ describe('config_transformation', () => {
         ),
       )
       expect(() =>
-        validateTransoformationConfig(
+        validateTransformationConfig(
           'PATH',
           {
             idFields: ['a', 'b&', 'c'],

@@ -17,7 +17,7 @@ import { isReferenceExpression, StaticFile, TemplateExpression, TemplatePart } f
 import { logger } from '@salto-io/logging'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { escapeTemplateMarker } from '../parser/internal/utils'
-import { createReferenceExpresion, unescapeTemplateMarker } from '../parser/internal/native/helpers'
+import { createReferenceExpression, unescapeTemplateMarker } from '../parser/internal/native/helpers'
 import { IllegalReference } from '../parser'
 import { REFERENCE_PART } from '../parser/internal/native/lexer'
 
@@ -54,7 +54,7 @@ const createReferencesFromStringParts = (parts: PartWithReferenceIndicator[]): T
         log.warn(`refParts is invalid, received ${refParts.toString()}`)
         return part.part
       }
-      const ref = createReferenceExpresion(refParts[1].trim())
+      const ref = createReferenceExpression(refParts[1].trim())
       return ref instanceof IllegalReference ? part.part : ref
     }
     return part.part

@@ -80,7 +80,7 @@ const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
  * Marks each field reference in field configuration as a weak reference.
  */
 const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
-  log.time(
+  log.timeDebug(
     () =>
       elements
         .filter(isInstanceElement)
@@ -100,7 +100,7 @@ const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSou
 const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       const fixedElements = await awu(elements)
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)

@@ -90,3 +90,17 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (ret
     credValidateFunc: validateCredentials,
     timeout,
   })
+
+export const createLogoConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) =>
+  clientUtils.axiosConnection({
+    retryOptions,
+    authParamsFunc: async ({ token }) => ({
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Issuer': 'micros-group/jsm-cmdb',
+      },
+    }),
+    baseURLFunc: async ({ baseUrl }) => baseUrl,
+    credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
+    timeout,
+  })

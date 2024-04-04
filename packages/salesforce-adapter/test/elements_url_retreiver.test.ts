@@ -87,9 +87,7 @@ describe('lightningElementsUrlRetriever', () => {
           elemID: new ElemID('salesforce', 'PermissionSetGroup'),
           annotations: { metadataType: 'PermissionSetGroup' },
         })
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/PermSetGroups/home',
           ),
@@ -101,9 +99,7 @@ describe('lightningElementsUrlRetriever', () => {
           elemID: new ElemID('salesforce', 'BusinessHoursSettings'),
           annotations: { metadataType: 'BusinessHoursSettings' },
         })
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
           ),
@@ -118,9 +114,7 @@ describe('lightningElementsUrlRetriever', () => {
             annotations: { metadataType: 'BusinessHoursSettings' },
           }),
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
           ),
@@ -136,19 +130,31 @@ describe('lightningElementsUrlRetriever', () => {
           }),
           { fullName: 'Lead' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/LeadRules/home',
           ),
         )
       })
 
+      it('AutoResponseRulesResolver', async () => {
+        const element = new InstanceElement(
+          'Case',
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'AutoResponseRules'),
+            annotations: { metadataType: 'AutoResponseRules' },
+          }),
+          { fullName: 'Case' },
+        )
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
+          new URL(
+            'https://salto5-dev-ed.lightning.force.com/lightning/setup/CaseResponses/home',
+          ),
+        )
+      })
+
       it('standard object', async () => {
-        await expect(
-          elementUrlRetriever?.retrieveUrl(standardObject),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(standardObject)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view',
           ),
@@ -156,9 +162,7 @@ describe('lightningElementsUrlRetriever', () => {
       })
 
       it('custom object', async () => {
-        await expect(
-          elementUrlRetriever?.retrieveUrl(customObject),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(customObject)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/Details/view',
           ),
@@ -172,9 +176,7 @@ describe('lightningElementsUrlRetriever', () => {
           BuiltinTypes.NUMBER,
           { apiName: 'standardField' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view',
           ),
@@ -188,9 +190,7 @@ describe('lightningElementsUrlRetriever', () => {
           BuiltinTypes.NUMBER,
           { internalId: 'someId' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/someId/view',
           ),
@@ -204,9 +204,7 @@ describe('lightningElementsUrlRetriever', () => {
           BuiltinTypes.NUMBER,
           { apiName: 'standardField' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/standardField/view',
           ),
@@ -220,9 +218,7 @@ describe('lightningElementsUrlRetriever', () => {
           BuiltinTypes.NUMBER,
           { internalId: 'fieldId' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/someId/FieldsAndRelationships/fieldId/view',
           ),
@@ -236,9 +232,7 @@ describe('lightningElementsUrlRetriever', () => {
           BuiltinTypes.NUMBER,
           { relationshipName: 'someRelationshipName' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/someRelationshipName/view',
           ),
@@ -250,9 +244,7 @@ describe('lightningElementsUrlRetriever', () => {
           elemID: new ElemID('salesforce', 'custom__mdt'),
           annotations: { internalId: 'someId', apiName: 'custom__mdt' },
         })
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/CustomMetadata/page?address=%2FsomeId%3Fsetupid%3DCustomMetadata',
           ),
@@ -264,9 +256,7 @@ describe('lightningElementsUrlRetriever', () => {
           processType: 'Flow',
           internalId: 'someId',
         })
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/builder_platform_interaction/flowBuilder.app?flowId=someId',
           ),
@@ -278,9 +268,7 @@ describe('lightningElementsUrlRetriever', () => {
           processType: 'Workflow',
           internalId: 'someId',
         })
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ProcessAutomation/home',
           ),
@@ -296,9 +284,7 @@ describe('lightningElementsUrlRetriever', () => {
           }),
           { internalId: 'someId' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3DsomeId',
           ),
@@ -320,9 +306,7 @@ describe('lightningElementsUrlRetriever', () => {
             ],
           },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view',
           ),
@@ -344,9 +328,7 @@ describe('lightningElementsUrlRetriever', () => {
             ],
           },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/ButtonsLinksActions/someId/view',
           ),
@@ -365,9 +347,7 @@ describe('lightningElementsUrlRetriever', () => {
             ],
           },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId',
           ),
@@ -379,9 +359,7 @@ describe('lightningElementsUrlRetriever', () => {
           PATH_ASSISTANT_METADATA_TYPE,
           mockTypes.PathAssistant,
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1',
           ),
@@ -393,9 +371,7 @@ describe('lightningElementsUrlRetriever', () => {
           elemID: new ElemID('salesforce', 'someType'),
           annotations: { internalId: 'someId' },
         })
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             'https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId',
           ),
@@ -408,9 +384,7 @@ describe('lightningElementsUrlRetriever', () => {
           customObject,
           { Id: 'instanceId' },
         )
-        await expect(
-          elementUrlRetriever?.retrieveUrl(element),
-        ).resolves.toEqual(
+        expect(await elementUrlRetriever?.retrieveUrl(element)).toEqual(
           new URL(
             `https://salto5-dev-ed.lightning.force.com/lightning/r/${customObject.annotations.apiName}/instanceId/view`,
           ),
@@ -423,9 +397,7 @@ describe('lightningElementsUrlRetriever', () => {
         })
         expect(elementUrlRetriever).toBeDefined()
         if (elementUrlRetriever !== undefined) {
-          await expect(
-            elementUrlRetriever.retrieveUrl(element),
-          ).resolves.toBeUndefined()
+          expect(await elementUrlRetriever.retrieveUrl(element)).toBeUndefined()
         }
       })
     })

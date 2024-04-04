@@ -1371,7 +1371,7 @@ describe('client_pagination', () => {
               getParams: { url: '/ep', paginationField: 'pagination.startAt' },
               currentParams: {},
               responseData: { total: 4, pagination: { startAt: 0 }, values: [1, 2] },
-              page: [{ totak: 4, pagination: { startAt: 0 }, values: [1, 2] }],
+              page: [{ total: 4, pagination: { startAt: 0 }, values: [1, 2] }],
             }),
           ).toEqual([{ 'pagination.startAt': '2' }])
         })

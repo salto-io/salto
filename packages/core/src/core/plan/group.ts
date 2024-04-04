@@ -79,7 +79,7 @@ export const getCustomGroupIds = async (
 // If we add / remove an object type, we can omit all the field add / remove
 // changes from the same group since they are included in the parent change
 const removeRedundantFieldNodes = (graph: DataNodeMap<Change>, groupKey: GroupKeyFunc): DataNodeMap<Change> =>
-  log.time(() => {
+  log.timeDebug(() => {
     const groupIdToAddedOrRemovedTypesMap = new DefaultMap<string, Map<string, collections.set.SetId>>(() => new Map())
     wu(graph.keys()).forEach(nodeId => {
       const change = graph.getData(nodeId)

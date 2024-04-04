@@ -34,7 +34,7 @@ export type ConfigChangeSuggestion = {
 /**
  * Update config with types to exclude or disabling private API according to config changes
  */
-export const getUpdatedCofigFromConfigChanges = ({
+export const getUpdatedConfigFromConfigChanges = ({
   configChanges,
   currentConfig,
   configType,
@@ -68,7 +68,7 @@ export const getUpdatedCofigFromConfigChanges = ({
     ...Object.fromEntries(fetchFlagsToEnable.map(flagName => [[flagName], true])),
   }
 
-  const updatedClientconfig = shouldDisablePrivateApi
+  const updatedClientConfig = shouldDisablePrivateApi
     ? { ...currentConfig.value[CLIENT_CONFIG], usePrivateAPI: false }
     : currentConfig.value[CLIENT_CONFIG]
 
@@ -77,7 +77,7 @@ export const getUpdatedCofigFromConfigChanges = ({
       new InstanceElement(ElemID.CONFIG_NAME, configType, {
         ...currentConfig.value,
         fetch: updatedFetchConfig,
-        client: updatedClientconfig,
+        client: updatedClientConfig,
       }),
     ],
     message: formatConfigSuggestionsReasons(configChanges.map(configChange => configChange.reason)),

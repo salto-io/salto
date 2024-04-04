@@ -24,7 +24,8 @@ import {
 import { setPath, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME } from '../constants'
+import { GROUP_MEMBERSHIP_TYPE_NAME, GROUP_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME } from '../constants'
+import { isValidGroupMembershipInstance } from './group_members'
 
 const log = logger(module)
 
@@ -48,7 +49,6 @@ const orderPasswordPolicyRuleMethods = (instance: InstanceElement): void => {
   const methodsPath = instance.elemID.createNestedID(
     'actions',
     'selfServicePasswordReset',
-    'additionalProperties',
     'requirement',
     'primary',
     'methods',
@@ -56,6 +56,12 @@ const orderPasswordPolicyRuleMethods = (instance: InstanceElement): void => {
   const methods = resolvePath(instance, methodsPath)
   if (_.isArray(methods)) {
     setPath(instance, methodsPath, methods.sort())
+  }
+}
+
+const sortGroupMembershipMembers = (instance: InstanceElement): void => {
+  if (isValidGroupMembershipInstance(instance)) {
+    instance.value.members = instance.value.members.sort()
   }
 }
 
@@ -74,6 +80,10 @@ const filterCreator: FilterCreator = () => ({
     instances
       .filter(instance => instance.elemID.typeName === PASSWORD_RULE_TYPE_NAME)
       .forEach(instance => orderPasswordPolicyRuleMethods(instance))
+
+    instances
+      .filter(instance => instance.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
+      .forEach(instance => sortGroupMembershipMembers(instance)) // we assume user ids were already converted to emails
   },
 })
 

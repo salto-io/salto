@@ -30,7 +30,7 @@ const getFilteredIds = (
   source: elementSource.ElementsSource,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
 ): Promise<ElemID[]> =>
-  log.time(
+  log.timeDebug(
     async () =>
       awu(
         await selectElementIdsByTraversal({
@@ -177,7 +177,7 @@ export const getEnvsDeletionsDiff = async (
   envs: ReadonlyArray<string>,
   selectors: ElementSelector[],
 ): Promise<Record<string, ElemID[]>> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(
       await awu(envs)
         .map(async env => [

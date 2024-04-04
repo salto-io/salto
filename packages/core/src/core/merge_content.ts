@@ -56,7 +56,7 @@ export const mergeStrings = (
     incoming: string
   },
 ): string | undefined =>
-  log.time(
+  log.timeDebug(
     () => {
       const contents = [current, base ?? '', incoming]
       log.debug(

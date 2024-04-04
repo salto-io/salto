@@ -375,7 +375,7 @@ const processMergeErrors = async (
   errors: merger.MergeError[],
   stateElements: elementSource.ElementsSource,
 ): Promise<ProcessMergeErrorsResult> =>
-  log.time(
+  log.timeDebug(
     async () => {
       const mergeErrsByElemID = _(errors)
         .map(me => [me.elemID.createTopLevelParentID().parent.getFullName(), { error: me, elements: [] }])
@@ -697,7 +697,7 @@ export const calcFetchChanges = async (
 
   // If the state is empty, no need to do all calculations, and just the workspaceToServiceChanges is enough
   const calculateChangesWithEmptyState = async (): Promise<DetailedChangeTreesResults> => {
-    const { changesTree: workspaceToServiceChanges } = await log.time(
+    const { changesTree: workspaceToServiceChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           workspaceElements,
@@ -718,7 +718,7 @@ export const calcFetchChanges = async (
 
   const calculateChangesWithState = async (): Promise<DetailedChangeTreesResults> => {
     // Changes from the service that are not in the state
-    const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time(
+    const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           stateElements,
@@ -737,7 +737,7 @@ export const calcFetchChanges = async (
     const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
 
     // Changes from the nacls that are not in the state
-    const { changesTree: pendingChanges } = await log.time(
+    const { changesTree: pendingChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           stateElements,
@@ -749,7 +749,7 @@ export const calcFetchChanges = async (
     )
 
     // Changes from the service that are not in the nacls
-    const { changesTree: workspaceToServiceChanges } = await log.time(
+    const { changesTree: workspaceToServiceChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           workspaceElements,
@@ -1061,7 +1061,7 @@ export const fetchChangesFromWorkspace = async (
     )
   }
 
-  const differentConfig = await log.time(async () => getDifferentConfigs(), 'Getting workspace configs')
+  const differentConfig = await log.timeDebug(async () => getDifferentConfigs(), 'Getting workspace configs')
   if (!_.isEmpty(differentConfig)) {
     const configsByAdapter = _.groupBy([...differentConfig, ...currentConfigs], config => config.elemID.adapter)
     Object.entries(configsByAdapter).forEach(([adapter, configs]) => {
@@ -1071,7 +1071,7 @@ export const fetchChangesFromWorkspace = async (
   }
   if (
     !fromState &&
-    (await log.time(async () => (await otherWorkspace.errors()).hasErrors('Error'), 'Checking workspace errors'))
+    (await log.timeDebug(async () => (await otherWorkspace.errors()).hasErrors('Error'), 'Checking workspace errors'))
   ) {
     return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
   }
@@ -1081,22 +1081,22 @@ export const fetchChangesFromWorkspace = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchAccounts)
   }
   const otherElementsSource = fromState ? otherWorkspace.state(env) : await otherWorkspace.elements(true, env)
-  const fullElements = await log.time(
+  const fullElements = await log.timeDebug(
     async () =>
       awu(await otherElementsSource.getAll())
         .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
         .toArray(),
     'Getting other workspace elements',
   )
-  const otherPathIndex = await log.time(
+  const otherPathIndex = await log.timeDebug(
     async () => otherWorkspace.state(env).getPathIndex(),
     'Getting other workspace pathIndex',
   )
-  const inMemoryOtherPathIndex = await log.time(
+  const inMemoryOtherPathIndex = await log.timeDebug(
     async () => new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(await awu(otherPathIndex.entries()).toArray()),
     'Saving pathIndex to memory',
   )
-  const splitByPathIndex = await log.time(
+  const splitByPathIndex = await log.timeDebug(
     async () =>
       (
         await withLimitedConcurrency(
@@ -1107,7 +1107,7 @@ export const fetchChangesFromWorkspace = async (
     'Splitting elements by PathIndex',
   )
   const [unmergedWithPath, unmergedWithoutPath] = _.partition(splitByPathIndex, elem => values.isDefined(elem.path))
-  const splitByFile = await log.time(
+  const splitByFile = await log.timeDebug(
     async () =>
       (
         await withLimitedConcurrency(
@@ -1121,7 +1121,7 @@ export const fetchChangesFromWorkspace = async (
     'Splitting elements by files',
   )
   const unmergedElements = [...unmergedWithPath, ...splitByFile]
-  const fetchChangesResult = await log.time(
+  const fetchChangesResult = await log.timeDebug(
     async () =>
       createFetchChanges({
         adapterNames: fetchAccounts,
@@ -1143,7 +1143,7 @@ export const fetchChangesFromWorkspace = async (
   // to drop the change
   // This will not be needed anymore once we have access to the state static file content
   return fromState
-    ? log.time(
+    ? log.timeDebug(
         async () => fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env),
         'Fix state static files',
       )

@@ -27,9 +27,11 @@ import {
   WorkspaceComponents,
   UnresolvedElemIDs,
   FromSourceWithEnv,
-  COMMON_ENV_PREFIX,
+  getBaseDirFromEnvName,
+  getStaticFileCacheName,
   UpdateNaclFilesResult,
   listElementsDependenciesInWorkspace,
+  COMMON_ENV_PREFIX,
 } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
@@ -102,6 +104,8 @@ export {
   EnvironmentsSources,
   initWorkspace,
   COMMON_ENV_PREFIX,
+  getBaseDirFromEnvName,
+  getStaticFileCacheName,
   state,
   workspaceConfigSource,
   adaptersConfigSource,

@@ -283,7 +283,7 @@ describe('dependencies', () => {
         expect(aaaRefs).toBeDefined()
         expect(aaaRefs).not.toHaveProperty('occurrences')
       })
-      it('should keep the existing annotation value when no new details are addded', () => {
+      it('should keep the existing annotation value when no new details are added', () => {
         const type789Refs = findRefDeps(new ElemID('adapter', 'type789'))
         expect(type789Refs).toBeDefined()
         expect(type789Refs.occurrences).toBeDefined()

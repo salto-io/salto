@@ -100,7 +100,6 @@ describe('swagger_type_elements', () => {
         const pet = allTypes.Pet as ObjectType
         expect(pet).toBeInstanceOf(ObjectType)
         expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
-          additionalProperties: 'Map<unknown>',
           category: 'myAdapter.Category',
           id: 'number',
           name: 'serviceid',
@@ -138,19 +137,15 @@ describe('swagger_type_elements', () => {
           middleName: 'string',
           // ref to UserAdditional2 in swagger
           middleName2: 'string',
-          // additional properties
-          additionalProperties: 'Map<myAdapter.Order>',
         })
 
-        // additionalProperties explicit property combined with enabled additionalProperties
-        // should be undefined
         const food = allTypes.Food as ObjectType
         expect(food).toBeInstanceOf(ObjectType)
         expect(_.mapValues(food.fields, f => f.refType.elemID.getFullName())).toEqual({
           brand: 'string',
           id: 'number',
           storage: 'List<string>',
-          additionalProperties: 'Map<unknown>',
+          additionalProperties: 'myAdapter.Category',
         })
 
         return { allTypes, parsedConfigs }
@@ -189,7 +184,6 @@ describe('swagger_type_elements', () => {
         const location = allTypes.Location as ObjectType
         expect(location).toBeInstanceOf(ObjectType)
         expect(_.mapValues(location.fields, f => f.refType.elemID.name)).toEqual({
-          additionalProperties: 'Map<unknown>',
           name: 'serviceid',
           // address is defined as anyOf combining primitive and object - should use unknown
           address: 'unknown',
@@ -316,7 +310,6 @@ describe('swagger_type_elements', () => {
         // regular response type with reference
         const pet = allTypes.Pet__new
         expect(Object.keys((pet as ObjectType).fields).sort()).toEqual([
-          'additionalProperties',
           'category',
           'id',
           'name',
@@ -326,7 +319,7 @@ describe('swagger_type_elements', () => {
         ])
       })
 
-      it('should not have anything under the original typenames', () => {
+      it('should not have anything under the original type names', () => {
         expect(allTypes.NewPet).toBeUndefined()
         expect(allTypes.pet__findByTags).toBeUndefined()
       })

@@ -55,7 +55,7 @@ export const parseTopLevelID = (context: ParseContext, fullname: string, range: 
   return new ElemID(adapter, name)
 }
 
-export const createReferenceExpresion = (ref: string): ReferenceExpression | IllegalReference => {
+export const createReferenceExpression = (ref: string): ReferenceExpression | IllegalReference => {
   try {
     const elemId = ElemID.fromFullName(ref)
     return elemId.adapter === ElemID.VARIABLES_NAMESPACE

@@ -209,7 +209,7 @@ export const filterInvalidChanges = (
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
 ): Promise<FilterResult> =>
-  log.time(
+  log.timeDebug(
     async () => {
       if (Object.keys(changeValidators).length === 0) {
         // Shortcut to avoid grouping all changes if there are no validators to run

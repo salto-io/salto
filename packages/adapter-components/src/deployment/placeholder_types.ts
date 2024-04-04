@@ -48,6 +48,13 @@ export const overrideInstanceTypeForDeploy = <Options extends FetchApiDefinition
   })
   const definedTypes = _.keyBy([generatedType.type, ...generatedType.nestedTypes], t => t.elemID.typeName)
   overrideFieldTypes({ definedTypes, defQuery })
+  // make sure all service id fields are there even on additions (which might not have values for them)
+  defQuery.query(typeName)?.resource?.serviceIDFields?.forEach(fieldName => {
+    if (generatedType.type.fields[fieldName] === undefined) {
+      generatedType.type.fields[fieldName] = instance.getTypeSync().fields[fieldName]
+    }
+  })
+
   clonedInstance.refType = new TypeReference(generatedType.type.elemID, generatedType.type)
   return clonedInstance
 }

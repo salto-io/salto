@@ -42,7 +42,7 @@ const log = logger(module)
 const { getTransformationConfigByType } = configUtils
 const { toBasicInstance } = elementUtils
 const { isDefined } = values
-const LINK_PATH = [LINKS_FIELD, 'additionalProperties', 'schema', 'href']
+const LINK_PATH = [LINKS_FIELD, 'schema', 'href']
 
 const getUserSchemaId = (instance: InstanceElement): string | undefined => {
   const url = _.get(instance.value, LINK_PATH)

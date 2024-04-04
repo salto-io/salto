@@ -50,7 +50,14 @@ export const TOKEN_TYPES = {
 
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
 const NEWLINE_CHARS = '\r\n\u2028\u2029'
-const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*[${NEWLINE_CHARS}]|.*?(?=\\$\\{)|.*[${NEWLINE_CHARS}]`)
+// In multiline strings, we want to match content till a reference expression, so next token matches the reference.
+// to do this we use a lookahead that finds the '${', but matches the string without it. the next token should catch the full ${<reference>} expression.
+// But, if the origin string contains something like ${<some text> {<reference>}}, the $ will be escaped by us, and we get \${<some text> {<reference>}}
+// So, we need to distinguish between '${' and '\${'.
+// The first alternative in the regex actually checks for a '${' preceded by at least one char that isn't \
+// The second alternative checks for strings containing '\${', and stops right after, to avoid including real references that comes after
+// The third alternative matches any other string, until a new line.
+const MULTILINE_CONTENT = new RegExp(`.*?[^\\\\](?=\\$\\{)|.*\\\\\\$\\{|.*[${NEWLINE_CHARS}]`)
 // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
 // We accept unicode newline characters because the string dump code does not treat them as newlines so they can appear
 // in a single line string

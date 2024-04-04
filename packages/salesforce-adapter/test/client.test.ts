@@ -197,6 +197,26 @@ describe('salesforce client', () => {
       expect(res).toEqual([])
     })
 
+    it('retries with 406 error', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .times(1)
+        .reply(406, {})
+        .post(/.*/)
+        .reply(
+          200,
+          {
+            'a:Envelope': {
+              'a:Body': { a: { result: { metadataObjects: [] } } },
+            },
+          },
+          headers,
+        )
+      const res = await client.listMetadataTypes()
+      expect(dodoScope.isDone()).toBeTruthy()
+      expect(res).toEqual([])
+    })
+
     it('fails if max attempts was reached ', async () => {
       const dodoScope = nock('http://dodo22')
         .persist()

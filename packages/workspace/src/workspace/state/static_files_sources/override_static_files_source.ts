@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { hash as lowerdashHash } from '@salto-io/lowerdash'
+import { calculateStaticFileHash } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DirectoryStore } from '../../dir_store'
 import { StateStaticFilesSource } from '../../static_files/common'
@@ -47,7 +47,7 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
       dirStore.getFullPath(args.filepath),
       async () => {
         const content = (await dirStore.get(args.filepath))?.buffer
-        return content !== undefined && lowerdashHash.toMD5(content) === args.hash ? content : undefined
+        return content !== undefined && calculateStaticFileHash(content) === args.hash ? content : undefined
       },
       args.encoding,
       args.isTemplate,
@@ -58,7 +58,7 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
   delete: file => dirStore.delete(file.filepath),
   clear: dirStore.clear,
   flush: () =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       await dirStore.flush()
     }, 'Flushing override static state files source'),
 })

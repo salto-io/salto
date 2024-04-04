@@ -17,7 +17,6 @@ import _ from 'lodash'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
-  createSaltoElementError,
   Element,
   ElemID,
   getChangeData,
@@ -36,7 +35,7 @@ import { getParent, invertNaclCase, naclCase, pathNaclCase } from '@salto-io/ada
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { getWorkspaceId } from '../../workspace_id'
+import { getWorkspaceId, getWorkspaceIdMissingErrors } from '../../workspace_id'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../constants'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
@@ -187,13 +186,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${OBJECT_TYPE_ORDER_TYPE} types because workspaceId is undefined`)
-      const errors = relevantChanges.map(change =>
-        createSaltoElementError({
-          message: `The following changes were not deployed, due to error with the workspaceId: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
-          severity: 'Error',
-          elemID: getChangeData(change).elemID,
-        }),
-      )
+      const errors = getWorkspaceIdMissingErrors(relevantChanges)
       return {
         deployResult: { appliedChanges: [], errors },
         leftoverChanges,

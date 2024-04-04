@@ -330,7 +330,6 @@ export const formatDeployActions = ({
       ...deployAction.subActions.map(action => indent(`- ${action}`, 1)),
       deployAction.documentationURL ?? '',
     ]),
-    emptyLine(),
   ]
 }
 
@@ -345,10 +344,10 @@ export const formatExecutionPlan = async (
     isPreDeploy: true,
   })
   const planErrorsOutput: string[] = _.isEmpty(formattedPlanChangeErrors)
-    ? [emptyLine()]
-    : [emptyLine(), header(Prompts.PLAN_CHANGE_ERRS_HEADER), formattedPlanChangeErrors, emptyLine()]
+    ? []
+    : [emptyLine(), header(Prompts.PLAN_CHANGE_ERRS_HEADER), formattedPlanChangeErrors]
   if (_.isEmpty(plan)) {
-    return [emptyLine(), Prompts.EMPTY_PLAN, ...planErrorsOutput, emptyLine()].join('\n')
+    return [emptyLine(), Prompts.EMPTY_PLAN, ...planErrorsOutput].join('\n')
   }
   const actionCount = formatCountPlanItemTypes(plan)
   const planSteps = await formatDetailedChanges(
@@ -359,11 +358,10 @@ export const formatExecutionPlan = async (
     emptyLine(),
     planSteps,
     ...planErrorsOutput,
-    emptyLine(),
     ...preDeployCallToActions,
+    emptyLine(),
     subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,
-    emptyLine(),
     emptyLine(),
   ].join('\n')
 }
@@ -372,10 +370,10 @@ const deployPhaseIndent = 2
 const formatItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
 
 export const deployPhaseHeader = (checkOnly: boolean): string =>
-  header([emptyLine(), Prompts.START_DEPLOY_EXEC(checkOnly), emptyLine()].join('\n'))
+  header([emptyLine(), Prompts.START_DEPLOY_EXEC(checkOnly)].join('\n'))
 
 export const cancelDeployOutput = (checkOnly: boolean): string =>
-  [emptyLine(), Prompts.CANCEL_DEPLOY(checkOnly), emptyLine()].join('\n')
+  [emptyLine(), Prompts.CANCEL_DEPLOY(checkOnly)].join('\n')
 
 export const deployErrorsOutput = (allErrors: DeployError[]): string => {
   const getErrorMessage = (err: DeployError): string =>

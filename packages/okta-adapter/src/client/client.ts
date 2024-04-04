@@ -40,7 +40,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitC
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // the smallest concurrent rate limit is 15 (by plan)
   get: 15,
-  deploy: 2,
+  deploy: 10,
 }
 
 // We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches

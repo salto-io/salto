@@ -168,7 +168,7 @@ export const isReferenceExpression = (value: any): value is ReferenceExpression 
 export class VariableExpression extends ReferenceExpression {
   constructor(elemID: ElemID, resValue?: Value, topLevelParent?: Element) {
     super(elemID, resValue, topLevelParent)
-    // This is to prevent programing errors since the parser will always create
+    // This is to prevent programming errors since the parser will always create
     // VariableExpressions with idType === 'var'
     if (elemID.idType !== 'var') {
       throw new Error(

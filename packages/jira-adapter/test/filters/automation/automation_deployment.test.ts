@@ -873,6 +873,13 @@ describe('automationDeploymentFilter', () => {
           })
         })
         it('should do nothing if there are no components', async () => {
+          automationInstance.value.components.value = undefined
+          config.fetch.enableJSM = true
+          config.fetch.enableJsmExperimental = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components.value).toBeUndefined()
+        })
+        it('should do nothing if the component is not assets component', async () => {
           automationInstance.value.components = undefined
           config.fetch.enableJSM = true
           config.fetch.enableJsmExperimental = true

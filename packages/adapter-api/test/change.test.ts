@@ -67,30 +67,30 @@ describe('change.ts', () => {
   })
 
   it('should getAllChangeData for removal change', () => {
-    const elems = getAllChangeData({
+    const elements = getAllChangeData({
       action: 'remove',
       data: { before: obj },
     })
-    expect(elems).toEqual([obj])
+    expect(elements).toEqual([obj])
   })
 
   it('should getAllChangeData for add change', () => {
-    const elems = getAllChangeData({
+    const elements = getAllChangeData({
       action: 'add',
       data: { after: inst },
     })
-    expect(elems).toEqual([inst])
+    expect(elements).toEqual([inst])
   })
 
   it('should getAllChangeData for modification change', () => {
     const { field } = obj.fields
     const otherField = field.clone()
     otherField.name = 'other'
-    const elems = getAllChangeData({
+    const elements = getAllChangeData({
       action: 'modify',
       data: { before: field, after: otherField },
     })
-    expect(elems).toEqual([field, otherField])
+    expect(elements).toEqual([field, otherField])
   })
 
   describe('isChange Functions', () => {
@@ -168,7 +168,7 @@ describe('change.ts', () => {
       expect(isModificationChange(newChange)).toBeTruthy()
     })
 
-    it('should throw error if befor and after not provided', () => {
+    it('should throw error if before and after not provided', () => {
       expect(() => toChange({})).toThrow('Must provide before or after')
     })
   })

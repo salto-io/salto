@@ -174,7 +174,7 @@ describe('createAdapter', () => {
                     context: {
                       args: {
                         parent_id: {
-                          fromField: 'id',
+                          root: 'id',
                         },
                       },
                     },
@@ -251,7 +251,9 @@ describe('createAdapter', () => {
                         },
                       },
                       copyFromResponse: {
-                        root: 'schedule',
+                        additional: {
+                          root: 'schedule',
+                        },
                       },
                     },
                     {

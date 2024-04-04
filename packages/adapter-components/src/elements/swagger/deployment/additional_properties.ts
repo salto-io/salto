@@ -58,6 +58,8 @@ const removeAdditionalPropertiesFlat = async (
   }
 }
 
+// TODO remove this
+// https://salto-io.atlassian.net/browse/SALTO-5332
 /**
  * Remove the additional properties value we added on fetch in normalizeElementValues before deploy
  * and add its values to the top level values if deployable

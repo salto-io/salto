@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createSkipParentsOfSkippedInstancesValidator } from '../../../src/deployment/change_validators/skip_parents_of_skipped_instances'
 
-describe('createSkipParentsOfSkippedInstsValidator', () => {
+describe('createSkipParentsOfSkippedInstancesValidator', () => {
   const skippedInstType = new ObjectType({ elemID: new ElemID('salto', 'obj') })
   const parentInstance = new InstanceElement('parent', skippedInstType)
   const skippedInst = new InstanceElement('inner', skippedInstType, {}, undefined, {

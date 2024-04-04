@@ -63,7 +63,7 @@ export const createResourceManager = <ClientOptions extends string>({
   elementGenerator: ElementGenerator
   initialRequestContext?: Record<string, unknown>
 }): ResourceManager => ({
-  fetch: log.time(
+  fetch: log.timeDebug(
     () => async query => {
       const createTypeFetcher: TypeFetcherCreator = ({ typeName, context }) =>
         createTypeResourceFetcher({

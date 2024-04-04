@@ -134,8 +134,8 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 53,
             nested_type: {
-              val: 'agds',
-              another_val: 'dgadgasg',
+              val: 'first_val',
+              another_val: 'second_val',
             },
           },
           field_with_complex_list_type: [
@@ -148,7 +148,7 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 222,
             nested_type: {
-              val: 'agds',
+              val: 'first_val',
               another_val: 7,
               abc: 'abc',
               unknown: null,
@@ -255,8 +255,8 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 53,
             nested_type: {
-              val: 'agds',
-              another_val: 'dgadgasg',
+              val: 'first_val',
+              another_val: 'second_val',
             },
           },
           field_with_complex_list_type: [
@@ -269,7 +269,7 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 222,
             nested_type: {
-              val: 'agds',
+              val: 'first_val',
               another_val: 7,
               abc: 'abc',
               unknown: null,
@@ -383,8 +383,8 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 53,
             nested_type: {
-              val: 'agds',
-              another_val: 'dgadgasg',
+              val: 'first_val',
+              another_val: 'second_val',
             },
           },
           field_with_complex_list_type: [
@@ -397,7 +397,7 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 222,
             nested_type: {
-              val: 'agds',
+              val: 'first_val',
               another_val: 7,
               abc: 'abc',
               unknown: null,
@@ -480,8 +480,8 @@ describe('ducktype_type_elements', () => {
           field_with_complex_type: {
             number: 53,
             nested_type: {
-              val: 'agds',
-              another_val: 'dgadgasg',
+              val: 'first_val',
+              another_val: 'second_val',
             },
           },
         },

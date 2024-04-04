@@ -42,7 +42,7 @@ describe('decorators', () => {
     let inst: TestCls
 
     beforeAll(() => {
-      log = jest.spyOn(logging, 'time')
+      log = jest.spyOn(logging, 'timeDebug')
       inst = new TestCls()
     })
     beforeEach(() => {
@@ -50,14 +50,14 @@ describe('decorators', () => {
     })
     it('should log the time it took to run sync functions', () => {
       inst.syncFunc()
-      expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'running sync')
+      expect(logging.timeDebug).toHaveBeenCalledTimes(1)
+      expect(logging.timeDebug).toHaveBeenCalledWith(expect.anything(), 'running sync')
     })
 
     it('should log the time it took to run async functions', async () => {
       await inst.asyncFunc()
-      expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'running async')
+      expect(logging.timeDebug).toHaveBeenCalledTimes(1)
+      expect(logging.timeDebug).toHaveBeenCalledWith(expect.anything(), 'running async')
     })
   })
 })

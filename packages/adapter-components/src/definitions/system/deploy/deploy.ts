@@ -41,9 +41,12 @@ export type DeployableRequestDefinition<ClientOptions extends string> = {
 
   // define what (if any) part of the response should be copied back to the workspace (via the original change).
   // by default, only values of fields marked as service id are copied
-  copyFromResponse?: TransformDefinition<ChangeAndContext> & {
+  copyFromResponse?: {
     // default: true
+    // note: if the request's transformation defines nestUnderField, it is used as the root when extracting service ids
     updateServiceIDs?: boolean
+    // default: nothing
+    additional?: TransformDefinition<ChangeAndContext>
   }
 }
 

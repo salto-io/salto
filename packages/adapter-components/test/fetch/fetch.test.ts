@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
+import { isInstanceElement } from '@salto-io/adapter-api'
 import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../src/client'
 import { createMockQuery } from '../../src/fetch/query'
 import { noPagination } from '../../src/fetch/request/pagination'
@@ -57,6 +58,15 @@ describe('fetch', () => {
           return {
             data: {
               options: [{ name: 'opt1' }, { name: 'opt2' }],
+            },
+            status: 200,
+            statusText: 'OK',
+          }
+        }
+        if (url === '/api/v1/fields/456/default_option') {
+          return {
+            data: {
+              name: 'opt1',
             },
             status: 200,
             statusText: 'OK',
@@ -142,7 +152,18 @@ describe('fetch', () => {
                         context: {
                           args: {
                             parent_id: {
-                              fromField: 'id',
+                              root: 'id',
+                            },
+                          },
+                        },
+                      },
+                      default: {
+                        typeName: 'default_option',
+                        single: true,
+                        context: {
+                          args: {
+                            parent_id: {
+                              root: 'id',
                             },
                           },
                         },
@@ -186,6 +207,18 @@ describe('fetch', () => {
                     },
                   },
                 },
+                default_option: {
+                  requests: [
+                    {
+                      endpoint: {
+                        path: '/api/v1/fields/{parent_id}/default_option',
+                      },
+                    },
+                  ],
+                  resource: {
+                    directFetch: false,
+                  },
+                },
               },
             },
             customNameMappingFunctions: {
@@ -200,12 +233,18 @@ describe('fetch', () => {
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'myAdapter.field',
         'myAdapter.field.instance.field1Custom',
+        'myAdapter.field__default',
         'myAdapter.group',
         'myAdapter.group.instance.group1Custom',
         'myAdapter.option',
         'myAdapter.option.instance.opt1Custom',
         'myAdapter.option.instance.opt2Custom',
       ])
+      expect(
+        res.elements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.getFullName() === 'myAdapter.field.instance.field1Custom')?.value.default,
+      ).toEqual({ name: 'opt1' })
       // TODO continue
     })
   })

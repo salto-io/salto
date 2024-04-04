@@ -431,11 +431,12 @@ describe('Field references', () => {
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)
       expect(folders[0].value.parent_id).toEqual('invalid')
     })
-    it('should not create missing reference if enableMissingReference is false (or not specified)', async () => {
+    it('should create missing reference if missingRefStrategy provided', async () => {
       const triggerWithMissingReference = elements.filter(
         e => isInstanceElement(e) && e.elemID.name === 'trigger2',
       )[0] as InstanceElement
-      expect(triggerWithMissingReference.value.ticket_field_id).not.toBeInstanceOf(ReferenceExpression)
+      expect(triggerWithMissingReference.value.ticket_field_id).toBeInstanceOf(ReferenceExpression)
+      expect(triggerWithMissingReference.value.ticket_field_id.elemID.name).toEqual('missing_3111')
     })
     describe("'exact' validation strategy", () => {
       const referee = new InstanceElement('referee', ticketFieldType, { id: '1234' })

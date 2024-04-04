@@ -40,7 +40,6 @@ const NOT_FETCHED_POST_FUNCTION_TYPES = ['GenerateChangeHistoryFunction', 'Issue
 const FETCHED_ONLY_INITIAL_POST_FUNCTION = ['UpdateIssueStatusFunction', 'CreateCommentFunction', 'IssueStoreFunction']
 
 const transformProperties = (item: Status | Transition): void => {
-  item.properties = item.properties?.additionalProperties
   // This is not deployable and we get another property
   // of "jira.issue.editable" with the same value
   delete item.properties?.issueEditable

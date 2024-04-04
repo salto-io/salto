@@ -149,51 +149,51 @@ describe('Values', () => {
   describe('StaticFile', () => {
     describe('constructor', () => {
       it('should normalize the file path', () => {
-        const SFile = new StaticFile({ filepath: 'some//path.ext', content: Buffer.from('ZOMG') })
+        const SFile = new StaticFile({ filepath: 'some//path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(SFile.filepath).toEqual('some/path.ext')
       })
     })
     describe('equality (direct)', () => {
       it('equals', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(true)
       })
       it('unequals', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG1') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA1') })
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(false)
       })
     })
     describe('equality (via isEqualValues)', () => {
       it('unequals by path with flag false', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.txt', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.txt', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: false })).toEqual(false)
       })
       it('unequals by path with flag true', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.txt', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.txt', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: true })).toEqual(true)
       })
       it('equals with flag false', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: false })).toEqual(true)
       })
       it('equals with flag true', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: true })).toEqual(true)
       })
       it('equals by hash', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(true)
       })
       it('unequals', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG1') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('VERY SURPRISING DATA1') })
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
       it('ignores newline differences', () => {
@@ -249,14 +249,14 @@ describe('Values', () => {
       })
     })
     it('calculate hash', () => {
-      const zOMGBuffer = Buffer.from('ZOMG')
-      const hash = '4dc55a74daa147a028360ee5687389d7'
-      const zOMGResult = calculateStaticFileHash(zOMGBuffer)
+      const vsdBuffer = Buffer.from('VERY SURPRISING DATA')
+      const hash = 'a1b185cb49337d10f0addd14c90ec34a'
+      const zOMGResult = calculateStaticFileHash(vsdBuffer)
       expect(zOMGResult).toEqual(hash)
     })
     it('isStaticFile when static file', () =>
       expect(isStaticFile(new StaticFile({ filepath: 'aa', hash: 'bb' }))).toBeTruthy())
-    it('isStaticFile when not static file', () => expect(isStaticFile('ZOMG')).toBeFalsy())
+    it('isStaticFile when not static file', () => expect(isStaticFile('VERY SURPRISING DATA')).toBeFalsy())
   })
 
   describe('isPrimitiveValue', () => {
@@ -281,7 +281,7 @@ describe('Values', () => {
     })
   })
   describe('TypeReference', () => {
-    const idString = 'salesforce.someid'
+    const idString = 'salesforce.some_id'
     const elemID = ElemID.fromFullName(idString)
 
     it('should throw error when no element source and no type', async () => {
@@ -327,7 +327,7 @@ describe('Values', () => {
       ).toEqual(BuiltinTypes.STRING)
     })
 
-    it('should return empty obj with ID if element returns undefined and type doesnt exist', async () => {
+    it("should return empty obj with ID if element returns undefined and type doesn't exist", async () => {
       const ref = new TypeReference(elemID)
       const res = await ref.getResolvedValue({
         list: jest.fn(),

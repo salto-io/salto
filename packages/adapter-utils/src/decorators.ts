@@ -20,5 +20,5 @@ const log = logger(module)
 
 export const logDuration = (message: string): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
-    async (original: decorators.OriginalCall): Promise<unknown> => log.time(original.call, message),
+    async (original: decorators.OriginalCall): Promise<unknown> => log.timeDebug(original.call, message),
   )

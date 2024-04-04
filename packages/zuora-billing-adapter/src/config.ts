@@ -153,6 +153,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       dataField: 'definitions',
     },
   },
+  FieldsAdditionalProperties: {
+    transformation: {
+      fieldsToOmit: [],
+    },
+  },
   [CUSTOM_OBJECT_DEFINITION_TYPE]: {
     transformation: {
       idFields: ['type'],

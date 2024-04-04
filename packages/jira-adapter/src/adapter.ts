@@ -127,13 +127,14 @@ import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_u
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import objectTypeIconFilter from './filters/assets/object_type_icon'
 import filtersFilter from './filters/filter'
 import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
 import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
-import { paginate, removeScopedObjects } from './client/pagination'
+import { paginate, filterResponseEntries } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
@@ -275,6 +276,7 @@ export const DEFAULT_FILTERS = [
   emptyValidatorWorkflowFilter,
   // must run before fieldReferencesFilter
   formsFilter,
+  objectTypeIconFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -440,7 +442,7 @@ export default class JiraAdapter implements AdapterOperations {
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
-      customEntryExtractor: removeScopedObjects,
+      customEntryExtractor: filterResponseEntries,
       asyncRun: config.fetch.asyncPagination ?? true,
     })
 
@@ -669,6 +671,7 @@ export default class JiraAdapter implements AdapterOperations {
           getElemIdFunc: this.getElemIdFunc,
           additionalRequestContext: serviceDeskProjRecord,
           getEntriesResponseValuesFunc: jiraJSMEntriesFunc(projectInstance),
+          shouldIgnorePermissionsError: true,
         })
       }),
     )

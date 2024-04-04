@@ -70,8 +70,8 @@ describe('generateInstanceNameFromConfig', () => {
     ).toBe('name')
   })
   it('should covert name if nameMapping exists', () => {
-    const lowercaseTransfomation: NameMappingOptions = 'lowercase'
-    const uppercaseTransfomation: NameMappingOptions = 'uppercase'
+    const lowercaseTransformation: NameMappingOptions = 'lowercase'
+    const uppercaseTransformation: NameMappingOptions = 'uppercase'
     expect(
       generateInstanceNameFromConfig(
         {
@@ -83,7 +83,7 @@ describe('generateInstanceNameFromConfig', () => {
           typeDefaults: {
             transformation: {
               idFields: ['id'],
-              nameMapping: lowercaseTransfomation,
+              nameMapping: lowercaseTransformation,
             },
           },
           types: {},
@@ -102,7 +102,7 @@ describe('generateInstanceNameFromConfig', () => {
           typeDefaults: {
             transformation: {
               idFields: ['id'],
-              nameMapping: uppercaseTransfomation,
+              nameMapping: uppercaseTransformation,
             },
           },
           types: {},
@@ -158,7 +158,7 @@ describe('getInstanceName', () => {
     expect(getInstanceName({ name: 'name', type: 'A' }, ['name', 'type'], 'test')).toBe('name_A')
     expect(getInstanceName({ name: 'name', type: 'A' }, [], 'test')).toBe('')
   })
-  it('should return undefined if all idFields doesnt exist in entry', () => {
+  it("should return undefined if all idFields doesn't exist in entry", () => {
     expect(getInstanceName({ name: 'name', type: 'A' }, ['foo', 'bar'], 'test')).toBe(undefined)
   })
   it('should ignore undefined fields when there is at least one defined field', () => {

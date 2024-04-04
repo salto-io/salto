@@ -51,7 +51,7 @@ const SERVICE_URL_SETTERS = {
 const setServiceUrls = async (elements: Element[], client: NetsuiteClient): Promise<void> => {
   // setConstantUrls should run last
   await awu(Object.entries(SERVICE_URL_SETTERS).concat([[setConstantUrls.name, setConstantUrls]])).forEach(
-    ([setterName, setter]) => log.time(() => setter(elements, client), `serviceUrls.${setterName}`),
+    ([setterName, setter]) => log.timeDebug(() => setter(elements, client), `serviceUrls.${setterName}`),
   )
 }
 

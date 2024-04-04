@@ -83,7 +83,7 @@ export const queryFilterCreator: <TContext, TResult extends void | filter.Filter
           .join(', '),
       )
 
-      // recurively remove children of removed instances
+      // Recursively remove children of removed instances
       const graph = createParentChildGraph(elements.filter(isInstanceElement), additionalParentFields)
       const additionalIDsToRemove = graph.getComponent({
         roots: removedInstances.map(e => e.elemID.getFullName()),

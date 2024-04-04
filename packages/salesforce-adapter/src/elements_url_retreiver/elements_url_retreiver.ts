@@ -16,7 +16,7 @@
 import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
-import { ElementIDResolver, resolvers } from './lightining_url_resolvers'
+import { ElementIDResolver, resolvers } from './lightning_url_resolvers'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

@@ -197,7 +197,7 @@ export const extractStandaloneFields = async ({
   getElemIdFunc?: ElemIdGetter
 }): Promise<void> => {
   const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
-  const allInstancesbyType = _.groupBy(elements.filter(isInstanceElement), e => e.refType.elemID.getFullName())
+  const allInstancesByType = _.groupBy(elements.filter(isInstanceElement), e => e.refType.elemID.getFullName())
 
   const typesWithStandaloneFields = _.pickBy(
     _.mapValues(transformationConfigByType, typeDef => typeDef.standaloneFields),
@@ -209,7 +209,7 @@ export const extractStandaloneFields = async ({
     if (type === undefined) {
       return
     }
-    const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
+    const instances = allInstancesByType[type.elemID.getFullName()] ?? []
 
     // first convert the fields to the right structure
     instances.forEach(inst => convertStringToObject(inst, standaloneFields))

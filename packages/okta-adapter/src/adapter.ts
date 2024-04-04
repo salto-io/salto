@@ -67,6 +67,7 @@ import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
+import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
@@ -87,6 +88,7 @@ import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
+import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
@@ -103,6 +105,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 const DEFAULT_FILTERS = [
+  renameDefaultAccessPolicy,
   standardRolesFilter,
   deleteFieldsFilter,
   userTypeFilter,
@@ -118,6 +121,7 @@ const DEFAULT_FILTERS = [
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
   addImportantValues,
+  accessPolicyRuleConstraintsFilter,
   defaultPolicyRuleDeployment,
   schemaFieldsRemovalFilter,
   appLogoFilter,
@@ -125,7 +129,7 @@ const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
   addAliasFilter,
-  // should run after fieldReferencesFilter
+  // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,

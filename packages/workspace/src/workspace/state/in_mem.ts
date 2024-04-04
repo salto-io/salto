@@ -89,7 +89,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
   }
 
   const updateStateElements = async (changes: DetailedChange[]): Promise<void> =>
-    log.time(async () => {
+    log.timeDebug(async () => {
       const state = (await stateData()).elements
       const changesByTopLevelElement = _.groupBy(changes, change =>
         change.id.createTopLevelParentID().parent.getFullName(),

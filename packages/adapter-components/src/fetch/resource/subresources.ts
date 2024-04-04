@@ -18,10 +18,30 @@ import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
 import { shouldRecurseIntoEntry } from '../../elements/instance_elements' // TODO move
+import { createValueTransformer } from '../utils'
+import { RecurseIntoDefinition } from '../../definitions/system/fetch/dependencies'
 
 const log = logger(module)
 
-type NestedResourceFetcher = (item: ValueGeneratedItem) => Promise<Record<string, ValueGeneratedItem[]>>
+type NestedResourceFetcher = (
+  item: ValueGeneratedItem,
+) => Promise<Record<string, ValueGeneratedItem[] | ValueGeneratedItem>>
+
+const extractRecurseIntoContext = (
+  item: ValueGeneratedItem,
+  recurseIntoDef: RecurseIntoDefinition,
+): Record<string, unknown> => {
+  const { args: contextArgs } = recurseIntoDef.context
+  const context = _.mapValues(contextArgs, contextDef => {
+    const transformer = createValueTransformer(contextDef)
+    const transformedItem = transformer(item)
+    if (Array.isArray(transformedItem)) {
+      return transformedItem.map(({ value }) => value)
+    }
+    return transformedItem?.value
+  })
+  return context
+}
 
 // TODO remove the old code when possible - originally called getExtraFieldValues
 export const recurseIntoSubresources =
@@ -41,9 +61,7 @@ export const recurseIntoSubresources =
           Object.entries(def.recurseInto ?? {})
             .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
             .map(async ([fieldName, recurseDef]) => {
-              const nestedRequestContext = _.mapValues(recurseDef.context.args, contextDef =>
-                _.get(item.value, contextDef.fromField),
-              )
+              const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
               // TODO avoid crashing if fails on sub-element (SALTO-5427)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,

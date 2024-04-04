@@ -143,7 +143,7 @@ export class CustomField implements MetadataInfo {
     valueSetName?: string
   }
 
-  // To be used for lookup and master detail types
+  // To be used for lookup and master-detail types
   readonly referenceTo?: string[]
   readonly relationshipName?: string
   readonly deleteConstraint?: string

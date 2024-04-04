@@ -19,8 +19,8 @@ import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
-describe('full name change validator', () => {
-  describe('when full name changes', () => {
+describe('fullName change validator', () => {
+  describe('when fullName changes', () => {
     let fullNameChange: Change
     beforeEach(() => {
       const beforeRecord = createInstanceElement(
@@ -41,7 +41,7 @@ describe('full name change validator', () => {
       expect(changeError.severity).toEqual('Error')
     })
   })
-  describe('when full name does not change', () => {
+  describe('when fullName does not change', () => {
     let fullNameChange: Change
     beforeEach(() => {
       const beforeRecord = createInstanceElement(

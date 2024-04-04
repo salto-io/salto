@@ -286,7 +286,7 @@ describe('transformer', () => {
         )
       })
 
-      it('should fetch master detail relationships', async () => {
+      it('should fetch master-detail relationships', async () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
@@ -314,7 +314,7 @@ describe('transformer', () => {
         ).toBe(true)
       })
 
-      it('should fetch master detail relationships which are not reparentable and requires read/write access', async () => {
+      it('should fetch master-detail relationships which are not reparentable and requires read/write access', async () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
@@ -1176,7 +1176,7 @@ describe('transformer', () => {
         expect(_.get(customObj, DESCRIPTION)).toEqual('MyDescription')
       })
 
-      it('should not transform skip listed annotations', () => {
+      it('should not transform skipped annotations', () => {
         expect(_.get(customObj, API_NAME)).toBeUndefined()
         expect(_.get(customObj, METADATA_TYPE)).toBeUndefined()
       })
@@ -1307,7 +1307,7 @@ describe('transformer', () => {
         expect(customField.referenceTo).toEqual(expectedReferenceTo)
       }
 
-      it('should transform master detail field', async () => {
+      it('should transform master-detail field', async () => {
         const masterDetailField = objectType.fields[fieldName]
         masterDetailField.refType = createRefToElmWithValue(
           Types.primitiveDataTypes.MasterDetail,

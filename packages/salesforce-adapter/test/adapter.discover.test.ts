@@ -105,6 +105,48 @@ const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
 
+const createCustomObject = (
+  name: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => {
+  const stringType = new PrimitiveType({
+    elemID: new ElemID(SALESFORCE, 'string'),
+    primitive: PrimitiveTypes.STRING,
+  })
+  const basicFields = {
+    Id: {
+      refType: stringType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [LABEL]: 'Id',
+        [API_NAME]: `${name}.Id`,
+      },
+    },
+    Name: {
+      refType: stringType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [LABEL]: 'description label',
+        [API_NAME]: `${name}.Name`,
+      },
+    },
+  }
+  const obj = new ObjectType({
+    elemID: new ElemID(SALESFORCE, name),
+    annotations: {
+      [API_NAME]: name,
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+    },
+    fields: additionalFields
+      ? Object.assign(basicFields, additionalFields)
+      : basicFields,
+  })
+  obj.path = [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
+  return obj
+}
+
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
@@ -562,88 +604,200 @@ describe('SalesforceAdapter fetch', () => {
     describe('partial fetch deletions detection', () => {
       let testAdapter: SalesforceAdapter
       let testConnection: MockInterface<Connection>
-      beforeEach(() => {
-        const existingElements = [
-          mockInstances().ChangedAtSingleton,
-          mockTypes.Layout,
-          mockTypes.ApexClass,
-          mockTypes.CustomObject,
-          createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
-          createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
-          createInstanceElement(
-            { fullName: 'DeletedLayout' },
+      describe('Targeted fetch', () => {
+        beforeEach(() => {
+          const existingElements = [
+            mockInstances().ChangedAtSingleton,
             mockTypes.Layout,
-          ),
-          createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
-          createInstanceElement({ fullName: 'Apex2' }, mockTypes.ApexClass),
-          createInstanceElement(
-            { fullName: 'DeletedApex' },
             mockTypes.ApexClass,
-          ),
-          createCustomObjectType('Account', {}),
-          createCustomObjectType('Deleted__c', {}),
-        ]
-        const elementsSource = buildElementsSourceFromElements(existingElements)
-        ;({ connection: testConnection, adapter: testAdapter } = mockAdapter({
-          adapterParams: {
-            getElemIdFunc: mockGetElemIdFunc,
-            config: {
-              fetch: {
-                metadata: {
-                  include: [{ metadataType: '.*' }],
+            mockTypes.CustomObject,
+            createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
+            createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
+            createInstanceElement(
+              { fullName: 'DeletedLayout' },
+              mockTypes.Layout,
+            ),
+            createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
+            createInstanceElement({ fullName: 'Apex2' }, mockTypes.ApexClass),
+            createInstanceElement(
+              { fullName: 'DeletedApex' },
+              mockTypes.ApexClass,
+            ),
+            createCustomObjectType('Account', {}),
+            createCustomObjectType('Deleted__c', {}),
+          ]
+          const elementsSource =
+            buildElementsSourceFromElements(existingElements)
+          ;({ connection: testConnection, adapter: testAdapter } = mockAdapter({
+            adapterParams: {
+              getElemIdFunc: mockGetElemIdFunc,
+              config: {
+                fetch: {
+                  metadata: {
+                    include: [{ metadataType: '.*' }],
+                  },
+                },
+                maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+                client: {
+                  readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
                 },
               },
-              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
-              client: {
-                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              elementsSource,
+            },
+          }))
+          testConnection.metadata.describe.mockResolvedValue(
+            mockDescribeResult([
+              { xmlName: 'Layout' },
+              { xmlName: 'ApexClass' },
+            ]),
+          )
+          testConnection.metadata.list.mockImplementation(async (queries) =>
+            makeArray(queries).flatMap((query) => {
+              if (query.type === 'Layout') {
+                return [
+                  mockFileProperties({ type: 'Layout', fullName: 'Layout1' }),
+                  mockFileProperties({ type: 'Layout', fullName: 'Layout2' }),
+                ]
+              }
+              if (query.type === 'ApexClass') {
+                return [
+                  mockFileProperties({ type: 'ApexClass', fullName: 'Apex1' }),
+                  mockFileProperties({ type: 'ApexClass', fullName: 'Apex2' }),
+                ]
+              }
+              if (query.type === 'CustomObject') {
+                return [
+                  mockFileProperties({
+                    type: 'CustomObject',
+                    fullName: 'Account',
+                  }),
+                ]
+              }
+              return []
+            }),
+          )
+        })
+        afterEach(() => {
+          jest.resetAllMocks()
+          jest.restoreAllMocks()
+        })
+
+        it('should return correct deleted elemIDs', async () => {
+          const fetchResult = await testAdapter.fetch({
+            ...mockFetchOpts,
+            withChangesDetection: true,
+          })
+          expect(
+            makeArray(fetchResult.partialFetchData?.deletedElements).map((id) =>
+              id.getFullName(),
+            ),
+          ).toEqual([
+            'salesforce.Layout.instance.DeletedLayout',
+            'salesforce.ApexClass.instance.DeletedApex',
+            'salesforce.Deleted__c',
+          ])
+        })
+      })
+
+      describe('Fetch with changes detection', () => {
+        const testTypeName = 'TestType'
+        const testType = createCustomObject(testTypeName)
+        let fetchResult: FetchResult
+        const changedAtCutoff = new Date(2024, 3, 27).toISOString()
+        const adapterConfig = {
+          fetch: {
+            metadata: {
+              include: [{ metadataType: '.*' }],
+            },
+            data: {
+              includeObjects: [testTypeName],
+              saltoIDSettings: {
+                defaultIdFields: ['Name'],
               },
             },
-            elementsSource,
           },
-        }))
-        testConnection.metadata.describe.mockResolvedValue(
-          mockDescribeResult([{ xmlName: 'Layout' }, { xmlName: 'ApexClass' }]),
-        )
-        testConnection.metadata.list.mockImplementation(async (queries) =>
-          makeArray(queries).flatMap((query) => {
-            if (query.type === 'Layout') {
-              return [
-                mockFileProperties({ type: 'Layout', fullName: 'Layout1' }),
-                mockFileProperties({ type: 'Layout', fullName: 'Layout2' }),
-              ]
-            }
-            if (query.type === 'ApexClass') {
-              return [
-                mockFileProperties({ type: 'ApexClass', fullName: 'Apex1' }),
-                mockFileProperties({ type: 'ApexClass', fullName: 'Apex2' }),
-              ]
-            }
-            if (query.type === 'CustomObject') {
-              return [
-                mockFileProperties({
-                  type: 'CustomObject',
-                  fullName: 'Account',
-                }),
-              ]
-            }
-            return []
-          }),
-        )
-      })
-      it('should return correct deleted elemIDs', async () => {
-        const fetchResult = await testAdapter.fetch({
-          ...mockFetchOpts,
-          withChangesDetection: true,
+        }
+        describe('When a record was deleted', () => {
+          const existingInstanceThatDoesntExistInSalesforce =
+            new InstanceElement('DeletedInstance', testType, {
+              [constants.CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
+            })
+          beforeEach(async () => {
+            changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+            _.set(
+              changedAtSingleton.value,
+              [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
+              changedAtCutoff,
+            )
+            const elements = [
+              testType,
+              existingInstanceThatDoesntExistInSalesforce,
+              changedAtSingleton,
+            ]
+            const elementsSource = buildElementsSourceFromElements(elements)
+            ;({ connection: testConnection, adapter: testAdapter } =
+              mockAdapter({
+                adapterParams: {
+                  config: adapterConfig,
+                  elementsSource,
+                },
+              }))
+            fetchResult = await testAdapter.fetch({
+              progressReporter: nullProgressReporter,
+              withChangesDetection: true,
+            })
+          })
+          afterEach(() => {
+            jest.resetAllMocks()
+            jest.restoreAllMocks()
+          })
+          it('Should return the elemID of the deleted record', () => {
+            expect(
+              fetchResult.partialFetchData?.deletedElements,
+            ).toContainEqual(existingInstanceThatDoesntExistInSalesforce.elemID)
+          })
         })
-        expect(
-          makeArray(fetchResult.partialFetchData?.deletedElements).map((id) =>
-            id.getFullName(),
-          ),
-        ).toEqual([
-          'salesforce.Layout.instance.DeletedLayout',
-          'salesforce.ApexClass.instance.DeletedApex',
-          'salesforce.Deleted__c',
-        ])
+        describe('When a record was modified', () => {
+          const testInstance = new InstanceElement('SomeInstance', testType, {
+            [constants.CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+          })
+          beforeEach(async () => {
+            const elements = [testType, testInstance, changedAtSingleton]
+            const elementsSource = buildElementsSourceFromElements(elements)
+            ;({ connection: testConnection, adapter: testAdapter } =
+              mockAdapter({
+                adapterParams: {
+                  config: adapterConfig,
+                  elementsSource,
+                },
+              }))
+            testConnection.query.mockResolvedValue(
+              mockQueryResult({
+                records: [
+                  {
+                    Id: 'SomeId',
+                    Name: 'SomeInstance',
+                  },
+                ],
+                totalSize: 1,
+              }),
+            )
+            fetchResult = await testAdapter.fetch({
+              progressReporter: nullProgressReporter,
+              withChangesDetection: true,
+            })
+          })
+          it('should not return any deleted elements', () => {
+            expect(fetchResult.partialFetchData?.deletedElements).toBeEmpty()
+          })
+          it('should return the modified instance', () => {
+            expect(fetchResult.elements).toContainEqual(
+              expect.objectContaining({
+                elemID: testInstance.elemID,
+              }),
+            )
+          })
+        })
       })
     })
 
@@ -3116,155 +3270,6 @@ describe('Fetch via retrieve API', () => {
             },
           }),
         ])
-      })
-    })
-  })
-})
-
-const createCustomObject = (
-  name: string,
-  additionalFields?: Record<string, FieldDefinition>,
-): ObjectType => {
-  const stringType = new PrimitiveType({
-    elemID: new ElemID(SALESFORCE, 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
-  const basicFields = {
-    Id: {
-      refType: stringType,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
-        [FIELD_ANNOTATIONS.QUERYABLE]: true,
-        [LABEL]: 'Id',
-        [API_NAME]: `${name}.Id`,
-      },
-    },
-    Name: {
-      refType: stringType,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
-        [FIELD_ANNOTATIONS.QUERYABLE]: true,
-        [LABEL]: 'description label',
-        [API_NAME]: `${name}.Name`,
-      },
-    },
-  }
-  const obj = new ObjectType({
-    elemID: new ElemID(SALESFORCE, name),
-    annotations: {
-      [API_NAME]: name,
-      [METADATA_TYPE]: CUSTOM_OBJECT,
-    },
-    fields: additionalFields
-      ? Object.assign(basicFields, additionalFields)
-      : basicFields,
-  })
-  obj.path = [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-  return obj
-}
-
-describe('Fetch data records', () => {
-  const testTypeName = 'TestType'
-  const testType = createCustomObject(testTypeName)
-  let fetchResult: FetchResult
-  let connection: MockInterface<Connection>
-  let adapter: SalesforceAdapter
-
-  const adapterConfig = {
-    fetch: {
-      metadata: {
-        include: [{ metadataType: '.*' }],
-      },
-      data: {
-        includeObjects: [testTypeName],
-        saltoIDSettings: {
-          defaultIdFields: ['Name'],
-        },
-      },
-    },
-  }
-
-  describe('Fetch with changes detection', () => {
-    const changedAtCutoff = new Date(2024, 3, 27).toISOString()
-    let changedAtSingleton: InstanceElement
-    beforeEach(() => {
-      changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-      _.set(
-        changedAtSingleton.value,
-        [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName],
-        changedAtCutoff,
-      )
-    })
-    describe('When a record was deleted', () => {
-      const existingInstanceThatDoesntExistInSalesforce = new InstanceElement(
-        'DeletedInstance',
-        testType,
-        {
-          [constants.CUSTOM_OBJECT_ID_FIELD]: 'deletedId',
-        },
-      )
-      beforeEach(async () => {
-        const elements = [
-          testType,
-          existingInstanceThatDoesntExistInSalesforce,
-          changedAtSingleton,
-        ]
-        const elementsSource = buildElementsSourceFromElements(elements)
-        ;({ connection, adapter } = mockAdapter({
-          adapterParams: {
-            config: adapterConfig,
-            elementsSource,
-          },
-        }))
-        fetchResult = await adapter.fetch({
-          progressReporter: nullProgressReporter,
-          withChangesDetection: true,
-        })
-      })
-      it('Should return the elemID of the deleted record', () => {
-        expect(fetchResult.partialFetchData?.deletedElements).toContainEqual(
-          existingInstanceThatDoesntExistInSalesforce.elemID,
-        )
-      })
-    })
-    describe('When a record was modified', () => {
-      const testInstance = new InstanceElement('SomeInstance', testType, {
-        [constants.CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
-      })
-      beforeEach(async () => {
-        const elements = [testType, testInstance, changedAtSingleton]
-        const elementsSource = buildElementsSourceFromElements(elements)
-        ;({ connection, adapter } = mockAdapter({
-          adapterParams: {
-            config: adapterConfig,
-            elementsSource,
-          },
-        }))
-        connection.query.mockResolvedValue(
-          mockQueryResult({
-            records: [
-              {
-                Id: 'SomeId',
-                Name: 'SomeInstance',
-              },
-            ],
-            totalSize: 1,
-          }),
-        )
-        fetchResult = await adapter.fetch({
-          progressReporter: nullProgressReporter,
-          withChangesDetection: true,
-        })
-      })
-      it('should not return any deleted elements', () => {
-        expect(fetchResult.partialFetchData?.deletedElements).toBeEmpty()
-      })
-      it('should return the modified instance', () => {
-        expect(fetchResult.elements).toContainEqual(
-          expect.objectContaining({
-            elemID: testInstance.elemID,
-          }),
-        )
       })
     })
   })

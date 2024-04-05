@@ -135,6 +135,7 @@ import {
 import {
   addDefaults,
   apiNameSync,
+  buildDataRecordsSoqlQueries,
   getFLSProfiles,
   getFullName,
   instanceInternalId,
@@ -167,6 +168,7 @@ import {
   ArtificialTypes,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
@@ -1046,13 +1048,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       await querySalesforceForRecordIdsOfInstances(workspaceInstances),
     )
 
-    return _(workspaceInstances)
+    return workspaceInstances
       .filter(
         (instance) =>
           !instanceIdsInSalesforce.has(instanceInternalId(instance)),
       )
       .map((instance) => instance.elemID)
-      .value()
   }
 
   private async getDeletedElemIdsForPartialFetch({

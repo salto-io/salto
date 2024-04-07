@@ -26,6 +26,7 @@ import { adapter as oktaAdapter } from '@salto-io/okta-adapter'
 import { adapter as sapAdapter } from '@salto-io/sap-adapter'
 import { adapter as serviceplaceholderAdapter } from '@salto-io/serviceplaceholder-adapter'
 import { adapter as googleWorkspaceAdapter } from '@salto-io/google-workspace-adapter'
+import { adapter as confluenceAdapter } from '@salto-io/confluence-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
@@ -42,6 +43,7 @@ const adapterCreators: Record<string, Adapter> = {
   dummy: dummyAdapter,
   serviceplaceholder: serviceplaceholderAdapter,
   google_workspace: googleWorkspaceAdapter,
+  confluence: confluenceAdapter,
 }
 
 export default adapterCreators

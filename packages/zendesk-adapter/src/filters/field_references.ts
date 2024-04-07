@@ -72,6 +72,9 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   locale_id: 'locale',
   via_id: 'channel',
   current_via_id: 'channel',
+  add_skills: 'routing_attribute_value',
+  set_skills: 'routing_attribute_value',
+  remove_skills: 'routing_attribute_value',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -905,6 +908,18 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     target: { typeContext: 'neighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
+  {
+  src: {
+    field: 'value',
+    parentTypes: [
+      'trigger__actions',
+    ],
+  },
+  serializationStrategy: 'idString',
+  target: { typeContext: 'allowlistedNeighborField' },
+  zendeskMissingRefStrategy: 'typeAndValue',
+},
+
   // only one of these applies in a given instance
   {
     src: { field: 'value' },

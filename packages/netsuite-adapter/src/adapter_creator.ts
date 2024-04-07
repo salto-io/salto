@@ -24,6 +24,8 @@ import {
   AdapterOperations,
 } from '@salto-io/adapter-api'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
+import { combineCustomReferenceGetters } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import Bottleneck from 'bottleneck'
 import { DEFAULT_CONCURRENCY } from './config/constants'
 import { configType } from './config/types'
@@ -35,6 +37,7 @@ import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 import loadElementsFromFolder from './sdf_folder_loader'
+import { customReferenceHandlers } from './custom_references'
 
 const configID = new ElemID(NETSUITE)
 
@@ -181,4 +184,7 @@ export const adapter: Adapter = {
     }
   },
   loadElementsFromFolder,
+  getCustomReferences: combineCustomReferenceGetters(
+    _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences),
+  ),
 }

@@ -1,6 +1,6 @@
 [
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+    "url": "/admin/directory/v1/customer/my_customer/orgunits",
     "method": "POST",
     "status": 200,
     "response": {
@@ -12,17 +12,17 @@
       "orgUnitId": "id:03ph8a2z4exfoz5"
     },
     "headers": {},
-    "data": { "name": "top", "description": "forreal", "parentOrgUnitId": "id:03ph8a2z2tgxglu" }
+    "data": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits/uri/neta/top",
+    "url": "/admin/directory/v1/customer/my_customer/orgunits/uri/neta/top",
     "method": "DELETE",
     "status": 204,
     "response": "",
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/features",
+    "url": "/admin/directory/v1/customer/my_customer/resources/features",
     "method": "POST",
     "status": 200,
     "response": {
@@ -31,10 +31,10 @@
       "name": "macabi1"
     },
     "headers": {},
-    "data": { "name": "macabi1" }
+    "data": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings/salto-office",
+    "url": "/admin/directory/v1/customer/my_customer/resources/buildings/salto-office",
     "method": "PUT",
     "status": 200,
     "response": {
@@ -46,11 +46,6 @@
       "floorNames": ["21"]
     },
     "headers": {},
-    "data": {
-      "buildingId": "salto-office",
-      "buildingName": "salto office",
-      "description": "wow",
-      "floorNames": ["21"]
-    }
+    "data": {}
   }
 ]

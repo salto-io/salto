@@ -1,6 +1,6 @@
 [
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/schemas",
+    "url": "/admin/directory/v1/customer/my_customer/schemas",
     "method": "GET",
     "status": 200,
     "response": {
@@ -31,7 +31,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+    "url": "/admin/directory/v1/customer/my_customer/orgunits",
     "queryParams": { "type": "ALL_INCLUDING_PARENT" },
     "method": "GET",
     "status": 200,
@@ -62,7 +62,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/domains",
+    "url": "/admin/directory/v1/customer/my_customer/domains",
     "method": "GET",
     "status": 200,
     "response": {
@@ -92,12 +92,12 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/calendars",
+    "url": "/admin/directory/v1/customer/my_customer/resources/calendars",
     "method": "GET",
     "status": 200,
     "response": {
       "kind": "admin#directory#resources#calendars#calendarResourcesList",
-      "etag": "\"MwwCk8WmXR4QeT6YR9Mdtt1oB-g2P44mZVZLLPWoDcw/JyUAkkx4zHMp3VttQcQrlID_Md4\"",
+      "etag": "abc",
       "items": [
         {
           "kind": "admin#directory#resources#calendars#CalendarResource",
@@ -126,7 +126,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roles",
+    "url": "/admin/directory/v1/customer/my_customer/roles",
     "method": "GET",
     "status": 200,
     "response": {
@@ -156,7 +156,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/features",
+    "url": "/admin/directory/v1/customer/my_customer/resources/features",
     "method": "GET",
     "status": 200,
     "response": {
@@ -173,7 +173,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/resources/buildings",
+    "url": "/admin/directory/v1/customer/my_customer/resources/buildings",
     "method": "GET",
     "status": 200,
     "response": {
@@ -193,7 +193,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/groups",
+    "url": "/admin/directory/v1/groups",
     "queryParams": { "domain": "localhost" },
     "method": "GET",
     "status": 200,
@@ -217,7 +217,7 @@
     "headers": {}
   },
   {
-    "url": "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/roleassignments",
+    "url": "/admin/directory/v1/customer/my_customer/roleassignments",
     "queryParams": { "userKey": "01tuee743bzv2ce" },
     "method": "GET",
     "status": 200,
@@ -239,7 +239,7 @@
     "headers": {}
   },
   {
-    "url": "https://www.googleapis.com/groups/v1/groups/blabla@localhost",
+    "url": "/groups/v1/groups/blabla@localhost",
     "queryParams": { "alt": "json" },
     "method": "GET",
     "status": 200,

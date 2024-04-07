@@ -451,7 +451,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
-          // waiting fir neta to check how to use the old name field in the URL
+          // TODO - SAAS-10775 - check how to use the old name field in the URL
           // modify: [
           //   {
           //     request: {

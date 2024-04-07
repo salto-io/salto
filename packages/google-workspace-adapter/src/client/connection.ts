@@ -36,7 +36,7 @@ export const validateDirectoryCredentials = async ({
   }
 }
 
-// There is no endPoints for groupSettings that we can use to validate the credentials with,
+// There is no endPoints for groupSettings that we can use to validate the credentials with.
 export const validateGroupSettingsCredentials = async (): Promise<AccountInfo> => ({ accountId: 'groupSettings' })
 
 const validateCredentialsPerApp: Record<

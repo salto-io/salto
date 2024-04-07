@@ -293,8 +293,8 @@ export type ReferenceContextStrategyName =
   | 'neighborParentType'
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  // We use allow lists because there are types we don't support (such organizarion or requester)
-  // and they'll as false positives
+  // We use allow lists because there are types we don't support (such as organization or requester)
+  // and they'll end up being false positives
   allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
   allowlistedNeighborSubject: neighborContextFunc({
     contextFieldName: 'subject',

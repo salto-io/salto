@@ -60,23 +60,19 @@ const sortLists = (instance: InstanceElement, defQuery: DefQuery<ElementFetchDef
           return value
         }
         const sortFields = fieldCustomizations[field.name]?.sort?.sortByProperties
-
-        if (sortFields !== undefined) {
-          _.assign(
-            value,
-            _.orderBy(
-              value,
-              sortFields.map(
-                ({ path }: PropertySortDefinition) =>
-                  (item: Value) =>
-                    get(item, path.split('.')),
-              ),
-              sortFields.map(({ order }: PropertySortDefinition) => order ?? 'asc'),
-            ),
-          )
+        if (sortFields === undefined) {
+          return value
         }
 
-        return value
+        return _.orderBy(
+          value,
+          sortFields.map(
+            ({ path }: PropertySortDefinition) =>
+              (item: Value) =>
+                get(item, path.split('.')),
+          ),
+          sortFields.map(({ order }: PropertySortDefinition) => order ?? 'asc'),
+        )
       },
     }) ?? {}
 }

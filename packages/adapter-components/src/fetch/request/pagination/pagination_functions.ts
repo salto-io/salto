@@ -257,3 +257,32 @@ export const cursorHeaderPagination = ({
 }
 
 export const noPagination = (): PaginationFunction => () => []
+
+/**
+ * Make paginated requests using the paginationToken from a specific field in the response,
+ * and puts it in another paginationField in the query params.
+ * Only supports next pages under the same endpoint (and uses the same host).
+ */
+export const tokenPagination = ({
+  paginationField,
+  tokenField,
+}: {
+  tokenField: string
+  paginationField: string
+}): PaginationFunction => {
+  const nextPageTokenPages: PaginationFunction = ({ responseData, currentParams }) => {
+    const token = _.get(responseData, tokenField)
+    if (!_.isString(token)) {
+      return []
+    }
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          ...currentParams.queryParams,
+          [paginationField]: token,
+        },
+      }),
+    ]
+  }
+  return nextPageTokenPages
+}

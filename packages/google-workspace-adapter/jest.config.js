@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ *                      Copyright 2020 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  cursorPagination,
-  cursorHeaderPagination,
-  itemOffsetPagination,
-  offsetAndLimitPagination,
-  pageOffsetAndLastPagination,
-  pageOffsetPagination,
-  noPagination,
-  defaultPathChecker,
-  PathCheckerFunc,
-  tokenPagination,
-} from './pagination_functions'
-export { traversePages } from './pagination'
+const deepMerge = require('../../build_utils/deep_merge')
+
+module.exports = deepMerge(require('../../jest.base.config.js'), {
+  name: 'google-workspace-adapter',
+  displayName: 'google-workspace-adapter',
+  rootDir: `${__dirname}`,
+  collectCoverageFrom: ['!<rootDir>/index.ts'],
+  testEnvironment: undefined,
+  coverageThreshold: {
+    global: {
+      branches: 25,
+      functions: 60,
+      lines: 70,
+      statements: 70,
+    },
+  },
+})

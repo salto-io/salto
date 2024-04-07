@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ZENDESK, ARTICLE_TYPE_NAME } from '../../../src/constants'
 import { parsePotentialReferencesByPrefix } from '../../../src/filters/template_engines/javascript_parser'
 
 describe('parsePotentialReferencesByPrefix', () => {
@@ -23,8 +25,17 @@ describe('parsePotentialReferencesByPrefix', () => {
         const otherVar = "test";
       `
     const prefix = 'myVar'
-    const result = parsePotentialReferencesByPrefix(code, prefix)
-    expect(result).toEqual(['hello', 'world'])
+    const result = parsePotentialReferencesByPrefix(code, {}, prefix)
+    expect(result).toEqual([
+      {
+        loc: { start: 24, end: 31 },
+        value: { parts: ['hello'] },
+      },
+      {
+        loc: { start: 54, end: 61 },
+        value: { parts: ['world'] },
+      },
+    ])
   })
 
   it('should return an empty array if no variables or assignments with the given prefix are found', () => {
@@ -34,7 +45,7 @@ describe('parsePotentialReferencesByPrefix', () => {
         const anotherVar = "test";
       `
     const prefix = 'myVar'
-    const result = parsePotentialReferencesByPrefix(code, prefix)
+    const result = parsePotentialReferencesByPrefix(code, {}, prefix)
     expect(result).toEqual([])
   })
 
@@ -45,7 +56,43 @@ describe('parsePotentialReferencesByPrefix', () => {
       $(myVar3).val()
     `
     const prefix = 'notRelevantHere'
-    const result = parsePotentialReferencesByPrefix(code, prefix)
-    expect(result).toEqual(['goodbye', 'space_123'])
+    const result = parsePotentialReferencesByPrefix(code, {}, prefix)
+    expect(result).toEqual([
+      {
+        loc: { start: 9, end: 18 },
+        value: { parts: ['goodbye'] },
+      },
+      {
+        loc: { start: 64, end: 75 },
+        value: { parts: ['space_123'] },
+      },
+    ])
+  })
+
+  it('should replace ids with referenceExpressions if they exist in idsToElements', () => {
+    const code = `
+      const prefix_my_id = 'catch_1144225_miss_1144226';
+      $('catch_1144225_miss_1144226').val()
+    `
+
+    const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }))
+    const prefix = 'prefix'
+    const result = parsePotentialReferencesByPrefix(
+      code,
+      {
+        1144225: article,
+      },
+      prefix,
+    )
+    expect(result).toEqual([
+      {
+        loc: { start: 28, end: 56 },
+        value: { parts: ['catch_', new ReferenceExpression(article.elemID, article), '_miss_1144226'] },
+      },
+      {
+        loc: { start: 66, end: 94 },
+        value: { parts: ['catch_', new ReferenceExpression(article.elemID, article), '_miss_1144226'] },
+      },
+    ])
   })
 })

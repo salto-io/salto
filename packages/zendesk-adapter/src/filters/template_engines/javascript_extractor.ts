@@ -16,23 +16,16 @@
 import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { extractTemplate } from '@salto-io/adapter-utils'
 import { DOMAIN_REGEX } from '../utils'
-
-const extractIdIfElementExists = (
-  idsToElements: Record<string, InstanceElement>,
-  expression: string,
-): string | ReferenceExpression => {
-  const element = idsToElements[expression]
-  if (element !== undefined) {
-    return new ReferenceExpression(element.elemID, element)
-  }
-  return expression
-}
+import { extractIdIfElementExists } from './utils'
 
 export const extractGreedyIdsFromScripts = (
   idsToElements: Record<string, InstanceElement>,
   script: string,
+  digitAmount: number,
 ): string | TemplateExpression =>
-  extractTemplate(script, [/(\d{6,})/], expression => extractIdIfElementExists(idsToElements, expression))
+  extractTemplate(script, [new RegExp(`(\\d{${digitAmount},})`)], expression =>
+    extractIdIfElementExists(idsToElements, expression),
+  )
 
 export const extractDomainsAndFieldsFromScripts = (
   idsToElements: Record<string, InstanceElement>,

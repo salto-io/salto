@@ -40,7 +40,7 @@ describe('extractGreedyIdsFromScripts', () => {
       const id2 = 789012;
       // More script code
     `
-    const result = extractGreedyIdsFromScripts(idsToElements, script)
+    const result = extractGreedyIdsFromScripts(idsToElements, script, 6)
     expect(result).toEqual({
       parts: [
         expect.stringMatching(/\s+\/\/ Some script code\s+const id1 = /),
@@ -59,7 +59,7 @@ describe('extractGreedyIdsFromScripts', () => {
       const id2 = 'some id?';
       // More script code
     `
-    const result = extractGreedyIdsFromScripts(idsToElements, script)
+    const result = extractGreedyIdsFromScripts(idsToElements, script, 6)
     expect(result).toEqual(script)
   })
 })

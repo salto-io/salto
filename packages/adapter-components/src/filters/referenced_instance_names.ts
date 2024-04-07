@@ -61,11 +61,10 @@ const { isDefined } = lowerDashValues
 const { createReferencesTransformFunc } = references
 
 const getFirstParent = (instance: InstanceElement): InstanceElement | undefined => {
-  const parentsElemIds = getParents(instance)
+  const parentsInstances = getParents(instance)
     .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
     .map(parent => parent.value)
-  // we are only using the first parent ElemId
-  return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
+  return parentsInstances.length > 0 ? parentsInstances[0] : undefined
 }
 
 /* Finds all elemIDs that the current instance relies on based on the idFields */
@@ -258,11 +257,8 @@ export const createReferenceIndex = (
 const getPathToNestUnder = <TOptions extends APIDefinitionsOptions = {}>(
   fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
   instance: InstanceElement,
-  parent?: InstanceElement,
+  parent: InstanceElement,
 ): string[] | undefined => {
-  if (parent === undefined) {
-    return undefined
-  }
   const shouldNestUnderParent = Object.values(
     fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations ?? {},
   ).find(def => def.standalone?.typeName === instance.elemID.typeName)?.standalone?.nestPathUnderParent
@@ -278,7 +274,7 @@ const calculateInstanceNewNameAndPath = <TOptions extends APIDefinitionsOptions 
   customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<TOptions>>,
 ): { newName: string; newPath: string[] } => {
   const parent = getFirstParent(instance)
-  const nestUnderPath = getPathToNestUnder(defQuery.getAll(), instance, parent)
+  const nestUnderPath = parent ? getPathToNestUnder(defQuery.getAll(), instance, parent) : undefined
   const { toElemName, toPath } = getInstanceCreationFunctions({
     defQuery,
     type: instance.getTypeSync(),

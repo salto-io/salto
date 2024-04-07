@@ -24,9 +24,8 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
-import { ensureSafeFilterFetch, queryClient } from './utils'
+import { ensureSafeFilterFetch, queryClient, safeApiName } from './utils'
 import {
-  apiName,
   getSObjectFieldElement,
   getTypePath,
 } from '../transformers/transformer'
@@ -75,7 +74,11 @@ const enrichTypeWithFields = async (
   fieldsToIgnore: Set<string>,
   fetchProfile: FetchProfile,
 ): Promise<void> => {
-  const typeApiName = await apiName(type)
+  const typeApiName = await safeApiName(type)
+  if (typeApiName === undefined) {
+    log.error('Failed getting OrganizationSettings API name.')
+    return
+  }
   const describeSObjectsResult = await client.describeSObjects([typeApiName])
   if (
     describeSObjectsResult.errors.length !== 0 ||
@@ -151,7 +154,7 @@ const createOrganizationInstance = (
     ],
   )
 
-const FILTER_NAME = 'organizationWideSharingDefaults'
+const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -160,7 +163,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: FILTER_NAME,
     fetchFilterFunc: async (elements) => {
       // SALTO-4821
       if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {

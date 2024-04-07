@@ -728,11 +728,14 @@ export const ensureSafeFilterFetch =
   }: {
     fetchFilterFunc: Required<Filter>['onFetch']
     warningMessage: string
-    filterName: keyof OptionalFeatures
     config: FilterContext
+    filterName?: keyof OptionalFeatures
   }): Required<Filter>['onFetch'] =>
   async (elements) => {
-    if (!config.fetchProfile.isFeatureEnabled(filterName)) {
+    if (
+      filterName !== undefined &&
+      !config.fetchProfile.isFeatureEnabled(filterName)
+    ) {
       log.debug('skipping %s filter due to configuration', filterName)
       return undefined
     }

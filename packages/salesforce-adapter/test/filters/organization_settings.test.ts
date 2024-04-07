@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/organization_wide_sharing_defaults'
+import filterCreator from '../../src/filters/organization_settings'
 import mockAdapter from '../adapter'
 import * as filterUtilsModule from '../../src/filters/utils'
 import {

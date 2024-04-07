@@ -27,8 +27,10 @@ import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import {
   APPLICATION_TYPE_NAME,
+  AUTHENTICATOR_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
   OKTA,
   USERTYPE_TYPE_NAME,
 } from '../../src/constants'
@@ -68,6 +70,27 @@ describe('fieldReferencesFilter', () => {
       assignUserToGroups: { refType: groupRuleAssign },
     },
   })
+  const authenticatorType = new ObjectType({
+    elemID: new ElemID(OKTA, AUTHENTICATOR_TYPE_NAME),
+    fields: { key: { refType: BuiltinTypes.STRING } },
+  })
+  const mfaAuthenticatorsType = new ObjectType({
+    elemID: new ElemID(OKTA, 'MultifactorEnrollmentPolicyAuthenticatorSettings'),
+    fields: { key: { refType: BuiltinTypes.STRING } },
+  })
+  const mfaType = new ObjectType({
+    elemID: new ElemID(OKTA, MFA_POLICY_TYPE_NAME),
+    fields: {
+      settings: {
+        refType: new ObjectType({
+          elemID: new ElemID(OKTA, 'MultifactorEnrollmentPolicySettings'),
+          fields: {
+            authenticators: { refType: new ListType(mfaAuthenticatorsType) },
+          },
+        }),
+      },
+    },
+  })
   const generateElements = (): Element[] => [
     profileMappingType,
     userTypeType,
@@ -75,6 +98,9 @@ describe('fieldReferencesFilter', () => {
     profileMappingSource,
     groupType,
     ruleType,
+    authenticatorType,
+    mfaAuthenticatorsType,
+    mfaType,
     new InstanceElement('mapping1', profileMappingType, {
       source: { id: '111', type: 'user' },
       target: { id: '222', type: 'appuser' },
@@ -82,6 +108,10 @@ describe('fieldReferencesFilter', () => {
     new InstanceElement('app1', appType, { id: '222' }),
     new InstanceElement('userType1', userTypeType, { id: '111' }),
     new InstanceElement('rule', ruleType, { id: '111', assignUserToGroups: { groupIds: ['missingId'] } }),
+    new InstanceElement('authenticator', authenticatorType, { name: 'OTP', key: 'otp' }),
+    new InstanceElement('mfa', mfaType, {
+      settings: { authenticators: [{ key: 'otp' }] },
+    }),
   ]
 
   describe('onFetch', () => {
@@ -119,6 +149,16 @@ describe('fieldReferencesFilter', () => {
         e => isInstanceElement(e) && e.elemID.typeName === GROUP_RULE_TYPE_NAME,
       )[0] as InstanceElement
       expect(rule.value?.assignUserToGroups?.groupIds).toEqual(['missingId'])
+    })
+    it('it should replace values using custom serialization strategies', async () => {
+      const elements = generateElements().map(e => e.clone())
+      const filter = filterCreator(getFilterParams({})) as FilterType
+      await filter.onFetch(elements)
+      const mfa = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'mfa')[0] as InstanceElement
+      expect(mfa.value.settings.authenticators[0].key).toBeInstanceOf(ReferenceExpression)
+      expect(mfa.value.settings.authenticators[0].key.elemID.getFullName()).toEqual(
+        'okta.Authenticator.instance.authenticator',
+      )
     })
   })
 })

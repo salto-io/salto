@@ -520,7 +520,7 @@ export const TEST_OBJECT_TO_API_MAPPING = {
   [CPQ_PRODUCT_OPTION_NAME]: CPQ_PRODUCT_OPTION,
 } as Record<string, string>
 
-export const SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING = {
+export const SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING = {
   [CPQ_ACCOUNT_NO_PRE]: CPQ_ACCOUNT,
 } as Record<string, string>
 

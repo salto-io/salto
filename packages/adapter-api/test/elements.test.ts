@@ -798,7 +798,7 @@ describe('Test elements.ts', () => {
           expect(path).toEqual([annotationTypeId.name])
         })
       })
-      describe('from instace id', () => {
+      describe('from instance id', () => {
         describe('without path', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
@@ -839,7 +839,7 @@ describe('Test elements.ts', () => {
       it('should identify instance annotation IDs', () => {
         const instAnno = new ElemID('salto', 'obj', 'instance', 'inst', CORE_ANNOTATIONS.GENERATED_DEPENDENCIES)
 
-        const nonAnno = new ElemID('salto', 'obj', 'instance', 'inst', 'whatevsman')
+        const nonAnno = new ElemID('salto', 'obj', 'instance', 'inst', 'what_ever_my_person')
 
         expect(instAnno.isAttrID()).toBeTruthy()
         expect(nonAnno.isAttrID()).toBeFalsy()

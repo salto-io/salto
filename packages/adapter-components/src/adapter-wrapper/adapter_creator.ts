@@ -35,6 +35,7 @@ import { defaultValidateCredentials } from '../credentials'
 import { adapterConfigFromConfig } from '../definitions/user/user_config'
 import { ClientDefaults } from '../client/http_client'
 import { AdapterImpl } from './adapter/adapter'
+import { getResolverCreator } from '../references/resolver_creator'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -57,7 +58,7 @@ export const createAdapter = <
 }: {
   adapterName: string
   // helper for determining the names of all clients that should be created
-  initialClients: Record<ResolveClientOptionsType<Options>, undefined>
+  initialClients: Record<ResolveClientOptionsType<Options>, undefined | ConnectionCreator<Credentials>>
   authenticationMethods: AdapterAuthentication
   validateCredentials?: Adapter['validateCredentials']
   adapterImpl?: AdapterImplConstructor<Credentials, Options, Co>
@@ -87,10 +88,10 @@ export const createAdapter = <
     operations: context => {
       const config = configCreator(context.config)
       const credentials = credentialsFromConfig(context.credentials)
-      const clients = _.mapValues(initialClients, () =>
+      const clients = _.mapValues(initialClients, createConnection =>
         createClient<Credentials>({
           adapterName,
-          createConnection: connectionCreator(context.config),
+          createConnection: createConnection ?? connectionCreator(context.config),
           clientOpts: {
             credentials,
             config: config.client,
@@ -99,6 +100,8 @@ export const createAdapter = <
         }),
       )
       const definitions = definitionsCreator({ clients, userConfig: config })
+      const resolverCreator = getResolverCreator(definitions)
+
       const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
           clients,
@@ -106,6 +109,7 @@ export const createAdapter = <
           getElemIdFunc: context.getElemIdFunc,
           definitions,
           elementSource: context.elementsSource,
+          referenceResolver: resolverCreator,
           filterCreators:
             customizeFilterCreators !== undefined
               ? customizeFilterCreators(config)
@@ -113,6 +117,7 @@ export const createAdapter = <
                   createCommonFilters<Options, Co>({
                     config,
                     definitions,
+                    fieldReferenceResolverCreator: resolverCreator,
                   }),
                 ),
           adapterName,

@@ -162,6 +162,7 @@ export type ChangeValidatorName =
   | 'artificialTypes'
   | 'metadataTypes'
   | 'taskOrEventFieldsModifications'
+  | 'newFieldsAndObjectsFLS'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -466,7 +467,7 @@ export type MetadataConfigSuggestion = {
   reason?: string
 }
 
-export type RetrieveSizeConfigSuggstion = {
+export type RetrieveSizeConfigSuggestion = {
   type: typeof MAX_ITEMS_IN_RETRIEVE_REQUEST
   value: number
   reason?: string
@@ -475,7 +476,7 @@ export type RetrieveSizeConfigSuggstion = {
 export type ConfigChangeSuggestion =
   | DataManagementConfigSuggestions
   | MetadataConfigSuggestion
-  | RetrieveSizeConfigSuggstion
+  | RetrieveSizeConfigSuggestion
 
 export const isDataManagementConfigSuggestions = (
   suggestion: ConfigChangeSuggestion,
@@ -487,9 +488,9 @@ export const isMetadataConfigSuggestions = (
 ): suggestion is MetadataConfigSuggestion =>
   suggestion.type === 'metadataExclude'
 
-export const isRetrieveSizeConfigSuggstion = (
+export const isRetrieveSizeConfigSuggestion = (
   suggestion: ConfigChangeSuggestion,
-): suggestion is RetrieveSizeConfigSuggstion =>
+): suggestion is RetrieveSizeConfigSuggestion =>
   suggestion.type === MAX_ITEMS_IN_RETRIEVE_REQUEST
 
 export type FetchElements<T> = {
@@ -879,6 +880,7 @@ const changeValidatorConfigType =
       artificialTypes: { refType: BuiltinTypes.BOOLEAN },
       metadataTypes: { refType: BuiltinTypes.BOOLEAN },
       taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
+      newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -906,7 +908,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
     warningSettings: { refType: warningSettingsType },
     additionalImportantValues: {
-      // Exported type is downcasted to TypeElement
+      // Exported type is downcast to TypeElement
       refType: new ListType(importantValueType),
     },
   },

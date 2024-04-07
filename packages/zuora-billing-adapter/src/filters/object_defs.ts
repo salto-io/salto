@@ -22,9 +22,8 @@ import {
   InstanceElement,
   ReferenceExpression,
   BuiltinTypes,
-  Values,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { pathNaclCase, naclCase, extendGeneratedDependencies, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues, promises } from '@salto-io/lowerdash'
@@ -50,7 +49,7 @@ import { isInstanceOfType } from '../element_utils'
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
-const { toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD } = elementUtils.swagger
+const { swaggerTypeToPrimitiveType } = openapi
 const { mapValuesAsync } = promises.object
 // Check whether an element is a custom/standard object definition.
 // Only relevant before the object_defs filter is run.
@@ -63,11 +62,6 @@ const isStandardObjectInstance = (inst: InstanceElement): boolean =>
 const typeName = (inst: InstanceElement): string =>
   isStandardObjectInstance(inst) ? inst.elemID.name : `${inst.elemID.name}${CUSTOM_OBJECT_SUFFIX}`
 
-const flattenAdditionalProperties = (val: Values): Values => ({
-  ..._.omit(val, ADDITIONAL_PROPERTIES_FIELD),
-  ...val[ADDITIONAL_PROPERTIES_FIELD],
-})
-
 const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectType> => {
   const { schema, type } = inst.value
   const { properties, required, filterable, description, label } = schema
@@ -75,10 +69,10 @@ const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectTy
   const filterableFields = new Set(filterable)
   const obj = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, typeName(inst)),
-    fields: _.mapValues(flattenAdditionalProperties(properties), (prop, fieldName) => ({
-      refType: toPrimitiveType(prop.type),
+    fields: _.mapValues(properties, (prop, fieldName) => ({
+      refType: swaggerTypeToPrimitiveType(prop.type),
       annotations: {
-        ...flattenAdditionalProperties(prop),
+        ...prop,
         [REQUIRED]: requiredFields.has(fieldName),
         [FILTERABLE]: filterableFields.has(fieldName),
       },
@@ -95,7 +89,7 @@ const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectTy
       [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
       [LABEL]: label,
       [DESCRIPTION]: description,
-      [INTERNAL_ID]: inst.value.additionalProperties?.Id,
+      [INTERNAL_ID]: inst.value.Id,
       [OBJECT_TYPE]: type,
     },
     // id name changes are currently not allowed so it's ok to use the elem id
@@ -120,60 +114,65 @@ const addRelationships = (
       }
       const refObjectNames = new Set<string>()
       // sort in order to keep relationship fields list stable
-      _.sortBy(relationships, 'object', ({ fields }) => Object.values(fields.additionalProperties ?? {})[0]).forEach(
-        rel => {
-          const { cardinality, namespace, object, fields, recordConstraints: constraints, ...additionalDetails } = rel
-          // the only cardinalities currently in use are oneToMany / manyToOne
-          if (cardinality === 'oneToMany') {
-            // each relationship appears in both directions, so it's enough to look at manyToOne
+      _.sortBy(
+        relationships,
+        'object',
+        ({ fields }) =>
+          Object.entries(fields ?? {})
+            .filter(([key]) => obj.fields[key] === undefined)
+            .map(([_key, value]) => value)[0],
+      ).forEach(rel => {
+        const { cardinality, namespace, object, fields, recordConstraints: constraints, ...additionalDetails } = rel
+        // the only cardinalities currently in use are oneToMany / manyToOne
+        if (cardinality === 'oneToMany') {
+          // each relationship appears in both directions, so it's enough to look at manyToOne
+          return
+        }
+        const referencedObjectName = namespace === 'default' ? `${object}${CUSTOM_OBJECT_SUFFIX}` : object
+        refObjectNames.add(referencedObjectName)
+        Object.entries(fields ?? {}).forEach(([src, target]) => {
+          const srcField = obj.fields[src]
+          if (srcField === undefined) {
+            log.warn('Could not find field %s in object %s, not adding relationship', src, name)
             return
           }
-          const referencedObjectName = namespace === 'default' ? `${object}${CUSTOM_OBJECT_SUFFIX}` : object
-          refObjectNames.add(referencedObjectName)
-          Object.entries(fields.additionalProperties ?? {}).forEach(([src, target]) => {
-            const srcField = obj.fields[src]
-            if (srcField === undefined) {
-              log.warn('Could not find field %s in object %s, not adding relationship', src, name)
-              return
-            }
-            const targetObj = findType(referencedObjectName)
-            const targetField =
-              _.isString(target) && targetObj?.fields[target]
-                ? new ReferenceExpression(targetObj.fields[target].elemID)
-                : `${referencedObjectName}.${target}`
-            // we assume each field can be listed in at most one relatioship, so it's ok to override
-            // these annotations
-            if (srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] !== undefined) {
-              log.info('Field %s already has referenceTo defined, extending', srcField.elemID.getFullName())
-            }
-            srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] = [
-              ...(srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] ?? []),
-              targetField,
-            ]
-            if (
-              [FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY, FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS].some(
-                anno => srcField.annotations[anno] !== undefined,
-              )
-            ) {
-              log.warn(
-                'Field %s already has annotation values %s, overriding',
-                srcField.elemID.getFullName(),
-                safeJsonStringify(
-                  _.pick(srcField.annotations, [
-                    FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY,
-                    FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS,
-                  ]),
-                ),
-              )
-            }
-            srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY] = cardinality
-            srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS] = constraints
-          })
-          if (!_.isEmpty(additionalDetails)) {
-            log.warn('Found unexpected additional details on type %s relationship', name)
+          const targetObj = findType(referencedObjectName)
+          const targetField =
+            _.isString(target) && targetObj?.fields[target]
+              ? new ReferenceExpression(targetObj.fields[target].elemID)
+              : `${referencedObjectName}.${target}`
+          // we assume each field can be listed in at most one relatioship, so it's ok to override
+          // these annotations
+          if (srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] !== undefined) {
+            log.info('Field %s already has referenceTo defined, extending', srcField.elemID.getFullName())
           }
-        },
-      )
+          srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] = [
+            ...(srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] ?? []),
+            targetField,
+          ]
+          if (
+            [FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY, FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS].some(
+              anno => srcField.annotations[anno] !== undefined,
+            )
+          ) {
+            log.warn(
+              'Field %s already has annotation values %s, overriding',
+              srcField.elemID.getFullName(),
+              safeJsonStringify(
+                _.pick(srcField.annotations, [
+                  FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY,
+                  FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS,
+                ]),
+              ),
+            )
+          }
+          srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY] = cardinality
+          srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS] = constraints
+        })
+        if (!_.isEmpty(additionalDetails)) {
+          log.warn('Found unexpected additional details on type %s relationship', name)
+        }
+      })
       if (refObjectNames.size > 0) {
         extendGeneratedDependencies(
           obj,

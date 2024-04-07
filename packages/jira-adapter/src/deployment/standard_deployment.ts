@@ -23,6 +23,7 @@ import {
   isAdditionChange,
   isEqualValues,
   isModificationChange,
+  isSaltoError,
   ReadOnlyElementsSource,
   SaltoElementError,
 } from '@salto-io/adapter-api'
@@ -137,6 +138,19 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         await deployChangeFunc(change)
         return change
       } catch (err) {
+        if (isSaltoError(err) && err.severity !== 'Error') {
+          log.error(
+            'An error occurred during deployment of %s: %o',
+            getChangeData(change).elemID.getFullName(),
+            err.message,
+          )
+          errors.push({
+            message: err.message,
+            severity: err.severity,
+            elemID: getChangeData(change).elemID,
+          })
+          return change
+        }
         log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)
         errors.push({
           message: `${err}`,

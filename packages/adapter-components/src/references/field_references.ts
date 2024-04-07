@@ -47,6 +47,7 @@ import {
   GetReferenceIdFunc,
   ReferenceSerializationStrategyLookup,
   ReferenceSourceTransformation,
+  ReferenceIndexField,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 import { checkMissingRef } from './missing_references'
@@ -60,12 +61,12 @@ const doNothing: ContextFunc = async () => undefined
 
 const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
 
-const isRelativeSerializer = (
-  serializer: ReferenceSerializationStrategy,
-): serializer is ReferenceSerializationStrategy & { getReferenceId: GetReferenceIdFunc } =>
+const isRelativeSerializer = <CustomIndexField extends string>(
+  serializer: ReferenceSerializationStrategy<CustomIndexField>,
+): serializer is ReferenceSerializationStrategy<CustomIndexField> & { getReferenceId: GetReferenceIdFunc } =>
   'getReferenceId' in serializer
 
-export const replaceReferenceValues = async <T extends string>({
+export const replaceReferenceValues = async <TContext extends string, CustomIndexField extends string>({
   instance,
   resolverFinder,
   elemLookupMaps,
@@ -74,11 +75,11 @@ export const replaceReferenceValues = async <T extends string>({
   contextStrategyLookup = emptyContextStrategyLookup,
 }: {
   instance: InstanceElement
-  resolverFinder: ReferenceResolverFinder<T>
+  resolverFinder: ReferenceResolverFinder<TContext, CustomIndexField>
   elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>
   fieldsWithResolvedReferences: Set<string>
   elemByElemID: multiIndex.Index<[string], Element>
-  contextStrategyLookup?: Record<T, ContextFunc>
+  contextStrategyLookup?: Record<TContext, ContextFunc>
 }): Promise<Values> => {
   const getRefElem = async ({
     val,
@@ -93,7 +94,7 @@ export const replaceReferenceValues = async <T extends string>({
     valTransformation: ReferenceSourceTransformation
     field: Field
     path?: ElemID
-    target: ExtendedReferenceTargetDefinition<T>
+    target: ExtendedReferenceTargetDefinition<TContext>
     lookupIndexName?: string
     createMissingReference?: CreateMissingRefFunc
   }): Promise<Element | undefined> => {
@@ -138,7 +139,7 @@ export const replaceReferenceValues = async <T extends string>({
 
   const replacePrimitive = async (val: string | number, field: Field, path?: ElemID): Promise<Value> => {
     const toValidatedReference = async (
-      serializer: ReferenceSerializationStrategy,
+      serializer: ReferenceSerializationStrategy<CustomIndexField>,
       sourceTransformation: ReferenceSourceTransformation,
       elem: Element | undefined,
     ): Promise<ReferenceExpression | undefined> => {
@@ -204,7 +205,7 @@ export const replaceReferenceValues = async <T extends string>({
             valTransformation: refResolver.sourceTransformation,
             field,
             path,
-            target: refResolver.target as ExtendedReferenceTargetDefinition<T>,
+            target: refResolver.target as ExtendedReferenceTargetDefinition<TContext>,
             lookupIndexName: refResolver.serializationStrategy.lookupIndexName,
             createMissingReference: refResolver.missingRefStrategy?.create,
           }),
@@ -236,27 +237,33 @@ export const replaceReferenceValues = async <T extends string>({
  *
  */
 export const addReferences = async <
-  T extends string,
-  GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>,
+  ContextStrategy extends string,
+  CustomSerializationStrategy extends string,
+  CustomIndexField extends string,
+  GenericFieldReferenceDefinition extends FieldReferenceDefinition<ContextStrategy, CustomSerializationStrategy>,
 >({
   elements,
   contextElements = elements,
   defs,
-  fieldsToGroupBy = ['id'],
+  fieldsToGroupBy = ['id', 'name'],
   contextStrategyLookup,
   fieldReferenceResolverCreator,
 }: {
   elements: Element[]
   contextElements?: Element[]
   defs: GenericFieldReferenceDefinition[]
-  fieldsToGroupBy?: string[]
-  contextStrategyLookup?: Record<T, ContextFunc>
-  fieldReferenceResolverCreator?: (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
+  fieldsToGroupBy?: (ReferenceIndexField | CustomIndexField)[]
+  contextStrategyLookup?: Record<ContextStrategy, ContextFunc>
+  fieldReferenceResolverCreator?: (
+    def: GenericFieldReferenceDefinition,
+  ) => FieldReferenceResolver<ContextStrategy, CustomSerializationStrategy, CustomIndexField>
 }): Promise<void> => {
-  const resolverFinder = generateReferenceResolverFinder<T, GenericFieldReferenceDefinition>(
-    defs,
-    fieldReferenceResolverCreator,
-  )
+  const resolverFinder = generateReferenceResolverFinder<
+    ContextStrategy,
+    CustomSerializationStrategy,
+    CustomIndexField,
+    GenericFieldReferenceDefinition
+  >(defs, fieldReferenceResolverCreator)
   const instances = elements.filter(isInstanceElement)
 
   // copied from Salesforce - both should be handled similarly:
@@ -291,17 +298,26 @@ export const addReferences = async <
 }
 
 export const generateLookupFunc = <
-  T extends string,
-  GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>,
+  TContext extends string,
+  CustomSerializationStrategy extends string,
+  CustomIndexField extends string,
+  GenericFieldReferenceDefinition extends FieldReferenceDefinition<TContext, CustomSerializationStrategy>,
 >(
   defs: GenericFieldReferenceDefinition[],
-  fieldReferenceResolverCreator?: (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>,
+  fieldReferenceResolverCreator?: (
+    def: GenericFieldReferenceDefinition,
+  ) => FieldReferenceResolver<TContext, CustomSerializationStrategy, CustomIndexField>,
 ): GetLookupNameFunc => {
-  const resolverFinder = generateReferenceResolverFinder(defs, fieldReferenceResolverCreator)
+  const resolverFinder = generateReferenceResolverFinder<
+    TContext,
+    CustomSerializationStrategy,
+    CustomIndexField,
+    GenericFieldReferenceDefinition
+  >(defs, fieldReferenceResolverCreator)
 
   const determineLookupStrategy = async (
     args: GetLookupNameFuncArgs,
-  ): Promise<ReferenceSerializationStrategy | undefined> => {
+  ): Promise<ReferenceSerializationStrategy<CustomIndexField> | undefined> => {
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined

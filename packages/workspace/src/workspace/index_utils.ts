@@ -89,7 +89,7 @@ export const updateIndex = async <T>({
   isCacheValid: boolean
   updateChanges: (changes: Change<Element>[], index: RemoteMap<T>) => Promise<void>
 }): Promise<void> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     let relevantChanges = changes
     const isVersionMatch = (await mapVersions.get(indexVersionKey)) === indexVersion
     if (!isCacheValid || !isVersionMatch) {

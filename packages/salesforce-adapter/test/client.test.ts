@@ -197,6 +197,26 @@ describe('salesforce client', () => {
       expect(res).toEqual([])
     })
 
+    it('retries with 406 error', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .times(1)
+        .reply(406, {})
+        .post(/.*/)
+        .reply(
+          200,
+          {
+            'a:Envelope': {
+              'a:Body': { a: { result: { metadataObjects: [] } } },
+            },
+          },
+          headers,
+        )
+      const res = await client.listMetadataTypes()
+      expect(dodoScope.isDone()).toBeTruthy()
+      expect(res).toEqual([])
+    })
+
     it('fails if max attempts was reached ', async () => {
       const dodoScope = nock('http://dodo22')
         .persist()
@@ -1154,17 +1174,17 @@ describe('salesforce client', () => {
         PromiseVal<ReturnType<typeof testConnection.metadata.read>>
       >[]
       let mockRead: jest.MockedFunction<typeof testConnection.metadata.read>
-      let readReqs: ReturnType<typeof testClient.readMetadata>[]
+      let readRequests: ReturnType<typeof testClient.readMetadata>[]
       let retrieves: Resolvable<RetrieveResult>[]
       let mockRetrieve: jest.MockedFunction<
         typeof testConnection.metadata.retrieve
       >
-      let retrieveReqs: ReturnType<typeof testClient.retrieve>[]
+      let retrieveRequests: ReturnType<typeof testClient.retrieve>[]
       let lists: Resolvable<
         PromiseVal<ReturnType<typeof testConnection.metadata.list>>
       >[]
       let mockList: jest.MockedFunction<typeof testConnection.metadata.list>
-      let listReqs: ReturnType<typeof testClient.listMetadataObjects>[]
+      let listRequests: ReturnType<typeof testClient.listMetadataObjects>[]
 
       let emptyRetrieveResult: RetrieveResult
 
@@ -1175,7 +1195,7 @@ describe('salesforce client', () => {
       const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         let resolve: () => void = () => {}
-        // Unsafe assumption - promise constructor calls the paramter function synchronously
+        // Unsafe assumption - promise constructor calls the parameter function synchronously
         const promise = new Promise<T>((resolveFunc) => {
           resolve = () => resolveFunc(resolveValue)
         })
@@ -1216,7 +1236,7 @@ describe('salesforce client', () => {
           _.times(reads.length, (i) =>
             mockRead.mockResolvedValueOnce(reads[i].promise),
           )
-          readReqs = _.times(reads.length, (i) =>
+          readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
           retrieves = _.times(4, () =>
@@ -1227,7 +1247,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
-          retrieveReqs = _.times(retrieves.length, (i) =>
+          retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
               singlePackage: false,
@@ -1241,15 +1261,15 @@ describe('salesforce client', () => {
           _.times(lists.length, (i) =>
             mockList.mockResolvedValueOnce(lists[i].promise),
           )
-          listReqs = _.times(lists.length, (i) =>
+          listRequests = _.times(lists.length, (i) =>
             testClient.listMetadataObjects({ type: `t${i}` }),
           )
 
           retrieves[0].resolve()
           retrieves[1].resolve()
           lists[0].resolve()
-          await Promise.all(retrieveReqs.slice(0, 2))
-          await listReqs[0]
+          await Promise.all(retrieveRequests.slice(0, 2))
+          await listRequests[0]
         })
 
         it('should not call 2nd read before 1st completed', () => {
@@ -1265,8 +1285,8 @@ describe('salesforce client', () => {
           reads[1].resolve()
           retrieves[2].resolve()
           retrieves[3].resolve()
-          await Promise.all(readReqs)
-          await Promise.all(retrieveReqs)
+          await Promise.all(readRequests)
+          await Promise.all(retrieveRequests)
           expect(mockRead).toHaveBeenCalledTimes(2)
           expect(mockRetrieve).toHaveBeenCalledTimes(4)
         })
@@ -1300,7 +1320,7 @@ describe('salesforce client', () => {
           _.times(reads.length, (i) =>
             mockRead.mockResolvedValueOnce(reads[i].promise),
           )
-          readReqs = _.times(reads.length, (i) =>
+          readRequests = _.times(reads.length, (i) =>
             testClient.readMetadata(`t${i}`, 'name'),
           )
           retrieves = _.times(4, () =>
@@ -1311,7 +1331,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
-          retrieveReqs = _.times(retrieves.length, (i) =>
+          retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
               singlePackage: false,
@@ -1325,14 +1345,14 @@ describe('salesforce client', () => {
 
         it('should call 2nd read before 1st completed', async () => {
           reads[1].resolve()
-          await readReqs[1]
+          await readRequests[1]
           expect(mockRead).toHaveBeenCalledTimes(2)
         })
         it('should call all retrieves', async () => {
           // Wait for the last retrieve - this will only work if the throttling allowed
           // the last request to run before the requests before it finished
           retrieves[3].resolve()
-          await retrieveReqs[3]
+          await retrieveRequests[3]
           expect(mockRetrieve).toHaveBeenCalledTimes(4)
         })
 
@@ -1340,8 +1360,8 @@ describe('salesforce client', () => {
           ;[...reads, ...retrieves].forEach((delayedPromise) =>
             delayedPromise.resolve(),
           )
-          await Promise.all(readReqs)
-          await Promise.all(retrieveReqs)
+          await Promise.all(readRequests)
+          await Promise.all(retrieveRequests)
         })
       })
 
@@ -1369,7 +1389,7 @@ describe('salesforce client', () => {
               mockRetrieveLocator(retrieves[i].promise),
             ),
           )
-          retrieveReqs = _.times(retrieves.length, (i) =>
+          retrieveRequests = _.times(retrieves.length, (i) =>
             testClient.retrieve({
               apiVersion: API_VERSION,
               singlePackage: false,
@@ -1381,7 +1401,7 @@ describe('salesforce client', () => {
           )
 
           retrieves[0].resolve()
-          await retrieveReqs[0]
+          await retrieveRequests[0]
         })
 
         it('should call at most 4 retrieves', () => {
@@ -1390,7 +1410,7 @@ describe('salesforce client', () => {
 
         afterAll(async () => {
           retrieves.forEach((delayedPromise) => delayedPromise.resolve())
-          await Promise.all(retrieveReqs)
+          await Promise.all(retrieveRequests)
         })
       })
     })

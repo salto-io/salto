@@ -155,17 +155,17 @@ describe('flows filter', () => {
           lastModifiedByName: 'Ruler',
           lastModifiedDate: '2021-10-19T06:30:10.000Z',
         })
-        const flowdef1 = createInstanceElement(
+        const flowDef1 = createInstanceElement(
           { fullName: 'flow1' },
           mockTypes.FlowDefinition,
         )
-        const flowdef2 = createInstanceElement(
+        const flowDef2 = createInstanceElement(
           { fullName: 'flow2', activeVersionNumber: 2 },
           mockTypes.FlowDefinition,
         )
         const result = createActiveVersionFileProperties(
           [mockedFileProperties1, mockedFileProperties2],
-          [flowdef1, flowdef2],
+          [flowDef1, flowDef2],
         )
         expect(result[0].fullName).toEqual('flow1')
         expect(result[1].fullName).toEqual('flow2-2')

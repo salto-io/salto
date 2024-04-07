@@ -42,7 +42,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const REFERENCE_INDEXES_VERSION = 6
+export const REFERENCE_INDEXES_VERSION = 7
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ChangeReferences = {
@@ -291,7 +291,7 @@ export const updateReferenceIndexes = async (
   isCacheValid: boolean,
   getCustomReferences: GetCustomReferencesFunc,
 ): Promise<void> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     let relevantChanges = changes
     let initialIndex = false
     const isVersionMatch = (await mapVersions.get(REFERENCE_INDEXES_KEY)) === REFERENCE_INDEXES_VERSION

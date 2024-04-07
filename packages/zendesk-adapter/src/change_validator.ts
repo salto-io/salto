@@ -86,6 +86,7 @@ import {
   immutableTypeAndKeyForUserFieldsValidator,
   localeModificationValidator,
   emptyAutomationOrderValidator,
+  viewCustomStatusConditionsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -187,6 +188,7 @@ export default ({
     immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
     localeModification: localeModificationValidator,
     emptyAutomationOrder: emptyAutomationOrderValidator,
+    viewCustomStatusConditions: viewCustomStatusConditionsValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

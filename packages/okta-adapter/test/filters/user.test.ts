@@ -13,11 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  toChange,
+  getChangeData,
+  ModificationChange,
+} from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  GROUP_MEMBERSHIP_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  OKTA,
+} from '../../src/constants'
 import userFilter from '../../src/filters/user'
 import { getFilterParams } from '../utils'
 import { getUsers } from '../../src/user_utils'
@@ -28,7 +41,7 @@ describe('user filter', () => {
   const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
   const accessPolicyRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
   const endUserSupportType = new ObjectType({ elemID: new ElemID(OKTA, 'EndUserSupport') })
-
+  const groupMembersType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_MEMBERSHIP_TYPE_NAME) })
   const groupRuleInstance = new InstanceElement('groupRuleTest', groupRuleType, {
     name: 'test',
     conditions: {
@@ -209,6 +222,25 @@ describe('user filter', () => {
       expect(endUserS?.value).toEqual({
         technicalContactId: '222',
       })
+    })
+    it('should work on the before value of modification changes', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementationOnce(async function* get() {
+        yield [
+          { id: '111', profile: { login: 'a@a.com' } },
+          { id: '222', profile: { login: 'b@a.com' } },
+          { id: '333', profile: { login: 'c@a.com' } },
+          { id: '555', profile: { login: 'd@a.com' } },
+        ]
+      })
+      const before = new InstanceElement('modified', groupMembersType, { members: ['a@a.com', 'b@a.com'] })
+      const after = new InstanceElement('modified', groupMembersType, { members: ['b@a.com', 'c@a.com'] })
+      filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
+      const change = toChange({ before, after }) as ModificationChange<InstanceElement>
+      await filter.preDeploy([change])
+      const beforeMembers = change.data.before.value.members
+      expect(beforeMembers).toEqual(['111', '222'])
+      const afterMembers = change.data.after.value.members
+      expect(afterMembers).toEqual(['222', '333'])
     })
   })
   describe('onDeploy', () => {

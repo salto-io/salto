@@ -167,7 +167,7 @@ describe('Custom Object Instances filter', () => {
       Id: 'abcdefg',
       OtherAddress: {
         city: 'city',
-        counry: 'country',
+        country: 'country',
       },
       Name: 'Name',
       FirstName: 'First',
@@ -187,7 +187,7 @@ describe('Custom Object Instances filter', () => {
       Id: 'hijklmn',
       OtherAddress: {
         city: 'citizen',
-        counry: 'countrizen',
+        country: 'countrizen',
       },
       Name: 'Namizen',
       FirstName: 'Firstizen',
@@ -264,6 +264,7 @@ describe('Custom Object Instances filter', () => {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
+    jest.spyOn(client, 'countInstances')
     setMockQueryResults(TestCustomRecords, false)
   })
 
@@ -308,6 +309,7 @@ describe('Custom Object Instances filter', () => {
           elementsSource: elementsSourceForQuickFetch,
           lastChangeDateOfTypesWithNestedInstances:
             emptyLastChangeDateOfTypesWithNestedInstances(),
+          customObjectsWithDeletedFields: new Set(),
         })
       : buildMetadataQuery({
           fetchParams: fetchProfileParams,
@@ -929,7 +931,7 @@ describe('Custom Object Instances filter', () => {
         await filter.onFetch(elements)
       })
 
-      it('should add instances per catched by regex object with fields', async () => {
+      it('should add instances per caught by regex object with fields', async () => {
         // 2 new instances per namespaced object because of TestCustomRecords's length
         expect(elements.length).toEqual(13)
         expect(
@@ -1102,7 +1104,7 @@ describe('Custom Object Instances filter', () => {
           expect(value.TestField).toEqual('Test')
           expect(value.OtherAddress).toEqual({
             city: 'city',
-            counry: 'country',
+            country: 'country',
           })
         })
 
@@ -1476,7 +1478,7 @@ describe('Custom Object Instances filter', () => {
       })
     })
 
-    describe('orphan object (master non-existance)', () => {
+    describe('orphan object (master non-existence)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
         instances = getInstancesOfObjectType(elements, orphanObject)
@@ -2331,6 +2333,12 @@ describe('Custom Object Instances filter', () => {
             expect(elements).toSatisfyAny(
               (element) =>
                 element?.value?.[CUSTOM_OBJECT_ID_FIELD] === refToInstanceId,
+            )
+          })
+          it('should not count types in allowReferenceTo', () => {
+            expect(client.countInstances).toHaveBeenCalledWith(testTypeName)
+            expect(client.countInstances).not.toHaveBeenCalledWith(
+              refToTypeName,
             )
           })
         })

@@ -23,5 +23,6 @@ export {
   noPagination,
   defaultPathChecker,
   PathCheckerFunc,
+  tokenPagination,
 } from './pagination_functions'
 export { traversePages } from './pagination'

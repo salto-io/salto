@@ -114,10 +114,10 @@ ${Prompts.ACCOUNT_ADD_HELP}
   public static readonly FETCH_SUB_HEADER = `This might take a few minutes. You can go grab your favorite beverage.
 The steps are: I. Fetching configs, II. Calculating difference and III. Applying the changes`
   public static readonly FETCH_GET_CHANGES_START = (adapters: string[]): string =>
-    `Fetching the latest configs from: ${adapters}`
+    `Fetching the latest configs from: ${adapters.join(', ')}`
 
   public static readonly FETCH_GET_CHANGES_FINISH = (adapters: string[]): string =>
-    `Finished fetching the latest configs from: ${adapters}`
+    `Finished fetching the latest configs from: ${adapters.join(', ')}`
 
   public static readonly FETCH_GET_CHANGES_FAIL = 'Fetching failed'
   public static readonly FETCH_CALC_DIFF_START = 'Calculating the difference between local and remote'

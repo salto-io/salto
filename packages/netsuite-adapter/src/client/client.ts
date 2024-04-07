@@ -28,7 +28,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
@@ -413,7 +413,7 @@ export default class NetsuiteClient {
       try {
         log.debug('deploying %d changes', dependencyGraph.nodes.size)
         // eslint-disable-next-line no-await-in-loop
-        await log.time(
+        await log.timeDebug(
           () => this.sdfClient.deploy(suiteAppId, { manifestDependencies, validateOnly }, dependencyGraph),
           'sdfDeploy',
         )
@@ -621,7 +621,7 @@ export default class NetsuiteClient {
       const desc = `client.${name}`
       try {
         // eslint-disable-next-line @typescript-eslint/return-await
-        return await log.time(call, desc)
+        return await log.timeDebug(call, desc)
       } catch (e) {
         log.error('failed to run Netsuite client command on: %o', e)
         throw e
@@ -629,7 +629,7 @@ export default class NetsuiteClient {
     },
   )
 
-  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL | undefined> {
+  public async getNetsuiteWsdl(): Promise<soap.WSDL | undefined> {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 

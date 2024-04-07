@@ -761,7 +761,7 @@ export const validateElements = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ValidationError[]> =>
-  log.time(
+  log.timeDebug(
     async () => {
       const resolved = await resolve(elements, elementsSource)
       const errors = resolved.flatMap(e => {

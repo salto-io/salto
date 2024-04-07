@@ -21,7 +21,6 @@ import {
   Values,
   OAuthRequestParameters,
   OauthAccessTokenResponse,
-  ElemID,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -149,13 +148,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    // This can be removed once all the workspaces configs were migrated
-    const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
-      // Creating new instance is required because the type is not resolved in context.config
-      new InstanceElement(ElemID.CONFIG_NAME, configType, context.config?.value),
-      DEFAULT_CONFIG,
-    )
-    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
+    const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const adapterOperations = new ZendeskAdapter({
       client: new ZendeskClient({
@@ -172,13 +165,7 @@ export const adapter: Adapter = {
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchRes = await adapterOperations.fetch(args)
-        return {
-          ...fetchRes,
-          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
-        }
-      },
+      fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
       fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }
@@ -195,7 +182,7 @@ export const adapter: Adapter = {
       createOAuthRequest,
       credentialsType: oauthAccessTokenCredentialsType,
       oauthRequestParameters: oauthRequestParametersType,
-      createFromOauthResponse: (inputConfig: Values, response: OauthAccessTokenResponse) => {
+      createFromOauthResponse: async (inputConfig: Values, response: OauthAccessTokenResponse) => {
         const { subdomain, domain } = inputConfig
         const { accessToken } = response.fields
         return {

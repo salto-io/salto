@@ -71,6 +71,10 @@ export type WorkflowStatus = {
   name: string
 }
 
+export type PayloadWorkflowStatus = WorkflowStatus & {
+  statusReference: string
+}
+
 export type WorkflowStatusAndPort = {
   statusReference: string | ReferenceExpression
   port?: number
@@ -169,14 +173,15 @@ export const isWorkflowV2Instance = (instance: InstanceElement): instance is Wor
 export const isWorkflowInstance = (instance: InstanceElement): instance is WorkflowV1Instance | WorkflowV2Instance =>
   isWorkflowV1Instance(instance) || isWorkflowV2Instance(instance)
 
-export type WorkflowPayload = {
-  statuses: Values[]
-  workflows: Values[]
+type DeploymentWorkflowPayload = {
+  statuses: PayloadWorkflowStatus[]
+  workflows: Workflow[]
   scope?: WorkflowScope
 }
 
 type WorkflowResponse = {
-  workflows: Workflow[]
+  workflows: (Workflow & { version: WorkflowVersion })[]
+  statuses: PayloadWorkflowStatus[]
   taskId?: string
 }
 
@@ -223,33 +228,73 @@ const WORKFLOW_DATA_RESPONSE_SCHEMA = Joi.array()
   )
   .required()
 
+const WORKFLOW_SCHEME = Joi.object({
+  name: Joi.string().required(),
+  id: Joi.string(),
+  version: Joi.object({
+    versionNumber: Joi.number().required(),
+    id: Joi.string().required(),
+  }).unknown(true),
+  scope: Joi.object({
+    project: Joi.string(),
+    type: Joi.string().required(),
+  })
+    .unknown(true)
+    .required(),
+  statuses: Joi.array().items(Joi.object().unknown(true)).required(),
+  transitions: Joi.array().items(TRANSITION_SCHEME).required(),
+})
+  .unknown(true)
+  .required()
+
+const STATUSES_SCHEME = Joi.array()
+  .items(
+    Joi.object({
+      id: Joi.string().required(),
+      name: Joi.string().required(),
+      statusReference: Joi.string().required(),
+    })
+      .unknown(true)
+      .required(),
+  )
+  .required()
+
 const WORKFLOW_RESPONSE_SCHEME = Joi.object({
   workflows: Joi.array()
     .items(
-      Joi.object({
-        name: Joi.string().required(),
-        id: Joi.string().required(),
-        version: Joi.object({
-          versionNumber: Joi.number().required(),
-          id: Joi.string().required(),
-        })
-          .unknown(true)
-          .required(),
-        scope: Joi.object({
-          project: Joi.string(),
-          type: Joi.string().required(),
-        })
-          .unknown(true)
-          .required(),
-        statuses: Joi.array().items(Joi.object().unknown(true)).required(),
-        transitions: Joi.array().items(TRANSITION_SCHEME).required(),
-      }).unknown(true),
+      WORKFLOW_SCHEME.concat(
+        Joi.object({
+          version: Joi.object({
+            versionNumber: Joi.number().required(),
+            id: Joi.string().required(),
+          })
+            .unknown(true)
+            .required(),
+        }),
+      ),
     )
     .required(),
+  statuses: STATUSES_SCHEME,
   taskId: Joi.string(),
 })
   .unknown(true)
   .required()
+
+const DEPLOYMENT_WORKFLOW_PAYLOAD_SCHEME = Joi.object({
+  statuses: STATUSES_SCHEME,
+  workflows: Joi.array().items(WORKFLOW_SCHEME).required(),
+  scope: Joi.object({
+    project: Joi.string(),
+    type: Joi.string().required(),
+  }).unknown(true),
+})
+  .unknown(true)
+  .required()
+
+export const isDeploymentWorkflowPayload = createSchemeGuard<DeploymentWorkflowPayload>(
+  DEPLOYMENT_WORKFLOW_PAYLOAD_SCHEME,
+  'Received an invalid workflow payload',
+)
 
 export const isWorkflowV2Transition = (value: unknown): value is WorkflowTransitionV2 => {
   const { error } = TRANSITION_SCHEME.validate(value)

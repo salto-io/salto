@@ -305,7 +305,7 @@ export const resolve = (
   elementsSource: ReadOnlyElementsSource,
   { shouldResolveReferences = true }: ResolveOpts = {},
 ): Promise<Element[]> =>
-  log.time(
+  log.timeDebug(
     async () => {
       // Create a clone of the input elements to ensure we do not modify the input
       const elementsToResolve = getClonedElements(elements)

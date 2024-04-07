@@ -102,6 +102,7 @@ type BuildFetchWithChangesDetectionMetadataQueryParams =
   BuildMetadataQueryParams & {
     elementsSource: ReadOnlyElementsSource
     lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
+    customObjectsWithDeletedFields: Set<string>
   }
 
 export const buildMetadataQuery = ({
@@ -296,6 +297,12 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         return false
       }
       const { metadataType, name } = instance
+      if (
+        metadataType === CUSTOM_OBJECT &&
+        params.customObjectsWithDeletedFields.has(name)
+      ) {
+        return true
+      }
       if (isTypeWithNestedInstances(metadataType)) {
         return isInstanceWithNestedInstancesIncluded(metadataType)
       }
@@ -318,6 +325,12 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         'The following instances were fetched in fetch with changes detection due to invalid or missing changedAt: %s',
         safeJsonStringify(missingOrInvalidChangedAtInstances),
       )
+      if (params.customObjectsWithDeletedFields.size > 0) {
+        log.debug(
+          'The following custom objects have deleted fields and were fetched in fetch with changes detection: %s',
+          Array.from(params.customObjectsWithDeletedFields),
+        )
+      }
     },
   }
 }

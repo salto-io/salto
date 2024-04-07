@@ -231,7 +231,7 @@ const addDifferentElements =
     compareOptions?: CompareOptions,
   ): PlanTransformer =>
   graph =>
-    log.time(
+    log.timeDebug(
       async () => {
         const outputGraph = graph.clone()
         const sieve = new Set<string>()
@@ -350,7 +350,7 @@ const addDifferentElements =
 const resolveNodeElements =
   (before: ReadOnlyElementsSource, after: ReadOnlyElementsSource): PlanTransformer =>
   graph =>
-    log.time(
+    log.timeDebug(
       async () => {
         const beforeItemsToResolve: ChangeDataType[] = []
         const afterItemsToResolve: ChangeDataType[] = []
@@ -365,12 +365,12 @@ const resolveNodeElements =
         })
 
         const resolvedBefore = _.keyBy(
-          await log.time(() => resolve(beforeItemsToResolve, before), 'Resolving before items'),
+          await log.timeDebug(() => resolve(beforeItemsToResolve, before), 'Resolving before items'),
           e => e.elemID.getFullName(),
         ) as Record<string, ChangeDataType>
 
         const resolvedAfter = _.keyBy(
-          await log.time(() => resolve(afterItemsToResolve, after), 'Resolving after items'),
+          await log.timeDebug(() => resolve(afterItemsToResolve, after), 'Resolving after items'),
           e => e.elemID.getFullName(),
         ) as Record<string, ChangeDataType>
 
@@ -459,7 +459,7 @@ export const getPlan = async ({
 }: GetPlanParameters): Promise<Plan> => {
   const numBeforeElements = await awu(await before.list()).length()
   const numAfterElements = await awu(await after.list()).length()
-  return log.time(
+  return log.timeDebug(
     async () => {
       const diffGraph = await buildDiffGraph(
         addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements, compareOptions),

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter, ElemID } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
@@ -26,7 +26,6 @@ import {
   FETCH_CONFIG,
   getDefaultConfig,
   WorkatoFetchConfig,
-  ENABLE_DEPLOY_SUPPORT_FLAG,
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
@@ -69,14 +68,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    // This can be removed once all the workspaces configs were migrated
-    const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
-      // Creating new instance is required because the type is not resolved in context.config
-      new InstanceElement(ElemID.CONFIG_NAME, configType, context.config?.value),
-      getDefaultConfig(context.config?.value.fetch?.[ENABLE_DEPLOY_SUPPORT_FLAG]),
-    )
-
-    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
+    const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const adapterOperations = new WorkatoAdapter({
       client: new WorkatoClient({
@@ -89,13 +81,7 @@ export const adapter: Adapter = {
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchRes = await adapterOperations.fetch(args)
-        return {
-          ...fetchRes,
-          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
-        }
-      },
+      fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
       postFetch: adapterOperations.postFetch.bind(adapterOperations),
     }

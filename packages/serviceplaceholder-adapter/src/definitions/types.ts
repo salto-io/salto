@@ -20,11 +20,16 @@ import { definitions } from '@salto-io/adapter-components'
 export type AdditionalAction = never
 export type ClientOptions = 'main'
 export type PaginationOptions = 'cursor'
+// TODO set these to never if not needed
 export type ReferenceContextStrategies = 'parentType'
+export type CustomReferenceSerializationStrategyName = 'otherFieldName'
+export type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions
   additionalAction: AdditionalAction
   referenceContextStrategies: ReferenceContextStrategies
+  referenceSerializationStrategies: CustomReferenceSerializationStrategyName
+  referenceIndexNames: CustomIndexField
 }

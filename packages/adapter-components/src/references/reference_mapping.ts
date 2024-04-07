@@ -25,6 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { createMissingInstance } from './missing_references'
 
 const { awu } = collections.asynciterable
 
@@ -39,9 +40,12 @@ export type CheckMissingRefFunc = (element: Element) => boolean
 
 export type GetReferenceIdFunc = (topLevelId: ElemID) => ElemID
 
-export type ReferenceSerializationStrategy = {
+export type ReferenceIndexField = 'id' | 'name'
+export type ReferenceSerializationStrategyName = 'fullValue' | ReferenceIndexField | 'nameWithPath'
+
+export type ReferenceSerializationStrategy<CustomIndexField extends string = never> = {
   lookup: LookupFunc
-  lookupIndexName?: string
+  lookupIndexName?: ReferenceIndexField | CustomIndexField
 } & types.OneOf<{
   serialize: GetLookupNameFunc
   // getReferenceId set the path of the value that the reference will be set by.
@@ -50,8 +54,6 @@ export type ReferenceSerializationStrategy = {
   getReferenceId: GetReferenceIdFunc
 }>
 export const basicLookUp: LookupFunc = val => val
-
-export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -106,20 +108,36 @@ export const ReferenceSourceTransformationLookup: Record<
 export type MissingReferenceStrategy = {
   create: CreateMissingRefFunc
 }
+
 export type MissingReferenceStrategyName = 'typeAndValue'
 
-type MetadataTypeArgs<T extends string> = {
-  type: string
-  typeContext: T
-}
-type MetadataParentArgs<T extends string> = {
-  parent?: string
-  parentContext?: T
+export const missingReferenceStrategyLookup: Record<MissingReferenceStrategyName, MissingReferenceStrategy> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return createMissingInstance(adapter, typeName, value)
+    },
+  },
 }
 
-export type ReferenceTargetDefinition<T extends string> = { name?: string } & types.OneOf<MetadataTypeArgs<T>> &
-  types.OneOf<MetadataParentArgs<T>>
-export type ExtendedReferenceTargetDefinition<T extends string> = ReferenceTargetDefinition<T> & { lookup: LookupFunc }
+type MetadataTypeArgs<TContext extends string> = {
+  type: string
+  typeContext: TContext
+}
+type MetadataParentArgs<TContext extends string> = {
+  parent?: string
+  parentContext?: TContext
+}
+
+export type ReferenceTargetDefinition<TContext extends string> = { name?: string } & types.OneOf<
+  MetadataTypeArgs<TContext>
+> &
+  types.OneOf<MetadataParentArgs<TContext>>
+export type ExtendedReferenceTargetDefinition<TContext extends string> = ReferenceTargetDefinition<TContext> & {
+  lookup: LookupFunc
+}
 
 export type FieldReferenceSourceDefinition = {
   field: string
@@ -140,12 +158,15 @@ export type FieldReferenceSourceDefinition = {
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-export type FieldReferenceDefinition<T extends string | never> = {
+export type FieldReferenceDefinition<
+  TContext extends string | never,
+  CustomSerializationStrategy extends string = never,
+> = {
   src: FieldReferenceSourceDefinition
-  serializationStrategy?: ReferenceSerializationStrategyName
+  serializationStrategy?: ReferenceSerializationStrategyName | CustomSerializationStrategy
   sourceTransformation?: ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
-  target?: ReferenceTargetDefinition<T>
+  target?: ReferenceTargetDefinition<TContext>
   // If missingRefStrategy is missing, we won't replace broken values with missing references
   missingRefStrategy?: MissingReferenceStrategyName
 }
@@ -161,29 +182,54 @@ const matchInstanceType = async (inst: InstanceElement, matchers: (string | RegE
   return matchers.some(matcher => matchName(typeName, matcher))
 }
 
-type FieldReferenceResolverDetails<T extends string> = {
-  serializationStrategy: ReferenceSerializationStrategy
+type FieldReferenceResolverDetails<TContext extends string, CustomIndexField extends string> = {
+  serializationStrategy: ReferenceSerializationStrategy<CustomIndexField>
   sourceTransformation: ReferenceSourceTransformation
-  target?: ExtendedReferenceTargetDefinition<T>
+  target?: ExtendedReferenceTargetDefinition<TContext>
   missingRefStrategy?: MissingReferenceStrategy
 }
 
-export class FieldReferenceResolver<T extends string> {
+const toStandardSerializationStrategy = (strategyName?: string): ReferenceSerializationStrategy =>
+  strategyName !== undefined && Object.keys(ReferenceSerializationStrategyLookup).includes(strategyName)
+    ? ReferenceSerializationStrategyLookup[strategyName as ReferenceSerializationStrategyName]
+    : ReferenceSerializationStrategyLookup.fullValue
+
+export class FieldReferenceResolver<
+  TContext extends string,
+  CustomReferenceSerializationStrategyName extends string = never,
+  CustomIndexField extends string = never,
+> {
   src: FieldReferenceSourceDefinition
-  serializationStrategy: ReferenceSerializationStrategy
+  serializationStrategy: ReferenceSerializationStrategy<CustomIndexField>
   sourceTransformation: ReferenceSourceTransformation
-  target?: ExtendedReferenceTargetDefinition<T>
+  target?: ExtendedReferenceTargetDefinition<TContext>
   missingRefStrategy?: MissingReferenceStrategy
 
-  constructor(def: FieldReferenceDefinition<T>) {
+  constructor(
+    def: FieldReferenceDefinition<TContext, CustomReferenceSerializationStrategyName>,
+    serializationStrategyLookup?: Record<
+      CustomReferenceSerializationStrategyName | ReferenceSerializationStrategyName,
+      ReferenceSerializationStrategy<CustomIndexField>
+    >,
+  ) {
     this.src = def.src
-    this.serializationStrategy = ReferenceSerializationStrategyLookup[def.serializationStrategy ?? 'fullValue']
+    this.serializationStrategy =
+      def.serializationStrategy !== undefined
+        ? serializationStrategyLookup?.[def.serializationStrategy] ??
+          toStandardSerializationStrategy(def.serializationStrategy)
+        : toStandardSerializationStrategy()
     this.sourceTransformation = ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'exact']
     this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
+    this.missingRefStrategy = def.missingRefStrategy
+      ? missingReferenceStrategyLookup[def.missingRefStrategy]
+      : undefined
   }
 
-  static create<S extends string>(def: FieldReferenceDefinition<S>): FieldReferenceResolver<S> {
-    return new FieldReferenceResolver<S>(def)
+  static create<S extends string, C extends string = never, I extends string = never>(
+    def: FieldReferenceDefinition<S, C>,
+    serializationStrategyLookup?: Record<C | ReferenceSerializationStrategyName, ReferenceSerializationStrategy<I>>,
+  ): FieldReferenceResolver<S, C, I> {
+    return new FieldReferenceResolver<S, C, I>(def, serializationStrategyLookup)
   }
 
   async match(field: Field, element: Element): Promise<boolean> {
@@ -196,23 +242,29 @@ export class FieldReferenceResolver<T extends string> {
   }
 }
 
-export type ReferenceResolverFinder<T extends string> = (
+export type ReferenceResolverFinder<TContext extends string, CustomIndexField extends string> = (
   field: Field,
   element: Element,
-) => Promise<FieldReferenceResolverDetails<T>[]>
+) => Promise<FieldReferenceResolverDetails<TContext, CustomIndexField>[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = <
-  T extends string,
-  GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>,
+  TContext extends string,
+  CustomSerializationStrategy extends string,
+  CustomIndexField extends string,
+  GenericFieldReferenceDefinition extends FieldReferenceDefinition<TContext, CustomSerializationStrategy>,
 >(
   defs: GenericFieldReferenceDefinition[],
-  fieldReferenceResolverCreator?: (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>,
-): ReferenceResolverFinder<T> => {
+  fieldReferenceResolverCreator?: (
+    def: GenericFieldReferenceDefinition,
+  ) => FieldReferenceResolver<TContext, CustomSerializationStrategy, CustomIndexField>,
+): ReferenceResolverFinder<TContext, CustomIndexField> => {
   const referenceDefinitions = defs.map(def =>
-    fieldReferenceResolverCreator ? fieldReferenceResolverCreator(def) : FieldReferenceResolver.create<T>(def),
+    fieldReferenceResolverCreator
+      ? fieldReferenceResolverCreator(def)
+      : FieldReferenceResolver.create<TContext, CustomSerializationStrategy, CustomIndexField>(def),
   )
 
   const matchersByFieldName = _(referenceDefinitions)

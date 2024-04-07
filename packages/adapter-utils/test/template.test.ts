@@ -56,9 +56,9 @@ describe('dynamic content references filter', () => {
     ])
   })
   it('should return a string if all parts are strings', async () => {
-    const template = new TemplateExpression({ parts: ['this is a test', 'final check'] })
+    const template = new TemplateExpression({ parts: ['this is a test ', 'final check'] })
     const result = compactTemplate(template)
-    expect(result).toBe('this is a testfinal check')
+    expect(result).toBe('this is a test final check')
   })
   it('should create a template expression with compacted string', async () => {
     const result = createTemplateExpression({

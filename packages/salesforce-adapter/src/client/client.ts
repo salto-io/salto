@@ -116,6 +116,8 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> =
     },
   }
 
+const errorCodesToRetry = [400, 406]
+
 // This is attempting to work around issues where the Salesforce API sometimes
 // returns invalid responses for no apparent reason, causing jsforce to crash.
 // We hope retrying will help...
@@ -138,6 +140,8 @@ const errorMessagesToRetry = [
   'Internal_Error',
   'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
   'no healthy upstream',
+  'upstream connect error or disconnect/reset before headers',
+  'security policies took too long to evaluate',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -380,14 +384,16 @@ const sendChunked = async <TIn, TOut>({
 
 export class ApiLimitsTooLowError extends Error {}
 
-const retry400ErrorWrapper =
+const retryErrorsByCodeWrapper =
   (strategy: RetryStrategy): RetryStrategy =>
   (err, response, body) => {
     if (strategy(err, response, body)) {
       return true
     }
-    if (response.statusCode === 400) {
-      log.trace(`Retrying on 400 due to known salesforce issues. Err: ${err}`)
+    if (errorCodesToRetry.some((code) => response.statusCode === code)) {
+      log.warn(
+        `Retrying on ${response.statusCode} due to known salesforce issues. Err: ${err}, headers: ${response.headers}, status message: ${response.statusMessage}, body: ${body}`,
+      )
       return true
     }
     return false
@@ -396,7 +402,7 @@ const createRetryOptions = (
   retryOptions: Required<ClientRetryConfig>,
 ): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
-  retryStrategy: retry400ErrorWrapper(
+  retryStrategy: retryErrorsByCodeWrapper(
     RetryStrategies[retryOptions.retryStrategy],
   ),
   timeout: retryOptions.timeout,
@@ -411,25 +417,25 @@ const createRetryOptions = (
 })
 
 const createConnectionFromCredentials = (
-  creds: Credentials,
+  credentials: Credentials,
   options: RequestRetryOptions,
 ): Connection => {
-  if (creds instanceof OauthAccessTokenCredentials) {
+  if (credentials instanceof OauthAccessTokenCredentials) {
     try {
       return oauthConnection({
-        instanceUrl: creds.instanceUrl,
-        accessToken: creds.accessToken,
-        refreshToken: creds.refreshToken,
+        instanceUrl: credentials.instanceUrl,
+        accessToken: credentials.accessToken,
+        refreshToken: credentials.refreshToken,
         retryOptions: options,
-        clientId: creds.clientId,
-        clientSecret: creds.clientSecret,
-        isSandbox: creds.isSandbox,
+        clientId: credentials.clientId,
+        clientSecret: credentials.clientSecret,
+        isSandbox: credentials.isSandbox,
       })
     } catch (error) {
       throw new CredentialError(error.message)
     }
   }
-  return realConnection(creds.isSandbox, options)
+  return realConnection(credentials.isSandbox, options)
 }
 
 const retryOnBadResponse = async <T extends object>(
@@ -484,14 +490,14 @@ const retryOnBadResponse = async <T extends object>(
 
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection,
-  creds: Credentials,
+  credentials: Credentials,
 ): Promise<string> => {
-  if (creds instanceof UsernamePasswordCredentials) {
+  if (credentials instanceof UsernamePasswordCredentials) {
     try {
       return (
         await connection.login(
-          creds.username,
-          creds.password + (creds.apiToken ?? ''),
+          credentials.username,
+          credentials.password + (credentials.apiToken ?? ''),
         )
       ).organizationId
     } catch (error) {
@@ -547,7 +553,7 @@ const PRODUCTION_ACCOUNT_TYPES = [
 ]
 
 export const getConnectionDetails = async (
-  creds: Credentials,
+  credentials: Credentials,
   connection?: Connection,
 ): Promise<{
   remainingDailyRequests: number
@@ -560,8 +566,9 @@ export const getConnectionDetails = async (
     maxAttempts: 2,
     retryStrategy: RetryStrategies.HTTPOrNetworkError,
   }
-  const conn = connection || createConnectionFromCredentials(creds, options)
-  const orgId = await loginFromCredentialsAndReturnOrgId(conn, creds)
+  const conn =
+    connection || createConnectionFromCredentials(credentials, options)
+  const orgId = await loginFromCredentialsAndReturnOrgId(conn, credentials)
   const limits = await conn.limits()
   const organizationRecord = await queryOrganization(conn, orgId)
   if (organizationRecord === undefined) {
@@ -582,7 +589,7 @@ export const getConnectionDetails = async (
 }
 
 export const validateCredentials = async (
-  creds: Credentials,
+  credentials: Credentials,
   minApiRequestsRemaining = 0,
   connection?: Connection,
 ): Promise<AccountInfo> => {
@@ -592,13 +599,13 @@ export const validateCredentials = async (
     accountType,
     isProduction,
     instanceUrl,
-  } = await getConnectionDetails(creds, connection)
+  } = await getConnectionDetails(credentials, connection)
   if (remainingDailyRequests < minApiRequestsRemaining) {
     throw new ApiLimitsTooLowError(
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`,
     )
   }
-  if (creds.isSandbox) {
+  if (credentials.isSandbox) {
     if (instanceUrl === undefined) {
       throw new Error(
         'Expected Salesforce organization URL to exist in the connection',

@@ -26,10 +26,13 @@ import {
   APIDefinitionsOptions,
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
+  ResolveReferenceContextStrategiesType,
   UserConfig,
 } from '../../definitions'
 import { AdapterFilterCreator, FilterResult } from '../../filter_utils'
 import { RequiredDefinitions } from '../../definitions/system/types'
+import { ResolveReferenceSerializationStrategyLookup, ResolveReferenceIndexNames } from '../../definitions/system/api'
+import { FieldReferenceDefinition, FieldReferenceResolver } from '../../references'
 
 export interface AdapterParams<
   Credentials,
@@ -46,6 +49,16 @@ export interface AdapterParams<
   getElemIdFunc?: ElemIdGetter
   additionalChangeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: DependencyChanger[]
+  referenceResolver: (
+    def: FieldReferenceDefinition<
+      ResolveReferenceContextStrategiesType<Options>,
+      ResolveReferenceSerializationStrategyLookup<Options>
+    >,
+  ) => FieldReferenceResolver<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>,
+    ResolveReferenceIndexNames<Options>
+  >
   elementSource: ReadOnlyElementsSource
   adapterName: string
   // TODO SALTO-5578 pass in account name as well

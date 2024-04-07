@@ -270,7 +270,7 @@ Go to ${url} to see valid users and account IDs.`,
       {
         elemID: instances[0].elemID,
         severity: 'Warning',
-        message: '1 usernames will be overridden to email1list2',
+        message: 'Usernames will be overridden',
         detailedMessage:
           'The following users are referenced by this element, but do not exist in the target environment: 403: "disp0l". If you continue, they will be set to email1list2 according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
       },
@@ -293,7 +293,7 @@ Go to ${url} to see valid users and account IDs.`,
       {
         elemID: instances[0].elemID,
         severity: 'Warning',
-        message: "1 usernames will be overridden to the deployer's user",
+        message: 'Usernames will be overridden',
         detailedMessage:
           'The following users are referenced by this element, but do not exist in the target environment: 403: "disp0l". If you continue, they will be set to the deployer\'s user according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
       },
@@ -558,7 +558,7 @@ Go to ${url} to see valid users and account IDs.`,
         {
           elemID: invalidUserInstance.elemID,
           severity: 'Warning',
-          message: '1 usernames will be overridden to firstAccount',
+          message: 'Usernames will be overridden',
           detailedMessage:
             'The following users are referenced by this element, but do not exist in the target environment: notExistsAccount. If you continue, they will be set to firstAccount according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
         },
@@ -580,7 +580,7 @@ Go to ${url} to see valid users and account IDs.`,
         {
           elemID: invalidUserInstance.elemID,
           severity: 'Warning',
-          message: "1 usernames will be overridden to the deployer's user",
+          message: 'Usernames will be overridden',
           detailedMessage:
             "The following users are referenced by this element, but do not exist in the target environment: notExistsAccount. If you continue, they will be set to the deployer's user according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira",
         },

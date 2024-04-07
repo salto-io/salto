@@ -24,7 +24,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { ImportantValues } from '@salto-io/adapter-utils'
-import { ConfigChangeSuggestion } from '../../../config' // TODO move
+import { ConfigChangeSuggestion } from '../../user'
 import { ArgsWithCustomizer } from '../shared/types'
 // eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'
@@ -77,7 +77,7 @@ type StandaloneFieldDefinition = {
   nestPathUnderParent?: boolean
 }
 
-// TODO add safeties (e.g. standalone.referencFromParent=false means omit)
+// TODO add safeties (e.g. standalone.referenceFromParent=false means omit)
 export type ElementFieldCustomization = types.XOR<
   {
     fieldType?: string

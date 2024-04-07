@@ -152,6 +152,7 @@ describe('Standard Value Sets filter', () => {
           elementsSource,
           lastChangeDateOfTypesWithNestedInstances:
             {} as unknown as LastChangeDateOfTypesWithNestedInstances,
+          customObjectsWithDeletedFields: new Set(),
         })
       : defaultFilterContext.fetchProfile.metadataQuery
     const fetchProfile = buildFetchProfile({ fetchParams: {}, metadataQuery })

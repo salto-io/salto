@@ -46,7 +46,7 @@ describe('Salesforce MetadataTypes', () => {
     expect(array.filter(isUnsupportedMetadataType)).toBeEmpty()
   })
   describe('getFetchTargets', () => {
-    describe('when fetch targets dont include any types with dependencies', () => {
+    describe("when fetch targets don't include any types with dependencies", () => {
       it('should return the same list', () => {
         const target: MetadataTypeWithoutDependencies[] = [
           'CustomLabels',

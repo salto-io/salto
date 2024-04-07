@@ -214,11 +214,11 @@ export const validateDataManagementConfig = (
     'allowReferenceTo',
   ])
   if (dataManagementConfig.saltoIDSettings.overrides !== undefined) {
-    const overridesObjectRegexs =
+    const overridesObjectRegexes =
       dataManagementConfig.saltoIDSettings.overrides.map(
         (override) => override.objectsRegex,
       )
-    validateRegularExpressions(overridesObjectRegexs, [
+    validateRegularExpressions(overridesObjectRegexes, [
       ...fieldPath,
       'saltoIDSettings',
       'overrides',

@@ -35,11 +35,13 @@ import {
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
+  definitions,
   elements as elementUtils,
   client as clientUtils,
   combineElementFixers,
   resolveChangeElement,
   fetch as fetchUtils,
+  openapi,
 } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -88,6 +90,7 @@ import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
+import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
@@ -96,7 +99,7 @@ import { createFixElementFunctions } from './fix_elements'
 
 const { awu } = collections.asynciterable
 
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllInstances } = elementUtils.swagger
 const { getAllElements } = elementUtils.ducktype
 const { computeGetArgs } = fetchUtils.resource
 const { findDataField } = elementUtils
@@ -104,6 +107,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 const DEFAULT_FILTERS = [
+  renameDefaultAccessPolicy,
   standardRolesFilter,
   deleteFieldsFilter,
   userTypeFilter,
@@ -127,7 +131,7 @@ const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
   addAliasFilter,
-  // should run after fieldReferencesFilter
+  // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
@@ -218,7 +222,7 @@ export default class OktaAdapter implements AdapterOperations {
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
-    return generateTypes(OKTA, this.userConfig[API_DEFINITIONS_CONFIG])
+    return openapi.generateTypes(OKTA, this.userConfig[API_DEFINITIONS_CONFIG])
   }
 
   @logDuration('generating instances from service')
@@ -306,7 +310,7 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
-  private async handleClassicEngineOrg(): Promise<configUtils.ConfigChangeSuggestion | undefined> {
+  private async handleClassicEngineOrg(): Promise<definitions.ConfigChangeSuggestion | undefined> {
     const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
     const isClassicOrg = isClassicOrgByConfig ?? (await isClassicEngineOrg(this.client))
     if (isClassicOrg) {
@@ -348,7 +352,7 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? []).concat(classicOrgConfigSuggestion ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
-        ? configUtils.getUpdatedCofigFromConfigChanges({
+        ? definitions.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,

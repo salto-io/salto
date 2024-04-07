@@ -40,6 +40,7 @@ export const VALID_USER_VALUES = [
   'agent',
   'end_user',
   '',
+  '__NULL__',
 ]
 export const MISSING_USERS_DOC_LINK =
   'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'

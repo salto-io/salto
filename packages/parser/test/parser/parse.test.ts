@@ -36,8 +36,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { registerTestFunction, registerThrowingFunction } from '../utils'
-import { Functions } from '../../src/parser/functions'
-import { SourceRange, parse, SourceMap, tokenizeContent, ParseResult } from '../../src/parser'
+import { Functions, SourceRange, parse, SourceMap, tokenizeContent, ParseResult } from '../../src/parser'
 import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
 
 const { awu } = collections.asynciterable
@@ -230,6 +229,10 @@ describe('Salto parser', () => {
 multiline
 template {{$\{te@mp.late.instance.multiline_stuff@us}}}
 value
+'''
+        escapedTemplateMarker = '''
+multiline
+\${{$\{te@mp.late.instance.multiline_stuff@us}}} and {{$\{te@mp.late.instance.multiline_stuff@us}}}\${{$\{te@mp.late.instance.multiline_stuff@us}}}{{$\{te@mp.late.instance.multiline_stuff@us}}} hello
 '''
       }
       
@@ -731,6 +734,29 @@ value
             elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
           }),
           '}}\nvalue',
+        ])
+      })
+
+      it('should parse references in multiline that exists on the same line as an escaped template marker as TemplateExpression', () => {
+        expect(multilineRefObj.annotations.escapedTemplateMarker).toBeInstanceOf(TemplateExpression)
+        expect(multilineRefObj.annotations.escapedTemplateMarker.parts).toEqual([
+          'multiline\n${{',
+          expect.objectContaining({
+            elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
+          }),
+          '}} and {{',
+          expect.objectContaining({
+            elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
+          }),
+          '}}${{',
+          expect.objectContaining({
+            elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
+          }),
+          '}}{{',
+          expect.objectContaining({
+            elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
+          }),
+          '}} hello',
         ])
       })
     })

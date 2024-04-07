@@ -66,7 +66,7 @@ export class RequestQueue<ClientOptions extends string> {
   processNext(): void {
     while (this.queue.length > 0 && this.activePromises.length < this.maxConcurrentRequests) {
       const args = this.queue.shift()
-      log.debug(
+      log.trace(
         'processNext on queue %s.%s:%s - %d items left',
         this.endpointIdentifier.client,
         this.endpointIdentifier.path,

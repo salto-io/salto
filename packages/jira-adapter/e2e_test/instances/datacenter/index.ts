@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement, Element, ModificationChange } from '@salto-io/adapter-api'
-import { AUTOMATION_TYPE, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
@@ -29,6 +29,11 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     findType('FieldConfiguration', fetchedElements),
     createFieldConfigurationValues(randomString),
   )
+  const issueType = new InstanceElement(`IT_${randomString}`, findType(ISSUE_TYPE_NAME, fetchedElements), {
+    description: randomString,
+    name: `IT_${randomString}`,
+    hierarchyLevel: 0,
+  })
 
   const automation = new InstanceElement(
     randomString,
@@ -66,7 +71,16 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     createPrioritySchemeValues(randomString, fetchedElements),
   )
 
-  return [[fieldConfiguration], [automation], [workflow], [kanbanBoard], [scrumBoard], [filter], [priorityScheme]]
+  return [
+    [fieldConfiguration],
+    [automation],
+    [workflow],
+    [kanbanBoard],
+    [issueType],
+    [scrumBoard],
+    [filter],
+    [priorityScheme],
+  ]
 }
 
 export const modifyDataCenterInstances = (_fetchedElements: Element[]): ModificationChange<InstanceElement>[][] => []

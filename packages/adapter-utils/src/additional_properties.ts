@@ -21,13 +21,16 @@ import {
   isType,
   Element,
   ObjectType,
-  TypeElement,
   Value,
+  ReferenceExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 
+const log = logger(module)
 type AdditionalPropertiesAnnotation = {
-  refType: TypeElement
+  refType: ReferenceExpression
   annotations?: Record<string, Value>
 }
 
@@ -40,7 +43,9 @@ export const setAdditionalPropertiesAnnotation = <T extends Element>(
 }
 
 const isAdditionalPropertiesAnnotation = (value: Value): value is AdditionalPropertiesAnnotation =>
-  (value?.annotations === undefined || _.isPlainObject(value?.annotations)) && isType(value?.refType)
+  (value?.annotations === undefined || _.isPlainObject(value?.annotations)) &&
+  isReferenceExpression(value?.refType) &&
+  value.refType.elemID.idType === 'type'
 
 export const extractAdditionalPropertiesField = (objType: ObjectType, name: string): Field | undefined => {
   const additionalProperties = objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]
@@ -48,7 +53,12 @@ export const extractAdditionalPropertiesField = (objType: ObjectType, name: stri
     return new Field(objType, name, BuiltinTypes.UNKNOWN)
   }
   if (isAdditionalPropertiesAnnotation(additionalProperties)) {
-    return new Field(objType, name, additionalProperties.refType, additionalProperties.annotations)
+    const type = additionalProperties.refType.value
+    if (!isType(type)) {
+      log.warn('Additional properties annotations refType reference is not a type')
+      return undefined
+    }
+    return new Field(objType, name, type, additionalProperties.annotations)
   }
   // case additionalProperties = false
   return undefined

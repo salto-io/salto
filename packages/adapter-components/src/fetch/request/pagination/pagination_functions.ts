@@ -135,7 +135,7 @@ export const pageOffsetAndLastPagination = ({
 }
 
 export const offsetAndLimitPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
-  // TODO allow customizing the field values (`isLastvalues`)
+  // TODO allow customizing the field values (`isLastValues`)
   type PageResponse = {
     isLast: boolean
     values: unknown[]
@@ -179,7 +179,7 @@ export const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => e
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified
- * as either a full URL or just the path and query prameters.
+ * as either a full URL or just the path and query parameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
 export const cursorPagination = ({
@@ -257,3 +257,32 @@ export const cursorHeaderPagination = ({
 }
 
 export const noPagination = (): PaginationFunction => () => []
+
+/**
+ * Make paginated requests using the paginationToken from a specific field in the response,
+ * and puts it in another paginationField in the query params.
+ * Only supports next pages under the same endpoint (and uses the same host).
+ */
+export const tokenPagination = ({
+  paginationField,
+  tokenField,
+}: {
+  tokenField: string
+  paginationField: string
+}): PaginationFunction => {
+  const nextPageTokenPages: PaginationFunction = ({ responseData, currentParams }) => {
+    const token = _.get(responseData, tokenField)
+    if (!_.isString(token)) {
+      return []
+    }
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          ...currentParams.queryParams,
+          [paginationField]: token,
+        },
+      }),
+    ]
+  }
+  return nextPageTokenPages
+}

@@ -62,7 +62,7 @@ describe('client_decorators', () => {
     let inst: TestCls
 
     beforeAll(() => {
-      log = jest.spyOn(logging, 'time')
+      log = jest.spyOn(logging, 'timeDebug')
       inst = new TestCls()
     })
     beforeEach(() => {
@@ -71,14 +71,14 @@ describe('client_decorators', () => {
 
     it('should log', async () => {
       await inst.doSomethingElse()
-      expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'cli:client.doSomethingElse()')
+      expect(logging.timeDebug).toHaveBeenCalledTimes(1)
+      expect(logging.timeDebug).toHaveBeenCalledWith(expect.anything(), 'cli:client.doSomethingElse()')
     })
 
     it('should log with arguments', async () => {
       await inst.doSomethingWithDetails({ str: 'bla', num: 123, arr: [{ str: 'str' }, { str: 'STR' }] })
-      expect(logging.time).toHaveBeenCalledTimes(1)
-      expect(logging.time).toHaveBeenCalledWith(expect.anything(), 'cli:client.doSomethingWithDetails(bla, str)')
+      expect(logging.timeDebug).toHaveBeenCalledTimes(1)
+      expect(logging.timeDebug).toHaveBeenCalledWith(expect.anything(), 'cli:client.doSomethingWithDetails(bla, str)')
     })
   })
 

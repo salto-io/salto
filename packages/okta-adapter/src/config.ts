@@ -1799,6 +1799,13 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       },
     },
   },
+  GroupMembership: {
+    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
+    deployRequests: {
+      add: { url: '', method: 'put' },
+      modify: { url: '', method: 'put' },
+    },
+  },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {

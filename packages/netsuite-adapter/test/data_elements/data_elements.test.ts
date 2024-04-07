@@ -25,7 +25,7 @@ import {
   toServiceIdsString,
 } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import NetsuiteClient from '../../src/client/client'
@@ -36,18 +36,15 @@ import { NetsuiteQuery } from '../../src/config/query'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),
-  elements: {
-    ...jest.requireActual('@salto-io/adapter-components').elements,
-    soap: {
-      extractTypes: jest.fn(),
-      createClientAsync: jest.fn(),
-    },
+  soap: {
+    extractTypes: jest.fn(),
+    createClientAsync: jest.fn(),
   },
 }))
 
 describe('data_elements', () => {
-  const createClientMock = elementUtils.soap.createClientAsync as jest.Mock
-  const extractTypesMock = elementUtils.soap.extractTypes as jest.Mock
+  const createClientMock = soap.createClientAsync as jest.Mock
+  const extractTypesMock = soap.extractTypes as jest.Mock
   const wsdl = {}
   const query = {
     isTypeMatch: () => true,
@@ -80,11 +77,11 @@ describe('data_elements', () => {
   beforeEach(() => {
     jest.resetAllMocks()
     jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(true)
-    jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(wsdl as elementUtils.soap.WSDL)
+    jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(wsdl as soap.WSDL)
     createClientMock.mockResolvedValue({
       wsdl,
       addSoapHeader: jest.fn(),
-    } as unknown as elementUtils.soap.Client)
+    } as unknown as soap.Client)
   })
 
   describe('getDataTypes', () => {

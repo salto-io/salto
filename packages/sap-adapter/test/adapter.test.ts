@@ -25,7 +25,7 @@ import {
   ProgressReporter,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { oauthClientCredentialsType } from '../src/auth'
@@ -41,9 +41,9 @@ type MockReply = {
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
-  const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (adapterName, config, schemasAndRefs) => {
+  const generateMockTypes: typeof openapi.generateTypes = async (adapterName, config, schemasAndRefs) => {
     if (schemasAndRefs !== undefined) {
-      return actual.elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
+      return actual.openapi.generateTypes(adapterName, config, schemasAndRefs)
     }
     return {
       allTypes: {
@@ -104,12 +104,9 @@ jest.mock('@salto-io/adapter-components', () => {
   }
   return {
     ...actual,
-    elements: {
-      ...actual.elements,
-      swagger: {
-        ...actual.elements.swagger,
-        generateTypes: jest.fn().mockImplementation(generateMockTypes),
-      },
+    openapi: {
+      ...actual.openapi,
+      generateTypes: jest.fn().mockImplementation(generateMockTypes),
     },
   }
 })
@@ -160,8 +157,8 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
 
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(SAP, {
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledTimes(1)
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledWith(SAP, {
           ...DEFAULT_API_DEFINITIONS,
           supportedTypes: {
             ...DEFAULT_API_DEFINITIONS.supportedTypes,

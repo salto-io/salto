@@ -173,7 +173,7 @@ const addToSource = async ({
   overrideTargetElements?: boolean
   valuesOverrides?: Record<string, Value>
 }): Promise<DetailedChange[]> =>
-  log.time(async () => {
+  log.timeDebug(async () => {
     const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
     const fullChanges = await awu(Object.values(idsByParent))
       .flatMap(async gids => {

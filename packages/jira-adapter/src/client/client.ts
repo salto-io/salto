@@ -127,6 +127,19 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
     })
   }
 
+  // Sends a get request to a JIRA JSP page
+  public async jspGet(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.get({
+      ...args,
+      headers: {
+        ...JSP_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
+  }
+
   // Sends a post request to Jira with GQL body
   @clientUtils.throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @clientUtils.logDecorator(['url', 'queryParams'])

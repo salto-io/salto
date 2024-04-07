@@ -31,7 +31,7 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
-  createInvlidIdFieldConfigChange,
+  createInvalidIdFieldConfigChange,
   createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
 } from '../config_change'
@@ -794,8 +794,9 @@ const filterTypesWithManyInstances = async ({
   const heavyTypesSuggestions: ConfigChangeSuggestion[] = []
 
   // Creates a lists of typeNames and changeSuggestions for types with too many instances
-  await awu(Object.keys(validChangesFetchSettings)).forEach(
-    async (typeName) => {
+  await awu(Object.entries(validChangesFetchSettings))
+    .filter(([, setting]) => setting.isBase)
+    .forEach(async ([typeName]) => {
       const instancesCount = await client.countInstances(typeName)
       if (instancesCount > maxInstancesPerType) {
         typesToFilter.push(typeName)
@@ -807,8 +808,7 @@ const filterTypesWithManyInstances = async ({
           }),
         )
       }
-    },
-  )
+    })
 
   return {
     filteredChangesFetchSettings: _.omit(
@@ -998,7 +998,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const invalidFieldSuggestions = await awu(invalidFetchSettings)
       .filter((settings) => settings.invalidIdFields.length > 0)
       .map(async (setting) =>
-        createInvlidIdFieldConfigChange(
+        createInvalidIdFieldConfigChange(
           await apiName(setting.objectType),
           makeArray(setting.invalidIdFields),
         ),

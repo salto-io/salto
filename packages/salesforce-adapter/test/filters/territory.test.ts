@@ -93,7 +93,7 @@ describe('territory filter', () => {
   describe('deploy pkg structure', () => {
     let territoryType: ObjectType
     let changes: Change[]
-    let beforeElenentTerritory: InstanceElement
+    let beforeElementTerritory: InstanceElement
     let afterElementTerritory: InstanceElement
     let beforeElementModel: InstanceElement
     let afterElementModel: InstanceElement
@@ -122,7 +122,7 @@ describe('territory filter', () => {
         },
         territoryType,
       )
-      beforeElenentTerritory = territoryInstance
+      beforeElementTerritory = territoryInstance
       afterElementTerritory = territoryInstance.clone()
       afterElementTerritory.value.description = 'Desc yay'
 
@@ -178,7 +178,7 @@ describe('territory filter', () => {
 
       changes = [
         toChange({
-          before: beforeElenentTerritory,
+          before: beforeElementTerritory,
           after: afterElementTerritory,
         }),
         toChange({ before: beforeElementModel, after: afterElementModel }),

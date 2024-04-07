@@ -22,6 +22,10 @@ import { formatStepStart, formatStepCompleted, formatStepFailed } from './format
 const log = logger(module)
 
 export const outputLine = (text: string, output: CliOutput): void => {
+  if (text === '') {
+    return
+  }
+
   output.stdout.write(`${text}\n`)
   log.debug(text)
 }

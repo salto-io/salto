@@ -17,7 +17,6 @@ import _ from 'lodash'
 import {
   ChangeError,
   ChangeValidator,
-  ElemID,
   getChangeData,
   isAdditionOrModificationChange,
   isInstanceChange,
@@ -30,32 +29,12 @@ import {
   DEFLECTION_ACTION,
   MACRO_TYPE_NAME,
   TRIGGER_TYPE_NAME,
-  ZENDESK,
 } from '../constants'
-import { ACCOUNT_SETTING_TYPE_NAME } from '../filters/account_settings'
+import { getAccountSettings, AccountSettingsInstance } from './utils'
 
 const log = logger(module)
 
 const TYPES_WITH_ACTIONS = [TRIGGER_TYPE_NAME, MACRO_TYPE_NAME, AUTOMATION_TYPE_NAME]
-
-type SettingsInstance = {
-  value: {
-    // eslint-disable-next-line camelcase
-    active_features: {
-      // eslint-disable-next-line camelcase
-      automatic_answers?: boolean
-    }
-    tickets: {
-      // eslint-disable-next-line camelcase
-      custom_statuses_enabled?: boolean
-    }
-  }
-}
-
-const isValidSettings = (instance: Value): instance is SettingsInstance =>
-  _.isPlainObject(instance?.value) &&
-  _.isPlainObject(instance.value.active_features) &&
-  _.isPlainObject(instance.value.tickets)
 
 export const DEFLECTION_ZENDESK_FIELD = 'Autoreply with articles'
 export const CUSTOM_TICKET_STATUS_ZENDESK_FIELD = 'Ticket status'
@@ -88,17 +67,11 @@ export const activeActionFeaturesValidator: ChangeValidator = async (changes, el
     return []
   }
 
-  if (elementSource === undefined) {
-    log.error('Failed to run activeActionFeaturesValidator because element source is undefined')
-    return []
-  }
-
-  const accountSettings = await elementSource.get(
-    new ElemID(ZENDESK, ACCOUNT_SETTING_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
-  )
-
-  if (!isValidSettings(accountSettings)) {
-    log.error('Failed to run deflectionActionValidator because account settings instance is invalid')
+  let accountSettings: AccountSettingsInstance
+  try {
+    accountSettings = await getAccountSettings(elementSource)
+  } catch (e) {
+    log.error(`Failed to run activeFeaturesValidator: ${e.message}`)
     return []
   }
 

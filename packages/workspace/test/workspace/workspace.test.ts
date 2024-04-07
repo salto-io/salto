@@ -60,13 +60,13 @@ import {
   Workspace,
   initWorkspace,
   EnvironmentSource,
-  COMMON_ENV_PREFIX,
   UnresolvedElemIDs,
   UpdateNaclFilesResult,
   isValidEnvName,
   serializeReferenceTree,
   deserializeReferenceTree,
   listElementsDependenciesInWorkspace,
+  COMMON_ENV_PREFIX,
 } from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,

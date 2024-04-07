@@ -153,8 +153,8 @@ describe('SalesforceAdapter creator', () => {
       ).toBeTruthy()
       expect(request.url.includes(oauthLoginInput.value.port)).toBeTruthy()
     })
-    it('creates the right object from the response', () => {
-      const creds = (
+    it('creates the right object from the response', async () => {
+      const responseCredentials = await (
         adapter.authenticationMethods.oauth as OAuthMethod
       ).createFromOauthResponse(
         {
@@ -170,7 +170,7 @@ describe('SalesforceAdapter creator', () => {
           },
         },
       )
-      expect(creds).toEqual({
+      expect(responseCredentials).toEqual({
         sandbox: false,
         accessToken: oauthConfigObj.accessToken,
         instanceUrl: oauthConfigObj.instanceUrl,

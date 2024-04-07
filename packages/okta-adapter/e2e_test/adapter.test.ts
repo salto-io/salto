@@ -40,6 +40,7 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   getParents,
+  inspectValue,
   naclCase,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
@@ -505,7 +506,17 @@ describe('Okta adapter E2E', () => {
         const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
         expect(instance).toBeDefined()
         // Omit '_links' as this field is hidden
-        expect(isEqualValues(_.omit(instance?.value, '_links'), deployedInstance.value)).toBeTruthy()
+        const originalValue = _.omit(instance?.value, '_links')
+        const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
+        if (!isEqualResult) {
+          log.error(
+            'Received unexpected result when deploying instance: %s. Deployed value: %s , Received value after fetch: %s',
+            deployedInstance.elemID.getFullName(),
+            inspectValue(deployedInstance.value, { depth: 7 }),
+            inspectValue(originalValue, { depth: 7 }),
+          )
+        }
+        expect(isEqualResult).toBeTruthy()
       })
     })
   })

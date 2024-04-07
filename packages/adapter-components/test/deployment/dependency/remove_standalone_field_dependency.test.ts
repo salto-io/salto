@@ -42,7 +42,7 @@ describe('dependency changers', () => {
           refType: BuiltinTypes.STRING,
           annotations: { _required: true },
         },
-        childs: { refType: stringListType },
+        children: { refType: stringListType },
       },
     })
     childType = new ObjectType({
@@ -59,7 +59,7 @@ describe('dependency changers', () => {
     })
     parentInstance = new InstanceElement('inst', parentType, {
       id: '1',
-      childs: [new ReferenceExpression(new ElemID('salto', 'child', 'instance', 'inst'))],
+      children: [new ReferenceExpression(new ElemID('salto', 'child', 'instance', 'inst'))],
     })
     childInstance = new InstanceElement(
       'inst',

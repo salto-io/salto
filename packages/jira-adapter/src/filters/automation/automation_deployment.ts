@@ -120,9 +120,7 @@ const ASSET_COMPONENT_SCHEME = Joi.object({
   })
     .unknown(true)
     .required(),
-})
-  .unknown(true)
-  .required()
+}).unknown(true)
 
 export const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
 
@@ -136,6 +134,7 @@ type requestTypeComponent = {
 const REQUEST_TYPE_COMPONENT_SCHEME = Joi.object({
   value: Joi.object({
     requestType: Joi.required(),
+    serviceDesk: Joi.string().optional(),
   })
     .unknown(true)
     .required(),
@@ -385,12 +384,9 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
   if (config.fetch.enableJSM) {
     const requestTypeComponents: requestTypeComponent[] = instance.value.components.filter(isRequestTypeComponent)
     requestTypeComponents.forEach(component => {
-      try {
-        const requestType = component.value.requestType.value
-        component.value.serviceDesk = requestType.value.serviceDeskId
-      } catch (e) {
-        log.warn(`Failed to update detailed request type components for ${instance.elemID.getFullName()}`)
-      }
+      const requestType = component.value.requestType.value
+      component.value.serviceDesk = requestType.value.serviceDeskId
+      log.warn(`Failed to update detailed request type components for ${instance.elemID.getFullName()}`)
     })
   }
 }

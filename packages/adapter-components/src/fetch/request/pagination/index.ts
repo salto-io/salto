@@ -22,6 +22,7 @@ export {
   pageOffsetPagination,
   noPagination,
   defaultPathChecker,
+  scrollingPagination,
   PathCheckerFunc,
   tokenPagination,
 } from './pagination_functions'

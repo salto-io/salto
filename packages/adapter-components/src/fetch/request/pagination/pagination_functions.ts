@@ -208,6 +208,32 @@ export const cursorPagination = ({
   return nextPageCursorPages
 }
 
+export const scrollingPagination = ({
+  scrollingParam,
+  stopCondition,
+}: {
+  scrollingParam: string
+  stopCondition?: (data: unknown) => boolean
+}): PaginationFunction => {
+  const nextPageScrollingPages: PaginationFunction = ({ currentParams, responseData }) => {
+    const scrollParam = _.get(responseData, scrollingParam)
+    if (typeof scrollParam !== 'string' || stopCondition?.(responseData)) {
+      return []
+    }
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          [scrollingParam]: scrollParam,
+          // This is a workaround to to handle our pagination mechanism which expects each pagination request to have a unique query param.
+          // It is not the case for the scrolling param - which is the same for all requests (until the stop condition is met).
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    ]
+  }
+  return nextPageScrollingPages
+}
+
 /**
  * Make paginated requests using the link response header.
  * Only supports next pages under the same endpoint (and uses the same host).

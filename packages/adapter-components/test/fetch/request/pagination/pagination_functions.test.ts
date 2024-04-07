@@ -21,6 +21,7 @@ import {
   offsetAndLimitPagination,
   cursorHeaderPagination,
   tokenPagination,
+  scrollingPagination,
 } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
@@ -189,5 +190,47 @@ describe('pagination functions', () => {
       ).toEqual([{ queryParams: { pageToken: 'second' } }])
     })
   })
+
+  describe('scrollingPagination', () => {
+    describe('When the stop condition is not met', () => {
+      const paginate = scrollingPagination({ scrollingParam: 'scroll', stopCondition: () => false })
+      it('should calculate next pages', async () => {
+        expect(
+          paginate({
+            endpointIdentifier: { path: '/ep' },
+            currentParams: {},
+            responseData: { a: [{ x: 'y' }], scroll: 'next' },
+          }),
+        ).toEqual([{ queryParams: { scroll: 'next', timestamp: expect.any(String) } }])
+      })
+    })
+
+    describe('When the stop condition is met', () => {
+      const paginate = scrollingPagination({ scrollingParam: 'scroll', stopCondition: () => true })
+      it('should return no next page', async () => {
+        expect(
+          paginate({
+            endpointIdentifier: { path: '/ep' },
+            currentParams: {},
+            responseData: { a: [{ x: 'y' }], scroll: 'next' },
+          }),
+        ).toEqual([])
+      })
+    })
+
+    describe('When there is no scrolling param', () => {
+      const paginate = scrollingPagination({ scrollingParam: 'scroll', stopCondition: () => false })
+      it('should return no next page', async () => {
+        expect(
+          paginate({
+            endpointIdentifier: { path: '/ep' },
+            currentParams: {},
+            responseData: { a: [{ x: 'y' }] },
+          }),
+        ).toEqual([])
+      })
+    })
+  })
+
   // TODO extend tests for all pagination functions (can rely on previous tests)
 })

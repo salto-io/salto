@@ -1898,6 +1898,7 @@ export type ChangeValidatorName =
   | 'appUrls'
   | 'profileMappingRemoval'
   | 'brandRemoval'
+  | 'dynamicOSVersion'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1926,6 +1927,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appUrls: { refType: BuiltinTypes.BOOLEAN },
     profileMappingRemoval: { refType: BuiltinTypes.BOOLEAN },
     brandRemoval: { refType: BuiltinTypes.BOOLEAN },
+    dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

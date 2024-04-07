@@ -43,18 +43,22 @@ import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter_utils'
-import {
-  AdapterApiConfig,
-  getTransformationConfigByType,
-  TransformationConfig,
-  TransformationDefaultConfig,
-  getConfigWithDefault,
-  dereferenceFieldName,
-  isReferencedIdField,
-} from '../config'
-import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 import { NameMappingOptions } from '../definitions'
 import { toNestedTypeName } from '../fetch/element'
+import {
+  AdapterApiConfig,
+  TransformationConfig,
+  TransformationDefaultConfig,
+  dereferenceFieldName,
+  getConfigWithDefault,
+  getTransformationConfigByType,
+  isReferencedIdField,
+} from '../config_deprecated'
+import {
+  getInstanceFilePath,
+  getInstanceNaclName,
+  joinInstanceNameParts,
+} from '../elements_deprecated/instance_elements'
 
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable

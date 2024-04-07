@@ -226,7 +226,7 @@ describe('sort lists filter', () => {
   it('should not allow to sort by a reference (require a property of the referenced element)', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: ['ref'] } },
+        field1: { sort: { sortByProperties: [{ path: 'ref' }] } },
       }),
     ) as FilterWith<'onFetch'>
     const mainObjType = new ObjectType({

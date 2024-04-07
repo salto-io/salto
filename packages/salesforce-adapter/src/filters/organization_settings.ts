@@ -151,7 +151,7 @@ const createOrganizationInstance = (
     ],
   )
 
-const FILTER_NAME = 'organizationWideSharingDefaults'
+const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -160,7 +160,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: FILTER_NAME,
     fetchFilterFunc: async (elements) => {
       // SALTO-4821
       if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {

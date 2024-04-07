@@ -123,7 +123,6 @@ export type OptionalFeatures = {
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
   fixRetrieveFilePaths?: boolean
-  organizationWideSharingDefaults?: boolean
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
@@ -832,7 +831,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
-    organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },

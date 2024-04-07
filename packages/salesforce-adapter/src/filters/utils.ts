@@ -61,6 +61,7 @@ import {
   FetchElements,
   INSTANCE_SUFFIXES,
   OptionalFeatures,
+  ProfileRelatedMetadataType,
   SalesforceConfig,
 } from '../types'
 import {
@@ -86,6 +87,7 @@ import {
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
+  PROFILE_RELATED_METADATA_TYPES,
   SALESFORCE,
   STATUS,
   UNIX_TIME_ZERO_STRING,
@@ -974,3 +976,10 @@ export const getMostRecentFileProperties = (
 
 export const getFLSProfiles = (config: SalesforceConfig): string[] =>
   config.client?.deploy?.flsProfiles ?? DEFAULT_FLS_PROFILES
+
+export const isProfileRelatedMetadataType = (
+  typeName: string,
+): typeName is ProfileRelatedMetadataType =>
+  PROFILE_RELATED_METADATA_TYPES.includes(
+    typeName as ProfileRelatedMetadataType,
+  )

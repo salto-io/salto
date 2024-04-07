@@ -236,6 +236,13 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
       lastChangeDateOfTypesWithNestedInstancesFromSingleton[type][parentName]
     const lastChangeDate =
       lastChangeDateOfTypesWithNestedInstances[type][parentName]
+    if (parentName === 'Parent') {
+      log.debug('lastChangeDate of Parent: %s', lastChangeDate)
+    }
+    // Standard Objects with no CustomFields and sub instances will have no lastChangeDate
+    if (lastChangeDate === undefined) {
+      return false
+    }
     return isValidDateString(dateFromSingleton) &&
       isValidDateString(lastChangeDate)
       ? new Date(dateFromSingleton).getTime() <

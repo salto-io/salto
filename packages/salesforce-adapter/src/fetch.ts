@@ -65,6 +65,7 @@ import {
 import {
   getFullName,
   isInstanceOfTypeSync,
+  isProfileRelatedMetadataType,
   listMetadataObjects,
 } from './filters/utils'
 import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
@@ -357,6 +358,24 @@ type RetrieveMetadataInstancesArgs = {
   getFilesToRetrieveFunc?: (allProps: FileProperties[]) => FileProperties[]
 }
 
+type Partitions = {
+  profileProps: FileProperties[]
+  profilesRelatedProps: FileProperties[]
+  nonProfileProps: FileProperties[]
+}
+
+const getPartitions = (includedProps: FileProperties[]): Partitions => {
+  const [profileProps, otherProps] = _.partition(
+    includedProps,
+    (file) => file.type === PROFILE_METADATA_TYPE,
+  )
+  const [profilesRelatedProps, nonProfileProps] = _.partition(
+    otherProps,
+    (file) => isProfileRelatedMetadataType(file.type),
+  )
+  return { profileProps, profilesRelatedProps, nonProfileProps }
+}
+
 export const retrieveMetadataInstances = async ({
   client,
   types,
@@ -611,46 +630,49 @@ export const retrieveMetadataInstances = async ({
   }
 }
 
-type Partitions = {
-  profileProps: FileProperties[]
-  nonProfileProps: FileProperties[]
-}
-
 export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrieveMetadataInstances =
   async (params) => {
     const metadataQuery = buildFilePropsMetadataQuery(
       params.fetchProfile.metadataQuery,
     )
-    const getPartitions = (allProps: FileProperties[]): Partitions => {
-      const [profileProps, nonProfileProps] = _.partition(
-        allProps.filter(metadataQuery.isInstanceIncluded),
-        (file) => file.type === PROFILE_METADATA_TYPE,
-      )
-      return { profileProps, nonProfileProps }
-    }
 
     const retrievePartialProfileInstances = retrieveMetadataInstances({
       ...params,
       getFilesToRetrieveFunc: (allProps) => {
-        const { profileProps, nonProfileProps } = getPartitions(allProps)
-        const modifiedNonProfileProps = nonProfileProps.filter((props) =>
-          metadataQuery.isInstanceMatch(props),
+        const { profileProps, profilesRelatedProps } = getPartitions(
+          allProps.filter(metadataQuery.isInstanceIncluded),
         )
-        if (modifiedNonProfileProps.length === 0) {
+        const modifiedProfilesRelatedProps = profilesRelatedProps.filter(
+          (props) => metadataQuery.isInstanceMatch(props),
+        )
+        if (modifiedProfilesRelatedProps.length === 0) {
           log.debug('No profile related props were changed')
           return []
         }
         const nonModifiedProfilesProps = profileProps.filter(
           (props) => !metadataQuery.isInstanceMatch(props),
         )
-        return nonModifiedProfilesProps.concat(modifiedNonProfileProps)
+        log.debug(
+          'Profiles modified related props: %s',
+          safeJsonStringify(modifiedProfilesRelatedProps),
+        )
+        log.debug(
+          'going to retrieve %d Profiles with related props of the following types: %s',
+          profileProps.length,
+          safeJsonStringify(
+            _.uniq(modifiedProfilesRelatedProps.map((p) => p.type)),
+          ),
+        )
+        return nonModifiedProfilesProps.concat(modifiedProfilesRelatedProps)
       },
     })
 
     const retrieveChangedProfileInstances = retrieveMetadataInstances({
       ...params,
       getFilesToRetrieveFunc: (allProps) => {
-        const { profileProps, nonProfileProps } = getPartitions(allProps)
+        const { profileProps, profilesRelatedProps } = getPartitions(
+          allProps.filter(metadataQuery.isInstanceIncluded),
+        )
         const modifiedProfilesProps = profileProps.filter((props) =>
           metadataQuery.isInstanceMatch(props),
         )
@@ -658,7 +680,7 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
           log.debug('No profiles were changed')
           return []
         }
-        return modifiedProfilesProps.concat(nonProfileProps)
+        return modifiedProfilesProps.concat(profilesRelatedProps)
       },
     }).then((result) => ({
       ...result,
@@ -667,9 +689,16 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
         isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
       ),
     }))
+    const retrieveNonProfileInstances = retrieveMetadataInstances({
+      ...params,
+      getFilesToRetrieveFunc: (allProps) =>
+        getPartitions(allProps.filter(metadataQuery.isInstanceMatch))
+          .nonProfileProps,
+    })
     const result = await Promise.all([
       retrievePartialProfileInstances,
       retrieveChangedProfileInstances,
+      retrieveNonProfileInstances,
     ])
     return {
       elements: result.flatMap((r) => r.elements),

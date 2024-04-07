@@ -28,6 +28,7 @@ import mockClient from '../client'
 import filterCreator, {
   createActiveVersionFileProperties,
 } from '../../src/filters/flows_filter'
+import * as filterModule from '../../src/filters/flows_filter'
 import {
   ACTIVE_VERSION_NUMBER,
   FLOW_DEFINITION_METADATA_TYPE,
@@ -54,6 +55,7 @@ describe('flows filter', () => {
   let flowDefinitionType: ObjectType
 
   beforeEach(() => {
+    jest.spyOn(filterModule, 'createActiveVersionFileProperties')
     client = mockClient().client
     flowType = new ObjectType({
       elemID: new ElemID(SALESFORCE, FLOW_METADATA_TYPE),
@@ -75,9 +77,17 @@ describe('flows filter', () => {
 
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
+    let flowDefinitionInstance: InstanceElement
     describe('with preferActiveFlowVersions true', () => {
       beforeEach(async () => {
-        elements = [flowType, flowDefinitionType]
+        flowDefinitionInstance = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'flow1',
+            [ACTIVE_VERSION_NUMBER]: 0,
+          },
+          flowDefinitionType,
+        )
+        elements = [flowType, flowDefinitionType, flowDefinitionInstance]
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
@@ -90,14 +100,23 @@ describe('flows filter', () => {
         await filter.onFetch(elements)
       })
 
-      it('should hide the FlowDefinition metadata type', async () => {
+      it('should hide the FlowDefinition metadata type and instances', async () => {
         expect(
           flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN],
+        ).toBeTrue()
+        expect(
+          flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN],
         ).toBeTrue()
       })
 
       it('Should call fetchMetadataInstances once', async () => {
-        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(2)
+        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
+      })
+      it('should invoke createActiveVersionFileProperties with the FlowDefinition instances', async () => {
+        expect(createActiveVersionFileProperties).toHaveBeenCalledWith(
+          expect.anything(),
+          [flowDefinitionInstance],
+        )
       })
     })
     describe('with preferActiveFlowVersions false', () => {

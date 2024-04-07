@@ -28,6 +28,7 @@ const DYNAMIC_OS_VERSION_PATH_OPTIONS = [
   ['osVersion', 'dynamicVersionRequirement'],
   ['osVersionConstraints'],
   // support paths including additionalProperties for backward compatibility
+  // TODO - remove after SALTO-5332s
   ['osVersion', 'additionalProperties', 'dynamicVersionRequirement'],
   ['additionalProperties', 'osVersionConstraints'],
 ]

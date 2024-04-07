@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-import { UserDeployConfig } from '@salto-io/adapter-components/src/definitions'
+import { ClientRateLimitConfig, ClientRetryConfig, UserDeployConfig } from '@salto-io/adapter-components/src/definitions'
 import { ImportantValues } from '@salto-io/adapter-utils'
-import { MetadataParams, DataManagementConfig, WarningSettings, CLIENT_CONFIG, SalesforceClientConfig, DEPLOY_CONFIG } from './types'
+import { MetadataParams, DataManagementConfig, WarningSettings, CLIENT_CONFIG, DEPLOY_CONFIG, ClientPollingConfig, ClientDeployConfig, CustomObjectsDeployRetryConfig, ReadMetadataChunkSizeConfig, MAX_ITEMS_IN_RETRIEVE_REQUEST } from './types'
 
 export const CPQ_MANAGED_PACKAGE = 'sbaa, SBQQ (CPQ)'
 
 export const MANAGED_PACKAGES = [CPQ_MANAGED_PACKAGE] as const
 
 export type ManagedPackage = (typeof MANAGED_PACKAGES)[number]
+
+export type SalesforceClientConfig = Partial<{
+  polling: ClientPollingConfig
+  deploy: ClientDeployConfig
+  maxConcurrentApiRequests: ClientRateLimitConfig
+  retry: ClientRetryConfig
+  dataRetry: CustomObjectsDeployRetryConfig
+  readMetadataChunkSize: ReadMetadataChunkSizeConfig
+  [MAX_ITEMS_IN_RETRIEVE_REQUEST]: number
+}>
 
 
 export type OptionalFeatures = {
@@ -67,8 +77,7 @@ export type GeneralFetchParameters = FetchParameters & {
 
 export type SalesforceConfig = {
   generalSettings: GeneralFetchParameters
-  [CLIENT_CONFIG]?: SalesforceClientConfig & {maxItemsInRetrieveRequest?: number}
+  [CLIENT_CONFIG]?: SalesforceClientConfig
   [DEPLOY_CONFIG]?: UserDeployConfig
-
 } &  { [key in ManagedPackage]: FetchParameters }
 

@@ -510,6 +510,15 @@ export const mockSObjectDescribe = (
   fields: overrides.fields?.map(mockSObjectField) ?? [],
 })
 
+const mockRestResponses: Record<string, unknown> = {
+  '/services/data/': [
+    { version: '9.0' },
+    { version: '58.0' },
+    { version: '59.0' },
+    { version: '60.0' },
+  ],
+}
+
 export const mockJsforce: () => MockInterface<Connection> = () => ({
   login: mockFunction<Connection['login']>().mockImplementation(async () => ({
     id: '',
@@ -549,7 +558,6 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
       Soap['describeSObjects']
     >().mockResolvedValue([]),
   },
-
   describeGlobal: mockFunction<
     Connection['describeGlobal']
   >().mockResolvedValue({ sobjects: [] }),
@@ -577,6 +585,9 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
   },
   identity: mockFunction<Connection['identity']>().mockImplementation(
     async () => mockIdentity(''),
+  ),
+  request: mockFunction<Connection['request']>().mockImplementation(
+    async (req) => mockRestResponses[req],
   ),
   instanceUrl: MOCK_INSTANCE_URL,
 })

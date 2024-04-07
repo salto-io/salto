@@ -1184,4 +1184,11 @@ export default class SalesforceClient {
     log.trace('client.bulkLoadOperation result: %o', result)
     return flatValues(result)
   }
+
+  @mapToUserFriendlyErrorMessages
+  @logDecorator()
+  @requiresLogin()
+  public async request(request: string): Promise<unknown> {
+    return this.conn.request(request)
+  }
 }

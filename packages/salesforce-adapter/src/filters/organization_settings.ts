@@ -16,6 +16,7 @@
 
 import _ from 'lodash'
 import {
+  BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
   InstanceElement,
@@ -42,6 +43,7 @@ import { FetchProfile } from '../types'
 const log = logger(module)
 
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
+const latestSupportedApiVersionField = 'LatestSupportedApiVersion'
 
 /*
  * These fields are not multienv friendly
@@ -57,7 +59,7 @@ const FIELDS_TO_IGNORE = [
   'MonthlyPageViewsUsed',
   'OrganizationType',
   'SelfServiceCaseSubmitRecordTypeId',
-  'SelfServiceEmailUserOnCaseCreation‍TemplateId',
+  'SelfServiceEmailUserOnCaseCreationTemplateId',
   'SelfServiceNewCommentTemplateId',
   'SelfServiceNewPassTemplateId',
   'SelfServiceNewUserTemplateId',
@@ -127,7 +129,11 @@ const enrichTypeWithFields = async (
 const createOrganizationType = (): ObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: {},
+    fields: {
+      [latestSupportedApiVersionField]: {
+        refType: BuiltinTypes.HIDDEN_STRING,
+      },
+    },
     annotations: {
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
@@ -153,6 +159,32 @@ const createOrganizationInstance = (
       ORGANIZATION_SETTINGS_INSTANCE_NAME,
     ],
   )
+
+const addLatestSupportedAPIVersion = async (
+  client: SalesforceClient,
+  instance: InstanceElement,
+): Promise<void> => {
+  const versions = await client.request('/services/data/')
+  if (!Array.isArray(versions)) {
+    log.error(
+      `Got a non-array response when getting supported API versions: ${versions}`,
+    )
+    return
+  }
+
+  const latestVersion = _(versions)
+    .map((ver) => ver?.version)
+    .filter((ver) => typeof ver === 'string')
+    .filter((ver) => ver.length > 0)
+    .maxBy(parseInt)
+
+  if (latestVersion === undefined) {
+    log.error('Could not get the latest supported API version.')
+    return
+  }
+
+  instance.value[latestSupportedApiVersionField] = latestVersion
+}
 
 const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
@@ -193,6 +225,8 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         objectType,
         queryResult[0],
       )
+
+      await addLatestSupportedAPIVersion(client, organizationInstance)
 
       elements.push(objectType, organizationInstance)
     },

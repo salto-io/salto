@@ -13,21 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { collections } from '@salto-io/lowerdash'
-
 import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
-import {
-  filter,
-  isResolvedReferenceExpression,
-  TransformFuncArgs,
-  transformValues,
-  transformValuesSync,
-} from '@salto-io/adapter-utils'
+import { filter, isResolvedReferenceExpression, TransformFuncArgs, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { ApiDefinitions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
 import { ElementFetchDefinition } from '../definitions/system/fetch'
-
-const { awu } = collections.asynciterable
+import { PropertySortDefinition } from '../definitions/system/fetch/element'
 
 /*
  * Resolve a string path within an instance value.
@@ -75,7 +66,12 @@ const sortLists = (instance: InstanceElement, defQuery: DefQuery<ElementFetchDef
             value,
             _.orderBy(
               value,
-              sortFields.map((fieldPath: string) => item => get(item, fieldPath.split('.'))),
+              sortFields.map(
+                ({ path }: PropertySortDefinition) =>
+                  (item: Value) =>
+                    get(item, path.split('.')),
+              ),
+              sortFields.map(({ order }: PropertySortDefinition) => order ?? 'asc'),
             ),
           )
         }

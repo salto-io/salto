@@ -38,10 +38,12 @@ const makeDefinitions = <TOptions>(
 })
 
 describe('sort lists filter', () => {
-  it('should sort simple fields with precedence, handle multiple elements', async () => {
+  it('should sort simple fields with precedence, handle multiple elements and directions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: ['prop1', 'prop2'] } },
+        field1: {
+          sort: { sortByProperties: [{ path: 'prop1' }, { path: 'prop2', order: 'desc' }] },
+        },
       }),
     ) as FilterWith<'onFetch'>
     const objType = new ObjectType({
@@ -73,10 +75,10 @@ describe('sort lists filter', () => {
     })
     expect(elements[1].value).toEqual({
       field1: [
-        { prop1: 1, prop2: 1 },
         { prop1: 1, prop2: 2 },
-        { prop1: 2, prop2: 1 },
+        { prop1: 1, prop2: 1 },
         { prop1: 2, prop2: 2 },
+        { prop1: 2, prop2: 1 },
       ],
     })
   })
@@ -84,7 +86,7 @@ describe('sort lists filter', () => {
   it('should sort fields with nested paths and ignore other properties', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: ['prop1.prop2'] } },
+        field1: { sort: { sortByProperties: [{ path: 'prop1.prop2' }] } },
       }),
     ) as FilterWith<'onFetch'>
     const objType = new ObjectType({
@@ -113,7 +115,7 @@ describe('sort lists filter', () => {
   it('should sort fields with reference expressions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: ['ref.prop1'] } },
+        field1: { sort: { sortByProperties: [{ path: 'ref.prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
     const mainObjType = new ObjectType({
@@ -142,7 +144,7 @@ describe('sort lists filter', () => {
   it('should sort fields with nested reference expressions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: ['ref.ref2.prop'] } },
+        field1: { sort: { sortByProperties: [{ path: 'ref.ref2.prop' }] } },
       }),
     ) as FilterWith<'onFetch'>
     const mainObjType = new ObjectType({
@@ -195,7 +197,7 @@ describe('sort lists filter', () => {
   it('should sort inner lists if their type has a sort customization', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: ['prop1'] } },
+        field1: { sort: { sortByProperties: [{ path: 'prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
     const mainObjType = new ObjectType({

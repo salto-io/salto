@@ -16,7 +16,13 @@
 import { collections } from '@salto-io/lowerdash'
 
 import { Element, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
-import { filter, isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
+import {
+  filter,
+  isResolvedReferenceExpression,
+  TransformFuncArgs,
+  transformValues,
+  transformValuesSync,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { ApiDefinitions, DefQuery, getNestedWithDefault, queryWithDefault } from '../definitions'
 import { ElementFetchDefinition } from '../definitions/system/fetch'
@@ -47,14 +53,14 @@ const get = (current: Value, tail: string[]): Value => {
   return get(next, rest)
 }
 
-const sortLists = async (instance: InstanceElement, defQuery: DefQuery<ElementFetchDefinition>): Promise<void> => {
+const sortLists = (instance: InstanceElement, defQuery: DefQuery<ElementFetchDefinition>): void => {
   instance.value =
-    (await transformValues({
+    transformValuesSync({
       values: instance.value,
-      type: await instance.getType(),
+      type: instance.getTypeSync(),
       strict: false,
       allowEmpty: true,
-      transformFunc: async ({ value, field }) => {
+      transformFunc: ({ value, field }: TransformFuncArgs) => {
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
@@ -76,7 +82,7 @@ const sortLists = async (instance: InstanceElement, defQuery: DefQuery<ElementFe
 
         return value
       },
-    })) ?? {}
+    }) ?? {}
 }
 
 /*
@@ -97,8 +103,6 @@ export const sortListsFilterCreator: <TResult extends void | filter.FilterResult
         return
       }
       const defQuery: DefQuery<ElementFetchDefinition> = queryWithDefault(getNestedWithDefault(instances, 'element'))
-      await awu(elements)
-        .filter(isInstanceElement)
-        .forEach(async element => sortLists(element, defQuery))
+      elements.filter(isInstanceElement).forEach((element: InstanceElement) => sortLists(element, defQuery))
     },
   })

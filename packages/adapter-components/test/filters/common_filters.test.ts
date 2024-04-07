@@ -83,7 +83,13 @@ describe('common filters', () => {
           },
         },
       })
-      expect(Object.keys(filters).sort()).toEqual(['defaultDeploy', 'fieldReferencesFilter', 'hideTypes', 'query'])
+      expect(Object.keys(filters).sort()).toEqual([
+        'defaultDeploy',
+        'fieldReferencesFilter',
+        'hideTypes',
+        'query',
+        'sortListsFilter',
+      ])
     })
   })
 })

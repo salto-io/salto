@@ -368,16 +368,12 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
   if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
     const assetsComponents: AssetComponent[] = instance.value.components.filter(isAssetComponent)
     assetsComponents.forEach(component => {
-      try {
-        const schema = component.value.schemaId.value
-        component.value.schemaLabel = schema.value.name
-        component.value.workspaceId = schema.value.workspaceId
-        if (component.value.objectTypeId !== undefined) {
-          const objectType = component.value.objectTypeId.value
-          component.value.objectTypeLabel = objectType.value.name
-        }
-      } catch (e) {
-        log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
+      const schema = component.value.schemaId.value
+      component.value.schemaLabel = schema.value.name
+      component.value.workspaceId = schema.value.workspaceId
+      if (component.value.objectTypeId !== undefined) {
+        const objectType = component.value.objectTypeId.value
+        component.value.objectTypeLabel = objectType.value.name
       }
     })
   }
@@ -386,7 +382,6 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
     requestTypeComponents.forEach(component => {
       const requestType = component.value.requestType.value
       component.value.serviceDesk = requestType.value.serviceDeskId
-      log.warn(`Failed to update detailed request type components for ${instance.elemID.getFullName()}`)
     })
   }
 }

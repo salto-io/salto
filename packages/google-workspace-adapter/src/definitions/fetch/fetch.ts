@@ -66,7 +66,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'roleName' }] },
         // serviceUrl: { path: 'https://admin.google.com/ac/roles/{roleId}' },
-        alias: { aliasComponents: [NAME_ID_FIELD] },
+        alias: { aliasComponents: [{ fieldName: 'roleName' }] },
       },
       fieldCustomizations: {
         roleId: {
@@ -304,13 +304,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }, { fieldName: 'name' }] },
         // serviceUrl: { path: 'https://admin.google.com/ac/orgunits' },
         alias: {
-          aliasComponents: [
-            {
-              fieldName: 'parentOrgUnitId',
-              referenceFieldName: '_alias',
-            },
-            { fieldName: 'name' },
-          ],
+          aliasComponents: [{ fieldName: 'name' }],
         },
         // path: {
         //   pathParts: [

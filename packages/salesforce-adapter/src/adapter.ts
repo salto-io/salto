@@ -52,6 +52,7 @@ import {
   isMetadataObjectType,
   MetadataObjectType,
   createInstanceElement,
+  isCustom,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -161,6 +162,7 @@ import nestedInstancesAuthorInformation from './filters/author_information/neste
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
+  CUSTOM_FIELD,
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
@@ -178,6 +180,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
+const { isDefined } = values
 
 const log = logger(module)
 
@@ -537,6 +540,24 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
+  private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
+    await listMetadataObjects(this.client, CUSTOM_FIELD)
+    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const fieldsFromElementsSource = await awu(
+      await this.elementsSource.getAll(),
+    )
+      .filter(isCustomObjectSync)
+      .flatMap((obj) => Object.values(obj.fields))
+      .filter((field) => isCustom(apiNameSync(field)))
+      .toArray()
+    return new Set(
+      fieldsFromElementsSource
+        .filter((field) => !listedFields.has(apiNameSync(field) ?? ''))
+        .map((field) => apiNameSync(field.parent))
+        .filter(isDefined),
+    )
+  }
+
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
@@ -558,6 +579,8 @@ export default class SalesforceAdapter implements AdapterOperations {
           fetchParams,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
+          customObjectsWithDeletedFields:
+            await this.getCustomObjectsWithDeletedFields(),
         })
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({

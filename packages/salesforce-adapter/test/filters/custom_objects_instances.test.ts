@@ -309,6 +309,7 @@ describe('Custom Object Instances filter', () => {
           elementsSource: elementsSourceForQuickFetch,
           lastChangeDateOfTypesWithNestedInstances:
             emptyLastChangeDateOfTypesWithNestedInstances(),
+          customObjectsWithDeletedFields: new Set(),
         })
       : buildMetadataQuery({
           fetchParams: fetchProfileParams,

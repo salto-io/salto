@@ -26,7 +26,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values, decorators } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, soap } from '@salto-io/adapter-components'
 import { InstanceElement } from '@salto-io/adapter-api'
 import {
   CallsLimiter,
@@ -710,7 +710,7 @@ export default class SuiteAppClient {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
   }
 
-  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL> {
+  public async getNetsuiteWsdl(): Promise<soap.WSDL> {
     return this.soapClient.getNetsuiteWsdl()
   }
 

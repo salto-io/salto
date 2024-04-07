@@ -17,7 +17,7 @@ import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { RemoteFilterCreator } from '../filter'
-import { lightningElementsUrlRetriever } from '../elements_url_retreiver/elements_url_retreiver'
+import { lightningElementsUrlRetriever } from '../elements_url_retriever/elements_url_retriever'
 import {
   buildElementsSourceForFetch,
   extractFlatCustomObjectFields,

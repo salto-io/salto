@@ -123,7 +123,7 @@ describe('Custom settings filter', () => {
       expect(noNameObject).toEqual(customSettingsWithNoNameField)
     })
 
-    it('Should add two instances for the valid object and no isntances for noName one', async () => {
+    it('Should add two instances for the valid object and no instances for noName one', async () => {
       const validObjectInstances = await awu(elements)
         .filter(
           async (elm) =>

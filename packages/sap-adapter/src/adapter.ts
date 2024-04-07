@@ -29,6 +29,7 @@ import {
   config as configUtils,
   elements as elementUtils,
   fetch as fetchUtils,
+  openapi,
 } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -42,7 +43,7 @@ import { SAP } from './constants'
 import { paginate } from './client/pagination'
 
 const { createPaginator } = clientUtils
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -93,8 +94,8 @@ export default class SAPAdapter implements AdapterOperations {
   }
 
   @logDuration('generating types from swagger')
-  private async getTypes(): Promise<elementUtils.swagger.ParsedTypes> {
-    return generateTypes(SAP, this.userConfig[API_DEFINITIONS_CONFIG])
+  private async getTypes(): Promise<openapi.ParsedTypes> {
+    return openapi.generateTypes(SAP, this.userConfig[API_DEFINITIONS_CONFIG])
   }
 
   @logDuration('getting instances from service')

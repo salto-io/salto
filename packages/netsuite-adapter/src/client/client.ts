@@ -28,7 +28,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
@@ -629,7 +629,7 @@ export default class NetsuiteClient {
     },
   )
 
-  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL | undefined> {
+  public async getNetsuiteWsdl(): Promise<soap.WSDL | undefined> {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 

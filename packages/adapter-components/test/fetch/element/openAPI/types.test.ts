@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { OpenAPIDefinition } from '../../../../src/definitions/system/sources'
-import { generateOpenApiTypes } from '../../../../src/fetch/element/openAPI/types'
+import { generateOpenApiTypes } from '../../../../src/openapi/type_elements/type_elements'
 import { queryWithDefault } from '../../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../../src/definitions/system/fetch'
 

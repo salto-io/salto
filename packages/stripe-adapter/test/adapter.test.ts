@@ -49,12 +49,9 @@ jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
   return {
     ...actual,
-    elements: {
-      ...actual.elements,
-      swagger: {
-        ...actual.elements.swagger,
-        generateTypes: jest.fn(),
-      },
+    openapi: {
+      ...actual.openapi,
+      generateTypes: jest.fn(),
     },
   }
 })
@@ -167,7 +164,7 @@ describe('stripe swagger adapter', () => {
         },
       },
     }
-    mockedAdapterComponents.elements.swagger.generateTypes.mockResolvedValue(mockTypes)
+    mockedAdapterComponents.openapi.generateTypes.mockResolvedValue(mockTypes)
 
     const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     ;(mockReplies as MockReply[]).forEach(({ url, params, response }) => {
@@ -232,33 +229,6 @@ describe('stripe swagger adapter', () => {
             [FETCH_CONFIG]: {
               include: SINGULAR_INCLUDE_TYPES.map(type => ({ type })),
               exclude: [],
-            },
-            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-          })
-          const instances = await fetchInstances(config)
-          fetchedInstancesTypes = new Set(instances.map(e => e.elemID.typeName))
-        })
-
-        it.each(SINGULAR_INCLUDE_TYPES)('%s', includedType => {
-          expect(fetchedInstancesTypes).toContain(includedType)
-        })
-
-        it("doesn't fetch additional types", () => {
-          const notIncluded = (typeName: string): boolean => !SINGULAR_INCLUDE_TYPES.includes(typeName)
-          const additionalTypes: string[] = Array.from(fetchedInstancesTypes).filter(notIncluded)
-          expect(additionalTypes).toBeEmpty()
-        })
-      })
-
-      describe('fetches with deprecated config', () => {
-        const SINGULAR_INCLUDE_TYPES = ['coupon', 'tax_rate']
-
-        let fetchedInstancesTypes: Set<string>
-
-        beforeAll(async () => {
-          const config = new InstanceElement('config', configType, {
-            [FETCH_CONFIG]: {
-              includeTypes: ['coupons', 'tax_rates'],
             },
             [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
           })

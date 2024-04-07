@@ -40,3 +40,4 @@ export {
   createClientConfigType,
   validateClientConfig,
 } from './client_config'
+export { getUpdatedConfigFromConfigChanges, ConfigChangeSuggestion } from './config_change'

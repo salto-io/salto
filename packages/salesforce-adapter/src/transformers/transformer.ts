@@ -1168,7 +1168,7 @@ const transformCompoundValues = async (
         return record[compoundFieldKey]
       }
       // Other compound fields are added a prefix according to the field name
-      // ie. LocalAddrress -> LocalCity, LocalState etc.
+      // ie. LocalAddress -> LocalCity, LocalState etc.
       const typeName = compoundField.refType.elemID.isEqual(
         Types.compoundDataTypes.Address.elemID,
       )
@@ -1514,7 +1514,7 @@ const EXTRA_INFORMATION_FIELD_ANNOTATIONS = [
   FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE,
 ]
 
-// The following method is used during the fetchy process and is used in building the objects
+// The following method is used during the fetch process and is used in building the objects
 // and their fields described in the Nacl file
 export const getSObjectFieldElement = (
   parent: ObjectType,
@@ -1673,7 +1673,7 @@ export const getSObjectFieldElement = (
     delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 
-  // An autoNumber field should be hidden because it will differ between enviorments
+  // An autoNumber field should be hidden because it will differ between environments
   // and not required to be able to add without it (ie. when moving envs)
   if (field.autoNumber) {
     annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true

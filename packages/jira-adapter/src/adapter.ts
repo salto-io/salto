@@ -34,10 +34,12 @@ import {
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
+  definitions,
   elements as elementUtils,
   client as clientUtils,
   combineElementFixers,
   fetch as fetchUtils,
+  openapi,
 } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -205,7 +207,7 @@ import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
 const { computeGetArgs } = fetchUtils.resource
-const { generateTypes, getAllInstances, loadSwagger, addDeploymentAnnotations } = elementUtils.swagger
+const { getAllInstances } = elementUtils.swagger
 const { createPaginator, getWithCursorPagination } = clientUtils
 const log = logger(module)
 
@@ -407,8 +409,8 @@ export interface JiraAdapterParams {
 }
 
 type AdapterSwaggers = {
-  platform: elementUtils.swagger.LoadedSwagger
-  jira: elementUtils.swagger.LoadedSwagger
+  platform: openapi.LoadedSwagger
+  jira: openapi.LoadedSwagger
 }
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
@@ -479,7 +481,7 @@ export default class JiraAdapter implements AdapterOperations {
       await Promise.all(
         Object.entries(getApiDefinitions(this.userConfig.apiDefinitions)).map(async ([key, config]) => [
           key,
-          await loadSwagger(config.swagger.url),
+          await openapi.loadSwagger(config.swagger.url),
         ]),
       ),
     )
@@ -496,7 +498,7 @@ export default class JiraAdapter implements AdapterOperations {
     // in the configuration
     const results = await Promise.all(
       Object.keys(swaggers).map(key =>
-        generateTypes(
+        openapi.generateTypes(
           JIRA,
           apiDefinitions[key as keyof AdapterSwaggers],
           undefined,
@@ -700,7 +702,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     return {
       elements: jiraJSMElements,
-      configChanges: elementUtils.ducktype.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+      configChanges: fetchUtils.getUniqueConfigSuggestions(allConfigChangeSuggestions),
       errors: jsmErrors,
     }
   }
@@ -769,7 +771,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     const updatedConfig =
       this.configInstance && configChanges
-        ? configUtils.getUpdatedCofigFromConfigChanges({
+        ? definitions.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,
@@ -777,7 +779,7 @@ export default class JiraAdapter implements AdapterOperations {
         : undefined
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
-    await addDeploymentAnnotations(
+    await openapi.addDeploymentAnnotations(
       elements.filter(isObjectType),
       Object.values(swaggers),
       this.userConfig.apiDefinitions,

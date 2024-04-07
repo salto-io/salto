@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { Element, SaltoError, ObjectType, TypeElement, Values } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion } from '../config'
+import { ConfigChangeSuggestion } from '../definitions'
 import { ContextParams, GeneratedItem } from '../definitions/system/shared'
 
 export type FetchElements<T = Element[]> = {

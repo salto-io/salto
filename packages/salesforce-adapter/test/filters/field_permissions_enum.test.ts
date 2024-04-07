@@ -54,7 +54,7 @@ describe('FieldPermissionsEnum filter', () => {
       [METADATA_TYPE]: PERMISSION_SET_METADATA_TYPE,
     },
   })
-  const permissionSetObjectBeforeCovnert = new ObjectType({
+  const permissionSetObjectBeforeConvert = new ObjectType({
     elemID: new ElemID(SALESFORCE, PERMISSION_SET_METADATA_TYPE),
     fields: {
       fieldPermissions: { refType: new ListType(profileFieldLevelSecurity) },
@@ -135,7 +135,7 @@ describe('FieldPermissionsEnum filter', () => {
   )
   const permissionSetInstanceBeforeConvert = new InstanceElement(
     'permissionSetInstanceBeforeConvert',
-    permissionSetObjectBeforeCovnert,
+    permissionSetObjectBeforeConvert,
     {
       fieldPermissions: fieldPermissionObjectValueAsList,
     },
@@ -163,7 +163,7 @@ describe('FieldPermissionsEnum filter', () => {
     let permissionSetInstanceClone: InstanceElement
     let permissionSetObjectClone: ObjectType
     let profileObjectClone: ObjectType
-    let permissionSetbjectBeforeConvertClone: ObjectType
+    let permissionSetObjectBeforeConvertClone: ObjectType
     let permissionSetInstanceBeforeConvertClone: InstanceElement
     describe('with enumFieldPermissions true', () => {
       beforeAll(async () => {
@@ -171,8 +171,8 @@ describe('FieldPermissionsEnum filter', () => {
         permissionSetInstanceClone = permissionSetInstance.clone()
         permissionSetObjectClone = permissionSetObject.clone()
         profileObjectClone = profileObj.clone()
-        permissionSetbjectBeforeConvertClone =
-          permissionSetObjectBeforeCovnert.clone()
+        permissionSetObjectBeforeConvertClone =
+          permissionSetObjectBeforeConvert.clone()
         permissionSetInstanceBeforeConvertClone =
           permissionSetInstanceBeforeConvert.clone()
         elements = [
@@ -180,7 +180,7 @@ describe('FieldPermissionsEnum filter', () => {
           permissionSetObjectClone,
           profileInstanceClone,
           permissionSetInstanceClone,
-          permissionSetbjectBeforeConvertClone,
+          permissionSetObjectBeforeConvertClone,
           permissionSetInstanceBeforeConvertClone,
           objA,
           objB,
@@ -234,7 +234,7 @@ describe('FieldPermissionsEnum filter', () => {
         ).toEqual(fieldPermissionObjectValueAsList)
         expect(
           isMapType(
-            await permissionSetbjectBeforeConvertClone.fields.fieldPermissions.getType(),
+            await permissionSetObjectBeforeConvertClone.fields.fieldPermissions.getType(),
           ),
         ).toBeFalsy()
       })

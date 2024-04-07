@@ -30,6 +30,7 @@ import {
   config as configUtils,
   elements as elementUtils,
   fetch as fetchUtils,
+  openapi,
 } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -59,7 +60,7 @@ import { getStandardObjectElements, getStandardObjectTypeName } from './transfor
 import { paginate } from './client/pagination'
 
 const { createPaginator } = clientUtils
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
 const { hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
@@ -122,17 +123,17 @@ export default class ZuoraAdapter implements AdapterOperations {
   }
 
   @logDuration('generating types from swagger')
-  private async getSwaggerTypes(): Promise<elementUtils.swagger.ParsedTypes> {
+  private async getSwaggerTypes(): Promise<openapi.ParsedTypes> {
     const config = _.cloneDeep(this.userConfig[API_DEFINITIONS_CONFIG])
     config.supportedTypes[LIST_ALL_SETTINGS_TYPE] = [LIST_ALL_SETTINGS_TYPE]
-    return generateTypes(ZUORA_BILLING, config)
+    return openapi.generateTypes(ZUORA_BILLING, config)
   }
 
   @logDuration('generating types for billing settings')
   private async getBillingSettingsTypes({
     parsedConfigs,
     allTypes,
-  }: elementUtils.swagger.ParsedTypes): Promise<elementUtils.swagger.ParsedTypes> {
+  }: openapi.ParsedTypes): Promise<openapi.ParsedTypes> {
     if (!Object.keys(SETTING_TYPES).some(this.fetchQuery.isTypeMatch)) {
       return { allTypes: {}, parsedConfigs: {} }
     }
@@ -152,10 +153,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   }
 
   @logDuration('generating type and instances for standard objects')
-  private async getStandardObjectElements({
-    parsedConfigs,
-    allTypes,
-  }: elementUtils.swagger.ParsedTypes): Promise<Element[]> {
+  private async getStandardObjectElements({ parsedConfigs, allTypes }: openapi.ParsedTypes): Promise<Element[]> {
     const apiConfig = this.apiDefinitions(parsedConfigs)
     const standardObjectTypeName = getStandardObjectTypeName(apiConfig)
     if (standardObjectTypeName === undefined || !this.fetchQuery.isTypeMatch(standardObjectTypeName)) {

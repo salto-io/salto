@@ -24,7 +24,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { ImportantValues } from '@salto-io/adapter-utils'
-import { ConfigChangeSuggestion } from '../../../config' // TODO move
+import { ConfigChangeSuggestion } from '../../user'
 import { ArgsWithCustomizer } from '../shared/types'
 // eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'

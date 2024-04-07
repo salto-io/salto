@@ -15,9 +15,12 @@
  */
 import _ from 'lodash'
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
-import { ReferenceContextStrategies, Options } from './types'
+import { ReferenceContextStrategies, Options, CustomReferenceSerializationStrategyName } from './types'
 
-const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ReferenceContextStrategies>[] = [
+const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
+  ReferenceContextStrategies,
+  CustomReferenceSerializationStrategyName
+>[] = [
   // TODO adjust and remove unneeded examples and documentation
 
   // all fields called group_id or group_ids are assumed to reference group instances by their id field
@@ -48,6 +51,13 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ReferenceContextS
       typeContext: 'parentType',
     },
   },
+  // the reference is by otherFieldName
+  {
+    src: { instanceTypes: ['made_up_type_a'], field: 'other_b' },
+    serializationStrategy: 'otherFieldName',
+    sourceTransformation: 'asString',
+    target: { type: 'made_up_type_b' },
+  },
 
   // the field id under the (nested) types
   // ticket_form__end_user_conditions__child_fields, ticket_form__agent_conditions__child_fields
@@ -65,7 +75,16 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<ReferenceContextS
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
+  // TODO remove if not needed
   contextStrategyLookup: {
     parentType: ({ instance }) => _.get(instance.value, 'parent_type'),
   },
+  serializationStrategyLookup: {
+    otherFieldName: {
+      serialize: ({ ref }) => ref.value.value.otherFieldName,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'otherFieldName',
+    },
+  },
+  fieldsToGroupBy: ['id', 'name', 'otherFieldName'],
 }

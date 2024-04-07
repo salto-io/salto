@@ -111,7 +111,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     _.pullAllWith(
       elements,
       customObjects,
-      // No need to check for custom objectness since all of the elements in
+      // No need to check whether the object is a CustomObject since all of the elements in
       // the second params are custom objects.
       (elementA: Element, elementB: Element): boolean =>
         isObjectType(elementA) &&

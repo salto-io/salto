@@ -119,6 +119,10 @@
 		{
 				"name": "google-workspace-adapter",
 				"path": "packages/google-workspace-adapter"
+    },
+    {
+			"name": "confluence-adapter",
+			"path": "packages/confluence-adapter"
 		}
   ],
   "settings": {

@@ -98,7 +98,7 @@ export const adapterConfigFromConfig = <
   defaultConfig: Co,
 ): Co & UserConfig<TCustomNameMappingOptions> => {
   // TODO extend validations SALTO-5584
-  const adapterConfig = _.defaults({}, config?.value, defaultConfig)
+  const adapterConfig = _.defaultsDeep({}, config?.value, defaultConfig)
   validateClientConfig('client', config?.value?.client)
   return adapterConfig
 }

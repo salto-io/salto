@@ -120,7 +120,6 @@
 				"name": "google-workspace-adapter",
 				"path": "packages/google-workspace-adapter"
 		}
-
   ],
   "settings": {
     "files.exclude": {

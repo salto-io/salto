@@ -6,7 +6,7 @@ Google WS adapter for salto.io
 
 ### Basic Authentication
 
-// not supported
+Basic authentication is not supported in google workspace. How ever we enabled the option to get use access token the was obtain with oauth.
 
 ### OAuth Authentication
 
@@ -23,3 +23,5 @@ The adapter also supports OAuth authentication. To authenticate using OAuth, use
 1. Enable Oauth for your app by following the instructions [here](https://developers.google.com/identity/protocols/oauth2).
 2. Set the `redirectUri` configuration parameter as `http://localhost:{port}/export`, where `port` is the port number you want to use.
 3. Run the `salto account add ...` command and follow the instructions to authenticate using OAuth. You will need to provide the `clientId` and `clientSecret`, which you can obtain from the same page you create the Oauth and set the `redirectUri`, you can go to your google [console](https://console.cloud.google.com/) => `APIs & Services` => `Credentials` .
+
+Please notice - in order to log in with oauth to google workspace, we are using the refresh token. The refresh token only returns in the first request, so if you are already connected to your google workspace in your browser, you can open a guest tab and repeat the login.

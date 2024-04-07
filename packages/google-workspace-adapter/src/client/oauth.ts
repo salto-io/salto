@@ -41,9 +41,11 @@ const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/admin.directory.user',
 ]
 
+const getRedirectUri = (port: number): string => `http://localhost:${port}/extract`
+
 export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
   const { clientId, clientSecret, port } = userInput.value
-  const redirectUri = `http://localhost:${port}`
+  const redirectUri = getRedirectUri(port)
   const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
 
   // Generate the url that will be used for the consent dialog.
@@ -116,7 +118,7 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
   response: OauthAccessTokenResponse,
 ) => {
   const { clientId, clientSecret, port } = input
-  const redirectUri = `http://localhost:${port}/extract`
+  const redirectUri = getRedirectUri(port)
   const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri)
   const { code } = response.fields
   const { tokens } = await oAuth2Client.getToken(code)

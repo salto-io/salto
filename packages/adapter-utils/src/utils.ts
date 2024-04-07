@@ -1183,3 +1183,26 @@ export const validateReferenceExpression =
     }
     return true
   }
+
+/**
+ * For a list of ElemIDs, returns a list of ElemIDs that are not children of any other ElemID in the list.
+ */
+export const getIndependentElemIDs = (elemIDs: ElemID[]): ElemID[] => {
+  // The sort here is to make sure an elemID of inner path in list items
+  // will appear after the elemID of the item itself.
+  const sortedIDs = _.sortBy(elemIDs, id => id.getFullNameParts())
+  let lastId = sortedIDs[0]
+  const fullNamesToReturn = new Set(
+    sortedIDs
+      .filter(id => {
+        const skip = lastId.isParentOf(id)
+        if (!skip) {
+          lastId = id
+        }
+        return !skip
+      })
+      .map(id => id.getFullName()),
+  )
+  // filter the original list to avoid changing the list order
+  return elemIDs.filter(id => fullNamesToReturn.has(id.getFullName()))
+}

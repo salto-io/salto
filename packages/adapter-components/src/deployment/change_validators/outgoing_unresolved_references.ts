@@ -26,7 +26,7 @@ import {
   UnresolvedReferenceError,
   SaltoErrorType,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP, getIndependentElemIDs } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -64,7 +64,7 @@ export const createOutgoingUnresolvedReferencesValidator =
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .map(async element => {
-        const unresolvedReferences = getOutgoingUnresolvedReferences(element, shouldIgnore)
+        const unresolvedReferences = getIndependentElemIDs(getOutgoingUnresolvedReferences(element, shouldIgnore))
 
         if (unresolvedReferences.length === 0) {
           return undefined

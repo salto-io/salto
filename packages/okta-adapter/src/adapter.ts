@@ -87,6 +87,7 @@ import profileMappingPropertiesFilter from './filters/profile_mapping_properties
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
+import policyRulePrioritiesFilter from './filters/policy_rule_priorities'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
@@ -125,6 +126,7 @@ const DEFAULT_FILTERS = [
   addImportantValues,
   accessPolicyRuleConstraintsFilter,
   defaultPolicyRuleDeployment,
+  policyRulePrioritiesFilter,
   schemaFieldsRemovalFilter,
   appLogoFilter,
   brandThemeFilesFilter,

@@ -48,6 +48,7 @@ export const AUTOMATION_TYPE_NAME = 'Automation'
 export const AUTOMATION_RULE_TYPE_NAME = 'AutomationRule'
 export const ACTIVE_STATUS = 'ACTIVE'
 export const INACTIVE_STATUS = 'INACTIVE'
+export const POLICY_RULE_PRIORITIES = 'PolicyRulePriorities'
 export const POLICY_TYPE_NAMES = [
   ACCESS_POLICY_TYPE_NAME,
   IDP_POLICY_TYPE_NAME,

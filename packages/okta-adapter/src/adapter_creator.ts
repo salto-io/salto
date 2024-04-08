@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
+import { client as clientUtils, combineCustomReferenceGetters, config as configUtils, definitions } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import {
@@ -43,6 +43,7 @@ import {
 import { createConnection } from './client/connection'
 import { validateOktaBaseUrl } from './utils'
 import { getAdminUrl } from './client/admin'
+import { weakReferenceHandlers } from './weak_references'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
@@ -159,4 +160,7 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getCustomReferences: combineCustomReferenceGetters(
+    _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),
+  ),
 }

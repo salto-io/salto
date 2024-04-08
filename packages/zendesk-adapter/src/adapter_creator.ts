@@ -56,7 +56,7 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 const { validateDefaultMissingUserFallbackConfig } = definitions
 
@@ -117,12 +117,12 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
     ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
     : { ...DEFAULT_CONFIG.apiDefinitions.supportedTypes, ...GUIDE_SUPPORTED_TYPES }
-  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+  const apiDefinitions = mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions,
   ) as configUtils.AdapterDuckTypeApiConfig
 
-  const fetch = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
+  const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,

@@ -219,8 +219,10 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           path: '/wiki/spaces/{spaceId.key}/pages/{id}',
         },
         elemID: {
-          // Confluence does not allow pages with the same title in the same space
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
+        },
+        path: {
+          extendReferenceField: 'spaceId',
         },
       },
       fieldCustomizations: {

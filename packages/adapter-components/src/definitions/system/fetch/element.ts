@@ -65,6 +65,8 @@ export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
   // when id parts info is missing, inherited from elemID (but the values are path-nacl-cased)
   pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[]
+  // when defined will nest under the reference path (this will override "nestUnderParent" defined in standalone)
+  extendReferenceField?: string
 }
 
 type StandaloneFieldDefinition = {

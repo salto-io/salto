@@ -222,10 +222,10 @@ const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
 
   const graph = new DAG<InstanceElement>()
   instances.forEach(instance => {
-    const { elemID } = fetchDefinitionInstanceName[instance.elemID.getFullName()]?.element?.topLevel ?? {}
-    const parts = elemID?.parts ?? []
-    const extendsParent = elemID?.extendsParent
-    if (extendsParent || parts.some(part => part.isReference)) {
+    const { topLevel } = fetchDefinitionInstanceName[instance.elemID.getFullName()]?.element ?? {}
+    const parts = topLevel?.elemID?.parts ?? []
+    const extendsParent = topLevel?.elemID?.extendsParent
+    if (extendsParent || topLevel?.path?.extendReferenceField !== undefined || parts.some(part => part.isReference)) {
       // removing duplicate elemIDs to create a graph
       // we can traverse based on references to unique elemIDs
       if (!isDuplicateInstance(instance.elemID.getFullName())) {
@@ -257,8 +257,27 @@ export const createReferenceIndex = (
 const getPathToNestUnder = <TOptions extends APIDefinitionsOptions = {}>(
   fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
   instance: InstanceElement,
-  parent: InstanceElement,
+  parent: InstanceElement | undefined,
 ): string[] | undefined => {
+  const fieldNameToNestUnder =
+    fetchDefinitionByType[instance.elemID.typeName].element?.topLevel?.path?.extendReferenceField
+  if (fieldNameToNestUnder !== undefined) {
+    const fieldValue = _.get(instance.value, fieldNameToNestUnder)
+    if (!isReferenceExpression(fieldValue)) {
+      throw new Error(`${fieldNameToNestUnder} is not a reference expression`)
+    }
+    const referencedInstance = fieldValue.value
+    if (!isInstanceElement(referencedInstance)) {
+      throw new Error(`${fieldNameToNestUnder} is not a reference to an instance`)
+    }
+    return [
+      ...(referencedInstance.path?.slice(2, referencedInstance.path?.length - 1) ?? []),
+      pathNaclCase(instance.elemID.typeName),
+    ]
+  }
+  if (parent === undefined) {
+    return undefined
+  }
   const shouldNestUnderParent = Object.values(
     fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations ?? {},
   ).find(def => def.standalone?.typeName === instance.elemID.typeName)?.standalone?.nestPathUnderParent
@@ -274,7 +293,7 @@ const calculateInstanceNewNameAndPath = <TOptions extends APIDefinitionsOptions 
   customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<TOptions>>,
 ): { newName: string; newPath: string[] } => {
   const parent = getFirstParent(instance)
-  const nestUnderPath = parent ? getPathToNestUnder(defQuery.getAll(), instance, parent) : undefined
+  const nestUnderPath = getPathToNestUnder(defQuery.getAll(), instance, parent)
   const { toElemName, toPath } = getInstanceCreationFunctions({
     defQuery,
     type: instance.getTypeSync(),

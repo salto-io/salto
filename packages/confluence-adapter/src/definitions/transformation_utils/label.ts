@@ -13,16 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
-
-const assertValue = (value: unknown): Record<string, unknown> => {
-  if (!lowerdashValues.isPlainRecord(value)) {
-    throw new Error('Can not deploy when the value is not an object')
-  }
-  return value
-}
+import { assertValue } from './generic'
 
 export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
   const value = assertValue(item.value)

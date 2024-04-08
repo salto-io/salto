@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2020 Salto Labs Ltd.
+ *                      Copyright 2024 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,20 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
 
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'confluence-adapter',
-  displayName: 'confluence-adapter',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
-  coverageThreshold: {
-    global: {
-      branches: 92,
-      functions: 75,
-      lines: 91,
-      statements: 85,
-    },
-  },
-})
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+
+export const assertValue = (value: unknown): Record<string, unknown> => {
+  if (!lowerdashValues.isPlainRecord(value)) {
+    throw new Error('Can not adjust when the value is not an object')
+  }
+  return value
+}

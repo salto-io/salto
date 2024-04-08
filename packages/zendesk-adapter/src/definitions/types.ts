@@ -24,6 +24,7 @@ export type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = 'parentType'
 export type CustomReferenceSerializationStrategyName = 'otherFieldName'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
+export type ZendeskFetchOptions = { clientOptions: ClientOptions; paginationOptions: PaginationOptions }
 
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions

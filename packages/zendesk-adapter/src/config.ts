@@ -27,6 +27,14 @@ import {
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
+import {
+  Guide,
+  IdLocator,
+  OmitInactiveConfig,
+  ZendeskApiConfig,
+  ZendeskDeployConfig,
+  ZendeskFetchConfig,
+} from './user_config'
 
 const { defaultMissingUserFallbackField } = configUtils
 const { createClientConfigType } = definitions
@@ -102,31 +110,6 @@ export type OmitInactiveConfig = definitions.DefaultWithCustomizations<boolean>
 export type ZendeskClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig> & {
   unassociatedAttachmentChunkSize: number
 }
-
-export type ZendeskFetchConfig = definitions.UserFetchConfig & {
-  enableMissingReferences?: boolean
-  includeAuditDetails?: boolean
-  addAlias?: boolean
-  handleIdenticalAttachmentConflicts?: boolean
-  greedyAppReferences?: boolean
-  appReferenceLocators?: IdLocator[]
-  guide?: Guide
-  resolveOrganizationIDs?: boolean
-  resolveUserIDs?: boolean
-  extractReferencesFromFreeText?: boolean
-  convertJsonIdsToReferences?: boolean
-  omitInactive?: OmitInactiveConfig
-  omitTicketStatusTicketField?: boolean
-}
-
-export type ZendeskDeployConfig = definitions.UserDeployConfig &
-  definitions.DefaultMissingUserFallbackConfig & {
-    createMissingOrganizations?: boolean
-  }
-export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig,
-  configUtils.TransformationDefaultConfig
->
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig

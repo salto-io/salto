@@ -18,7 +18,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import ZendeskClient from '../src/client/client'
-import { ZendeskDeployConfig } from '../src/config'
+import { ZendeskDeployConfig } from '../src/user_config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
 import * as usersUtilsModule from '../src/user_utils'
 

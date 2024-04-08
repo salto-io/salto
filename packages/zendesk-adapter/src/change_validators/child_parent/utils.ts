@@ -24,7 +24,7 @@ import {
   ModificationChange,
   ElemID,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 
 const { makeArray } = collections.array
 

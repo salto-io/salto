@@ -15,8 +15,8 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { UserFetchConfig } from '../../config'
-import { Options } from '../types'
+import { ZendeskConfig } from '../../config'
+import { ZendeskFetchOptions } from '../types'
 import * as transforms from './transforms'
 
 // TODO example - adjust and remove:
@@ -54,7 +54,10 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
   DEFAULT_FIELDS_TO_OMIT,
 )
 
-const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
+const createCustomizations = (): Record<
+  string,
+  definitions.fetch.InstanceFetchApiDefinitions<ZendeskFetchOptions>
+> => ({
   group: {
     requests: [
       {
@@ -167,8 +170,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
 })
 
 export const createFetchDefinitions = (
-  _fetchConfig: UserFetchConfig,
-): definitions.fetch.FetchApiDefinitions<Options> => ({
+  _fetchConfig: ZendeskConfig,
+): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => ({
   instances: {
     default: {
       resource: {

@@ -29,6 +29,7 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
+  // isObjectType,
   isReferenceExpression,
   isSaltoError,
   ReadOnlyElementsSource,
@@ -42,6 +43,7 @@ import {
   resolveChangeElement,
   resolveValues,
   definitions,
+  definitions as definitionsUtils,
   fetch as fetchUtils,
   restoreChangeElement,
 } from '@salto-io/adapter-components'
@@ -156,7 +158,7 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
-import { filterOutInactiveInstancesForType } from './inactive'
+// import { filterOutInactiveInstancesForType } from './inactive'
 import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
 import addImportantValuesFilter from './filters/add_important_values'
 import customObjectFilter from './filters/custom_objects/custom_object'
@@ -165,6 +167,11 @@ import customObjectFieldsOrderFilter from './filters/custom_objects/custom_objec
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
 import guideThemeSettingFilter from './filters/guide_theme_settings'
+import { ZendeskFetchOptions } from './definitions/types'
+import { createClientDefinitions, createFetchDefinitions } from './definitions'
+import { PAGINATION } from './definitions/requests/pagination'
+import { ZendeskFetchConfig } from './user_config'
+import { filterOutInactiveInstancesForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -457,7 +464,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
-  private definitions: definitionsUtils.RequiredDefinitions<OktaFetchOptions>
+  private adapterDefinitions: definitionsUtils.RequiredDefinitions<ZendeskFetchOptions>
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -503,22 +510,21 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
     }
 
-    const definitions = {
-      // TODO - SALTO-5746 - only provide adminClient when it is defined
-      clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
+    const otherDefinitions = {
+      clients: createClientDefinitions({ main: this.client }),
       pagination: PAGINATION,
-      fetch: createFetchDefinitions(this.userConfig, shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig)),
-      sources: { openAPI: [OPEN_API_DEFINITIONS] },
+      fetch: createFetchDefinitions(this.userConfig),
     }
 
-    this.definitions = {
-      ...definitions,
+    this.adapterDefinitions = {
+      ...otherDefinitions,
       fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
-        userElemID: userConfig.fetch.elemID as OktaUserFetchConfig['elemID'],
-        fetchConfig: definitions.fetch,
+        userElemID: this.userConfig.fetch.elemID as ZendeskFetchConfig['elemID'],
+        fetchConfig: otherDefinitions.fetch,
       }),
     }
-
+    // eslint-disable-next-line no-console
+    console.log(this.adapterDefinitions, filterOutInactiveInstancesForType)
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {
@@ -594,6 +600,15 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
       customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
+
+    // // Zendesk Support and (if enabled) global Zendesk Guide types
+    // const defaultSubdomainResult = await fetchUtils.getElements({
+    //   adapterName: ZENDESK,
+    //   fetchQuery: this.fetchQuery,
+    //   getElemIdFunc: this.getElemIdFunc,
+    //   definitions: this.adapterDefinitions,
+    //   // predefinedTypes: _.pickBy(supportedTypes, isObjectType),
+    // })
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult
@@ -727,7 +742,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
     const updatedConfig =
       this.configInstance && configChanges
-        ? definitions.getUpdatedConfigFromConfigChanges({
+        ? definitionsUtils.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,

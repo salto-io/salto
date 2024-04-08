@@ -28,7 +28,13 @@ import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { definitions } from '@salto-io/adapter-components'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
+<<<<<<< HEAD
 import { OMIT_INACTIVE_DEFAULT, ZendeskFetchConfig } from '../config'
+||||||| parent of e119a5cc8 (Set up easy before/after fetch in the adapter)
+import { ZendeskApiConfig, ZendeskFetchConfig } from '../config'
+=======
+import { ZendeskApiConfig, ZendeskFetchConfig } from '../user_config'
+>>>>>>> e119a5cc8 (Set up easy before/after fetch in the adapter)
 
 const { isDefined } = lowerDashValues
 const log = logger(module)

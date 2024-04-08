@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { ZENDESK, CUSTOM_ROLE_TYPE_NAME } from '../../src/constants'
 import { customRoleRemovalValidator } from '../../src/change_validators/custom_role_removal'
 import ZendeskClient from '../../src/client/client'
-import { ZendeskFetchConfig } from '../../src/config'
+import { ZendeskFetchConfig } from '../../src/user_config'
 
 describe('customRoleRemovalValidator', () => {
   let client: ZendeskClient

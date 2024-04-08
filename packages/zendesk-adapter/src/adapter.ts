@@ -457,6 +457,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
+  private definitions: definitionsUtils.RequiredDefinitions<OktaFetchOptions>
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -500,6 +501,22 @@ export default class ZendeskAdapter implements AdapterOperations {
         config: clientConfig,
         allowOrganizationNames: this.userConfig[FETCH_CONFIG].resolveOrganizationIDs,
       })
+    }
+
+    const definitions = {
+      // TODO - SALTO-5746 - only provide adminClient when it is defined
+      clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
+      pagination: PAGINATION,
+      fetch: createFetchDefinitions(this.userConfig, shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig)),
+      sources: { openAPI: [OPEN_API_DEFINITIONS] },
+    }
+
+    this.definitions = {
+      ...definitions,
+      fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+        userElemID: userConfig.fetch.elemID as OktaUserFetchConfig['elemID'],
+        fetchConfig: definitions.fetch,
+      }),
     }
 
     const clientsBySubdomain: Record<string, ZendeskClient> = {}

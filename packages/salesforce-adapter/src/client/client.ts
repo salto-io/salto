@@ -1188,7 +1188,7 @@ export default class SalesforceClient {
   @mapToUserFriendlyErrorMessages
   @logDecorator()
   @requiresLogin()
-  public async request(request: string): Promise<unknown> {
-    return this.conn.request(request)
+  public async request(url: string): Promise<unknown> {
+    return this.conn.request(url)
   }
 }

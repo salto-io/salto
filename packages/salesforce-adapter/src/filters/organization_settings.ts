@@ -131,7 +131,10 @@ const createOrganizationType = (): ObjectType =>
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
     fields: {
       [latestSupportedApiVersionField]: {
-        refType: BuiltinTypes.HIDDEN_STRING,
+        refType: BuiltinTypes.NUMBER,
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
       },
     },
     annotations: {
@@ -174,9 +177,9 @@ const addLatestSupportedAPIVersion = async (
 
   const latestVersion = _(versions)
     .map((ver) => ver?.version)
-    .filter((ver) => typeof ver === 'string')
-    .filter((ver) => ver.length > 0)
-    .maxBy(parseInt)
+    .map(_.toNumber)
+    .filter(_.isFinite)
+    .max()
 
   if (latestVersion === undefined) {
     log.error('Could not get the latest supported API version.')

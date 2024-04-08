@@ -173,7 +173,7 @@ describe('organization-wide defaults filter', () => {
             DefaultContactAccess: 'ControlledByParent',
             DefaultLeadAccess: 'ReadEditTransfer',
             DefaultOpportunityAccess: 'None',
-            LatestSupportedApiVersion: '60.0',
+            LatestSupportedApiVersion: 60,
           },
         },
       ])

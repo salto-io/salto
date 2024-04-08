@@ -44,7 +44,6 @@ export {
   defaultMissingUserFallbackField,
   AdapterFetchError,
 } from './shared'
-export { mergeWithDefaultConfig } from './merge'
 export {
   createTypeNameOverrideConfigType,
   createSwaggerAdapterApiConfigType,

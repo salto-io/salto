@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { config as configUtils, definitions } from '@salto-io/adapter-components'
+import { definitions } from '@salto-io/adapter-components'
 import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../../config/api_config'
 import { DC_ADDITIONAL_TYPE_NAME_OVERRIDES, DC_DEFAULT_API_DEFINITIONS } from './api_config'
 import { ProductSettings } from '../product_settings'
@@ -370,7 +370,7 @@ const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
 })
 
 export const DATA_CENTER_SETTINGS: ProductSettings = {
-  defaultApiDefinitions: configUtils.mergeWithDefaultConfig(
+  defaultApiDefinitions: definitions.mergeWithDefaultConfig(
     addTypeNameOverrides(DEFAULT_API_DEFINITIONS, DC_ADDITIONAL_TYPE_NAME_OVERRIDES),
     DC_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,

@@ -21,6 +21,7 @@ import {
   getInstanceCreationFunctions,
   createInstance,
   omitInstanceValues,
+  recursiveNaclCase,
 } from '../../../src/fetch/element/instance_utils'
 
 describe('instance utils', () => {
@@ -130,6 +131,48 @@ describe('instance utils', () => {
           defQuery,
         }),
       ).toEqual({ str: 'A', something: 'a' })
+    })
+  })
+  describe('recursiveNaclCase', () => {
+    describe('when invert is false', () => {
+      it('should nacl case all keys in object', () => {
+        const obj = {
+          id: 'abc',
+          'some.key': { val: 'a' },
+          arr: [{ $foo: 'a', bar: 'b' }],
+          innerObj: {
+            'i.n.n.e.r': 'a',
+          },
+        }
+        expect(recursiveNaclCase(obj)).toEqual({
+          id: 'abc',
+          'some_key@v': { val: 'a' },
+          arr: [{ '_foo@zc': 'a', bar: 'b' }],
+          innerObj: {
+            'i_n_n_e_r@v': 'a',
+          },
+        })
+      })
+    })
+    describe('when invert is true', () => {
+      it('should invert nacl case all keys in object', () => {
+        const obj = {
+          id: 'abc',
+          'some_key@v': { val: 'a' },
+          arr: [{ '_foo@zc': 'a', bar: 'b' }],
+          innerObj: {
+            'i_n_n_e_r@v': 'a',
+          },
+        }
+        expect(recursiveNaclCase(obj, true)).toEqual({
+          id: 'abc',
+          'some.key': { val: 'a' },
+          arr: [{ $foo: 'a', bar: 'b' }],
+          innerObj: {
+            'i.n.n.e.r': 'a',
+          },
+        })
+      })
     })
   })
 })

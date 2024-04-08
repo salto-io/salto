@@ -909,16 +909,14 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
-  src: {
-    field: 'value',
-    parentTypes: [
-      'trigger__actions',
-    ],
+    src: {
+      field: 'value',
+      parentTypes: ['trigger__actions'],
+    },
+    serializationStrategy: 'idString',
+    target: { typeContext: 'allowlistedNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
-  serializationStrategy: 'idString',
-  target: { typeContext: 'allowlistedNeighborField' },
-  zendeskMissingRefStrategy: 'typeAndValue',
-},
 
   // only one of these applies in a given instance
   {

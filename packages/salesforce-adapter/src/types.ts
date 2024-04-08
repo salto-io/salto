@@ -365,15 +365,6 @@ export type FetchParameters = {
   additionalImportantValues?: ImportantValues
 }
 
-export type DeprecatedMetadataParams = {
-  [METADATA_TYPES_SKIPPED_LIST]?: string[]
-  [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
-}
-
-export type DeprecatedFetchParameters = {
-  [DATA_MANAGEMENT]?: DataManagementConfig
-} & DeprecatedMetadataParams
-
 export type ClientRateLimitConfig = Partial<{
   total: number
   retrieve: number

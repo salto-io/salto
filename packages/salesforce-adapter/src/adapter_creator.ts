@@ -261,15 +261,7 @@ export const adapter: Adapter = {
     return {
       fetch: async (opts) => {
         const salesforceAdapter = createSalesforceAdapter()
-        const fetchResults = await salesforceAdapter.fetch(opts)
-        fetchResults.updatedConfig = getConfigChange(
-          fetchResults.updatedConfig,
-          updatedConfig && {
-            config: [updatedConfig.config],
-            message: updatedConfig.message,
-          },
-        )
-        return fetchResults
+        return salesforceAdapter.fetch(opts)
       },
 
       deploy: async (opts) => {

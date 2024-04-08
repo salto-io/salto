@@ -32,7 +32,6 @@ import {
   oauthRequestParameters,
   OauthAccessTokenCredentials,
   accessTokenCredentialsType,
-  METADATA_TYPES_SKIPPED_LIST,
 } from '../src/types'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
@@ -555,119 +554,6 @@ describe('SalesforceAdapter creator', () => {
     })
   })
 
-  describe('validateDeprecatedParameters', () => {
-    describe('instancesRegexSkippedList', () => {
-      it('invalid instancesRegexSkippedList should throw an error', () => {
-        const configClone = config.clone()
-        configClone.value.instancesRegexSkippedList = ['(']
-
-        expect(() =>
-          adapter.operations({
-            credentials,
-            elementsSource: buildElementsSourceFromElements([]),
-            config: configClone,
-          }),
-        ).toThrow(
-          'Failed to load config due to an invalid instancesRegexSkippedList value. The following regular expressions are invalid: (',
-        )
-      })
-
-      it('valid instancesRegexSkippedList should not throw', () => {
-        const configClone = config.clone()
-        configClone.value.instancesRegexSkippedList = ['valid']
-
-        expect(() =>
-          adapter.operations({
-            credentials,
-            elementsSource: buildElementsSourceFromElements([]),
-            config: configClone,
-          }),
-        ).not.toThrow()
-      })
-    })
-
-    describe('dataManagement', () => {
-      it('invalid dataManagement should throw an error', () => {
-        const configClone = config.clone()
-        configClone.value.dataManagement = {}
-
-        expect(() =>
-          adapter.operations({
-            credentials,
-            elementsSource: buildElementsSourceFromElements([]),
-            config: configClone,
-          }),
-        ).toThrow(
-          'Failed to load config due to an invalid dataManagement.includeObjects value. includeObjects is required when dataManagement is configured',
-        )
-      })
-
-      it('valid dataManagement should not throw', () => {
-        const configClone = config.clone()
-        configClone.value.dataManagement = {
-          includeObjects: ['^SBQQ__.*'],
-          saltoIDSettings: {
-            defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-            overrides: [],
-          },
-          brokenOutgoingReferencesSettings: {
-            defaultBehavior: 'BrokenReference',
-            perTargetTypeOverrides: {
-              User: 'InternalId',
-            },
-          },
-          omittedFields: ['OmniUiCard.SampleDataSourceResponse'],
-        }
-
-        expect(() =>
-          adapter.operations({
-            credentials,
-            elementsSource: buildElementsSourceFromElements([]),
-            config: configClone,
-          }),
-        ).not.toThrow()
-      })
-
-      it('valid dataManagement and fetch.data should throw an error', () => {
-        const configClone = config.clone()
-        const dataConf = {
-          includeObjects: ['^SBQQ__.*'],
-          saltoIDSettings: {
-            defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-            overrides: [],
-          },
-        }
-        configClone.value.dataManagement = dataConf
-        configClone.value.fetch.data = dataConf
-
-        expect(() =>
-          adapter.operations({
-            credentials,
-            elementsSource: buildElementsSourceFromElements([]),
-            config: configClone,
-          }),
-        ).toThrow(
-          'Failed to load config due to an invalid dataManagement value. fetch.data configuration option cannot be used with dataManagement option. The configuration of dataManagement should be moved to fetch.data',
-        )
-      })
-    })
-
-    describe('metadataTypesSkippedList', () => {
-      it('valid metadataTypesSkippedList should not throw', () => {
-        const configClone = config.clone()
-        configClone.value.metadataTypesSkippedList = ['valid']
-
-        expect(() =>
-          adapter.operations({
-            credentials,
-            elementsSource: buildElementsSourceFromElements([]),
-            config: configClone,
-          }),
-        ).not.toThrow()
-      })
-    })
-  })
-
   describe('validateValidatorsConfig', () => {
     it('should throw when validators config exists and is not an object', () => {
       const configClone = config.clone()
@@ -694,54 +580,6 @@ describe('SalesforceAdapter creator', () => {
           config: configClone,
         }),
       ).toThrow()
-    })
-  })
-
-  describe('deprecated configuration', () => {
-    SalesforceAdapter.prototype.fetch = jest
-      .fn()
-      .mockResolvedValue({ elements: [] })
-
-    const deprecatedConfig = config.clone()
-    deprecatedConfig.value[METADATA_TYPES_SKIPPED_LIST] = ['aaa']
-    const operations = adapter.operations({
-      credentials,
-      config: deprecatedConfig,
-      elementsSource: buildElementsSourceFromElements([]),
-    })
-    it('pass to the adapter operation configuration without deprecated fields', async () => {
-      await operations.fetch(mockFetchOpts)
-      expect(SalesforceAdapter).toHaveBeenCalledWith({
-        config: {
-          fetch: {
-            metadata: {
-              exclude: [
-                { metadataType: 'test1' },
-                { name: 'test2' },
-                { name: 'test3' },
-                { metadataType: 'aaa' },
-              ],
-            },
-          },
-          client: {
-            maxConcurrentApiRequests: {
-              list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-              read: 55,
-              retrieve: 3,
-              total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-            },
-          },
-        },
-        client: expect.any(Object),
-        getElemIdFunc: undefined,
-        elementsSource: expect.any(Object),
-      })
-    })
-
-    it('return update from fetch', async () => {
-      expect(
-        (await operations.fetch(mockFetchOpts)).updatedConfig,
-      ).toBeDefined()
     })
   })
 

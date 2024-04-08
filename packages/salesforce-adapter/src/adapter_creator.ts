@@ -45,7 +45,6 @@ import {
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
-import { updateDeprecatedConfiguration } from './deprecated_config'
 import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
@@ -242,11 +241,7 @@ In Addition, ${configFromFetch.message}`,
 
 export const adapter: Adapter = {
   operations: (context) => {
-    const updatedConfig =
-      context.config && updateDeprecatedConfiguration(context.config)
-    const config = adapterConfigFromConfig(
-      updatedConfig?.config ?? context.config,
-    )
+    const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const client = new SalesforceClient({
       credentials,

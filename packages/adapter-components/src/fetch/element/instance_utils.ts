@@ -22,7 +22,13 @@ import {
   ReferenceExpression,
   Values,
 } from '@salto-io/adapter-api'
-import { TransformFuncSync, invertNaclCase, mapKeysRecursive, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
+import {
+  TransformFuncSync,
+  invertNaclCase,
+  mapKeysRecursive,
+  naclCase,
+  transformValuesSync,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
 import { DefQuery, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'

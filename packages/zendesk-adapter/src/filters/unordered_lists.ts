@@ -247,7 +247,8 @@ const orderAppInstallationsInWorkspace = (instances: InstanceElement[]): void =>
     .forEach(workspace => {
       const appsList = workspace.value.apps
       if (_.isArray(appsList)) {
-        workspace.value.apps = _.sortBy(appsList, ['position', 'name'])
+        // _.sortBy is stable, so the order of apps with the same position will not change
+        workspace.value.apps = _.sortBy(appsList, ['position'])
       } else if (appsList !== undefined) {
         log.warn(
           `orderAppInstallationsInWorkspace - app installations are not a list in ${appsList.elemID.getFullName()}`,

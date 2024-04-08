@@ -43,7 +43,7 @@ import { FetchProfile } from '../types'
 const log = logger(module)
 
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
-const latestSupportedApiVersionField = 'LatestSupportedApiVersion'
+export const LATEST_SUPPORTED_API_VERSION_FIELD = 'LatestSupportedApiVersion'
 
 /*
  * These fields are not multienv friendly
@@ -130,7 +130,7 @@ const createOrganizationType = (): ObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
     fields: {
-      [latestSupportedApiVersionField]: {
+      [LATEST_SUPPORTED_API_VERSION_FIELD]: {
         refType: BuiltinTypes.NUMBER,
         annotations: {
           [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
@@ -186,7 +186,7 @@ const addLatestSupportedAPIVersion = async (
     return
   }
 
-  instance.value[latestSupportedApiVersionField] = latestVersion
+  instance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
 }
 
 const FILTER_NAME = 'organizationSettings'

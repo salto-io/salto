@@ -22,6 +22,9 @@ import {
   ServiceIds,
   Values,
   toServiceIdsString,
+  ReferenceExpression,
+  isReferenceExpression,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { invertNaclCase, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -109,6 +112,28 @@ export const getNameMapping = <TCustomNameMappingOptions extends string = never>
   return String(name)
 }
 
+const getFieldValue = (entry: Values, fieldName: string, useOldFormat?: boolean): string | undefined => {
+  const dereferenceFieldValue = (fieldValue: ReferenceExpression): string => {
+    const { parent, path } = fieldValue.elemID.createTopLevelParentID()
+    return [useOldFormat ? parent.name : invertNaclCase(parent.name), ...path].join('.')
+  }
+
+  const fieldValue = _.get(entry, fieldName)
+  if (isReferenceExpression(fieldValue)) {
+    return dereferenceFieldValue(fieldValue)
+  }
+  if (isTemplateExpression(fieldValue)) {
+    return fieldValue.parts
+      .map(part => (isReferenceExpression(part) ? dereferenceFieldValue(part) : _.toString(part)))
+      .join('')
+  }
+  if (fieldValue === undefined) {
+    log.debug(`could not find idField: ${fieldName}`)
+    return undefined
+  }
+  return _.toString(fieldValue)
+}
+
 const computeElemIDPartsFunc =
   <TCustomNameMappingOptions extends string = never>(
     elemIDDef: ElemIDDefinition<TCustomNameMappingOptions>,
@@ -121,18 +146,24 @@ const computeElemIDPartsFunc =
         if (part.custom !== undefined) {
           return part.custom(part)(entry)
         }
-        return getNameMapping({
-          name: _.get(entry, part.fieldName) ?? '',
-          nameMapping: part.mapping,
-          customNameMappingFunctions,
-        })
+        const fieldValue = getFieldValue(entry, part.fieldName, elemIDDef.useOldFormat)
+        return fieldValue !== undefined
+          ? getNameMapping({
+              name: fieldValue,
+              nameMapping: part.mapping,
+              customNameMappingFunctions,
+            })
+          : undefined
       })
     const nonEmptyParts = parts.filter(lowerdashValues.isDefined).filter(part => part.length > 0)
 
     const res =
       elemIDDef.extendsParent && parent !== undefined
         ? // the delimiter between parent and child will be doubled
-          [invertNaclCase(parent.elemID.name), ...(nonEmptyParts.length > 0 ? ['', ...nonEmptyParts] : [])]
+          [
+            elemIDDef.useOldFormat ? parent.elemID.name : invertNaclCase(parent.elemID.name),
+            ...(nonEmptyParts.length > 0 ? ['', ...nonEmptyParts] : []),
+          ]
         : nonEmptyParts
 
     if (nonEmptyParts.length < parts.length) {

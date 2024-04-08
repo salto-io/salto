@@ -65,7 +65,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'roleName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/roles/{roleId}' },
+        serviceUrl: { path: '/roles/{roleId}' },
         alias: { aliasComponents: [{ fieldName: 'roleName' }] },
       },
       fieldCustomizations: {
@@ -107,7 +107,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'domainName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/domains' },
+        serviceUrl: { path: '/domains' },
         alias: { aliasComponents: [{ fieldName: 'domainName' }] },
       },
       fieldCustomizations: {
@@ -182,7 +182,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        // serviceUrl: { path: 'https://admin.google.com/ac/groups/{id}' },
+        serviceUrl: { path: '/groups/{id}' },
         elemID: { parts: [NAME_ID_FIELD] },
       },
       fieldCustomizations: {
@@ -302,16 +302,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }, { fieldName: 'name' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/orgunits' },
+        serviceUrl: { path: '/orgunits' },
         alias: {
           aliasComponents: [{ fieldName: 'name' }],
         },
-        // path: {
-        //   pathParts: [
-        //     { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
-        //     { parts: [{ fieldName: 'orgUnitPath' }] },
-        //   ],
-        // },
+        path: {
+          pathParts: [
+            { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
+            { parts: [{ fieldName: 'name' }] },
+          ],
+        },
       },
 
       fieldCustomizations: {
@@ -358,7 +358,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'schemaName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/customschema' },
+        serviceUrl: { path: '/customschema' },
         alias: { aliasComponents: [{ fieldName: 'schemaName' }] },
       },
       fieldCustomizations: {
@@ -399,7 +399,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'buildingName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        serviceUrl: { path: '/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'buildingName' }] },
       },
       fieldCustomizations: {
@@ -428,7 +428,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'resourceName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        serviceUrl: { path: '/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'resourceName' }] },
       },
       fieldCustomizations: {
@@ -459,7 +459,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        serviceUrl: { path: '/calendarresources/resources' },
         alias: { aliasComponents: [NAME_ID_FIELD] },
       },
     },
@@ -475,6 +475,7 @@ export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<
       element: {
         topLevel: {
           elemID: { parts: DEFAULT_ID_PARTS },
+          serviceUrl: { baseUrl: 'https://admin.google.com/ac' },
         },
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },

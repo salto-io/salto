@@ -586,29 +586,28 @@ export default class ZendeskAdapter implements AdapterOperations {
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()
     // Zendesk Support and (if enabled) global Zendesk Guide types
-    const defaultSubdomainResult = await getAllElements({
-      adapterName: ZENDESK,
-      types: this.userConfig.apiDefinitions.types,
-      shouldAddRemainingTypes: !isGuideInFetch,
-      // tags are "fetched" in a filter
-      supportedTypes: _.omit(supportedTypes, 'tag'),
-      fetchQuery: this.fetchQuery,
-      paginator: this.paginator,
-      nestedFieldFinder: findDataField,
-      computeGetArgs,
-      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-      getElemIdFunc: this.getElemIdFunc,
-      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
-    })
-
-    // // Zendesk Support and (if enabled) global Zendesk Guide types
-    // const defaultSubdomainResult = await fetchUtils.getElements({
+    // const defaultSubdomainResult = await getAllElements({
     //   adapterName: ZENDESK,
+    //   types: this.userConfig.apiDefinitions.types,
+    //   shouldAddRemainingTypes: !isGuideInFetch,
+    //   // tags are "fetched" in a filter
+    //   supportedTypes: _.omit(supportedTypes, 'tag'),
     //   fetchQuery: this.fetchQuery,
+    //   paginator: this.paginator,
+    //   nestedFieldFinder: findDataField,
+    //   computeGetArgs,
+    //   typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
     //   getElemIdFunc: this.getElemIdFunc,
-    //   definitions: this.adapterDefinitions,
-    //   // predefinedTypes: _.pickBy(supportedTypes, isObjectType),
+    //   customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     // })
+
+    const defaultSubdomainResult = await fetchUtils.getElements({
+      adapterName: ZENDESK,
+      fetchQuery: this.fetchQuery,
+      getElemIdFunc: this.getElemIdFunc,
+      definitions: this.adapterDefinitions,
+      // predefinedTypes: _.pickBy(supportedTypes, isObjectType),
+    })
 
     if (!isGuideInFetch) {
       return defaultSubdomainResult

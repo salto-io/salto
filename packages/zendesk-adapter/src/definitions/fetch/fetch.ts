@@ -40,7 +40,16 @@ const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCusto
   },
 }
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  _links: {
+  count: {
+    omit: true,
+  },
+  url: {
+    omit: true,
+  },
+  extended_output_schema: {
+    omit: true,
+  },
+  extended_input_schema: {
     omit: true,
   },
 }
@@ -78,7 +87,7 @@ const createCustomizations = (): Record<
         // isTopLevel should be set when the workspace can have instances of this type
         isTopLevel: true,
         serviceUrl: {
-          path: '/some/path/to/group/with/potential/placeholder/{id}',
+          path: '/admin/people/team/groups/{id}',
         },
       },
       fieldCustomizations: {
@@ -135,7 +144,7 @@ const createCustomizations = (): Record<
           standalone: {
             typeName: 'business_hours_schedule_holiday',
             addParentAnnotation: true,
-            referenceFromParent: false,
+            referenceFromParent: true,
             nestPathUnderParent: true,
           },
         },
@@ -164,6 +173,8 @@ const createCustomizations = (): Record<
           fieldType: 'number',
           hide: true,
         },
+        start_year: { fieldType: 'string', hide: true },
+        end_year: { fieldType: 'string', hide: true },
       },
     },
   },

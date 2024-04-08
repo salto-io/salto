@@ -807,7 +807,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       recurseInto: [
         {
           type: 'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu',
-          toField: 'theme',
+          toField: 'BrandTheme',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
       ],
@@ -902,9 +902,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'theme' }],
-      nestStandaloneInstances: false,
-      fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
+      standaloneFields: [{ fieldName: 'BrandTheme' }],
+      nestStandaloneInstances: true,
+      fieldTypeOverrides: [{ fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' }],
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {

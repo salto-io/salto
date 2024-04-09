@@ -55,8 +55,8 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
   article: {
-    // TODO SVH: translate author_id to author mail
-    // TODO SVH: create service url from url field
+    // TODO SALTO-5768: translate author_id to author mail
+    // TODO SALTO-5768: create service url from url field
     requests: [
       {
         endpoint: {
@@ -92,7 +92,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   collection: {
-    // TODO SVH: handle hep_center_id (maybe path?)
+    // TODO SALTO-5768: nest under their parent dir?
+    // TODO SALTO-5768: nest all collections under the help center they're in?
     requests: [
       {
         endpoint: {
@@ -125,8 +126,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   company: {
-    // TODO SVH: actively remove results that have no company name?
-    // TODO SVH: adjust tags and segments fields? ( references + manipulation )
+    // TODO SALTO-5768: actively remove results that have no company name?
     requests: [
       {
         endpoint: {
@@ -162,7 +162,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   data_attribute: {
-    // TODO SVH: translate admin_id to admin mail
+    // TODO SALTO-5768: translate admin_id to admin mail
     requests: [
       {
         endpoint: {
@@ -210,7 +210,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   news_item: {
-    // TODO SVH: translate sender_id to sender mail
+    // TODO SALTO-5768: translate sender_id to sender mail
     requests: [
       {
         endpoint: {
@@ -344,7 +344,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     },
   },
   team: {
-    // TODO SVH: translate admin_ids to admin mails
+    // TODO SALTO-5768: translate admin_ids to admin mails
     requests: [
       {
         endpoint: {

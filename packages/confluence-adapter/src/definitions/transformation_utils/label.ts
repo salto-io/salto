@@ -25,10 +25,9 @@ export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
   const value = assertValue(item.value)
   const labels = _.get(value, 'labels')
   if (_.isEmpty(labels) || !Array.isArray(labels)) {
-    return { ...item, value }
+    return { value }
   }
   return {
-    ...item,
     value: {
       ...value,
       labels: labels.map(label => label.id),

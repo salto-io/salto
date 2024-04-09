@@ -28,13 +28,13 @@ describe('page transformation utils', () => {
       expect(increasePagesVersion(item).value.version.number).toEqual(2)
     })
 
-    it('should return the same item if the version number is not a number (should not happen)', () => {
+    it('should return the same value if the version number is not a number (should not happen)', () => {
       const item = {
         typeName: 'mockType',
         context: {} as definitions.deploy.ChangeAndContext,
         value: { version: { number: 'not a number' } },
       }
-      expect(increasePagesVersion(item)).toEqual(item)
+      expect(increasePagesVersion(item).value).toEqual(item.value)
     })
   })
 })

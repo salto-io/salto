@@ -23,14 +23,14 @@ import {
   isAdditionChange,
   toChange,
 } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { getParents } from '@salto-io/adapter-utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from '../constants'
-import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployWithStatus } from '../deployment'
+import { OktaFetchOptions } from '../definitions/types'
 
 const log = logger(module)
 
@@ -57,7 +57,10 @@ const isRulesResponse = (values: unknown): values is PolicyRule[] => {
   return true
 }
 
-const getDefaultPolicyRuleEntry = async (policyId: string, client: OktaClient): Promise<PolicyRule> => {
+const getDefaultPolicyRuleEntry = async (
+  policyId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<PolicyRule> => {
   const url = `/api/v1/policies/${policyId}/rules`
   const ruleEntries = (await client.get({ url })).data
   if (!isRulesResponse(ruleEntries)) {
@@ -75,24 +78,17 @@ const getDefaultPolicyRuleEntry = async (policyId: string, client: OktaClient): 
 const getCreatedPolicyRuleInstance = (
   policyRuleEntry: PolicyRule,
   defaultPolicyRuleInstance: InstanceElement,
-  apiDefinitions: OktaSwaggerApiConfig,
+  fieldsToOmit: string[] = [],
 ): InstanceElement => {
   const createdPolicyRuleInstance = defaultPolicyRuleInstance.clone()
-  const { fieldsToOmit } = configUtils.getTypeTransformationConfig(
-    createdPolicyRuleInstance.elemID.typeName,
-    apiDefinitions.types,
-    apiDefinitions.typeDefaults,
-  )
-  createdPolicyRuleInstance.value = _.omit(
-    policyRuleEntry,
-    (fieldsToOmit ?? []).map(field => field.fieldName),
-  )
+  createdPolicyRuleInstance.value = _.omit(policyRuleEntry, fieldsToOmit)
   return createdPolicyRuleInstance
 }
 
 const deployDefaultPolicy = async (
   change: Change<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  defQuery: definitionsUtils.DefQuery<definitionsUtils.fetch.InstanceFetchApiDefinitions<OktaFetchOptions>, string>,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const defaultRuleInstance = getChangeData(change)
@@ -104,12 +100,17 @@ const deployDefaultPolicy = async (
     )
   }
   const createdPolicyRuleEntry = await getDefaultPolicyRuleEntry(parentPolicyId, client)
+  const fieldsToOmit = _.pickBy(
+    defQuery.query(defaultRuleInstance.elemID.typeName)?.element?.fieldCustomizations ?? {},
+    f => f.omit,
+  )
+
   // Assign the id created by the service to the default policy rule
   defaultRuleInstance.value.id = createdPolicyRuleEntry.id
   const createdPolicyRuleInstance = getCreatedPolicyRuleInstance(
     createdPolicyRuleEntry,
     defaultRuleInstance,
-    apiDefinitions,
+    Object.keys(fieldsToOmit),
   )
   await defaultDeployWithStatus(
     toChange({ before: createdPolicyRuleInstance, after: defaultRuleInstance }),
@@ -122,7 +123,7 @@ const deployDefaultPolicy = async (
  * Deploy addition changes of default rules for AccessPolicy and ProfileEnrollmentPolicy
  * by changing them to modification changes, because default rules automatically created by the service
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultPolicyRuleDeployment',
   preDeploy: async changes => {
     changes
@@ -139,6 +140,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       })
   },
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
+    const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
@@ -149,7 +152,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployDefaultPolicy(change, client, config[API_DEFINITIONS_CONFIG]),
+      deployDefaultPolicy(change, client, defQuery, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
     )
 
     return {

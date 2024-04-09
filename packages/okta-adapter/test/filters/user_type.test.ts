@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-import { ObjectType, ElemID, InstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, toChange, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import OktaClient from '../../src/client/client'
 import { OKTA, USERTYPE_TYPE_NAME } from '../../src/constants'
 import userTypeFilter from '../../src/filters/user_type'
-import { getFilterParams, mockClient } from '../utils'
+import { createDefinitions, getFilterParams, mockClient } from '../utils'
 
 describe('userTypeFilter', () => {
   let filter: filterUtils.FilterWith<'deploy'>
   let client: OktaClient
   let mockConnection: MockInterface<clientUtils.APIConnection>
-  const userTypeType = new ObjectType({ elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME) })
+  const userTypeType = new ObjectType({
+    elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
+    fields: {
+      id: { refType: BuiltinTypes.SERVICE_ID },
+    },
+  })
   const userTypeInstanceA = new InstanceElement('test1', userTypeType, { name: 'A', default: false })
   const userTypeInstanceB = new InstanceElement('test2', userTypeType, { name: 'B', default: false })
   const userTypeInstanceC = new InstanceElement('test3', userTypeType, { name: 'C', default: false })
@@ -36,7 +41,8 @@ describe('userTypeFilter', () => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    filter = userTypeFilter(getFilterParams({ client })) as typeof filter
+    const definitions = createDefinitions({ client })
+    filter = userTypeFilter(getFilterParams({ definitions })) as typeof filter
   })
 
   describe('deploy', () => {

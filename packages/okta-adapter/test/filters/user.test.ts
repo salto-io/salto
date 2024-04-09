@@ -24,12 +24,13 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { FETCH_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/user_config'
 import {
   ACCESS_POLICY_RULE_TYPE_NAME,
-  GROUP_MEMBERSHIP_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   OKTA,
+  GROUP_MEMBERSHIP_TYPE_NAME,
 } from '../../src/constants'
 import userFilter from '../../src/filters/user'
 import { getFilterParams } from '../utils'

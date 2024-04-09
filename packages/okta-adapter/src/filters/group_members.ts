@@ -40,7 +40,6 @@ import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, GROUP_MEMBERSHIP_TYPE_NAME, OKTA } from '../constants'
 import { areUsers, User } from '../user_utils'
 import { FETCH_CONFIG } from '../config'
-import OktaClient from '../client/client'
 
 const log = logger(module)
 const { RECORDS_PATH, TYPES_PATH } = elementUtils
@@ -113,7 +112,7 @@ const deployGroupAssignment = async ({
   groupId: string
   userId: string
   action: 'add' | 'remove'
-  client: OktaClient
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface
 }): Promise<{ userId: string; result: 'success' | 'failure' }> => {
   const endpoint = `/api/v1/groups/${groupId}/users/${userId}`
   try {
@@ -150,7 +149,7 @@ const updateChangeWithFailedAssignments = async (
 
 const deployGroupMembershipChange = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
 ): Promise<GroupMembershipDeployResult> => {
   const parentGroupId = getParents(getChangeData(change))[0]?.id // parent is already resolved
   if (!_.isString(parentGroupId)) {
@@ -213,7 +212,7 @@ const deployGroupMembershipChange = async (
 /**
  * Create a single group-memberships instance per group.
  */
-const groupMembersFilter: FilterCreator = ({ config, paginator, client }) => ({
+const groupMembersFilter: FilterCreator = ({ definitions, config, paginator }) => ({
   name: 'groupMembersFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (!config[FETCH_CONFIG].includeGroupMemberships) {
@@ -238,6 +237,7 @@ const groupMembersFilter: FilterCreator = ({ config, paginator, client }) => ({
     groupMembershipInstances.forEach(instance => elements.push(instance))
   },
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>

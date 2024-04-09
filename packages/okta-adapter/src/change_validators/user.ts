@@ -21,7 +21,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import { paginate } from '../client/pagination'
 import OktaClient from '../client/client'
-import { OktaConfig, FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG } from '../config'
 import {
   DEFAULT_CONVERT_USERS_IDS_VALUE,
   getUsers,
@@ -29,6 +29,7 @@ import {
   OMIT_MISSING_USERS_CONFIGURATION_LINK,
   USER_MAPPING,
 } from '../user_utils'
+import { OktaUserConfig } from '../user_config'
 
 const { isDefined } = values
 const { createPaginator } = clientUtils
@@ -37,7 +38,7 @@ const log = logger(module)
 /**
  * Verifies users exist in the environement before deployment of an instance with user references
  */
-export const usersValidator: (client: OktaClient, config: OktaConfig) => ChangeValidator =
+export const usersValidator: (client: OktaClient, userConfig: OktaUserConfig) => ChangeValidator =
   (client, config) => async changes => {
     const { convertUsersIds } = config[FETCH_CONFIG]
     if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {

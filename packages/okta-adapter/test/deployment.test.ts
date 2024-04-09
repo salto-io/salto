@@ -15,7 +15,7 @@
  */
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { ElemID, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, OKTA } from '../src/constants'
@@ -29,6 +29,9 @@ describe('deployment.ts', () => {
   let instance2: InstanceElement
   const type = new ObjectType({
     elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
+    fields: {
+      id: { refType: BuiltinTypes.SERVICE_ID },
+    },
   })
 
   beforeEach(() => {

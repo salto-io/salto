@@ -39,7 +39,10 @@ const matchVariableDeclarationWithPrefix = (
       if (declarationNode.init.loc === undefined || declarationNode.init.loc === null) {
         log.warn('Could not find location for variable declaration')
       } else if (declarationNode.init.value) {
-        matches.push({ value: declarationNode.init.value.toString(), loc: declarationNode.init.loc })
+        matches.push({
+          value: (declarationNode.init.raw ?? declarationNode.init.value).toString(),
+          loc: declarationNode.init.loc,
+        })
       }
     }
   })
@@ -52,7 +55,7 @@ const matchJQuerySelector = (node: CallExpression, matches: { value: string; loc
       if (selectorArg.loc === undefined || selectorArg.loc === null) {
         log.warn('Could not find location for jQuery selector')
       } else {
-        matches.push({ value: selectorArg.value, loc: selectorArg.loc })
+        matches.push({ value: selectorArg.raw ?? selectorArg.value, loc: selectorArg.loc })
       }
     }
   }

@@ -39,7 +39,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { resolvePath, setPath } from './utils'
+import { getIndependentElemIDs, resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
 const log = logger(module)
@@ -358,17 +358,9 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
   if (changes.every(change => !isOrderChange(change))) {
     return changes
   }
-  // The sort here is to make sure a change of inner values in list items
-  // will appear after the change of the item itself.
-  const sortedChanges = _.sortBy(changes, change => change.id.getFullNameParts())
-  let lastId = sortedChanges[0].id
-  return sortedChanges.filter(change => {
-    const skip = lastId.isParentOf(change.id)
-    if (!skip) {
-      lastId = change.id
-    }
-    return !skip
-  })
+  // filter out nested changes if their top level change is already included
+  const relevantIds = new Set(getIndependentElemIDs(changes.map(change => change.id)).map(id => id.getFullName()))
+  return changes.filter(change => relevantIds.has(change.id.getFullName()))
 }
 
 /**

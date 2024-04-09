@@ -31,6 +31,8 @@ export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 export type BaseLogger = {
   log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
   assignTags(logTags?: LogTags): void
+  verifyLogCount(): boolean
+  initLogCount(): void
 }
 
 export type GlobalTags = {
@@ -113,6 +115,8 @@ export const logger = (
   tags?: LogTags,
 ): Logger => {
   const baseLogger = baseLoggerRepo(namespace, tags)
+  const baseCount = baseLogger.verifyLogCount
+  const baseInitLogCount =
   const baseLog = baseLogger.log
 
   return addLogMethods(
@@ -129,6 +133,7 @@ export const logger = (
 
         baseLog(level, ...rest)
       },
+      verifyLogCount: (): boolean => baseCount()
     }),
   )
 }

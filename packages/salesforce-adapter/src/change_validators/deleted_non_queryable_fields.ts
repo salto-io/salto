@@ -54,8 +54,8 @@ const createNonQueryableFieldsWarning = ({
 }): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
-  message: `The type of this instance (${apiNameSync(instance.getTypeSync())}) has inaccessible fields. Deploying the instance may be interpreted as deleting these fields.`,
-  detailedMessage: `The following fields were not readable/queryable by the user who last fetched this workspace. As a result, these fields are seen as empty, and when they are deployed their values will be erased in the target environment: ${fields.join(',')}`,
+  message: 'Inaccessible fields may lead to field deletion.',
+  detailedMessage: `Some fields were not readable or queryable by the user who last fetched this workspace. As a result, these fields appear to have no value. Deploying these fields will cause their value in the service to be erased. The affected fields are: ${fields.join(',')}`,
 })
 
 /**

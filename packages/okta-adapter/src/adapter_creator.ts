@@ -46,7 +46,7 @@ import { getAdminUrl } from './client/admin'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig } = configUtils
 
 const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
@@ -70,27 +70,21 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): OktaConfig => {
-  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+  const apiDefinitions = mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions,
   ) as OktaSwaggerApiConfig
 
-  const privateApiDefinitions = configUtils.mergeWithDefaultConfig(
+  const privateApiDefinitions = mergeWithDefaultConfig(
     DEFAULT_CONFIG[PRIVATE_API_DEFINITIONS_CONFIG],
     config?.value.privateApiDefinitions,
   ) as OktaDuckTypeApiConfig
 
   const fetch = _.defaults({}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG])
 
-  const client = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG[CLIENT_CONFIG] ?? {},
-    config?.value?.client,
-  ) as OktaClientConfig
+  const client = mergeWithDefaultConfig(DEFAULT_CONFIG[CLIENT_CONFIG] ?? {}, config?.value?.client) as OktaClientConfig
 
-  const deploy = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
-    config?.value?.deploy,
-  ) as OktaDeployConfig
+  const deploy = mergeWithDefaultConfig(DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {}, config?.value?.deploy) as OktaDeployConfig
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)

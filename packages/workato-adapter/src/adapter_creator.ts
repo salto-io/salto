@@ -32,7 +32,7 @@ import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
@@ -42,12 +42,12 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
   const configValue = config?.value ?? {}
   const defaultConfig = getDefaultConfig(configValue.enableDeploySupport)
-  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+  const apiDefinitions = mergeWithDefaultConfig(
     defaultConfig.apiDefinitions,
     config?.value.apiDefinitions,
   ) as configUtils.AdapterDuckTypeApiConfig
 
-  const fetch = configUtils.mergeWithDefaultConfig(defaultConfig.fetch, config?.value.fetch) as WorkatoFetchConfig
+  const fetch = mergeWithDefaultConfig(defaultConfig.fetch, config?.value.fetch) as WorkatoFetchConfig
 
   const adapterConfig: { [K in keyof Required<WorkatoConfig>]: WorkatoConfig[K] } = {
     client: configValue.client,

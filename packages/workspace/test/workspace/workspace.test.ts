@@ -5063,10 +5063,42 @@ describe('listElementsDependenciesInWorkspace', () => {
     b: 'bbb',
     c: 'ccc',
   })
+  const typeWithFields = new ObjectType({
+    elemID: new ElemID('salesforce', 'typeWithFields'),
+  })
+  const fieldA = new Field(typeWithFields, 'myField', BuiltinTypes.NUMBER)
+  const fieldB = new Field(typeWithFields, 'myFieldB', new ListType(BuiltinTypes.STRING))
+  typeWithFields.fields = { myField: fieldA, myFieldB: fieldB }
+  const unrelatedFieldC = new Field(
+    new ObjectType({ elemID: new ElemID('salesforce', 'random') }),
+    'unrelatedField',
+    BuiltinTypes.BOOLEAN,
+  )
+  const instWithTypeAndFieldRefs = new InstanceElement('instWithTypeAndFieldRefs', new TypeReference(type1.elemID), {
+    fields: {
+      a: new ReferenceExpression(fieldA.elemID),
+      b: new ReferenceExpression(fieldB.elemID),
+    },
+    unrelatedField: new ReferenceExpression(unrelatedFieldC.elemID),
+    myType: new ReferenceExpression(typeWithFields.elemID),
+  })
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    const elements = [type1, type2, instWithRef, instNoRefs, instWithNestedPathRef, instWithMissingRef, initialInst]
+    const elements = [
+      type1,
+      type2,
+      instWithRef,
+      instNoRefs,
+      instWithNestedPathRef,
+      instWithMissingRef,
+      initialInst,
+      typeWithFields,
+      fieldA,
+      fieldB,
+      instWithTypeAndFieldRefs,
+      unrelatedFieldC,
+    ]
     workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
       '': {
         naclFiles: await naclFilesSource(
@@ -5125,7 +5157,7 @@ describe('listElementsDependenciesInWorkspace', () => {
       [type1.elemID.createNestedID('field', 'c').getFullName()]: [],
     })
   })
-  it('should stop iterating when encoutinering a missing referenc and return missing elemdIDs recursively', async () => {
+  it('should stop iterating when encoutinering a missing reference and return missing elemdIDs recursively', async () => {
     const topLevelMissing = new ElemID('salesforce', 'someType', 'instance', 'missing')
     const nestedMissingElemId = new ElemID('salesforce', 'missingType', 'instance', 'misisng2')
     instWithNestedPathRef.value.a.a = new ReferenceExpression(nestedMissingElemId)
@@ -5136,5 +5168,20 @@ describe('listElementsDependenciesInWorkspace', () => {
       envToListFrom: 'default',
     })
     expect(res.missing).toEqual([topLevelMissing, nestedMissingElemId])
+  })
+  it('should ignore additional dependencies for nested ids if their parent is already a dependency', async () => {
+    const res = await listElementsDependenciesInWorkspace({
+      workspace,
+      elemIDsToFind: [instWithTypeAndFieldRefs.elemID],
+      elemIDsToSkip: [instNoRefs.elemID],
+      envToListFrom: 'default',
+    })
+
+    expect(res.dependencies).toEqual({
+      [instWithTypeAndFieldRefs.elemID.getFullName()]: [unrelatedFieldC.elemID, typeWithFields.elemID],
+      [typeWithFields.elemID.getFullName()]: [],
+      [unrelatedFieldC.elemID.getFullName()]: [],
+    })
+    expect(res.missing).toEqual([])
   })
 })

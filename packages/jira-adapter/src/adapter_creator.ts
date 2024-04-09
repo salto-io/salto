@@ -34,7 +34,7 @@ import { weakReferenceHandlers } from './weak_references'
 
 const log = logger(module)
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
-const { validateClientConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => config.value as Credentials
@@ -67,7 +67,7 @@ const adapterConfigFromConfig = (
   config: Readonly<InstanceElement> | undefined,
   defaultConfig: JiraConfig,
 ): JiraConfig => {
-  const configWithoutFetch = configUtils.mergeWithDefaultConfig(
+  const configWithoutFetch = mergeWithDefaultConfig(
     _.omit(defaultConfig, 'fetch'),
     _.omit(config?.value ?? {}, 'fetch'),
   )

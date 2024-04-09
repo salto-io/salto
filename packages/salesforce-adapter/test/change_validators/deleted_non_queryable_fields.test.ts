@@ -146,7 +146,7 @@ describe('deletedNonQueryableFields', () => {
           {
             elemID: getChangeData(changes[0]).elemID,
             severity: 'Warning',
-            message: expect.stringContaining('SomeType'),
+            message: 'Inaccessible fields may lead to field deletion.',
             detailedMessage: expect.stringContaining('SomeField'),
           },
         ])

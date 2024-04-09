@@ -33,7 +33,7 @@ import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
@@ -52,7 +52,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZuoraConfig => {
-  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+  const apiDefinitions = mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions,
   ) as ZuoraApiConfig

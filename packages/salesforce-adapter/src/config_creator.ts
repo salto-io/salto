@@ -17,8 +17,11 @@
 import {
   BuiltinTypes,
   ConfigCreator,
+  CORE_ANNOTATIONS,
+  createRestriction,
   ElemID,
   InstanceElement,
+  ListType,
 } from '@salto-io/adapter-api'
 import {
   createDefaultInstanceFromType,
@@ -181,19 +184,38 @@ export const configWithCPQ = new InstanceElement(
 
 const optionsElemId = new ElemID(constants.SALESFORCE, 'configOptionsType')
 
-type ConfigOptionsType = {
+const CPQ_MANAGED_PACKAGE = 'sbaa, SBQQ (CPQ)'
+
+const MANAGED_PACKAGES = [CPQ_MANAGED_PACKAGE] as const
+
+type ManagedPackage = (typeof MANAGED_PACKAGES)[number]
+
+export type SalesforceConfigOptionsType = {
   cpq?: boolean
+  managedPackages?: ManagedPackage[]
 }
 
-export const optionsType = createMatchingObjectType<ConfigOptionsType>({
-  elemID: optionsElemId,
-  fields: {
-    cpq: { refType: BuiltinTypes.BOOLEAN },
-  },
-})
+export const optionsType =
+  createMatchingObjectType<SalesforceConfigOptionsType>({
+    elemID: optionsElemId,
+    fields: {
+      cpq: { refType: BuiltinTypes.BOOLEAN },
+      managedPackages: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: MANAGED_PACKAGES,
+            enforce_value: true,
+          }),
+          [CORE_ANNOTATIONS.DESCRIPTION]:
+            'Names of managed packages to fetch into the environment [Learn more](https://help.salto.io/en/articles/9164974-extending-your-salesforce-configuration-with-managed-packages)',
+        },
+      },
+    },
+  })
 const isOptionsTypeInstance = (
   instance: InstanceElement,
-): instance is InstanceElement & { value: ConfigOptionsType } => {
+): instance is InstanceElement & { value: SalesforceConfigOptionsType } => {
   if (instance.refType.elemID.isEqual(optionsElemId)) {
     return true
   }
@@ -213,7 +235,10 @@ export const getConfig = async (
   if (options === undefined || !isOptionsTypeInstance(options)) {
     return defaultConf
   }
-  if (options.value.cpq === true) {
+  if (
+    options.value.cpq === true ||
+    options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)
+  ) {
     return configWithCPQ
   }
   return defaultConf

@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2020 Salto Labs Ltd.
+ *                      Copyright 2024 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
 
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'confluence-adapter',
-  displayName: 'confluence-adapter',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
-  coverageThreshold: {
-    global: {
-      branches: 89,
-      functions: 88,
-      lines: 96,
-      statements: 97,
-    },
-  },
+import { assertValue } from '../../src/definitions/transformation_utils'
+
+describe('Adjust utils', () => {
+  describe('assertValue', () => {
+    it('should return the value if it is an object', () => {
+      const value = { key: 'value' }
+      expect(assertValue(value)).toEqual(value)
+    })
+
+    it('should throw an error if the value is not an object', () => {
+      expect(() => assertValue('not an object')).toThrow()
+    })
+  })
 })

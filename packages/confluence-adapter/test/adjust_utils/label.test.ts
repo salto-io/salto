@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-import { adjustLabelsToIdsFunc } from '../src/definitions/adjust_utils'
+import { adjustLabelsToIdsFunc } from '../../src/definitions/transformation_utils'
 
-describe('Adjust utils', () => {
+describe('label transformation utils', () => {
   describe('adjustLabelsToIdsFunc', () => {
-    it('should return the same item if labels is not an array', () => {
+    it('should return the same value if labels is not an array', () => {
       const item = {
         typeName: 'mockType',
         context: {},
         value: { labels: 'not an array' },
       }
-      expect(adjustLabelsToIdsFunc(item)).toEqual(item)
+      expect(adjustLabelsToIdsFunc(item).value).toEqual(item.value)
     })
 
-    it('should return the same item if labels is empty', () => {
+    it('should return the same value if labels is empty', () => {
       const item = {
         typeName: 'mockType',
         context: {},
         value: { labels: [] },
       }
-      expect(adjustLabelsToIdsFunc(item)).toEqual(item)
+      expect(adjustLabelsToIdsFunc(item).value).toEqual(item.value)
     })
 
-    it('should return the item with labels as ids', () => {
+    it('should return the value with labels as ids', () => {
       const item = {
         typeName: 'mockType',
         context: {},

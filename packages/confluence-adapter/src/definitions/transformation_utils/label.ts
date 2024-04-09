@@ -13,25 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { assertValue } from './generic'
 
-const assertValue = (value: unknown): Record<string, unknown> => {
-  if (!lowerdashValues.isPlainRecord(value)) {
-    throw new Error('Can not deploy when the value is not an object')
-  }
-  return value
-}
-
+/**
+ * AdjustFunction that converts labels object array to ids array.
+ */
 export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
   const value = assertValue(item.value)
   const labels = _.get(value, 'labels')
   if (_.isEmpty(labels) || !Array.isArray(labels)) {
-    return { ...item, value }
+    return { value }
   }
   return {
-    ...item,
     value: {
       ...value,
       labels: labels.map(label => label.id),

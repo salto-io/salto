@@ -816,8 +816,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(change, lookupFunc, async (element, getLookUpName, elementsSource) =>
-              resolveValues(element, getLookUpName, elementsSource, true),
+          : resolveChangeElement(
+              change,
+              lookupFunc,
+              async (element, getLookUpName, elementsSource) =>
+                resolveValues(element, getLookUpName, elementsSource, true),
+              this.elementsSource,
             ),
       )
       .toArray()

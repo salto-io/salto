@@ -598,6 +598,10 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
 
     const file = allStaticFilesPaths.get(path.getFullName())
     if (file !== undefined) {
+      if (file.isTemplate) {
+        // TODO: Move to adapter-components
+        // return templateExpressionToStaticFile(value, file.filepath)
+      }
       const content = file.encoding === 'binary' ? value : Buffer.from(value, file.encoding)
       return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })
     }

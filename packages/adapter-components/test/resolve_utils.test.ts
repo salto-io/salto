@@ -33,6 +33,7 @@ import {
   TemplateExpression,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, ResolveValuesFunc, restoreValues } from '@salto-io/adapter-utils'
+import { templateExpressionToStaticFile } from '@salto-io/parser/src/utils'
 import { resolveValues, resolveChangeElement, createChangeElementResolver } from '../src/resolve_utils'
 import { fileContent, getName, mockInstance, regValue, valueFile, valueRef } from './utils'
 
@@ -56,6 +57,7 @@ describe('resolve utils func', () => {
         arrayValues: { refType: new ListType(BuiltinTypes.STRING) },
         mapValues: { refType: new MapType(BuiltinTypes.STRING) },
         fileValue: { refType: BuiltinTypes.STRING },
+        templateFileValue: { refType: BuiltinTypes.STRING },
         objValue: { refType: new ObjectType({ elemID: new ElemID('salesforce', 'nested') }) },
       },
     })
@@ -75,12 +77,27 @@ describe('resolve utils func', () => {
     })
 
     const firstRef = new InstanceElement('first', refType, { from: 'Milano', to: 'Minsk', obj: { a: 1 } })
+
+    const templateFileValue = templateExpressionToStaticFile(
+      new TemplateExpression({
+        parts: [
+          'Well, you made a long journey from ',
+          refTo(firstRef, 'from'),
+          ' to ',
+          refTo(firstRef, 'to'),
+          ', Rochelle Rochelle',
+        ],
+      }),
+      'test',
+    )
+
     const instance = new InstanceElement(
       'instance',
       element,
       {
         name: instanceName,
         fileValue: valueFile,
+        templateFileValue,
         refValue: valueRef,
         objValue: new ReferenceExpression(firstRef.elemID.createNestedID('obj'), firstRef.value.obj, firstRef),
         into: new TemplateExpression({
@@ -192,6 +209,17 @@ describe('resolve utils func', () => {
         expect(resolvedInstance.value.mapValues.regValue).toEqual(regValue)
         expect(resolvedInstance.value.mapValues.valueRef).toEqual(regValue)
         expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
+        expect(resolvedInstance.value.templateFileValue).toEqual(
+          new TemplateExpression({
+            parts: [
+              'Well, you made a long journey from ',
+              refTo(firstRef, 'from'),
+              ' to ',
+              refTo(firstRef, 'to'),
+              ', Rochelle Rochelle',
+            ],
+          }),
+        )
         expect(resolvedInstance.value.objValue).toEqual(firstRef.value.obj)
       })
 

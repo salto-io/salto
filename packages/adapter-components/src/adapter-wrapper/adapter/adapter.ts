@@ -33,7 +33,7 @@ import {
   DependencyChanger,
   TypeMap,
 } from '@salto-io/adapter-api'
-import { logDuration, restoreChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import { Client } from '../../client/client_creator'
@@ -70,6 +70,7 @@ import {
   ResolveReferenceIndexNames,
   ResolveReferenceSerializationStrategyLookup,
 } from '../../definitions/system/api'
+import { restoreChangeElement } from '../../restore_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

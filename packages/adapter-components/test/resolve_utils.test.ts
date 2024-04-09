@@ -32,9 +32,11 @@ import {
   StaticFile,
   TemplateExpression,
 } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, ResolveValuesFunc, restoreValues } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, ResolveValuesFunc } from '@salto-io/adapter-utils'
 import { templateExpressionToStaticFile } from '@salto-io/parser/src/utils'
 import { resolveValues, resolveChangeElement, createChangeElementResolver } from '../src/resolve_utils'
+import { restoreValues } from '../src/restore_utils'
+
 import { fileContent, getName, mockInstance, regValue, valueFile, valueRef } from './utils'
 
 describe('resolve utils func', () => {
@@ -232,6 +234,7 @@ describe('resolve utils func', () => {
         expect(restoredInstance.value.arrayValues[1]).toBeInstanceOf(ReferenceExpression)
         expect(restoredInstance.value.mapValues.valueRef).toBeInstanceOf(ReferenceExpression)
         expect(restoredInstance.value.fileValue).toBeInstanceOf(StaticFile)
+        expect(restoredInstance.value.templateFileValue).toBeInstanceOf(StaticFile)
         expect(restoredInstance.value.into).toBeInstanceOf(TemplateExpression)
       })
     })

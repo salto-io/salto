@@ -33,13 +33,11 @@ import {
   ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
+import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
-  filter,
-  logDuration,
+  resolveChangeElement,
   restoreChangeElement,
-  safeJsonStringify,
-} from '@salto-io/adapter-utils'
-import { resolveChangeElement } from '@salto-io/adapter-components'
+} from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'

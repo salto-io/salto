@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import axios from 'axios'
 import {
   BuiltinTypes,
   ElemID,
@@ -79,16 +80,14 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
     client_secret: clientSecret,
     code,
   }
-  const res = await fetch('https://api.intercom.io/auth/eagle/token', {
-    // TODO SVH: use other options than fetch? like axios?
-    method: 'POST',
+  const httpClient = axios.create({
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body, null, 2),
   })
+  const res = await httpClient.post('https://api.intercom.io/auth/eagle/token', body)
   // eslint-disable-next-line camelcase
-  const { access_token } = await res.json()
+  const { access_token } = res.data
   return {
     accessToken: access_token,
   }

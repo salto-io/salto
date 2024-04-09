@@ -59,7 +59,8 @@ describe('data account specific values validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].message).toEqual("field has a missing ID and therefore it can't be deployed")
+      expect(changeErrors[0].message).toEqual("Can't deploy field with missing ID")
+      expect(changeErrors[0].detailedMessage).toContain('In order to deploy field,')
     })
 
     it('should have ChangeError when deploying an instance with internalId that is ACCOUNT_SPECIFIC_VALUE', async () => {
@@ -72,7 +73,8 @@ describe('data account specific values validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].message).toEqual("field has a missing ID and therefore it can't be deployed")
+      expect(changeErrors[0].message).toEqual("Can't deploy field with missing ID")
+      expect(changeErrors[0].detailedMessage).toContain('In order to deploy field,')
     })
 
     it('should have ChangeError on nested field with internalId that is ACCOUNT_SPECIFIC_VALUE', async () => {
@@ -87,7 +89,8 @@ describe('data account specific values validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].message).toEqual("field.nested has a missing ID and therefore it can't be deployed")
+      expect(changeErrors[0].message).toEqual("Can't deploy field with missing ID")
+      expect(changeErrors[0].detailedMessage).toContain('In order to deploy field.nested,')
     })
 
     it('should not have ChangeError if a field with ACCOUNT_SPECIFIC_VALUE was not changed', async () => {

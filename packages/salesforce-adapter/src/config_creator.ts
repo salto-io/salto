@@ -208,7 +208,7 @@ export const optionsType =
             enforce_value: true,
           }),
           [CORE_ANNOTATIONS.DESCRIPTION]:
-            'You can choose to add managed packages e.g. sbaa, SBQQ (CPQ)',
+            'Names of managed packages to fetch into the environment [Learn more](https://help.salto.io/en/articles/9164974-extending-your-salesforce-configuration-with-managed-packages)',
         },
       },
     },

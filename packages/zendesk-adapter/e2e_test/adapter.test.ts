@@ -309,6 +309,10 @@ describe('Zendesk adapter E2E', () => {
         name,
         idsToElements: {},
         matchBrandSubdomain: () => brand,
+        config: {
+          javascriptStrategy: 'greedy',
+          javascriptDigitAmount: 6,
+        },
       })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()

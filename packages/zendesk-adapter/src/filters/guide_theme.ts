@@ -16,30 +16,31 @@
 import {
   AdditionChange,
   Change,
+  CORE_ANNOTATIONS,
+  Element,
+  Field,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceElement,
   isModificationChange,
+  isObjectType,
   isReferenceExpression,
+  MapType,
   ModificationChange,
   SaltoElementError,
   SaltoError,
   StaticFile,
-  Element,
-  isObjectType,
-  Field,
-  MapType,
-  CORE_ANNOTATIONS,
-  ReferenceExpression,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource, inspectValue, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues, values } from '@salto-io/lowerdash'
+import { parserUtils } from '@salto-io/parser'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
+import { FETCH_CONFIG, isGuideThemesEnabled, Themes } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME,
   THEME_FILE_TYPE_NAME,
@@ -52,10 +53,13 @@ import { create } from './guide_themes/create'
 import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
+import {
+  createHandlebarTemplateExpression,
+  createHtmlTemplateExpression,
+  createJavascriptTemplateExpression,
+  TemplateEngineCreator,
+} from './template_engines/creator'
 import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
-import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
-import { parseHtmlPotentialReferences } from './template_engines/html_parser'
-import { extractGreedyIdsFromScripts } from './template_engines/javascript_extractor'
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
@@ -69,73 +73,42 @@ export type ThemeDirectory = {
   folders: Record<string, ThemeDirectory>
 }
 
-const createTemplateParts = ({
+const createTemplateExpression = ({
   filePath,
   content,
   idsToElements,
   matchBrandSubdomain,
+  config,
 }: {
   filePath: string
   content: string
   idsToElements: Record<string, InstanceElement>
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
-}): void => {
-  if (filePath.endsWith('.hbs')) {
-    try {
-      const potentialReferences = parseHandlebarPotentialReferences(content)
-      const handlebarReferences = potentialReferences.map(ref =>
-        idsToElements[ref.value] !== undefined
-          ? { value: new ReferenceExpression(idsToElements[ref.value].elemID, idsToElements[ref.value]), loc: ref.loc }
-          : ref,
-      )
-      if (handlebarReferences.length > 0) {
-        log.info('Found the following references in file %s in the theme: %o', filePath, handlebarReferences)
-      }
-      const { urls, scripts } = parseHtmlPotentialReferences(content, {
+  config: Themes
+}): string | TemplateExpression => {
+  try {
+    let createTemplateExpressionFunc: TemplateEngineCreator
+    if (filePath.endsWith('.hbs')) {
+      createTemplateExpressionFunc = createHandlebarTemplateExpression
+    } else if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
+      createTemplateExpressionFunc = createHtmlTemplateExpression
+    } else if (filePath.endsWith('.js')) {
+      createTemplateExpressionFunc = createJavascriptTemplateExpression
+    } else {
+      return content
+    }
+    return createTemplateExpressionFunc(
+      content,
+      {
+        idsToElements,
         matchBrandSubdomain,
-        instancesById: idsToElements,
-        enableMissingReferences: false,
-      })
-      if (urls.length > 0 && urls.filter(url => typeof url.value !== 'string').length > 0) {
-        log.info('Found the following URLs file %s in the theme: %o', filePath, urls)
-      }
-      const scriptsWithReferences = scripts.map(script => ({
-        value: extractGreedyIdsFromScripts(idsToElements, script.value),
-        loc: script.loc,
-      }))
-      if (
-        scriptsWithReferences.length > 0 &&
-        scriptsWithReferences.filter(script => typeof script.value !== 'string').length > 0
-      ) {
-        log.info('Found the following script references in file %s in the theme: %o', filePath, urls)
-      }
-    } catch (e) {
-      log.warn('Error parsing references in file %s, %o', filePath, e)
-    }
-  }
-  if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
-    try {
-      const { urls } = parseHtmlPotentialReferences(content, {
-        matchBrandSubdomain,
-        instancesById: idsToElements,
-        enableMissingReferences: false,
-      })
-      if (urls.length > 0 && urls.filter(url => typeof url.value !== 'string').length > 0) {
-        log.info('Found the following URLs file %s in the theme: %o', filePath, urls)
-      }
-    } catch (e) {
-      log.warn('Error parsing references in file %s, %o', filePath, e)
-    }
-  }
-  if (filePath.endsWith('.js')) {
-    try {
-      const greedyIds = extractGreedyIdsFromScripts(idsToElements, content)
-      if (typeof greedyIds !== 'string') {
-        log.info('Found the following script references in file %s in the theme: %o', filePath, greedyIds)
-      }
-    } catch (e) {
-      log.warn('Error parsing references in file %s, %o', filePath, e)
-    }
+        enableMissingReferences: false, // Starting with false, to gain confidence in the feature
+      },
+      config,
+    )
+  } catch (e) {
+    log.warn('Error parsing references in file %s, %o', filePath, e)
+    return content
   }
 }
 
@@ -145,12 +118,14 @@ export const unzipFolderToElements = async ({
   name,
   idsToElements,
   matchBrandSubdomain,
+  config,
 }: {
   buffer: Buffer
   currentBrandName: string
   name: string
   idsToElements: Record<string, InstanceElement>
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
+  config: Themes
 }): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
@@ -173,10 +148,20 @@ export const unzipFolderToElements = async ({
       // It's a file
       const filepath = `${ZENDESK}/themes/brands/${currentBrandName}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
-      createTemplateParts({ filePath: fullPath, content: content.toString(), idsToElements, matchBrandSubdomain }) // Only logging for now
+      const templateExpression = createTemplateExpression({
+        filePath: fullPath,
+        content: content.toString(),
+        idsToElements,
+        matchBrandSubdomain,
+        config,
+      })
+      const staticFile =
+        typeof templateExpression === 'string'
+          ? new StaticFile({ filepath, content })
+          : parserUtils.templateExpressionToStaticFile(templateExpression, filepath)
       currentDir.files[naclCase(firstPart)] = {
         filename: fullPath,
-        content: new StaticFile({ filepath, content }),
+        content: staticFile,
       }
       return
     }
@@ -373,6 +358,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
             name: theme.value.name,
             idsToElements,
             matchBrandSubdomain,
+            config: config[FETCH_CONFIG].guide?.themes || {
+              javascriptStrategy: 'greedy',
+              javascriptDigitAmount: 6,
+            },
           })
           theme.value.root = themeElements
         } catch (e) {

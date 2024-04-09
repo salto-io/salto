@@ -83,7 +83,7 @@ describe('extractDomainsAndFieldsFromScripts', () => {
   })
 
   const matchBrandSubdomain = (url: string): InstanceElement | undefined => {
-    if (url === 'https://brand.com') {
+    if (url.includes('https://brand.com')) {
       return brand
     }
     return undefined

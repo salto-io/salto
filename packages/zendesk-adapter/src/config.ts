@@ -73,8 +73,19 @@ export type IdLocator = {
   type: string[]
 }
 
+export type Themes =
+  | {
+      javascriptStrategy: 'greedy'
+      javascriptDigitAmount: number
+    }
+  | {
+      javascriptStrategy: 'prefix'
+      javascriptPrefix: string
+    }
+
 export type Guide = {
   brands: string[]
+  themes?: Themes
   themesForBrands?: string[]
 }
 
@@ -2838,6 +2849,33 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
   },
 })
 
+const ThemesType = createMatchingObjectType<Themes>({
+  elemID: new ElemID(ZENDESK, 'ThemeType'),
+  fields: {
+    javascriptStrategy: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    javascriptPrefix: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    javascriptDigitAmount: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const GuideType = createMatchingObjectType<Guide>({
   elemID: new ElemID(ZENDESK, 'GuideType'),
   fields: {
@@ -2846,6 +2884,9 @@ const GuideType = createMatchingObjectType<Guide>({
       annotations: {
         _required: true,
       },
+    },
+    themes: {
+      refType: ThemesType,
     },
     themesForBrands: {
       refType: new ListType(BuiltinTypes.STRING),

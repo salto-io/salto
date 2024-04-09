@@ -81,7 +81,7 @@ describe('adapter', () => {
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'intercom.article',
-          'intercom.article.instance.3780722_Fetching_Your_Configuration_Data@usss', // TODO: Adjust parent ref in elemId once the filter is merged
+          'intercom.article.instance.Getting_Started_Fetching_Your_Configuration_Data@susss',
           'intercom.collection',
           'intercom.collection.instance.Getting_Started@s',
           'intercom.data_attribute',
@@ -116,12 +116,12 @@ describe('adapter', () => {
           'intercom.ticket_type.instance.Feature_Request@s',
           'intercom.ticket_type.instance.Tracker_Tickets@s',
           'intercom.ticket_type_attribute',
-          'intercom.ticket_type_attribute.instance.1__default_description_',
-          'intercom.ticket_type_attribute.instance.1__default_title_',
-          'intercom.ticket_type_attribute.instance.2__default_description_',
-          'intercom.ticket_type_attribute.instance.2__default_title_',
-          'intercom.ticket_type_attribute.instance.3__default_description_',
-          'intercom.ticket_type_attribute.instance.3__default_title_',
+          'intercom.ticket_type_attribute.instance.Customer_Request__default_description_@suuuu',
+          'intercom.ticket_type_attribute.instance.Customer_Request__default_title_@suuuu',
+          'intercom.ticket_type_attribute.instance.Feature_Request__default_description_@suuuu',
+          'intercom.ticket_type_attribute.instance.Feature_Request__default_title_@suuuu',
+          'intercom.ticket_type_attribute.instance.Tracker_Tickets__default_description_@suuuu',
+          'intercom.ticket_type_attribute.instance.Tracker_Tickets__default_title_@suuuu',
           'intercom.ticket_type_attribute__input_options',
         ])
 
@@ -130,7 +130,9 @@ describe('adapter', () => {
 
         // Article
         const article = instances.find(
-          e => e.elemID.getFullName() === 'intercom.article.instance.3780722_Fetching_Your_Configuration_Data@usss',
+          e =>
+            e.elemID.getFullName() ===
+            'intercom.article.instance.Getting_Started_Fetching_Your_Configuration_Data@susss',
         )
         expect(article?.value).toEqual(
           expect.objectContaining({
@@ -296,13 +298,14 @@ describe('adapter', () => {
         expect(
           ticketType?.value?.ticket_type_attributes.map((e: ReferenceExpression) => e.elemID.getFullName()),
         ).toEqual([
-          'intercom.ticket_type_attribute.instance.2__default_title_',
-          'intercom.ticket_type_attribute.instance.2__default_description_',
+          'intercom.ticket_type_attribute.instance.Customer_Request__default_title_@suuuu',
+          'intercom.ticket_type_attribute.instance.Customer_Request__default_description_@suuuu',
         ])
 
         // Ticket Type Attribute
         const ticketTypeAttribute = instances.find(
-          e => e.elemID.getFullName() === 'intercom.ticket_type_attribute.instance.2__default_title_',
+          e =>
+            e.elemID.getFullName() === 'intercom.ticket_type_attribute.instance.Feature_Request__default_title_@suuuu',
         )
         expect(ticketTypeAttribute?.value).toEqual(
           expect.objectContaining({
@@ -323,7 +326,7 @@ describe('adapter', () => {
         )
         expect(ticketTypeAttribute?.value?.ticket_type_id).toBeInstanceOf(ReferenceExpression)
         expect(ticketTypeAttribute?.value?.ticket_type_id?.elemID.getFullName()).toEqual(
-          'intercom.ticket_type.instance.Customer_Request@s',
+          'intercom.ticket_type.instance.Feature_Request@s',
         )
       })
     })

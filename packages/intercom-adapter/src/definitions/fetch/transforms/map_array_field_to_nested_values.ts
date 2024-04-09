@@ -15,10 +15,8 @@
  */
 import { Value } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-
-const { isPlainObject } = values
+import { validateItemValue } from './validators'
 
 type FieldAdjustment = {
   fieldName: string
@@ -30,12 +28,13 @@ type FieldAdjustment = {
 export const mapArrayFieldToNestedValues =
   (fieldAdjustments: FieldAdjustment[]): definitions.AdjustFunction =>
   ({ value }) => {
-    if (!isPlainObject(value)) {
-      throw new Error(`Unexpected item value: ${value}, expected object`)
-    }
-
+    validateItemValue(value)
     const mapField = ({ fieldName, fromField, nestedField, fallbackValue }: FieldAdjustment): Value => {
-      const fieldToMap = _.get(value, fromField ?? fieldName, [])
+      const fieldToMap = _.get(value, fromField ?? fieldName)
+      if (fieldToMap === undefined) {
+        return {}
+      }
+
       if (!Array.isArray(fieldToMap)) {
         throw new Error(`Unexpected item value for mapNestedArrayToFields: ${fieldToMap}, expected array`)
       }

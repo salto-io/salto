@@ -13,6 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Value } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
+import _ from 'lodash'
+import { validateItemValue } from './validators'
 
-export { mapArrayFieldToNestedValues } from './map_array_field_to_nested_values'
-export { replaceFieldWithNestedValue } from './replace_field_with_nested_value'
+export const replaceFieldWithNestedValue =
+  ({
+    fieldName,
+    nestedField,
+    fallbackValue,
+  }: {
+    fieldName: string
+    nestedField: string
+    fallbackValue: Value
+  }): definitions.AdjustFunction =>
+  ({ value }) => {
+    validateItemValue(value)
+
+    return {
+      value: {
+        ...value,
+        [fieldName]: _.get(value, `${fieldName}.${nestedField}`, fallbackValue),
+      },
+    }
+  }

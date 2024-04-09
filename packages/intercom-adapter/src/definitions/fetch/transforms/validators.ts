@@ -13,32 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Value } from '@salto-io/adapter-api'
-import { definitions } from '@salto-io/adapter-components'
+
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 
 const { isPlainObject } = values
 
-export const replaceFieldWithNestedValue =
-  ({
-    fieldName,
-    nestedField,
-    fallbackValue,
-  }: {
-    fieldName: string
-    nestedField: string
-    fallbackValue: Value
-  }): definitions.AdjustFunction =>
-  ({ value }) => {
-    if (!isPlainObject(value)) {
-      throw new Error(`Unexpected item value: ${value}, expected object`)
-    }
-
-    return {
-      value: {
-        ...value,
-        [fieldName]: _.get(value, `${fieldName}.${nestedField}`, fallbackValue),
-      },
-    }
+export function validateItemValue(value: unknown): asserts value is object {
+  if (!isPlainObject(value)) {
+    throw new Error(`Unexpected item value: ${safeJsonStringify(value)}, expected object`)
   }
+}

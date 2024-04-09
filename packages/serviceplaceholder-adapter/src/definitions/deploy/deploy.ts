@@ -44,15 +44,7 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
             context: deployment.helpers.DEFAULT_CONTEXT,
           },
         },
-        customizations: {
-          add: [
-            {
-              request: {
-                transformation: {},
-              },
-            },
-          ],
-        },
+        customizations: {},
       },
       changeGroupId: deployment.grouping.selfGroup,
     },

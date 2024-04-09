@@ -17,9 +17,34 @@ import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { ClientOptions, PaginationOptions } from '../types'
 
-const { cursorPagination, scrollingPagination } = fetchUtils.request.pagination
+type PaginationFunction = definitions.PaginationFunction
+const { cursorPagination } = fetchUtils.request.pagination
 
-// TODO adjust - replace with the correct pagination function(s), remove unneeded ones
+export const scrollingPagination = ({
+  scrollingParam,
+  stopCondition,
+}: {
+  scrollingParam: string
+  stopCondition?: (data: unknown) => boolean
+}): PaginationFunction => {
+  const nextPageScrollingPages: PaginationFunction = ({ currentParams, responseData }) => {
+    const scrollParam = _.get(responseData, scrollingParam)
+    if (typeof scrollParam !== 'string' || stopCondition?.(responseData)) {
+      return []
+    }
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          [scrollingParam]: scrollParam,
+          // This is a workaround to to handle our pagination mechanism which expects each pagination request to have a unique query param.
+          // It is not the case for the scrolling param - which is the same for all requests (until the stop condition is met).
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    ]
+  }
+  return nextPageScrollingPages
+}
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {

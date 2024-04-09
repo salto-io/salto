@@ -25,7 +25,7 @@ import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
 import {
-  createReferenceExpresion,
+  createReferenceExpression,
   unescapeTemplateMarker,
   addValuePromiseWatcher,
   registerRange,
@@ -66,7 +66,7 @@ const consumeWord: Consumer<string> = context => {
   }
 }
 
-const defaultStringTokenTranformFunc = (context: ParseContext, token: Required<Token>): string => {
+const defaultStringTokenTransformFunc = (context: ParseContext, token: Required<Token>): string => {
   try {
     return JSON.parse(`"${unescapeTemplateMarker(token.text)}"`)
   } catch (e) {
@@ -87,18 +87,18 @@ const defaultStringTokenTranformFunc = (context: ParseContext, token: Required<T
 const createSimpleStringValue = (
   context: ParseContext,
   tokens: Required<Token>[],
-  transformFunc: (context: ParseContext, token: Required<Token>) => string = defaultStringTokenTranformFunc,
+  transformFunc: (context: ParseContext, token: Required<Token>) => string = defaultStringTokenTransformFunc,
 ): string => tokens.map(token => transformFunc(context, token)).join('')
 
 const createTemplateExpressions = (
   context: ParseContext,
   tokens: Required<Token>[],
-  transformFunc: (context: ParseContext, token: Required<Token>) => string = defaultStringTokenTranformFunc,
+  transformFunc: (context: ParseContext, token: Required<Token>) => string = defaultStringTokenTransformFunc,
 ): TemplateExpression =>
   createTemplateExpression({
     parts: tokens.map(token => {
       if (token.type === TOKEN_TYPES.REFERENCE) {
-        const ref = createReferenceExpresion(token.value)
+        const ref = createReferenceExpression(token.value)
         return ref instanceof IllegalReference ? token.text : ref
       }
       return transformFunc(context, token)
@@ -353,7 +353,7 @@ const consumeFunctionOrReferenceOrBoolean: Consumer<Value> = context => {
     }
   }
   return {
-    value: createReferenceExpresion(firstToken.value),
+    value: createReferenceExpression(firstToken.value),
     range: { start, end: positionAtEnd(firstToken) },
   }
 }
@@ -440,11 +440,11 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
 export const consumeValue = (
   context: ParseContext,
   idPrefix?: ElemID,
-  valueSeperator: string = TOKEN_TYPES.NEWLINE,
+  valueSeparator: string = TOKEN_TYPES.NEWLINE,
 ): ConsumerReturnType<Value> => {
-  // We force the value to be in the same line if the seperator is a newline by
-  // ignoring newlines if the seperator is not a new line...
-  const token = context.lexer.peek(valueSeperator !== TOKEN_TYPES.NEWLINE)
+  // We force the value to be in the same line if the separator is a newline by
+  // ignoring newlines if the separator is not a new line...
+  const token = context.lexer.peek(valueSeparator !== TOKEN_TYPES.NEWLINE)
   switch (token?.type) {
     case TOKEN_TYPES.OCURLY:
       return consumeObject(context, idPrefix)
@@ -458,7 +458,7 @@ export const consumeValue = (
       return consumeFunctionOrReferenceOrBoolean(context)
     case TOKEN_TYPES.NUMBER:
       return consumeNumber(context)
-    case valueSeperator:
+    case valueSeparator:
       return consumeMissingValue(context)
     default:
       if (token !== undefined) {

@@ -52,6 +52,7 @@ import {
   isMetadataObjectType,
   MetadataObjectType,
   createInstanceElement,
+  isCustom,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -110,7 +111,7 @@ import createMissingInstalledPackagesInstancesFilter from './filters/create_miss
 import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
-import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
+import organizationWideDefaults from './filters/organization_settings'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
@@ -161,8 +162,8 @@ import nestedInstancesAuthorInformation from './filters/author_information/neste
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
+  CUSTOM_FIELD,
   CUSTOM_OBJECT,
-  FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
@@ -178,6 +179,7 @@ import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
+const { isDefined } = values
 
 const log = logger(module)
 
@@ -417,10 +419,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [
-      FLOW_METADATA_TYPE,
-      FLOW_DEFINITION_METADATA_TYPE,
-    ],
+    metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {
@@ -537,6 +536,24 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
+  private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
+    await listMetadataObjects(this.client, CUSTOM_FIELD)
+    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const fieldsFromElementsSource = await awu(
+      await this.elementsSource.getAll(),
+    )
+      .filter(isCustomObjectSync)
+      .flatMap((obj) => Object.values(obj.fields))
+      .filter((field) => isCustom(apiNameSync(field)))
+      .toArray()
+    return new Set(
+      fieldsFromElementsSource
+        .filter((field) => !listedFields.has(apiNameSync(field) ?? ''))
+        .map((field) => apiNameSync(field.parent))
+        .filter(isDefined),
+    )
+  }
+
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
@@ -558,6 +575,8 @@ export default class SalesforceAdapter implements AdapterOperations {
           fetchParams,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
+          customObjectsWithDeletedFields:
+            await this.getCustomObjectsWithDeletedFields(),
         })
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({
@@ -921,7 +940,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     return _(metadataElements)
       .groupBy(metadataTypeSync)
-      .mapValues((elems) => elems.map((e) => e.elemID))
+      .mapValues((elements) => elements.map((e) => e.elemID))
       .value()
   }
 

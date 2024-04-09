@@ -39,7 +39,7 @@ describe('resolutionAndPriorityToTypeName', () => {
   })
 })
 describe('JiraFieldReferenceResolver', () => {
-  it('should use fall back when there are no serializationStrategy or jiraSerializationStrategy ', () => {
+  it('should use fall back when there is no serializationStrategy ', () => {
     const res = new JiraFieldReferenceResolver({
       src: { field: 'value', parentTypes: ['WorkflowProperty'] },
       target: { typeContext: 'workflowStatusPropertiesContext' },

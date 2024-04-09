@@ -52,7 +52,7 @@ const getAffectedType = (change: Change): ObjectType | undefined => {
 }
 
 const isMetadataType = (objectType: ObjectType): boolean => {
-  // Artifical Types
+  // Artificial Types
   if (objectType.annotations[METADATA_TYPE] === undefined) {
     return false
   }

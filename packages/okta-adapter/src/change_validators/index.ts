@@ -45,6 +45,7 @@ import {
   OktaConfig,
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
+import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
 
 const { createCheckDeploymentBasedOnConfigValidator, getDefaultChangeValidators, createChangeValidator } =
   deployment.changeValidators
@@ -76,6 +77,7 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     appUrls: appUrlsValidator,
     profileMappingRemoval: profileMappingRemovalValidator,
     brandRemoval: brandRemovalValidator,
+    dynamicOSVersion: dynamicOSVersionFeatureValidator,
   }
 
   return createChangeValidator({

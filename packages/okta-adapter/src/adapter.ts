@@ -35,11 +35,13 @@ import {
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
+  definitions,
   elements as elementUtils,
   client as clientUtils,
   combineElementFixers,
   resolveChangeElement,
   fetch as fetchUtils,
+  openapi,
 } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -97,7 +99,7 @@ import { createFixElementFunctions } from './fix_elements'
 
 const { awu } = collections.asynciterable
 
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllInstances } = elementUtils.swagger
 const { getAllElements } = elementUtils.ducktype
 const { computeGetArgs } = fetchUtils.resource
 const { findDataField } = elementUtils
@@ -220,7 +222,7 @@ export default class OktaAdapter implements AdapterOperations {
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
-    return generateTypes(OKTA, this.userConfig[API_DEFINITIONS_CONFIG])
+    return openapi.generateTypes(OKTA, this.userConfig[API_DEFINITIONS_CONFIG])
   }
 
   @logDuration('generating instances from service')
@@ -308,7 +310,7 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
-  private async handleClassicEngineOrg(): Promise<configUtils.ConfigChangeSuggestion | undefined> {
+  private async handleClassicEngineOrg(): Promise<definitions.ConfigChangeSuggestion | undefined> {
     const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
     const isClassicOrg = isClassicOrgByConfig ?? (await isClassicEngineOrg(this.client))
     if (isClassicOrg) {
@@ -350,7 +352,7 @@ export default class OktaAdapter implements AdapterOperations {
     const configChanges = (getElementsConfigChanges ?? []).concat(classicOrgConfigSuggestion ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
-        ? configUtils.getUpdatedCofigFromConfigChanges({
+        ? definitions.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,

@@ -61,6 +61,7 @@ import {
   FetchElements,
   INSTANCE_SUFFIXES,
   OptionalFeatures,
+  ProfileRelatedMetadataType,
   SalesforceConfig,
 } from '../types'
 import {
@@ -86,6 +87,7 @@ import {
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
+  PROFILE_RELATED_METADATA_TYPES,
   SALESFORCE,
   STATUS,
   UNIX_TIME_ZERO_STRING,
@@ -726,11 +728,14 @@ export const ensureSafeFilterFetch =
   }: {
     fetchFilterFunc: Required<Filter>['onFetch']
     warningMessage: string
-    filterName: keyof OptionalFeatures
     config: FilterContext
+    filterName?: keyof OptionalFeatures
   }): Required<Filter>['onFetch'] =>
   async (elements) => {
-    if (!config.fetchProfile.isFeatureEnabled(filterName)) {
+    if (
+      filterName !== undefined &&
+      !config.fetchProfile.isFeatureEnabled(filterName)
+    ) {
       log.debug('skipping %s filter due to configuration', filterName)
       return undefined
     }
@@ -974,3 +979,10 @@ export const getMostRecentFileProperties = (
 
 export const getFLSProfiles = (config: SalesforceConfig): string[] =>
   config.client?.deploy?.flsProfiles ?? DEFAULT_FLS_PROFILES
+
+export const isProfileRelatedMetadataType = (
+  typeName: string,
+): typeName is ProfileRelatedMetadataType =>
+  PROFILE_RELATED_METADATA_TYPES.includes(
+    typeName as ProfileRelatedMetadataType,
+  )

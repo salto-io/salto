@@ -1,168 +1,228 @@
 {
-	"folders": [
+  "folders": [
+    {
+      "name": "playground",
+      "path": "playground",
+    },
+    {
+      "name": "adapter-api",
+      "path": "packages/adapter-api",
+    },
+    {
+      "name": "adapter-components",
+      "path": "packages/adapter-components",
+    },
+    {
+      "name": "adapter-utils",
+      "path": "packages/adapter-utils",
+    },
+    {
+      "name": "aws-utils",
+      "path": "packages/aws-utils",
+    },
+    {
+      "name": "cli",
+      "path": "packages/cli",
+    },
+    {
+      "name": "core",
+      "path": "packages/core",
+    },
+    {
+      "name": "dag",
+      "path": "packages/dag",
+    },
+    {
+      "name": "dummy-adapter",
+      "path": "packages/dummy-adapter",
+    },
+    {
+      "name": "e2e-credentials-store",
+      "path": "packages/e2e-credentials-store",
+    },
+    {
+      "name": "file",
+      "path": "packages/file",
+    },
+    {
+      "name": "jira-adapter",
+      "path": "packages/jira-adapter",
+    },
+    {
+      "name": "lang-server",
+      "path": "packages/lang-server",
+    },
+    {
+      "name": "logging",
+      "path": "packages/logging",
+    },
+    {
+      "name": "lowerdash",
+      "path": "packages/lowerdash",
+    },
+    {
+      "name": "netsuite-adapter",
+      "path": "packages/netsuite-adapter",
+    },
+    {
+      "name": "okta-adapter",
+      "path": "packages/okta-adapter",
+    },
+    {
+      "name": "parser",
+      "path": "packages/parser",
+    },
+    {
+      "name": "persistent-pool",
+      "path": "packages/persistent-pool",
+    },
+    {
+      "name": "salesforce-adapter",
+      "path": "packages/salesforce-adapter",
+    },
+    {
+      "name": "sap-adapter",
+      "path": "packages/sap-adapter",
+    },
+    {
+      "name": "test-utils",
+      "path": "packages/test-utils",
+    },
+    {
+      "name": "vscode",
+      "path": "packages/vscode",
+    },
+    {
+      "name": "workato-adapter",
+      "path": "packages/workato-adapter",
+    },
+    {
+      "name": "workspace",
+      "path": "packages/workspace",
+    },
+    {
+      "name": "zendesk-adapter",
+      "path": "packages/zendesk-adapter",
+    },
+    {
+      "name": "zuora-billing-adapter",
+      "path": "packages/zuora-billing-adapter",
+    },
+    {
+      "name": "stripe-adapter",
+      "path": "packages/stripe-adapter",
+    },
+    {
+      "name": "serviceplaceholder-adapter",
+      "path": "packages/serviceplaceholder-adapter",
+    },
 		{
-			"name": "playground",
-			"path": "playground"
-		},
-		{
-			"name": "adapter-api",
-			"path": "packages/adapter-api"
-		},
-		{
-			"name": "adapter-components",
-			"path": "packages/adapter-components"
-		},
-		{
-			"name": "adapter-utils",
-			"path": "packages/adapter-utils"
-		},
-		{
-			"name": "aws-utils",
-			"path": "packages/aws-utils"
-		},
-		{
-			"name": "cli",
-			"path": "packages/cli"
-		},
-		{
-			"name": "core",
-			"path": "packages/core"
-		},
-		{
-			"name": "dag",
-			"path": "packages/dag"
-		},
-		{
-			"name": "dummy-adapter",
-			"path": "packages/dummy-adapter"
-		},
-		{
-			"name": "e2e-credentials-store",
-			"path": "packages/e2e-credentials-store"
-		},
-		{
-			"name": "file",
-			"path": "packages/file"
-		},
-		{
-			"name": "jira-adapter",
-			"path": "packages/jira-adapter"
-		},
-		{
-			"name": "lang-server",
-			"path": "packages/lang-server"
-		},
-		{
-			"name": "logging",
-			"path": "packages/logging"
-		},
-		{
-			"name": "lowerdash",
-			"path": "packages/lowerdash"
-		},
-		{
-			"name": "netsuite-adapter",
-			"path": "packages/netsuite-adapter"
-		},
-		{
-			"name": "okta-adapter",
-			"path": "packages/okta-adapter"
-		},
-		{
-			"name": "parser",
-			"path": "packages/parser"
-		},
-		{
-			"name": "persistent-pool",
-			"path": "packages/persistent-pool"
-		},
-		{
-			"name": "salesforce-adapter",
-			"path": "packages/salesforce-adapter"
-		},
-		{
-			"name": "sap-adapter",
-			"path": "packages/sap-adapter"
-		},
-                {
-                        "name": "test-utils",
-                        "path": "packages/test-utils"
-                },
-		{
-			"name": "vscode",
-			"path": "packages/vscode"
-		},
-		{
-			"name": "workato-adapter",
-			"path": "packages/workato-adapter"
-		},
-		{
-			"name": "workspace",
-			"path": "packages/workspace"
-		},
-		{
-			"name": "zendesk-adapter",
-			"path": "packages/zendesk-adapter"
-		},
-		{
-			"name": "zuora-billing-adapter",
-			"path": "packages/zuora-billing-adapter"
-		},
-		{
-			"name": "stripe-adapter",
-			"path": "packages/stripe-adapter"
-		},
-		{
-			"name": "serviceplaceholder-adapter",
-			"path": "packages/serviceplaceholder-adapter"
+				"name": "google-workspace-adapter",
+				"path": "packages/google-workspace-adapter"
+    },
+    {
+			"name": "confluence-adapter",
+			"path": "packages/confluence-adapter"
 		}
-	],
-	"settings": {
-		"files.exclude": {
-			"**/dist": true,
-			"**/node_modules": true
-		},
-		"typescript.tsdk": "node_modules/typescript/lib",
-		"cSpell.words": [
-			"apidevtools",
-			"asynciterable",
-			"AUTONUMBER",
-			"camelcase",
-			"customizer",
-			"DATETIME",
-			"ducktype",
-			"ENCRYPTEDTEXT",
-			"jsforce",
-			"LONGTEXTAREA",
-			"lowerdash",
-			"multienv",
-			"MULTIPICKLIST",
-			"nacl",
-			"naclcase",
-			"nearley",
-			"netsuite",
-			"openapi",
-			"orientdb",
-			"orientjs",
-			"petstore",
-			"PICKLIST",
-			"regexes",
-			"requestable",
-			"requestretry",
-			"resolvables",
-			"RICHTEXTAREA",
-			"SERVICEID",
-			"sfdc",
-			"sfdx",
-			"sobject",
-			"sobjects",
-			"staticfile",
-			"subresources",
-			"unaliased",
-			"undeployable",
-			"upsert",
-			"workato",
-			"zuora"
-		]
-	}
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/dist": true,
+      "**/node_modules": true,
+    },
+    "typescript.tsdk": "vscode/node_modules/typescript/lib",
+    "cSpell.words": [
+      "activateable",
+      "aggregatable",
+      "apidevtools",
+      "Ashkelon",
+      "asynciterable",
+      "AUTONUMBER",
+      "autoresponse",
+      "camelcase",
+      "combobox",
+      "complexvalue",
+      "createable",
+      "customizer",
+      "datasource",
+      "DATETIME",
+      "ducktype",
+      "encryptedstring",
+      "ENCRYPTEDTEXT",
+      "ESOCKETTIMEDOUT",
+      "FILTERSCOPES",
+      "flexi",
+      "groupable",
+      "ISBLANK",
+      "jsforce",
+      "layoutable",
+      "LONGTEXTAREA",
+      "lowerdash",
+      "Marketo",
+      "mergeable",
+      "modstamp",
+      "multienv",
+      "MULTIPICKLIST",
+      "nacl",
+      "naclcase",
+      "nacls",
+      "nearley",
+      "netsuite",
+      "nillable",
+      "omni",
+      "openapi",
+      "orientdb",
+      "orientjs",
+      "permissionable",
+      "petstore",
+      "PICKLIST",
+      "picklists",
+      "plaintextarea",
+      "prefilterable",
+      "pricebook",
+      "queryability",
+      "readdirp",
+      "referencable",
+      "regexes",
+      "reparentable",
+      "replicateable",
+      "requestable",
+      "requestretry",
+      "resolvables",
+      "retrieveable",
+      "retryable",
+      "RICHTEXTAREA",
+      "sbaa",
+      "SBQQ",
+      "SCHEDULABLE",
+      "Scontrol",
+      "SERVICEID",
+      "servlet",
+      "sfdc",
+      "sfdx",
+      "sobject",
+      "sobjects",
+      "Soql",
+      "staticfile",
+      "staticresources",
+      "subflow",
+      "subresources",
+      "subtab",
+      "TIMENOW",
+      "triggerable",
+      "unaliased",
+      "undeletable",
+      "undeployable",
+      "undeployed",
+      "unfethced",
+      "unfiled",
+      "unpackaged",
+      "updateable",
+      "upsert",
+      "WEBLINK",
+      "whitespaces",
+      "workato",
+      "zuora",
+    ],
+  },
 }

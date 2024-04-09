@@ -91,6 +91,7 @@ import {
   FILTER_FUNC_NEXT_STEP,
   transformValuesSync,
   TransformFuncSync,
+  getIndependentElemIDs,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2802,6 +2803,31 @@ describe('Test utils.ts', () => {
     })
     it('should return true for a resolved reference expression', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, inst))).toBeTruthy()
+    })
+  })
+  describe('getIndependentElemIDs', () => {
+    it('should filter out any elemIDs that their parent is included in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const fieldElemID = elemID.createNestedID('field', 'fieldA')
+      const anotherElemID = new ElemID('salto', 'anotherType')
+      const res = getIndependentElemIDs([fieldElemID, elemID, anotherElemID])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([elemID, anotherElemID])
+    })
+    it('should filter out nested instance path if the top level instance is in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const instA = elemID.createNestedID('instance', 'inst')
+      const nested = instA.createNestedID('nested')
+      const res = getIndependentElemIDs([instA, elemID, nested])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([instA, elemID])
+    })
+    it('it should not filter out nested elemIDs if their parent is not included in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const anotherElemID = new ElemID('salto', 'anotherType', 'field', 'nestedField')
+      const res = getIndependentElemIDs([elemID, anotherElemID])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([elemID, anotherElemID])
     })
   })
 })

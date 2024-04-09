@@ -33,7 +33,7 @@ import elementsUrlFilter, {
 } from '../../src/filters/elements_url'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import * as ElementsUrlRetrieverModule from '../../src/elements_url_retreiver/elements_url_retreiver'
+import * as ElementsUrlRetrieverModule from '../../src/elements_url_retriever/elements_url_retriever'
 
 describe('elements url filter', () => {
   let filter: Filter
@@ -132,7 +132,7 @@ describe('elements url filter', () => {
     ).toBeUndefined()
   })
 
-  it('should not service url for unkown element', async () => {
+  it('should not service url for unknown element', async () => {
     connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
     const element = new ObjectType({
       elemID: new ElemID('salesforce', 'someType'),
@@ -143,19 +143,19 @@ describe('elements url filter', () => {
   })
 
   describe('when feature is throwing an error', () => {
-    const elementsUrlRetreiverSpy = jest.spyOn(
+    const elementsUrlRetrieverSpy = jest.spyOn(
       ElementsUrlRetrieverModule,
       'lightningElementsUrlRetriever',
     )
 
     beforeEach(() => {
-      elementsUrlRetreiverSpy.mockImplementation(() => {
+      elementsUrlRetrieverSpy.mockImplementation(() => {
         throw new Error()
       })
     })
 
     afterEach(() => {
-      elementsUrlRetreiverSpy.mockReset()
+      elementsUrlRetrieverSpy.mockReset()
     })
 
     it('should return a warning', async () => {

@@ -54,9 +54,9 @@ describe('cpq custom script filter', () => {
   let filter: FilterType
   let elements: Element[]
 
-  const mockCustomScriptElemenID = new ElemID(SALESFORCE, CPQ_CUSTOM_SCRIPT)
+  const mockCustomScriptElementID = new ElemID(SALESFORCE, CPQ_CUSTOM_SCRIPT)
   const mockCustomScriptObject = new ObjectType({
-    elemID: mockCustomScriptElemenID,
+    elemID: mockCustomScriptElementID,
     fields: {
       [CPQ_CONSUMPTION_RATE_FIELDS]: {
         refType: createRefToElmWithValue(Types.primitiveDataTypes.LongTextArea),
@@ -116,7 +116,7 @@ describe('cpq custom script filter', () => {
     randomField: 'stayLikeThis',
   }
   const mockAfterOnFetchCustomScriptInstance = new InstanceElement(
-    'afterOnFetchcustomScriptInst',
+    'afterOnFetchCustomScriptInst',
     mockCustomScriptObject,
     afterOnFetchCustomScriptValues,
   )

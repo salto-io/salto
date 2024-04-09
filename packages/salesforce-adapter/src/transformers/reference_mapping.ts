@@ -65,7 +65,7 @@ import {
   CPQ_GROUP_FIELDS,
   CPQ_QUOTE_LINE_FIELDS,
   DEFAULT_OBJECT_TO_API_MAPPING,
-  SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
+  SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING,
   CPQ_TESTED_OBJECT,
   CPQ_PRICE_SCHEDULE,
@@ -149,12 +149,12 @@ const ReferenceSerializationStrategyLookup: Record<
     serialize: async ({ ref, path }) => {
       const relativeApiName = await safeApiName({ ref, path, relative: true })
       return (
-        _.invert(SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ??
+        _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ??
         relativeApiName
       )
     },
     lookup: (val, context) => {
-      const mappedValue = SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING[val]
+      const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
       return context !== undefined
         ? [context, mappedValue].join(API_NAME_SEPARATOR)
         : mappedValue

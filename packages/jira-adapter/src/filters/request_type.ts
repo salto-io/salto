@@ -61,6 +61,15 @@ type workflowStatusesType = statusType[]
 const WORKFLOW_STATUS_TYPE = Joi.array().items(STATUS_TYPE)
 const isWorkFlowStatuses = createSchemeGuard<workflowStatusesType>(WORKFLOW_STATUS_TYPE)
 
+type RequestTypeAdditionResponse = {
+  serviceDeskId: string
+}
+const REQUEST_TYPE_ADDITION_RESPONSE = Joi.object({
+  serviceDeskId: Joi.string().required(),
+}).unknown(true)
+
+const isRequestTypeAdditionResponse = createSchemeGuard<RequestTypeAdditionResponse>(REQUEST_TYPE_ADDITION_RESPONSE)
+
 const FIELDS_TO_IGNORE = ['issueView', 'requestForm', 'workflowStatuses', 'avatarId', 'groupIds']
 
 const deployWorkflowStatuses = async (
@@ -210,12 +219,16 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(typeFixedChanges, async change => {
       if (isAdditionOrModificationChange(change)) {
         if (isAdditionChange(change)) {
-          await defaultDeployChange({
+          const res = await defaultDeployChange({
             change,
             client,
             apiDefinitions: jsmApiDefinitions,
             fieldsToIgnore: FIELDS_TO_IGNORE,
           })
+          if (!isRequestTypeAdditionResponse(res)) {
+            throw new Error('Failed to deploy request type due to bad response')
+          }
+          change.data.after.value.serviceDeskId = res.serviceDeskId
         }
         await deployRequestTypeLayout(change, client, REQUEST_FORM_TYPE)
         await deployRequestTypeLayout(change, client, ISSUE_VIEW_TYPE)

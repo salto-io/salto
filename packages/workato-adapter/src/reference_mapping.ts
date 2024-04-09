@@ -21,9 +21,10 @@ import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, REC
 import { getFolderPath, getRootFolderID } from './utils'
 
 type WorkatoReferenceSerializationStrategyName = 'serializeInner' | 'folderPath'
-type WorkatoFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
-  WorkatoSerializationStrategy?: WorkatoReferenceSerializationStrategyName
-}
+type WorkatoFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
+  never,
+  WorkatoReferenceSerializationStrategyName
+>
 
 const { toNestedTypeName } = fetchUtils.element
 
@@ -40,7 +41,6 @@ const WorkatoReferenceSerializationStrategyLookup: Record<
       return isInstanceElement(inner.value) ? inner.value.value : inner.value
     },
     lookup: referenceUtils.basicLookUp,
-    lookupIndexName: 'serializeInner',
   },
   folderPath: {
     serialize: async ({ ref }) => ({
@@ -48,18 +48,18 @@ const WorkatoReferenceSerializationStrategyLookup: Record<
       rootId: getRootFolderID(ref.value),
     }),
     lookup: referenceUtils.basicLookUp,
-    lookupIndexName: 'folderPath',
   },
 }
 
-export class WorkatoFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<WorkatoReferenceSerializationStrategyName> {
+export class WorkatoFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+  never,
+  WorkatoReferenceSerializationStrategyName
+> {
   constructor(def: WorkatoFieldReferenceDefinition) {
-    super({ src: def.src, sourceTransformation: def.sourceTransformation ?? 'asString' })
-    this.serializationStrategy =
-      WorkatoReferenceSerializationStrategyLookup[
-        def.WorkatoSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-      ]
-    this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
+    super(
+      { ...def, sourceTransformation: def.sourceTransformation ?? 'asString' },
+      WorkatoReferenceSerializationStrategyLookup,
+    )
   }
 }
 
@@ -106,14 +106,14 @@ export const deployResolveRules: WorkatoFieldReferenceDefinition[] = [
   // While importing zip by rlm we need to get all resolved data from the connection to the recipe config
   {
     src: { field: 'account_id', parentTypes: [RECIPE_CONFIG_TYPE] },
-    WorkatoSerializationStrategy: 'serializeInner',
+    serializationStrategy: 'serializeInner',
     target: { type: CONNECTION_TYPE },
   },
   // This rule is needed while deploying using rlm
   // Importing zip by rlm should get the root folder path
   {
     src: { field: 'folder_id', parentTypes: [RECIPE_CONFIG_TYPE, CONNECTION_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE] },
-    WorkatoSerializationStrategy: 'folderPath',
+    serializationStrategy: 'folderPath',
     target: { type: FOLDER_TYPE },
   },
   ...fieldNameToTypeMappingDefs,

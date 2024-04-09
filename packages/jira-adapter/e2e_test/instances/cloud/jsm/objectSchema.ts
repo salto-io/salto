@@ -18,7 +18,7 @@ import { Values } from '@salto-io/adapter-api'
 
 export const createObjectSchmaValues = (name: string): Values => ({
   name,
-  objectSchemaKey: 'TEST',
+  objectSchemaKey: name.substring(15).toUpperCase(), // Key is max 10 letters long. we'll use the last 10 letters of the name.
   status: 'Ok',
   description: 'test description',
   properties: {

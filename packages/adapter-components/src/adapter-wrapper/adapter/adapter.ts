@@ -39,8 +39,8 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { Client } from '../../client/client_creator'
 import { AdapterParams } from './types'
 import { Filter, FilterResult, filterRunner } from '../../filter_utils'
-import { getUpdatedConfigFromConfigChanges } from '../../config'
 import {
+  getUpdatedConfigFromConfigChanges,
   APIDefinitionsOptions,
   ResolveClientOptionsType,
   ResolveCustomNameMappingOptionsType,
@@ -58,12 +58,18 @@ import {
   deployNotSupportedValidator,
   getDefaultChangeValidators,
 } from '../../deployment/change_validators'
-import { generateOpenApiTypes } from '../../fetch/element/openAPI/types'
+import { generateOpenApiTypes } from '../../openapi/type_elements/type_elements'
 import { generateLookupFunc } from '../../references'
 import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../deployment'
 import { createChangeElementResolver } from '../../resolve_utils'
 import { getChangeGroupIdsFuncWithDefinitions } from '../../deployment/grouping'
 import { combineDependencyChangers } from '../../deployment/dependency'
+import { FieldReferenceResolver, FieldReferenceDefinition } from '../../references/reference_mapping'
+import {
+  ResolveReferenceContextStrategiesType,
+  ResolveReferenceIndexNames,
+  ResolveReferenceSerializationStrategyLookup,
+} from '../../definitions/system/api'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -86,6 +92,16 @@ export class AdapterImpl<
   protected changeValidators: Record<string, ChangeValidator>
   protected dependencyChangers: DependencyChanger[]
   protected definitions: RequiredDefinitions<Options>
+  protected referenceResolver: (
+    def: FieldReferenceDefinition<
+      ResolveReferenceContextStrategiesType<Options>,
+      ResolveReferenceSerializationStrategyLookup<Options>
+    >,
+  ) => FieldReferenceResolver<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>,
+    ResolveReferenceIndexNames<Options>
+  >
 
   public constructor({
     adapterName,
@@ -98,6 +114,7 @@ export class AdapterImpl<
     getElemIdFunc,
     additionalChangeValidators,
     dependencyChangers,
+    referenceResolver,
   }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
@@ -131,6 +148,8 @@ export class AdapterImpl<
     }
     // TODO combine with infra changers after SALTO-5571
     this.dependencyChangers = dependencyChangers ?? []
+
+    this.referenceResolver = referenceResolver
   }
 
   @logDuration('generating types from swagger')
@@ -229,8 +248,10 @@ export class AdapterImpl<
       }
     }
 
-    // TODO SALTO-5406 allow passing in a custom fieldReferenceResolverCreator
-    const lookupFunc = generateLookupFunc(this.definitions.references?.rules ?? [])
+    const lookupFunc =
+      this.definitions.references === undefined
+        ? generateLookupFunc([])
+        : generateLookupFunc(this.definitions.references?.rules ?? [], def => this.referenceResolver(def))
 
     const changesToDeploy = instanceChanges.map(change => ({
       action: change.action,

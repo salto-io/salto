@@ -41,9 +41,10 @@ import { resolveUserSchemaRef } from './filters/expression_language'
 const { awu } = collections.asynciterable
 
 type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId'
+type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
-  referenceUtils.ReferenceSerializationStrategy
+  referenceUtils.ReferenceSerializationStrategy<OktaReferenceIndexName>
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   key: {
@@ -86,17 +87,21 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
   }),
 }
 
-type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<ReferenceContextStrategyName> & {
-  oktaSerializationStrategy?: OktaReferenceSerializationStrategyName
-}
+type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
+  ReferenceContextStrategyName,
+  OktaReferenceSerializationStrategyName
+>
 
-export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<ReferenceContextStrategyName> {
+export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+  ReferenceContextStrategyName,
+  OktaReferenceSerializationStrategyName,
+  OktaReferenceIndexName
+> {
   constructor(def: OktaFieldReferenceDefinition) {
-    super({ ...def, sourceTransformation: def.sourceTransformation ?? 'asString' })
-    this.serializationStrategy =
-      OktaReferenceSerializationStrategyLookup[
-        def.oktaSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-      ]
+    super(
+      { ...def, sourceTransformation: def.sourceTransformation ?? 'asString' },
+      OktaReferenceSerializationStrategyLookup,
+    )
   }
 }
 
@@ -191,7 +196,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'key', parentTypes: ['MultifactorEnrollmentPolicyAuthenticatorSettings'] },
-    oktaSerializationStrategy: 'key',
+    serializationStrategy: 'key',
     missingRefStrategy: 'typeAndValue',
     target: { type: AUTHENTICATOR_TYPE_NAME },
   },
@@ -268,7 +273,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'groupPushRule', parentTypes: [GROUP_PUSH_TYPE_NAME] },
-    oktaSerializationStrategy: 'mappingRuleId',
+    serializationStrategy: 'mappingRuleId',
     missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
   },
@@ -285,7 +290,7 @@ const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   userSchemaLookUpFunc,
-  // The second param is needed to resolve references by oktaSerializationStrategy
+  // The second param is needed to resolve references by serializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
 ]
 

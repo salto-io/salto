@@ -22,7 +22,13 @@ import {
   ReferenceExpression,
   Values,
 } from '@salto-io/adapter-api'
-import { TransformFuncSync, invertNaclCase, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
+import {
+  TransformFuncSync,
+  invertNaclCase,
+  mapKeysRecursive,
+  naclCase,
+  transformValuesSync,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
 import { DefQuery, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
@@ -38,7 +44,7 @@ import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/type
  */
 export const recursiveNaclCase = (value: Values, invert = false): Values => {
   const func = invert ? invertNaclCase : naclCase
-  return _.cloneDeepWith(value, val => (_.isPlainObject(val) ? _.mapKeys(val, (_v, k) => func(k)) : val))
+  return mapKeysRecursive(value, ({ key }) => func(key))
 }
 
 /**

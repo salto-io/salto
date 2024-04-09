@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { config } from '@salto-io/adapter-components'
+import { definitions as definitionsUtils } from '@salto-io/adapter-components'
 import {
   DEFAULT_API_DEFINITIONS,
   SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS,
@@ -157,7 +157,7 @@ const CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES = [
 ]
 
 export const CLOUD_SETTINGS: ProductSettings = {
-  defaultApiDefinitions: config.mergeWithDefaultConfig(
+  defaultApiDefinitions: definitionsUtils.mergeWithDefaultConfig(
     addTypeNameOverrides(DEFAULT_API_DEFINITIONS, CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES),
     CLOUD_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,

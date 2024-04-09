@@ -29,7 +29,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { openapi } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '../src/adapter_creator'
@@ -95,9 +95,9 @@ const getObjectDefTypes = (): Record<string, ObjectType> => {
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
-  const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (adapterName, config, schemasAndRefs) => {
+  const generateMockTypes: typeof openapi.generateTypes = async (adapterName, config, schemasAndRefs) => {
     if (schemasAndRefs !== undefined) {
-      return actual.elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
+      return actual.openapi.generateTypes(adapterName, config, schemasAndRefs)
     }
     return {
       allTypes: {
@@ -211,12 +211,9 @@ jest.mock('@salto-io/adapter-components', () => {
   }
   return {
     ...actual,
-    elements: {
-      ...actual.elements,
-      swagger: {
-        ...actual.elements.swagger,
-        generateTypes: jest.fn().mockImplementation(generateMockTypes),
-      },
+    openapi: {
+      ...actual.openapi,
+      generateTypes: jest.fn().mockImplementation(generateMockTypes),
     },
   }
 })
@@ -260,8 +257,8 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
 
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(2)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledTimes(2)
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
           ...DEFAULT_API_DEFINITIONS,
           supportedTypes: {
             ...DEFAULT_API_DEFINITIONS.supportedTypes,
@@ -373,8 +370,8 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
 
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledTimes(1)
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
           ...DEFAULT_API_DEFINITIONS,
           supportedTypes: {
             ...DEFAULT_API_DEFINITIONS.supportedTypes,
@@ -425,8 +422,8 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
 
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledTimes(1)
+        expect(adapterComponents.openapi.generateTypes).toHaveBeenCalledWith(ZUORA_BILLING, {
           ...DEFAULT_API_DEFINITIONS,
           supportedTypes: {
             ...DEFAULT_API_DEFINITIONS.supportedTypes,

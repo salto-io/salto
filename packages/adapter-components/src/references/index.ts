@@ -38,4 +38,5 @@ export {
   ExtendedReferenceTargetDefinition,
   LookupFunc,
   basicLookUp,
+  ReferenceIndexField,
 } from './reference_mapping'

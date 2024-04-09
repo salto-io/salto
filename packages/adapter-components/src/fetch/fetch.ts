@@ -18,8 +18,13 @@ import { ElemIdGetter, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ElementQuery } from './query'
-import { APIDefinitionsOptions, getNestedWithDefault, mergeWithDefault, queryWithDefault } from '../definitions'
-import { getUniqueConfigSuggestions } from '../elements/ducktype' // TODO move
+import {
+  APIDefinitionsOptions,
+  ConfigChangeSuggestion,
+  getNestedWithDefault,
+  mergeWithDefault,
+  queryWithDefault,
+} from '../definitions'
 import { getRequester } from './request/requester'
 import { createResourceManager } from './resource/resource_manager'
 import { getElementGenerator } from './element/element'
@@ -27,6 +32,9 @@ import { FetchElements } from './types'
 import { RequiredDefinitions } from '../definitions/system/types'
 
 const log = logger(module)
+
+export const getUniqueConfigSuggestions = (configSuggestions: ConfigChangeSuggestion[]): ConfigChangeSuggestion[] =>
+  _.uniqBy(configSuggestions, suggestion => `${suggestion.type}-${suggestion.value}-${suggestion.reason}`)
 
 /**
  * Helper function for the adapter fetch implementation:

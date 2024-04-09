@@ -163,6 +163,7 @@ describe('requestType filter', () => {
         }
         throw new Error('Err')
       })
+      connection.post.mockResolvedValueOnce({ status: 200, data: { serviceDeskId: '1010' } })
     })
     it('should deploy addition of a request type', async () => {
       const res = await filter.deploy([{ action: 'add', data: { after: requestTypeInstance } }])

@@ -95,7 +95,7 @@ const extractToStaticFile = async (
 }
 
 /**
- * Extract field value to static-resources for chosen intstances.
+ * Extract field value to static-resources for chosen instances.
  */
 const filter: LocalFilterCreator = () => ({
   name: 'valueToStaticFileFilter',

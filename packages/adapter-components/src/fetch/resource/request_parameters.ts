@@ -19,7 +19,7 @@ import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ClientGetWithPaginationParams } from '../../client'
-import { FetchRequestConfig, UrlParams, DependsOnConfig } from '../../config/request' // TODO move and change format
+import { FetchRequestConfig, UrlParams, DependsOnConfig } from '../../config_deprecated/request' // TODO move and change format
 import { replaceArgs } from '../request'
 import { findUnresolvedArgs } from '../request/utils'
 

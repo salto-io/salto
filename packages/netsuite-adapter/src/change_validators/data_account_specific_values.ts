@@ -104,7 +104,7 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     return {
       elemID: parent,
       severity: 'Error',
-      message: `${fieldName} has a missing ID and therefore it can't be deployed`,
+      message: "Can't deploy field with missing ID",
       detailedMessage: `The missing ID is replaced by Salto with 'ACCOUNT_SPECIFIC_VALUE'.
 In order to deploy ${fieldName}, please edit it in Salto and either replace 'ACCOUNT_SPECIFIC_VALUE' with the actual value in the environment you are deploying to or remove ${fieldName}.
 If you choose to remove it, after a successful deploy you can assign the correct value in the NetSuite UI.`,

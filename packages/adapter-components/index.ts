@@ -15,11 +15,9 @@
  */
 export * as auth from './src/auth'
 export * as client from './src/client'
-export * as config from './src/config'
 export * as credentials from './src/credentials'
 export * as definitions from './src/definitions'
 export * as deployment from './src/deployment'
-export * as elements from './src/elements'
 export * as fetch from './src/fetch'
 export * as filters from './src/filters'
 export * as filterUtils from './src/filter_utils'
@@ -31,3 +29,9 @@ export * from './src/references/weak_reference_handler'
 export * from './src/resolve_utils'
 export * from './src/references/get_references'
 export * from './src/adapter-wrapper'
+export * as openapi from './src/openapi'
+export * as soap from './src/soap'
+
+// TODO remove in SALTO-5538
+export * as config from './src/config_deprecated'
+export * as elements from './src/elements_deprecated'

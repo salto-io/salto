@@ -17,16 +17,19 @@
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceAdapter from '../index'
 import mockAdapter from './adapter'
 import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 import {
+  API_NAME,
   CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
+  FIELD_ANNOTATIONS,
+  UNIX_TIME_ZERO_STRING,
 } from '../src/constants'
 import { mockInstances, mockTypes } from './mock_elements'
 import {
@@ -35,21 +38,70 @@ import {
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
-import { mockFetchOpts } from './utils'
+import { createCustomObjectType, mockFetchOpts } from './utils'
 import { Types } from '../src/transformers/transformer'
 
 const { makeArray } = collections.array
 
 describe('Salesforce Fetch With Changes Detection', () => {
+  const OBJECT_WITH_DELETED_FIELD_NAME = 'ObjectWithDeletedField__c'
+  const UPDATED_OBJECT_NAME = 'Updated__c'
+  const NON_UPDATED_OBJECT_NAME = 'NonUpdated__c'
+
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let changedAtSingleton: InstanceElement
   beforeEach(async () => {
     changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+    const objectWithDeletedField = createCustomObjectType(
+      OBJECT_WITH_DELETED_FIELD_NAME,
+      {
+        fields: {
+          DeletedField__c: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [API_NAME]: 'DeletedField__c',
+            },
+          },
+        },
+      },
+    )
+    const nonUpdatedObject = createCustomObjectType(NON_UPDATED_OBJECT_NAME, {
+      fields: {
+        TestField__c: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            [API_NAME]: `${NON_UPDATED_OBJECT_NAME}.TestField__c`,
+          },
+        },
+      },
+    })
+    const updatedObject = createCustomObjectType(UPDATED_OBJECT_NAME, {
+      fields: {
+        TestField__c: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            [API_NAME]: `${UPDATED_OBJECT_NAME}.TestField__c`,
+          },
+        },
+      },
+    })
     const sourceElements = [
       ...Object.values(mockTypes),
       ...Types.getAllMissingTypes(),
       changedAtSingleton,
+      objectWithDeletedField,
+      nonUpdatedObject,
+      updatedObject,
     ]
     const elementsSource = buildElementsSourceFromElements(sourceElements)
     ;({ connection, adapter } = mockAdapter({
@@ -76,9 +128,8 @@ describe('Salesforce Fetch With Changes Detection', () => {
       CUSTOM_OBJECT,
     ] as const
     type RelatedType = (typeof RELATED_TYPES)[number]
-
-    const UPDATED_OBJECT_NAME = 'Updated__c'
-    const NON_UPDATED_OBJECT_NAME = 'NonUpdated__c'
+    // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
+    const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
 
     let retrieveRequest: RetrieveRequest
 
@@ -132,6 +183,16 @@ describe('Salesforce Fetch With Changes Detection', () => {
             type: CUSTOM_OBJECT,
             lastModifiedDate: '2023-11-01T00:00:00.000Z',
           }),
+          mockFileProperties({
+            fullName: OBJECT_WITH_DELETED_FIELD_NAME,
+            type: CUSTOM_OBJECT,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: NON_UPDATED_STANDARD_OBJECT,
+            type: CUSTOM_OBJECT,
+            lastModifiedDate: UNIX_TIME_ZERO_STRING,
+          }),
         ],
         FieldSet: [],
         Index: [],
@@ -170,6 +231,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
       changedAtSingleton.value[CUSTOM_OBJECT] = {
         [UPDATED_OBJECT_NAME]: '2023-11-06T00:00:00.000Z',
         [NON_UPDATED_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
+        [OBJECT_WITH_DELETED_FIELD_NAME]: '2023-11-02T00:00:00.000Z',
       }
     })
     it('should fetch only the updated CustomObject instances', async () => {
@@ -177,7 +239,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
       expect(retrieveRequest.unpackaged?.types).toIncludeSameMembers([
         {
           name: CUSTOM_OBJECT,
-          members: [UPDATED_OBJECT_NAME],
+          members: [UPDATED_OBJECT_NAME, OBJECT_WITH_DELETED_FIELD_NAME],
         },
       ])
     })

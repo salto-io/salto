@@ -16,11 +16,19 @@
 import { createSaltoElementErrorFromError, isSaltoElementError, isSaltoError } from '@salto-io/adapter-api'
 import { APIDefinitionsOptions, ApiDefinitions, ResolveCustomNameMappingOptionsType, UserConfig } from '../definitions'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
-import { FieldReferenceDefinition } from '../references'
+import { FieldReferenceDefinition, FieldReferenceResolver } from '../references'
 import { hideTypesFilterCreator } from './hide_types'
 import { defaultDeployFilterCreator } from './default_deploy'
 import { fieldReferencesFilterCreator } from './field_references'
 import { queryFilterCreator } from './query'
+import {
+  ResolveReferenceSerializationStrategyLookup,
+  ResolveReferenceContextStrategiesType,
+  ResolveReferenceIndexNames,
+} from '../definitions/system/api'
+import { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
+import { serviceUrlFilterCreator } from './service_url'
+import { addAliasFilterCreator } from './add_alias'
 
 /**
  * Filter creators of all the common filters
@@ -30,17 +38,34 @@ export const createCommonFilters = <
   Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
 >({
   referenceRules,
+  fieldReferenceResolverCreator,
 }: {
-  referenceRules?: FieldReferenceDefinition<never>[]
+  referenceRules?: FieldReferenceDefinition<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>
+  >[]
   config: Co
   definitions: ApiDefinitions<Options>
+  fieldReferenceResolverCreator?: (
+    def: FieldReferenceDefinition<
+      ResolveReferenceContextStrategiesType<Options>,
+      ResolveReferenceSerializationStrategyLookup<Options>
+    >,
+  ) => FieldReferenceResolver<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>,
+    ResolveReferenceIndexNames<Options>
+  >
 }): Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>> => ({
   // TODO SALTO-5421 finish upgrading filters to new def structure and add remaining shared filters
   hideTypes: hideTypesFilterCreator(),
-  // fieldReferencesFilter should run after all elements were created
-  fieldReferencesFilter: fieldReferencesFilterCreator(referenceRules),
+  // referencedInstanceNames and fieldReferencesFilter should run after all elements were created
+  fieldReferencesFilter: fieldReferencesFilterCreator(referenceRules, fieldReferenceResolverCreator),
   // referencedInstanceNames should run after fieldReferencesFilter
-  // referencedInstanceNames: referencedInstanceNamesFilterCreator(), // TODO add back after SALTO-5421
+  referencedInstanceNames: referencedInstanceNamesFilterCreator(),
+  serviceUrl: serviceUrlFilterCreator(),
+  addAlias: addAliasFilterCreator(),
+
   query: queryFilterCreator({}),
   // defaultDeploy should run after other deploy filters
   defaultDeploy: defaultDeployFilterCreator({

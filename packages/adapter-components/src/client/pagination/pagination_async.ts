@@ -106,7 +106,7 @@ class PromisesQueue {
     }
     const promise = singlePagePagination(pageArgs, additionalArgs)
     this.promises.push(promise)
-    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
+    log.trace(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
   }
 
   async dequeue(): Promise<PaginationResult> {
@@ -116,7 +116,7 @@ class PromisesQueue {
       log.error('No promises to dequeue from pagination queue')
       throw new Error('No promises to dequeue from pagination queue')
     }
-    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
+    log.trace(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
     return settledPromise
   }
 

@@ -123,7 +123,6 @@ export type OptionalFeatures = {
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
   fixRetrieveFilePaths?: boolean
-  organizationWideSharingDefaults?: boolean
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
@@ -467,7 +466,7 @@ export type MetadataConfigSuggestion = {
   reason?: string
 }
 
-export type RetrieveSizeConfigSuggstion = {
+export type RetrieveSizeConfigSuggestion = {
   type: typeof MAX_ITEMS_IN_RETRIEVE_REQUEST
   value: number
   reason?: string
@@ -476,7 +475,7 @@ export type RetrieveSizeConfigSuggstion = {
 export type ConfigChangeSuggestion =
   | DataManagementConfigSuggestions
   | MetadataConfigSuggestion
-  | RetrieveSizeConfigSuggstion
+  | RetrieveSizeConfigSuggestion
 
 export const isDataManagementConfigSuggestions = (
   suggestion: ConfigChangeSuggestion,
@@ -488,9 +487,9 @@ export const isMetadataConfigSuggestions = (
 ): suggestion is MetadataConfigSuggestion =>
   suggestion.type === 'metadataExclude'
 
-export const isRetrieveSizeConfigSuggstion = (
+export const isRetrieveSizeConfigSuggestion = (
   suggestion: ConfigChangeSuggestion,
-): suggestion is RetrieveSizeConfigSuggstion =>
+): suggestion is RetrieveSizeConfigSuggestion =>
   suggestion.type === MAX_ITEMS_IN_RETRIEVE_REQUEST
 
 export type FetchElements<T> = {
@@ -832,7 +831,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
-    organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
@@ -908,7 +906,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
     warningSettings: { refType: warningSettingsType },
     additionalImportantValues: {
-      // Exported type is downcasted to TypeElement
+      // Exported type is downcast to TypeElement
       refType: new ListType(importantValueType),
     },
   },
@@ -1061,3 +1059,6 @@ export type LastChangeDateOfTypesWithNestedInstances = {
 } & {
   [key in TypeWithNestedInstances]: string | undefined
 }
+
+export type ProfileRelatedMetadataType =
+  (typeof constants.PROFILE_RELATED_METADATA_TYPES)[number]

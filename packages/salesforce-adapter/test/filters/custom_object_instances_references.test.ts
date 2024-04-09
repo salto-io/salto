@@ -152,7 +152,7 @@ describe('Custom Object Instances References filter', () => {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
-          [LABEL]: 'detailfOfMaster',
+          [LABEL]: 'detailOfMaster',
           [API_NAME]: 'MasterDetailExample',
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,

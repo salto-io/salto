@@ -130,6 +130,9 @@ export const createUserFetchConfigType = <TCustomNameMappingOptions extends stri
       extendsParent: {
         refType: BuiltinTypes.BOOLEAN,
       },
+      useOldFormat: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
       extendSystemPartsDefinition: {
         refType: BuiltinTypes.BOOLEAN,
       },

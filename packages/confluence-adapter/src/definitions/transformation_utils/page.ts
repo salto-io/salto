@@ -19,37 +19,22 @@ import { assertValue } from './generic'
 
 const isNumber = (value: unknown): value is number => typeof value === 'number'
 
+/**
+ * AdjustFunction that increases the version number of a page for deploy modification change.
+ */
 export const increasePagesVersion: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = item => {
   const value = assertValue(item.value)
   const version = assertValue(value.version)
   const { number } = version
   if (!isNumber(number)) {
-    return { ...item, value }
+    return { value }
   }
   return {
-    ...item,
     value: {
       ...value,
       version: {
         ...version,
         number: number + 1,
-      },
-    },
-  }
-}
-
-export const updatePageVersion: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = item => {
-  const value = assertValue(item.value)
-  const version = assertValue(value.version)
-  const { number } = version
-  if (!isNumber(number)) {
-    return { ...item, value }
-  }
-  return {
-    ...item,
-    value: {
-      version: {
-        number,
       },
     },
   }

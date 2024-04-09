@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
-import { increasePagesVersion, updatePageVersion } from '../transformation_utils'
+import { increasePagesVersion } from '../transformation_utils'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -68,7 +68,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
               copyFromResponse: {
                 additional: {
-                  adjust: updatePageVersion,
+                  pick: ['version.number'],
                 },
               },
             },

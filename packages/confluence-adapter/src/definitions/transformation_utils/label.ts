@@ -18,6 +18,9 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { assertValue } from './generic'
 
+/**
+ * AdjustFunction that converts labels object array to ids array.
+ */
 export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
   const value = assertValue(item.value)
   const labels = _.get(value, 'labels')

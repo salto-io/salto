@@ -134,7 +134,14 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
     // order of precedence in case of overlaps: pagination defaults < endpoint < resource-specific request
     const mergedEndpointDef = _.merge({}, clientArgs, mergedRequestDef.endpoint)
 
-    const extractorCreator = (context: ContextParams): ItemExtractor => createExtractor({ ...requestDef, context }, typeName)
+    const extractorCreator = (context: ContextParams): ItemExtractor =>
+      createExtractor(
+        {
+          ...requestDef,
+          context: { ...requestDef.context, context },
+        },
+        typeName,
+      )
 
     const callArgs = mergedEndpointDef.omitBody
       ? _.pick(mergedEndpointDef, ['queryArgs', 'headers'])

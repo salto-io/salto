@@ -23,6 +23,17 @@ import { ResolveReferenceIndexNames, ResolveReferenceSerializationStrategyLookup
 
 const { makeArray } = collections.array
 
+export type FieldReferenceResolverCreator<Options extends APIDefinitionsOptions = {}> = (
+  def: FieldReferenceDefinition<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>
+  >,
+) => FieldReferenceResolver<
+  ResolveReferenceContextStrategiesType<Options>,
+  ResolveReferenceSerializationStrategyLookup<Options>,
+  ResolveReferenceIndexNames<Options>
+>
+
 /**
  * replace values with references based on a set of rules
  */
@@ -32,16 +43,7 @@ export const fieldReferencesFilterCreator =
       ResolveReferenceContextStrategiesType<Options>,
       ResolveReferenceSerializationStrategyLookup<Options>
     >[],
-    fieldReferenceResolverCreator?: (
-      def: FieldReferenceDefinition<
-        ResolveReferenceContextStrategiesType<Options>,
-        ResolveReferenceSerializationStrategyLookup<Options>
-      >,
-    ) => FieldReferenceResolver<
-      ResolveReferenceContextStrategiesType<Options>,
-      ResolveReferenceSerializationStrategyLookup<Options>,
-      ResolveReferenceIndexNames<Options>
-    >,
+    fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>,
   ): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions }) => ({
     name: 'fieldReferencesFilter',

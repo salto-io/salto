@@ -25,12 +25,20 @@ type FieldAdjustment = {
   fallbackValue: Value
 }
 
+/**
+ * Transform fields that contain array of objects to fields that contain array of values,
+ * where each value is a field of the object.
+ * Example:
+ * mapArrayFieldToNestedValues([{ fieldName: 'field1', fromField: 'inner', nestedField: 'nestedField1', fallbackValue: 'fallback1' ])
+ * will transform { field1: { inner: [{ nestedField1: 'value1' }, 'value2'] } } to { field1: ['value1', 'fallback1'] }
+ */
+
 export const mapArrayFieldToNestedValues =
   (fieldAdjustments: FieldAdjustment[]): definitions.AdjustFunction =>
   ({ value }) => {
     validateItemValue(value)
     const mapField = ({ fieldName, fromField, nestedField, fallbackValue }: FieldAdjustment): Value => {
-      const fieldToMap = _.get(value, fromField ?? fieldName)
+      const fieldToMap = _.get(value, fromField ? `${fieldName}.${fromField}` : fieldName)
       if (fieldToMap === undefined) {
         return {}
       }

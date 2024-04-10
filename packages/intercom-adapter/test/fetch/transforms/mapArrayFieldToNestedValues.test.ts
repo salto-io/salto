@@ -61,6 +61,17 @@ describe('mapArrayFieldToNestedValues', () => {
     })
   })
 
+  describe('When fromField is specified', () => {
+    it('Should return the object with the field mapped to the nested field', () => {
+      const fieldAdjustments = [
+        { fieldName: 'field1', fromField: 'inner', nestedField: 'nestedField1', fallbackValue: 'fallback1' },
+      ]
+      const value = { field1: { inner: [{ nestedField1: 'value1' }, 'value2'] } }
+      const result = mapArrayFieldToNestedValues(fieldAdjustments)({ ...generatedItem, value })
+      expect(result.value).toEqual({ field1: ['value1', 'fallback1'] })
+    })
+  })
+
   describe('When there are multiple field adjustments', () => {
     it('Should return the object with all the fields mapped to the nested fields', () => {
       const fieldAdjustments = [

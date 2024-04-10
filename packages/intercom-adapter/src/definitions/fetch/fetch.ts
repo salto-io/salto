@@ -138,8 +138,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           // app_id is always the same as the account_id
           omit: ['type', 'app_id', 'remote_created_at', 'created_at', 'updated_at', 'last_request_at'],
           adjust: mapArrayFieldToNestedValues([
-            { fieldName: 'tags', fromField: 'tags.tags', nestedField: 'id', fallbackValue: '' },
-            { fieldName: 'segments', fromField: 'segments.segments', nestedField: 'id', fallbackValue: '' },
+            { fieldName: 'tags', fromField: 'tags', nestedField: 'id', fallbackValue: '' },
+            { fieldName: 'segments', fromField: 'segments', nestedField: 'id', fallbackValue: '' },
           ]),
         },
       },

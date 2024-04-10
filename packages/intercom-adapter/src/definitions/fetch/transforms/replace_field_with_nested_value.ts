@@ -18,6 +18,14 @@ import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { validateItemValue } from './validators'
 
+/**
+ * Replace a field with a nested value from the item.
+ * If the nested field does not exist, the fallback value will be used.
+ * Example:
+ * replaceFieldWithNestedValue({ fieldName: 'field1', nestedField: 'nestedField1', fallbackValue: 'fallback1' })
+ * will transform { field1: { nestedField1: 'value1' } } to { field1: 'value1' }
+ * and { field1: {} } to { field1: 'fallback1' }
+ */
 export const replaceFieldWithNestedValue =
   ({
     fieldName,

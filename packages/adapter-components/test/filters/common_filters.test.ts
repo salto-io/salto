@@ -90,7 +90,7 @@ describe('common filters', () => {
         'query',
         'referencedInstanceNames',
         'serviceUrl',
-        'sortListsFitler',
+        'sortListsFilter',
       ])
     })
   })

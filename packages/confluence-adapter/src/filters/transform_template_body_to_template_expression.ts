@@ -55,6 +55,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
       templateInstances.forEach(templateInst => {
         const bodyValue = _.get(templateInst.value, 'body.storage.value')
         if (!_.isString(bodyValue)) {
+          // TODO_F add log
           return
         }
         const templateExpression = extractTemplate(bodyValue, [PAGE_REF_REGEX], expression => {
@@ -64,6 +65,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
             const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
             const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
             if (space === undefined) {
+              // TODO_F add log
               return expression
             }
             const spaceReference = new ReferenceExpression(space.elemID, space)
@@ -98,6 +100,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
         const { after } = data
         const bodyStorage = _.get(after.value, 'body.storage')
         if (!_.isPlainObject(bodyStorage) || !isTemplateExpression(bodyStorage.value)) {
+          // TODO_F add log
           return
         }
         const container = { values: [bodyStorage], fieldName: 'value' }

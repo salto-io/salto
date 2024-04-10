@@ -19,7 +19,7 @@ export type AdditionalAction = never
 export type ClientOptions = 'main' | 'groupSettings'
 export type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = never
-export type CustomReferenceSerializationStrategyName = 'roleId' | 'orgUnitId' | 'buildingId'
+export type CustomReferenceSerializationStrategyName = 'roleId' | 'orgUnitId' | 'buildingId' | 'email'
 
 export type CustomIndexField = CustomReferenceSerializationStrategyName
 export type Options = definitions.APIDefinitionsOptions & {

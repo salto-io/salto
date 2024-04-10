@@ -37,7 +37,7 @@ describe('Intercom adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/me').reply(200)
+    mockAxiosAdapter.onGet('/me').reply(200, { app: { id_code: '123' } })
     ;([...fetchMockReplies] as MockReply[]).forEach(({ url, params, response }) => {
       const mock = mockAxiosAdapter.onGet.bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)

@@ -29,10 +29,10 @@ export const validateCredentials = async ({
   try {
     const response = await connection.get('/me')
     const accountId = _.get(response.data, 'app.id_code')
-    if (_.isUndefined(accountId)) {
+    if (accountId === undefined) {
       throw new Error(`Failed to fetch account id from response, status: ${response.status} body: ${response.data}`)
     }
-    return { accountId: _.get(response.data, 'app.id_code') }
+    return { accountId }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)

@@ -36,5 +36,6 @@ export {
   TransformFunction,
   AdjustFunction,
   ContextParams,
+  GeneratedItem,
 } from './shared'
 export * from './utils'

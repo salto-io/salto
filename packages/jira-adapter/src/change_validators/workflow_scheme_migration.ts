@@ -266,8 +266,10 @@ export const workflowSchemeMigrationValidator =
         const instance = getChangeData(change)
         addUrlToInstance(
           instance,
-          client.baseUrl,
-          configDefToInstanceFetchApiDefinitionsForServiceUrl(config.apiDefinitions.types[instance.elemID.typeName]),
+          configDefToInstanceFetchApiDefinitionsForServiceUrl(
+            config.apiDefinitions.types[instance.elemID.typeName],
+            client.baseUrl,
+          ),
         )
         const changedItems = await getChangedItemsFromChange(
           change,

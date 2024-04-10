@@ -57,6 +57,9 @@ export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
     // default - true when parent annotation exists?
     // TODO check if still needed when implementing SALTO-5421
     extendsParent?: boolean
+    // This is a temporary flag to support double nacl case for upgrading existing services to the new definitions
+    // https://salto-io.atlassian.net/browse/SALTO-5743
+    useOldFormat?: boolean
   }
 
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
@@ -164,8 +167,15 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
   path?: PathDefinition<ResolveCustomNameMappingOptionsType<Options>>
 
   // customize the service-url annotation used to define go-to-service
-  // TODO use
-  serviceUrl?: ArgsWithCustomizer<string, { path: string }, Values>
+  // baseUrl should be define in default and override in custom if needed
+  serviceUrl?: ArgsWithCustomizer<
+    string,
+    {
+      path: string
+      baseUrl?: string
+    },
+    Values
+  >
 
   // when true, instances of this type will be hidden (_hidden_value = true on type)
   hide?: boolean

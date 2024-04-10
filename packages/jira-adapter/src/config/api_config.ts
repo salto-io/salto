@@ -1895,13 +1895,8 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['name', 'projectKey'],
       sourceTypeName: 'RequestType__values',
       dataField: 'values',
-      fieldsToOmit: [
-        { fieldName: '_expands' },
-        { fieldName: 'portalId' },
-        { fieldName: 'groupIds' },
-        { fieldName: 'serviceDeskId' },
-      ],
-      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }],
+      fieldsToOmit: [{ fieldName: '_expands' }, { fieldName: 'portalId' }, { fieldName: 'groupIds' }],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }, { fieldName: 'serviceDeskId' }],
       serviceIdField: 'id',
     },
     deployRequests: {
@@ -2286,9 +2281,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ObjectTypes: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/objecttypes/flat',
-      queryParams: {
-        includeObjectCounts: 'true',
-      },
     },
     transformation: {
       dataField: '.',
@@ -2304,6 +2296,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
         { fieldName: 'workspaceId' },
+        { fieldName: 'objectCount' },
       ],
       extendsParentId: false,
       serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}',

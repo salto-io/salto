@@ -30,6 +30,7 @@ import {
   createSaltoElementError,
   isSaltoError,
   SaltoError,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils,
@@ -42,7 +43,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
-import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
+import { ACTIVE_STATUS, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME } from './constants'
 import { OktaStatusActionName, OktaSwaggerApiConfig } from './config'
 
 const log = logger(module)
@@ -111,6 +112,14 @@ export const isActivationChange = ({ before, after }: { before: string; after: s
 
 export const isDeactivationChange = ({ before, after }: { before: string; after: string }): boolean =>
   before === ACTIVE_STATUS && after === INACTIVE_STATUS
+
+const isDeactivationModificationChange = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change) &&
+  isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+
+const DEACTIVATE_BEFORE_REMOVAL_TYPES = new Set([NETWORK_ZONE_TYPE_NAME])
+const shouldDeactivateBeforeRemoval = (change: Change<InstanceElement>): boolean =>
+  isRemovalChange(change) && DEACTIVATE_BEFORE_REMOVAL_TYPES.has(getChangeData(change).elemID.typeName)
 
 export const deployStatusChange = async (
   change: Change<InstanceElement>,
@@ -209,12 +218,8 @@ export const defaultDeployWithStatus = async (
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {
   try {
-    // If the instance is deactivated,
-    // we should first change the status as some instances can not be changed in status 'ACTIVE'
-    if (
-      isModificationChange(change) &&
-      isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
-    ) {
+    // some changes can't be applied when status is ACTIVE, so we need to deactivate them first
+    if (isDeactivationModificationChange(change) || shouldDeactivateBeforeRemoval(change)) {
       await deployStatusChange(change, client, apiDefinitions, 'deactivate')
     }
     const response = await defaultDeployChange(change, client, apiDefinitions, fieldsToIgnore, queryParams)

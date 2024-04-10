@@ -90,9 +90,7 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
 type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName,
   OktaReferenceSerializationStrategyName
-> & {
-  oktaSerializationStrategy?: OktaReferenceSerializationStrategyName
-}
+>
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
   ReferenceContextStrategyName,
@@ -198,7 +196,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'key', parentTypes: ['MultifactorEnrollmentPolicyAuthenticatorSettings'] },
-    oktaSerializationStrategy: 'key',
+    serializationStrategy: 'key',
     missingRefStrategy: 'typeAndValue',
     target: { type: AUTHENTICATOR_TYPE_NAME },
   },
@@ -275,7 +273,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'groupPushRule', parentTypes: [GROUP_PUSH_TYPE_NAME] },
-    oktaSerializationStrategy: 'mappingRuleId',
+    serializationStrategy: 'mappingRuleId',
     missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
   },
@@ -292,7 +290,7 @@ const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   userSchemaLookUpFunc,
-  // The second param is needed to resolve references by oktaSerializationStrategy
+  // The second param is needed to resolve references by serializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
 ]
 

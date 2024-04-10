@@ -40,7 +40,7 @@ describe('remove sdf object change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(standardInstanceNoInternalId.elemID)
-      expect(changeErrors[0].message).toEqual("Can't remove instances of type workflow")
+      expect(changeErrors[0].message).toEqual("Can't remove instance")
     })
 
     it('should have change error when removing an instance of standard type with no internal id', async () => {
@@ -54,7 +54,7 @@ describe('remove sdf object change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(standardInstanceNoInternalId.elemID)
-      expect(changeErrors[0].message).toEqual("Can't remove instance of type entitycustomfield")
+      expect(changeErrors[0].message).toEqual("Can't remove instance")
     })
 
     it('should not have change error when removing an instance of standard type with internal id', async () => {

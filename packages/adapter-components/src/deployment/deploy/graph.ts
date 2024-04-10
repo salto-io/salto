@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ActionName,
-  Change,
-  getChangeData,
-  InstanceElement,
-  ChangeGroup,
-  ReadOnlyElementsSource,
-  ChangeId,
-} from '@salto-io/adapter-api'
+import { ActionName, Change, getChangeData, InstanceElement, ChangeId } from '@salto-io/adapter-api'
 import { DAG } from '@salto-io/dag'
 import { DefQuery } from '../../definitions'
 import { InstanceDeployApiDefinitions, ChangeDependency, ChangeAndContext } from '../../definitions/system/deploy'
@@ -57,15 +49,12 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
   defQuery,
   dependencies,
   changes,
-  changeGroup,
-  elementSource,
+  ...changeContext
 }: {
   defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>
   dependencies?: ChangeDependency<AdditionalAction>[]
   changes: Change<InstanceElement>[]
-  changeGroup: Readonly<ChangeGroup>
-  elementSource: ReadOnlyElementsSource
-}): DAG<NodeType<AdditionalAction>> => {
+} & Omit<ChangeAndContext, 'change'>): DAG<NodeType<AdditionalAction>> => {
   const changesByTypeAndAction: Record<
     string,
     Partial<Record<ActionName | AdditionalAction, Change<InstanceElement>[]>>
@@ -74,8 +63,7 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
     const { typeName } = getChangeData(c).elemID
     const actions = (defQuery.query(typeName)?.toActionNames ?? toDefaultActionNames)({
       change: c,
-      changeGroup,
-      elementSource,
+      ...changeContext,
     })
     if (changesByTypeAndAction[typeName] === undefined) {
       changesByTypeAndAction[typeName] = {}
@@ -104,13 +92,13 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       })
     })
     defQuery.query(typeName)?.actionDependencies?.forEach(({ first, second }) => {
-      graph.addEdge(toNodeID(typeName, first), toNodeID(typeName, second))
+      graph.addEdge(toNodeID(typeName, second), toNodeID(typeName, first))
     })
   })
   dependencies?.forEach(({ first, second }) => {
     getRelevantActions(changesByTypeAndAction[first.type], first.action).forEach(firstAction => {
       getRelevantActions(changesByTypeAndAction[second.type], second.action).forEach(secondAction => {
-        graph.addEdge(toNodeID(first.type, firstAction), toNodeID(second.type, secondAction))
+        graph.addEdge(toNodeID(second.type, secondAction), toNodeID(first.type, firstAction))
       })
     })
   })

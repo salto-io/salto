@@ -33,7 +33,7 @@ import {
   DependencyChanger,
   TypeMap,
 } from '@salto-io/adapter-api'
-import { logDuration, restoreChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import { Client } from '../../client/client_creator'
@@ -56,6 +56,7 @@ import { ElementQuery, createElementQuery } from '../../fetch/query'
 import {
   createChangeValidator,
   deployNotSupportedValidator,
+  createCheckDeploymentBasedOnDefinitionsValidator,
   getDefaultChangeValidators,
 } from '../../deployment/change_validators'
 import { generateOpenApiTypes } from '../../openapi/type_elements/type_elements'
@@ -70,6 +71,7 @@ import {
   ResolveReferenceIndexNames,
   ResolveReferenceSerializationStrategyLookup,
 } from '../../definitions/system/api'
+import { restoreChangeElement } from '../../restore_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -135,6 +137,7 @@ export class AdapterImpl<
           config: this.userConfig,
           getElemIdFunc: this.getElemIdFunc,
           elementSource,
+          sharedContext: {},
         },
         filterCreators,
         objects.concatObjects,
@@ -143,7 +146,13 @@ export class AdapterImpl<
     this.configInstance = configInstance
     this.changeValidators = {
       ...getDefaultChangeValidators(),
-      ...(this.definitions.deploy?.instances === undefined ? { deployNotSupported: deployNotSupportedValidator } : {}),
+      ...(this.definitions.deploy?.instances === undefined
+        ? { deployNotSupported: deployNotSupportedValidator }
+        : {
+            createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator({
+              deployDefinitions: this.definitions.deploy,
+            }),
+          }),
       ...additionalChangeValidators,
     }
     // TODO combine with infra changers after SALTO-5571

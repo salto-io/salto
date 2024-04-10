@@ -101,6 +101,23 @@ describe('unresolved_references', () => {
     expect(errors[0].type).toEqual('unresolvedReferences')
   })
 
+  it('should filter out unresolved references to nested paths if their parent path is also unresolved', async () => {
+    const typeElemID = new ElemID('adapter', 'typeA')
+    const fieldElemID = typeElemID.createNestedID('field', 'A')
+
+    const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'layout') }), {
+      refToType: new ReferenceExpression(typeElemID, new UnresolvedReference(typeElemID)),
+      refToField: new ReferenceExpression(fieldElemID, new UnresolvedReference(fieldElemID)),
+    })
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: instance })])
+    expect(errors).toHaveLength(1)
+    expect(errors[0].elemID).toEqual(instance.elemID)
+    expect(errors[0].detailedMessage).toEqual(
+      `Element ${instance.elemID.getFullName()} contains unresolved references: ${typeElemID.getFullName()}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`,
+    )
+    expect(errors[0].unresolvedElemIds).toEqual([typeElemID])
+  })
+
   it('should find unresolved references in templates', async () => {
     const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'type') }), {
       value: new TemplateExpression({

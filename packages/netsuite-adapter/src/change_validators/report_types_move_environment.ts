@@ -82,7 +82,7 @@ const getChangeError = async (instance: InstanceElement): Promise<ChangeError> =
     return {
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Can't deploy partial changes to ${typeNameToPluralName[instance.elemID.typeName]}`,
+      message: "Can't deploy partial changes",
       detailedMessage: `Can't deploy partial changes to this ${typeNameToName[instance.elemID.typeName]} element. Modify it from NetSuite UI, and select the whole element for deployment.`,
     } as ChangeError
   }

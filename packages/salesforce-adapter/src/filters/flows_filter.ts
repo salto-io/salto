@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _, { isUndefined } from 'lodash'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FileProperties } from '@salto-io/jsforce-types'
 import {
@@ -45,6 +45,7 @@ import {
   apiNameSync,
   isDeactivatedFlowChangeOnly,
   isInstanceOfTypeChangeSync,
+  isInstanceOfTypeSync,
   listMetadataObjects,
 } from './utils'
 
@@ -97,29 +98,6 @@ const getFlowWithoutVersion = (
   )
 }
 
-const createActiveVersionProps = async (
-  client: SalesforceClient,
-  fetchProfile: FetchProfile,
-  flowDefinitionType: ObjectType,
-  fileProps: FileProperties[],
-): Promise<FileProperties[]> => {
-  const { elements: definitionFileProps } = await listMetadataObjects(
-    client,
-    FLOW_DEFINITION_METADATA_TYPE,
-  )
-  const flowDefinitionInstances = await fetchMetadataInstances({
-    client,
-    fileProps: definitionFileProps,
-    metadataType: flowDefinitionType,
-    metadataQuery: fetchProfile.metadataQuery,
-    maxInstancesPerType: fetchProfile.maxInstancesPerType,
-  })
-  return createActiveVersionFileProperties(
-    fileProps,
-    flowDefinitionInstances.elements,
-  )
-}
-
 const createDeactivatedFlowDefinitionChange = (
   flowChange: Change<InstanceElement>,
   flowDefinitionMetadataType: ObjectType,
@@ -142,30 +120,17 @@ const getFlowInstances = async (
   client: SalesforceClient,
   fetchProfile: FetchProfile,
   flowType: ObjectType,
-  flowDefinitionType: ObjectType | undefined,
+  flowDefinitionInstances: InstanceElement[],
 ): Promise<FetchElements<InstanceElement[]>> => {
   const { elements: fileProps, configChanges } = await listMetadataObjects(
     client,
     FLOW_METADATA_TYPE,
   )
-  if (
-    fetchProfile.preferActiveFlowVersions &&
-    isUndefined(flowDefinitionType)
-  ) {
-    log.error(
-      'Failed to fetch flows active version due to a problem with flowDefinition type',
-    )
-    return {} as FetchElements<InstanceElement[]>
-  }
-  const flowsVersionProps =
-    fetchProfile.preferActiveFlowVersions && isDefined(flowDefinitionType)
-      ? await createActiveVersionProps(
-          client,
-          fetchProfile,
-          flowDefinitionType,
-          fileProps,
-        )
-      : fileProps
+
+  const flowsVersionProps = fetchProfile.preferActiveFlowVersions
+    ? createActiveVersionFileProperties(fileProps, flowDefinitionInstances)
+    : fileProps
+
   const instances = await fetchMetadataInstances({
     client,
     fileProps: flowsVersionProps,
@@ -199,14 +164,18 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       client,
       config.fetchProfile,
       flowType,
-      flowDefinitionType,
+      elements.filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE)),
     )
     instances.elements.forEach((e) => elements.push(e))
-    // While we don't manage FlowDefinition Instances in Salto, we use the type upon deploy
-    // to create FlowDefinition Instance to deactivate a Flow.
+    // Hide the FlowDefinition type and it's instances
     if (flowDefinitionType !== undefined) {
       flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
     }
+    elements
+      .filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE))
+      .forEach((flowDefinition) => {
+        flowDefinition.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+      })
     return {
       configSuggestions: [...instances.configChanges],
     }

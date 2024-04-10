@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { FieldDefinition, ObjectType, ElemID, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { FieldDefinition, ObjectType, ElemID, CORE_ANNOTATIONS, InstanceElement, Values } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { createClientConfigType, ClientBaseConfig, ClientRateLimitConfig, validateClientConfig } from './client_config'
 import { DefaultFetchCriteria, UserFetchConfig, createUserFetchConfigType } from './fetch_config'
@@ -32,7 +32,7 @@ export type UserConfig<
   }>,
   TDeploy extends UserDeployConfig = UserDeployConfig,
 > = {
-  client: TClient
+  client?: TClient
   fetch: TFetch
   deploy?: TDeploy
 }
@@ -90,6 +90,11 @@ export const createUserConfigType = <TCustomNameMappingOptions extends string = 
     },
   })
 
+export const mergeWithDefaultConfig = (defaultConfig: Values, config?: Values): Values =>
+  _.mergeWith(_.cloneDeep(defaultConfig), config ?? {}, (_firstVal, secondValue) =>
+    Array.isArray(secondValue) ? secondValue : undefined,
+  )
+
 export const adapterConfigFromConfig = <
   TCustomNameMappingOptions extends string,
   Co extends UserConfig<TCustomNameMappingOptions>,
@@ -98,7 +103,24 @@ export const adapterConfigFromConfig = <
   defaultConfig: Co,
 ): Co & UserConfig<TCustomNameMappingOptions> => {
   // TODO extend validations SALTO-5584
-  const adapterConfig = _.defaults({}, config?.value, defaultConfig)
   validateClientConfig('client', config?.value?.client)
-  return adapterConfig
+  const client = mergeWithDefaultConfig(defaultConfig.client ?? {}, config?.value?.client)
+
+  const fetch = _.defaults({}, config?.value?.fetch, defaultConfig.fetch)
+
+  const deploy = mergeWithDefaultConfig(defaultConfig.deploy ?? {}, config?.value?.deploy)
+
+  const additionalConfigProps = mergeWithDefaultConfig(
+    _.omit(defaultConfig, ['client', 'fetch', 'deploy']),
+    _.omit(config?.value, ['client', 'fetch', 'deploy']),
+  )
+
+  const adapterConfig = {
+    fetch,
+    deploy,
+    client,
+    ...additionalConfigProps,
+  }
+
+  return adapterConfig as Co & UserConfig<TCustomNameMappingOptions>
 }

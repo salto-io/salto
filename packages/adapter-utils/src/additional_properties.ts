@@ -18,12 +18,12 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   Field,
-  isType,
   Element,
   ObjectType,
   Value,
   ReferenceExpression,
   isReferenceExpression,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -53,12 +53,12 @@ export const extractAdditionalPropertiesField = (objType: ObjectType, name: stri
     return new Field(objType, name, BuiltinTypes.UNKNOWN)
   }
   if (isAdditionalPropertiesAnnotation(additionalProperties)) {
-    const type = additionalProperties.refType.value
-    if (!isType(type)) {
+    const { elemID, value: type } = additionalProperties.refType
+    if (elemID.idType !== 'type') {
       log.warn('Additional properties annotations refType reference is not a type')
       return undefined
     }
-    return new Field(objType, name, type, additionalProperties.annotations)
+    return new Field(objType, name, new TypeReference(elemID, type), additionalProperties.annotations)
   }
   // case additionalProperties = false
   return undefined

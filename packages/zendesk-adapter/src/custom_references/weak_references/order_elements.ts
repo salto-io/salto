@@ -165,7 +165,7 @@ const removeMissingOrderElements: WeakReferencesHandler<{
         return {
           elemID: instance.elemID.createNestedID(path),
           severity: 'Info',
-          message: `Deploying ${fullPath} without all attached ${elementTypeName}`,
+          message: `Deploying without all attached ${elementTypeName}`,
           detailedMessage: `This ${fullPath} is attached to some ${elementTypeName} that do not exist in the target environment. It will be deployed without referencing these ${elementTypeName}.`,
         }
       }),

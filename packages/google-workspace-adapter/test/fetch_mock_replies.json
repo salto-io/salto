@@ -1,0 +1,310 @@
+[
+  {
+    "url": "/admin/directory/v1/customer/my_customer/schemas",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#schemas",
+      "etag": "abc",
+      "schemas": [
+        {
+          "kind": "admin#directory#schema",
+          "schemaId": "aKR62Yy0Q4K4PkhgTIlz7g==",
+          "etag": "abc",
+          "schemaName": "uri",
+          "displayName": "uri",
+          "fields": [
+            {
+              "kind": "admin#directory#schema#fieldspec",
+              "fieldId": "K_6NO6yeQcO3VrkTubW6SQ==",
+              "etag": "abc",
+              "fieldType": "STRING",
+              "fieldName": "roles",
+              "displayName": "roles",
+              "multiValued": true,
+              "readAccessType": "ALL_DOMAIN_USERS"
+            }
+          ]
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/orgunits",
+    "queryParams": { "type": "ALL_INCLUDING_PARENT" },
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#orgUnits",
+      "etag": "abc",
+      "organizationUnits": [
+        {
+          "kind": "admin#directory#orgUnit",
+          "etag": "abc",
+          "name": "Salto Neta test1",
+          "description": "Salto Neta test1",
+          "orgUnitPath": "/",
+          "orgUnitId": "id:03ph8a2z2dk12tm"
+        },
+        {
+          "kind": "admin#directory#orgUnit",
+          "etag": "abc",
+          "name": "uri",
+          "description": "the one",
+          "orgUnitPath": "/uri",
+          "orgUnitId": "id:03ph8a2z31unp74",
+          "parentOrgUnitPath": "/",
+          "parentOrgUnitId": "id:03ph8a2z2dk12tm"
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/domains",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#domains",
+      "etag": "abc",
+      "domains": [
+        {
+          "kind": "admin#directory#domain",
+          "etag": "abc",
+          "domainName": "localhost",
+          "domainAliases": [
+            {
+              "kind": "admin#directory#domainAlias",
+              "etag": "abc",
+              "domainAliasName": "localhost/uri",
+              "parentDomainName": "localhost",
+              "verified": true,
+              "creationTime": "1710066097283"
+            }
+          ],
+          "isPrimary": true,
+          "verified": true,
+          "creationTime": "1710066097283"
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/resources/calendars",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#resources#calendars#calendarResourcesList",
+      "etag": "abc",
+      "items": [
+        {
+          "kind": "admin#directory#resources#calendars#CalendarResource",
+          "etag": "abc",
+          "resourceId": "87492684594",
+          "resourceName": "zoom room",
+          "generatedResourceName": "salto office-21-zoom room (4) [macabi]",
+          "resourceType": "zoom room",
+          "resourceEmail": "saltosalto@resource.calendar.google.com",
+          "capacity": 4,
+          "buildingId": "salto-office",
+          "floorName": "21",
+          "resourceCategory": "CONFERENCE_ROOM",
+          "featureInstances": [
+            {
+              "feature": {
+                "kind": "admin#directory#resources#features#Feature",
+                "etags": "abc",
+                "name": "macabi"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/roles",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#roles",
+      "etag": "abc",
+      "items": [
+        {
+          "kind": "admin#directory#role",
+          "etag": "abc",
+          "roleId": "65643247212429313",
+          "roleName": "_SEED_ADMIN_ROLE",
+          "roleDescription": "Google Workspace Administrator Seed Role",
+          "rolePrivileges": [
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "04i7ojhp4kgosur" },
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02pta16n3efhw69" },
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "00nmf14n14wtgcf" },
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "044sinio4cntx2o" },
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "03cqmetx1vygwki" },
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "02szc72q136h7dm" },
+            { "privilegeName": "ROOT_APP_ADMIN", "serviceId": "037m2jsg3ckz96v" }
+          ],
+          "isSystemRole": true,
+          "isSuperAdminRole": true
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/resources/features",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#resources#features#featuresList",
+      "etag": "abc",
+      "features": [
+        {
+          "kind": "admin#directory#resources#features#Feature",
+          "etags": "abc",
+          "name": "macabi"
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/resources/buildings",
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#resources#buildings#buildingsList",
+      "etag": "abc",
+      "buildings": [
+        {
+          "kind": "admin#directory#resources#buildings#Building",
+          "etag": "abc",
+          "buildingId": "salto-office",
+          "buildingName": "salto office",
+          "description": "wow",
+          "floorNames": ["21"]
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/groups",
+    "queryParams": { "domain": "localhost" },
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#groups",
+      "etag": "abc",
+      "groups": [
+        {
+          "kind": "admin#directory#group",
+          "id": "01tuee743bzv2ce",
+          "etag": "abc",
+          "email": "blabla@localhost",
+          "name": "blabla",
+          "directMembersCount": "0",
+          "description": "test test",
+          "adminCreated": true,
+          "nonEditableAliases": ["blabla@localhost"]
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/roleassignments",
+    "queryParams": { "userKey": "01tuee743bzv2ce" },
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#roleAssignments",
+      "etag": "abc",
+      "items": [
+        {
+          "kind": "admin#directory#roleAssignment",
+          "etag": "abc",
+          "roleAssignmentId": "65643247212429314",
+          "roleId": "65643247212429314",
+          "assignedTo": "01tuee743bzv2ce",
+          "assigneeType": "group",
+          "scopeType": "CUSTOMER"
+        }
+      ]
+    },
+    "headers": {}
+  },
+  {
+    "url": "/groups/v1/groups/blabla@localhost",
+    "queryParams": { "alt": "json" },
+    "method": "GET",
+    "status": 200,
+    "response": {
+      "kind": "groupsSettings#groups",
+      "email": "blabla@neta-test1.salto-internal-test.com",
+      "name": "blabla",
+      "description": "test test",
+      "whoCanJoin": "CAN_REQUEST_TO_JOIN",
+      "whoCanViewMembership": "ALL_MEMBERS_CAN_VIEW",
+      "whoCanViewGroup": "ALL_MEMBERS_CAN_VIEW",
+      "whoCanInvite": "ALL_MANAGERS_CAN_INVITE",
+      "whoCanAdd": "ALL_MANAGERS_CAN_ADD",
+      "allowExternalMembers": "false",
+      "whoCanPostMessage": "ANYONE_CAN_POST",
+      "allowWebPosting": "true",
+      "maxMessageBytes": 26214400,
+      "isArchived": "false",
+      "archiveOnly": "false",
+      "messageModerationLevel": "MODERATE_NONE",
+      "spamModerationLevel": "MODERATE",
+      "replyTo": "REPLY_TO_IGNORE",
+      "includeCustomFooter": "false",
+      "customFooterText": "",
+      "sendMessageDenyNotification": "false",
+      "defaultMessageDenyNotificationText": "",
+      "showInGroupDirectory": "true",
+      "allowGoogleCommunication": "false",
+      "membersCanPostAsTheGroup": "false",
+      "messageDisplayFont": "DEFAULT_FONT",
+      "includeInGlobalAddressList": "true",
+      "whoCanLeaveGroup": "ALL_MEMBERS_CAN_LEAVE",
+      "whoCanContactOwner": "ANYONE_CAN_CONTACT",
+      "whoCanAddReferences": "NONE",
+      "whoCanAssignTopics": "NONE",
+      "whoCanUnassignTopic": "NONE",
+      "whoCanTakeTopics": "NONE",
+      "whoCanMarkDuplicate": "NONE",
+      "whoCanMarkNoResponseNeeded": "NONE",
+      "whoCanMarkFavoriteReplyOnAnyTopic": "NONE",
+      "whoCanMarkFavoriteReplyOnOwnTopic": "NONE",
+      "whoCanUnmarkFavoriteReplyOnAnyTopic": "NONE",
+      "whoCanEnterFreeFormTags": "NONE",
+      "whoCanModifyTagsAndCategories": "NONE",
+      "favoriteRepliesOnTop": "true",
+      "whoCanApproveMembers": "ALL_MANAGERS_CAN_APPROVE",
+      "whoCanBanUsers": "OWNERS_AND_MANAGERS",
+      "whoCanModifyMembers": "OWNERS_AND_MANAGERS",
+      "whoCanApproveMessages": "OWNERS_AND_MANAGERS",
+      "whoCanDeleteAnyPost": "OWNERS_AND_MANAGERS",
+      "whoCanDeleteTopics": "OWNERS_AND_MANAGERS",
+      "whoCanLockTopics": "OWNERS_AND_MANAGERS",
+      "whoCanMoveTopicsIn": "OWNERS_AND_MANAGERS",
+      "whoCanMoveTopicsOut": "OWNERS_AND_MANAGERS",
+      "whoCanPostAnnouncements": "OWNERS_AND_MANAGERS",
+      "whoCanHideAbuse": "NONE",
+      "whoCanMakeTopicsSticky": "NONE",
+      "whoCanModerateMembers": "OWNERS_AND_MANAGERS",
+      "whoCanModerateContent": "OWNERS_AND_MANAGERS",
+      "whoCanAssistContent": "NONE",
+      "customRolesEnabledForSettingsToBeMerged": "false",
+      "enableCollaborativeInbox": "false",
+      "whoCanDiscoverGroup": "ALL_IN_DOMAIN_CAN_DISCOVER",
+      "defaultSender": "DEFAULT_SELF"
+    },
+    "headers": {}
+  }
+]

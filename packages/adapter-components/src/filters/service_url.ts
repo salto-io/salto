@@ -40,6 +40,7 @@ const log = logger(module)
 
 export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
   configDef?: TypeConfig<TransformationConfig, ActionName>,
+  baseUrl?: string,
 ): InstanceFetchApiDefinitions | undefined => {
   const serviceUrl = configDef?.transformation?.serviceUrl
   return serviceUrl !== undefined
@@ -47,7 +48,7 @@ export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
         element: {
           topLevel: {
             isTopLevel: true as const,
-            serviceUrl: { path: serviceUrl },
+            serviceUrl: { path: serviceUrl, baseUrl },
           },
         },
       }
@@ -56,13 +57,17 @@ export const configDefToInstanceFetchApiDefinitionsForServiceUrl = (
 
 export const addUrlToInstance: <Options extends FetchApiDefinitionsOptions = {}>(
   instance: InstanceElement,
-  baseUrl: string,
   apiDef: InstanceFetchApiDefinitions<Options> | undefined,
-) => void = (instance, baseUrl, apiDef) => {
-  const serviceUrl = apiDef?.element?.topLevel?.serviceUrl
-  if (serviceUrl === undefined) {
+) => void = (instance, apiDef) => {
+  const { path, baseUrl } = apiDef?.element?.topLevel?.serviceUrl ?? {}
+  if (path === undefined) {
     return
   }
+  if (baseUrl === undefined) {
+    log.error('baseUrl is missing in serviceUrl definition for %s', instance.elemID.typeName)
+    return
+  }
+
   // parent is ReferenceExpression during fetch, and serialized into full value during deploy
   const parentValues = instance.annotations[CORE_ANNOTATIONS.PARENT]?.map((parent: unknown) =>
     isReferenceExpression(parent) ? parent.value.value : parent,
@@ -73,7 +78,7 @@ export const addUrlToInstance: <Options extends FetchApiDefinitionsOptions = {}>
     })
     return result
   }, {})
-  const url = createUrl({ instance, url: serviceUrl.path, additionalUrlVars: parentContext })
+  const url = createUrl({ instance, url: path, additionalUrlVars: parentContext })
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, baseUrl).href
 }
 
@@ -82,10 +87,8 @@ export const serviceUrlFilterCreator: <
   TResult extends void | filter.FilterResult = void,
   TAdditional = {},
   TOptions extends FetchApiDefinitionsOptions = {},
->(
-  baseUrl: string,
-) => AdapterFilterCreator<TContext, TResult, TAdditional, TOptions> =
-  baseUrl =>
+>() => AdapterFilterCreator<TContext, TResult, TAdditional, TOptions> =
+  () =>
   ({ definitions }) => {
     if (definitions.fetch === undefined) {
       log.warn('No fetch definitions were found, skipping service url filter')
@@ -97,13 +100,13 @@ export const serviceUrlFilterCreator: <
       name: 'serviceUrlFilter',
       onFetch: async (elements: Element[]) => {
         elements.filter(isInstanceElement).forEach(instance => {
-          addUrlToInstance(instance, baseUrl, defQuery.query(instance.elemID.typeName))
+          addUrlToInstance(instance, defQuery.query(instance.elemID.typeName))
         })
       },
       onDeploy: async (changes: Change<InstanceElement>[]) => {
         const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
         relevantChanges.map(getChangeData).forEach(instance => {
-          addUrlToInstance(instance, baseUrl, defQuery.query(instance.elemID.typeName))
+          addUrlToInstance(instance, defQuery.query(instance.elemID.typeName))
         })
       },
     }
@@ -119,7 +122,7 @@ export const serviceUrlFilterCreatorDeprecated: <
 ) => FilterCreator<TClient, TContext, TResult> = (baseUrl, additionalApiDefinitions) => args => {
   const { config } = args
   const customizations = _({ ...config.apiDefinitions.types, ...additionalApiDefinitions?.types })
-    .mapValues(configDefToInstanceFetchApiDefinitionsForServiceUrl)
+    .mapValues(value => configDefToInstanceFetchApiDefinitionsForServiceUrl(value, baseUrl))
     .pickBy(lowerdashValues.isDefined)
     .value()
 
@@ -127,9 +130,21 @@ export const serviceUrlFilterCreatorDeprecated: <
   const definitions = {
     fetch: {
       instances: {
+        default: {
+          element: {
+            topLevel: {
+              serviceUrl: { baseUrl },
+            },
+          },
+        },
         customizations,
       },
     },
   } as ApiDefinitions
-  return serviceUrlFilterCreator(baseUrl)({ ...args, definitions, elementSource: buildElementsSourceFromElements([]) })
+  return serviceUrlFilterCreator()({
+    ...args,
+    definitions,
+    elementSource: buildElementsSourceFromElements([]),
+    sharedContext: {},
+  })
 }

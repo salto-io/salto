@@ -104,7 +104,7 @@ const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(
   'Received an invalid automation import response',
 )
 
-export type Component = {
+type AssetComponent = {
   value: {
     workspaceId?: string
     schemaId: ReferenceExpression
@@ -122,7 +122,25 @@ const ASSET_COMPONENT_SCHEME = Joi.object({
     .required(),
 }).unknown(true)
 
-export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)
+export const isAssetComponent = createSchemeGuard<AssetComponent>(ASSET_COMPONENT_SCHEME)
+
+type requestTypeComponent = {
+  value: {
+    requestType: ReferenceExpression
+    serviceDesk?: string
+  }
+}
+
+const REQUEST_TYPE_COMPONENT_SCHEME = Joi.object({
+  value: Joi.object({
+    requestType: Joi.required(),
+    serviceDesk: Joi.string().optional(),
+  })
+    .unknown(true)
+    .required(),
+}).unknown(true)
+
+const isRequestTypeComponent = createSchemeGuard<requestTypeComponent>(REQUEST_TYPE_COMPONENT_SCHEME)
 
 const generateRuleScopesResources = (instance: InstanceElement, cloudId: string): string[] => {
   if ((instance.value.projects ?? []).length === 0) {
@@ -343,13 +361,13 @@ const updateAutomationLabels = async (
     await removeAutomationLabels(getChangeData(change), removedLabels, client, cloudId)
   }
 }
-const addDetailedAssetsComponents = (instance: InstanceElement): void => {
+const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig): void => {
   if (!instance.value.components) {
     return
   }
-  const assetsComponents: Component[] = instance.value.components.filter(isAssetComponent)
-  assetsComponents.forEach(component => {
-    try {
+  if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+    const assetsComponents: AssetComponent[] = instance.value.components.filter(isAssetComponent)
+    assetsComponents.forEach(component => {
       const schema = component.value.schemaId.value
       component.value.schemaLabel = schema.value.name
       component.value.workspaceId = schema.value.workspaceId
@@ -357,22 +375,35 @@ const addDetailedAssetsComponents = (instance: InstanceElement): void => {
         const objectType = component.value.objectTypeId.value
         component.value.objectTypeLabel = objectType.value.name
       }
-    } catch (e) {
-      log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
-    }
-  })
+    })
+  }
+  if (config.fetch.enableJSM) {
+    const requestTypeComponents: requestTypeComponent[] = instance.value.components.filter(isRequestTypeComponent)
+    requestTypeComponents.forEach(component => {
+      const requestType = component.value.requestType.value
+      component.value.serviceDesk = requestType.value.serviceDeskId
+    })
+  }
 }
 
-const deleteDetailedAssetsComponents = (instance: InstanceElement): void => {
+const modifyComponentsPostDeploy = (instance: InstanceElement, config: JiraConfig): void => {
   if (!instance.value.components) {
     return
   }
-  const assetsComponents: Component[] = instance.value.components.filter(isAssetComponent)
-  assetsComponents.forEach(component => {
-    delete component.value.schemaLabel
-    delete component.value.objectTypeLabel
-    delete component.value.workspaceId
-  })
+  if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+    const assetsComponents: AssetComponent[] = instance.value.components.filter(isAssetComponent)
+    assetsComponents.forEach(component => {
+      delete component.value.schemaLabel
+      delete component.value.objectTypeLabel
+      delete component.value.workspaceId
+    })
+  }
+  if (config.fetch.enableJSM) {
+    const requestTypeComponents: requestTypeComponent[] = instance.value.components.filter(isRequestTypeComponent)
+    requestTypeComponents.forEach(component => {
+      delete component.value.serviceDesk
+    })
+  }
 }
 
 const updateAutomation = async (
@@ -440,16 +471,12 @@ const filter: FilterCreator = ({ client, config }) => ({
     setTypeDeploymentAnnotations(automationType)
   },
   preDeploy: async changes => {
-    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
-      return
-    }
-
     await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-      .forEach(addDetailedAssetsComponents)
+      .forEach(instance => modifyComponentsPreDeploy(instance, config))
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -476,16 +503,12 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
   },
   onDeploy: async changes => {
-    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
-      return
-    }
-
     await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-      .forEach(deleteDetailedAssetsComponents)
+      .forEach(instance => modifyComponentsPostDeploy(instance, config))
   },
 })
 export default filter

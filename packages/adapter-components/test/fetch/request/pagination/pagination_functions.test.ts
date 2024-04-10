@@ -20,6 +20,7 @@ import {
   cursorPagination,
   offsetAndLimitPagination,
   cursorHeaderPagination,
+  tokenPagination,
 } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
@@ -176,5 +177,17 @@ describe('pagination functions', () => {
     })
   })
 
+  describe('tokenPagination', () => {
+    it('should calculate next pages', async () => {
+      const paginate = tokenPagination({ paginationField: 'pageToken', tokenField: 'nextPageToken' })
+      expect(
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: { queryParams: { pageToken: 'first' } },
+          responseData: { a: [{ x: 'y' }], nextPageToken: 'second' },
+        }),
+      ).toEqual([{ queryParams: { pageToken: 'second' } }])
+    })
+  })
   // TODO extend tests for all pagination functions (can rely on previous tests)
 })

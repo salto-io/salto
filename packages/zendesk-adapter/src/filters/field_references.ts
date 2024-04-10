@@ -72,6 +72,9 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   locale_id: 'locale',
   via_id: 'channel',
   current_via_id: 'channel',
+  add_skills: 'routing_attribute_value',
+  set_skills: 'routing_attribute_value',
+  remove_skills: 'routing_attribute_value',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -293,8 +296,8 @@ export type ReferenceContextStrategyName =
   | 'neighborParentType'
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  // We use allow lists because there are types we don't support (such organizarion or requester)
-  // and they'll as false positives
+  // We use allow lists because there are types we don't support (such as organization or requester)
+  // and they'll end up being false positives
   allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
   allowlistedNeighborSubject: neighborContextFunc({
     contextFieldName: 'subject',
@@ -905,6 +908,16 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     target: { typeContext: 'neighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
+  {
+    src: {
+      field: 'value',
+      parentTypes: ['trigger__actions'],
+    },
+    serializationStrategy: 'idString',
+    target: { typeContext: 'allowlistedNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+
   // only one of these applies in a given instance
   {
     src: { field: 'value' },

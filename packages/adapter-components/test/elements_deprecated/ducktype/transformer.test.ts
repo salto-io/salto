@@ -407,7 +407,7 @@ describe('ducktype_transformer', () => {
           },
           subfolder: {
             request: {
-              url: '/folders/{folderId}/subfolders/{extraContext}',
+              url: '/folders/{folderId}/subfolders/{sharedContext}',
             },
             transformation: {
               sourceTypeName: 'folder__subfolders',
@@ -422,7 +422,7 @@ describe('ducktype_transformer', () => {
         },
         nestedFieldFinder: returnFullEntry,
         reversedSupportedTypes: { folders: ['folder'], subfolder: ['subfolder'] },
-        additionalRequestContext: { extraContext: 'extra' },
+        additionalRequestContext: { sharedContext: 'extra' },
       })
       expect(mockPaginator).toHaveBeenCalledTimes(3)
       expect(mockPaginator.mock.calls[0][0]).toEqual({

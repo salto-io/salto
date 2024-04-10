@@ -46,7 +46,6 @@ import {
   UNLIMITED_INSTANCES_VALUE,
   DETECTS_PARENTS_INDICATOR,
   API_NAME_SEPARATOR,
-  LAST_MODIFIED_DATE,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import { FilterContext, FilterResult, RemoteFilterCreator } from '../filter'
@@ -63,16 +62,14 @@ import {
   isReferenceField,
   referenceFieldTargetTypes,
   queryClient,
-  buildSelectQueries,
-  getFieldNamesForQuery,
   apiNameSync,
   isQueryableField,
   isHiddenField,
   isReadOnlyField,
   isCustomObjectSync,
-  SoqlQuery,
   buildElementsSourceForFetch,
   getChangedAtSingletonInstance,
+  buildDataRecordsSoqlQueries,
   isInstanceOfCustomObjectSync,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
@@ -109,44 +106,6 @@ const aliasSeparator = ' '
 const getQueryableFields = (object: ObjectType): Field[] =>
   Object.values(object.fields).filter(isQueryableField)
 
-const buildQueryStrings = async (
-  typeName: string,
-  fields: Field[],
-  ids?: string[],
-  managedBySaltoField?: string,
-  changedSince?: string,
-): Promise<string[]> => {
-  const fieldNames = await awu(fields).flatMap(getFieldNamesForQuery).toArray()
-  const queryConditions: SoqlQuery[][] = [
-    ...makeArray(ids).map((id) => [
-      { fieldName: 'Id', operator: 'IN' as const, value: `'${id}'` },
-    ]),
-    ...(managedBySaltoField !== undefined
-      ? [
-          [
-            {
-              fieldName: managedBySaltoField,
-              operator: '=' as const,
-              value: 'TRUE',
-            },
-          ],
-        ]
-      : []),
-    ...(changedSince
-      ? [
-          [
-            {
-              fieldName: LAST_MODIFIED_DATE,
-              operator: '>' as const,
-              value: changedSince,
-            },
-          ],
-        ]
-      : []),
-  ]
-  return buildSelectQueries(typeName, fieldNames, queryConditions)
-}
-
 type GetRecordsParams = {
   client: SalesforceClient
   customObjectFetchSettings: CustomObjectFetchSetting
@@ -181,7 +140,7 @@ const getRecords = async ({
     managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '',
     changedSince ? `, changed since ${changedSince}` : '',
   )
-  const queries = await buildQueryStrings(
+  const queries = await buildDataRecordsSoqlQueries(
     typeName,
     queryableFields,
     ids,

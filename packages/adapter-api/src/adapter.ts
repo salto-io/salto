@@ -207,10 +207,7 @@ export type ReferenceInfo = {
   type: ReferenceType
 }
 
-export type GetCustomReferencesFunc = (
-  elements: Element[],
-  adapterConfig: InstanceElement | undefined,
-) => Promise<ReferenceInfo[]>
+export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { ObjectType, ElemID, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter_utils'
-import { Paginator } from '../../src/client'
 import { createMockQuery } from '../../src/fetch/query'
 import { addAliasFilterCreator } from '../../src/filters/add_alias'
 import { ApiDefinitions } from '../../src/definitions'
@@ -50,11 +50,12 @@ describe('add alias filter', () => {
   })
 
   const createFilter = (definitions: ApiDefinitions): FilterType =>
-    addAliasFilterCreator(definitions)({
-      client: {} as unknown,
-      paginator: undefined as unknown as Paginator,
+    addAliasFilterCreator()({
+      elementSource: buildElementsSourceFromElements([]),
       fetchQuery: createMockQuery(),
-      config: {} as unknown,
+      config: {},
+      definitions,
+      sharedContext: {},
     }) as FilterType
 
   describe('when fetch definition is undefined', () => {

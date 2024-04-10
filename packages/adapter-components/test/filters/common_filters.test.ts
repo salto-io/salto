@@ -41,7 +41,6 @@ describe('common filters', () => {
       const filters = createCommonFilters({
         referenceRules: [],
         config: {
-          client: {},
           fetch: {
             ...INCLUDE_ALL_CONFIG,
           },
@@ -84,11 +83,14 @@ describe('common filters', () => {
         },
       })
       expect(Object.keys(filters).sort()).toEqual([
+        'addAlias',
         'defaultDeploy',
         'fieldReferencesFilter',
         'hideTypes',
         'query',
-        'sortListsFilter',
+        'referencedInstanceNames',
+        'serviceUrl',
+        'sortListsFitler',
       ])
     })
   })

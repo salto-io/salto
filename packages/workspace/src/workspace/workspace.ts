@@ -40,7 +40,13 @@ import {
   TypeReference,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, inspectValue, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  getIndependentElemIDs,
+  inspectValue,
+  naclCase,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
@@ -407,7 +413,7 @@ export const listElementsDependenciesInWorkspace = async ({
     const [foundIds, missingIds] = _.partition(baseLevelIds, elemID => workspaceBaseLevelIds.has(elemID.getFullName()))
 
     const result: Record<string, ElemID[]> = {}
-    const elemIDsToProcess = [...foundIds]
+    const elemIDsToProcess = Array.from(foundIds)
     const visited: Set<string> = new Set()
     while (elemIDsToProcess.length > 0) {
       const currentLevelIds = elemIDsToProcess
@@ -421,9 +427,11 @@ export const listElementsDependenciesInWorkspace = async ({
         currentLevelIds.map(async currentId => {
           // eslint-disable-next-line no-await-in-loop
           const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
-          const relevantElemIds = references
-            .map(ref => ref.id.createBaseID().parent)
-            .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName()))
+          const relevantElemIds = getIndependentElemIDs(
+            references
+              .map(ref => ref.id.createBaseID().parent)
+              .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName())),
+          )
 
           const [foundElemIDs, missingElemIDs] = _.partition(relevantElemIds, elemID =>
             workspaceBaseLevelIds.has(elemID.getFullName()),

@@ -1,0 +1,51 @@
+[
+  {
+    "url": "/admin/directory/v1/customer/my_customer/orgunits",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#orgUnit",
+      "etag": "abc",
+      "name": "top",
+      "description": "forreal",
+      "orgUnitPath": "/uri/neta/top",
+      "orgUnitId": "id:03ph8a2z4exfoz5"
+    },
+    "headers": {},
+    "data": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/orgunits/uri/neta/top",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "headers": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/resources/features",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#orgUnit",
+      "etag": "abc",
+      "name": "macabi1"
+    },
+    "headers": {},
+    "data": {}
+  },
+  {
+    "url": "/admin/directory/v1/customer/my_customer/resources/buildings/salto-office",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "kind": "admin#directory#resources#buildings#Building",
+      "etags": "abc",
+      "buildingId": "salto-office",
+      "buildingName": "salto office",
+      "description": "new desc",
+      "floorNames": ["21"]
+    },
+    "headers": {},
+    "data": {}
+  }
+]

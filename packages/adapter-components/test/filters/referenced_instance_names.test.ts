@@ -29,15 +29,15 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { FilterWith } from '../../src/filter_utils'
+import { createMockQuery } from '../../src/fetch/query'
+import { ApiDefinitions, NameMappingOptions, queryWithDefault } from '../../src/definitions'
 import {
-  addReferencesToInstanceNames,
   referencedInstanceNamesFilterCreator,
   createReferenceIndex,
+  addReferencesToInstanceNames,
 } from '../../src/filters/referenced_instance_names'
-import { FilterWith } from '../../src/filter_utils'
-import { Paginator } from '../../src/client'
-import { createMockQuery } from '../../src/fetch/query'
-import { NameMappingOptions } from '../../src/definitions'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -98,7 +98,7 @@ describe('referenced instances', () => {
       },
     })
     const standaloneDoubleNestedFieldType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, 'nestingParent__standaloneNestedField__standaloneDoubleNestedField'),
+      elemID: new ElemID(ADAPTER_NAME, 'nestingParent_standaloneNestedField_standaloneDoubleNestedField'),
       fields: {
         name: { refType: BuiltinTypes.STRING },
       },
@@ -107,6 +107,24 @@ describe('referenced instances', () => {
       elemID: new ElemID(ADAPTER_NAME, 'notStandaloneNestedField'),
       fields: {
         name: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const differentMappingFunctionType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'differentMappingFunction'),
+      fields: {
+        first: { refType: BuiltinTypes.STRING },
+        second: { refType: BuiltinTypes.STRING },
+        third: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const complicatedPathType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'complicatedPath'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        first: { refType: BuiltinTypes.STRING },
+        second: { refType: BuiltinTypes.STRING },
+        third: { refType: BuiltinTypes.STRING },
+        bookId: { refType: BuiltinTypes.NUMBER },
       },
     })
     const rootBook = new InstanceElement('rootBook', bookType, {
@@ -233,14 +251,14 @@ describe('referenced instances', () => {
       'standaloneNestedField',
       standaloneNestedFieldType,
       { name: 'upstandingName' },
-      ['will', 'change', 'to', 'hierarchy', 'nestingParent', 'standaloneNestedField'],
+      undefined,
       { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(nestingParent.elemID, nestingParent) },
     )
     const nestedNestedStandaloneField = new InstanceElement(
       'nestedNestedStandaloneField',
       standaloneDoubleNestedFieldType,
       { name: 'nestedNestedName' },
-      ['will', 'change', 'to', 'hierarchy', 'nestingParent', 'standaloneNestedField', 'nestedNestedStandaloneField'],
+      undefined,
       { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(standaloneNestedField.elemID, standaloneNestedField) },
     )
     const notNestingParent = new InstanceElement('notNestingParent', notNestingParentType)
@@ -248,25 +266,62 @@ describe('referenced instances', () => {
       'notStandaloneNestedField',
       notStandaloneNestedFieldType,
       { name: 'fishyName' },
-      ['adapterName', 'Records', 'this', 'will', 'disappear!'],
+      undefined,
       { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(notNestingParent.elemID, notNestingParent) },
+    )
+
+    const differentMappingFunctionInstance = new InstanceElement(
+      'differentMappingFunction',
+      differentMappingFunctionType,
+      {
+        first: 'fiRst',
+        second: 'seCond',
+        third: 'thIrd',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(nestingParent.elemID, nestingParent),
+      },
+    )
+
+    const complicatedPathInstance = new InstanceElement(
+      'complicatedPath',
+      complicatedPathType,
+      {
+        id: 321,
+        first: 'fiRst',
+        second: 'seCond',
+        third: 'thIrd',
+        bookId: new ReferenceExpression(rootBook.elemID, rootBook),
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(nestingParent.elemID, nestingParent),
+      },
     )
 
     return [
       recipeType,
       bookType,
+      groupType,
+      statusType,
+      emailType,
+      noIdFieldsType,
+      nestingParentType,
+      notNestingParentType,
+      standaloneNestedFieldType,
+      standaloneDoubleNestedFieldType,
+      notStandaloneNestedFieldType,
+      differentMappingFunctionType,
       ...recipes,
       anotherBook,
       rootBook,
       sameRecipeOne,
       sameRecipeTwo,
       lastRecipe,
-      groupType,
       ...groups,
-      folderType,
       folderOne,
       folderTwo,
-      statusType,
       status,
       ...emailsWithTemplates,
       noIdFieldsParent,
@@ -276,90 +331,301 @@ describe('referenced instances', () => {
       standaloneNestedField,
       notStandaloneNestedField,
       nestedNestedStandaloneField,
+      differentMappingFunctionInstance,
+      complicatedPathType,
+      complicatedPathInstance,
     ]
   }
   const lowercaseName: NameMappingOptions = 'lowercase'
-  const config = {
-    apiDefinitions: {
-      types: {
-        book: {
-          transformation: {
-            idFields: ['id', '&parent_book_id'],
+  const uppercaseName: NameMappingOptions = 'uppercase'
+  const definitions = {
+    fetch: {
+      instances: {
+        default: {
+          element: {
+            topLevel: {
+              isTopLevel: true,
+              elemID: {
+                parts: [{ fieldName: 'id' }],
+              },
+            },
           },
         },
-        recipe: {
-          transformation: {
-            idFields: ['name', '&book_id'],
-            extendsParentId: true,
+        customizations: {
+          book: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [
+                    {
+                      fieldName: 'id',
+                    },
+                    {
+                      fieldName: 'parent_book_id',
+                      isReference: true,
+                    },
+                  ],
+                },
+              },
+            },
           },
-        },
-        group: {
-          transformation: {
-            idFields: ['name'],
+          recipe: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [
+                    {
+                      fieldName: 'name',
+                    },
+                    {
+                      fieldName: 'book_id',
+                      isReference: true,
+                    },
+                  ],
+                  extendsParent: true,
+                },
+              },
+            },
           },
-        },
-        folder: {
-          transformation: {
-            idFields: ['name'],
-            extendsParentId: true,
+          group: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [
+                    {
+                      fieldName: 'name',
+                    },
+                  ],
+                },
+              },
+            },
           },
-        },
-        status: {
-          transformation: {
-            idFields: ['name', '&fav_recipe'],
-            nameMapping: lowercaseName,
+          folder: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [
+                    {
+                      fieldName: 'name',
+                    },
+                  ],
+                  extendsParent: true,
+                },
+              },
+            },
           },
-        },
-        email: {
-          transformation: {
-            idFields: ['name', '&email'],
+          status: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [
+                    {
+                      fieldName: 'name',
+                      mapping: lowercaseName,
+                    },
+                    {
+                      fieldName: 'fav_recipe',
+                      mapping: lowercaseName,
+                      isReference: true,
+                    },
+                  ],
+                },
+              },
+            },
           },
-        },
-        noIdFields: {
-          transformation: {
-            idFields: [],
-            extendsParentId: true,
+          email: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [
+                    {
+                      fieldName: 'name',
+                    },
+                    {
+                      fieldName: 'email',
+                      isReference: true,
+                    },
+                  ],
+                },
+              },
+            },
           },
-        },
-        nestingParent: {
-          transformation: {
-            standaloneFields: [{ fieldName: 'standaloneNestedField' }],
-            nestStandaloneInstances: true,
+          noIdFields: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  extendsParent: true,
+                  parts: [],
+                },
+              },
+            },
           },
-        },
-        notNestingParent: {
-          transformation: {
-            standaloneFields: [{ fieldName: 'notStandaloneNestedField' }],
-            nestStandaloneInstances: false,
+          nestingParent: {
+            element: {
+              fieldCustomizations: {
+                standaloneNestedFieldButWithDifferentName: {
+                  standalone: {
+                    typeName: 'standaloneNestedField',
+                    nestPathUnderParent: true,
+                  },
+                },
+                differentMappingFunction: {
+                  standalone: {
+                    typeName: 'differentMappingFunction',
+                    nestPathUnderParent: true,
+                  },
+                },
+                complicatedPath: {
+                  standalone: {
+                    typeName: 'complicatedPath',
+                    nestPathUnderParent: true,
+                  },
+                },
+              },
+            },
           },
-        },
-        standaloneNestedField: {
-          transformation: {
-            extendsParentId: true,
-            nestStandaloneInstances: true,
-            standaloneFields: [{ fieldName: 'standaloneDoubleNestedField' }],
+          notNestingParent: {
+            element: {
+              fieldCustomizations: {
+                notStandaloneNestedField: {
+                  standalone: {
+                    typeName: 'notStandaloneNestedField',
+                    nestPathUnderParent: false,
+                  },
+                },
+              },
+            },
           },
-        },
-        nestingParent__standaloneNestedField__standaloneDoubleNestedField: {
-          transformation: {
-            extendsParentId: true,
-            nestStandaloneInstances: true,
+          standaloneNestedField: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  extendsParent: true,
+                  parts: [{ fieldName: 'name' }],
+                },
+              },
+              fieldCustomizations: {
+                standaloneDoubleNestedField: {
+                  standalone: {
+                    typeName: 'standaloneDoubleNestedField',
+                    nestPathUnderParent: true,
+                  },
+                },
+                nestingParent_standaloneNestedField_standaloneDoubleNestedField: {
+                  standalone: {
+                    typeName: 'nestingParent_standaloneNestedField_standaloneDoubleNestedField',
+                    nestPathUnderParent: true,
+                  },
+                },
+              },
+            },
           },
-        },
-        notStandaloneNestedField: {
-          transformation: {
-            extendsParentId: true,
+          nestingParent_standaloneNestedField_standaloneDoubleNestedField: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  extendsParent: true,
+                  parts: [{ fieldName: 'name' }],
+                },
+              },
+            },
+          },
+          notStandaloneNestedField: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  extendsParent: true,
+                  parts: [{ fieldName: 'name' }],
+                },
+              },
+            },
+          },
+          differentMappingFunction: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  extendsParent: true,
+                  parts: [
+                    {
+                      fieldName: 'first',
+                      mapping: lowercaseName,
+                    },
+                    {
+                      fieldName: 'second',
+                      mapping: uppercaseName,
+                    },
+                    {
+                      fieldName: 'third',
+                      mapping: lowercaseName,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          complicatedPath: {
+            element: {
+              topLevel: {
+                isTopLevel: true,
+                elemID: {
+                  parts: [{ fieldName: 'bookId', isReference: true }],
+                },
+                path: {
+                  pathParts: [
+                    {
+                      parts: [
+                        {
+                          fieldName: 'id',
+                        },
+                      ],
+                    },
+                    {
+                      parts: [
+                        {
+                          fieldName: 'first',
+                          mapping: lowercaseName,
+                        },
+                      ],
+                    },
+                    {
+                      parts: [
+                        {
+                          fieldName: 'second',
+                          mapping: uppercaseName,
+                        },
+                        {
+                          fieldName: 'third',
+                        },
+                      ],
+                    },
+                    {
+                      parts: [
+                        {
+                          fieldName: 'bookId',
+                          mapping: uppercaseName,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
           },
         },
       },
-      typeDefaults: {
-        transformation: {
-          idFields: ['id'],
-        },
-      },
-      supportedTypes: {},
     },
-  }
+  } as unknown as ApiDefinitions
   let elements: Element[]
 
   describe('referencedInstanceNames filter', () => {
@@ -369,15 +635,16 @@ describe('referenced instances', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
       filter = referencedInstanceNamesFilterCreator()({
-        client: {} as unknown,
-        paginator: undefined as unknown as Paginator,
-        config,
+        elementSource: buildElementsSourceFromElements([]),
+        definitions,
+        config: {},
         fetchQuery: createMockQuery(),
+        sharedContext: {},
       }) as FilterType
-    })
-    it('should rename the elements correctly when the filter is called', async () => {
       elements = generateElements()
       await filter.onFetch(elements)
+    })
+    it('should rename the elements correctly when the filter is called', () => {
       expect(
         elements
           .filter(isInstanceElement)
@@ -387,6 +654,8 @@ describe('referenced instances', () => {
         'myAdapter.book.instance.123_ROOT',
         'myAdapter.book.instance.456_123_ROOT',
         'myAdapter.book.instance.no_idFieldsParent',
+        'myAdapter.complicatedPath.instance.123_ROOT',
+        'myAdapter.differentMappingFunction.instance.nestingParent__first_SECOND_third',
         'myAdapter.email.instance.aaa_username_group1@um',
         'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
         'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
@@ -395,75 +664,91 @@ describe('referenced instances', () => {
         'myAdapter.group.instance.group2',
         'myAdapter.group.instance.group3',
         'myAdapter.nestingParent.instance.nestingParent',
-        'myAdapter.nestingParent__standaloneNestedField__standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
+        'myAdapter.nestingParent_standaloneNestedField_standaloneDoubleNestedField.instance.nestingParent__upstandingName__nestedNestedName',
         'myAdapter.noIdFields.instance.no_idFieldsParent',
         'myAdapter.notNestingParent.instance.notNestingParent',
-        'myAdapter.notStandaloneNestedField.instance.notNestingParent__notStandaloneNestedField',
+        'myAdapter.notStandaloneNestedField.instance.notNestingParent__fishyName',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         'myAdapter.recipe.instance.sameRecipe',
         'myAdapter.recipe.instance.sameRecipe',
-        'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
+        'myAdapter.standaloneNestedField.instance.nestingParent__upstandingName',
         'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
+      ])
+    })
+    it('should calculate path correctly when the filter is called', () => {
+      expect(
+        elements
+          .filter(isInstanceElement)
+          .map(e => e.path)
+          .filter(Array.isArray)
+          .map(path => path.join('/'))
+          .sort(),
+      ).toEqual([
+        'adapterName/Records/existing/path/to/nestingParent/nestingParent',
+        'myAdapter/Records/book/123_ROOT',
+        'myAdapter/Records/book/456_123_ROOT',
+        'myAdapter/Records/book/no_idFieldsParent',
+        'myAdapter/Records/email/aaa_username_group1',
+        'myAdapter/Records/email/aaa_username_group1_x_y',
+        'myAdapter/Records/existing/path/to/nestingParent/complicatedPath/321/first/SECOND_thIrd/123_ROOT',
+        'myAdapter/Records/existing/path/to/nestingParent/differentMappingFunction/nestingParent__first_SECOND_third',
+        'myAdapter/Records/existing/path/to/nestingParent/standaloneNestedFieldButWithDifferentName/nestingParent__upstandingName/nestingParent__upstandingName',
+        'myAdapter/Records/existing/path/to/nestingParent/standaloneNestedFieldButWithDifferentName/nestingParent__upstandingName/nestingParent_standaloneNestedField_standaloneDoubleNestedField/nestingParent__upstandingName__nestedNestedName',
+        'myAdapter/Records/folder/recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+        'myAdapter/Records/folder/recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+        'myAdapter/Records/noIdFields/no_idFieldsParent',
+        'myAdapter/Records/notStandaloneNestedField/notNestingParent__fishyName',
+        'myAdapter/Records/recipe/recipe123_123_ROOT',
+        'myAdapter/Records/recipe/recipe123_123_ROOT__lastRecipe_456_123_ROOT',
+        'myAdapter/Records/recipe/recipe456_456_123_ROOT',
+        'myAdapter/Records/status/status_recipe123_123_root_name',
       ])
     })
   })
 
   describe('addReferencesToInstanceNames function', () => {
-    const transformationDefaultConfig = config.apiDefinitions.typeDefaults.transformation
-    const transformationConfigByType = {
-      recipe: config.apiDefinitions.types.recipe.transformation,
-      book: config.apiDefinitions.types.book.transformation,
-      group: config.apiDefinitions.types.group.transformation,
-      folder: config.apiDefinitions.types.folder.transformation,
-      nestingParent: config.apiDefinitions.types.nestingParent.transformation,
-      notNestingParent: config.apiDefinitions.types.notNestingParent.transformation,
-      standaloneNestedField: config.apiDefinitions.types.standaloneNestedField.transformation,
-      nestingParent__standaloneNestedField__standaloneDoubleNestedField:
-        config.apiDefinitions.types.nestingParent__standaloneNestedField__standaloneDoubleNestedField.transformation,
-      notStandaloneNestedField: config.apiDefinitions.types.notStandaloneNestedField.transformation,
-    }
-
+    beforeEach(() => {
+      elements = generateElements()
+    })
+    const defQuery = queryWithDefault(definitions.fetch?.instances ?? { customizations: {} })
     it('should change name and references correctly', async () => {
-      elements = generateElements().filter(e => !['status', 'email'].includes(e.elemID.typeName))
-      const result = await addReferencesToInstanceNames(
-        elements.slice(0, 6).concat(elements.slice(8)),
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
+      const result = await addReferencesToInstanceNames(elements, defQuery)
       const sortedResult = result
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName())
         .sort()
-      expect(result.length).toEqual(21)
+      expect(result.length).toEqual(37)
       expect(sortedResult).toEqual([
         'myAdapter.book.instance.123_ROOT',
         'myAdapter.book.instance.456_123_ROOT',
         'myAdapter.book.instance.no_idFieldsParent',
+        'myAdapter.complicatedPath.instance.123_ROOT',
+        'myAdapter.differentMappingFunction.instance.nestingParent__first_SECOND_third',
+        'myAdapter.email.instance.aaa_username_group1@um',
+        'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
         'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
         'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
         'myAdapter.group.instance.group1',
         'myAdapter.group.instance.group2',
         'myAdapter.group.instance.group3',
         'myAdapter.nestingParent.instance.nestingParent',
-        'myAdapter.nestingParent__standaloneNestedField__standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
-        'myAdapter.noIdFields.instance.no_idFieldsWithParent',
+        'myAdapter.nestingParent_standaloneNestedField_standaloneDoubleNestedField.instance.nestingParent__upstandingName__nestedNestedName',
+        'myAdapter.noIdFields.instance.no_idFieldsParent',
         'myAdapter.notNestingParent.instance.notNestingParent',
-        'myAdapter.notStandaloneNestedField.instance.notNestingParent__notStandaloneNestedField',
+        'myAdapter.notStandaloneNestedField.instance.notNestingParent__fishyName',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',
-        'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
+        'myAdapter.recipe.instance.sameRecipe',
+        'myAdapter.recipe.instance.sameRecipe',
+        'myAdapter.standaloneNestedField.instance.nestingParent__upstandingName',
+        'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
       ])
     })
     it('should update references to the renamed instance correctly', async () => {
-      elements = generateElements()
-      const result = await addReferencesToInstanceNames(
-        elements,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
+      const result = await addReferencesToInstanceNames(elements, defQuery)
       const updatedRecipe = result.filter(isInstanceElement).find(inst => inst.elemID.name === 'recipe456_456_123_ROOT')
       const updatedGroup = result.filter(isInstanceElement).find(inst => inst.elemID.name === 'group3')
       const updatedReference = updatedGroup?.value.fav_recipe
@@ -475,12 +760,7 @@ describe('referenced instances', () => {
       )
     })
     it('should change references correctly inside template expressions', async () => {
-      elements = generateElements()
-      const result = await addReferencesToInstanceNames(
-        elements,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
+      const result = await addReferencesToInstanceNames(elements, defQuery)
       const updatedStatus = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'status')
       expect(updatedStatus).toBeInstanceOf(InstanceElement)
       expect(updatedStatus?.value.template_with_refs).toBeInstanceOf(TemplateExpression)
@@ -499,94 +779,54 @@ describe('referenced instances', () => {
       ])
     })
     it('should not change name for duplicate elemIDs', async () => {
-      elements = generateElements().filter(e => !['status', 'email', 'group'].includes(e.elemID.typeName))
-      const result = await addReferencesToInstanceNames(
-        elements,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
-      expect(result.length).toEqual(19)
+      const result = (await addReferencesToInstanceNames(elements, defQuery)).filter(isInstanceElement)
+      expect(result.length).toEqual(24)
       expect(result.map(e => e.elemID.getFullName()).sort()).toEqual([
-        'myAdapter.book',
         'myAdapter.book.instance.123_ROOT',
         'myAdapter.book.instance.456_123_ROOT',
         'myAdapter.book.instance.no_idFieldsParent',
-        'myAdapter.folder',
+        'myAdapter.complicatedPath.instance.123_ROOT',
+        'myAdapter.differentMappingFunction.instance.nestingParent__first_SECOND_third',
+        'myAdapter.email.instance.aaa_username_group1@um',
+        'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
         'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
         'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+        'myAdapter.group.instance.group1',
+        'myAdapter.group.instance.group2',
+        'myAdapter.group.instance.group3',
         'myAdapter.nestingParent.instance.nestingParent',
-        'myAdapter.nestingParent__standaloneNestedField__standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
-        'myAdapter.noIdFields.instance.no_idFieldsWithParent',
+        'myAdapter.nestingParent_standaloneNestedField_standaloneDoubleNestedField.instance.nestingParent__upstandingName__nestedNestedName',
+        'myAdapter.noIdFields.instance.no_idFieldsParent',
         'myAdapter.notNestingParent.instance.notNestingParent',
-        'myAdapter.notStandaloneNestedField.instance.notNestingParent__notStandaloneNestedField',
-        'myAdapter.recipe',
+        'myAdapter.notStandaloneNestedField.instance.notNestingParent__fishyName',
         'myAdapter.recipe.instance.recipe123_123_ROOT',
         'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
         'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         'myAdapter.recipe.instance.sameRecipe',
         'myAdapter.recipe.instance.sameRecipe',
-        'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
-      ])
-    })
-    it('should preserve the path of a nestStandaloneInstances instance and update others', async () => {
-      elements = generateElements()
-      const result = await addReferencesToInstanceNames(
-        elements,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
-      const updatedStandaloneNestedField = result
-        .filter(isInstanceElement)
-        .find(inst => inst.elemID.typeName === 'standaloneNestedField')
-      // The double last couple is because the type has it's own standalone field
-      expect(updatedStandaloneNestedField?.path).toEqual([
-        'myAdapter',
-        'Records',
-        'existing',
-        'path',
-        'to',
-        'nestingParent',
-        'standaloneNestedField',
-        'nestingParent__standaloneNestedField',
-        'nestingParent__standaloneNestedField',
-      ])
-      const updatedNotStandaloneNestedField = result
-        .filter(isInstanceElement)
-        .find(inst => inst.elemID.typeName === 'notStandaloneNestedField')
-      expect(updatedNotStandaloneNestedField?.path).toEqual([
-        'myAdapter',
-        'Records',
-        'notStandaloneNestedField',
-        'notNestingParent__notStandaloneNestedField',
+        'myAdapter.standaloneNestedField.instance.nestingParent__upstandingName',
+        'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
       ])
     })
     it('should update the path of a double nested instance', async () => {
-      elements = generateElements()
-      const result = await addReferencesToInstanceNames(
-        elements,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
-      const updatedNestedNestedStandaloneField = result
+      const result = await addReferencesToInstanceNames(elements, defQuery)
+      const updatedNestedNestedStandaloneFieldPath = result
         .filter(isInstanceElement)
-        .find(
-          inst => inst.elemID.typeName === 'nestingParent__standaloneNestedField__standaloneDoubleNestedField',
-        )?.path
-      expect(updatedNestedNestedStandaloneField).toEqual([
+        .find(inst => inst.elemID.typeName === 'nestingParent_standaloneNestedField_standaloneDoubleNestedField')?.path
+      expect(updatedNestedNestedStandaloneFieldPath).toEqual([
         'myAdapter',
         'Records',
         'existing',
         'path',
         'to',
         'nestingParent',
-        'standaloneNestedField',
-        'nestingParent__standaloneNestedField',
-        'standaloneDoubleNestedField',
-        'nestingParent__standaloneNestedField__nestedNestedStandaloneField',
+        'standaloneNestedFieldButWithDifferentName',
+        'nestingParent__upstandingName',
+        'nestingParent_standaloneNestedField_standaloneDoubleNestedField',
+        'nestingParent__upstandingName__nestedNestedName',
       ])
     })
     it('should create the correct reference map', () => {
-      elements = generateElements()
       const bookOrRecipeIns = elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === 'book' || e.elemID.typeName === 'recipe')
@@ -594,7 +834,7 @@ describe('referenced instances', () => {
       const allIns = elements.filter(isInstanceElement)
       const res = createReferenceIndex(allIns, new Set(bookOrRecipeIns))
       expect(_.mapValues(res, val => val.length)).toEqual({
-        'myAdapter.book.instance.rootBook': 4,
+        'myAdapter.book.instance.rootBook': 5,
         'myAdapter.book.instance.book': 3,
         'myAdapter.book.instance.no_idFieldsParent': 1,
         'myAdapter.recipe.instance.recipe123': 6,
@@ -603,21 +843,11 @@ describe('referenced instances', () => {
       })
     })
     it('should not have different results on the second fetch', async () => {
-      elements = generateElements()
-      const result = await addReferencesToInstanceNames(
-        elements,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
-      const result2 = await addReferencesToInstanceNames(
-        result,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
+      const result = await addReferencesToInstanceNames(elements, defQuery)
+      const result2 = await addReferencesToInstanceNames(result, defQuery)
       expect(result).toEqual(result2)
     })
     it('should ignore null values on idFields', async () => {
-      elements = generateElements()
       const parentRecipe = elements.filter(e => e.elemID.name === 'recipe123')
       const recipeType = elements.find(e => isObjectType(e) && e.elemID.typeName === 'recipe')
       const recipeWithNullBook = new InstanceElement(
@@ -632,11 +862,7 @@ describe('referenced instances', () => {
           _parent: [new ReferenceExpression(parentRecipe[0].elemID, parentRecipe[0])],
         },
       )
-      const res = await addReferencesToInstanceNames(
-        elements.concat(recipeWithNullBook),
-        transformationConfigByType,
-        transformationDefaultConfig,
-      )
+      const res = await addReferencesToInstanceNames(elements.concat(recipeWithNullBook), defQuery)
       const recipeWithNullBookRes = res
         .filter(isInstanceElement)
         .find(e => e.value.name === 'recipeWithNullBook') as InstanceElement

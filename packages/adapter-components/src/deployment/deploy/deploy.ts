@@ -22,10 +22,10 @@ import {
   InstanceElement,
   SaltoElementError,
   DeployResult,
-  ChangeGroup,
   isSaltoError,
-  ReadOnlyElementsSource,
   changeId,
+  isSaltoElementError,
+  createSaltoElementErrorFromError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, values } from '@salto-io/lowerdash'
@@ -40,6 +40,15 @@ import { ResolveAdditionalActionType } from '../../definitions/system/api'
 
 const log = logger(module)
 
+export type ConvertError = (elemID: ElemID, error: Error) => Error | SaltoElementError | undefined
+
+export const defaultConvertError: ConvertError = (elemID, error) => {
+  if (isSaltoError(error) && isSaltoElementError(error)) {
+    return error
+  }
+  return createSaltoElementErrorFromError({ error, severity: 'Error', elemID })
+}
+
 /**
  * Deploy a change with standard (add / modify / remove) and custom-defined actions based on the provided deploy definitions
  */
@@ -49,7 +58,7 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
   changeResolver,
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
-  convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+  convertError: ConvertError
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
 }): ((args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>) => {
   const { clients, deploy } = definitions
@@ -61,7 +70,16 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
     try {
       return await requester.requestAllForChangeAndAction(args)
     } catch (err) {
-      throw convertError(getChangeData(args.change).elemID, err)
+      const convertedError = convertError(getChangeData(args.change).elemID, err)
+      if (convertedError !== undefined) {
+        throw convertedError
+      }
+      log.warn(
+        'Error has been thrown during deployment of %s, but was converted to undefined. Original error: %o',
+        getChangeData(args.change).elemID.getFullName(),
+        err,
+      )
+      return undefined
     }
   }
 }
@@ -72,24 +90,21 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
 export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   definitions,
   changes,
-  changeGroup,
-  elementSource,
   deployChangeFunc,
   convertError,
   changeResolver,
+  ...changeContext
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   changes: Change<InstanceElement>[]
-  changeGroup: Readonly<ChangeGroup>
-  elementSource: ReadOnlyElementsSource
-  convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+  convertError: ConvertError
   deployChangeFunc?: (args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
-}): Promise<Omit<DeployResult, 'extraProperties'>> => {
+} & Omit<ChangeAndContext, 'change'>): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const defQuery = queryWithDefault(definitions.deploy.instances)
   const { dependencies } = definitions.deploy
 
-  const graph = createDependencyGraph({ defQuery, dependencies, changes, changeGroup, elementSource })
+  const graph = createDependencyGraph({ defQuery, dependencies, changes, ...changeContext })
 
   const errors: SaltoElementError[] = []
   const appliedChanges: Change<InstanceElement>[] = []
@@ -105,7 +120,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       typeActionChanges.length,
       typeName,
       action,
-      changeGroup.groupID,
+      changeContext.changeGroup.groupID,
     )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
     const limiter = new Bottleneck({
@@ -117,7 +132,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       await Promise.all(
         typeActionChanges.map(async change => {
           try {
-            await limitedDeployChange({ change, changeGroup, elementSource, action })
+            await limitedDeployChange({ ...changeContext, change, action })
             return change
           } catch (err) {
             log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)
@@ -155,5 +170,5 @@ export type SingleChangeDeployCreator<
   convertError,
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
-  convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+  convertError: ConvertError
 }) => (args: ChangeAndContext) => Promise<void>

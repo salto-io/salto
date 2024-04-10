@@ -16,7 +16,12 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  combineCustomReferenceGetters,
+  config as configUtils,
+  definitions,
+} from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import {
@@ -43,10 +48,11 @@ import {
 import { createConnection } from './client/connection'
 import { validateOktaBaseUrl } from './utils'
 import { getAdminUrl } from './client/admin'
+import { weakReferenceHandlers } from './weak_references'
 
 const log = logger(module)
 const { validateCredentials } = clientUtils
-const { validateClientConfig } = definitions
+const { validateClientConfig, mergeWithDefaultConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig } = configUtils
 
 const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
@@ -70,27 +76,21 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): OktaConfig => {
-  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+  const apiDefinitions = mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions,
   ) as OktaSwaggerApiConfig
 
-  const privateApiDefinitions = configUtils.mergeWithDefaultConfig(
+  const privateApiDefinitions = mergeWithDefaultConfig(
     DEFAULT_CONFIG[PRIVATE_API_DEFINITIONS_CONFIG],
     config?.value.privateApiDefinitions,
   ) as OktaDuckTypeApiConfig
 
   const fetch = _.defaults({}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG])
 
-  const client = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG[CLIENT_CONFIG] ?? {},
-    config?.value?.client,
-  ) as OktaClientConfig
+  const client = mergeWithDefaultConfig(DEFAULT_CONFIG[CLIENT_CONFIG] ?? {}, config?.value?.client) as OktaClientConfig
 
-  const deploy = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
-    config?.value?.deploy,
-  ) as OktaDeployConfig
+  const deploy = mergeWithDefaultConfig(DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {}, config?.value?.deploy) as OktaDeployConfig
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
@@ -165,4 +165,7 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getCustomReferences: combineCustomReferenceGetters(
+    _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),
+  ),
 }

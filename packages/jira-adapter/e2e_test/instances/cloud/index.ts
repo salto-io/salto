@@ -191,7 +191,7 @@ export const createInstances = (
   const scriptedField = new InstanceElement(
     randomString,
     findType(SCRIPTED_FIELD_TYPE, fetchedElements),
-    createScriptedFieldValues(randomString, fetchedElements),
+    createScriptedFieldValues(randomString),
   )
   const scriptRunnerListeners = new InstanceElement(
     randomString,

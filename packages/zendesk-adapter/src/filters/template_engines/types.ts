@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { SourceLocation } from '@handlebars/parser/types/ast'
-import { TemplateExpression } from '@salto-io/adapter-api'
+import { InstanceElement, TemplateExpression } from '@salto-io/adapter-api'
 
 export type PotentialReference<T extends string | TemplateExpression> = {
   value: T
-  loc: SourceLocation | { start: number | null; end: number | null }
+  loc: { start: number; end: number }
+}
+
+export type TemplateEngineOptions = {
+  matchBrandSubdomain: (url: string) => InstanceElement | undefined
+  idsToElements: Record<string, InstanceElement>
+  enableMissingReferences?: boolean
 }

@@ -16,9 +16,12 @@
 import { isObjectType, FetchOptions } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { MockInterface } from '@salto-io/test-utils'
+import { logger } from '@salto-io/logging'
 import { OAuthClientCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import ZuoraAdapter from '../src/adapter'
+
+const log = logger(module)
 
 describe('Zuora adapter E2E with real swagger and mock replies', () => {
   let adapter: ZuoraAdapter
@@ -27,6 +30,7 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
   jest.setTimeout(10 * 1000)
 
   beforeAll(async () => {
+    log.resetLogCount()
     credLease = await credsLease()
     const adapterAttr = realAdapter({ credentials: credLease.value })
     adapter = adapterAttr.adapter
@@ -36,6 +40,7 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
     if (credLease.return) {
       await credLease.return()
     }
+    log.info('Zuora adapter E2E: Log counts = %o', log.getLogCount())
   })
 
   describe('fetch', () => {

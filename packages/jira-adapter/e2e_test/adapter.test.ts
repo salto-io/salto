@@ -26,6 +26,7 @@ import {
   ReadOnlyElementsSource,
   toChange,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements, getParents, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -43,6 +44,7 @@ import { BEHAVIOR_TYPE } from '../src/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
+const log = logger(module)
 
 jest.setTimeout(600 * 1000)
 
@@ -69,6 +71,7 @@ each([
   let elementsSource: ReadOnlyElementsSource
 
   beforeAll(async () => {
+    log.resetLogCount()
     elementsSource = buildElementsSourceFromElements([])
     credLease = await credsLease(isDataCenter)
     const adapterAttr = realAdapter({
@@ -87,6 +90,7 @@ each([
     if (credLease.return) {
       await credLease.return()
     }
+    log.info('Jira E2E: Log counts = %o', log.getLogCount())
   })
 
   describe('should fetch types', () => {
@@ -253,15 +257,25 @@ each([
       })
 
       addDeployResults = await Promise.all(
-        removalChanges.map(change =>
-          adapter.deploy({
-            changeGroup: {
-              groupID: getChangeData(change).elemID.getFullName(),
-              changes: [change],
-            },
-            progressReporter: nullProgressReporter,
-          }),
-        ),
+        removalChanges.map(change => {
+          try {
+            return adapter.deploy({
+              changeGroup: {
+                groupID: getChangeData(change).elemID.getFullName(),
+                changes: [change],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          } catch (e) {
+            if (String(e).includes('status code 404')) {
+              return {
+                errors: [],
+                appliedChanges: [],
+              }
+            }
+            throw e
+          }
+        }),
       )
 
       const errors = addDeployResults.flatMap(res => res.errors)

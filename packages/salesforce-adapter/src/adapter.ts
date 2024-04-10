@@ -22,6 +22,7 @@ import {
   Change,
   ElemIdGetter,
   FetchResult,
+  FixElementsFunc,
   AdapterOperations,
   DeployResult,
   FetchOptions,
@@ -33,13 +34,11 @@ import {
   ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
+import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
-  filter,
-  logDuration,
+  resolveChangeElement,
   restoreChangeElement,
-  safeJsonStringify,
-} from '@salto-io/adapter-utils'
-import { resolveChangeElement } from '@salto-io/adapter-components'
+} from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -52,6 +51,7 @@ import {
   isMetadataObjectType,
   MetadataObjectType,
   createInstanceElement,
+  isCustom,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -110,7 +110,7 @@ import createMissingInstalledPackagesInstancesFilter from './filters/create_miss
 import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
-import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
+import organizationWideDefaults from './filters/organization_settings'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
@@ -134,13 +134,17 @@ import {
 import {
   addDefaults,
   apiNameSync,
+  buildDataRecordsSoqlQueries,
   getFLSProfiles,
   getFullName,
+  instanceInternalId,
   isCustomObjectSync,
   isCustomType,
+  isInstanceOfCustomObjectSync,
   isMetadataInstanceElementSync,
   listMetadataObjects,
   metadataTypeSync,
+  queryClient,
 } from './filters/utils'
 import {
   retrieveMetadataInstances,
@@ -161,8 +165,9 @@ import nestedInstancesAuthorInformation from './filters/author_information/neste
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
+  CUSTOM_FIELD,
   CUSTOM_OBJECT,
-  FLOW_DEFINITION_METADATA_TYPE,
+  CUSTOM_OBJECT_ID_FIELD,
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
@@ -174,10 +179,12 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
+import { fixElementsFunc } from './weak_references/handlers'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
+const { isDefined } = values
 
 const log = logger(module)
 
@@ -415,12 +422,10 @@ export default class SalesforceAdapter implements AdapterOperations {
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
   private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
+  private fixElementsFunc: FixElementsFunc
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [
-      FLOW_METADATA_TYPE,
-      FLOW_DEFINITION_METADATA_TYPE,
-    ],
+    metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {
@@ -535,6 +540,25 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
+    this.fixElementsFunc = fixElementsFunc({ elementsSource })
+  }
+
+  private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
+    await listMetadataObjects(this.client, CUSTOM_FIELD)
+    const listedFields = this.listedInstancesByType.get(constants.CUSTOM_FIELD)
+    const fieldsFromElementsSource = await awu(
+      await this.elementsSource.getAll(),
+    )
+      .filter(isCustomObjectSync)
+      .flatMap((obj) => Object.values(obj.fields))
+      .filter((field) => isCustom(apiNameSync(field)))
+      .toArray()
+    return new Set(
+      fieldsFromElementsSource
+        .filter((field) => !listedFields.has(apiNameSync(field) ?? ''))
+        .map((field) => apiNameSync(field.parent))
+        .filter(isDefined),
+    )
   }
 
   /**
@@ -558,6 +582,8 @@ export default class SalesforceAdapter implements AdapterOperations {
           fetchParams,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
+          customObjectsWithDeletedFields:
+            await this.getCustomObjectsWithDeletedFields(),
         })
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({
@@ -925,13 +951,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       .value()
   }
 
-  private async getDeletedElemIdsForPartialFetch({
-    fetchProfile,
-    fetchElements,
-  }: {
-    fetchElements: ReadonlyArray<Element>
-    fetchProfile: FetchProfile
-  }): Promise<Required<PartialFetchData>['deletedElements']> {
+  private async getDeletedMetadataForPartialFetch(
+    fetchElements: ReadonlyArray<Element>,
+    fetchProfile: FetchProfile,
+  ): Promise<Required<PartialFetchData>['deletedElements']> {
     const createElemId = (type: ObjectType, fullName: string): ElemID => {
       const typeName = apiNameSync(type)
       return typeName === CUSTOM_OBJECT
@@ -973,4 +996,83 @@ export default class SalesforceAdapter implements AdapterOperations {
       })
     return Array.from(deletedElemIds)
   }
+
+  private async getDeletedDataRecordsForPartialFetch(
+    fetchElements: ReadonlyArray<Element>,
+  ): Promise<Required<PartialFetchData>['deletedElements']> {
+    const querySalesforceForRecordIdsOfInstances = async (
+      instances: ReadonlyArray<InstanceElement>,
+    ): Promise<string[]> => {
+      const instancesByType = _(instances)
+        .filter(isInstanceOfCustomObjectSync)
+        .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+        .value()
+      _.unset(instancesByType, '')
+
+      const queries = awu(Object.entries(instancesByType)).map(
+        async ([typeName, instancesOfType]) =>
+          buildDataRecordsSoqlQueries(
+            typeName,
+            [instancesOfType[0].getTypeSync().fields[CUSTOM_OBJECT_ID_FIELD]],
+            instancesOfType.map(instanceInternalId),
+          ),
+      )
+
+      return awu(queries)
+        .flatMap(async (typeQueries) => queryClient(this.client, typeQueries))
+        .map((record) => record[CUSTOM_OBJECT_ID_FIELD])
+        .toArray()
+    }
+
+    const getCustomObjectInstancesFromElementSource = async (
+      elementsSource: ReadOnlyElementsSource,
+      instancesToDiscard: ReadonlyArray<Element>,
+    ): Promise<InstanceElement[]> => {
+      // We implement a small optimization of not querying for IDs we just fetched, because we know these IDs couldn't
+      // have been deleted.
+      const idsToDiscard = new Set(
+        instancesToDiscard
+          .filter(isInstanceOfCustomObjectSync)
+          .map(instanceInternalId),
+      )
+      return awu(await elementsSource.getAll())
+        .filter(isInstanceOfCustomObjectSync)
+        .filter((instance) => !idsToDiscard.has(instanceInternalId(instance)))
+        .toArray()
+    }
+
+    const workspaceInstances = await getCustomObjectInstancesFromElementSource(
+      this.elementsSource,
+      fetchElements,
+    )
+
+    const instanceIdsInSalesforce = new Set(
+      await querySalesforceForRecordIdsOfInstances(workspaceInstances),
+    )
+
+    return workspaceInstances
+      .filter(
+        (instance) =>
+          !instanceIdsInSalesforce.has(instanceInternalId(instance)),
+      )
+      .map((instance) => instance.elemID)
+  }
+
+  private async getDeletedElemIdsForPartialFetch({
+    fetchProfile,
+    fetchElements,
+  }: {
+    fetchElements: ReadonlyArray<Element>
+    fetchProfile: FetchProfile
+  }): Promise<Required<PartialFetchData>['deletedElements']> {
+    const deletedMetadata = await this.getDeletedMetadataForPartialFetch(
+      fetchElements,
+      fetchProfile,
+    )
+    const deletedDataRecords =
+      await this.getDeletedDataRecordsForPartialFetch(fetchElements)
+    return deletedMetadata.concat(deletedDataRecords)
+  }
+
+  fixElements: FixElementsFunc = (elements) => this.fixElementsFunc(elements)
 }

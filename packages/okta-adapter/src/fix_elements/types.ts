@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FixElementsFunc } from '@salto-io/adapter-api'
+import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import OktaClient from '../client/client'
 import { OktaConfig } from '../config'
 
 export type FixElementsArgs = {
   client: OktaClient
   config: OktaConfig
+  elementsSource: ReadOnlyElementsSource
 }
 
 export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc

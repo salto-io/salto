@@ -25,6 +25,7 @@ import {
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { MetadataInfo } from '@salto-io/jsforce-types'
+import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
@@ -59,6 +60,8 @@ import {
 } from './utils'
 import { testHelpers } from './jest_environment'
 
+const log = logger(module)
+
 describe('workflow filter', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
@@ -68,6 +71,7 @@ describe('workflow filter', () => {
   let fetchResult: Element[]
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
+    log.resetLogCount()
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
@@ -80,6 +84,7 @@ describe('workflow filter', () => {
     if (credLease.return) {
       await credLease.return()
     }
+    log.info('workflow filter E2E: Log counts = %o', log.getLogCount())
   })
   const baseCustomObject = 'Lead'
 

@@ -45,6 +45,10 @@
       "path": "packages/file",
     },
     {
+      "name": "intercom-adapter",
+      "path": "packages/intercom-adapter"
+    },
+    {
       "name": "jira-adapter",
       "path": "packages/jira-adapter",
     },
@@ -116,6 +120,14 @@
       "name": "serviceplaceholder-adapter",
       "path": "packages/serviceplaceholder-adapter",
     },
+		{
+				"name": "google-workspace-adapter",
+				"path": "packages/google-workspace-adapter"
+    },
+    {
+			"name": "confluence-adapter",
+			"path": "packages/confluence-adapter"
+		}
   ],
   "settings": {
     "files.exclude": {

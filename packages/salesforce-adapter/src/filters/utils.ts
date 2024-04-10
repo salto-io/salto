@@ -61,6 +61,7 @@ import {
   FetchElements,
   INSTANCE_SUFFIXES,
   OptionalFeatures,
+  ProfileRelatedMetadataType,
   SalesforceConfig,
 } from '../types'
 import {
@@ -86,10 +87,12 @@ import {
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
+  PROFILE_RELATED_METADATA_TYPES,
   SALESFORCE,
   STATUS,
   UNIX_TIME_ZERO_STRING,
   VALUE_SET_FIELDS,
+  LAST_MODIFIED_DATE,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -694,6 +697,44 @@ export const queryClient = async (
   return records
 }
 
+export const buildDataRecordsSoqlQueries = async (
+  typeName: string,
+  fields: Field[],
+  ids?: string[],
+  managedBySaltoField?: string,
+  changedSince?: string,
+): Promise<string[]> => {
+  const fieldNames = await awu(fields).flatMap(getFieldNamesForQuery).toArray()
+  const queryConditions: SoqlQuery[][] = [
+    ...makeArray(ids).map((id) => [
+      { fieldName: 'Id', operator: 'IN' as const, value: `'${id}'` },
+    ]),
+    ...(managedBySaltoField !== undefined
+      ? [
+          [
+            {
+              fieldName: managedBySaltoField,
+              operator: '=' as const,
+              value: 'TRUE',
+            },
+          ],
+        ]
+      : []),
+    ...(changedSince
+      ? [
+          [
+            {
+              fieldName: LAST_MODIFIED_DATE,
+              operator: '>' as const,
+              value: changedSince,
+            },
+          ],
+        ]
+      : []),
+  ]
+  return buildSelectQueries(typeName, fieldNames, queryConditions)
+}
+
 export const buildElementsSourceForFetch = (
   elements: ReadonlyArray<Element>,
   config: Pick<FilterContext, 'fetchProfile' | 'elementsSource'>,
@@ -726,11 +767,14 @@ export const ensureSafeFilterFetch =
   }: {
     fetchFilterFunc: Required<Filter>['onFetch']
     warningMessage: string
-    filterName: keyof OptionalFeatures
     config: FilterContext
+    filterName?: keyof OptionalFeatures
   }): Required<Filter>['onFetch'] =>
   async (elements) => {
-    if (!config.fetchProfile.isFeatureEnabled(filterName)) {
+    if (
+      filterName !== undefined &&
+      !config.fetchProfile.isFeatureEnabled(filterName)
+    ) {
       log.debug('skipping %s filter due to configuration', filterName)
       return undefined
     }
@@ -805,6 +849,14 @@ export const getChangedAtSingletonInstance = async (
 export const isCustomType = (element: Element): element is ObjectType =>
   isObjectType(element) &&
   ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+
+const pickFromDuplicates = (
+  duplicateProperties: ReadonlyArray<FileProperties>,
+): FileProperties | undefined =>
+  _(duplicateProperties)
+    .sortBy((prop) => new Date(prop.lastModifiedDate))
+    .last()
+
 const removeDuplicateFileProps = (
   files: FileProperties[],
 ): FileProperties[] => {
@@ -818,7 +870,7 @@ const removeDuplicateFileProps = (
       props,
     )
   })
-  return uniques.concat(duplicates.map((props) => props[0]))
+  return uniques.concat(duplicates.map(pickFromDuplicates).filter(isDefined))
 }
 export const listMetadataObjects = async (
   client: SalesforceClient,
@@ -974,3 +1026,10 @@ export const getMostRecentFileProperties = (
 
 export const getFLSProfiles = (config: SalesforceConfig): string[] =>
   config.client?.deploy?.flsProfiles ?? DEFAULT_FLS_PROFILES
+
+export const isProfileRelatedMetadataType = (
+  typeName: string,
+): typeName is ProfileRelatedMetadataType =>
+  PROFILE_RELATED_METADATA_TYPES.includes(
+    typeName as ProfileRelatedMetadataType,
+  )

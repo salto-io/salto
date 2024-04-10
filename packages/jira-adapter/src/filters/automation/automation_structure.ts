@@ -27,14 +27,17 @@ import {
 import {
   transformElement,
   applyFunctionToChangeData,
-  restoreChangeElement,
   safeJsonStringify,
-  restoreValues,
   createSchemeGuard,
   TransformFuncSync,
 } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
+import {
+  elements as elementUtils,
+  resolveValues,
+  restoreChangeElement,
+  restoreValues,
+} from '@salto-io/adapter-components'
 import {
   AUTOMATION_TYPE,
   AUTOMATION_COMPONENT_TYPE,

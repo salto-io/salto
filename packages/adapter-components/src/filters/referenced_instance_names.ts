@@ -27,38 +27,31 @@ import {
 } from '@salto-io/adapter-api'
 import {
   filter,
-  references,
   getParents,
-  transformElement,
   setPath,
   walkOnElement,
   WalkOnFunc,
   WALK_NEXT_STEP,
   resolvePath,
   createTemplateExpression,
-  getParent,
-  hasValidParent,
+  transformElement,
+  references,
+  pathNaclCase,
+  invertNaclCase,
 } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter_utils'
+import { AdapterFilterCreator } from '../filter_utils'
 import {
-  AdapterApiConfig,
-  getTransformationConfigByType,
-  TransformationConfig,
-  TransformationDefaultConfig,
-  getConfigWithDefault,
-  dereferenceFieldName,
-  isReferencedIdField,
-} from '../config_deprecated'
-import {
-  joinInstanceNameParts,
-  getInstanceFilePath,
-  getInstanceNaclName,
-} from '../elements_deprecated/instance_elements'
-import { NameMappingOptions } from '../definitions'
-import { toNestedTypeName } from '../fetch/element'
+  APIDefinitionsOptions,
+  DefQuery,
+  NameMappingFunctionMap,
+  ResolveCustomNameMappingOptionsType,
+  queryWithDefault,
+} from '../definitions'
+import { FieldIDPart, InstanceFetchApiDefinitions } from '../definitions/system/fetch'
+import { getInstanceCreationFunctions } from '../fetch/element/instance_utils'
 
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable
@@ -67,160 +60,37 @@ const log = logger(module)
 const { isDefined } = lowerDashValues
 const { createReferencesTransformFunc } = references
 
-type TransformationIdConfig = {
-  idFields: string[]
-  extendsParentId?: boolean
-  nameMapping?: NameMappingOptions
-}
-
-const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
-  const parentsElemIds = getParents(instance)
+const getFirstParent = (instance: InstanceElement): InstanceElement | undefined => {
+  const parentsInstances = getParents(instance)
     .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
-    .map(parent => parent.elemID)
-  // we are only using the first parent ElemId
-  return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
+    .map(parent => parent.value)
+  return parentsInstances.length > 0 ? parentsInstances[0] : undefined
 }
-
-const createInstanceReferencedNameParts = (instance: InstanceElement, idFields: string[]): (string | undefined)[] =>
-  idFields.map(fieldName => {
-    if (!isReferencedIdField(fieldName)) {
-      return _.get(instance.value, fieldName)
-    }
-    const dereferenceFieldValue = (fieldValue: ReferenceExpression): string => {
-      const { parent, path } = fieldValue.elemID.createTopLevelParentID()
-      return [parent.name, ...path].join('.')
-    }
-
-    const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
-    if (isReferenceExpression(fieldValue)) {
-      return dereferenceFieldValue(fieldValue)
-    }
-    if (isTemplateExpression(fieldValue)) {
-      return fieldValue.parts
-        .map(part => (isReferenceExpression(part) ? dereferenceFieldValue(part) : _.toString(part)))
-        .join('')
-    }
-    if (fieldValue === undefined) {
-      log.debug(`In instance: ${instance.elemID.getFullName()}, could not find idField: ${fieldName}`)
-      return undefined
-    }
-    log.warn(
-      `In instance: ${instance.elemID.getFullName()}, could not find reference for referenced idField: ${fieldName}, falling back to original value`,
-    )
-    return _.toString(fieldValue)
-  })
 
 /* Finds all elemIDs that the current instance relies on based on the idFields */
-const getInstanceNameDependencies = (
+const getInstanceNameDependencies = <TOptions extends APIDefinitionsOptions = {}>(
   instance: InstanceElement,
-  idFields: string[],
+  fieldIdParts: FieldIDPart<ResolveCustomNameMappingOptionsType<TOptions>>[],
   extendsParentId?: boolean,
 ): string[] => {
-  const referencedInstances = idFields
-    .filter(isReferencedIdField)
-    .map(fieldName => {
-      const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
+  const referencedInstances = fieldIdParts
+    .filter(fieldIdPart => fieldIdPart.isReference)
+    .map(fieldIdPart => {
+      const fieldValue = _.get(instance.value, fieldIdPart.fieldName)
       if (isReferenceExpression(fieldValue) && fieldValue.elemID.idType === 'instance') {
         return fieldValue.elemID.createTopLevelParentID().parent.getFullName()
       }
+      log.warn(
+        `Instance ${instance.elemID.getFullName()} has a reference field ${fieldIdPart.fieldName} that is not a reference expression`,
+      )
       return undefined
     })
     .filter(isDefined)
-  const parentFullName = getFirstParentElemId(instance)?.getFullName()
+  const parentFullName = getFirstParent(instance)?.elemID?.getFullName()
   if (extendsParentId && parentFullName !== undefined) {
     referencedInstances.push(parentFullName)
   }
   return referencedInstances
-}
-
-const isStandalone = (instance: InstanceElement, configByType: Record<string, TransformationConfig>): boolean => {
-  const parentElemID = getFirstParentElemId(instance)
-  if (parentElemID === undefined) {
-    return false
-  }
-  const { standaloneFields, nestStandaloneInstances } = configByType[parentElemID.typeName]
-  return (
-    (nestStandaloneInstances &&
-      standaloneFields?.some(
-        field =>
-          toNestedTypeName(parentElemID.name, field.fieldName) === instance.elemID.typeName ||
-          field.fieldName === instance.elemID.typeName,
-      )) ??
-    false
-  )
-}
-
-const nestedPath = (
-  instance: InstanceElement,
-  configByType: Record<string, TransformationConfig>,
-): string[] | undefined => {
-  if (!isStandalone(instance, configByType || !hasValidParent(instance))) {
-    return undefined
-  }
-  const parent = getParent(instance)
-  const fieldName = instance.elemID.typeName.split('__').pop() ?? instance.elemID.typeName
-  // Remove adapter, Records and the parent instance type name
-  return [...(parent.path?.slice(2, parent.path.length - 1) ?? []), fieldName]
-}
-
-/* Calculates the new instance name and file path */
-const createInstanceNameAndFilePath = (
-  instance: InstanceElement,
-  idConfig: TransformationIdConfig,
-  configByType: Record<string, TransformationConfig>,
-  getElemIdFunc?: ElemIdGetter,
-): { newNaclName: string; filePath: string[] } => {
-  const { idFields, nameMapping } = idConfig
-  const newNameParts = createInstanceReferencedNameParts(instance, idFields)
-  const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentName = idConfig.extendsParentId ? getFirstParentElemId(instance)?.name : undefined
-  const { typeName, adapter } = instance.elemID
-  const { fileNameFields, serviceIdField, nestStandaloneInstances, standaloneFields } = configByType[typeName]
-
-  const newNaclName = getInstanceNaclName({
-    entry: instance.value,
-    name: newName,
-    parentName,
-    adapterName: adapter,
-    getElemIdFunc,
-    serviceIdField,
-    typeElemId: instance.refType.elemID,
-    nameMapping,
-  })
-  const filePath = getInstanceFilePath({
-    fileNameFields,
-    entry: instance.value,
-    naclName: newNaclName,
-    typeName,
-    isSettingType: configByType[typeName].isSingleton ?? false,
-    nameMapping: configByType[typeName].nameMapping,
-    adapterName: adapter,
-    nestedPaths: nestedPath(instance, configByType),
-    hasNestStandAloneFields: nestStandaloneInstances && standaloneFields !== undefined,
-  })
-  return { newNaclName, filePath }
-}
-
-/* Create new instance with the new naclName and file path */
-const createNewInstance = async (
-  currentInstance: InstanceElement,
-  newNaclName: string,
-  newFilePath: string[],
-): Promise<InstanceElement> => {
-  const { adapter, typeName } = currentInstance.elemID
-  const newElemId = new ElemID(adapter, typeName, 'instance', newNaclName)
-  const updatedInstance = await transformElement({
-    element: currentInstance,
-    transformFunc: createReferencesTransformFunc(currentInstance.elemID, newElemId),
-    strict: false,
-  })
-  return new InstanceElement(
-    newElemId.name,
-    updatedInstance.refType,
-    updatedInstance.value,
-    newFilePath,
-    updatedInstance.annotations,
-  )
 }
 
 const isReferenceOfSomeElement = (reference: ReferenceExpression, instancesFullName: Set<string>): boolean =>
@@ -249,6 +119,28 @@ const getReferencesToElemIds = (
   }
   walkOnElement({ element, func: findReferences })
   return refs
+}
+
+/* Create new instance with the new naclName and file path */
+const createNewInstance = async (
+  currentInstance: InstanceElement,
+  newNaclName: string,
+  newFilePath: string[],
+): Promise<InstanceElement> => {
+  const { adapter, typeName } = currentInstance.elemID
+  const newElemId = new ElemID(adapter, typeName, 'instance', newNaclName)
+  const updatedInstance = await transformElement({
+    element: currentInstance,
+    transformFunc: createReferencesTransformFunc(currentInstance.elemID, newElemId),
+    strict: false,
+  })
+  return new InstanceElement(
+    newElemId.name,
+    updatedInstance.refType,
+    updatedInstance.value,
+    newFilePath,
+    updatedInstance.annotations,
+  )
 }
 
 /* Creates the same nested path under the updated instance */
@@ -313,13 +205,10 @@ const updateAllReferences = ({
   delete referenceIndex[instanceOriginalName]
 }
 
-const shouldChangeElemId = (idFields: string[], extendsParentId: boolean | undefined): boolean =>
-  idFields.some(field => isReferencedIdField(field)) || extendsParentId === true
-
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
-const createGraph = (
+const createGraph = <TOptions extends APIDefinitionsOptions = {}>(
   instances: InstanceElement[],
-  instanceToIdConfig: { instance: InstanceElement; idConfig: TransformationIdConfig }[],
+  fetchDefinitionInstanceName: Record<string, InstanceFetchApiDefinitions<TOptions>>,
 ): DAG<InstanceElement> => {
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
@@ -332,13 +221,15 @@ const createGraph = (
   }
 
   const graph = new DAG<InstanceElement>()
-  instanceToIdConfig.forEach(({ instance, idConfig }) => {
-    const { idFields, extendsParentId } = idConfig
-    if (shouldChangeElemId(idFields, extendsParentId)) {
+  instances.forEach(instance => {
+    const { elemID } = fetchDefinitionInstanceName[instance.elemID.getFullName()]?.element?.topLevel ?? {}
+    const parts = elemID?.parts ?? []
+    const extendsParent = elemID?.extendsParent
+    if (extendsParent || parts.some(part => part.isReference)) {
       // removing duplicate elemIDs to create a graph
       // we can traverse based on references to unique elemIDs
       if (!isDuplicateInstance(instance.elemID.getFullName())) {
-        const nameDependencies = getInstanceNameDependencies(instance, idFields, extendsParentId).filter(
+        const nameDependencies = getInstanceNameDependencies(instance, parts, extendsParent).filter(
           instanceName => !isDuplicateInstance(instanceName),
         )
         graph.addNode(instance.elemID.getFullName(), nameDependencies, instance)
@@ -363,52 +254,80 @@ export const createReferenceIndex = (
   return referenceIndex
 }
 
+const getPathToNestUnder = <TOptions extends APIDefinitionsOptions = {}>(
+  fetchDefinitionByType: Record<string, InstanceFetchApiDefinitions<TOptions>>,
+  instance: InstanceElement,
+  parent: InstanceElement,
+): string[] | undefined => {
+  const [fieldName, fieldCustomizations] =
+    Object.entries(fetchDefinitionByType[parent.elemID.typeName]?.element?.fieldCustomizations ?? {}).find(
+      ([, def]) => def.standalone?.typeName === instance.elemID.typeName,
+    ) ?? []
+  return fieldCustomizations?.standalone?.nestPathUnderParent
+    ? [...(parent.path?.slice(2, parent.path?.length - 1) ?? []), pathNaclCase(fieldName)]
+    : undefined
+}
+
+const calculateInstanceNewNameAndPath = <TOptions extends APIDefinitionsOptions = {}>(
+  instance: InstanceElement,
+  defQuery: DefQuery<InstanceFetchApiDefinitions<TOptions>, string>,
+  getElemIdFunc?: ElemIdGetter,
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<TOptions>>,
+): { newName: string; newPath: string[] } => {
+  const parent = getFirstParent(instance)
+  const nestUnderPath = parent ? getPathToNestUnder(defQuery.getAll(), instance, parent) : undefined
+  const { toElemName, toPath } = getInstanceCreationFunctions({
+    defQuery,
+    type: instance.getTypeSync(),
+    getElemIdFunc,
+    nestUnderPath,
+    customNameMappingFunctions,
+  })
+
+  const nameAndPathCreationArgs = {
+    entry: instance.value,
+    defaultName: invertNaclCase(instance.elemID.name),
+    parent,
+  }
+  return { newName: toElemName(nameAndPathCreationArgs), newPath: toPath(nameAndPathCreationArgs) }
+}
+
 /*
  * Utility function that finds instance elements whose id relies on the ids of other instances,
  * and replaces them with updated instances with the correct id and file path.
  */
-export const addReferencesToInstanceNames = async (
+export const addReferencesToInstanceNames = async <TOptions extends APIDefinitionsOptions = {}>(
   elements: Element[],
-  transformationConfigByType: Record<string, TransformationConfig>,
-  transformationDefaultConfig: TransformationDefaultConfig,
+  defQuery: DefQuery<InstanceFetchApiDefinitions<TOptions>, string>,
   getElemIdFunc?: ElemIdGetter,
+  customNameMappingFunctions?: NameMappingFunctionMap<ResolveCustomNameMappingOptionsType<TOptions>>,
 ): Promise<Element[]> => {
   const instances = elements.filter(isInstanceElement)
-  const instanceTypeNames = new Set(instances.map(instance => instance.elemID.typeName))
-  const configByType = Object.fromEntries(
-    [...instanceTypeNames].map(typeName => [
-      typeName,
-      getConfigWithDefault(transformationConfigByType[typeName], transformationDefaultConfig),
-    ]),
-  )
-
-  const instancesToIdConfig = instances.map(instance => ({
-    instance,
-    idConfig: {
-      idFields: configByType[instance.elemID.typeName].idFields,
-      extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
-      nameMapping: configByType[instance.elemID.typeName].nameMapping,
-    },
-  }))
-
-  const graph = createGraph(instances, instancesToIdConfig)
-
-  const nameToInstanceIdConfig = _.keyBy(instancesToIdConfig, obj => obj.instance.elemID.getFullName())
+  const fetchDefinitionByType = defQuery.getAll()
   const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
+  const instanceNameToDefinition = _(nameToInstance)
+    .mapValues(value => fetchDefinitionByType[value.elemID.typeName])
+    .value()
+
+  const graph = createGraph(instances, instanceNameToDefinition)
 
   const elemIdsToRename = new Set(wu(graph.nodeData.keys()).map(instanceName => instanceName.toString()))
   const referenceIndex = createReferenceIndex(instances, elemIdsToRename)
-
   await awu(graph.evaluationOrder()).forEach(async graphNode => {
     if (!elemIdsToRename.has(graphNode.toString())) {
       return
     }
-    const instanceIdConfig = nameToInstanceIdConfig[graphNode.toString()]
-    if (instanceIdConfig !== undefined) {
-      const { instance, idConfig } = instanceIdConfig
+    const instanceFetchDefinitions = instanceNameToDefinition[graphNode.toString()]
+    if (instanceFetchDefinitions !== undefined) {
+      const instance = graph.getData(graphNode)
       const originalFullName = instance.elemID.getFullName()
-      const { newNaclName, filePath } = createInstanceNameAndFilePath(instance, idConfig, configByType, getElemIdFunc)
-      const newInstance = await createNewInstance(instance, newNaclName, filePath)
+      const { newName, newPath } = calculateInstanceNewNameAndPath(
+        instance,
+        defQuery,
+        getElemIdFunc,
+        customNameMappingFunctions,
+      )
+      const newInstance = await createNewInstance(instance, newName, newPath)
 
       updateAllReferences({
         referenceIndex,
@@ -428,21 +347,28 @@ export const addReferencesToInstanceNames = async (
   return elements
 }
 
-export const referencedInstanceNamesFilterCreator: <
-  TClient,
-  TContext extends { apiDefinitions: AdapterApiConfig },
-  TResult extends void | filter.FilterResult = void,
->(
-  customApiDefinitions?: AdapterApiConfig,
-) => FilterCreator<TClient, TContext, TResult> =
-  customApiDefinitions =>
-  ({ config, getElemIdFunc }) => ({
-    name: 'referencedInstanceNames',
-    onFetch: async (elements: Element[]) => {
-      const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
-      const transformationDefault = apiDefinitions.typeDefaults.transformation
-      const configByType = apiDefinitions.types
-      const transformationByType = getTransformationConfigByType(configByType)
-      await addReferencesToInstanceNames(elements, transformationByType, transformationDefault, getElemIdFunc)
-    },
-  })
+export const referencedInstanceNamesFilterCreator =
+  <TResult extends void | filter.FilterResult, TOptions extends APIDefinitionsOptions = {}>(): AdapterFilterCreator<
+    {},
+    TResult,
+    {},
+    TOptions
+  > =>
+  ({ definitions, getElemIdFunc }) => {
+    if (definitions.fetch === undefined) {
+      log.warn('No fetch definitions were found, skipping referencedInstanceNames filter')
+      return () => ({})
+    }
+    const { instances } = definitions.fetch
+    return {
+      name: 'referencedInstanceNames',
+      onFetch: async elements => {
+        await addReferencesToInstanceNames(
+          elements,
+          queryWithDefault(instances),
+          getElemIdFunc,
+          definitions.fetch?.customNameMappingFunctions,
+        )
+      },
+    }
+  }

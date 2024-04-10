@@ -25,11 +25,8 @@ import {
   isInstanceChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
 import { WorkflowV1Instance, isWorkflowV1Instance } from '../workflow/types'
-
-const log = logger(module)
 
 export const CHUNK_SIZE = 25
 export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
@@ -295,15 +292,6 @@ export const isDeploymentWorkflowPayload = createSchemeGuard<DeploymentWorkflowP
   DEPLOYMENT_WORKFLOW_PAYLOAD_SCHEME,
   'Received an invalid workflow payload',
 )
-
-export const isWorkflowV2Transition = (value: unknown): value is WorkflowTransitionV2 => {
-  const { error } = TRANSITION_SCHEME.validate(value)
-  if (error !== undefined) {
-    log.warn(`Received an invalid workflowV2 transition: ${error.message}`)
-    return false
-  }
-  return true
-}
 
 export const isWorkflowDataResponse = createSchemeGuard<WorkflowDataResponse[]>(
   WORKFLOW_DATA_RESPONSE_SCHEMA,

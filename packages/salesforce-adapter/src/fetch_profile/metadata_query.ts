@@ -102,6 +102,7 @@ type BuildFetchWithChangesDetectionMetadataQueryParams =
   BuildMetadataQueryParams & {
     elementsSource: ReadOnlyElementsSource
     lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
+    customObjectsWithDeletedFields: Set<string>
   }
 
 export const buildMetadataQuery = ({
@@ -235,6 +236,13 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
       lastChangeDateOfTypesWithNestedInstancesFromSingleton[type][parentName]
     const lastChangeDate =
       lastChangeDateOfTypesWithNestedInstances[type][parentName]
+    if (parentName === 'Parent') {
+      log.debug('lastChangeDate of Parent: %s', lastChangeDate)
+    }
+    // Standard Objects with no CustomFields and sub instances will have no lastChangeDate
+    if (lastChangeDate === undefined) {
+      return false
+    }
     return isValidDateString(dateFromSingleton) &&
       isValidDateString(lastChangeDate)
       ? new Date(dateFromSingleton).getTime() <
@@ -289,6 +297,12 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         return false
       }
       const { metadataType, name } = instance
+      if (
+        metadataType === CUSTOM_OBJECT &&
+        params.customObjectsWithDeletedFields.has(name)
+      ) {
+        return true
+      }
       if (isTypeWithNestedInstances(metadataType)) {
         return isInstanceWithNestedInstancesIncluded(metadataType)
       }
@@ -311,6 +325,12 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
         'The following instances were fetched in fetch with changes detection due to invalid or missing changedAt: %s',
         safeJsonStringify(missingOrInvalidChangedAtInstances),
       )
+      if (params.customObjectsWithDeletedFields.size > 0) {
+        log.debug(
+          'The following custom objects have deleted fields and were fetched in fetch with changes detection: %s',
+          Array.from(params.customObjectsWithDeletedFields),
+        )
+      }
     },
   }
 }

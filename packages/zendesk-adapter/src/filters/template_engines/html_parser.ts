@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, TemplateExpression } from '@salto-io/adapter-api'
+import { TemplateExpression } from '@salto-io/adapter-api'
 import { extractTemplate } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { hasChildren, isTag, isText, Node } from 'domhandler'
+import { Element, hasChildren, isTag, isText, Node } from 'domhandler'
 import { DomHandler, Parser } from 'htmlparser2'
 import { extractTemplateFromUrl, URL_REGEX } from '../article/utils'
-import { PotentialReference } from './types'
+import { PotentialReference, TemplateEngineOptions } from './types'
 
 const log = logger(module)
 
@@ -49,25 +49,69 @@ const ELEMENTS_WITH_URLS: { [key: string]: string } = {
  */
 export const parseUrlPotentialReferencesFromString = (
   content: string,
-  {
-    matchBrandSubdomain,
-    instancesById,
-    enableMissingReferences,
-  }: {
-    matchBrandSubdomain: (url: string) => InstanceElement | undefined
-    instancesById: Record<string, InstanceElement>
-    enableMissingReferences?: boolean
-  },
+  { matchBrandSubdomain, idsToElements, enableMissingReferences }: TemplateEngineOptions,
 ): string | TemplateExpression =>
   extractTemplate(content, [URL_REGEX, HELP_CENTER_URL], expression => {
     if (expression.match(URL_REGEX)) {
       const urlBrandInstance = matchBrandSubdomain(expression)
       return urlBrandInstance !== undefined
-        ? extractTemplateFromUrl({ url: expression, urlBrandInstance, instancesById, enableMissingReferences })
+        ? extractTemplateFromUrl({
+            url: expression,
+            urlBrandInstance,
+            instancesById: idsToElements,
+            enableMissingReferences,
+          })
         : expression
     }
-    return extractTemplateFromUrl({ url: expression, instancesById, enableMissingReferences })
+    return extractTemplateFromUrl({ url: expression, instancesById: idsToElements, enableMissingReferences })
   })
+
+// Function to extract the location of an attribute value in the content
+// htmlparser2 does not provide the location of the attribute value in a node
+const updateUrlLocations = (urls: PotentialReference<string>[], content: string): PotentialReference<string>[] =>
+  urls.map(({ loc, value }) => {
+    const start = loc.start + content.substring(loc.start, loc.end).indexOf(value)
+    return { value, loc: { start, end: start + value.length } }
+  })
+
+const parseUrlTag = (node: Element): PotentialReference<string> | undefined => {
+  if (node.name in ELEMENTS_WITH_URLS) {
+    const urlAttr = ELEMENTS_WITH_URLS[node.name]
+    if (!node.startIndex || !node.endIndex) {
+      log.error('Missing start or end index for node %o', node)
+      return undefined
+    }
+    if (node.attribs[urlAttr]) {
+      return { value: node.attribs[urlAttr], loc: { start: node.startIndex, end: node.endIndex } }
+    }
+    if (node.attribs[`ng-${urlAttr}`]) {
+      // Support AngularJS ng-href and ng-src
+      return {
+        value: node.attribs[`ng-${urlAttr}`],
+        loc: { start: node.startIndex, end: node.endIndex },
+      }
+    }
+  }
+  return undefined
+}
+
+const parseScriptTag = (node: Element): PotentialReference<string> | undefined => {
+  if (node.name === 'script') {
+    // Assumes the first text child of a script tag is the script content
+    const scriptContent = node.children.find(child => isText(child))
+    if (scriptContent && isText(scriptContent)) {
+      if (!scriptContent.startIndex || !scriptContent.endIndex) {
+        log.error('Missing start or end index for node %o', node)
+        return undefined
+      }
+      return {
+        value: scriptContent.data,
+        loc: { start: scriptContent.startIndex, end: scriptContent.endIndex },
+      }
+    }
+  }
+  return undefined
+}
 
 // Function to parse HTML and extract URLs from tags
 export const parseTagsFromHtml = (
@@ -83,27 +127,13 @@ export const parseTagsFromHtml = (
         const traverse = (nodes: Node[]): void => {
           nodes.forEach(node => {
             if (isTag(node)) {
-              if (node.name in ELEMENTS_WITH_URLS) {
-                const urlAttr = ELEMENTS_WITH_URLS[node.name]
-                if (node.attribs[urlAttr]) {
-                  urls.push({ value: node.attribs[urlAttr], loc: { start: node.startIndex, end: node.endIndex } })
-                } else if (node.attribs[`ng-${urlAttr}`]) {
-                  // Support AngularJS ng-href and ng-src
-                  urls.push({
-                    value: node.attribs[`ng-${urlAttr}`],
-                    loc: { start: node.startIndex, end: node.endIndex },
-                  })
-                }
+              const url = parseUrlTag(node)
+              if (url) {
+                urls.push(url)
               }
-              if (node.name === 'script') {
-                // Assumes the first text child of a script tag is the script content
-                const scriptContent = node.children.find(child => isText(child))
-                if (scriptContent && isText(scriptContent)) {
-                  scripts.push({
-                    value: scriptContent.data,
-                    loc: { start: scriptContent.startIndex, end: scriptContent.endIndex },
-                  })
-                }
+              const script = parseScriptTag(node)
+              if (script) {
+                scripts.push(script)
               }
             }
             if (hasChildren(node)) {
@@ -121,27 +151,19 @@ export const parseTagsFromHtml = (
   parser.write(htmlContent)
   parser.end()
 
-  return { urls, scripts }
+  return { urls: updateUrlLocations(urls, htmlContent), scripts }
 }
 
 export const parseHtmlPotentialReferences = (
   content: string,
-  {
-    matchBrandSubdomain,
-    instancesById,
-    enableMissingReferences,
-  }: {
-    matchBrandSubdomain: (url: string) => InstanceElement | undefined
-    instancesById: Record<string, InstanceElement>
-    enableMissingReferences?: boolean
-  },
+  { matchBrandSubdomain, idsToElements, enableMissingReferences }: TemplateEngineOptions,
 ): { urls: PotentialReference<string | TemplateExpression>[]; scripts: PotentialReference<string>[] } => {
   const { urls, scripts } = parseTagsFromHtml(content)
   return {
     urls: urls.map(url => ({
       value: parseUrlPotentialReferencesFromString(url.value, {
         matchBrandSubdomain,
-        instancesById,
+        idsToElements,
         enableMissingReferences,
       }),
       loc: url.loc,

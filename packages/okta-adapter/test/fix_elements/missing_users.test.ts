@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import OktaClient from '../../src/client/client'
 import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
@@ -65,6 +66,7 @@ describe('missing_users', () => {
   )
   const groupPushInstance = new InstanceElement('foo', pushGroupType, { notUsersKnownPath: [NOT_EXIST_USER] })
   const missingUsersHandlerInput = [accessPolicyInstance, groupRuleInstance, groupPushInstance]
+  const elementsSource = buildElementsSourceFromElements([])
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -74,7 +76,9 @@ describe('missing_users', () => {
       [FETCH_CONFIG]: {},
     } as OktaConfig
     it('should return empty fixElements list and empty errors list', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient })(missingUsersHandlerInput)
+      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
+        missingUsersHandlerInput,
+      )
       expect(result.errors).toHaveLength(0)
       expect(result.fixedElements).toHaveLength(0)
       expect(mockGetUsers).not.toHaveBeenCalled()
@@ -88,7 +92,9 @@ describe('missing_users', () => {
       [FETCH_CONFIG]: {},
     } as OktaConfig
     it('should return empty fixElements list and empty errors list', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient })(missingUsersHandlerInput)
+      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
+        missingUsersHandlerInput,
+      )
       expect(result.errors).toHaveLength(0)
       expect(result.fixedElements).toHaveLength(0)
       expect(mockGetUsers).not.toHaveBeenCalled()
@@ -102,7 +108,9 @@ describe('missing_users', () => {
       [FETCH_CONFIG]: {},
     } as OktaConfig
     it('should return fixElements list and errors list correctly', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient })(missingUsersHandlerInput)
+      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
+        missingUsersHandlerInput,
+      )
       expect(result.errors).toHaveLength(2)
       expect(result.errors).toEqual([
         expect.objectContaining({
@@ -141,6 +149,7 @@ If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSIN
             },
           } as OktaConfig,
           client: mockClient,
+          elementsSource,
         })(missingUsersHandlerInput)
         expect(mockGetUsers.mock.calls[0][1]).toEqual({
           userIds: expect.arrayContaining(ALL_MOCK_USERS),

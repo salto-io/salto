@@ -52,6 +52,8 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
     if (isStaticFile(value)) {
       if (value.isTemplate) {
         const templateExpression = await parserUtils.staticFileToTemplateExpression(value)
+        // resolve of references in templateExpression usually happen in core however for templateStaticFile it is not
+        // possible to do it there, and therefore it happens here.
         if (templateExpression)
           templateExpression.parts = await Promise.all(
             templateExpression?.parts.map(async part =>

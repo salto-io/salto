@@ -51,7 +51,6 @@ import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-// import { createAdditionalParentChanges } from './utils'
 
 const { isDefined } = values
 const log = logger(module)
@@ -328,7 +327,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME,
     )
-    let additionalParentChanges: Change<InstanceElement>[] | undefined = []
+    let additionalParentChanges: Change<InstanceElement>[] | undefined
     if (parentChanges.length === 0 && childrenChanges.length > 0) {
       additionalParentChanges = childrenChanges
         .flatMap(childChange => {

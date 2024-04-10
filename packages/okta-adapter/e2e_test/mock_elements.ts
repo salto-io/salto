@@ -133,7 +133,8 @@ export const mockDefaultValues: Record<string, Values> = {
   [NETWORK_ZONE_TYPE_NAME]: {
     type: 'IP',
     name: 'myNewZone',
-    status: 'ACTIVE',
+    // TODO SALTO-5779 change to ACTIVE
+    status: 'INACTIVE',
     usage: 'POLICY',
     system: false,
     gateways: [

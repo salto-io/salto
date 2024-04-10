@@ -170,8 +170,10 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
       name: createName('policyRule'),
       conditions: {
         network: {
-          connection: 'ZONE',
-          include: [new ReferenceExpression(zoneInstance.elemID, zoneInstance)],
+          connection: 'ANYWHERE',
+          // TODO SALTO-5780 - return reference to zone once resolved
+          // connection: 'ZONE',
+          // include: [new ReferenceExpression(zoneInstance.elemID, zoneInstance)],
         },
         riskScore: { level: 'ANY' },
       },

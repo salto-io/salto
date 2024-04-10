@@ -78,6 +78,7 @@ export type Guide = {
   themesForBrands?: string[]
 }
 
+export const OMIT_INACTIVE_DEFAULT = true
 export type OmitInactiveConfig = definitions.DefaultWithCustomizations<boolean>
 
 export type ZendeskClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig> & {
@@ -2783,7 +2784,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     addAlias: true,
     handleIdenticalAttachmentConflicts: false,
     omitInactive: {
-      default: true,
+      default: OMIT_INACTIVE_DEFAULT,
     },
     omitTicketStatusTicketField: false,
   },

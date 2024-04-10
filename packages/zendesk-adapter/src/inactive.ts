@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { ZendeskConfig, FETCH_CONFIG } from './config'
+import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
 import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 
 /**
@@ -38,7 +37,7 @@ export const filterOutInactiveInstancesForType = (
     // We can't omit inactive ticket_form instances because we need all the instance in order to reorder them
     // if we decide to omit inactive ticket_form
     // we will need to add warning in the ticket_field_deactivation change validator
-    const omitInactive = omitInactiveQuery ? omitInactiveQuery.query(typeName) : false
+    const omitInactive = omitInactiveQuery ? omitInactiveQuery.query(typeName) : OMIT_INACTIVE_DEFAULT
     if (typeName === TICKET_FORM_TYPE_NAME || !omitInactive) {
       return instances
     }

@@ -35,10 +35,11 @@ import {
   StaticFile,
   Value,
   Element,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { parserUtils } from '@salto-io/parser'
-import _ from 'lodash'
+import _, { isBuffer, isString } from 'lodash'
 
 const log = logger(module)
 
@@ -101,13 +102,14 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
 
     const file = allStaticFilesPaths.get(path.getFullName())
     if (file !== undefined) {
-      if (file.isTemplate) {
+      if (file.isTemplate && isTemplateExpression(value)) {
         return parserUtils.templateExpressionToStaticFile(value, file.filepath)
       }
-      const content = file.encoding === 'binary' ? value : Buffer.from(value, file.encoding)
-      return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })
+      if (isBuffer(value) || isString(value)) {
+        const content = file.encoding === 'binary' || isBuffer(value) ? value : Buffer.from(value, file.encoding)
+        return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })
+      }
     }
-
     return value
   }
 

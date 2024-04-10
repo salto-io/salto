@@ -32,7 +32,7 @@ const isCloudV1ScriptRunnerItem = (value: Value): boolean =>
   SCRIPT_RUNNER_CLOUD_TYPES.includes(value.type) && value.configuration?.scriptRunner != null
 
 const isCloudV2ScriptRunnerItem = (value: Value): boolean =>
-  value.parameters != null &&
+  value.parameters !== undefined &&
   SCRIPT_RUNNER_CLOUD_TYPES.includes(value.parameters.appKey) &&
   value.parameters.scriptRunner != null
 
@@ -111,12 +111,10 @@ export const walkOnScripts = ({
     })
   })
   instances.filter(isWorkflowV2Instance).forEach(instance => {
-    Object.entries(instance.value.transitions).forEach(([key, transition]) => {
-      walkOnValue({
-        elemId: instance.elemID.createNestedID('transitions', key),
-        value: transition,
-        func: walkOnCloudV2Scripts(func),
-      })
+    walkOnValue({
+      elemId: instance.elemID.createNestedID('transitions'),
+      value: instance.value.transitions,
+      func: walkOnCloudV2Scripts(func),
     })
   })
   instances

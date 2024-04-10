@@ -28,8 +28,9 @@ export const validateCredentials = async ({
 }): Promise<AccountInfo> => {
   try {
     const response = await connection.get('/me')
-    if (response.status !== 200) {
-      throw new Error(`Failed to validate credentials, got status: ${response.status}`)
+    const accountId = _.get(response.data, 'app.id_code')
+    if (_.isUndefined(accountId)) {
+      throw new Error(`Failed to fetch account id from response, status: ${response.status} body: ${response.data}`)
     }
     return { accountId: _.get(response.data, 'app.id_code') }
   } catch (e) {

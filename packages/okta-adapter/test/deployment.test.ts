@@ -253,17 +253,9 @@ describe('deployment.ts', () => {
           data: {},
         })
         mockConnection.delete.mockResolvedValue({ status: 200, data: {} })
-        await defaultDeployWithStatus(
-          toChange({ before: zoneInstance }),
-          client,
-          DEFAULT_API_DEFINITIONS,
-          [],
-        )
+        await defaultDeployWithStatus(toChange({ before: zoneInstance }), client, DEFAULT_API_DEFINITIONS, [])
         expect(mockConnection.post).toHaveBeenCalledWith('/api/v1/zones/a/lifecycle/deactivate', {}, undefined)
-        expect(mockConnection.delete).toHaveBeenCalledWith(
-          '/api/v1/zones/a',
-          { data: undefined },
-        )
+        expect(mockConnection.delete).toHaveBeenCalledWith('/api/v1/zones/a', { data: undefined })
       })
     })
   })

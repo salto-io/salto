@@ -20,31 +20,36 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategies,
   CustomReferenceSerializationStrategyName
 >[] = [
-  {
-    src: { field: 'roleId', parentTypes: ['roleAssignment'] },
-    serializationStrategy: 'roleId',
-    target: { type: 'role' },
-  },
-  {
-    src: { field: 'assignedTo', parentTypes: ['roleAssignment'] },
-    serializationStrategy: 'id',
-    target: { type: 'group' },
-  },
-  {
-    src: { field: 'parentOrgUnitId', parentTypes: ['orgUnit'] },
-    serializationStrategy: 'orgUnitId',
-    target: { type: 'orgUnit' },
-  },
+  // {
+  //   src: { field: 'roleId', parentTypes: ['roleAssignment'] },
+  //   serializationStrategy: 'roleId',
+  //   target: { type: 'role' },
+  // },
+  // {
+  //   src: { field: 'assignedTo', parentTypes: ['roleAssignment'] },
+  //   serializationStrategy: 'id',
+  //   target: { type: 'group' },
+  // },
+  // {
+  //   src: { field: 'parentOrgUnitId', parentTypes: ['orgUnit'] },
+  //   serializationStrategy: 'orgUnitId',
+  //   target: { type: 'orgUnit' },
+  // },
   {
     src: { field: 'buildingId', parentTypes: ['room'] },
     serializationStrategy: 'buildingId',
     target: { type: 'building' },
   },
-  {
-    src: { field: 'name', parentTypes: ['room__featureInstances__feature'] },
-    serializationStrategy: 'name',
-    target: { type: 'feature' },
-  },
+  // {
+  //   src: { field: 'name', parentTypes: ['room__featureInstances__feature'] },
+  //   serializationStrategy: 'name',
+  //   target: { type: 'feature' },
+  // },
+  // {
+  //   src: { field: 'email', parentTypes: ['groupMember'] },
+  //   serializationStrategy: 'email',
+  //   target: { type: 'group' },
+  // },
 ]
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
@@ -65,6 +70,11 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       lookup: referenceUtils.basicLookUp,
       lookupIndexName: 'orgUnitId',
     },
+    email: {
+      serialize: ({ ref }) => ref.value.value.email,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'email',
+    },
   },
-  fieldsToGroupBy: ['id', 'roleId', 'buildingId', 'orgUnitId', 'name'],
+  fieldsToGroupBy: ['id', 'roleId', 'buildingId', 'orgUnitId', 'email', 'name'],
 }

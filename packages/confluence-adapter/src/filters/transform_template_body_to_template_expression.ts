@@ -42,11 +42,13 @@ import { UserConfig } from '../config'
 const log = logger(module)
 
 const TEMPLATE_TYPE_NAMES = ['template', 'global_template']
+
+// If you change one regex for some reason, you should change the other as well
 const PAGE_REF_REGEX = /<ri:page ri:space-key=".*?" ri:content-title=".*?" ri:version-at-save=".*?" >/
+const SPLIT_REGEX = /(<ri:page ri:space-key=")(.*?)(" ri:content-title=")(.*?)(" ri:version-at-save=".*?" \/>)/
 
 const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () => {
   let deployTemplateMapping: Record<string, TemplateExpression>
-  const fetchTemplateMapping = new Map<ReferenceExpression, string>()
   return {
     name: 'templateBodyToTemplateExpressionFilter',
     onFetch: async elements => {
@@ -59,8 +61,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
           return
         }
         const templateExpression = extractTemplate(bodyValue, [PAGE_REF_REGEX], expression => {
-          const splitRegex = /(<ri:page ri:space-key=")(.*?)(" ri:content-title=")(.*?)(" ri:version-at-save=".*?" \/>)/
-          const matches = expression.match(splitRegex)
+          const matches = expression.match(SPLIT_REGEX)
           if (matches !== null) {
             const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
             const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
@@ -69,7 +70,6 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
               return expression
             }
             const spaceReference = new ReferenceExpression(space.elemID, space)
-            fetchTemplateMapping.set(spaceReference, spaceKeyValue)
             const page = instances.find(
               inst =>
                 inst.elemID.typeName === 'page' &&
@@ -82,7 +82,6 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
               return [spaceKey, spaceReference, contentTitle, contentTitle, versionAtSave]
             }
             const pageReference = new ReferenceExpression(page.elemID, page)
-            fetchTemplateMapping.set(pageReference, contentTitle)
             return [spaceKey, spaceReference, contentTitle, pageReference, versionAtSave]
           }
           return expression
@@ -112,11 +111,6 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
             )
             return ''
           }
-          const stringValueSavedOnFetch = fetchTemplateMapping.get(ref)
-          if (stringValueSavedOnFetch) {
-            return stringValueSavedOnFetch
-          }
-          // cases where reference hasn't created upon fetch
           if (ref.value.elemID.typeName === 'space' && _.isString(ref.value?.key)) {
             return ref.value.key
           }

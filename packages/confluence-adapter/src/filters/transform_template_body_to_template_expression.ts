@@ -18,13 +18,13 @@ import {
   InstanceElement,
   ReferenceExpression,
   TemplateExpression,
+  TemplatePart,
   UnresolvedReference,
   getChangeData,
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
-  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { AdapterFilterCreator, FilterResult } from '@salto-io/adapter-components/src/filter_utils'
 import {
@@ -35,20 +35,78 @@ import {
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { awu } from '@salto-io/lowerdash/src/collections/asynciterable'
+import { collections } from '@salto-io/lowerdash'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
 
 const log = logger(module)
-
+const { awu } = collections.asynciterable
 const TEMPLATE_TYPE_NAMES = ['template', 'global_template']
 
-// If you change one regex for some reason, you should change the other as well
-const PAGE_REF_REGEX = /<ri:page ri:space-key=".*?" ri:content-title=".*?" ri:version-at-save=".*?" >/
-const SPLIT_REGEX = /(<ri:page ri:space-key=")(.*?)(" ri:content-title=")(.*?)(" ri:version-at-save=".*?" \/>)/
+// If you change one regex of a pair (TYPE_REF_REGEX, SPLIT_TYPE_REF_REGEX), you should change the other as well
+const PAGE_REF_REGEX = /(<ri:page\s+ri:space-key="[^"]*"\s+ri:content-title="[^"]*"\s+ri:version-at-save="\d+"\s*\/>)/
+const SPLIT_PAGE_REF_REGEX =
+  /(<ri:page\s+ri:space-key=")([^"]*)("\s+ri:content-title=")([^"]*)("\s+ri:version-at-save="\d+"\s*\/>)/
+
+const SPACE_REF_REGEX = /(<ri:space\sri:space-key="[^"]*"\s*\/>)/
+const SPLIT_SPACE_REF_REGEX = /(<ri:space\sri:space-key=")([^"]*)("\s*\/>)/
+
+const handlePageRefMatch = (
+  matches: RegExpMatchArray,
+  instances: InstanceElement[],
+  fallback: string,
+): TemplatePart | TemplatePart[] => {
+  const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
+  const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
+  if (space === undefined) {
+    // TODO_F add log
+    return fallback
+  }
+  const spaceReference = new ReferenceExpression(space.elemID, space)
+  const page = instances.find(
+    inst =>
+      inst.elemID.typeName === 'page' &&
+      inst.value.title === contentTitleValue &&
+      isReferenceExpression(inst.value.spaceId) &&
+      inst.value.spaceId.elemID.isEqual(spaceReference.elemID),
+  )
+  if (page === undefined) {
+    // TODO_F add log
+    return [spaceKey, spaceReference, contentTitle, contentTitle, versionAtSave]
+  }
+  const pageReference = new ReferenceExpression(page.elemID, page)
+  return [spaceKey, spaceReference, contentTitle, pageReference, versionAtSave]
+}
+
+const handleSpaceRefMatch = (
+  matches: RegExpMatchArray,
+  instances: InstanceElement[],
+  fallback: string,
+): TemplatePart | TemplatePart[] => {
+  const [, spaceKey, spaceKeyValue, rest] = matches
+  const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
+  if (space === undefined) {
+    // TODO_F add log
+    return fallback
+  }
+  const spaceReference = new ReferenceExpression(space.elemID, space)
+  return [spaceKey, spaceReference, rest]
+}
+
+const extractionFunc = (expression: string, instances: InstanceElement[]): TemplatePart | TemplatePart[] => {
+  const pageMatches = expression.match(SPLIT_PAGE_REF_REGEX)
+  if (pageMatches !== null) {
+    return handlePageRefMatch(pageMatches, instances, expression)
+  }
+  const spaceMatches = expression.match(SPLIT_SPACE_REF_REGEX)
+  if (spaceMatches !== null) {
+    return handleSpaceRefMatch(spaceMatches, instances, expression)
+  }
+  return expression
+}
 
 const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () => {
-  let deployTemplateMapping: Record<string, TemplateExpression>
+  const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
     name: 'templateBodyToTemplateExpressionFilter',
     onFetch: async elements => {
@@ -60,68 +118,50 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
           // TODO_F add log
           return
         }
-        const templateExpression = extractTemplate(bodyValue, [PAGE_REF_REGEX], expression => {
-          const matches = expression.match(SPLIT_REGEX)
-          if (matches !== null) {
-            const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
-            const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
-            if (space === undefined) {
-              // TODO_F add log
-              return expression
-            }
-            const spaceReference = new ReferenceExpression(space.elemID, space)
-            const page = instances.find(
-              inst =>
-                inst.elemID.typeName === 'page' &&
-                inst.value.title === contentTitleValue &&
-                isReferenceExpression(inst.value.spaceId) &&
-                inst.value.spaceId.elemID.isEqual(spaceReference.elemID),
-            )
-            if (page === undefined) {
-              // TODO_F add log
-              return [spaceKey, spaceReference, contentTitle, contentTitle, versionAtSave]
-            }
-            const pageReference = new ReferenceExpression(page.elemID, page)
-            return [spaceKey, spaceReference, contentTitle, pageReference, versionAtSave]
-          }
-          return expression
-        })
+        const templateExpression = extractTemplate(bodyValue, [PAGE_REF_REGEX, SPACE_REF_REGEX], expression =>
+          extractionFunc(expression, instances),
+        )
         templateInst.value.body.storage.value = templateExpression
       })
     },
     preDeploy: async changes => {
-      const templateChanges = changes
-        .filter(isInstanceChange)
+      await awu(changes)
         .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
         .filter(change => TEMPLATE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
-
-      templateChanges.forEach(async ({ data }) => {
-        const { after } = data
-        const bodyStorage = _.get(after.value, 'body.storage')
-        if (!_.isPlainObject(bodyStorage) || !isTemplateExpression(bodyStorage.value)) {
-          // TODO_F add log
-          return
-        }
-        const container = { values: [bodyStorage], fieldName: 'value' }
-        replaceTemplatesWithValues(container, deployTemplateMapping, ref => {
-          if (ref.value instanceof UnresolvedReference) {
-            log.trace(
-              'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
-              ref.elemID.getFullName(),
-            )
-            return ''
-          }
-          if (ref.value.elemID.typeName === 'space' && _.isString(ref.value?.key)) {
-            return ref.value.key
-          }
-          if (ref.value.elemID.typeName === 'page' && _.isString(ref.value?.title)) {
-            return ref.value.title
-          }
-          // TODO_F add log
-          // fallback to the original reference
-          return ref
+        .forEach(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
+            try {
+              replaceTemplatesWithValues(
+                { values: [instance.value.body.storage], fieldName: 'value' },
+                deployTemplateMapping,
+                ref => {
+                  if (ref.value instanceof UnresolvedReference) {
+                    log.trace(
+                      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
+                      ref.elemID.getFullName(),
+                    )
+                    return ''
+                  }
+                  if (ref.value.elemID.typeName === 'space' && _.isString(ref.value.value?.key)) {
+                    return ref.value.value.key
+                  }
+                  if (ref.value.elemID.typeName === 'page' && _.isString(ref.value.value?.title)) {
+                    return ref.value.value.title
+                  }
+                  // TODO_F add log
+                  // fallback to the original reference
+                  return ref
+                },
+              )
+            } catch (e) {
+              log.error(
+                `Error serializing article translation body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
+              )
+            }
+            return instance
+          })
         })
-      })
     },
     onDeploy: async changes => {
       await awu(changes)

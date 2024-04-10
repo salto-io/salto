@@ -120,13 +120,13 @@ export const issueLayoutsValidator: ChangeValidator = async (changes, elementsSo
       const issueLayoutsScreen = await getIssueLayoutsScreen(elementsSource, instances[0])
 
       await Promise.all(
-        instances.map(async instance => {
-          if (!issueLayoutsScreen.includes(instance.value.extraDefinerId.elemID.getFullName())) {
+        instances.map(async issueLayoutInstance => {
+          if (!issueLayoutsScreen.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName())) {
             errors.push({
-              elemID: instance.elemID,
+              elemID: issueLayoutInstance.elemID,
               severity: 'Error',
               message: 'Invalid screen in Issue Layout',
-              detailedMessage: `Issue layout ${instance.elemID.getFullName()} references an invalid or non-existing screen.`,
+              detailedMessage: 'This issue layout references an invalid or non-existing screen.',
             })
           }
         }),

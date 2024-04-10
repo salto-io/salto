@@ -27,21 +27,17 @@ import { PropertySortDefinition } from '../definitions/system/fetch/element'
  * values from resolved reference expressions.
  */
 const get = (current: Value, tail: string[]): Value => {
-  if (current === undefined) {
-    return undefined
-  }
-  const [head, ...rest] = tail
-  const next: Value = _.get(current, head)
-  if (isResolvedReferenceExpression(next)) {
-    if (rest.length === 0) {
+  if (isResolvedReferenceExpression(current) || isInstanceElement(current)) {
+    if (tail.length === 0) {
       throw new Error('Cannot sort by reference, use a property of the referenced element')
     }
-    return get(next.value, rest)
+    return get(current.value, tail)
   }
-  if (rest.length === 0) {
-    return next
+  if (current === undefined || tail.length === 0) {
+    return current
   }
-  return get(next, rest)
+  const [head, ...rest] = tail
+  return get(_.get(current, head), rest)
 }
 
 const sortLists = (instance: InstanceElement, defQuery: DefQuery<ElementFetchDefinition>): void => {

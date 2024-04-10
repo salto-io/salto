@@ -141,6 +141,37 @@ describe('sort lists filter', () => {
     })
   })
 
+  it('should sort fields with instance reference expressions', async () => {
+    const filter = sortListsFilterCreator()(
+      makeDefinitions({
+        field1: { sort: { sortByProperties: [{ path: 'ref.prop1' }] } },
+      }),
+    ) as FilterWith<'onFetch'>
+    const mainObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't1'),
+      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+    })
+    const referencedObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't2'),
+      fields: { prop1: { refType: BuiltinTypes.NUMBER } },
+    })
+
+    const [ref1, ref2, ref3]: ReferenceExpression[] = [1, 2, 3]
+      .map(value => new InstanceElement(`ref${value}`, referencedObjType, { prop1: value }))
+      .map(instance => new ReferenceExpression(instance.elemID, instance))
+
+    const instance = new InstanceElement('instance', mainObjType, {
+      field1: [{ ref: ref2 }, { ref: ref3 }, { ref: ref1 }],
+    })
+
+    const elements = [instance]
+    await filter.onFetch(elements)
+    expect(elements).toHaveLength(1)
+    expect(elements[0].value).toEqual({
+      field1: [{ ref: ref1 }, { ref: ref2 }, { ref: ref3 }],
+    })
+  })
+
   it('should sort fields with nested reference expressions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({

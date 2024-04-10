@@ -28,7 +28,7 @@ import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { definitions } from '@salto-io/adapter-components'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
-import { ZendeskFetchConfig } from '../config'
+import { OMIT_INACTIVE_DEFAULT, ZendeskFetchConfig } from '../config'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -88,7 +88,7 @@ export const triggerCategoryRemovalValidator: (fetchConfig: ZendeskFetchConfig) 
     const omitInactiveConfig = fetchConfig.omitInactive
     const inactiveTriggersOmitted = omitInactiveConfig
       ? definitions.queryWithDefault(omitInactiveConfig).query(TRIGGER_CATEGORY_TYPE_NAME)
-      : false
+      : OMIT_INACTIVE_DEFAULT
     const removalWarnings = removedTriggerCategories.map((removedTriggerCategory): ChangeError | undefined => {
       // If we omitted inactive triggers, we can't warn about them specifically, so we return a general warning
       if (inactiveTriggersOmitted) {

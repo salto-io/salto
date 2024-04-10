@@ -19,10 +19,11 @@ import _ from 'lodash'
 import referencesFilter from '../../../src/filters/script_runner/script_template_expressions'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
+import { WORKFLOW_CONFIGURATION_TYPE } from '../../../src/constants'
 
 type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
 
-const checkValuesNoReference = (element: InstanceElement): void => {
+const checkValuesV1NoReference = (element: InstanceElement): void => {
   const postFunction = element.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner
   const { conditions } = element.value.transitions.tran1.rules.conditions
   expect(postFunction.field).toEqual(1)
@@ -38,7 +39,44 @@ const checkValuesNoReference = (element: InstanceElement): void => {
   expect(conditions[1].configuration.scriptRunner.expression).toEqual('test customfield_2 test2')
 }
 
-const checkValues = (element: InstanceElement): void => {
+const checkValuesV2NoReference = (element: InstanceElement): void => {
+  const postFunction = element.value.transitions.tran1.actions[0].parameters.scriptRunner
+  const { conditions } = element.value.transitions.tran1.conditions
+  expect(postFunction.field).toEqual(1)
+  expect(postFunction.field2).toEqual('no fields')
+  expect(postFunction.expression).toEqual('test customfield_1 test2')
+  expect(postFunction.additionalCode).toEqual('customfield_2')
+  expect(postFunction.emailCode).toEqual('customfield_3 test customfield_4')
+  expect(postFunction.condition).toEqual('customfield_5')
+  expect(element.value.transitions.tran1.validators[0].parameters.scriptRunner.expression).toEqual(
+    'test customfield_1 test2',
+  )
+  expect(conditions[0].parameters.scriptRunner.expression).toEqual('test customfield_1 test2')
+  expect(conditions[1].parameters.scriptRunner.expression).toEqual('test customfield_2 test2')
+}
+
+const checkValuesV2 = (element: InstanceElement): void => {
+  const postFunction = element.value.transitions.tran1.actions[0].parameters.scriptRunner
+  const { conditions } = element.value.transitions.tran1.conditions
+  expect(postFunction.field).toEqual(1)
+  expect(postFunction.field2).toEqual('no fields')
+  expect(postFunction.expression.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
+  expect(postFunction.additionalCode.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_2')
+  expect(postFunction.emailCode.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_3')
+  expect(postFunction.emailCode.parts[2].elemID.getFullName()).toEqual('jira.Field.instance.field_4')
+  expect(postFunction.condition.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_5')
+  expect(
+    element.value.transitions.tran1.validators[0].parameters.scriptRunner.expression.parts[1].elemID.getFullName(),
+  ).toEqual('jira.Field.instance.field_1')
+  expect(conditions[0].parameters.scriptRunner.expression.parts[1].elemID.getFullName()).toEqual(
+    'jira.Field.instance.field_1',
+  )
+  expect(conditions[1].parameters.scriptRunner.expression.parts[1].elemID.getFullName()).toEqual(
+    'jira.Field.instance.field_2',
+  )
+}
+
+const checkValuesV1 = (element: InstanceElement): void => {
   const postFunction = element.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner
   const { conditions } = element.value.transitions.tran1.rules.conditions
   expect(postFunction.field).toEqual(1)
@@ -117,18 +155,132 @@ describe('workflow_script_references', () => {
       config.fetch.enableScriptRunnerAddon = true
       filter = referencesFilter(getFilterParams({ config })) as FilterType
       filterOff = referencesFilter(getFilterParams({ config: configOff })) as FilterType
-
-      const workflowType = createEmptyType('Workflow')
-      instance = new InstanceElement('instance', workflowType, {
-        transitions: {
-          tran1: {
-            name: 'tran1',
-            rules: {
-              undefined, // to test cases of undefined fields
-              postFunctions: [
+    })
+    describe('WORKFLOW_V1', () => {
+      beforeEach(() => {
+        instance = new InstanceElement('instance', createEmptyType('Workflow'), {
+          transitions: {
+            tran1: {
+              name: 'tran1',
+              rules: {
+                undefined, // to test cases of undefined fields
+                postFunctions: [
+                  {
+                    type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
+                    configuration: {
+                      scriptRunner: {
+                        field: 1,
+                        field2: 'no fields',
+                        expression: 'test customfield_1 test2',
+                        additionalCode: 'customfield_2',
+                        emailCode: 'customfield_3 test customfield_4',
+                        condition: 'customfield_5',
+                      },
+                    },
+                  },
+                ],
+                validators: [
+                  {
+                    type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
+                    configuration: {
+                      scriptRunner: {
+                        expression: 'test customfield_1 test2',
+                      },
+                    },
+                  },
+                ],
+                conditions: {
+                  operator: 'AND',
+                  conditions: [
+                    {
+                      type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
+                      configuration: {
+                        scriptRunner: {
+                          expression: 'test customfield_1 test2',
+                        },
+                      },
+                    },
+                    {
+                      type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
+                      configuration: {
+                        scriptRunner: {
+                          expression: 'test customfield_2 test2',
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        })
+      })
+      it('fetch should not add references when script runner is disabled', async () => {
+        const elements = [instance, ...fields]
+        await filterOff.onFetch(elements)
+        checkValuesV1NoReference(elements[0])
+      })
+      it('fetch should add references when script runner is enabled', async () => {
+        const elements = [instance, ...fields]
+        await filter.onFetch(elements)
+        checkValuesV1(elements[0])
+      })
+      it('fetch should not fail if a script is null', async () => {
+        const elements = [instance, ...fields]
+        elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.expression = null
+        await filter.onFetch(elements)
+        expect(
+          elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.expression,
+        ).toBeNull()
+      })
+      it('fetch should not fail if a scriptRunner object is null', async () => {
+        const elements = [instance, ...fields]
+        elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = null
+        await filter.onFetch(elements)
+        expect(elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toBeNull()
+      })
+      it('pre-deploy should not remove references when script runner is disabled', async () => {
+        await filter.onFetch([instance, ...fields])
+        await filterOff.preDeploy([toChange({ after: instance })])
+        checkValuesV1(instance)
+      })
+      it('pre-deploy should remove references when script runner is enabled', async () => {
+        await filter.onFetch([instance, ...fields])
+        await filter.preDeploy([toChange({ after: instance })])
+        checkValuesV1NoReference(instance)
+      })
+      it('onDeploy should not restore references when script runner is disabled', async () => {
+        // just for coverage
+        await filterOff.onDeploy([toChange({ after: instance })])
+        // another for coverage
+        const emptyInstance = new InstanceElement('instance', createEmptyType('Workflow'), {
+          transitions: [{}],
+        })
+        await filter.onDeploy([toChange({ after: emptyInstance })])
+      })
+      it('onDeploy should restore references when script runner is enabled', async () => {
+        await filter.onFetch([instance, ...fields])
+        await filter.preDeploy([toChange({ after: instance })])
+        await filter.onDeploy([toChange({ after: instance })])
+        checkValuesV1(instance)
+      })
+    })
+    describe('WORKFLOW_V2', () => {
+      beforeEach(() => {
+        instance = new InstanceElement('instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
+          name: 'workflowV2',
+          scope: {
+            type: 'global',
+          },
+          statuses: [],
+          transitions: {
+            tran1: {
+              name: 'tran1',
+              type: 'DIRECTED',
+              actions: [
                 {
-                  type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
-                  configuration: {
+                  parameters: {
+                    appKey: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
                     scriptRunner: {
                       field: 1,
                       field2: 'no fields',
@@ -142,8 +294,8 @@ describe('workflow_script_references', () => {
               ],
               validators: [
                 {
-                  type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
-                  configuration: {
+                  parameters: {
+                    appKey: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
                     scriptRunner: {
                       expression: 'test customfield_1 test2',
                     },
@@ -151,19 +303,19 @@ describe('workflow_script_references', () => {
                 },
               ],
               conditions: {
-                operator: 'AND',
+                operation: 'AND',
                 conditions: [
                   {
-                    type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
-                    configuration: {
+                    parameters: {
+                      appKey: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
                       scriptRunner: {
                         expression: 'test customfield_1 test2',
                       },
                     },
                   },
                   {
-                    type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
-                    configuration: {
+                    parameters: {
+                      appKey: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions',
                       scriptRunner: {
                         expression: 'test customfield_2 test2',
                       },
@@ -173,57 +325,55 @@ describe('workflow_script_references', () => {
               },
             },
           },
-        },
+        })
       })
-    })
-    it('fetch should not add references when script runner is disabled', async () => {
-      const elements = [instance, ...fields]
-      await filterOff.onFetch(elements)
-      checkValuesNoReference(elements[0])
-    })
-    it('fetch should add references when script runner is enabled', async () => {
-      const elements = [instance, ...fields]
-      await filter.onFetch(elements)
-      checkValues(elements[0])
-    })
-    it('fetch should not fail if a script is null', async () => {
-      const elements = [instance, ...fields]
-      elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.expression = null
-      await filter.onFetch(elements)
-      expect(
-        elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.expression,
-      ).toBeNull()
-    })
-    it('fetch should not fail if a scriptRunner object is null', async () => {
-      const elements = [instance, ...fields]
-      elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = null
-      await filter.onFetch(elements)
-      expect(elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toBeNull()
-    })
-    it('pre-deploy should not remove references when script runner is disabled', async () => {
-      await filter.onFetch([instance, ...fields])
-      await filterOff.preDeploy([toChange({ after: instance })])
-      checkValues(instance)
-    })
-    it('pre-deploy should remove references when script runner is enabled', async () => {
-      await filter.onFetch([instance, ...fields])
-      await filter.preDeploy([toChange({ after: instance })])
-      checkValuesNoReference(instance)
-    })
-    it('onDeploy should not restore references when script runner is disabled', async () => {
-      // just for coverage
-      await filterOff.onDeploy([toChange({ after: instance })])
-      // another for coverage
-      const emptyInstance = new InstanceElement('instance', createEmptyType('Workflow'), {
-        transitions: [{}],
+      it('fetch should not add references when script runner is disabled', async () => {
+        const elements = [instance, ...fields]
+        await filterOff.onFetch(elements)
+        checkValuesV2NoReference(elements[0])
       })
-      await filter.onDeploy([toChange({ after: emptyInstance })])
-    })
-    it('onDeploy should restore references when script runner is enabled', async () => {
-      await filter.onFetch([instance, ...fields])
-      await filter.preDeploy([toChange({ after: instance })])
-      await filter.onDeploy([toChange({ after: instance })])
-      checkValues(instance)
+      it('fetch should add references when script runner is enabled', async () => {
+        const elements = [instance, ...fields]
+        await filter.onFetch(elements)
+        checkValuesV2(elements[0])
+      })
+      it('fetch should not fail if a script is null', async () => {
+        const elements = [instance, ...fields]
+        elements[0].value.transitions.tran1.actions[0].parameters.scriptRunner.expression = null
+        await filter.onFetch(elements)
+        expect(elements[0].value.transitions.tran1.actions[0].parameters.scriptRunner.expression).toBeNull()
+      })
+      it('fetch should not fail if a scriptRunner object is null', async () => {
+        const elements = [instance, ...fields]
+        elements[0].value.transitions.tran1.actions[0].parameters.scriptRunner = null
+        await filter.onFetch(elements)
+        expect(elements[0].value.transitions.tran1.actions[0].parameters.scriptRunner).toBeNull()
+      })
+      it('pre-deploy should not remove references when script runner is disabled', async () => {
+        await filter.onFetch([instance, ...fields])
+        await filterOff.preDeploy([toChange({ after: instance })])
+        checkValuesV2(instance)
+      })
+      it('pre-deploy should remove references when script runner is enabled', async () => {
+        await filter.onFetch([instance, ...fields])
+        await filter.preDeploy([toChange({ after: instance })])
+        checkValuesV2NoReference(instance)
+      })
+      it('onDeploy should not restore references when script runner is disabled', async () => {
+        // just for coverage
+        await filterOff.onDeploy([toChange({ after: instance })])
+        // another for coverage
+        const emptyInstance = new InstanceElement('instance', createEmptyType(WORKFLOW_CONFIGURATION_TYPE), {
+          transitions: [{}],
+        })
+        await filter.onDeploy([toChange({ after: emptyInstance })])
+      })
+      it('onDeploy should restore references when script runner is enabled', async () => {
+        await filter.onFetch([instance, ...fields])
+        await filter.preDeploy([toChange({ after: instance })])
+        await filter.onDeploy([toChange({ after: instance })])
+        checkValuesV2(instance)
+      })
     })
   })
   describe('DC', () => {

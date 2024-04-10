@@ -172,10 +172,41 @@ describe('sort lists filter', () => {
     })
   })
 
+  it('should sort fields that have direct instance reference expressions', async () => {
+    const filter = sortListsFilterCreator()(
+      makeDefinitions({
+        field1: { sort: { sortByProperties: [{ path: 'prop1' }] } },
+      }),
+    ) as FilterWith<'onFetch'>
+    const mainObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't1'),
+      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+    })
+    const referencedObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't2'),
+      fields: { prop1: { refType: BuiltinTypes.NUMBER } },
+    })
+
+    const [ref1, ref2, ref3]: ReferenceExpression[] = [1, 2, 3]
+      .map(value => new InstanceElement(`ref${value}`, referencedObjType, { prop1: value }))
+      .map(instance => new ReferenceExpression(instance.elemID, instance))
+
+    const instance = new InstanceElement('instance', mainObjType, {
+      field1: [ref2, ref1, ref3],
+    })
+
+    const elements = [instance]
+    await filter.onFetch(elements)
+    expect(elements).toHaveLength(1)
+    expect(elements[0].value).toEqual({
+      field1: [ref1, ref2, ref3],
+    })
+  })
+
   it('should sort fields with nested reference expressions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'ref.ref2.prop' }] } },
+        field1: { sort: { sortByProperties: [{ path: 'ref.nestedRef.prop' }] } },
       }),
     ) as FilterWith<'onFetch'>
     const mainObjType = new ObjectType({
@@ -186,17 +217,17 @@ describe('sort lists filter', () => {
       field1: [
         {
           ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
+            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
           }),
         },
         {
           ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
+            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
           }),
         },
         {
           ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
+            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
           }),
         },
       ],
@@ -208,20 +239,62 @@ describe('sort lists filter', () => {
       field1: [
         {
           ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
+            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
           }),
         },
         {
           ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
+            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
           }),
         },
         {
           ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            ref2: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
+            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
           }),
         },
       ],
+    })
+  })
+
+  it('should sort fields with nested instance reference expressions', async () => {
+    const filter = sortListsFilterCreator()(
+      makeDefinitions({
+        field1: { sort: { sortByProperties: [{ path: 'ref.nestedRef.prop1' }] } },
+      }),
+    ) as FilterWith<'onFetch'>
+    const mainObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't1'),
+      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+    })
+    const referencedObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't2'),
+      fields: { nestedRef: { refType: BuiltinTypes.UNKNOWN } },
+    })
+    const nestedReferencedObjType = new ObjectType({
+      elemID: new ElemID('adapter', 't3'),
+      fields: { prop1: { refType: BuiltinTypes.NUMBER } },
+    })
+
+    const [ref1, ref2, ref3]: ReferenceExpression[] = [1, 2, 3]
+      .map(value => new InstanceElement(`nestedRef${value}`, nestedReferencedObjType, { prop1: value }))
+      .map(instance => new ReferenceExpression(instance.elemID, instance))
+      .map(
+        ref =>
+          new InstanceElement(`nestedRef.${ref.value.prop1}`, referencedObjType, {
+            nestedRef: new ReferenceExpression(ref.elemID, ref),
+          }),
+      )
+      .map(instance => new ReferenceExpression(instance.elemID, instance))
+
+    const instance = new InstanceElement('instance', mainObjType, {
+      field1: [{ ref: ref2 }, { ref: ref3 }, { ref: ref1 }],
+    })
+
+    const elements = [instance]
+    await filter.onFetch(elements)
+    expect(elements).toHaveLength(1)
+    expect(elements[0].value).toEqual({
+      field1: [{ ref: ref1 }, { ref: ref2 }, { ref: ref3 }],
     })
   })
 

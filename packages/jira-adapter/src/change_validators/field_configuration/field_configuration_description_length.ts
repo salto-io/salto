@@ -22,30 +22,19 @@ import {
 } from '@salto-io/adapter-api'
 import { 
   FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, 
-  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH, 
-  FIELD_CONFIGURATION_ITEM_TYPE_NAME, 
   FIELD_CONFIGURATION_TYPE_NAME 
 } from '../../constants';
 
-const maxLengthsMap: Map<string, number> = new Map();
-maxLengthsMap.set(FIELD_CONFIGURATION_TYPE_NAME, FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
-maxLengthsMap.set(FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH)
 
 export const fieldConfigurationDescriptionLengthValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(change => maxLengthsMap.has(getChangeData(change).elemID.typeName))
-    .filter(change => change.data.after.value.description !== undefined)
-    .filter(
-      change => {
-        const maxLength = maxLengthsMap.get(getChangeData(change).elemID.typeName)
-        return maxLength!== undefined && change.data.after.value.description.length > maxLength
-      }
-    )
+    .filter(change => getChangeData(change).elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+    .filter(change => change.data.after.value.description.length > FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
     .map(change => ({
       elemID: getChangeData(change).elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Description length exceeded maximum.',
-      detailedMessage: `Description length (${change.data.after.value.description.length}) exceeded the allowed maximum of ${maxLengthsMap.get(getChangeData(change).elemID.typeName)} characters.`,
+      message: 'Field configuration description length exceeded maximum.',
+      detailedMessage: `Field configuration description length (${change.data.after.value.description.length}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH} characters.`,
     }))

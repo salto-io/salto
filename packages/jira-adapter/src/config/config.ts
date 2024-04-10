@@ -197,6 +197,7 @@ export type ChangeValidatorName =
   | 'deployTypesNotSupported'
   | 'readOnlyProjectRoleChange'
   | 'defaultFieldConfiguration'
+  | 'fieldConfigurationDescriptionLength'
   | 'screen'
   | 'issueTypeScheme'
   | 'issueTypeSchemeDefaultType'
@@ -256,6 +257,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
     defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
+    fieldConfigurationDescriptionLength: { refType: BuiltinTypes.BOOLEAN },
     screen: { refType: BuiltinTypes.BOOLEAN },
     issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },

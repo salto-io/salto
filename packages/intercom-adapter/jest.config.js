@@ -16,14 +16,14 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'serviceplaceholder-adapter',
-  displayName: 'serviceplaceholder-adapter',
+  name: 'intercom-adapter',
+  displayName: 'intercom-adapter',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   testEnvironment: undefined,
   coverageThreshold: {
     global: {
-      branches: 85,
+      branches: 88,
       functions: 84,
       lines: 95,
       statements: 96,

@@ -134,9 +134,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'data',
-          // Type field is same for all - 'company'
           // app_id is always the same as the account_id
-          omit: ['type', 'app_id', 'remote_created_at', 'created_at', 'updated_at', 'last_request_at'],
+          omit: ['app_id', 'remote_created_at', 'created_at', 'updated_at', 'last_request_at'],
           adjust: mapArrayFieldToNestedValues([
             { fieldName: 'tags', fromField: 'tags', nestedField: 'id', fallbackValue: '' },
             { fieldName: 'segments', fromField: 'segments', nestedField: 'id', fallbackValue: '' },
@@ -170,7 +169,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'data',
-          omit: ['type'], // Same for all - 'data_attribute'
         },
       },
     ],
@@ -218,7 +216,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'data',
-          omit: ['type'], // Same for all - 'news-item'
           adjust: mapArrayFieldToNestedValues([
             {
               fieldName: 'newsfeed_assignments',
@@ -249,7 +246,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'data',
-          omit: ['type'], // Same for all - 'newsfeed'
         },
       },
     ],
@@ -270,7 +266,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'segments',
-          omit: ['type'], // Same for all - 'segment'
         },
       },
     ],
@@ -291,7 +286,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'data',
-          omit: ['type'], // Same for all - 'subscription'
           adjust: replaceFieldWithNestedValue({
             fieldName: 'default_translation',
             nestedField: 'name',
@@ -330,7 +324,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'data',
-          omit: ['type'], // Same for all - 'tag'
         },
       },
     ],
@@ -352,7 +345,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'teams',
-          omit: ['type'], // Same for all - 'team'
         },
       },
     ],

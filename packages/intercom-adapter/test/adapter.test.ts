@@ -31,7 +31,7 @@ type MockReply = {
   response: unknown
 }
 
-describe('adapter', () => {
+describe('Intercom adapter', () => {
   jest.setTimeout(10 * 1000)
   let mockAxiosAdapter: MockAdapter
 
@@ -81,18 +81,18 @@ describe('adapter', () => {
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'intercom.article',
-          'intercom.article.instance.Getting_Started_Fetching_Your_Configuration_Data@susss',
+          'intercom.article.instance.Test_collection_This_is_a_test_article@sussss',
           'intercom.collection',
-          'intercom.collection.instance.Getting_Started@s',
+          'intercom.collection.instance.Test_collection@s',
           'intercom.data_attribute',
           'intercom.data_attribute.instance.name',
           'intercom.help_center',
-          'intercom.help_center.instance.salto_io@b',
+          'intercom.help_center.instance.test_help_center@b',
           'intercom.news_item',
-          'intercom.news_item.instance.Monitoring_has_a_new_home_@ssssl',
+          'intercom.news_item.instance.This_is_a_test_news_item@s',
           'intercom.newsfeed',
-          'intercom.newsfeed.instance.Jira',
-          'intercom.newsfeed.instance.Rest_of_the_adapters@s',
+          'intercom.newsfeed.instance.Test',
+          'intercom.newsfeed.instance.Test_with_a_long_name@s',
           'intercom.segment',
           'intercom.segment.instance.Active',
           'intercom.segment.instance.Customers',
@@ -105,9 +105,9 @@ describe('adapter', () => {
           'intercom.subscription_type_translation.instance.Best_practices@s',
           'intercom.subscription_type_translation.instance.Newsletter',
           'intercom.tag',
-          'intercom.tag.instance.Free_plan@s',
-          'intercom.tag.instance.enterprise_paying@s',
-          'intercom.tag.instance.enterprise_trials@s',
+          'intercom.tag.instance.Another_test_tag@s',
+          'intercom.tag.instance.Test_tag@s',
+          'intercom.tag.instance.Test_tag_with_a_long_name@s',
           'intercom.team',
           'intercom.team.instance.Billing',
           'intercom.team.instance.Free',
@@ -130,49 +130,48 @@ describe('adapter', () => {
 
         // Article
         const article = instances.find(
-          e =>
-            e.elemID.getFullName() ===
-            'intercom.article.instance.Getting_Started_Fetching_Your_Configuration_Data@susss',
+          e => e.elemID.getFullName() === 'intercom.article.instance.Test_collection_This_is_a_test_article@sussss',
         )
         expect(article?.value).toEqual(
           expect.objectContaining({
+            type: 'article',
             parent_type: 'collection',
-            title: 'Fetching Your Configuration Data',
+            title: 'This is a test article',
             description: '',
-            body: '<p class="no-margin">Hello, I\'m an article for example. You can learn how to explore your configuration data here: <a href="https://help.salto.io/en/articles/6926919-exploring-your-configuration-data" target="_blank" class="intercom-content-link">here</a>).</p>',
+            body: '<p class="no-margin">Hello, I\'m an article for example. You can edit me in the admin panel.</p>',
             author_id: 5230119,
             state: 'published',
-            url: 'https://help.salto.io/en/articles/8889642-fetching-your-configuration-data',
+            url: 'https://help.test.io/',
           }),
         )
         expect(article?.value?.parent_id).toBeInstanceOf(ReferenceExpression)
         expect(article?.value?.parent_id?.elemID.getFullName()).toEqual(
-          'intercom.collection.instance.Getting_Started@s',
+          'intercom.collection.instance.Test_collection@s',
         )
 
         // Collection
         const collection = instances.find(
-          e => e.elemID.getFullName() === 'intercom.collection.instance.Getting_Started@s',
+          e => e.elemID.getFullName() === 'intercom.collection.instance.Test_collection@s',
         )
         expect(collection?.value).toEqual(
           expect.objectContaining({
-            name: 'Getting Started',
-            url: 'https://help.salto.io/',
+            name: 'Test collection',
+            url: 'https://test.io/',
             order: 1,
-            description:
-              'This collection will help you get started with Salto. See everything you need to know to get you up and running in a jiffy.',
+            description: 'This is a test collection',
             icon: 'book-bookmark',
           }),
         )
         expect(collection?.value?.help_center_id).toBeInstanceOf(ReferenceExpression)
         expect(collection?.value?.help_center_id?.elemID.getFullName()).toEqual(
-          'intercom.help_center.instance.salto_io@b',
+          'intercom.help_center.instance.test_help_center@b',
         )
 
         // Data Attribute
         const dataAttribute = instances.find(e => e.elemID.getFullName() === 'intercom.data_attribute.instance.name')
         expect(dataAttribute?.value).toEqual(
           expect.objectContaining({
+            type: 'data_attribute',
             name: 'name',
             full_name: 'name',
             label: 'Name',
@@ -188,23 +187,26 @@ describe('adapter', () => {
         )
 
         // Help Center
-        const helpCenter = instances.find(e => e.elemID.getFullName() === 'intercom.help_center.instance.salto_io@b')
+        const helpCenter = instances.find(
+          e => e.elemID.getFullName() === 'intercom.help_center.instance.test_help_center@b',
+        )
         expect(helpCenter?.value).toEqual(
           expect.objectContaining({
-            identifier: 'salto-io',
+            identifier: 'test-help-center',
             website_turned_on: true,
-            display_name: 'Salto Help Center',
+            display_name: 'Test Help Center',
           }),
         )
 
         // News Item
         const newsItem = instances.find(
-          e => e.elemID.getFullName() === 'intercom.news_item.instance.Monitoring_has_a_new_home_@ssssl',
+          e => e.elemID.getFullName() === 'intercom.news_item.instance.This_is_a_test_news_item@s',
         )
         expect(newsItem?.value).toEqual(
           expect.objectContaining({
-            title: 'Monitoring has a new home!',
-            body: "<p>Hi there,</p><p>The Monitoring feature, previously located in the environment's top bar, is now accessible directly from the environment Settings tab.  This change is part of our ongoing effort to make your navigation within Salto more intuitive and efficient.</p>",
+            type: 'news-item',
+            title: 'This is a test news item',
+            body: "<p>Hi there,</p><p>This is a test news item. It's a great way to communicate with your users.</p>",
             sender_id: 5451387,
             state: 'live',
             labels: ['Announcement'],
@@ -213,15 +215,16 @@ describe('adapter', () => {
           }),
         )
         expect(newsItem?.value?.newsfeed_assignments.map((e: ReferenceExpression) => e.elemID.getFullName())).toEqual([
-          'intercom.newsfeed.instance.Rest_of_the_adapters@s',
-          'intercom.newsfeed.instance.Jira',
+          'intercom.newsfeed.instance.Test_with_a_long_name@s',
+          'intercom.newsfeed.instance.Test',
         ])
 
         // Newsfeed
-        const newsfeed = instances.find(e => e.elemID.getFullName() === 'intercom.newsfeed.instance.Jira')
+        const newsfeed = instances.find(e => e.elemID.getFullName() === 'intercom.newsfeed.instance.Test')
         expect(newsfeed?.value).toEqual(
           expect.objectContaining({
-            name: 'Jira',
+            type: 'newsfeed',
+            name: 'Test',
           }),
         )
 
@@ -229,6 +232,7 @@ describe('adapter', () => {
         const segment = instances.find(e => e.elemID.getFullName() === 'intercom.segment.instance.Active')
         expect(segment?.value).toEqual(
           expect.objectContaining({
+            type: 'segment',
             name: 'Active',
             person_type: 'user',
           }),
@@ -240,6 +244,7 @@ describe('adapter', () => {
         )
         expect(subscriptionType?.value).toEqual(
           expect.objectContaining({
+            type: 'subscription',
             state: 'draft',
             consent_type: 'opt_out',
             content_types: ['email'],
@@ -266,10 +271,11 @@ describe('adapter', () => {
         )
 
         // Tag
-        const tag = instances.find(e => e.elemID.getFullName() === 'intercom.tag.instance.Free_plan@s')
+        const tag = instances.find(e => e.elemID.getFullName() === 'intercom.tag.instance.Test_tag@s')
         expect(tag?.value).toEqual(
           expect.objectContaining({
-            name: 'Free plan',
+            type: 'tag',
+            name: 'Test tag',
           }),
         )
 
@@ -277,6 +283,7 @@ describe('adapter', () => {
         const team = instances.find(e => e.elemID.getFullName() === 'intercom.team.instance.Billing')
         expect(team?.value).toEqual(
           expect.objectContaining({
+            type: 'team',
             name: 'Billing',
             admin_ids: [5451387, 5230119, 4361488, 4554691],
           }),

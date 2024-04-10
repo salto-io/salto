@@ -22,6 +22,7 @@ import { createClientDefinitions, createDeployDefinitions, createFetchDefinition
 import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
+import { customConvertError } from './utils'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials
@@ -59,4 +60,5 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
     retry: DEFAULT_RETRY_OPTS,
   },
+  customCreateSaltoElementError: customConvertError,
 })

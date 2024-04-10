@@ -46,6 +46,15 @@ export const createSaltoElementErrorFromError = ({
   elemID: ElemID
 }): SaltoElementError => ({ message: error.message, severity, elemID })
 
+export type ConvertError = (elemID: ElemID, error: Error) => SaltoElementError
+
+export const defaultConvertError: ConvertError = (elemID, error) => {
+  if (isSaltoError(error) && isSaltoElementError(error)) {
+    return error
+  }
+  return createSaltoElementErrorFromError({ error, severity: 'Error', elemID })
+}
+
 export const createSaltoElementError = ({
   message,
   severity,

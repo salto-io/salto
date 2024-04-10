@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createSaltoElementErrorFromError, isSaltoElementError, isSaltoError } from '@salto-io/adapter-api'
+import { ConvertError, defaultConvertError } from '@salto-io/adapter-api'
 import { APIDefinitionsOptions, ApiDefinitions, ResolveCustomNameMappingOptionsType, UserConfig } from '../definitions'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
 import { FieldReferenceDefinition } from '../references'
@@ -40,6 +40,7 @@ export type FilterCreationArgs<
     ResolveReferenceSerializationStrategyLookup<Options>
   >[]
   fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
+  convertError?: ConvertError
 }
 
 /**
@@ -51,6 +52,7 @@ export const createCommonFilters = <
 >({
   referenceRules,
   fieldReferenceResolverCreator,
+  convertError = defaultConvertError,
 }: FilterCreationArgs<Options, Co>): Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>> => ({
   // TODO SALTO-5421 finish upgrading filters to new def structure and add remaining shared filters
   hideTypes: hideTypesFilterCreator(),
@@ -64,12 +66,6 @@ export const createCommonFilters = <
   query: queryFilterCreator({}),
   // defaultDeploy should run after other deploy filters
   defaultDeploy: defaultDeployFilterCreator({
-    convertError: (elemID, error) => {
-      if (isSaltoError(error) && isSaltoElementError(error)) {
-        return error
-      }
-      return createSaltoElementErrorFromError({ error, severity: 'Error', elemID })
-    },
-    fieldReferenceResolverCreator,
+    convertError,
   }),
 })

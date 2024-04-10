@@ -190,7 +190,7 @@ export const loggerRepo = (
   config: Config,
 ): BaseLoggerRepo => {
   const { stream, end: endStream } = toStream(consoleStream, config)
-  const levelCountRecord: Record<string, number> = {}
+  let levelCountRecord: Record<string, number> = {}
   global.globalLogTags = mergeLogTags(global.globalLogTags || {}, config.globalTags)
   const tagsByNamespace = new collections.map.DefaultMap<string, LogTags>(() => global.globalLogTags)
 
@@ -275,23 +275,26 @@ export const loggerRepo = (
 
   const loggerMaker: BaseLoggerMaker = (namespace: Namespace) => {
     const pinoLoggerWithoutTags = childrenByNamespace.get(namespace)
+    const logFunc = (level: LogLevel, message: string | Error, ...args: unknown[]): void => {
+      const namespaceTags = tagsByNamespace.get(namespace)
+      /*
+       We must "normalize" logTags because there are types of tags that pino doesn't support
+       for example - Functions.
+       */
+      const normalizedLogTags = normalizeLogTags({...namespaceTags, ...global.globalLogTags})
+      const [formattedOrError, unconsumedArgs] =
+        typeof message === 'string' ? formatMessage(message, ...args) : [message, args]
+
+      if (levelCountRecord[level] === undefined) {
+        levelCountRecord[level] = 0
+      }
+      levelCountRecord[level] += 1
+
+      logMessage(pinoLoggerWithoutTags, level, unconsumedArgs, normalizedLogTags, formattedOrError)
+    }
     return {
       log(level: LogLevel, message: string | Error, ...args: unknown[]): void {
-        const namespaceTags = tagsByNamespace.get(namespace)
-        /*
-         We must "normalize" logTags because there are types of tags that pino doesn't support
-         for example - Functions.
-         */
-        const normalizedLogTags = normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
-        const [formattedOrError, unconsumedArgs] =
-          typeof message === 'string' ? formatMessage(message, ...args) : [message, args]
-
-        if (levelCountRecord[level] === undefined) {
-          levelCountRecord[level] = 0
-        }
-        levelCountRecord[level] += 1
-
-        logMessage(pinoLoggerWithoutTags, level, unconsumedArgs, normalizedLogTags, formattedOrError)
+        return logFunc(level, message, ...args)
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) global.globalLogTags = {}
@@ -304,10 +307,13 @@ export const loggerRepo = (
         if (!logTags) tagsByNamespace.set(namespace, {})
         else tagsByNamespace.set(namespace, mergeLogTags(tagsByNamespace.get(namespace), logTags))
       },
-      verifyLogCount() {
-        console.log(JSON.stringify(levelCountRecord, null, 2))
-        return true
+      printLogCount() {
+        const message = `final log count is: ${JSON.stringify(levelCountRecord, null, 2)}`
+        logFunc('debug', message)
       },
+      initLogCount() {
+        levelCountRecord = {}
+      }
     }
   }
 

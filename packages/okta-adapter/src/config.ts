@@ -810,6 +810,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'theme',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
+        {
+          type: 'api__v1__brands___brandId___pages__SignInPage@???????',
+          toField: 'SignInPage',
+          context: [{ name: 'brandId', fromField: 'id' }],
+        },
       ],
     },
     transformation: {
@@ -822,6 +827,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
+    },
+  },
+  'api__v1__brands___brandId___pages__SignInPage@???????': {
+    request: {
+      url: '/api/v1/brands/{brandId}/pages/sign-in',
+    },
+    transformation: {
+      dataField: '.', // TODO(rachum): needed?
     },
   },
   GroupSchema: {

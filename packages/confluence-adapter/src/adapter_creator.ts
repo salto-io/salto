@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createAdapter, credentials, client } from '@salto-io/adapter-components'
+import { createAdapter, credentials, client, filters } from '@salto-io/adapter-components'
 import { Credentials, credentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
@@ -23,6 +23,7 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
 import { customConvertError } from './error_utils'
+import transformTemplateBodyToTemplateExpressionFilterCreator from './filters/transform_template_body_to_template_expression'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials
@@ -45,6 +46,10 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   operationsCustomizations: {
     connectionCreatorFromConfig: () => createConnection,
     credentialsFromConfig: defaultCredentialsFromConfig,
+    customizeFilterCreators: args => ({
+      ...filters.createCommonFilters<Options, UserConfig>(args),
+      transformTemplateBodyToTemplateExpressionFilterCreator,
+    }),
   },
 
   initialClients: {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
-import { createMatchingObjectType, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -3145,69 +3145,5 @@ export const validateOmitInactiveConfig = (
         },
       }),
     )
-  }
-}
-const extractOmitInactiveConfig = (
-  apiDefinitions: ZendeskApiConfig,
-): { omitInactiveConfig: OmitInactiveConfig; updatedApiDefinitions: ZendeskApiConfig } | undefined => {
-  const omitInactiveDefault = _.get(apiDefinitions.typeDefaults?.transformation, 'omitInactive')
-  const customizations: Record<string, boolean> = {}
-
-  const updatedApiDefinitions: ZendeskApiConfig = _.cloneDeep(apiDefinitions)
-  if (omitInactiveDefault !== undefined) {
-    _.unset(updatedApiDefinitions.typeDefaults.transformation, 'omitInactive')
-  }
-  if (updatedApiDefinitions.types !== undefined) {
-    Object.keys(updatedApiDefinitions.types).forEach(typeKey => {
-      const typeConfig = apiDefinitions.types[typeKey]
-      if (typeConfig.transformation && _.has(typeConfig.transformation, 'omitInactive')) {
-        customizations[typeKey] = _.get(typeConfig.transformation, 'omitInactive')
-        _.unset(updatedApiDefinitions.types[typeKey].transformation, 'omitInactive')
-      }
-    })
-  }
-
-  if (omitInactiveDefault !== undefined || Object.keys(customizations).length > 0) {
-    return {
-      omitInactiveConfig: {
-        default: omitInactiveDefault,
-        customizations,
-      },
-      updatedApiDefinitions,
-    }
-  }
-  return undefined
-}
-
-export const migrateOmitInactiveConfig = (
-  currentConfig: InstanceElement,
-  updatedConfig: { config: InstanceElement[]; message: string } | undefined,
-): { config: InstanceElement[]; message: string } | undefined => {
-  const configToOverride = updatedConfig === undefined ? currentConfig.value : updatedConfig.config[0].value
-  const updatedFetchConfig = configToOverride[FETCH_CONFIG]
-  const currentApiDefinitions = configToOverride[API_DEFINITIONS_CONFIG]
-  if (updatedFetchConfig?.omitInactive !== undefined || currentApiDefinitions === undefined) {
-    return updatedConfig
-  }
-  const omitInactiveMigration = extractOmitInactiveConfig(currentApiDefinitions)
-  if (omitInactiveMigration === undefined) {
-    return updatedConfig
-  }
-  updatedFetchConfig.omitInactive = omitInactiveMigration.omitInactiveConfig
-  const omitInactiveMessage = 'Added omitInactive default set to true to the fetch configuration'
-  const message =
-    updatedConfig === undefined
-      ? omitInactiveMessage
-      : formatConfigSuggestionsReasons([updatedConfig.message, omitInactiveMessage])
-
-  return {
-    config: [
-      new InstanceElement(ElemID.CONFIG_NAME, configType, {
-        ...configToOverride,
-        fetch: updatedFetchConfig,
-        apiDefinitions: omitInactiveMigration.updatedApiDefinitions,
-      }),
-    ],
-    message,
   }
 }

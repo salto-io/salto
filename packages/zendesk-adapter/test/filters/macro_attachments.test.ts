@@ -20,7 +20,6 @@ import {
   InstanceElement,
   isInstanceElement,
   StaticFile,
-  CORE_ANNOTATIONS,
   ReferenceExpression,
   ListType,
   BuiltinTypes,
@@ -135,6 +134,7 @@ describe('macro attachment filter', () => {
           encoding: 'binary',
           content,
         }),
+        macros: [new ReferenceExpression(macroInstance.elemID, macroInstance)],
       })
     })
     describe('invalid attachments response', () => {
@@ -308,9 +308,7 @@ describe('macro attachment filter', () => {
         ],
         [ATTACHMENTS_FIELD_NAME]: [new ReferenceExpression(attachmentInstance.elemID, attachmentInstance)],
       })
-      attachmentInstance.annotate({
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(macroInstance.elemID, macroInstance)],
-      })
+      attachmentInstance.value.macros = [new ReferenceExpression(macroInstance.elemID, macroInstance)]
     })
     it('should pass the correct params to deployChange and client on create', async () => {
       const clonedMacro = macroInstance.clone()
@@ -369,7 +367,7 @@ describe('macro attachment filter', () => {
       const clonedAttachment = attachmentInstance.clone()
       clonedAttachment.value.id = attachmentId
       clonedMacro.value[ATTACHMENTS_FIELD_NAME] = [new ReferenceExpression(clonedAttachment.elemID, clonedAttachment)]
-      clonedAttachment.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
+      clonedAttachment.value.macros = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
       const clonedBeforeMacro = clonedMacro.clone()
       const clonedAfterMacro = clonedMacro.clone()
       clonedAfterMacro.value.title = `${clonedAfterMacro.value.title}-edited`
@@ -438,7 +436,7 @@ describe('macro attachment filter', () => {
       const clonedAttachment = attachmentInstance.clone()
       clonedAttachment.value.id = attachmentId
       clonedMacro.value[ATTACHMENTS_FIELD_NAME] = [new ReferenceExpression(clonedAttachment.elemID, clonedAttachment)]
-      clonedAttachment.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
+      clonedAttachment.value.macros = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
       const clonedBeforeAttachment = clonedAttachment.clone()
       const clonedAfterAttachment = clonedAttachment.clone()
       clonedAfterAttachment.value.filename = `${clonedAfterAttachment.value.filename}-edited`
@@ -484,6 +482,19 @@ describe('macro attachment filter', () => {
       resolvedBeforeAttachment.value.content = content
       resolvedAfterAttachment.value.content = content
       resolvedAfterAttachment.value.id = newAttachmentId
+      // eslint-disable-next-line no-console
+      console.log('AFTER')
+      // eslint-disable-next-line no-console
+      console.log(resolvedAfterAttachment.value)
+      // eslint-disable-next-line no-console
+      console.log((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.after.value)
+      // eslint-disable-next-line no-console
+      console.log('BEFORE')
+      // eslint-disable-next-line no-console
+      console.log(resolvedBeforeAttachment.value)
+      // eslint-disable-next-line no-console
+      console.log((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.before.value)
+
       expect(res.deployResult.appliedChanges[0].action).toEqual('modify')
       expect((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.before.value).toEqual(
         resolvedBeforeAttachment.value,
@@ -498,7 +509,7 @@ describe('macro attachment filter', () => {
       const clonedAttachment = attachmentInstance.clone()
       clonedAttachment.value.id = attachmentId
       clonedMacro.value[ATTACHMENTS_FIELD_NAME] = [new ReferenceExpression(clonedAttachment.elemID, clonedAttachment)]
-      clonedAttachment.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
+      clonedAttachment.value.macros = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
       mockDeployChange.mockImplementation(async () => ({ macro: { id: macroId } }))
       mockPost = jest.spyOn(client, 'post')
       mockPost.mockResolvedValueOnce({ status: 200 })

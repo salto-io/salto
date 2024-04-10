@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 import {
+  Change,
+  InstanceElement,
   ReferenceExpression,
   TemplateExpression,
   UnresolvedReference,
@@ -25,12 +27,17 @@ import {
   isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { AdapterFilterCreator, FilterResult } from '@salto-io/adapter-components/src/filter_utils'
-import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import {
+  applyFunctionToChangeData,
+  extractTemplate,
+  replaceTemplatesWithValues,
+  resolveTemplates,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { awu } from '@salto-io/lowerdash/src/collections/asynciterable'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
-import { awu } from '@salto-io/lowerdash/src/collections/asynciterable'
 
 const log = logger(module)
 
@@ -126,7 +133,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
         .filter(change => TEMPLATE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
-            resolveTemplates({ values: [instance.value], fieldName: 'body' }, deployTemplateMapping)
+            resolveTemplates({ values: [instance.value], fieldName: 'body.storage.value' }, deployTemplateMapping)
             return instance
           })
         })

@@ -104,7 +104,6 @@ import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
 import { isClassicEngineOrg } from './utils'
 import { createFixElementFunctions } from './fix_elements'
-import { weakReferenceHandlers } from './weak_references'
 
 const { awu } = collections.asynciterable
 
@@ -229,10 +228,7 @@ export default class OktaAdapter implements AdapterOperations {
         filterCreators,
         objects.concatObjects,
       )
-    this.fixElementsFunc = combineElementFixers([
-      ...createFixElementFunctions({ client, config }),
-      ...Object.values(weakReferenceHandlers).map(handler => handler.removeWeakReferences({ elementsSource })),
-    ])
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config, elementsSource }))
   }
 
   @logDuration('generating types from swagger')

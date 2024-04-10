@@ -305,6 +305,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
 }
 const getPoliceyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] => {
   const policyRulePrioritiesConfig = POLICY_RULE_PRIORITY_TYPE_NAMES.map(typeName => ({
+    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
     [typeName]: {
       deployRequests: {
         add: { url: '', method: 'put' },
@@ -1813,13 +1814,6 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
   },
   GroupMembership: {
-    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
-    deployRequests: {
-      add: { url: '', method: 'put' },
-      modify: { url: '', method: 'put' },
-    },
-  },
-  PolicyRulePriorities: {
     // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
     deployRequests: {
       add: { url: '', method: 'put' },

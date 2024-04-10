@@ -60,8 +60,9 @@ const getPolicyPriorityReferences: GetCustomReferencesFunc = async elements =>
     .flatMap(getFieldReferences)
     .toArray()
 
-/**
- * Remove invalid rules (not references or missing references) from policyPriority.
+/*
+ * Since we can implement a priority order for a portion of the rules.
+ * We removing invalid rules (those not referenced or missing references) from policyPriority.
  */
 const removeMissingPolicyRulePriorities: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
@@ -97,9 +98,8 @@ const removeMissingPolicyRulePriorities: WeakReferencesHandler['removeWeakRefere
     const errors = fixedElements.map(instance => ({
       elemID: instance.elemID.createNestedID('priorities'),
       severity: 'Info' as const,
-      message: `${instance.elemID.typeName} will be deployed without priorities defined on non-existing fields`,
-      detailedMessage:
-        'This policy priority has priorities which use rules which no longer exist. It will be deployed without them.',
+      message: `Deploying ${instance.elemID.typeName} without all attached priorities for rules.`,
+      detailedMessage: `This ${instance.elemID.typeName} is attached to some rules that do not exist in the target environment. It will be deployed without referencing these.`,
     }))
     return { fixedElements, errors }
   }

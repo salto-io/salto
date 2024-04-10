@@ -16,7 +16,12 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
-import { client as clientUtils, combineCustomReferenceGetters, config as configUtils, definitions } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  combineCustomReferenceGetters,
+  config as configUtils,
+  definitions,
+} from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import {

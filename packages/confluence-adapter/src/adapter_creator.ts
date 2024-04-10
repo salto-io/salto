@@ -60,5 +60,5 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
     retry: DEFAULT_RETRY_OPTS,
   },
-  customCreateSaltoElementError: customConvertError,
+  customConvertError,
 })

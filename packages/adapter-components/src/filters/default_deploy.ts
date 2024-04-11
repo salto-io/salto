@@ -21,19 +21,22 @@ import { generateLookupFunc } from '../references'
 import { ChangeAndContext } from '../definitions/system/deploy'
 import { createChangeElementResolver } from '../resolve_utils'
 import { APIDefinitionsOptions } from '../definitions'
+import { FieldReferenceResolverCreator } from './field_references'
 
 /**
  * Default deploy based on deploy definitions.
  * Note: when there are other filters running custom deploy, they should usually run before this filter.
  */
 export const defaultDeployFilterCreator =
-  <TResult extends void | filter.FilterResult, TOptions extends APIDefinitionsOptions>({
+  <TResult extends void | filter.FilterResult, Options extends APIDefinitionsOptions>({
     deployChangeFunc,
     convertError,
+    fieldReferenceResolverCreator,
   }: {
     deployChangeFunc?: (args: ChangeAndContext) => Promise<void>
     convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
-  }): AdapterFilterCreator<{}, TResult, {}, TOptions> =>
+    fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
+  }): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions, elementSource }) => ({
     name: 'defaultDeployFilter',
     deploy: async (changes, changeGroup) => {
@@ -45,7 +48,7 @@ export const defaultDeployFilterCreator =
         throw new Error('change group not provided')
       }
 
-      const lookupFunc = generateLookupFunc(definitions.references?.rules ?? [])
+      const lookupFunc = generateLookupFunc(definitions.references?.rules ?? [], fieldReferenceResolverCreator)
       const changeResolver = createChangeElementResolver<Change<InstanceElement>>({ getLookUpName: lookupFunc })
 
       const deployResult = await deployChanges({

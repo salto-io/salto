@@ -2272,18 +2272,23 @@ describe('Custom Object Instances filter', () => {
             fetchProfile,
           },
         }) as FilterType
+
+        const testType = createCustomObject(testTypeName)
+        elements = [testType, changedAtSingleton]
+        await filter.onFetch(elements)
       })
       describe('Without allowReferenceTo', () => {
         beforeEach(async () => {
+          const testType = createCustomObject(testTypeName)
           elements = [
-            createCustomObject(testTypeName),
+            testType,
             createCustomObject(refToTypeName),
             changedAtSingleton,
           ]
           await filter.onFetch(elements)
         })
         it('Should query using the changed-at value', () => {
-          expect(basicQueryImplementation).toHaveBeenLastCalledWith(
+          expect(basicQueryImplementation).toHaveBeenCalledWith(
             expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`),
           )
         })

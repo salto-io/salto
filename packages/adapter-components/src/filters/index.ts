@@ -19,6 +19,7 @@ export {
   serviceUrlFilterCreatorDeprecated,
   configDefToInstanceFetchApiDefinitionsForServiceUrl,
 } from './service_url'
+export { referencedInstanceNamesFilterCreatorDeprecated } from './referenced_instance_names_deprecated'
 export { defaultDeployFilterCreator } from './default_deploy'
 export { addAliasFilterCreator } from './add_alias'
 export { fieldReferencesFilterCreator } from './field_references'

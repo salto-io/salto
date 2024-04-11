@@ -195,6 +195,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    groupMember: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/admin/directory/v1/groups/{parent_id}/members',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/admin/directory/v1/groups/{parent_id}/members/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/admin/directory/v1/groups/{parent_id}/members/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
     orgUnit: {
       requestsByAction: {
         customizations: {
@@ -451,7 +487,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
-          // TODO - SAAS-10775 - check how to use the old name field in the URL
+          // TODO - SALTO-5749 - check how to use the old name field in the URL
           // modify: [
           //   {
           //     request: {

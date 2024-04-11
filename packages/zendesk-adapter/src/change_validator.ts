@@ -179,7 +179,7 @@ export default ({
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     attachmentWithoutContent: attachmentWithoutContentValidator,
     duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
-    triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig, fetchConfig),
+    triggerCategoryRemoval: triggerCategoryRemovalValidator(fetchConfig),
     duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     conditionalTicketFields: conditionalTicketFieldsValidator,

@@ -65,8 +65,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'roleName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/roles/{roleId}' },
-        alias: { aliasComponents: [NAME_ID_FIELD] },
+        serviceUrl: { path: '/roles/{roleId}' },
+        alias: { aliasComponents: [{ fieldName: 'roleName' }] },
       },
       fieldCustomizations: {
         roleId: {
@@ -107,7 +107,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'domainName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/domains' },
+        serviceUrl: { path: '/domains' },
         alias: { aliasComponents: [{ fieldName: 'domainName' }] },
       },
       fieldCustomizations: {
@@ -177,12 +177,22 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             },
           },
         },
+        groupMembers: {
+          typeName: 'groupMember',
+          context: {
+            args: {
+              groupId: {
+                root: 'id',
+              },
+            },
+          },
+        },
       },
     },
     element: {
       topLevel: {
         isTopLevel: true,
-        // serviceUrl: { path: 'https://admin.google.com/ac/groups/{id}' },
+        serviceUrl: { path: '/groups/{id}' },
         elemID: { parts: [NAME_ID_FIELD] },
       },
       fieldCustomizations: {
@@ -192,6 +202,14 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             addParentAnnotation: false,
             referenceFromParent: false,
             nestPathUnderParent: false,
+          },
+        },
+        groupMembers: {
+          standalone: {
+            typeName: 'groupMember',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
           },
         },
         id: {
@@ -205,6 +223,35 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         nonEditableAliases: {
           omit: true,
+        },
+      },
+    },
+  },
+  groupMember: {
+    requests: [
+      {
+        endpoint: {
+          path: '/admin/directory/v1/groups/{groupId}/members',
+        },
+        transformation: {
+          root: 'members',
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [{ fieldName: 'email', isReference: true }],
+        },
+      },
+      fieldCustomizations: {
+        id: {
+          hide: true,
         },
       },
     },
@@ -302,22 +349,16 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }, { fieldName: 'name' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/orgunits' },
+        serviceUrl: { path: '/orgunits' },
         alias: {
-          aliasComponents: [
-            {
-              fieldName: 'parentOrgUnitId',
-              referenceFieldName: '_alias',
-            },
-            { fieldName: 'name' },
+          aliasComponents: [{ fieldName: 'name' }],
+        },
+        path: {
+          pathParts: [
+            { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
+            { parts: [{ fieldName: 'name' }] },
           ],
         },
-        // path: {
-        //   pathParts: [
-        //     { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
-        //     { parts: [{ fieldName: 'orgUnitPath' }] },
-        //   ],
-        // },
       },
 
       fieldCustomizations: {
@@ -364,7 +405,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'schemaName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/customschema' },
+        serviceUrl: { path: '/customschema' },
         alias: { aliasComponents: [{ fieldName: 'schemaName' }] },
       },
       fieldCustomizations: {
@@ -405,7 +446,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'buildingName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        serviceUrl: { path: '/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'buildingName' }] },
       },
       fieldCustomizations: {
@@ -434,7 +475,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'resourceName' }] },
-        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        serviceUrl: { path: '/calendarresources/resources' },
         alias: { aliasComponents: [{ fieldName: 'resourceName' }] },
       },
       fieldCustomizations: {
@@ -465,7 +506,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        // serviceUrl: { path: 'https://admin.google.com/ac/calendarresources/resources' },
+        serviceUrl: { path: '/calendarresources/resources' },
         alias: { aliasComponents: [NAME_ID_FIELD] },
       },
     },
@@ -481,6 +522,7 @@ export const createFetchDefinitions = (): definitions.fetch.FetchApiDefinitions<
       element: {
         topLevel: {
           elemID: { parts: DEFAULT_ID_PARTS },
+          serviceUrl: { baseUrl: 'https://admin.google.com/ac' },
         },
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },

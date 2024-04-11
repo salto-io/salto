@@ -30,17 +30,15 @@ import { MACRO_ATTACHMENT_TYPE_NAME } from '../filters/macro_attachments'
 const createDependencyChange = (
   change: { key: collections.set.SetId; change: Change<InstanceElement> },
   changes: { key: collections.set.SetId; change: Change<InstanceElement> }[],
-): DependencyChange[] => {
-  const { macros } = getChangeData(change.change).value
-
-  const macroChanges = changes.filter(
-    c =>
-      macros.find((macroRef: ReferenceExpression) => getChangeData(c.change).elemID === macroRef.value.elemID) !==
-      undefined,
-  )
-
-  return macroChanges.map(macroChange => dependencyChange('remove', change.key, macroChange.key))
-}
+): DependencyChange[] =>
+  changes
+    .filter(
+      c =>
+        getChangeData(change.change).value.find(
+          (macroRef: ReferenceExpression) => getChangeData(c.change).elemID === macroRef.value.elemID,
+        ) !== undefined,
+    )
+    .map(macroChange => dependencyChange('remove', change.key, macroChange.key))
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   isInstanceChange(change) && getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME
@@ -55,6 +53,7 @@ export const macroAttachmentDependencyChanger: DependencyChanger = async changes
       isInstanceChange(change.change),
     )
 
-  const relevantChanges = instanceChanges.filter(({ change }) => isRelevantChange(change))
-  return relevantChanges.flatMap(change => createDependencyChange(change, instanceChanges))
+  return instanceChanges
+    .filter(({ change }) => isRelevantChange(change))
+    .flatMap(change => createDependencyChange(change, instanceChanges))
 }

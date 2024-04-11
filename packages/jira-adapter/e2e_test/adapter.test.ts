@@ -26,7 +26,7 @@ import {
   ReadOnlyElementsSource,
   toChange,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
+import { elements as elementUtils, resolveValues, client as clientUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements, getParents, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -253,15 +253,25 @@ each([
       })
 
       addDeployResults = await Promise.all(
-        removalChanges.map(change =>
-          adapter.deploy({
-            changeGroup: {
-              groupID: getChangeData(change).elemID.getFullName(),
-              changes: [change],
-            },
-            progressReporter: nullProgressReporter,
-          }),
-        ),
+        removalChanges.map(change => {
+          try {
+            return adapter.deploy({
+              changeGroup: {
+                groupID: getChangeData(change).elemID.getFullName(),
+                changes: [change],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          } catch (e) {
+            if (e instanceof clientUtils.HTTPError && e.response?.status === 404) {
+              return {
+                errors: [],
+                appliedChanges: [],
+              }
+            }
+            throw e
+          }
+        }),
       )
 
       const errors = addDeployResults.flatMap(res => res.errors)

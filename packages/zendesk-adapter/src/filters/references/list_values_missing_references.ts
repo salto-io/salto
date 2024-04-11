@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { references as referencesUtils } from '@salto-io/adapter-components'
-import {inspectValue} from '@salto-io/adapter-utils';
+import { inspectValue } from '@salto-io/adapter-utils'
 import { FETCH_CONFIG, ZendeskConfig } from '../../config'
 import { FilterCreator } from '../../filter'
 import { VALUES_TO_SKIP_BY_TYPE } from './missing_references'
@@ -75,7 +75,7 @@ export const listValuesMissingReferencesOnFetch = (elements: Element[], config: 
         return
       }
       valueObjects.forEach(obj => {
-        if (!_.isArray(obj.value)){
+        if (!_.isArray(obj.value)) {
           log.debug(`Obj is not an array, for instance ${instance.elemID.getFullName()}, obj: ${inspectValue(obj)}`)
           return
         }

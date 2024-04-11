@@ -251,6 +251,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'delete',
                 },
+                transformation: {
+                  omit: ['orgUnitPath'],
+                },
               },
             },
           ],
@@ -260,6 +263,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'put',
+                },
+                transformation: {
+                  omit: ['orgUnitPath'],
                 },
               },
             },

@@ -59,11 +59,13 @@ const filter: FilterCreator = ({ config }) => ({
       )
     })
 
+    const prettifiesName = (instance: InstanceElement): string =>
+      instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+      ? instance.annotations[CORE_ANNOTATIONS.ALIAS]
+      : instance.elemID.name
     const duplicateInstanceNames = _.uniq(
-      duplicateInstances.flatMap(instance =>
-        instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
-          ? instance.annotations[CORE_ANNOTATIONS.ALIAS]
-          : instance.elemID.getFullName(),
+      duplicateInstances.filter(isInstanceElement).flatMap(instance =>
+        (`${prettifiesName(instance)} (${instance.elemID.getFullName()})`)
       ),
     )
     if (!config.fetch.fallbackToInternalId) {

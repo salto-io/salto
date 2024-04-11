@@ -29,6 +29,19 @@ import { referencedInstanceNamesFilterCreator } from './referenced_instance_name
 import { serviceUrlFilterCreator } from './service_url'
 import { addAliasFilterCreator } from './add_alias'
 
+export type FilterCreationArgs<
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
+> = {
+  config: Co
+  definitions: ApiDefinitions<Options>
+  referenceRules?: FieldReferenceDefinition<
+    ResolveReferenceContextStrategiesType<Options>,
+    ResolveReferenceSerializationStrategyLookup<Options>
+  >[]
+  fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
+}
+
 /**
  * Filter creators of all the common filters
  */
@@ -38,15 +51,7 @@ export const createCommonFilters = <
 >({
   referenceRules,
   fieldReferenceResolverCreator,
-}: {
-  referenceRules?: FieldReferenceDefinition<
-    ResolveReferenceContextStrategiesType<Options>,
-    ResolveReferenceSerializationStrategyLookup<Options>
-  >[]
-  config: Co
-  definitions: ApiDefinitions<Options>
-  fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
-}): Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>> => ({
+}: FilterCreationArgs<Options, Co>): Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>> => ({
   // TODO SALTO-5421 finish upgrading filters to new def structure and add remaining shared filters
   hideTypes: hideTypesFilterCreator(),
   // referencedInstanceNames and fieldReferencesFilter should run after all elements were created

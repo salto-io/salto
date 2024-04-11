@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { InstanceElement, Adapter, AdapterAuthentication } from '@salto-io/adapter-api'
-import { createCommonFilters } from '../filters/common_filters'
+import { FilterCreationArgs, createCommonFilters } from '../filters/common_filters'
 import { createClient } from '../client/client_creator'
 import { AdapterImplConstructor } from './adapter/types'
 import { createAdapterImpl } from './adapter/creator'
@@ -72,13 +72,14 @@ export const createAdapter = <
     adapterConfigCreator?: (config: Readonly<InstanceElement> | undefined) => Co
     credentialsFromConfig: (config: Readonly<InstanceElement>) => Credentials
     connectionCreatorFromConfig: (config: Co['client']) => ConnectionCreator<Credentials>
-    customizeFilterCreators?: (config: Co) => AdapterFilterCreator<Co, FilterResult, {}, Options>[]
+    customizeFilterCreators?: (
+      args: FilterCreationArgs<Options, Co>,
+    ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
 }): Adapter => {
   const { adapterConfigCreator, credentialsFromConfig, connectionCreatorFromConfig, customizeFilterCreators } =
     operationsCustomizations
-
   const configCreator: ConfigCreator<Co> = config =>
     (adapterConfigCreator ?? adapterConfigFromConfig)(config, defaultConfig)
   const connectionCreator: ConnectionCreatorFromConfig<Credentials> = config =>
@@ -110,16 +111,13 @@ export const createAdapter = <
           definitions,
           elementSource: context.elementsSource,
           referenceResolver: resolverCreator,
-          filterCreators:
-            customizeFilterCreators !== undefined
-              ? customizeFilterCreators(config)
-              : Object.values(
-                  createCommonFilters<Options, Co>({
-                    config,
-                    definitions,
-                    fieldReferenceResolverCreator: resolverCreator,
-                  }),
-                ),
+          filterCreators: Object.values(
+            (customizeFilterCreators ?? createCommonFilters)({
+              config,
+              definitions,
+              fieldReferenceResolverCreator: resolverCreator,
+            }),
+          ),
           adapterName,
           configInstance: context.config,
         },

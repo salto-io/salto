@@ -18,7 +18,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../src/constants'
+import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, OKTA } from '../src/constants'
 import { defaultDeployChange, defaultDeployWithStatus, deployStatusChange, getOktaError } from '../src/deployment'
 import { DEFAULT_API_DEFINITIONS, OktaSwaggerApiConfig } from '../src/config'
 
@@ -242,6 +242,20 @@ describe('deployment.ts', () => {
           { id: '1', name: 'changed val' },
           undefined,
         )
+      })
+    })
+    describe('removal changes', () => {
+      it('should deactivate change before removal for relevant changes', async () => {
+        const zoneType = new ObjectType({ elemID: new ElemID(OKTA, NETWORK_ZONE_TYPE_NAME) })
+        const zoneInstance = new InstanceElement('zone', zoneType, { id: 'a', name: 'zone', status: 'ACTIVE' })
+        mockConnection.post.mockResolvedValue({
+          status: 204,
+          data: {},
+        })
+        mockConnection.delete.mockResolvedValue({ status: 200, data: {} })
+        await defaultDeployWithStatus(toChange({ before: zoneInstance }), client, DEFAULT_API_DEFINITIONS, [])
+        expect(mockConnection.post).toHaveBeenCalledWith('/api/v1/zones/a/lifecycle/deactivate', {}, undefined)
+        expect(mockConnection.delete).toHaveBeenCalledWith('/api/v1/zones/a', { data: undefined })
       })
     })
   })

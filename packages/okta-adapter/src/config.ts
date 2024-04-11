@@ -909,7 +909,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         // nested object in the same call.
         { fieldName: 'Domain' },
       ],
-      nestStandaloneInstances: true,
       fieldTypeOverrides: [{ fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' }],
       serviceUrl: '/admin/customizations/footer',
     },

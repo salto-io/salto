@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ConvertError, defaultConvertError } from '@salto-io/adapter-api'
 import { APIDefinitionsOptions, ApiDefinitions, ResolveCustomNameMappingOptionsType, UserConfig } from '../definitions'
 import { AdapterFilterCreator, FilterResult } from '../filter_utils'
 import { FieldReferenceDefinition } from '../references'
@@ -28,6 +27,7 @@ import {
 import { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
 import { serviceUrlFilterCreator } from './service_url'
 import { addAliasFilterCreator } from './add_alias'
+import { ConvertError, defaultConvertError } from '../deployment'
 
 export type FilterCreationArgs<
   Options extends APIDefinitionsOptions,

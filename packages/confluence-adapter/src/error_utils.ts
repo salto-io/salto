@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import _, { isString } from 'lodash'
-import { ConvertError, isSaltoElementError, isSaltoError } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { isSaltoElementError, isSaltoError } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 
-export const customConvertError: ConvertError = (elemID, error) => {
+export const customConvertError: deployment.ConvertError = (elemID, error) => {
   if (isSaltoError(error) && isSaltoElementError(error)) {
     return error
   }
@@ -30,7 +31,7 @@ export const customConvertError: ConvertError = (elemID, error) => {
       status === 409 &&
       Array.isArray(errorsArray) &&
       errorsArray.length > 0 &&
-      isString(errorsArray[0].title) &&
+      _.isString(errorsArray[0].title) &&
       errorsArray[0].title.startsWith('Version')
     )
   }

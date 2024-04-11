@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { InstanceElement, Adapter, AdapterAuthentication, ConvertError } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, AdapterAuthentication } from '@salto-io/adapter-api'
 import { FilterCreationArgs, createCommonFilters } from '../filters/common_filters'
 import { createClient } from '../client/client_creator'
 import { AdapterImplConstructor } from './adapter/types'
@@ -36,6 +36,7 @@ import { adapterConfigFromConfig } from '../definitions/user/user_config'
 import { ClientDefaults } from '../client/http_client'
 import { AdapterImpl } from './adapter/adapter'
 import { getResolverCreator } from '../references/resolver_creator'
+import { ConvertError } from '../deployment'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -118,7 +119,7 @@ export const createAdapter = <
               config,
               definitions,
               fieldReferenceResolverCreator: resolverCreator,
-              customConvertError,
+              convertError: customConvertError,
             }),
           ),
           adapterName,

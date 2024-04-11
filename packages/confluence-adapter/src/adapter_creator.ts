@@ -22,7 +22,7 @@ import { createClientDefinitions, createDeployDefinitions, createFetchDefinition
 import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references'
-import { customConvertError } from './utils'
+import { customConvertError } from './error_utils'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = client
 const { defaultCredentialsFromConfig } = credentials

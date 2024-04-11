@@ -15,7 +15,7 @@
  */
 
 import { ElemID } from '@salto-io/adapter-api'
-import { customConvertError } from '../src/utils'
+import { customConvertError } from '../src/error_utils'
 
 describe('customConvertError', () => {
   const elemID = new ElemID('testElemID')

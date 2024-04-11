@@ -21,7 +21,6 @@ import { JIRA } from '../../../../src/constants'
 export const createObjectTypeValues = (name: string, allElements: Element[]): Values => ({
   name,
   type: 0,
-  objectCount: 0,
   inherited: true,
   abstractObjectType: false,
   parentObjectTypeInherited: true,

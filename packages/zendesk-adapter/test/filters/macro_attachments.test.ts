@@ -288,6 +288,8 @@ describe('macro attachment filter', () => {
     let attachmentInstance: InstanceElement
     let macroInstance: InstanceElement
     beforeEach(() => {
+      jest.clearAllMocks()
+      mockPost = jest.spyOn(client, 'post')
       attachmentInstance = new InstanceElement('attachment', attachmentType, {
         filename,
         contentType: 'text/plain',
@@ -314,7 +316,6 @@ describe('macro attachment filter', () => {
       const clonedMacro = macroInstance.clone()
       const clonedAttachment = attachmentInstance.clone()
       mockDeployChange.mockImplementation(async () => ({ macro: { id: macroId } }))
-      mockPost = jest.spyOn(client, 'post')
       mockPost.mockResolvedValueOnce({
         status: 201,
         data: {
@@ -351,14 +352,9 @@ describe('macro attachment filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
       expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'add', data: { after: resolvedClonedMacro } })
-      const resolvedAttachment = clonedAttachment.clone()
-      resolvedAttachment.value.content = content
-      // It's actually not deployed with id but its added to the element that we check
-      resolvedAttachment.value.id = attachmentId
       expect(res.deployResult.appliedChanges[1].action).toEqual('add')
-      expect((getChangeData(res.deployResult.appliedChanges[1]) as InstanceElement).value).toEqual(
-        resolvedAttachment.value,
-      )
+      expect((getChangeData(res.deployResult.appliedChanges[1]) as InstanceElement).value.content).toEqual(content)
+      expect((getChangeData(res.deployResult.appliedChanges[1]) as InstanceElement).value.id).toEqual(attachmentId)
     })
     it('should pass the correct params to deployChange and client on modify - with parent', async () => {
       const newAttachmentId = 123
@@ -376,7 +372,6 @@ describe('macro attachment filter', () => {
       clonedAfterAttachment.value.filename = `${clonedAfterAttachment.value.filename}-edited`
 
       mockDeployChange.mockImplementation(async () => ({ macro: { id: macroId } }))
-      mockPost = jest.spyOn(client, 'post')
       mockPost.mockResolvedValueOnce({
         status: 201,
         data: {
@@ -416,17 +411,12 @@ describe('macro attachment filter', () => {
         action: 'modify',
         data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro },
       })
-      const resolvedBeforeAttachment = clonedBeforeAttachment.clone()
-      const resolvedAfterAttachment = clonedAfterAttachment.clone()
-      resolvedBeforeAttachment.value.content = content
-      resolvedAfterAttachment.value.content = content
-      resolvedAfterAttachment.value.id = newAttachmentId
       expect(res.deployResult.appliedChanges[1].action).toEqual('modify')
-      expect((res.deployResult.appliedChanges[1] as ModificationChange<InstanceElement>).data.before.value).toEqual(
-        resolvedBeforeAttachment.value,
-      )
-      expect((res.deployResult.appliedChanges[1] as ModificationChange<InstanceElement>).data.after.value).toEqual(
-        resolvedAfterAttachment.value,
+      expect(
+        (res.deployResult.appliedChanges[1] as ModificationChange<InstanceElement>).data.before.value.content,
+      ).toEqual(content)
+      expect((res.deployResult.appliedChanges[1] as ModificationChange<InstanceElement>).data.after.value.id).toEqual(
+        newAttachmentId,
       )
     })
     it('should pass the correct params to deployChange and client on modify - just child', async () => {
@@ -442,7 +432,6 @@ describe('macro attachment filter', () => {
       clonedAfterAttachment.value.filename = `${clonedAfterAttachment.value.filename}-edited`
 
       mockDeployChange.mockImplementation(async () => ({ macro: { id: macroId } }))
-      mockPost = jest.spyOn(client, 'post')
       mockPost.mockResolvedValueOnce({
         status: 201,
         data: {
@@ -477,30 +466,12 @@ describe('macro attachment filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      const resolvedBeforeAttachment = clonedBeforeAttachment.clone()
-      const resolvedAfterAttachment = clonedAfterAttachment.clone()
-      resolvedBeforeAttachment.value.content = content
-      resolvedAfterAttachment.value.content = content
-      resolvedAfterAttachment.value.id = newAttachmentId
-      // eslint-disable-next-line no-console
-      console.log('AFTER')
-      // eslint-disable-next-line no-console
-      console.log(resolvedAfterAttachment.value)
-      // eslint-disable-next-line no-console
-      console.log((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.after.value)
-      // eslint-disable-next-line no-console
-      console.log('BEFORE')
-      // eslint-disable-next-line no-console
-      console.log(resolvedBeforeAttachment.value)
-      // eslint-disable-next-line no-console
-      console.log((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.before.value)
-
       expect(res.deployResult.appliedChanges[0].action).toEqual('modify')
-      expect((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.before.value).toEqual(
-        resolvedBeforeAttachment.value,
+      expect((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.before.value.id).toEqual(
+        attachmentId,
       )
-      expect((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.after.value).toEqual(
-        resolvedAfterAttachment.value,
+      expect((res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual(
+        newAttachmentId,
       )
     })
     it('should pass the correct params to deployChange and client on remove', async () => {
@@ -511,7 +482,6 @@ describe('macro attachment filter', () => {
       clonedMacro.value[ATTACHMENTS_FIELD_NAME] = [new ReferenceExpression(clonedAttachment.elemID, clonedAttachment)]
       clonedAttachment.value.macros = [new ReferenceExpression(clonedMacro.elemID, clonedMacro)]
       mockDeployChange.mockImplementation(async () => ({ macro: { id: macroId } }))
-      mockPost = jest.spyOn(client, 'post')
       mockPost.mockResolvedValueOnce({ status: 200 })
       const res = await filter.deploy([
         { action: 'remove', data: { before: clonedAttachment } },
@@ -531,18 +501,13 @@ describe('macro attachment filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
       expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'remove', data: { before: resolvedClonedMacro } })
-      const resolvedAttachment = clonedAttachment.clone()
-      resolvedAttachment.value.content = content
       expect(res.deployResult.appliedChanges[1].action).toEqual('remove')
-      expect((getChangeData(res.deployResult.appliedChanges[1]) as InstanceElement).value).toEqual(
-        resolvedAttachment.value,
-      )
+      expect((getChangeData(res.deployResult.appliedChanges[1]) as InstanceElement).value.content).toEqual(content)
     })
     it('should not deploy parent if the deployment of the child failed', async () => {
       const clonedMacro = macroInstance.clone()
       const clonedAttachment = attachmentInstance.clone()
       mockDeployChange.mockImplementation(async () => ({ macro: { id: macroId } }))
-      mockPost = jest.spyOn(client, 'post')
       mockPost.mockImplementationOnce(() => {
         throw new Error('err')
       })

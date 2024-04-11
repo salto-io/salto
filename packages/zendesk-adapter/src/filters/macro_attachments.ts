@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
@@ -28,7 +26,6 @@ import {
   InstanceElement,
   isInstanceElement,
   isRemovalChange,
-  isRemovalOrModificationChange,
   isSaltoError,
   isStaticFile,
   ObjectType,
@@ -118,31 +115,6 @@ const replaceAttachmentId = (
     return instance ? new ReferenceExpression(instance.elemID, instance) : ref
   })
   return parentChange
-}
-
-const replaceMacroObject = (
-  change: Change<InstanceElement>,
-  fullNameToInstance: Record<string, InstanceElement>,
-): void => {
-  const instance = getChangeData(change)
-  const { macros } = instance.value
-  if (macros === undefined || !Array.isArray(macros) || macros.length === 0) {
-    return
-  }
-  if (isArrayOfRefExprToInstances(macros)) {
-    return
-  }
-  instance.value.macros = macros.map(ref => {
-    const instance2 = fullNameToInstance[ref.id]
-    return instance2 ? new ReferenceExpression(instance2.elemID, instance2) : ref
-  })
-
-  if (isRemovalOrModificationChange(change)) {
-    change.data.before.value.macros = macros.map(ref => {
-      const instance2 = fullNameToInstance[ref.id]
-      return instance2 ? new ReferenceExpression(instance2.elemID, instance2) : ref
-    })
-  }
 }
 
 const addAttachment = async (client: ZendeskClient, instance: InstanceElement): ReturnType<typeof client.post> => {
@@ -355,7 +327,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME,
     )
-    let additionalParentChanges: Change<InstanceElement>[] | undefined
+    let additionalParentChanges: Change<InstanceElement>[] | undefined = []
     if (parentChanges.length === 0 && childrenChanges.length > 0) {
       additionalParentChanges = childrenChanges
         .flatMap(childChange => {
@@ -388,11 +360,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
-    const parentFullNameToInstance: Record<string, InstanceElement> = {}
-    ;[...parentChanges, ...additionalParentChanges].forEach(change => {
-      const instance = getChangeData(change)
-      parentFullNameToInstance[instance.value.id] = instance
-    })
     const childFullNameToInstance: Record<string, InstanceElement> = {}
     const resolvedChildrenChanges = await awu(childrenChanges)
       .map(change => resolveChangeElement(change, lookupFunc))
@@ -410,11 +377,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         dataField: MACRO_ATTACHMENT_DATA_FIELD,
         addAlsoOnModification: true,
       })
-      // eslint-disable-next-line no-console
-      console.log('b4', instance)
-      replaceMacroObject(change, parentFullNameToInstance)
-      // eslint-disable-next-line no-console
-      console.log('after', instance)
       childFullNameToInstance[instance.elemID.getFullName()] = instance
     })
     if (!_.isEmpty(attachmentDeployResult.errors)) {

@@ -17,7 +17,6 @@ import {
   InstanceElement,
   ReferenceInfo,
   Values,
-  ObjectType,
   ElemID,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -30,79 +29,17 @@ import {
   LAYOUT_TYPE_ID_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
   SALESFORCE,
-} from '../src/constants'
-import { mockTypes } from './mock_elements'
-import { createCustomObjectType, createMetadataTypeElement } from './utils'
-import { getCustomReferences } from '../src/custom_references'
-import {
-  CUSTOM_REFS_CONFIG,
-  DATA_CONFIGURATION,
-  FETCH_CONFIG,
-} from '../src/types'
+} from '../../src/constants'
+import { mockTypes } from '../mock_elements'
+import { createCustomObjectType, createMetadataTypeElement } from '../utils'
+import { profilesHandler } from '../../src/weak_references/profiles'
 
-describe('getCustomReferences', () => {
+describe('Profile weak references handler', () => {
   let refs: ReferenceInfo[]
   let profileInstance: InstanceElement
   const createTestInstance = (fields: Values): InstanceElement =>
     new InstanceElement('test', mockTypes.Profile, fields)
 
-  describe('when profile refs are disabled', () => {
-    beforeEach(async () => {
-      profileInstance = createTestInstance({
-        fieldPermissions: {
-          Account: {
-            testField__c: 'ReadWrite',
-          },
-        },
-      })
-
-      const AdapterConfigType = new ObjectType({
-        elemID: new ElemID('adapter'),
-        isSettings: true,
-      })
-      const adapterConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        AdapterConfigType,
-        {
-          [FETCH_CONFIG]: {
-            [DATA_CONFIGURATION]: {
-              [CUSTOM_REFS_CONFIG]: {
-                profiles: false,
-              },
-            },
-          },
-        },
-      )
-      refs = await getCustomReferences([profileInstance], adapterConfig)
-    })
-    it('should not generate references', () => {
-      expect(refs).toBeEmpty()
-    })
-  })
-  describe('when profile custom refs config is not set', () => {
-    beforeEach(async () => {
-      profileInstance = createTestInstance({
-        fieldPermissions: {
-          Account: {
-            testField__c: 'ReadWrite',
-          },
-        },
-      })
-
-      const AdapterConfigType = new ObjectType({
-        elemID: new ElemID('adapter'),
-        isSettings: true,
-      })
-      const adapterConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        AdapterConfigType,
-      )
-      refs = await getCustomReferences([profileInstance], adapterConfig)
-    })
-    it('should not generate references', () => {
-      expect(refs).toBeEmpty()
-    })
-  })
   describe('fields', () => {
     describe('when the fields are inaccessible', () => {
       beforeEach(async () => {
@@ -113,12 +50,14 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
       })
     })
+
     describe('when the fields are accessible', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -128,8 +67,9 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should create references', async () => {
         const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
         const expectedTarget = mockTypes.Account.elemID.createNestedID(
@@ -146,6 +86,7 @@ describe('getCustomReferences', () => {
       })
     })
   })
+
   describe('custom apps', () => {
     const customApp = new InstanceElement(
       'SomeApplication',
@@ -165,7 +106,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should not create a reference', () => {
@@ -185,7 +126,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should create a reference', () => {
@@ -214,7 +155,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should create a reference', () => {
@@ -230,6 +171,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('if a reference already exists', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -248,13 +190,15 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
       })
     })
   })
+
   describe('apex classes', () => {
     const apexClass = new InstanceElement(
       'SomeApexClass',
@@ -272,7 +216,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should not create a reference', () => {
@@ -290,7 +234,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should create a reference', () => {
@@ -306,6 +250,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('if a reference already exists', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -323,13 +268,15 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
       })
     })
   })
+
   describe('flows', () => {
     const flow = new InstanceElement('SomeFlow', mockTypes.Flow, {
       [INSTANCE_FULL_NAME_FIELD]: 'SomeFlow',
@@ -345,12 +292,14 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
       })
     })
+
     describe('when enabled', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -361,8 +310,9 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
@@ -376,6 +326,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('if a reference already exists', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -393,13 +344,15 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
       })
     })
   })
+
   describe('layouts', () => {
     const layout = new InstanceElement(
       'Account_Account_Layout@bs',
@@ -418,8 +371,9 @@ describe('getCustomReferences', () => {
             ],
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
@@ -433,6 +387,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('when there is a reference to a recordType', () => {
       const recordTypes = [
         new InstanceElement('SomeRecordType', mockTypes.RecordType, {
@@ -442,6 +397,7 @@ describe('getCustomReferences', () => {
           [INSTANCE_FULL_NAME_FIELD]: 'SomeOtherRecordType',
         }),
       ]
+
       beforeEach(async () => {
         profileInstance = createTestInstance({
           layoutAssignments: {
@@ -457,8 +413,9 @@ describe('getCustomReferences', () => {
             ],
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
@@ -487,6 +444,7 @@ describe('getCustomReferences', () => {
           },
         ])
       })
+
       describe('if a reference already exists to a layout', () => {
         beforeEach(async () => {
           profileInstance = createTestInstance({
@@ -505,12 +463,17 @@ describe('getCustomReferences', () => {
               ],
             },
           })
-          refs = await getCustomReferences([profileInstance], undefined)
+          refs = await profilesHandler.findWeakReferences(
+            [profileInstance],
+            undefined,
+          )
         })
+
         it('should not create references', async () => {
           expect(refs).toBeEmpty()
         })
       })
+
       describe('if a reference already exists to a recordType', () => {
         beforeEach(async () => {
           profileInstance = createTestInstance({
@@ -541,8 +504,12 @@ describe('getCustomReferences', () => {
               ],
             },
           })
-          refs = await getCustomReferences([profileInstance], undefined)
+          refs = await profilesHandler.findWeakReferences(
+            [profileInstance],
+            undefined,
+          )
         })
+
         it('should only create references to layout', () => {
           expect(refs).toEqual([
             {
@@ -558,6 +525,7 @@ describe('getCustomReferences', () => {
       })
     })
   })
+
   describe('objects', () => {
     const customObject = createCustomObjectType('Account', {})
 
@@ -577,7 +545,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should not create references', () => {
@@ -601,7 +569,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should create a reference', () => {
@@ -617,6 +585,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('when a reference already exists', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -635,13 +604,15 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
       })
     })
   })
+
   describe('Apex pages', () => {
     const apexPage = new InstanceElement('SomeApexPage', mockTypes.ApexPage, {
       [INSTANCE_FULL_NAME_FIELD]: 'SomeApexPage',
@@ -657,7 +628,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should not create a reference', () => {
@@ -675,7 +646,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should create a reference', () => {
@@ -691,6 +662,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('when a reference already exists', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -708,7 +680,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
 
       it('should not create a reference', () => {
@@ -716,12 +688,14 @@ describe('getCustomReferences', () => {
       })
     })
   })
+
   describe('record types', () => {
     const recordType = new InstanceElement(
       'Case_SomeCaseRecordType',
       mockTypes.RecordType,
       { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
     )
+
     describe('when neither default nor visible', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -735,12 +709,14 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
       })
     })
+
     describe('when default', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -754,8 +730,9 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
@@ -770,6 +747,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('when visible', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -783,8 +761,9 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should create a reference', () => {
         expect(refs).toEqual([
           {
@@ -799,6 +778,7 @@ describe('getCustomReferences', () => {
         ])
       })
     })
+
     describe('when visible and a reference already exists', () => {
       beforeEach(async () => {
         profileInstance = createTestInstance({
@@ -819,8 +799,9 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance], undefined)
+        refs = await profilesHandler.findWeakReferences([profileInstance])
       })
+
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
       })

@@ -22,6 +22,7 @@ import {
   Change,
   ElemIdGetter,
   FetchResult,
+  FixElementsFunc,
   AdapterOperations,
   DeployResult,
   FetchOptions,
@@ -178,6 +179,7 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
+import { fixElementsFunc } from './weak_references'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -420,6 +422,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
   private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
+  private fixElementsFunc: FixElementsFunc
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE],
@@ -537,6 +540,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
+    this.fixElementsFunc = fixElementsFunc({ elementsSource })
   }
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {
@@ -1069,4 +1073,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       await this.getDeletedDataRecordsForPartialFetch(fetchElements)
     return deletedMetadata.concat(deletedDataRecords)
   }
+
+  fixElements: FixElementsFunc = (elements) => this.fixElementsFunc(elements)
 }

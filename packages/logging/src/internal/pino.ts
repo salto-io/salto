@@ -307,8 +307,8 @@ export const loggerRepo = (
         if (!logTags) tagsByNamespace.set(namespace, {})
         else tagsByNamespace.set(namespace, mergeLogTags(tagsByNamespace.get(namespace), logTags))
       },
-      printLogCount() {
-        const message = `final log count is: ${JSON.stringify(levelCountRecord, null, 2)}`
+      printLogCount(location?: string) {
+        const message = `${location ?? ''}: final log count is: ${JSON.stringify(levelCountRecord, null, 2)}`
         logFunc('debug', message)
       },
       initLogCount() {

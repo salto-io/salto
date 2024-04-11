@@ -37,6 +37,7 @@ import {
   FetchOptions,
   ProgressReporter,
 } from '@salto-io/adapter-api'
+import {logger} from '@salto-io/logging';
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from '@salto-io/jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -118,6 +119,7 @@ import {
 import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants
@@ -134,6 +136,7 @@ describe('Salesforce adapter E2E with real account', () => {
   let adapter: SalesforceAdapter
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
+    log.initLogCount()
     credLease = await testHelpers().credentials()
     const adapterAttr = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
@@ -146,6 +149,7 @@ describe('Salesforce adapter E2E with real account', () => {
     if (credLease.return) {
       await credLease.return()
     }
+    log.printLogCount('Salesforce adapter E2E')
   })
 
   // Set long timeout as we communicate with salesforce API

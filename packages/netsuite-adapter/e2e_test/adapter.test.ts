@@ -157,6 +157,7 @@ describe('Netsuite adapter E2E with real account', () => {
   }
 
   beforeAll(async () => {
+    log.initLogCount()
     await adapterCreator.install?.()
     credentialsLease = await credsLease()
     logging(`using account ${credentialsLease.value.accountId}`)
@@ -166,6 +167,7 @@ describe('Netsuite adapter E2E with real account', () => {
     if (credentialsLease?.return) {
       await credentialsLease.return()
     }
+    log.printLogCount('Netsuite adapter E2E')
   })
 
   // Set long timeout as we communicate with Netsuite APIs

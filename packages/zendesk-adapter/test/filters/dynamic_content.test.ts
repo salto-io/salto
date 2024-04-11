@@ -28,6 +28,7 @@ import filterCreator, {
   DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
   VARIANTS_FIELD_NAME,
 } from '../../src/filters/dynamic_content'
+import { placeholderToTitle } from '../../src/filters/utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -204,6 +205,14 @@ describe('dynmaic content filter', () => {
       active: true,
       default: false,
     })
+    const differentTitleAndPlaceholder = new InstanceElement('differentTitleAndPlaceholder', parentObjType, {
+      default_locale_id: 1,
+      title: 'differentTitleAndPlaceholder',
+      placeholder: '{{dc.placeholder}}',
+      [VARIANTS_FIELD_NAME]: [
+        { content: 'abc', locale_id: 1, active: true, default: true },
+      ],
+    })
 
     it('should pass the correct params to deployChange when we add both parent and children', async () => {
       const clonedElements = [resolvedParent, child1Resolved, child2Resolved].map(e => e.clone())
@@ -306,6 +315,17 @@ describe('dynmaic content filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+    it('should create the correct changes when creating a new change where title is different from the placeholder', async () => {
+      // deploy changes the change itself so we need to clone it
+      const clonedDifferentTitleAndPlaceholder = differentTitleAndPlaceholder.clone()
+      const res = await filter.deploy([{ action: 'add', data: { after: differentTitleAndPlaceholder } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(2)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(2)
+      expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'add', data: { after: differentTitleAndPlaceholder }})
+      expect(res.deployResult.appliedChanges[1]).toEqual({ action: 'modify', data: { after: clonedDifferentTitleAndPlaceholder, before: differentTitleAndPlaceholder }})
     })
   })
 })

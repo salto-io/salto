@@ -26,7 +26,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { applyforInstanceChangesOfType } from './utils'
+import { applyforInstanceChangesOfType, placeholderToTitle, titleToPlaceholder } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 export const VARIANTS_FIELD_NAME = 'variants'
@@ -76,6 +76,24 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
+
+    const isAdditionOfAlteredDynamicContentItem = (item: Change<InstanceElement>): boolean =>
+      isAdditionChange(item) &&
+      getChangeData(item).value.placeholder !== titleToPlaceholder(getChangeData(item).value.title)
+
+    itemChanges.filter(isAdditionOfAlteredDynamicContentItem).forEach(item => {
+      const itemDataToBeAltered = getChangeData(item)
+      const originalItemData = itemDataToBeAltered.clone()
+      itemDataToBeAltered.value.title = placeholderToTitle(itemDataToBeAltered.value.placeholder)
+
+      itemChanges.push({
+        action: 'modify',
+        data: {
+          before: itemDataToBeAltered,
+          after: originalItemData,
+        },
+      })
+    })
 
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
       // The service does not allow us to have an item with no variant - therefore, we need to do

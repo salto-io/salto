@@ -66,6 +66,10 @@ export type SubjectCondition = {
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
+export const placeholderToTitle = (placeholder: string): string => placeholder.substring(5, placeholder.length - 2)
+
+export const titleToPlaceholder = (title: string): string => `{{dc.${title.toLowerCase()}}}`
+
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
   typeNames: string[],

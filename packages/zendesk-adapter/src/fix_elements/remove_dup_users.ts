@@ -27,7 +27,7 @@ type FixedElementResponse = { fixedInstance: InstanceElement; dupUsers: UsersLis
 const dupUsersRemovalWarning = (fixedElem: FixedElementResponse): ChangeError => ({
   elemID: fixedElem.fixedInstance.elemID,
   severity: 'Warning',
-  message: `Duplicate appearances of ${fixedElem.dupUsers.length} username${fixedElem.dupUsers.length > 1 ? 's' : ''} in instance fields`,
+  message: 'Duplicate usernames in instance fields',
   detailedMessage: `The following usernames appear multiple times: ${fixedElem.dupUsers.join(', ')}.\nIf you continue, the duplicate entries will be removed from the list.\n`,
 })
 

@@ -31,22 +31,22 @@ const createDependencyChange = (
   change: { key: collections.set.SetId; change: Change<InstanceElement> },
   changes: { key: collections.set.SetId; change: Change<InstanceElement> }[],
 ): DependencyChange[] => {
-  const parents = getChangeData(change.change).value.macros
+  const { macros } = getChangeData(change.change).value
 
-  const parentChanges = changes.filter(
+  const macroChanges = changes.filter(
     c =>
-      parents.find((parent: ReferenceExpression) => getChangeData(c.change).elemID === parent.value.elemID) !==
+      macros.find((macroRef: ReferenceExpression) => getChangeData(c.change).elemID === macroRef.value.elemID) !==
       undefined,
   )
 
-  return parentChanges.map(parentChange => dependencyChange('remove', change.key, parentChange.key))
+  return macroChanges.map(macroChange => dependencyChange('remove', change.key, macroChange.key))
 }
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   isInstanceChange(change) && getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME
 
 /**
- * Removed the dependency between a macro attachment instance and its parent, to avoid circular dependency
+ * Removed the dependency between a macro attachment instance and its macro, to avoid circular dependency
  */
 export const macroAttachmentDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())

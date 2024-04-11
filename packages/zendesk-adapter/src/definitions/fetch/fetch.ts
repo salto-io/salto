@@ -26,32 +26,16 @@ import * as transforms from './transforms'
 // Note: hiding fields inside arrays is not supported, and can result in a corrupted workspace.
 // when in doubt, it's best to hide fields only for relevant types, or to omit them.
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  created_at: {
-    hide: true,
-  },
-  updated_at: {
-    hide: true,
-  },
-  created_by_id: {
-    hide: true,
-  },
-  updated_by_id: {
-    hide: true,
-  },
+  created_at: { hide: true },
+  updated_at: { hide: true },
+  created_by_id: { hide: true },
+  updated_by_id: { hide: true },
 }
 const DEFAULT_FIELDS_TO_OMIT: Record<string, definitions.fetch.ElementFieldCustomization> = {
-  count: {
-    omit: true,
-  },
-  url: {
-    omit: true,
-  },
-  extended_output_schema: {
-    omit: true,
-  },
-  extended_input_schema: {
-    omit: true,
-  },
+  count: { omit: true },
+  url: { omit: true },
+  extended_output_schema: { omit: true },
+  extended_input_schema: { omit: true },
 }
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
@@ -70,31 +54,41 @@ const createCustomizations = (): Record<
   group: {
     requests: [
       {
-        endpoint: {
-          path: '/api/v2/groups',
-        },
-        transformation: {
-          root: 'groups',
-        },
+        endpoint: { path: '/api/v2/groups' },
+        transformation: { root: 'groups' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/people/team/groups/{id}' },
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+      },
+    },
+  },
+  custom_role: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/custom_roles' },
+        transformation: { root: 'custom_roles' },
       },
     ],
     resource: {
-      // this type can be included/excluded based on the user's fetch query
       directFetch: true,
     },
     element: {
       topLevel: {
-        // isTopLevel should be set when the workspace can have instances of this type
         isTopLevel: true,
-        serviceUrl: {
-          path: '/admin/people/team/groups/{id}',
-        },
+        serviceUrl: { path: '/admin/people/team/roles/{id}' },
       },
       fieldCustomizations: {
-        id: {
-          fieldType: 'number',
-          hide: true,
-        },
+        id: { fieldType: 'number', hide: true },
+        // always 0 - https://developer.zendesk.com/api-reference/ticketing/account-configuration/custom_roles/#json-format
+        role_type: { omit: true },
+        team_member_count: { omit: true },
       },
     },
   },
@@ -102,12 +96,8 @@ const createCustomizations = (): Record<
   business_hours_schedule: {
     requests: [
       {
-        endpoint: {
-          path: '/api/v2/business_hours/schedules',
-        },
-        transformation: {
-          root: 'schedules',
-        },
+        endpoint: { path: '/api/v2/business_hours/schedules' },
+        transformation: { root: 'schedules' },
       },
     ],
     resource: {
@@ -117,28 +107,17 @@ const createCustomizations = (): Record<
       recurseInto: {
         holidays: {
           typeName: 'business_hours_schedule_holiday',
-          context: {
-            args: {
-              parent_id: {
-                root: 'id',
-              },
-            },
-          },
+          context: { args: { parent_id: { root: 'id' } } },
         },
       },
     },
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: {
-          path: '/admin/objects-rules/rules/schedules',
-        },
+        serviceUrl: { path: '/admin/objects-rules/rules/schedules' },
       },
       fieldCustomizations: {
-        id: {
-          fieldType: 'number',
-          hide: true,
-        },
+        id: { fieldType: 'number', hide: true },
         holidays: {
           // extract each item in the holidays field to its own instance
           standalone: {
@@ -154,25 +133,14 @@ const createCustomizations = (): Record<
   business_hours_schedule_holiday: {
     requests: [
       {
-        endpoint: {
-          path: '/api/v2/business_hours/schedules/{parent_id}/holidays',
-        },
-        transformation: {
-          root: 'holidays',
-          adjust: transforms.transformHoliday,
-        },
+        endpoint: { path: '/api/v2/business_hours/schedules/{parent_id}/holidays' },
+        transformation: { root: 'holidays', adjust: transforms.transformHoliday },
       },
     ],
     element: {
-      topLevel: {
-        isTopLevel: true,
-        elemID: { extendsParent: true },
-      },
+      topLevel: { isTopLevel: true, elemID: { extendsParent: true } },
       fieldCustomizations: {
-        id: {
-          fieldType: 'number',
-          hide: true,
-        },
+        id: { fieldType: 'number', hide: true },
         start_year: { fieldType: 'string', hide: true },
         end_year: { fieldType: 'string', hide: true },
       },
@@ -185,13 +153,9 @@ export const createFetchDefinitions = (
 ): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => ({
   instances: {
     default: {
-      resource: {
-        serviceIDFields: ['id'],
-      },
+      resource: { serviceIDFields: ['id'] },
       element: {
-        topLevel: {
-          elemID: { parts: DEFAULT_ID_PARTS },
-        },
+        topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },
     },

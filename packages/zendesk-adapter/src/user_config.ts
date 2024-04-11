@@ -21,8 +21,26 @@ export type IdLocator = {
   type: string[]
 }
 
+export type Themes = {
+  brands?: string[]
+  referenceOptions: {
+    enableReferenceLookup: boolean
+    javascriptReferenceLookupStrategy?:
+      | {
+          strategy: 'numericValues'
+          minimumDigitAmount: number
+        }
+      | {
+          strategy: 'varNamePrefix'
+          prefix: string
+        }
+  }
+}
+
 export type Guide = {
   brands: string[]
+  themes?: Themes
+  // Deprecated
   themesForBrands?: string[]
 }
 
@@ -49,7 +67,9 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
 
-export type ZendeskClientConfig = definitions.ClientBaseConfig<ZendeskClientRateLimitConfig>
+export type ZendeskClientConfig = definitions.ClientBaseConfig<ZendeskClientRateLimitConfig> & {
+  unassociatedAttachmentChunkSize: number
+}
 
 export type ZendeskDeployConfig = definitions.UserDeployConfig &
   definitions.DefaultMissingUserFallbackConfig & {

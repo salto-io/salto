@@ -18,20 +18,8 @@ import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { triggerCategoryRemovalValidator } from '../../src/change_validators'
-<<<<<<< HEAD
-import { DEFAULT_CONFIG, FETCH_CONFIG, ZendeskFetchConfig } from '../../src/config'
-||||||| parent of e119a5cc8 (Set up easy before/after fetch in the adapter)
-import {
-  API_DEFINITIONS_CONFIG,
-  DEFAULT_CONFIG,
-  FETCH_CONFIG,
-  ZendeskApiConfig,
-  ZendeskFetchConfig,
-} from '../../src/config'
-=======
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { ZendeskApiConfig, ZendeskFetchConfig } from '../../src/user_config'
->>>>>>> e119a5cc8 (Set up easy before/after fetch in the adapter)
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { ZendeskFetchConfig } from '../../src/user_config'
 
 const { createInMemoryElementSource } = elementSourceUtils
 

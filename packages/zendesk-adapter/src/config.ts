@@ -32,6 +32,7 @@ import {
   IdLocator,
   OmitInactiveConfig,
   ZendeskApiConfig,
+  ZendeskClientConfig,
   ZendeskDeployConfig,
   ZendeskFetchConfig,
 } from './user_config'
@@ -75,41 +76,7 @@ export const DEFAULT_TIMEOUT_OPTS = {
   maxDuration: DEFAULT_REQUEST_TIMEOUT,
 }
 
-export type IdLocator = {
-  fieldRegex: string
-  idRegex: string
-  type: string[]
-}
-
-export type Themes = {
-  brands?: string[]
-  referenceOptions: {
-    enableReferenceLookup: boolean
-    javascriptReferenceLookupStrategy?:
-      | {
-          strategy: 'numericValues'
-          minimumDigitAmount: number
-        }
-      | {
-          strategy: 'varNamePrefix'
-          prefix: string
-        }
-  }
-}
-
-export type Guide = {
-  brands: string[]
-  themes?: Themes
-  // Deprecated
-  themesForBrands?: string[]
-}
-
 export const OMIT_INACTIVE_DEFAULT = true
-export type OmitInactiveConfig = definitions.DefaultWithCustomizations<boolean>
-
-export type ZendeskClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig> & {
-  unassociatedAttachmentChunkSize: number
-}
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig

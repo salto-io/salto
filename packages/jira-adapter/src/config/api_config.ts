@@ -2296,7 +2296,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
         { fieldName: 'workspaceId' },
-        { fieldName: 'objectCount'},
+        { fieldName: 'objectCount' },
       ],
       extendsParentId: false,
       serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}',

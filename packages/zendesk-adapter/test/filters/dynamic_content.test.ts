@@ -28,7 +28,6 @@ import filterCreator, {
   DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
   VARIANTS_FIELD_NAME,
 } from '../../src/filters/dynamic_content'
-import { placeholderToTitle } from '../../src/filters/utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -209,9 +208,7 @@ describe('dynmaic content filter', () => {
       default_locale_id: 1,
       title: 'differentTitleAndPlaceholder',
       placeholder: '{{dc.placeholder}}',
-      [VARIANTS_FIELD_NAME]: [
-        { content: 'abc', locale_id: 1, active: true, default: true },
-      ],
+      [VARIANTS_FIELD_NAME]: [{ content: 'abc', locale_id: 1, active: true, default: true }],
     })
 
     it('should pass the correct params to deployChange when we add both parent and children', async () => {
@@ -324,8 +321,14 @@ describe('dynmaic content filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
-      expect(res.deployResult.appliedChanges[0]).toEqual({ action: 'add', data: { after: differentTitleAndPlaceholder }})
-      expect(res.deployResult.appliedChanges[1]).toEqual({ action: 'modify', data: { after: clonedDifferentTitleAndPlaceholder, before: differentTitleAndPlaceholder }})
+      expect(res.deployResult.appliedChanges[0]).toEqual({
+        action: 'add',
+        data: { after: differentTitleAndPlaceholder },
+      })
+      expect(res.deployResult.appliedChanges[1]).toEqual({
+        action: 'modify',
+        data: { after: clonedDifferentTitleAndPlaceholder, before: differentTitleAndPlaceholder },
+      })
     })
   })
 })

@@ -41,7 +41,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('dynmaic content filter', () => {
+describe('dynamic content filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const parentTypeName = DYNAMIC_CONTENT_ITEM_TYPE_NAME

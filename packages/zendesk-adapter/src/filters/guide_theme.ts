@@ -321,14 +321,16 @@ const fixThemeTypes = (elements: Element[]): void => {
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'guideThemesFilter',
   onFetch: async elements => {
-    if (!isGuideThemesEnabled(config[FETCH_CONFIG])) {
-      return undefined
-    }
-
     fixThemeTypes(elements)
 
     const instances = elements.filter(isInstanceElement)
     const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+    log.info('Found %d guide themes: %s', guideThemes.length, guideThemes.map(theme => theme.value?.name).join(', '))
+
+    if (!isGuideThemesEnabled(config[FETCH_CONFIG])) {
+      return undefined
+    }
+
     const brands = getBrandsForGuideThemes(instances, config[FETCH_CONFIG])
     const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
     const getBrandName = (theme: InstanceElement): string | undefined => {

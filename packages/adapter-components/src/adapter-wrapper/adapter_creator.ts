@@ -36,6 +36,7 @@ import { adapterConfigFromConfig } from '../definitions/user/user_config'
 import { ClientDefaults } from '../client/http_client'
 import { AdapterImpl } from './adapter/adapter'
 import { getResolverCreator } from '../references/resolver_creator'
+import { ConvertError } from '../deployment'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -55,6 +56,7 @@ export const createAdapter = <
   configTypeCreator,
   operationsCustomizations,
   clientDefaults,
+  customConvertError,
 }: {
   adapterName: string
   // helper for determining the names of all clients that should be created
@@ -77,6 +79,7 @@ export const createAdapter = <
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
+  customConvertError?: ConvertError
 }): Adapter => {
   const { adapterConfigCreator, credentialsFromConfig, connectionCreatorFromConfig, customizeFilterCreators } =
     operationsCustomizations
@@ -116,6 +119,7 @@ export const createAdapter = <
               config,
               definitions,
               fieldReferenceResolverCreator: resolverCreator,
+              convertError: customConvertError,
             }),
           ),
           adapterName,

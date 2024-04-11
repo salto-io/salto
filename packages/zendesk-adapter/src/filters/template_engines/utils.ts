@@ -20,9 +20,9 @@ import { SourceLocation as AcornLocation } from 'acorn'
 export const findLineStartIndexes = (input: string, pos = 0, indexes = [0]): number[] => {
   const index = input.indexOf('\n', pos)
   if (index === -1) {
-    // If the last character is not a newline, add the start index of the last line
-    if (indexes[indexes.length - 1] !== input.length) {
-      return [...indexes, input.length]
+    // If the last character is a newline, remove the last wrong start index
+    if (input.endsWith('\n')) {
+      indexes.pop() // Removes the last element
     }
     return indexes
   }
@@ -40,11 +40,11 @@ export const sourceLocationToIndexRange = (
 
 export const extractIdIfElementExists = (
   idsToElements: Record<string, InstanceElement>,
-  expression: string,
+  id: string,
 ): string | ReferenceExpression => {
-  const element = idsToElements[expression]
+  const element = idsToElements[id]
   if (element !== undefined) {
     return new ReferenceExpression(element.elemID, element)
   }
-  return expression
+  return id
 }

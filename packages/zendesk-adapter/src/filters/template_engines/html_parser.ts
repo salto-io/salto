@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, TemplateExpression } from '@salto-io/adapter-api'
+import { TemplateExpression } from '@salto-io/adapter-api'
 import { extractTemplate } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Element } from 'domhandler'
-import { hasChildren, isTag, isText, Node } from 'domhandler'
+import { Element, hasChildren, isTag, isText, Node } from 'domhandler'
 import { DomHandler, Parser } from 'htmlparser2'
 import { extractTemplateFromUrl, URL_REGEX } from '../article/utils'
 import { PotentialReference, TemplateEngineOptions } from './types'

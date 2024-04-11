@@ -29,11 +29,11 @@ describe('parsePotentialReferencesByPrefix', () => {
     expect(result).toEqual([
       {
         loc: { start: 24, end: 31 },
-        value: { parts: ['hello'] },
+        value: { parts: ['"hello"'] },
       },
       {
         loc: { start: 54, end: 61 },
-        value: { parts: ['world'] },
+        value: { parts: ['"world"'] },
       },
     ])
   })
@@ -60,11 +60,11 @@ describe('parsePotentialReferencesByPrefix', () => {
     expect(result).toEqual([
       {
         loc: { start: 9, end: 18 },
-        value: { parts: ['goodbye'] },
+        value: { parts: ["'goodbye'"] },
       },
       {
         loc: { start: 64, end: 75 },
-        value: { parts: ['space_123'] },
+        value: { parts: ["'space_123'"] },
       },
     ])
   })
@@ -87,11 +87,11 @@ describe('parsePotentialReferencesByPrefix', () => {
     expect(result).toEqual([
       {
         loc: { start: 28, end: 56 },
-        value: { parts: ['catch_', new ReferenceExpression(article.elemID, article), '_miss_1144226'] },
+        value: { parts: ["'catch_", new ReferenceExpression(article.elemID, article), "_miss_1144226'"] },
       },
       {
         loc: { start: 66, end: 94 },
-        value: { parts: ['catch_', new ReferenceExpression(article.elemID, article), '_miss_1144226'] },
+        value: { parts: ["'catch_", new ReferenceExpression(article.elemID, article), "_miss_1144226'"] },
       },
     ])
   })

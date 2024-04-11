@@ -92,6 +92,29 @@ const createCustomizations = (): Record<
       },
     },
   },
+  organization: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/organizations' },
+        transformation: { root: 'custom_roles' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/people/team/roles/{id}' },
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        // always 0 - https://developer.zendesk.com/api-reference/ticketing/account-configuration/custom_roles/#json-format
+        role_type: { omit: true },
+        team_member_count: { omit: true },
+      },
+    },
+  },
 
   business_hours_schedule: {
     requests: [

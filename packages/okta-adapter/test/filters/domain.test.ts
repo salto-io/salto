@@ -25,11 +25,11 @@ describe('domainFilter', () => {
 
     const domainType = new ObjectType({ elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME) })
     const domain = new InstanceElement('domain', domainType, {
-      brand: new ReferenceExpression(brand.elemID, brand),
+      brandId: new ReferenceExpression(brand.elemID, brand),
     })
 
     const filter = domainFilter(getFilterParams({}))
     filter.onFetch?.([domain])
-    expect(domain.annotations).toHaveProperty('_parent', new ReferenceExpression(brand.elemID, brand))
+    expect(domain.annotations).toHaveProperty('_parent', [new ReferenceExpression(brand.elemID, brand)])
   })
 })

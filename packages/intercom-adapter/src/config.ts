@@ -28,9 +28,9 @@ export type UserConfig = definitions.UserConfig<
 >
 
 export const DEFAULT_CONFIG: UserConfig = {
-  client: {},
   fetch: {
     include: [{ type: elements.query.ALL_TYPES }],
     exclude: [{ type: 'company' }],
+    hideTypes: true,
   },
 }

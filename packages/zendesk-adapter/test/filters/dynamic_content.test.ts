@@ -187,6 +187,8 @@ describe('dynamic content filter', () => {
     const resolvedParent = new InstanceElement('parent', parentObjType, {
       default_locale_id: 1,
       name: 'parent',
+      title: 'parent',
+      placeholder: '{{dc.parent}}',
       [VARIANTS_FIELD_NAME]: [
         { content: 'abc', locale_id: 1, active: true, default: true },
         { content: 'abc', locale_id: 2, active: true, default: false },
@@ -296,23 +298,6 @@ describe('dynamic content filter', () => {
         beforeElements.map((e, i) => ({ action: 'modify', data: { before: e, after: afterElements[i] } })),
       )
     })
-    it('should return error if deployChange failed', async () => {
-      const clonedResolvedParent = resolvedParent.clone()
-      mockDeployChange.mockImplementation(async () => {
-        throw new Error('err')
-      })
-      const res = await filter.deploy([{ action: 'add', data: { after: clonedResolvedParent } }])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: clonedResolvedParent } },
-        client: expect.anything(),
-        endpointDetails: expect.anything(),
-        undefined,
-      })
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
-    })
     it('should create the correct changes when creating a new change where title is different from the placeholder', async () => {
       // deploy changes the change itself so we need to clone it
       const clonedDifferentTitleAndPlaceholder = differentTitleAndPlaceholder.clone()
@@ -329,6 +314,24 @@ describe('dynamic content filter', () => {
         action: 'modify',
         data: { after: clonedDifferentTitleAndPlaceholder, before: differentTitleAndPlaceholder },
       })
+    })
+    // This test must be last because it changes the mock implementation!
+    it('should return error if deployChange failed', async () => {
+      const clonedResolvedParent = resolvedParent.clone()
+      mockDeployChange.mockImplementation(async () => {
+        throw new Error('err')
+      })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedResolvedParent } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedResolvedParent } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
   })
 })

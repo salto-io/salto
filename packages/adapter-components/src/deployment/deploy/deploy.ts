@@ -26,6 +26,8 @@ import {
   isSaltoError,
   ReadOnlyElementsSource,
   changeId,
+  isSaltoElementError,
+  createSaltoElementErrorFromError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, values } from '@salto-io/lowerdash'
@@ -40,6 +42,15 @@ import { ResolveAdditionalActionType } from '../../definitions/system/api'
 
 const log = logger(module)
 
+export type ConvertError = (elemID: ElemID, error: Error) => Error | SaltoElementError
+
+export const defaultConvertError: ConvertError = (elemID, error) => {
+  if (isSaltoError(error) && isSaltoElementError(error)) {
+    return error
+  }
+  return createSaltoElementErrorFromError({ error, severity: 'Error', elemID })
+}
+
 /**
  * Deploy a change with standard (add / modify / remove) and custom-defined actions based on the provided deploy definitions
  */
@@ -49,7 +60,7 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
   changeResolver,
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
-  convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+  convertError: ConvertError
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
 }): ((args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>) => {
   const { clients, deploy } = definitions
@@ -82,7 +93,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   changes: Change<InstanceElement>[]
   changeGroup: Readonly<ChangeGroup>
   elementSource: ReadOnlyElementsSource
-  convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+  convertError: ConvertError
   deployChangeFunc?: (args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
 }): Promise<Omit<DeployResult, 'extraProperties'>> => {
@@ -155,5 +166,5 @@ export type SingleChangeDeployCreator<
   convertError,
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
-  convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+  convertError: ConvertError
 }) => (args: ChangeAndContext) => Promise<void>

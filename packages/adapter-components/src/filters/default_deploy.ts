@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Change, ElemID, InstanceElement, SaltoElementError, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { AdapterFilterCreator } from '../filter_utils'
-import { deployChanges } from '../deployment'
+import { ConvertError, deployChanges } from '../deployment'
 import { generateLookupFunc } from '../references'
 import { ChangeAndContext } from '../definitions/system/deploy'
 import { createChangeElementResolver } from '../resolve_utils'
@@ -34,7 +34,7 @@ export const defaultDeployFilterCreator =
     fieldReferenceResolverCreator,
   }: {
     deployChangeFunc?: (args: ChangeAndContext) => Promise<void>
-    convertError: (elemID: ElemID, error: Error) => Error | SaltoElementError
+    convertError: ConvertError
     fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
   }): AdapterFilterCreator<{}, TResult, {}, Options> =>
   ({ definitions, elementSource }) => ({

@@ -66,6 +66,7 @@ describe('list values missing references filter', () => {
         { field: 'notification_webhook', value: ['01GB7WWYD3QM8G7BWTR7A28XWR', ['one', 'two']] },
         { field: 'notification_webhook', value: "['01GB7WWYD3QM8G7BWTR7A28XWR', ['one', 'two']]" },
         { field: 'notification_target', value: ['01GB7WWYD3QM8G7BWTR7A28XWR', 'target'] },
+        { field: 'notification_target' },
       ],
     }),
   ]
@@ -83,7 +84,7 @@ describe('list values missing references filter', () => {
         const brokenTrigger = elements.filter(
           e => isInstanceElement(e) && e.elemID.name === 'trigger1',
         )[0] as InstanceElement
-        expect(brokenTrigger.value.actions).toHaveLength(5)
+        expect(brokenTrigger.value.actions).toHaveLength(6)
         const triggerFirstAction = brokenTrigger.value.actions[0].value
         expect(triggerFirstAction[0]).toBeInstanceOf(ReferenceExpression)
         expect(triggerFirstAction[0].value.elemID.name).toEqual('missing_123456789')
@@ -119,6 +120,13 @@ describe('list values missing references filter', () => {
         expect(triggerSecondAction[0]).not.toBeInstanceOf(ReferenceExpression)
         expect(triggerSecondAction[0]).toEqual('group_id')
         expect(triggerSecondAction[1]).not.toBeInstanceOf(ReferenceExpression)
+      })
+      it('should do nothing if value is not an array', () => {
+        const brokenTrigger = elements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'trigger1',
+        )[0] as InstanceElement
+        const triggerLastAction = brokenTrigger.value.actions[5]
+        expect(triggerLastAction).toEqual({ field: 'notification_target' })
       })
     })
   })

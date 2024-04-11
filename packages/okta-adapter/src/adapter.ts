@@ -42,8 +42,9 @@ import {
   resolveChangeElement,
   fetch as fetchUtils,
   openapi,
+  restoreChangeElement,
 } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration, restoreChangeElement } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'

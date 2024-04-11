@@ -33,8 +33,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from '@salto-io/jsforce'
-import { restoreValues } from '@salto-io/adapter-utils'
-import { resolveValues } from '@salto-io/adapter-components'
+import { resolveValues, restoreValues } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 
 import {

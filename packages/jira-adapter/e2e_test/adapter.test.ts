@@ -26,7 +26,7 @@ import {
   ReadOnlyElementsSource,
   toChange,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils, resolveValues, client as clientUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements, getParents, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -263,7 +263,7 @@ each([
               progressReporter: nullProgressReporter,
             })
           } catch (e) {
-            if (e instanceof clientUtils.HTTPError && e.response?.status === 404) {
+            if (String(e).includes('status code 404')) {
               return {
                 errors: [],
                 appliedChanges: [],

@@ -36,8 +36,8 @@ const filterCreator: FilterCreator = () => ({
     // Instead of having a `Brand` reference expression, make it the parent of the domain.
     await Promise.all(
       instances.map(async instance => {
-        instance.annotations[CORE_ANNOTATIONS.PARENT] = instance.value.brand as ReferenceExpression
-        delete instance.value.brand
+        instance.annotations[CORE_ANNOTATIONS.PARENT] = [instance.value.brandId as ReferenceExpression]
+        delete instance.value.brandId
       }),
     )
   },

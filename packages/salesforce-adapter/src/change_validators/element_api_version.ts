@@ -46,12 +46,16 @@ const elementApiVersionValidator: ChangeValidator = async (
   return changes
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(...VERSIONED_TYPES))
-    .filter((instance) => instance.value.apiVersion > latestApiVersion)
+    .filter(
+      (instance) =>
+        _.isNumber(instance.value.apiVersion) &&
+        instance.value.apiVersion > latestApiVersion,
+    )
     .map((instance) => ({
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Unsupported API version',
-      detailedMessage: `Element API version set to ${instance.value.apiVersion}, the maximum supported version is ${latestApiVersion}.`,
+      detailedMessage: `Element API version set to ${instance.value.apiVersion}, the maximum supported version is ${latestApiVersion}. You can change the element's API version to one that is supported.`,
     }))
 }
 

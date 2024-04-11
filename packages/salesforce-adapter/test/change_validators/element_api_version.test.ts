@@ -18,6 +18,7 @@ import {
   ElemID,
   InstanceElement,
   ObjectType,
+  ReadOnlyElementsSource,
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -27,41 +28,49 @@ import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import elementApiVersionValidator from '../../src/change_validators/element_api_version'
 
-const ELEMENTS_SOURCE = buildElementsSourceFromElements([
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    new ObjectType({
-      elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    }),
-    {
-      [LATEST_SUPPORTED_API_VERSION_FIELD]: 50,
-    },
-  ),
-])
+describe('Element API version Change Validator', () => {
+  let elementSource: ReadOnlyElementsSource
 
-const flowWithApiVersion = (apiVersion: number): InstanceElement =>
-  createInstanceElement({ fullName: 'flow1', apiVersion }, mockTypes.Flow)
+  const flowWithApiVersion = (apiVersion: number): InstanceElement =>
+    createInstanceElement({ fullName: 'flow1', apiVersion }, mockTypes.Flow)
 
-describe('Element API version validator', () => {
+  beforeEach(() => {
+    elementSource = buildElementsSourceFromElements([
+      new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
+        }),
+        {
+          [LATEST_SUPPORTED_API_VERSION_FIELD]: 50,
+        },
+      ),
+    ])
+  })
+
   it('should return no errors for valid elements', async () => {
     const change = toChange({
       before: flowWithApiVersion(40),
       after: flowWithApiVersion(50),
     })
-    const errors = await elementApiVersionValidator([change], ELEMENTS_SOURCE)
+    const errors = await elementApiVersionValidator([change], elementSource)
     expect(errors).toBeEmpty()
   })
 
   it('should return an error with unsupported API version', async () => {
+    const flow = flowWithApiVersion(51)
     const change = toChange({
-      after: flowWithApiVersion(51),
+      after: flow,
     })
-    const errors = await elementApiVersionValidator([change], ELEMENTS_SOURCE)
-    expect(errors).toHaveLength(1)
-    const [error] = errors
-    expect(error.severity).toEqual('Error')
-    expect(error.detailedMessage).toInclude('50')
-    expect(error.detailedMessage).toInclude('51')
+    const errors = await elementApiVersionValidator([change], elementSource)
+    expect(errors).toEqual([
+      expect.objectContaining({
+        elemID: flow.elemID,
+        severity: 'Error',
+        detailedMessage:
+          expect.stringContaining('50') && expect.stringContaining('51'),
+      }),
+    ])
   })
 
   it('should return no errors for missing elements source', async () => {

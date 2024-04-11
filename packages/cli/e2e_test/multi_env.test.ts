@@ -19,7 +19,7 @@ import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapt
 import path from 'path'
 import { Plan } from '@salto-io/core'
 import { parser } from '@salto-io/parser'
-import {logger} from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'

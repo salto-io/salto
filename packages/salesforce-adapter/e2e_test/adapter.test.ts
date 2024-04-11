@@ -37,7 +37,7 @@ import {
   FetchOptions,
   ProgressReporter,
 } from '@salto-io/adapter-api'
-import {logger} from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from '@salto-io/jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'

@@ -16,7 +16,7 @@
 import { isObjectType, FetchOptions } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { MockInterface } from '@salto-io/test-utils'
-import { logger } from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import { OAuthClientCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import ZuoraAdapter from '../src/adapter'

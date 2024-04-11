@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { MetadataInfo } from '@salto-io/jsforce-types'
-import { logger } from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'

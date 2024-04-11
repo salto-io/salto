@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { collections } from '@salto-io/lowerdash'
-import { logger} from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'

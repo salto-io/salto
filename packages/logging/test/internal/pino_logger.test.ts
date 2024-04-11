@@ -734,11 +734,8 @@ describe('pino based logger', () => {
         logger.printLogCount('location')
         logger.initLogCount()
         logger.printLogCount()
-        lines = consoleStream
-          .contents()
-          .split('\n')
+        lines = consoleStream.contents().split('\n')
       })
-
 
       it('should log levelCountRecord correctly', () => {
         expect(lines[1]).toContain('location: final log count is')

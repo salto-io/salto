@@ -17,7 +17,7 @@ import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings, collections } from '@salto-io/lowerdash'
-import {logger} from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import { copyFile, rm, mkdirp, exists, readFile, writeFile } from '@salto-io/file'
 import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports

@@ -15,7 +15,7 @@
  */
 import { ChangeGroup, StaticFile, toChange } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { logger} from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
 import { API_VERSION } from '../src/client/client'

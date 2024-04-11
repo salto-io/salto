@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { Element, isObjectType } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging';
+import { logger } from '@salto-io/logging'
 import 'jest-extended'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { AccessTokenCredentials } from '../src/auth'

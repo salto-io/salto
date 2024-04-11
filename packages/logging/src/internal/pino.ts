@@ -281,7 +281,7 @@ export const loggerRepo = (
        We must "normalize" logTags because there are types of tags that pino doesn't support
        for example - Functions.
        */
-      const normalizedLogTags = normalizeLogTags({...namespaceTags, ...global.globalLogTags})
+      const normalizedLogTags = normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
       const [formattedOrError, unconsumedArgs] =
         typeof message === 'string' ? formatMessage(message, ...args) : [message, args]
 
@@ -313,7 +313,7 @@ export const loggerRepo = (
       },
       initLogCount() {
         levelCountRecord = {}
-      }
+      },
     }
   }
 

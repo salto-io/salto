@@ -134,7 +134,7 @@ export const logger = (
         baseLog(level, ...rest)
       },
       printLogCount: (location?: string): void => baseCount(location),
-      initLogCount: (): void => baseInitLogCount()
+      initLogCount: (): void => baseInitLogCount(),
     }),
   )
 }

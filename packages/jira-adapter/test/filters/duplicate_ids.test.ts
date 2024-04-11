@@ -147,7 +147,13 @@ describe('duplicateIdsFilter', () => {
       },
     )
 
-    const elements = [instance, instanceDuplicatedName, instanceWithAlias, instanceWithAliasDuplicatedName, instanceWithAliasDuplicatedNameDuplicateAlias]
+    const elements = [
+      instance,
+      instanceDuplicatedName,
+      instanceWithAlias,
+      instanceWithAliasDuplicatedName,
+      instanceWithAliasDuplicatedNameDuplicateAlias,
+    ]
     const filterRes = await filter.onFetch?.(elements)
     expect(elements).toHaveLength(0)
 

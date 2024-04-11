@@ -110,18 +110,29 @@ describe('duplicateIdsFilter', () => {
       id: '2',
       name: 'dup',
     })
-    const instanceWithAlias = new InstanceElement('dup', type, {
-      id: '1',
-      name: 'dup',
-    }, undefined, {
-      [CORE_ANNOTATIONS.ALIAS]: ['status alias'],
-    })
-    const instanceWithAliasDuplicatedName = new InstanceElement('dup', type, {
+    const instanceWithAlias = new InstanceElement(
+      'dup',
+      type,
+      {
+        id: '1',
+        name: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.ALIAS]: ['status alias'],
+      },
+    )
+    const instanceWithAliasDuplicatedName = new InstanceElement(
+      'dup',
+      type,
+      {
         id: '2',
         name: 'dup',
-      }, undefined, {
+      },
+      undefined,
+      {
         [CORE_ANNOTATIONS.ALIAS]: ['status alias'],
-      }
+      },
     )
 
     const elements = [instance, instanceDuplicatedName, instanceWithAlias, instanceWithAliasDuplicatedName]

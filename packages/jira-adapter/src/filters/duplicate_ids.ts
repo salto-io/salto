@@ -59,8 +59,13 @@ const filter: FilterCreator = ({ config }) => ({
       )
     })
 
-    const duplicateInstanceNames = _.uniq(duplicateInstances
-      .flatMap(instance => instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined ? instance.annotations[CORE_ANNOTATIONS.ALIAS] : instance.elemID.getFullName()))
+    const duplicateInstanceNames = _.uniq(
+      duplicateInstances.flatMap(instance =>
+        instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+          ? instance.annotations[CORE_ANNOTATIONS.ALIAS]
+          : instance.elemID.getFullName(),
+      ),
+    )
     if (!config.fetch.fallbackToInternalId) {
       return {
         errors: [

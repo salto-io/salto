@@ -37,7 +37,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [ACCESS_POLICY_RULE_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication rule',
-    priority: 0,
     system: false,
     conditions: {
       network: { connection: 'ANYWHERE' },

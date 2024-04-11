@@ -18,26 +18,39 @@ import _ from 'lodash'
 import { isSaltoElementError, isSaltoError } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 
+const isJavaNullPointerErrorOrUndefined = (err: Error): boolean => {
+  const status = _.get(err, 'response.status')
+  const message = _.get(err, 'response.data.message')
+  return status === 500 && message.startsWith('java.lang.NullPointerException: Cannot invoke')
+}
+
+const suppressedErrorsCheckerList: ((err: Error) => boolean)[] = [isJavaNullPointerErrorOrUndefined]
+
+const shouldSuppressError = (err: Error): boolean => suppressedErrorsCheckerList.some(checkFunc => checkFunc(err))
+
+const getWrongVersionErrorOrUndefined = (err: Error): string | undefined => {
+  const errorsArray = _.get(err, 'response.data.errors')
+  const status = _.get(err, 'response.status')
+  if (
+    status === 409 &&
+    Array.isArray(errorsArray) &&
+    errorsArray.length > 0 &&
+    _.isString(errorsArray[0].title) &&
+    errorsArray[0].title.startsWith('Version')
+  ) {
+    return errorsArray[0].title
+  }
+  return undefined
+}
+const getErrorMessage = (err: Error): string => getWrongVersionErrorOrUndefined(err) ?? err.message
+
 export const customConvertError: deployment.ConvertError = (elemID, error) => {
   if (isSaltoError(error) && isSaltoElementError(error)) {
     return error
   }
-  const isWrongVersionError = (
-    err: unknown,
-  ): err is { response: { data: { errors: { title: string }[] }; status: string } } => {
-    const errorsArray = _.get(err, 'response.data.errors')
-    const status = _.get(err, 'response.status')
-    return (
-      status === 409 &&
-      Array.isArray(errorsArray) &&
-      errorsArray.length > 0 &&
-      _.isString(errorsArray[0].title) &&
-      errorsArray[0].title.startsWith('Version')
-    )
+  if (shouldSuppressError(error)) {
+    return undefined
   }
-  const extractErrorMessageFromErrorArray = (err: unknown): string | undefined =>
-    isWrongVersionError(err) ? err.response.data.errors[0].title : undefined
 
-  const message = extractErrorMessageFromErrorArray(error) ?? error.message
-  return { elemID, message, severity: 'Error' }
+  return { elemID, message: getErrorMessage(error), severity: 'Error' }
 }

@@ -76,7 +76,7 @@ const handlePageRefMatch = (
       contentTitleValue,
       spaceKeyValue,
     )
-    return [spaceKey, spaceReference, contentTitle, contentTitle, versionAtSave]
+    return [spaceKey, spaceReference, contentTitle, contentTitleValue, versionAtSave]
   }
   const pageReference = new ReferenceExpression(page.elemID, page)
   return [spaceKey, spaceReference, contentTitle, pageReference, versionAtSave]
@@ -154,17 +154,11 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
         .filter(change => TEMPLATE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
-            try {
-              replaceTemplatesWithValues(
-                { values: [instance.value.body?.storage], fieldName: 'value' },
-                deployTemplateMapping,
-                prepRef,
-              )
-            } catch (e) {
-              log.error(
-                `Error serializing article translation body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
-              )
-            }
+            replaceTemplatesWithValues(
+              { values: [instance.value.body?.storage], fieldName: 'value' },
+              deployTemplateMapping,
+              prepRef,
+            )
             return instance
           })
         })
@@ -176,7 +170,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
         .filter(change => TEMPLATE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
-            resolveTemplates({ values: [instance.value], fieldName: 'body.storage.value' }, deployTemplateMapping)
+            resolveTemplates({ values: [instance.value.body?.storage], fieldName: 'value' }, deployTemplateMapping)
             return instance
           })
         })

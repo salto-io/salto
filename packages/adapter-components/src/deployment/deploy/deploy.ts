@@ -42,7 +42,7 @@ import { ResolveAdditionalActionType } from '../../definitions/system/api'
 
 const log = logger(module)
 
-export type ConvertError = (elemID: ElemID, error: Error) => Error | SaltoElementError
+export type ConvertError = (elemID: ElemID, error: Error) => Error | SaltoElementError | undefined
 
 export const defaultConvertError: ConvertError = (elemID, error) => {
   if (isSaltoError(error) && isSaltoElementError(error)) {
@@ -72,7 +72,15 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
     try {
       return await requester.requestAllForChangeAndAction(args)
     } catch (err) {
-      throw convertError(getChangeData(args.change).elemID, err)
+      const convertedError = convertError(getChangeData(args.change).elemID, err)
+      if (convertedError !== undefined) {
+        throw convertedError
+      }
+      log.warn(
+        'Error has been thrown during deployment of %s, but was converted to undefined. Original error: %o',
+        getChangeData(args.change).elemID.getFullName(),
+        err,
+      )
     }
   }
 }

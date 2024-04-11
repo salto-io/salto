@@ -18,6 +18,13 @@ import { definitions, deployment } from '@salto-io/adapter-components'
 import { isModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
 import { increasePagesVersion } from '../transformation_utils'
+import {
+  BLOG_POST_TYPE_NAME,
+  GLOBAL_TEMPLATE_TYPE_NAME,
+  PAGE_TYPE_NAME,
+  SPACE_TYPE_NAME,
+  TEMPLATE_TYPE_NAME,
+} from '../../constants'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -33,12 +40,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     AdditionalAction,
     ClientOptions
   >({
-    blogpost: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
-    global_template: { bulkPath: 'wiki/rest/api/template', idField: 'templateId' },
+    [BLOG_POST_TYPE_NAME]: { bulkPath: 'wiki/api/v2/blogposts', idField: 'id' },
+    [GLOBAL_TEMPLATE_TYPE_NAME]: { bulkPath: 'wiki/rest/api/template', idField: 'templateId' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    page: {
+    [PAGE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [
@@ -86,7 +93,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    space: {
+    [SPACE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [
@@ -150,7 +157,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    template: {
+    [TEMPLATE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [

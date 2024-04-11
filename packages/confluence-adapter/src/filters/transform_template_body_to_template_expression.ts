@@ -38,10 +38,10 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
+import { SPACE_TYPE_NAME, TEMPLATE_TYPE_NAMES } from '../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const TEMPLATE_TYPE_NAMES = ['template', 'global_template']
 
 // If you change one regex of a pair (TYPE_REF_REGEX, SPLIT_TYPE_REF_REGEX), you should change the other as well
 const PAGE_REF_REGEX = /(<ri:page\s+ri:space-key="[^"]*"\s+ri:content-title="[^"]*"\s+ri:version-at-save="\d+"\s*\/>)/
@@ -57,9 +57,9 @@ const handlePageRefMatch = (
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
   const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
-  const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
+  const space = instances.find(inst => inst.elemID.typeName === SPACE_TYPE_NAME && inst.value.key === spaceKeyValue)
   if (space === undefined) {
-    // TODO_F add log
+    log.warn('Could not find space with key %s', spaceKeyValue)
     return fallback
   }
   const spaceReference = new ReferenceExpression(space.elemID, space)
@@ -71,7 +71,11 @@ const handlePageRefMatch = (
       inst.value.spaceId.elemID.isEqual(spaceReference.elemID),
   )
   if (page === undefined) {
-    // TODO_F add log
+    log.warn(
+      'Could not find page with title %s in spaceKey %s, creating reference for space only',
+      contentTitleValue,
+      spaceKeyValue,
+    )
     return [spaceKey, spaceReference, contentTitle, contentTitle, versionAtSave]
   }
   const pageReference = new ReferenceExpression(page.elemID, page)
@@ -84,9 +88,9 @@ const handleSpaceRefMatch = (
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
   const [, spaceKey, spaceKeyValue, rest] = matches
-  const space = instances.find(inst => inst.elemID.typeName === 'space' && inst.value.key === spaceKeyValue)
+  const space = instances.find(inst => inst.elemID.typeName === SPACE_TYPE_NAME && inst.value.key === spaceKeyValue)
   if (space === undefined) {
-    // TODO_F add log
+    log.warn('Could not find space with key %s', spaceKeyValue)
     return fallback
   }
   const spaceReference = new ReferenceExpression(space.elemID, space)
@@ -105,6 +109,25 @@ const extractionFunc = (expression: string, instances: InstanceElement[]): Templ
   return expression
 }
 
+const prepRef = (ref: ReferenceExpression): TemplatePart => {
+  if (ref.value instanceof UnresolvedReference) {
+    log.trace(
+      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
+      ref.elemID.getFullName(),
+    )
+    return ''
+  }
+  if (ref.value.elemID.typeName === SPACE_TYPE_NAME && _.isString(ref.value.value?.key)) {
+    return ref.value.value.key
+  }
+  if (ref.value.elemID.typeName === 'page' && _.isString(ref.value.value?.title)) {
+    return ref.value.value.title
+  }
+  log.warn('prepRef received a part that is not a space or page reference %o', ref)
+  // fallback to the original reference
+  return ref
+}
+
 const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
@@ -115,7 +138,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
       templateInstances.forEach(templateInst => {
         const bodyValue = _.get(templateInst.value, 'body.storage.value')
         if (!_.isString(bodyValue)) {
-          // TODO_F add log
+          log.warn('Body value is not a string for template instance %s', templateInst.elemID.getFullName())
           return
         }
         const templateExpression = extractTemplate(bodyValue, [PAGE_REF_REGEX, SPACE_REF_REGEX], expression =>
@@ -133,26 +156,9 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
           await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
             try {
               replaceTemplatesWithValues(
-                { values: [instance.value.body.storage], fieldName: 'value' },
+                { values: [instance.value.body?.storage], fieldName: 'value' },
                 deployTemplateMapping,
-                ref => {
-                  if (ref.value instanceof UnresolvedReference) {
-                    log.trace(
-                      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
-                      ref.elemID.getFullName(),
-                    )
-                    return ''
-                  }
-                  if (ref.value.elemID.typeName === 'space' && _.isString(ref.value.value?.key)) {
-                    return ref.value.value.key
-                  }
-                  if (ref.value.elemID.typeName === 'page' && _.isString(ref.value.value?.title)) {
-                    return ref.value.value.title
-                  }
-                  // TODO_F add log
-                  // fallback to the original reference
-                  return ref
-                },
+                prepRef,
               )
             } catch (e) {
               log.error(

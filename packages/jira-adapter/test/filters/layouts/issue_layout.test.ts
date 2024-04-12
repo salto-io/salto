@@ -102,7 +102,6 @@ describe('issue layout filter', () => {
     screenInstance = new InstanceElement('screen1', screenType, {
       id: 11,
     })
-
     fieldType = createEmptyType('Field')
     fieldInstance1 = new InstanceElement('testField1', fieldType, {
       id: 'testField1',
@@ -215,13 +214,12 @@ describe('issue layout filter', () => {
       })
       issueTypeSchemeInstance1 = new InstanceElement('issueTypeScheme1', issueTypeScheme, {
         id: 10,
-        issueTypeIds: [100],
+        issueTypeIds: [{ issueTypeId: 100 }],
       })
       issueTypeSchemeInstance2 = new InstanceElement('issueTypeScheme2', issueTypeScheme, {
         id: 20,
-        issueTypeIds: [100, 200],
+        issueTypeIds: [{ issueTypeId: 100 }, { issueTypeId: 200 }],
       })
-
       screenSchemeInstance1 = new InstanceElement('screenScheme1', screenSchemeType, {
         id: 111,
       })
@@ -233,7 +231,6 @@ describe('issue layout filter', () => {
         id: 333,
         screens: { default: 13, view: 12 },
       })
-
       issueTypeScreenSchemeInstance1 = new InstanceElement('issueTypeScreenScheme1', issueTypeScreenSchemeType, {
         id: 1111,
         issueTypeMappings: [
@@ -243,7 +240,6 @@ describe('issue layout filter', () => {
           },
         ],
       })
-
       issueTypeScreenSchemeInstance2 = new InstanceElement('issueTypeScreenScheme2', issueTypeScreenSchemeType, {
         id: 2222,
         issueTypeMappings: [
@@ -291,6 +287,15 @@ describe('issue layout filter', () => {
       expect(Object.entries(res)).toHaveLength(2)
       expect(res['11111'][11]).toBeDefined()
       expect(res['22222'][12]).toBeDefined()
+    })
+    it('should return the correct answer if there are multiple issueLayouts in the same project', async () => {
+      projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 2222 } }
+      projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 20 } }
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(Object.entries(res['11111'])).toHaveLength(2)
+      expect(res['11111'][11]).toBeDefined()
+      expect(res['11111'][12]).toBeDefined()
     })
     it('should be empty answer if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({

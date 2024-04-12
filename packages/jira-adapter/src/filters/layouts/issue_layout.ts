@@ -56,7 +56,7 @@ type issueTypeMappingStruct = {
 type ResponsesRecord = Record<string, Record<string, Promise<graphQLResponseType>>>
 
 const viewOrDefaultScreen = (screenScheme: InstanceElement): string =>
-  screenScheme.value.screens.view ?? screenScheme.value.screens.default
+  screenScheme.value.screens?.view ?? screenScheme.value.screens?.default
 
 // Check if the issueType of the issueTypeMapping is default or is in the issueTypeScheme of the project
 const IsIssueTypeInIssueTypeSchemesOrDefault = (
@@ -65,7 +65,7 @@ const IsIssueTypeInIssueTypeSchemesOrDefault = (
   issueTypeSchemeId: string,
 ): boolean =>
   issueTypeMapping.issueTypeId === 'default' ||
-  issueTypeSchemesToIssueTypeList[issueTypeSchemeId].includes(issueTypeMapping.issueTypeId)
+  issueTypeSchemesToIssueTypeList[issueTypeSchemeId]?.includes(issueTypeMapping.issueTypeId)
 
 // we do not want to filter out the default issueTypeScreenScheme in case there is an issueType that is not in the issueTypeMapping
 // we can do it by compare the length of the issueTypeScheme to the length of the issueTypeMapping after we filter the issueTypeMapping
@@ -99,7 +99,12 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
-      .map(issueTypeScheme => [issueTypeScheme.value.id, issueTypeScheme.value.issueTypeIds]),
+      .map(issueTypeScheme => [
+        issueTypeScheme.value.id,
+        issueTypeScheme.value.issueTypeIds.map(
+          (issueTypeIdRecord: Record<string, string>) => issueTypeIdRecord.issueTypeId,
+        ),
+      ]),
   )
 
   return Object.fromEntries(
@@ -112,11 +117,11 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
         [
           ...new Set(
             issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
-              .filter((issueTypeMapping: issueTypeMappingStruct) =>
+              ?.filter((issueTypeMapping: issueTypeMappingStruct) =>
                 IsIssueTypeInIssueTypeSchemesOrDefault(
                   issueTypeMapping,
                   issueTypeSchemesToIssueTypeList,
-                  project.value.issueTypeScheme.issueTypeScheme.id,
+                  project.value.issueTypeScheme?.issueTypeScheme.id,
                 ),
               )
               .filter((issueTypeMapping: issueTypeMappingStruct) =>
@@ -124,11 +129,14 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
                   issueTypeMapping,
                   issueTypeScreenSchemesToiIssueTypeMappings[
                     project.value.issueTypeScreenScheme.issueTypeScreenScheme.id
-                  ].length,
-                  issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length,
+                  ]?.length ?? 0,
+                  issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id]?.length ?? 0,
                 ),
               )
-              .map((struct: issueTypeMappingStruct) => screensSchemesToDefaultOrViewScreens[struct.screenSchemeId]),
+              .map(
+                (issueTypeMapping: issueTypeMappingStruct) =>
+                  screensSchemesToDefaultOrViewScreens[issueTypeMapping.screenSchemeId],
+              ),
           ),
         ],
       ]),

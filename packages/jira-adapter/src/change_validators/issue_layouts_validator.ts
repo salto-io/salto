@@ -65,7 +65,7 @@ const issueLayoutByProject = (changes: ReadonlyArray<Change>): InstanceElement[]
     ),
   )
 
-const getIssueLayoutsScreen = async (
+const getIssueLayoutScreensIds = async (
   elementsSource: ReadOnlyElementsSource,
   issueLayout: InstanceElement,
 ): Promise<string[]> => {
@@ -113,23 +113,26 @@ export const issueLayoutsValidator: ChangeValidator = async (changes, elementsSo
 
   if (elementsSource === undefined) return errors
 
-  const projectIdToIssueLayout: InstanceElement[][] = issueLayoutByProject(changes)
+  const projectIdToIssueLayouts: InstanceElement[][] = issueLayoutByProject(changes)
 
   await Promise.all(
-    projectIdToIssueLayout.map(async instances => {
-      const issueLayoutsScreen = await getIssueLayoutsScreen(elementsSource, instances[0])
+    projectIdToIssueLayouts.map(async instances => {
+      const issueLayoutsScreens = await getIssueLayoutScreensIds(elementsSource, instances[0])
 
       await Promise.all(
-        instances.map(async issueLayoutInstance => {
-          if (!issueLayoutsScreen.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName())) {
+        instances
+          .filter(
+            issueLayoutInstance =>
+              !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
+          )
+          .map(async issueLayoutInstance => {
             errors.push({
               elemID: issueLayoutInstance.elemID,
               severity: 'Error',
               message: 'Invalid screen in Issue Layout',
               detailedMessage: 'This issue layout references an invalid or non-existing screen.',
             })
-          }
-        }),
+          }),
       )
     }),
   )

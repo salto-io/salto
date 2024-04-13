@@ -38,12 +38,17 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { Options } from '../definitions/types'
 import { UserConfig } from '../config'
-import { SPACE_TYPE_NAME, TEMPLATE_TYPE_NAMES } from '../constants'
+import { PAGE_TYPE_NAME, SPACE_TYPE_NAME, TEMPLATE_TYPE_NAMES } from '../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-// If you change one regex of a pair (TYPE_REF_REGEX, SPLIT_TYPE_REF_REGEX), you should change the other as well
+type PossibleRefsInTemplateIndices = {
+  spaceByKey: Record<string, InstanceElement>
+  pageBySpaceElemIdAndTitle: Record<string, Record<string, InstanceElement>>
+}
+
+// If you change one regex of a pair (TYPE_REF_REGEX, SPLIT_TYPE_REF_REGEX), you should change the other one as well
 const PAGE_REF_REGEX = /(<ri:page\s+ri:space-key="[^"]*"\s+ri:content-title="[^"]*"\s+ri:version-at-save="\d+"\s*\/>)/
 const SPLIT_PAGE_REF_REGEX =
   /(<ri:page\s+ri:space-key=")([^"]*)("\s+ri:content-title=")([^"]*)("\s+ri:version-at-save="\d+"\s*\/>)/
@@ -53,23 +58,18 @@ const SPLIT_SPACE_REF_REGEX = /(<ri:space\sri:space-key=")([^"]*)("\s*\/>)/
 
 const handlePageRefMatch = (
   matches: RegExpMatchArray,
-  instances: InstanceElement[],
+  indices: PossibleRefsInTemplateIndices,
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
+  const { spaceByKey, pageBySpaceElemIdAndTitle } = indices
   const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
-  const space = instances.find(inst => inst.elemID.typeName === SPACE_TYPE_NAME && inst.value.key === spaceKeyValue)
+  const space = spaceByKey[spaceKeyValue]
   if (space === undefined) {
     log.warn('Could not find space with key %s', spaceKeyValue)
     return fallback
   }
   const spaceReference = new ReferenceExpression(space.elemID, space)
-  const page = instances.find(
-    inst =>
-      inst.elemID.typeName === 'page' &&
-      inst.value.title === contentTitleValue &&
-      isReferenceExpression(inst.value.spaceId) &&
-      inst.value.spaceId.elemID.isEqual(spaceReference.elemID),
-  )
+  const page = pageBySpaceElemIdAndTitle[space.elemID.getFullName()]?.[contentTitleValue]
   if (page === undefined) {
     log.warn(
       'Could not find page with title %s in spaceKey %s, creating reference for space only',
@@ -84,11 +84,11 @@ const handlePageRefMatch = (
 
 const handleSpaceRefMatch = (
   matches: RegExpMatchArray,
-  instances: InstanceElement[],
+  spaceByKey: PossibleRefsInTemplateIndices['spaceByKey'],
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
   const [, spaceKey, spaceKeyValue, rest] = matches
-  const space = instances.find(inst => inst.elemID.typeName === SPACE_TYPE_NAME && inst.value.key === spaceKeyValue)
+  const space = spaceByKey[spaceKeyValue]
   if (space === undefined) {
     log.warn('Could not find space with key %s', spaceKeyValue)
     return fallback
@@ -97,14 +97,14 @@ const handleSpaceRefMatch = (
   return [spaceKey, spaceReference, rest]
 }
 
-const extractionFunc = (expression: string, instances: InstanceElement[]): TemplatePart | TemplatePart[] => {
+const extractionFunc = (expression: string, indices: PossibleRefsInTemplateIndices): TemplatePart | TemplatePart[] => {
   const pageMatches = expression.match(SPLIT_PAGE_REF_REGEX)
   if (pageMatches !== null) {
-    return handlePageRefMatch(pageMatches, instances, expression)
+    return handlePageRefMatch(pageMatches, indices, expression)
   }
   const spaceMatches = expression.match(SPLIT_SPACE_REF_REGEX)
   if (spaceMatches !== null) {
-    return handleSpaceRefMatch(spaceMatches, instances, expression)
+    return handleSpaceRefMatch(spaceMatches, indices.spaceByKey, expression)
   }
   return expression
 }
@@ -120,7 +120,7 @@ const prepRef = (ref: ReferenceExpression): TemplatePart => {
   if (ref.value.elemID.typeName === SPACE_TYPE_NAME && _.isString(ref.value.value?.key)) {
     return ref.value.value.key
   }
-  if (ref.value.elemID.typeName === 'page' && _.isString(ref.value.value?.title)) {
+  if (ref.value.elemID.typeName === PAGE_TYPE_NAME && _.isString(ref.value.value?.title)) {
     return ref.value.value.title
   }
   log.warn('prepRef received a part that is not a space or page reference %o', ref)
@@ -134,6 +134,28 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
     name: 'templateBodyToTemplateExpressionFilter',
     onFetch: async elements => {
       const instances = elements.filter(isInstanceElement)
+      const indices: PossibleRefsInTemplateIndices = instances.reduce<PossibleRefsInTemplateIndices>(
+        (acc, inst) => {
+          if (inst.elemID.typeName === SPACE_TYPE_NAME) {
+            acc.spaceByKey[inst.value.key] = inst
+          } else if (inst.elemID.typeName === PAGE_TYPE_NAME) {
+            const spaceRef = inst.value.spaceId
+            if (!isReferenceExpression(spaceRef)) {
+              return acc
+            }
+            acc.pageBySpaceElemIdAndTitle[inst.value.spaceId.elemID.getFullName()] = {
+              ...acc.pageBySpaceElemIdAndTitle[inst.value.spaceId.elemID.getFullName()],
+              [inst.value.title]: inst,
+            }
+          }
+          return acc
+        },
+        {
+          spaceByKey: {},
+          pageBySpaceElemIdAndTitle: {},
+        },
+      )
+
       const templateInstances = instances.filter(inst => TEMPLATE_TYPE_NAMES.includes(inst.elemID.typeName))
       templateInstances.forEach(templateInst => {
         const bodyValue = _.get(templateInst.value, 'body.storage.value')
@@ -142,7 +164,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
           return
         }
         const templateExpression = extractTemplate(bodyValue, [PAGE_REF_REGEX, SPACE_REF_REGEX], expression =>
-          extractionFunc(expression, instances),
+          extractionFunc(expression, indices),
         )
         templateInst.value.body.storage.value = templateExpression
       })

@@ -45,7 +45,7 @@ const { awu } = collections.asynciterable
 
 type PossibleRefsInTemplateIndices = {
   spaceByKey: Record<string, InstanceElement>
-  pageBySpaceElemIdAndTitle: Record<string, Record<string, InstanceElement>>
+  pageBySpaceFullNameAndTitle: Record<string, Record<string, InstanceElement>>
 }
 
 // If you change one regex of a pair (TYPE_REF_REGEX, SPLIT_TYPE_REF_REGEX), you should change the other one as well
@@ -61,7 +61,7 @@ const handlePageRefMatch = (
   indices: PossibleRefsInTemplateIndices,
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
-  const { spaceByKey, pageBySpaceElemIdAndTitle } = indices
+  const { spaceByKey, pageBySpaceFullNameAndTitle } = indices
   const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
   const space = spaceByKey[spaceKeyValue]
   if (space === undefined) {
@@ -69,7 +69,7 @@ const handlePageRefMatch = (
     return fallback
   }
   const spaceReference = new ReferenceExpression(space.elemID, space)
-  const page = pageBySpaceElemIdAndTitle[space.elemID.getFullName()]?.[contentTitleValue]
+  const page = pageBySpaceFullNameAndTitle[space.elemID.getFullName()]?.[contentTitleValue]
   if (page === undefined) {
     log.warn(
       'Could not find page with title %s in spaceKey %s, creating reference for space only',
@@ -143,8 +143,8 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
             if (!isReferenceExpression(spaceRef)) {
               return acc
             }
-            acc.pageBySpaceElemIdAndTitle[inst.value.spaceId.elemID.getFullName()] = {
-              ...acc.pageBySpaceElemIdAndTitle[inst.value.spaceId.elemID.getFullName()],
+            acc.pageBySpaceFullNameAndTitle[inst.value.spaceId.elemID.getFullName()] = {
+              ...acc.pageBySpaceFullNameAndTitle[inst.value.spaceId.elemID.getFullName()],
               [inst.value.title]: inst,
             }
           }
@@ -152,7 +152,7 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
         },
         {
           spaceByKey: {},
-          pageBySpaceElemIdAndTitle: {},
+          pageBySpaceFullNameAndTitle: {},
         },
       )
 

@@ -81,6 +81,7 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
         getChangeData(args.change).elemID.getFullName(),
         err,
       )
+      return undefined
     }
   }
 }

@@ -33,13 +33,11 @@ import {
   ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
+import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
-  filter,
-  logDuration,
+  resolveChangeElement,
   restoreChangeElement,
-  safeJsonStringify,
-} from '@salto-io/adapter-utils'
-import { resolveChangeElement } from '@salto-io/adapter-components'
+} from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -135,13 +133,17 @@ import {
 import {
   addDefaults,
   apiNameSync,
+  buildDataRecordsSoqlQueries,
   getFLSProfiles,
   getFullName,
+  instanceInternalId,
   isCustomObjectSync,
   isCustomType,
+  isInstanceOfCustomObjectSync,
   isMetadataInstanceElementSync,
   listMetadataObjects,
   metadataTypeSync,
+  queryClient,
 } from './filters/utils'
 import {
   retrieveMetadataInstances,
@@ -164,6 +166,7 @@ import {
   ArtificialTypes,
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
@@ -944,13 +947,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       .value()
   }
 
-  private async getDeletedElemIdsForPartialFetch({
-    fetchProfile,
-    fetchElements,
-  }: {
-    fetchElements: ReadonlyArray<Element>
-    fetchProfile: FetchProfile
-  }): Promise<Required<PartialFetchData>['deletedElements']> {
+  private async getDeletedMetadataForPartialFetch(
+    fetchElements: ReadonlyArray<Element>,
+    fetchProfile: FetchProfile,
+  ): Promise<Required<PartialFetchData>['deletedElements']> {
     const createElemId = (type: ObjectType, fullName: string): ElemID => {
       const typeName = apiNameSync(type)
       return typeName === CUSTOM_OBJECT
@@ -991,5 +991,82 @@ export default class SalesforceAdapter implements AdapterOperations {
         })
       })
     return Array.from(deletedElemIds)
+  }
+
+  private async getDeletedDataRecordsForPartialFetch(
+    fetchElements: ReadonlyArray<Element>,
+  ): Promise<Required<PartialFetchData>['deletedElements']> {
+    const querySalesforceForRecordIdsOfInstances = async (
+      instances: ReadonlyArray<InstanceElement>,
+    ): Promise<string[]> => {
+      const instancesByType = _(instances)
+        .filter(isInstanceOfCustomObjectSync)
+        .groupBy((instance) => apiNameSync(instance.getTypeSync()) ?? '')
+        .value()
+      _.unset(instancesByType, '')
+
+      const queries = awu(Object.entries(instancesByType)).map(
+        async ([typeName, instancesOfType]) =>
+          buildDataRecordsSoqlQueries(
+            typeName,
+            [instancesOfType[0].getTypeSync().fields[CUSTOM_OBJECT_ID_FIELD]],
+            instancesOfType.map(instanceInternalId),
+          ),
+      )
+
+      return awu(queries)
+        .flatMap(async (typeQueries) => queryClient(this.client, typeQueries))
+        .map((record) => record[CUSTOM_OBJECT_ID_FIELD])
+        .toArray()
+    }
+
+    const getCustomObjectInstancesFromElementSource = async (
+      elementsSource: ReadOnlyElementsSource,
+      instancesToDiscard: ReadonlyArray<Element>,
+    ): Promise<InstanceElement[]> => {
+      // We implement a small optimization of not querying for IDs we just fetched, because we know these IDs couldn't
+      // have been deleted.
+      const idsToDiscard = new Set(
+        instancesToDiscard
+          .filter(isInstanceOfCustomObjectSync)
+          .map(instanceInternalId),
+      )
+      return awu(await elementsSource.getAll())
+        .filter(isInstanceOfCustomObjectSync)
+        .filter((instance) => !idsToDiscard.has(instanceInternalId(instance)))
+        .toArray()
+    }
+
+    const workspaceInstances = await getCustomObjectInstancesFromElementSource(
+      this.elementsSource,
+      fetchElements,
+    )
+
+    const instanceIdsInSalesforce = new Set(
+      await querySalesforceForRecordIdsOfInstances(workspaceInstances),
+    )
+
+    return workspaceInstances
+      .filter(
+        (instance) =>
+          !instanceIdsInSalesforce.has(instanceInternalId(instance)),
+      )
+      .map((instance) => instance.elemID)
+  }
+
+  private async getDeletedElemIdsForPartialFetch({
+    fetchProfile,
+    fetchElements,
+  }: {
+    fetchElements: ReadonlyArray<Element>
+    fetchProfile: FetchProfile
+  }): Promise<Required<PartialFetchData>['deletedElements']> {
+    const deletedMetadata = await this.getDeletedMetadataForPartialFetch(
+      fetchElements,
+      fetchProfile,
+    )
+    const deletedDataRecords =
+      await this.getDeletedDataRecordsForPartialFetch(fetchElements)
+    return deletedMetadata.concat(deletedDataRecords)
   }
 }

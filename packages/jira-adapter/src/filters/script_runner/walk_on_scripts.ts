@@ -20,6 +20,7 @@ import { SCRIPT_RUNNER_DC_TYPES } from './workflow/workflow_dc'
 import { SCRIPT_RUNNER_CLOUD_TYPES } from './workflow/workflow_cloud'
 import { isWorkflowV1Instance } from '../workflow/types'
 import { BEHAVIOR_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
+import { isWorkflowV2Instance } from '../workflowV2/types'
 
 const WORKFLOW_SCRIPT_DC_FIELDS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
 const WORKFLOW_SCRIPT_CLOUD_FIELDS = ['expression', 'additionalCode', 'emailCode', 'condition']
@@ -27,8 +28,13 @@ const SCRIPT_CLOUD_FIELDS = ['script', 'executionCondition', 'codeToRun']
 
 export type referenceFunc = (value: Value, fieldName: string) => void
 
-const isCloudScriptRunnerItem = (value: Value): boolean =>
+const isCloudV1ScriptRunnerItem = (value: Value): boolean =>
   SCRIPT_RUNNER_CLOUD_TYPES.includes(value.type) && value.configuration?.scriptRunner != null
+
+const isCloudV2ScriptRunnerItem = (value: Value): boolean =>
+  value.parameters !== undefined &&
+  SCRIPT_RUNNER_CLOUD_TYPES.includes(value.parameters.appKey) &&
+  value.parameters.scriptRunner != null
 
 const walkOnCloudScripts =
   (func: (value: string, fieldName: string) => void): WalkOnFunc =>
@@ -36,13 +42,30 @@ const walkOnCloudScripts =
     if (value == null) {
       return WALK_NEXT_STEP.SKIP
     }
-    if (isCloudScriptRunnerItem(value)) {
+    if (isCloudV1ScriptRunnerItem(value)) {
       WORKFLOW_SCRIPT_CLOUD_FIELDS.forEach(fieldName => {
         if (value.configuration.scriptRunner[fieldName] != null) {
           func(value.configuration.scriptRunner, fieldName)
         }
       })
       return WALK_NEXT_STEP.SKIP
+    }
+    return WALK_NEXT_STEP.RECURSE
+  }
+
+const walkOnCloudV2Scripts =
+  (func: (value: string, fieldName: string) => void): WalkOnFunc =>
+  ({ value }): WALK_NEXT_STEP => {
+    if (value == null) {
+      return WALK_NEXT_STEP.SKIP
+    }
+    if (isCloudV2ScriptRunnerItem(value)) {
+      WORKFLOW_SCRIPT_CLOUD_FIELDS.forEach(fieldName => {
+        if (value.parameters.scriptRunner[fieldName] != null) {
+          func(value.parameters.scriptRunner, fieldName)
+        }
+        return WALK_NEXT_STEP.SKIP
+      })
     }
     return WALK_NEXT_STEP.RECURSE
   }
@@ -85,6 +108,13 @@ export const walkOnScripts = ({
           func: isDc ? walkOnDcScripts(func) : walkOnCloudScripts(func),
         })
       }
+    })
+  })
+  instances.filter(isWorkflowV2Instance).forEach(instance => {
+    walkOnValue({
+      elemId: instance.elemID.createNestedID('transitions'),
+      value: instance.value.transitions,
+      func: walkOnCloudV2Scripts(func),
     })
   })
   instances

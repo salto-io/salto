@@ -470,7 +470,7 @@ describe('referenced instances', () => {
           nestingParent: {
             element: {
               fieldCustomizations: {
-                standaloneNestedField: {
+                standaloneNestedFieldButWithDifferentName: {
                   standalone: {
                     typeName: 'standaloneNestedField',
                     nestPathUnderParent: true,
@@ -693,8 +693,8 @@ describe('referenced instances', () => {
         'myAdapter/Records/email/aaa_username_group1_x_y',
         'myAdapter/Records/existing/path/to/nestingParent/complicatedPath/321/first/SECOND_thIrd/123_ROOT',
         'myAdapter/Records/existing/path/to/nestingParent/differentMappingFunction/nestingParent__first_SECOND_third',
-        'myAdapter/Records/existing/path/to/nestingParent/standaloneNestedField/nestingParent__upstandingName/nestingParent__upstandingName',
-        'myAdapter/Records/existing/path/to/nestingParent/standaloneNestedField/nestingParent__upstandingName/nestingParent_standaloneNestedField_standaloneDoubleNestedField/nestingParent__upstandingName__nestedNestedName',
+        'myAdapter/Records/existing/path/to/nestingParent/standaloneNestedFieldButWithDifferentName/nestingParent__upstandingName/nestingParent__upstandingName',
+        'myAdapter/Records/existing/path/to/nestingParent/standaloneNestedFieldButWithDifferentName/nestingParent__upstandingName/nestingParent_standaloneNestedField_standaloneDoubleNestedField/nestingParent__upstandingName__nestedNestedName',
         'myAdapter/Records/folder/recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
         'myAdapter/Records/folder/recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
         'myAdapter/Records/noIdFields/no_idFieldsParent',
@@ -819,7 +819,7 @@ describe('referenced instances', () => {
         'path',
         'to',
         'nestingParent',
-        'standaloneNestedField',
+        'standaloneNestedFieldButWithDifferentName',
         'nestingParent__upstandingName',
         'nestingParent_standaloneNestedField_standaloneDoubleNestedField',
         'nestingParent__upstandingName__nestedNestedName',

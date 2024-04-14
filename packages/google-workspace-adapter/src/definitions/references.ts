@@ -45,6 +45,11 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     serializationStrategy: 'name',
     target: { type: 'feature' },
   },
+  {
+    src: { field: 'email', parentTypes: ['groupMember'] },
+    serializationStrategy: 'email',
+    target: { type: 'group' },
+  },
 ]
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
@@ -65,6 +70,11 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       lookup: referenceUtils.basicLookUp,
       lookupIndexName: 'orgUnitId',
     },
+    email: {
+      serialize: ({ ref }) => ref.value.value.email,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'email',
+    },
   },
-  fieldsToGroupBy: ['id', 'roleId', 'buildingId', 'orgUnitId', 'name'],
+  fieldsToGroupBy: ['id', 'roleId', 'buildingId', 'orgUnitId', 'email', 'name'],
 }

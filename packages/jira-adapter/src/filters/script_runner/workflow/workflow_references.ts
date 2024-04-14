@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { restoreValues, isResolvedReferenceExpression, resolvePath } from '@salto-io/adapter-utils'
+import { isResolvedReferenceExpression, resolvePath } from '@salto-io/adapter-utils'
 import {
   isAdditionOrModificationChange,
   getChangeData,
@@ -25,7 +25,7 @@ import {
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { references as referenceUtils, resolveValues } from '@salto-io/adapter-components'
+import { references as referenceUtils, resolveValues, restoreValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'

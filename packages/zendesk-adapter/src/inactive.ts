@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { config as configUtils, definitions } from '@salto-io/adapter-components'
-import { ZendeskConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from './config'
+import { definitions } from '@salto-io/adapter-components'
+import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
 import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 
 /**
@@ -27,9 +26,8 @@ import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 export const filterOutInactiveInstancesForType = (
   config: ZendeskConfig,
 ): ((instances: InstanceElement[]) => InstanceElement[]) => {
-  const apiDefinitions = config[API_DEFINITIONS_CONFIG]
   const omitInactiveConfig = config[FETCH_CONFIG]?.omitInactive
-  const newOmitInactiveQuery = omitInactiveConfig ? definitions.queryWithDefault(omitInactiveConfig) : undefined
+  const omitInactiveQuery = omitInactiveConfig ? definitions.queryWithDefault(omitInactiveConfig) : undefined
   return instances => {
     if (instances.length === 0) {
       return instances
@@ -39,20 +37,8 @@ export const filterOutInactiveInstancesForType = (
     // We can't omit inactive ticket_form instances because we need all the instance in order to reorder them
     // if we decide to omit inactive ticket_form
     // we will need to add warning in the ticket_field_deactivation change validator
-    // TODO SALTO-5420 remove the omitInactive migration
-    const oldOmitInactive = _.get(
-      configUtils.getConfigWithDefault(
-        apiDefinitions.types?.[typeName]?.transformation,
-        apiDefinitions.typeDefaults.transformation,
-      ),
-      'omitInactive',
-    )
-    const newOmitInactive = newOmitInactiveQuery ? newOmitInactiveQuery.query(typeName) : false
-    if (
-      typeName === TICKET_FORM_TYPE_NAME ||
-      (oldOmitInactive === undefined && !newOmitInactive) ||
-      oldOmitInactive === false
-    ) {
+    const omitInactive = omitInactiveQuery ? omitInactiveQuery.query(typeName) : OMIT_INACTIVE_DEFAULT
+    if (typeName === TICKET_FORM_TYPE_NAME || !omitInactive) {
       return instances
     }
     if (typeName === WEBHOOK_TYPE_NAME) {

@@ -43,8 +43,9 @@ import {
   resolveValues,
   definitions,
   fetch as fetchUtils,
+  restoreChangeElement,
 } from '@salto-io/adapter-components'
-import { getElemIdFuncWrapper, inspectValue, logDuration, restoreChangeElement } from '@salto-io/adapter-utils'
+import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -61,7 +62,6 @@ import {
   isGuideEnabled,
   isGuideThemesEnabled,
   ZendeskConfig,
-  migrateOmitInactiveConfig,
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -717,15 +717,11 @@ export default class ZendeskAdapter implements AdapterOperations {
           })
         : undefined
 
-    // TODO SALTO-5420 remove the omitInactive migration
-    const configWithOmitInactive = this.configInstance
-      ? migrateOmitInactiveConfig(this.configInstance, updatedConfig)
-      : undefined
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     if (this.logIdsFunc !== undefined) {
       this.logIdsFunc()
     }
-    return { elements, errors: fetchErrors, updatedConfig: configWithOmitInactive }
+    return { elements, errors: fetchErrors, updatedConfig }
   }
 
   private getBrandsFromElementsSource(): Promise<InstanceElement[]> {
@@ -821,8 +817,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(change, lookupFunc, async (element, getLookUpName, elementsSource) =>
-              resolveValues(element, getLookUpName, elementsSource, true),
+          : resolveChangeElement(
+              change,
+              lookupFunc,
+              async (element, getLookUpName, elementsSource) =>
+                resolveValues(element, getLookUpName, elementsSource, true),
+              this.elementsSource,
             ),
       )
       .toArray()

@@ -32,7 +32,6 @@ import {
   BuiltinTypes,
   StaticFile,
   isPrimitiveType,
-  Element,
   isReferenceExpression,
   isPrimitiveValue,
   CORE_ANNOTATIONS,
@@ -48,7 +47,6 @@ import {
   TypeReference,
   createRefToElmWithValue,
   VariableExpression,
-  getChangeData,
   PlaceholderObjectType,
   UnresolvedReference,
 } from '@salto-io/adapter-api'
@@ -63,7 +61,6 @@ import {
   findElement,
   findElements,
   findObjectType,
-  GetLookupNameFunc,
   safeJsonStringify,
   findInstances,
   flattenElementStr,
@@ -74,8 +71,6 @@ import {
   mapKeysRecursive,
   createDefaultInstanceFromType,
   applyInstancesDefaults,
-  restoreChangeElement,
-  RestoreValuesFunc,
   applyFunctionToChangeData,
   transformElement,
   toObjectType,
@@ -91,6 +86,7 @@ import {
   FILTER_FUNC_NEXT_STEP,
   transformValuesSync,
   TransformFuncSync,
+  getIndependentElemIDs,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -103,7 +99,6 @@ describe('Test utils.ts', () => {
     annotations: { testAnno: 'TEST ANNO TYPE' },
     path: ['here', 'we', 'go'],
   })
-  const getName: GetLookupNameFunc = ({ ref }) => ref.value
   const mockElem = new ElemID('mockAdapter', 'test')
   const mockType = new ObjectType({
     elemID: mockElem,
@@ -1741,96 +1736,6 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('restore/ResolveChangeElement functions', () => {
-    let afterData: InstanceElement
-    let beforeData: InstanceElement
-    let additionChange: AdditionChange<InstanceElement>
-    let removalChange: RemovalChange<InstanceElement>
-    let modificationChange: ModificationChange<InstanceElement>
-    beforeEach(() => {
-      afterData = mockInstance.clone()
-      beforeData = mockInstance.clone()
-      additionChange = { action: 'add', data: { after: afterData } }
-      removalChange = { action: 'remove', data: { before: beforeData } }
-      modificationChange = { action: 'modify', data: { before: beforeData, after: afterData } }
-    })
-
-    describe('restoreChangeElement func', () => {
-      let mockRestore: RestoreValuesFunc
-      beforeEach(() => {
-        mockRestore = jest
-          .fn()
-          .mockImplementation(
-            <T extends Element>(_source: T, targetElement: T, _getLookUpName: GetLookupNameFunc) => targetElement,
-          )
-      })
-      describe('with addition change', () => {
-        let sourceChange: AdditionChange<InstanceElement>
-        let restoredChange: AdditionChange<InstanceElement>
-        beforeEach(async () => {
-          sourceChange = { action: 'add', data: { after: afterData.clone() } }
-          const sourceChanges = _.keyBy([sourceChange], c => getChangeData(c).elemID.getFullName())
-          restoredChange = (await restoreChangeElement(
-            additionChange,
-            sourceChanges,
-            getName,
-            mockRestore,
-          )) as AdditionChange<InstanceElement>
-        })
-        it('should call restore func on the after data', () => {
-          expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
-        })
-        it('should return the after data from the source change', () => {
-          expect(restoredChange.data.after).toStrictEqual(sourceChange.data.after)
-        })
-      })
-      describe('with removal change', () => {
-        let sourceChange: RemovalChange<InstanceElement>
-        let restoredChange: RemovalChange<InstanceElement>
-        beforeEach(async () => {
-          sourceChange = { action: 'remove', data: { before: beforeData.clone() } }
-          const sourceChanges = _.keyBy([sourceChange], c => getChangeData(c).elemID.getFullName())
-          restoredChange = (await restoreChangeElement(
-            removalChange,
-            sourceChanges,
-            getName,
-            mockRestore,
-          )) as RemovalChange<InstanceElement>
-        })
-        it('should not call restore func on the before data', () => {
-          expect(mockRestore).not.toHaveBeenCalled()
-        })
-        it('should return the before data from the source change', () => {
-          expect(restoredChange.data.before).toBe(sourceChange.data.before)
-        })
-      })
-      describe('with modification change', () => {
-        let sourceChange: ModificationChange<InstanceElement>
-        let restoredChange: ModificationChange<InstanceElement>
-        beforeEach(async () => {
-          sourceChange = {
-            action: 'modify',
-            data: { before: beforeData.clone(), after: afterData.clone() },
-          }
-          const sourceChanges = _.keyBy([sourceChange], c => getChangeData(c).elemID.getFullName())
-          restoredChange = (await restoreChangeElement(
-            modificationChange,
-            sourceChanges,
-            getName,
-            mockRestore,
-          )) as ModificationChange<InstanceElement>
-        })
-        it('should call the restore func only on the after data', () => {
-          expect(mockRestore).toHaveBeenCalledTimes(1)
-          expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
-        })
-        it('should return the before data from the source change', () => {
-          expect(restoredChange.data.before).toBe(sourceChange.data.before)
-        })
-      })
-    })
-  })
-
   describe('applyFunctionToChangeData', () => {
     const transformFunc = (): string => 'changed'
     describe('with addition change', () => {
@@ -2802,6 +2707,31 @@ describe('Test utils.ts', () => {
     })
     it('should return true for a resolved reference expression', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, inst))).toBeTruthy()
+    })
+  })
+  describe('getIndependentElemIDs', () => {
+    it('should filter out any elemIDs that their parent is included in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const fieldElemID = elemID.createNestedID('field', 'fieldA')
+      const anotherElemID = new ElemID('salto', 'anotherType')
+      const res = getIndependentElemIDs([fieldElemID, elemID, anotherElemID])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([elemID, anotherElemID])
+    })
+    it('should filter out nested instance path if the top level instance is in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const instA = elemID.createNestedID('instance', 'inst')
+      const nested = instA.createNestedID('nested')
+      const res = getIndependentElemIDs([instA, elemID, nested])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([instA, elemID])
+    })
+    it('it should not filter out nested elemIDs if their parent is not included in the list', () => {
+      const elemID = new ElemID('salto', 'type')
+      const anotherElemID = new ElemID('salto', 'anotherType', 'field', 'nestedField')
+      const res = getIndependentElemIDs([elemID, anotherElemID])
+      expect(res).toHaveLength(2)
+      expect(res).toEqual([elemID, anotherElemID])
     })
   })
 })

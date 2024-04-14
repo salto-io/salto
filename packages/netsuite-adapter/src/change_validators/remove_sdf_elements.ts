@@ -40,7 +40,7 @@ const validateRemovableChange = async (
       return {
         elemID: element.elemID,
         severity: 'Error',
-        message: `Can't remove instances of type ${element.elemID.typeName}`,
+        message: "Can't remove instance",
         detailedMessage: `Can't remove this ${element.elemID.typeName}. Remove it in NetSuite UI`,
       }
     }
@@ -48,7 +48,7 @@ const validateRemovableChange = async (
       return {
         elemID: element.elemID,
         severity: 'Error',
-        message: `Can't remove instance of type ${element.elemID.typeName}`,
+        message: "Can't remove instance",
         detailedMessage: `Can't remove this ${element.elemID.typeName}. Try fetching and deploying again, or remove it in Netsuite UI`,
       }
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { fieldConfigurationItemDescriptionLengthValidator } from '../../../src/change_validators/field_configuration/field_configuration_item_description_length'
 import { 
   JIRA, 
@@ -22,15 +22,22 @@ import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME
 } from '../../../src/constants'
 
-describe('fieldConfigurationItemDescriptionLengthValidator', () => {
+
+const boundaryValues = [
+  0, // Lower bound
+  1, // Lower bound + 1
+  Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2), // Average case
+  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH - 1, // Upper bound - 1
+  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH // Upper bound
+]
+
+describe('fieldConfigurationItemDescriptionLengthValidator non split configuration', () => {
   let fieldConfigurationType: ObjectType
   let fieldConfigurationInstance: InstanceElement
-  let fieldConfigurationItemType: ObjectType
-  let fieldConfigurationItemInstance: InstanceElement
+  
 
   beforeEach(() => {
     fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
-    fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
 
     fieldConfigurationInstance = new InstanceElement('instance', fieldConfigurationType, {
       fields: {
@@ -42,14 +49,9 @@ describe('fieldConfigurationItemDescriptionLengthValidator', () => {
         }
       },
     })
-
-    fieldConfigurationItemInstance = new InstanceElement('instance', fieldConfigurationItemType, {
-      description: 'item description',
-      id: { elemID: new ElemID(JIRA, 'item') },
-    })
   })
 
-  it.each([0, 1, Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2), FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH])('Should succeed because item description length inside FieldConfiguration is lower than maximum.', async (descriptionLength) => {
+  it.each(boundaryValues)('Should succeed because item description length inside FieldConfiguration is lower than maximum.', async (descriptionLength) => {
     const afterInstance = fieldConfigurationInstance.clone()
     afterInstance.value.fields.item1.description = '*'.repeat(descriptionLength)
     expect(
@@ -81,10 +83,21 @@ describe('fieldConfigurationItemDescriptionLengthValidator', () => {
       },
     ])
   })
+})
 
+describe('fieldConfigurationItemDescriptionLengthValidator split item configuration', () => {
+  let fieldConfigurationItemType: ObjectType
+  let fieldConfigurationItemInstance: InstanceElement
 
-  // Tests FieldConfigurationItem type:
-  it.each([0, 1, Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2), FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH])('Should succeed because FieldConfigurationItem description length is lower than maximum.', async (descriptionLength) => {
+  beforeEach(() => {
+    fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
+    fieldConfigurationItemInstance = new InstanceElement('instance', fieldConfigurationItemType, {
+      description: 'item description',
+      id: new ReferenceExpression(new ElemID(JIRA, 'item')),
+    })
+  })
+
+  it.each(boundaryValues)('Should succeed because FieldConfigurationItem description length is lower than maximum.', async (descriptionLength) => {
     const afterInstance = fieldConfigurationItemInstance.clone()
     afterInstance.value.description = '*'.repeat(descriptionLength)
     expect(

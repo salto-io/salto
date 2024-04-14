@@ -15,17 +15,20 @@
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { fieldConfigurationDescriptionLengthValidator } from '../../../src/change_validators/field_configuration/field_configuration_description_length'
-import { JIRA, FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_TYPE_NAME, FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_ITEM_TYPE_NAME} from '../../../src/constants'
+import { JIRA, FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_TYPE_NAME } from '../../../src/constants'
 
 describe('fieldConfigurationDescriptionLengthValidator', () => {
   let fieldConfigurationType: ObjectType
   let fieldConfigurationInstance: InstanceElement
-  let fieldConfigurationItemType: ObjectType
-  let fieldConfigurationItemInstance: InstanceElement
-
+  const boundaryValues = [
+    0, // Lower bound
+    1,  // Lower + 1
+    Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2), // Average case
+    FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH - 1, // Upper bound - 1
+    FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH // Upper bound
+  ]
   beforeEach(() => {
     fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
-    fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
 
     fieldConfigurationInstance = new InstanceElement('instance', fieldConfigurationType, {
       fields: {
@@ -35,15 +38,9 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
         }
       },
     })
-
-    fieldConfigurationItemInstance = new InstanceElement('instance', fieldConfigurationItemType, {
-      fields: {
-        description: 'item description',
-      },
-    })
   })
 
-  it.each([0, 1, Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2), FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH])('Should succeed because field configuration description length is lower than maximum.', async (descriptionLength) => {
+  it.each(boundaryValues)('Should succeed because field configuration description length is lower than maximum.', async (descriptionLength) => {
     const afterInstance = fieldConfigurationInstance.clone()
     afterInstance.value.description = '*'.repeat(descriptionLength)
     expect(
@@ -71,42 +68,8 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
       {
         elemID: fieldConfigurationInstance.elemID,
         severity: 'Error',
-        message: 'Description length exceeded maximum.',
-        detailedMessage: `Description length (${afterInstance.value.description.length}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH} characters.`,
-      },
-    ])
-  })
-
-  it.each([0, 1, Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2), FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH])('Should succeed because field configuration item description length is lower than maximum.', async (descriptionLength) => {
-    const afterInstance = fieldConfigurationItemInstance.clone()
-    afterInstance.value.description = '*'.repeat(descriptionLength)
-    expect(
-      await fieldConfigurationDescriptionLengthValidator([
-        toChange({
-          before: fieldConfigurationItemInstance,
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([])
-  })
-  
-  it('Should return an error because field configuration item description length exceeds maximum.', async () => {
-    const afterInstance = fieldConfigurationItemInstance.clone()
-    afterInstance.value.description = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)
-
-    expect(
-      await fieldConfigurationDescriptionLengthValidator([
-        toChange({
-          before: fieldConfigurationItemInstance,
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([
-      {
-        elemID: fieldConfigurationItemInstance.elemID,
-        severity: 'Error',
-        message: 'Description length exceeded maximum.',
-        detailedMessage: `Description length (${afterInstance.value.description.length}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`,
+        message: 'Field configuration description length exceeded maximum.',
+        detailedMessage: `Field configuration description length (${afterInstance.value.description.length}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH} characters.`,
       },
     ])
   })

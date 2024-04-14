@@ -146,7 +146,7 @@ const getFixedPermissionField = async (
   )
 }
 
-const getFixedElementsAndUpdatedPaths = async (
+const getFixedElements = async (
   roleOrCustomRecordType: InstanceElement | ObjectType,
   elementsSource: ReadOnlyElementsSource,
   permissionType: RoleOrCustomRecordType,
@@ -189,7 +189,7 @@ const removeUnresolvedPermissionElements: WeakReferencesHandler<{
     const fixedRoles = await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ROLE)
-      .map(role => getFixedElementsAndUpdatedPaths(role, elementsSource, ROLE))
+      .map(role => getFixedElements(role, elementsSource, ROLE))
       .filter(values.isDefined)
       .toArray()
 
@@ -206,7 +206,7 @@ const removeUnresolvedPermissionElements: WeakReferencesHandler<{
     const fixedCustomRecordTypes = await awu(elements)
       .filter(isObjectType)
       .filter(isCustomRecordType)
-      .map(custRecordType => getFixedElementsAndUpdatedPaths(custRecordType, elementsSource, CUSTOM_RECORD_TYPE))
+      .map(custRecordType => getFixedElements(custRecordType, elementsSource, CUSTOM_RECORD_TYPE))
       .filter(values.isDefined)
       .toArray()
 

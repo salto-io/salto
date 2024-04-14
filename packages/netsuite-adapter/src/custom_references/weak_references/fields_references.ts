@@ -31,19 +31,27 @@ import { WeakReferencesHandler } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { TransformFunc, WALK_NEXT_STEP, transformElement, walkOnValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { ADDRESS_FORM, ENTRY_FORM, PERMISSIONS, TRANSACTION_FORM } from '../../constants'
+import { ADDRESS_FORM, ENTRY_FORM, INDEX, TRANSACTION_FORM } from '../../constants'
 import { captureServiceIdInfo } from '../../service_id_info'
 
 const { awu } = collections.asynciterable
 
 const formTypes = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
 
-const GENERATED_DEPENDENCIES = '_generated_dependencies'
+export const GENERATED_DEPENDENCIES = '_generated_dependencies'
 
-export const getPermissionsListPath = (): string[] => [PERMISSIONS, 'permission']
+type GeneratedDependency = {
+  reference: ReferenceExpression
+}
+
+type MappedList = Record<string, { index: number; [key: string]: Value }>
+
+const isGeneratedDependency = (val: unknown): val is GeneratedDependency =>
+  values.isPlainRecord(val) && isReferenceExpression(val.reference)
 
 const getFieldReferences = (formInstance: InstanceElement): Record<string, ReferenceExpression> => {
   const referencesRecord: Record<string, ReferenceExpression> = {}
+
   walkOnValue({
     elemId: formInstance.elemID,
     value: formInstance.value,
@@ -57,7 +65,7 @@ const getFieldReferences = (formInstance: InstanceElement): Record<string, Refer
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  // eslint-disable-next-line no-underscore-dangle
+
   const generatedDependencies = formInstance.annotations[GENERATED_DEPENDENCIES]
   if (Array.isArray(generatedDependencies)) {
     generatedDependencies.forEach((dep, index) => {
@@ -95,42 +103,51 @@ const isUnresolvedReference = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<boolean> => (await elementsSource.get(ref.elemID.createTopLevelParentID().parent)) === undefined
 
-const getUnresolvedGeneratedDependencies = async (
+const handleGeneratedDependencies = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): Promise<string[]> =>
-  awu(form.annotations[GENERATED_DEPENDENCIES])
-    .filter(values.isPlainRecord)
-    .map(dep => dep.reference)
-    .filter(isReferenceExpression)
-    // TODO: see how to do this without this lint disable
-    // eslint-disable-next-line no-return-await, @typescript-eslint/return-await
-    .filter(async ref => await isUnresolvedReference(ref, elementsSource))
-    .map(ref => ref.elemID.createTopLevelParentID().parent.name)
+): Promise<{ fixedGeneratedDependencies: GeneratedDependency[]; unresolvedGeneratedDependencies: Set<string> }> => {
+  const unresolvedGeneratedDependencies = new Set<string>()
+  if (!form.annotations[GENERATED_DEPENDENCIES]) {
+    return { fixedGeneratedDependencies: [], unresolvedGeneratedDependencies }
+  }
+  const fixedGeneratedDependencies = await awu(form.annotations[GENERATED_DEPENDENCIES])
+    .filter(isGeneratedDependency)
+    .filter(async dep => {
+      if (await isUnresolvedReference(dep.reference, elementsSource)) {
+        unresolvedGeneratedDependencies.add(dep.reference.elemID.createTopLevelParentID().parent.name)
+        return false
+      }
+      return true
+    })
     .toArray()
+  return { fixedGeneratedDependencies, unresolvedGeneratedDependencies }
+}
 
-const getPathsToRemove = async (form: InstanceElement, elementsSource: ReadOnlyElementsSource): Promise<string[]> => {
-  // TODO: why doesn't the transformElement change the value in the fixedForm?
-  const pathsToRemove: string[] = []
-
-  const unresolvedGeneratedDependencies = new Set<string>(
-    await getUnresolvedGeneratedDependencies(form, elementsSource),
-  )
+const getPathsToRemove = async (
+  form: InstanceElement,
+  elementsSource: ReadOnlyElementsSource,
+  unresolvedGeneratedDependencies: Set<string>,
+): Promise<ElemID[]> => {
+  const pathsToRemove: ElemID[] = []
 
   const transformPathsToRemove: TransformFunc = async ({ value, path }) => {
     if (!values.isPlainRecord(value)) {
       return value
     }
     const { id } = value
+    if (id === undefined) {
+      return value
+    }
     if (isReferenceExpression(id) && (await isUnresolvedReference(id, elementsSource))) {
       if (path) {
-        pathsToRemove.push(form.elemID.getRelativePath(path).join('.'))
+        pathsToRemove.push(path)
       }
       return undefined
     }
     if (_.isString(id) && checkIfUnresolvedGeneratedDependency(id, unresolvedGeneratedDependencies)) {
       if (path) {
-        pathsToRemove.push(form.elemID.getRelativePath(path).join('.'))
+        pathsToRemove.push(path)
       }
       return undefined
     }
@@ -141,26 +158,66 @@ const getPathsToRemove = async (form: InstanceElement, elementsSource: ReadOnlyE
     element: form,
     transformFunc: transformPathsToRemove,
     elementsSource,
+    strict: false,
   })
 
   return pathsToRemove
 }
-const getFixedElements = async (
+
+const hasIndexAttribute = (val: unknown): boolean => values.isPlainRecord(val) && _.isNumber(val[INDEX])
+
+const isMappedList = (val: unknown): val is MappedList =>
+  values.isPlainRecord(val) && Object.values(val).every(hasIndexAttribute)
+
+const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
+  const pathsToFixIndex = new Set<string>(
+    pathsToRemove.map(path => form.elemID.getRelativePath(path.createParentID()).join('.')),
+  )
+
+  pathsToFixIndex.forEach(path => {
+    const parent = _.get(form.value, path)
+    if (isMappedList(parent)) {
+      Object.keys(parent).forEach((key, index) => {
+        parent[key][INDEX] = index
+      })
+    }
+  })
+}
+
+const getFixedElementAndPaths = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): Promise<InstanceElement | undefined> => {
+): Promise<{ instance: InstanceElement; paths: ElemID[] } | undefined> => {
   const fixedForm = form.clone()
 
-  const pathsToRemove = await getPathsToRemove(fixedForm, elementsSource)
+  const { fixedGeneratedDependencies, unresolvedGeneratedDependencies } = await handleGeneratedDependencies(
+    form,
+    elementsSource,
+  )
+
+  const pathsToRemove = await getPathsToRemove(fixedForm, elementsSource, unresolvedGeneratedDependencies)
 
   if (pathsToRemove.length === 0) {
     return undefined
   }
 
-  pathsToRemove.forEach(path => _.unset(fixedForm.value, path))
-  fixedForm.annotations[GENERATED_DEPENDENCIES] = []
+  pathsToRemove.forEach(path => _.unset(fixedForm.value, fixedForm.elemID.getRelativePath(path).join('.')))
 
-  return fixedForm
+  // TODO why doesn't it work?
+  // const mappedLists = await getMappedLists(form)
+  // const mappedlistsPaths = new Set<string>(mappedLists.map(mappedList => mappedList.path.getFullName()))
+  // const pathsToFixIndex = new Set<string>(
+  //   pathsToRemove
+  //     .map(path => path.createParentID())
+  //     .filter(path => mappedlistsPaths.has(path.getFullName()))
+  //     .map(path => fixedForm.elemID.getRelativePath(path).join('.')),
+  // )
+
+  fixIndexes(fixedForm, pathsToRemove)
+
+  fixedForm.annotations[GENERATED_DEPENDENCIES] = fixedGeneratedDependencies
+
+  return { instance: fixedForm, paths: pathsToRemove }
 }
 
 const removeUnresolvedFieldElements: WeakReferencesHandler<{
@@ -168,22 +225,26 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
 }>['removeWeakReferences'] =
   ({ elementsSource }): FixElementsFunc =>
   async elements => {
-    const fixedForms = await awu(elements)
+    const fixedFormsWithPaths = await awu(elements)
       .filter(isFormInstanceElement)
-      .map(form => getFixedElements(form, elementsSource))
+      .map(form => getFixedElementAndPaths(form, elementsSource))
       .filter(values.isDefined)
       .toArray()
 
-    const formErrors: ChangeError[] = fixedForms.map(form => ({
-      elemID: form.elemID,
-      severity: 'Info',
-      message: 'Deploying without all referenced fields',
-      detailedMessage:
-        'This form is referencing a few fields that do not exist in the target environment. As a result, it will be deployed without those references.',
-    }))
+    const formErrors: ChangeError[] = fixedFormsWithPaths.flatMap(({ instance, paths }) =>
+      paths.map(path => {
+        const fullPath = `${instance.elemID.name}.${instance.elemID.getRelativePath(path).join('.')}`
+        return {
+          elemID: path,
+          severity: 'Info',
+          message: 'Deploying without all referenced fields',
+          detailedMessage: `This ${fullPath} is referencing a field that does not exist in the target environment. As a result, it will be deployed without this field.`,
+        }
+      }),
+    )
 
     return {
-      fixedElements: fixedForms,
+      fixedElements: fixedFormsWithPaths.map(element => element.instance),
       errors: formErrors,
     }
   }

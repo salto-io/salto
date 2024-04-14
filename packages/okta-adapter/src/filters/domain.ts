@@ -28,7 +28,7 @@ import { DOMAIN_TYPE_NAME } from '../constants'
  */
 const filterCreator: FilterCreator = () => ({
   name: 'domainFilter',
-  onFetch: async (elements: Element[]) => {
+  onFetch: async elements => {
     const instances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME)

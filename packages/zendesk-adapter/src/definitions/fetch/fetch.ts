@@ -96,7 +96,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/organizations' },
-        transformation: { root: 'custom_roles' },
+        transformation: { root: 'organizations' },
       },
     ],
     resource: {
@@ -105,13 +105,12 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        serviceUrl: { path: '/admin/people/team/roles/{id}' },
+        serviceUrl: { path: '/agent/organizations/{id}/tickets' },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
         // always 0 - https://developer.zendesk.com/api-reference/ticketing/account-configuration/custom_roles/#json-format
-        role_type: { omit: true },
-        team_member_count: { omit: true },
+        organization_fields: { fieldType: 'map<unknown>' },
       },
     },
   },

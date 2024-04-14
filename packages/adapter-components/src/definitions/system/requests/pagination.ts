@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ClientBaseParams, HTTPReadClientInterface, HTTPWriteClientInterface, ResponseValue } from '../../../client'
+import {
+  ClientBaseParams,
+  ClientGetWithPaginationParams,
+  HTTPReadClientInterface,
+  HTTPWriteClientInterface,
+  ResponseValue,
+} from '../../../client'
 import { ContextParams } from '../shared'
 import { HTTPEndpointIdentifier, RequestArgs } from './types'
 
@@ -24,11 +30,13 @@ export type PaginationFunction = <ClientOptions extends string>({
   currentParams,
   responseHeaders,
   endpointIdentifier,
+  getParams,
 }: {
   responseData: ResponseValue | ResponseValue[]
   currentParams: ClientRequestArgsNoPath
   responseHeaders?: Record<string, unknown>
   endpointIdentifier: HTTPEndpointIdentifier<ClientOptions>
+  getParams?: ClientGetWithPaginationParams
 }) => ClientRequestArgsNoPath[]
 
 // creates a pagination function that receives a single-page response and returns the next page requests

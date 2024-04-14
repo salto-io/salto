@@ -40,7 +40,7 @@ export const createClientDefinitions = (
           '/api/v2/organizations': {
             get: {
               pagination: 'cursor',
-              params: { 'page[size]': String(100) },
+              params: { queryArgs: { 'page[size]': String(100) } },
             },
           },
         },

@@ -15,9 +15,8 @@
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ClientOptions, PaginationOptions } from '../types'
-import { getWithCursorPagination } from '@salto-io/adapter-components/src/client'
 
-const { cursorPagination } = fetchUtils.request.pagination
+const { cursorPagination, cursorPaginationWithPages } = fetchUtils.request.pagination
 
 // TODO adjust - replace with the correct pagination function(s), remove unneeded ones
 
@@ -31,8 +30,9 @@ export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinit
   },
   next_page: {
     funcCreator: () =>
-      getWithCursorPagination({
-        pathChecker: fetchUtils.request.pagination.defaultPathChecker,
+      cursorPaginationWithPages({
+        pathChecker: fetchUtils.request.pagination.defaultPathChecker, // TODO-daniel: swap this out for the 'real' default path checker?
+        url: 'hi', // where can i get the actual url?
         paginationField: 'next_page',
       }),
   },

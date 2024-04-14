@@ -43,6 +43,7 @@ import { DeployRequestCondition, DeployableRequestDefinition } from '../../defin
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
+import { recursiveNaclCase } from '../../fetch/element/instance_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -245,7 +246,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
           changeGroup,
           elementSource,
           additionalContext,
-          value: getChangeData(resolvedChange).value,
+          value: recursiveNaclCase(getChangeData(resolvedChange).value, true),
         })
 
     throwOnUnresolvedReferences(data)

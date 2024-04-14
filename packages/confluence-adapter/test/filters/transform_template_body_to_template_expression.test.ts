@@ -164,10 +164,16 @@ describe('transformTemplateBodyToTemplateExpression', () => {
       const expectedLength = elements.length
       await filter.onFetch?.(elements)
       expect(elements).toHaveLength(expectedLength)
-      checkInstanceAfterFilter('templateWithoutReferences', elements)
       checkInstanceAfterFilter('templateWithPageReference', elements)
-      checkInstanceAfterFilter('templateWithRefToPageWhichCannotBeFound', elements)
       checkInstanceAfterFilter('templateWithRefToSpace', elements)
+    })
+    it('should handle templates without references', async () => {
+      const elements = generateElements(true)
+      const expectedLength = elements.length
+      await filter.onFetch?.(elements)
+      expect(elements).toHaveLength(expectedLength)
+      checkInstanceAfterFilter('templateWithoutReferences', elements)
+      checkInstanceAfterFilter('templateWithRefToPageWhichCannotBeFound', elements)
     })
   })
   describe('deploy', () => {

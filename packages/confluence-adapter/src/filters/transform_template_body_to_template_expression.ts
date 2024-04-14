@@ -62,6 +62,7 @@ const handlePageRefMatch = (
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
   const { spaceByKey, pageBySpaceFullNameAndTitle } = indices
+  // dropping first item as it is the whole line
   const [, spaceKey, spaceKeyValue, contentTitle, contentTitleValue, versionAtSave] = matches
   const space = spaceByKey[spaceKeyValue]
   if (space === undefined) {
@@ -87,6 +88,7 @@ const handleSpaceRefMatch = (
   spaceByKey: PossibleRefsInTemplateIndices['spaceByKey'],
   fallback: string,
 ): TemplatePart | TemplatePart[] => {
+  // dropping first item as it is the whole line
   const [, spaceKey, spaceKeyValue, rest] = matches
   const space = spaceByKey[spaceKeyValue]
   if (space === undefined) {
@@ -111,9 +113,10 @@ const extractionFunc = (expression: string, indices: PossibleRefsInTemplateIndic
 
 const prepRef = (ref: ReferenceExpression): TemplatePart => {
   if (ref.value instanceof UnresolvedReference) {
-    log.trace(
-      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ',
+    log.debug(
+      'prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s unresolved reference fullName: %s',
       ref.elemID.getFullName(),
+      ref.value.target.getFullName(),
     )
     return ''
   }
@@ -185,6 +188,8 @@ const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () =
           })
         })
     },
+    // TODO, this part is just reverting the preDeploy step, we should do it in adjust function upon deploy
+    // (when manipulating values with adjust function preDeploy, we do not need to revert it in onDeploy)
     onDeploy: async changes => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)

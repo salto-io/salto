@@ -17,16 +17,21 @@
 import _ from 'lodash'
 import { isSaltoElementError, isSaltoError } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 
-const isJavaNullPointerErrorOrUndefined = (err: Error): boolean => {
+const log = logger(module)
+
+type SuppressedErrorChecker = (err: Error) => boolean
+
+const isJavaNullPointerErrorOrUndefined: SuppressedErrorChecker = err => {
   const status = _.get(err, 'response.status')
   const message = _.get(err, 'response.data.message')
   return status === 500 && message.startsWith('java.lang.NullPointerException: Cannot invoke')
 }
 
-const suppressedErrorsCheckerList: ((err: Error) => boolean)[] = [isJavaNullPointerErrorOrUndefined]
+const SUPPRESSED_ERRORS_CHECKER_LIST: SuppressedErrorChecker[] = [isJavaNullPointerErrorOrUndefined]
 
-const shouldSuppressError = (err: Error): boolean => suppressedErrorsCheckerList.some(checkFunc => checkFunc(err))
+const shouldSuppressError = (err: Error): boolean => SUPPRESSED_ERRORS_CHECKER_LIST.some(checkFunc => checkFunc(err))
 
 const getWrongVersionErrorOrUndefined = (err: Error): string | undefined => {
   const errorsArray = _.get(err, 'response.data.errors')
@@ -49,6 +54,7 @@ export const customConvertError: deployment.ConvertError = (elemID, error) => {
     return error
   }
   if (shouldSuppressError(error)) {
+    log.debug('Suppressing error: %s', error)
     return undefined
   }
 

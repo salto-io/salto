@@ -48,6 +48,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     credentialsFromConfig: defaultCredentialsFromConfig,
     customizeFilterCreators: args => ({
       ...filters.createCommonFilters<Options, UserConfig>(args),
+      // transform template body must run after references are created (fieldReferencesFilter)
       transformTemplateBodyToTemplateExpressionFilterCreator,
     }),
   },

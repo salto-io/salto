@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  isInstanceElement,
-  ReferenceExpression,
-  InstanceElement,
-  CORE_ANNOTATIONS,
-  Element,
-} from '@salto-io/adapter-api'
+import { isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { DOMAIN_TYPE_NAME } from '../constants'
 
 /**
- * TODO
+ * Set the parent of the domain to be the brand it is associated with.
+ *
+ * Domains always have a `brandId` field that references a brand. This filter changes the
+ * reference to be the parent of the domain.
  */
 const filterCreator: FilterCreator = () => ({
-  name: 'domainFilter',
+  name: 'domainParentFilter',
   onFetch: async elements => {
     const instances = elements
       .filter(isInstanceElement)

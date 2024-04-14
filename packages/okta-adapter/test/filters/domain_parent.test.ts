@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import domainFilter from '../../src/filters/domain'
+import domainParentFilter from '../../src/filters/domain_parent'
 import { DOMAIN_TYPE_NAME, OKTA, BRAND_TYPE_NAME } from '../../src/constants'
 import { getFilterParams } from '../utils'
 
-describe('domainFilter', () => {
+describe('domainParentFilter', () => {
   it('should set the parent of the domain to be the brand', async () => {
     const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
     const brand = new InstanceElement('brand', brandType, {})
@@ -28,7 +28,7 @@ describe('domainFilter', () => {
       brandId: new ReferenceExpression(brand.elemID, brand),
     })
 
-    const filter = domainFilter(getFilterParams({}))
+    const filter = domainParentFilter(getFilterParams({}))
     filter.onFetch?.([domain])
     expect(domain.annotations).toHaveProperty('_parent', [new ReferenceExpression(brand.elemID, brand)])
   })

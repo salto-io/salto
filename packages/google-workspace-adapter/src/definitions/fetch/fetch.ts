@@ -348,7 +348,8 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }, { fieldName: 'name' }] },
+        elemID: { parts: [{ fieldName: 'orgUnitPath' }] },
+
         serviceUrl: { path: '/orgunits' },
         alias: {
           aliasComponents: [{ fieldName: 'name' }],

@@ -56,7 +56,7 @@ const missingUsersChangeWarning = (
 ): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
-  message: `${missingUsers.length} usernames will be overridden to ${userFallbackValue}`,
+  message: 'Usernames will be overridden',
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
 })
 

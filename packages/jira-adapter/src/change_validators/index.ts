@@ -17,8 +17,8 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './field_configuration/default_field_configuration'
-import { fieldConfigurationDescriptionLengthValidator } from './field_configuration/field_configuration_description_length';
-import { fieldConfigurationItemDescriptionLengthValidator } from './field_configuration/field_configuration_item_description_length';
+import { fieldConfigurationDescriptionLengthValidator } from './field_configuration/field_configuration_description_length'
+import { fieldConfigurationItemDescriptionLengthValidator } from './field_configuration/field_configuration_item_description_length'
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'

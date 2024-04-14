@@ -20,11 +20,7 @@ import {
   isModificationChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import { 
-  FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, 
-  FIELD_CONFIGURATION_TYPE_NAME 
-} from '../../constants';
-
+import { FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
 
 export const fieldConfigurationDescriptionLengthValidator: ChangeValidator = async changes =>
   changes

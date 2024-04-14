@@ -21,15 +21,16 @@ import {
   Value,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { 
+import {
   FIELD_CONFIGURATION_TYPE_NAME,
-  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH, 
-  FIELD_CONFIGURATION_ITEM_TYPE_NAME, 
-} from '../../constants';
+  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH,
+  FIELD_CONFIGURATION_ITEM_TYPE_NAME,
+} from '../../constants'
 
 type descriptionType = undefined | string
-type descriptionObjectType = {description: descriptionType}
-const isDescriptionTooLong = (obj: descriptionObjectType): boolean => obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
+type descriptionObjectType = { description: descriptionType }
+const isDescriptionTooLong = (obj: descriptionObjectType): boolean =>
+  obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
 const filteredTypes = new Set([FIELD_CONFIGURATION_TYPE_NAME, FIELD_CONFIGURATION_ITEM_TYPE_NAME])
 
 export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator = async changes =>
@@ -39,7 +40,7 @@ export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator =
     .map(getChangeData)
     .filter(change => filteredTypes.has(change.elemID.typeName))
     .filter(change => {
-      if (change.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME){
+      if (change.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
         return isDescriptionTooLong(change.value as descriptionObjectType)
       }
 
@@ -54,13 +55,13 @@ export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator =
       }
       if (change.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
         error.detailedMessage = `Description length (${change.value.description.length}) of field configuration item (${change.value.id.elemID.getFullName()}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`
-      }
-      else {
+      } else {
         const fields = Object.entries(change.value.fields)
-        .map(([key, value]: [string, Value]) => ({name: key, description: value.description}))
-        .filter(isDescriptionTooLong)
-        .map(field => field.name)
-        if (fields.length > 0) { // Should always be true.
+          .map(([key, value]: [string, Value]) => ({ name: key, description: value.description }))
+          .filter(isDescriptionTooLong)
+          .map(field => field.name)
+        if (fields.length > 0) {
+          // Should always be true.
           error.detailedMessage = `Exceeded maximum description length of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters for the following fields: ${fields}.`
         }
       }

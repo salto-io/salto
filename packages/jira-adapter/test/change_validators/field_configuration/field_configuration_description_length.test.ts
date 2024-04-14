@@ -22,10 +22,10 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
   let fieldConfigurationInstance: InstanceElement
   const boundaryValues = [
     0, // Lower bound
-    1,  // Lower + 1
+    1, // Lower + 1
     Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2), // Average case
     FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH - 1, // Upper bound - 1
-    FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH // Upper bound
+    FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, // Upper bound
   ]
   beforeEach(() => {
     fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
@@ -34,25 +34,28 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
       fields: {
         description: 'configuration description',
         item: {
-          description: 'item description'
-        }
+          description: 'item description',
+        },
       },
     })
   })
 
-  it.each(boundaryValues)('Should succeed because field configuration description length is lower than maximum.', async (descriptionLength) => {
-    const afterInstance = fieldConfigurationInstance.clone()
-    afterInstance.value.description = '*'.repeat(descriptionLength)
-    expect(
-      await fieldConfigurationDescriptionLengthValidator([
-        toChange({
-          before: fieldConfigurationInstance,
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([])
-  })
-  
+  it.each(boundaryValues)(
+    'Should succeed because field configuration description length is lower than maximum.',
+    async descriptionLength => {
+      const afterInstance = fieldConfigurationInstance.clone()
+      afterInstance.value.description = '*'.repeat(descriptionLength)
+      expect(
+        await fieldConfigurationDescriptionLengthValidator([
+          toChange({
+            before: fieldConfigurationInstance,
+            after: afterInstance,
+          }),
+        ]),
+      ).toEqual([])
+    },
+  )
+
   it('Should return an error because field configuration description length exceeds maximum.', async () => {
     const afterInstance = fieldConfigurationInstance.clone()
     afterInstance.value.description = '*'.repeat(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH + 1)

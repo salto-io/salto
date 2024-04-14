@@ -15,26 +15,24 @@
  */
 import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { fieldConfigurationItemDescriptionLengthValidator } from '../../../src/change_validators/field_configuration/field_configuration_item_description_length'
-import { 
-  JIRA, 
-  FIELD_CONFIGURATION_TYPE_NAME, 
-  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH, 
-  FIELD_CONFIGURATION_ITEM_TYPE_NAME
+import {
+  JIRA,
+  FIELD_CONFIGURATION_TYPE_NAME,
+  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH,
+  FIELD_CONFIGURATION_ITEM_TYPE_NAME,
 } from '../../../src/constants'
-
 
 const boundaryValues = [
   0, // Lower bound
   1, // Lower bound + 1
   Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2), // Average case
   FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH - 1, // Upper bound - 1
-  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH // Upper bound
+  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH, // Upper bound
 ]
 
 describe('fieldConfigurationItemDescriptionLengthValidator non split configuration', () => {
   let fieldConfigurationType: ObjectType
   let fieldConfigurationInstance: InstanceElement
-  
 
   beforeEach(() => {
     fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
@@ -42,28 +40,31 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
     fieldConfigurationInstance = new InstanceElement('instance', fieldConfigurationType, {
       fields: {
         item1: {
-          description: 'item1 description'
+          description: 'item1 description',
         },
         item2: {
-          description: 'item2 description'
-        }
+          description: 'item2 description',
+        },
       },
     })
   })
 
-  it.each(boundaryValues)('Should succeed because item description length inside FieldConfiguration is lower than maximum.', async (descriptionLength) => {
-    const afterInstance = fieldConfigurationInstance.clone()
-    afterInstance.value.fields.item1.description = '*'.repeat(descriptionLength)
-    expect(
-      await fieldConfigurationItemDescriptionLengthValidator([
-        toChange({
-          before: fieldConfigurationInstance,
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([])
-  })
-  
+  it.each(boundaryValues)(
+    'Should succeed because item description length inside FieldConfiguration is lower than maximum.',
+    async descriptionLength => {
+      const afterInstance = fieldConfigurationInstance.clone()
+      afterInstance.value.fields.item1.description = '*'.repeat(descriptionLength)
+      expect(
+        await fieldConfigurationItemDescriptionLengthValidator([
+          toChange({
+            before: fieldConfigurationInstance,
+            after: afterInstance,
+          }),
+        ]),
+      ).toEqual([])
+    },
+  )
+
   it('Should return an error because description length of items inside FieldConfiguration exceeds maximum.', async () => {
     const afterInstance = fieldConfigurationInstance.clone()
     afterInstance.value.fields.item1.description = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)
@@ -97,19 +98,22 @@ describe('fieldConfigurationItemDescriptionLengthValidator split item configurat
     })
   })
 
-  it.each(boundaryValues)('Should succeed because FieldConfigurationItem description length is lower than maximum.', async (descriptionLength) => {
-    const afterInstance = fieldConfigurationItemInstance.clone()
-    afterInstance.value.description = '*'.repeat(descriptionLength)
-    expect(
-      await fieldConfigurationItemDescriptionLengthValidator([
-        toChange({
-          before: fieldConfigurationItemInstance,
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([])
-  })
-  
+  it.each(boundaryValues)(
+    'Should succeed because FieldConfigurationItem description length is lower than maximum.',
+    async descriptionLength => {
+      const afterInstance = fieldConfigurationItemInstance.clone()
+      afterInstance.value.description = '*'.repeat(descriptionLength)
+      expect(
+        await fieldConfigurationItemDescriptionLengthValidator([
+          toChange({
+            before: fieldConfigurationItemInstance,
+            after: afterInstance,
+          }),
+        ]),
+      ).toEqual([])
+    },
+  )
+
   it('Should return an error because FieldConfigurationItem description length exceeds maximum.', async () => {
     const afterInstance = fieldConfigurationItemInstance.clone()
     afterInstance.value.description = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)

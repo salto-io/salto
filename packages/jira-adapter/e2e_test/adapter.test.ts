@@ -253,15 +253,25 @@ each([
       })
 
       addDeployResults = await Promise.all(
-        removalChanges.map(change =>
-          adapter.deploy({
-            changeGroup: {
-              groupID: getChangeData(change).elemID.getFullName(),
-              changes: [change],
-            },
-            progressReporter: nullProgressReporter,
-          }),
-        ),
+        removalChanges.map(change => {
+          try {
+            return adapter.deploy({
+              changeGroup: {
+                groupID: getChangeData(change).elemID.getFullName(),
+                changes: [change],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          } catch (e) {
+            if (String(e).includes('status code 404')) {
+              return {
+                errors: [],
+                appliedChanges: [],
+              }
+            }
+            throw e
+          }
+        }),
       )
 
       const errors = addDeployResults.flatMap(res => res.errors)

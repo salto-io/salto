@@ -15,6 +15,7 @@
  */
 
 import {
+  CORE_ANNOTATIONS,
   ChangeError,
   ElemID,
   FixElementsFunc,
@@ -36,22 +37,22 @@ import { captureServiceIdInfo } from '../../service_id_info'
 
 const { awu } = collections.asynciterable
 
-const formTypes = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
-
-export const GENERATED_DEPENDENCIES = '_generated_dependencies'
-
 type GeneratedDependency = {
   reference: ReferenceExpression
 }
 
 type MappedList = Record<string, { index: number; [key: string]: Value }>
 
+const formTypeNames = new Set([ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM])
+
+const isFormInstanceElement = (element: Value): element is InstanceElement =>
+  isInstanceElement(element) && formTypeNames.has(element.elemID.typeName)
+
 const isGeneratedDependency = (val: unknown): val is GeneratedDependency =>
   values.isPlainRecord(val) && isReferenceExpression(val.reference)
 
-const getFieldReferences = (formInstance: InstanceElement): Record<string, ReferenceExpression> => {
+const getIdReferencesRecord = (formInstance: InstanceElement): Record<string, ReferenceExpression> => {
   const referencesRecord: Record<string, ReferenceExpression> = {}
-
   walkOnValue({
     elemId: formInstance.elemID,
     value: formInstance.value,
@@ -65,18 +66,28 @@ const getFieldReferences = (formInstance: InstanceElement): Record<string, Refer
       return WALK_NEXT_STEP.RECURSE
     },
   })
+  return referencesRecord
+}
 
-  const generatedDependencies = formInstance.annotations[GENERATED_DEPENDENCIES]
+const getGeneratedDependenciesReferencesRecord = (
+  formInstance: InstanceElement,
+): Record<string, ReferenceExpression> => {
+  const referencesRecord: Record<string, ReferenceExpression> = {}
+  const generatedDependencies = formInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
   if (Array.isArray(generatedDependencies)) {
-    generatedDependencies.forEach((dep, index) => {
-      if (values.isPlainRecord(dep) && isReferenceExpression(dep.reference)) {
-        referencesRecord[formInstance.elemID.createNestedID(GENERATED_DEPENDENCIES, index.toString()).getFullName()] =
-          dep.reference
-      }
+    generatedDependencies.filter(isGeneratedDependency).forEach((dep, index) => {
+      referencesRecord[
+        formInstance.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES, index.toString()).getFullName()
+      ] = dep.reference
     })
   }
   return referencesRecord
 }
+
+const getFieldReferences = (formInstance: InstanceElement): Record<string, ReferenceExpression> => ({
+  ...getIdReferencesRecord(formInstance),
+  ...getGeneratedDependenciesReferencesRecord(formInstance),
+})
 
 const getWeakElementReferences = (formInstance: InstanceElement): ReferenceInfo[] => {
   const fieldsReferences = getFieldReferences(formInstance)
@@ -86,9 +97,6 @@ const getWeakElementReferences = (formInstance: InstanceElement): ReferenceInfo[
     type: 'weak' as const,
   }))
 }
-
-const isFormInstanceElement = (element: Value): element is InstanceElement =>
-  isInstanceElement(element) && formTypes.has(element.elemID.typeName)
 
 const getFieldsReferences: GetCustomReferencesFunc = async elements =>
   elements.filter(isFormInstanceElement).flatMap(getWeakElementReferences)
@@ -108,10 +116,10 @@ const handleGeneratedDependencies = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<{ fixedGeneratedDependencies: GeneratedDependency[]; unresolvedGeneratedDependencies: Set<string> }> => {
   const unresolvedGeneratedDependencies = new Set<string>()
-  if (!form.annotations[GENERATED_DEPENDENCIES]) {
+  if (!form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]) {
     return { fixedGeneratedDependencies: [], unresolvedGeneratedDependencies }
   }
-  const fixedGeneratedDependencies = await awu(form.annotations[GENERATED_DEPENDENCIES])
+  const fixedGeneratedDependencies = await awu(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
     .filter(isGeneratedDependency)
     .filter(async dep => {
       if (await isUnresolvedReference(dep.reference, elementsSource)) {
@@ -169,6 +177,13 @@ const hasIndexAttribute = (val: unknown): boolean => values.isPlainRecord(val) &
 const isMappedList = (val: unknown): val is MappedList =>
   values.isPlainRecord(val) && Object.values(val).every(hasIndexAttribute)
 
+const fixIndexInMappedList = (mappedList: MappedList): void =>
+  Object.entries(mappedList)
+    .sort(([, val1], [, val2]) => val1[INDEX] - val2[INDEX])
+    .forEach(([key], index) => {
+      mappedList[key][INDEX] = index
+    })
+
 const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
   const pathsToFixIndex = new Set<string>(
     pathsToRemove.map(path => form.elemID.getRelativePath(path.createParentID()).join('.')),
@@ -177,9 +192,7 @@ const fixIndexes = (form: InstanceElement, pathsToRemove: ElemID[]): void => {
   pathsToFixIndex.forEach(path => {
     const parent = _.get(form.value, path)
     if (isMappedList(parent)) {
-      Object.keys(parent).forEach((key, index) => {
-        parent[key][INDEX] = index
-      })
+      fixIndexInMappedList(parent)
     }
   })
 }
@@ -203,19 +216,9 @@ const getFixedElementAndPaths = async (
 
   pathsToRemove.forEach(path => _.unset(fixedForm.value, fixedForm.elemID.getRelativePath(path).join('.')))
 
-  // TODO why doesn't it work?
-  // const mappedLists = await getMappedLists(form)
-  // const mappedlistsPaths = new Set<string>(mappedLists.map(mappedList => mappedList.path.getFullName()))
-  // const pathsToFixIndex = new Set<string>(
-  //   pathsToRemove
-  //     .map(path => path.createParentID())
-  //     .filter(path => mappedlistsPaths.has(path.getFullName()))
-  //     .map(path => fixedForm.elemID.getRelativePath(path).join('.')),
-  // )
-
   fixIndexes(fixedForm, pathsToRemove)
 
-  fixedForm.annotations[GENERATED_DEPENDENCIES] = fixedGeneratedDependencies
+  fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = fixedGeneratedDependencies
 
   return { instance: fixedForm, paths: pathsToRemove }
 }

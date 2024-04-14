@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { GENERATED_DEPENDENCIES, fieldsHandler } from '../../../src/custom_references/weak_references/fields_references'
+import { fieldsHandler } from '../../../src/custom_references/weak_references/fields_references'
 import { NETSUITE, SCRIPT_ID, TRANSACTION_FORM } from '../../../src/constants'
 import { transactionFormType } from '../../../src/autogen/types/standard_types/transactionForm'
 
@@ -93,7 +100,7 @@ describe('permissions_references', () => {
     },
     [NETSUITE, TRANSACTION_FORM, 'form2'],
     {
-      [GENERATED_DEPENDENCIES]: [
+      [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
         {
           reference: new ReferenceExpression(inst2.elemID.createNestedID(SCRIPT_ID), inst2.value.scriptid, inst2),
         },
@@ -146,12 +153,12 @@ describe('permissions_references', () => {
           type: 'weak',
         },
         {
-          source: form2.elemID.createNestedID(GENERATED_DEPENDENCIES, '0'),
+          source: form2.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES, '0'),
           target: instance2.elemID.createNestedID(SCRIPT_ID),
           type: 'weak',
         },
         {
-          source: form2.elemID.createNestedID(GENERATED_DEPENDENCIES, '1'),
+          source: form2.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES, '1'),
           target: instance3.elemID.createNestedID(SCRIPT_ID),
           type: 'weak',
         },
@@ -240,8 +247,10 @@ describe('permissions_references', () => {
       expect(fixedForm.value.parentField.field2).toBeUndefined()
       expect(fixedForm.value.parentField.field3.id).toEqual(form2.value.parentField.field3.id)
       expect(fixedForm.value.parentField.field3.index).toEqual(0)
-      expect(fixedForm.annotations[GENERATED_DEPENDENCIES].length).toEqual(1)
-      expect(fixedForm.annotations[GENERATED_DEPENDENCIES][0]).toEqual(form2.annotations[GENERATED_DEPENDENCIES][1])
+      expect(fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].length).toEqual(1)
+      expect(fixedForm.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][0]).toEqual(
+        form2.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][1],
+      )
     })
     it('should do nothing if all references are valid', async () => {
       const clonedForm2 = form2.clone()

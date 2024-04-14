@@ -137,7 +137,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   // add CV to inform the user that this fields are read-only
-                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
+                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings', 'labels'],
                 },
               },
               copyFromResponse: {
@@ -153,6 +153,22 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   root: 'groupSettings',
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/v1/groups/{id}',
+                  method: 'patch',
+                  queryArgs: {
+                    updateMask: 'labels',
+                  },
+                  client: 'cloudIdentity',
+                },
+                transformation: {
+                  root: 'labels',
+                  nestUnderField: 'labels',
                 },
               },
             },
@@ -176,7 +192,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   // add CV to inform the user that this fields are read-only
-                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
+                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings', 'labels'],
                 },
               },
             },
@@ -189,6 +205,22 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   root: 'groupSettings',
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/v1/groups/{id}',
+                  queryArgs: {
+                    updateMask: 'labels',
+                  },
+                  method: 'patch',
+                  client: 'cloudIdentity',
+                },
+                transformation: {
+                  root: 'labels',
+                  nestUnderField: 'labels',
                 },
               },
             },

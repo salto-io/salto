@@ -51,5 +51,20 @@ export const createClientDefinitions = (
         },
       },
     },
+    cloudIdentity: {
+      httpClient: clients.cloudIdentity,
+      endpoints: {
+        default: {
+          get: {
+            pagination: 'cursor',
+            // only readonly endpoint calls are allowed during fetch. we assume by default that GET endpoints are safe
+            readonly: true,
+          },
+          delete: {
+            omitBody: true,
+          },
+        },
+      },
+    },
   },
 })

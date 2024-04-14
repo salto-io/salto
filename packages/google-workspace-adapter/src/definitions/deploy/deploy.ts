@@ -251,9 +251,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'delete',
                 },
-                transformation: {
-                  omit: ['orgUnitPath'],
-                },
               },
             },
           ],
@@ -264,6 +261,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'put',
                 },
+                // the orgUnitPath can be changed and we use the name of the orgUnit and his parent to identify the orgUnit
                 transformation: {
                   omit: ['orgUnitPath'],
                 },

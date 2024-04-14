@@ -29,7 +29,6 @@ import {
 
 type descriptionType = undefined | string
 type descriptionObjectType = {description: descriptionType}
-// type fieldType = {name: string} & descriptionObjectType
 const isDescriptionTooLong = (obj: descriptionObjectType): boolean => obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
 const filteredTypes = new Set([FIELD_CONFIGURATION_TYPE_NAME, FIELD_CONFIGURATION_ITEM_TYPE_NAME])
 

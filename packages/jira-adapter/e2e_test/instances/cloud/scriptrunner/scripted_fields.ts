@@ -13,20 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../../../utils'
-import { ISSUE_TYPE_NAME, JIRA } from '../../../../src/constants'
+import { Values } from '@salto-io/adapter-api'
 
-export const createScriptedFieldValues = (name: string, allElements: Element[]): Values => ({
+// TODO update to reflect new scripted field
+export const createScriptedFieldValues = (name: string): Values => ({
   name,
-  projectKeys: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements)],
-  issueTypes: [
-    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Story'), allElements),
-    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
-  ],
   scriptedFieldType: 'DATE_FIELD',
   codeToRun: 'issue.projectObject.key == XYZ17',
-  searchTerm: `ComplexName${name}`,
-  enabled: true,
-  itemLocation: 'atl.jira.view.issue.right.context',
+  description: 'Description of the scripted field',
 })

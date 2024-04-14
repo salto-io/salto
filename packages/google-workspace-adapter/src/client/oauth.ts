@@ -31,6 +31,7 @@ export const GROUP_SETTINGS_APP_NAME = 'groupSettings'
 
 const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/cloud-platform',
   'https://www.googleapis.com/auth/admin.directory.rolemanagement',
   'https://www.googleapis.com/auth/admin.directory.group',
   'https://www.googleapis.com/auth/admin.directory.domain',

@@ -705,6 +705,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
 
 // Avoid using this function from out of this file. This filters out only the hidden changes but not
 // their side effects like done in handleHiddenChanges.
+// just for test
 export const filterOutHiddenChanges = async (
   changes: DetailedChange[],
   state: State,

@@ -79,6 +79,7 @@ import {
   isDeploymentWorkflowPayload,
   PayloadWorkflowStatus,
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
+  WORKFLOW_V2,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE } from '../../constants'
@@ -230,7 +231,7 @@ const createWorkflowInstances = async ({
             return undefined
           }
           // convert transition list to map
-          const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
+          const [error] = transformTransitions(workflow, WORKFLOW_V2, workflowIdToStatuses[workflow.id])
           if (error) {
             errors.push(error)
           }

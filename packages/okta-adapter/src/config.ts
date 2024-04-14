@@ -916,7 +916,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'BrandTheme' }],
+      standaloneFields: [
+        { fieldName: 'BrandTheme' },
+        // This is a hack to make the Domain NaCl file nested under Brand, even though it's not actually fetched as a
+        // nested object in the same call.
+        { fieldName: 'Domain' },
+      ],
       fieldTypeOverrides: [{ fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' }],
       serviceUrl: '/admin/customizations/footer',
     },

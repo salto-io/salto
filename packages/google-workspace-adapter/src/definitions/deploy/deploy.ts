@@ -90,11 +90,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   // add CV to inform the user that this fields are read-only
-                  omit: ['verified', 'isPrimary'],
+                  omit: ['verified', 'isPrimary', 'domainAliases'],
                 },
               },
+              // TODO - SALTO-5728 - we should deal with the domain aliases in a different request
               copyFromResponse: {
-                additional: { pick: ['verified', 'isPrimary'] },
+                additional: { pick: ['verified', 'isPrimary', 'domainAliases'] },
               },
             },
           ],

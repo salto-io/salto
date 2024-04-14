@@ -1341,7 +1341,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: OBJECT_TYPE_ICON_TYPE },
   },
-  // typeValueMulti in ObjectTypeAttribute can be of different types. 
+  // typeValueMulti in ObjectTypeAttribute can be of different types.
   {
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',

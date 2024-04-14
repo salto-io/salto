@@ -29,6 +29,7 @@ import {
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
   VIEW_TYPE_NAME,
+  WORKSPACE_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
@@ -44,6 +45,7 @@ describe('Unordered lists filter', () => {
     const dynamicContentItemType = new ObjectType({ elemID: new ElemID(ZENDESK, 'dynamic_content_item') })
     const triggerDefinitionType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger_definition') })
     const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
+    const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') })
     const viewType = new ObjectType({ elemID: new ElemID(ZENDESK, VIEW_TYPE_NAME) })
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
     const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
@@ -281,6 +283,14 @@ describe('Unordered lists filter', () => {
         { title: 'bravo', type: 'alpha' },
       ],
     })
+    const workspaceWithMultipleApps = new InstanceElement('workspaceWithNoApps', workspaceType, {
+      apps: [
+        { name: 'c', position: 3 },
+        { name: 'b', position: 2 },
+        { name: 'a', position: 1 },
+      ],
+    })
+
     const empty = new InstanceElement('empty', dynamicContentItemType, {})
     return [
       localeType,
@@ -320,6 +330,7 @@ describe('Unordered lists filter', () => {
       ticketFieldThreeInstance,
       invalidChildFieldTicketFormInstance,
       invalidTicketFieldInstance,
+      workspaceWithMultipleApps,
     ]
   }
 
@@ -535,6 +546,22 @@ describe('Unordered lists filter', () => {
       testView.value.execution = undefined
       testView2.value.execution.custom_fields = undefined
       await filter.onFetch([testView, testView2])
+    })
+  })
+  describe('workspace', () => {
+    let instance: InstanceElement
+    beforeAll(() => {
+      ;[instance] = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
+    })
+
+    it('should sort apps by position', async () => {
+      expect(instance.value.apps).toHaveLength(3)
+      expect(instance.value.apps[0].name).toEqual('a')
+      expect(instance.value.apps[0].position).toEqual(1)
+      expect(instance.value.apps[1].name).toEqual('b')
+      expect(instance.value.apps[1].position).toEqual(2)
+      expect(instance.value.apps[2].name).toEqual('c')
+      expect(instance.value.apps[2].position).toEqual(3)
     })
   })
 })

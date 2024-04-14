@@ -29,9 +29,9 @@ import { DOMAIN_TYPE_NAME } from '../constants'
 const filterCreator: FilterCreator = () => ({
   name: 'domainFilter',
   onFetch: async (elements: Element[]) => {
-    const instances: InstanceElement[] = elements
+    const instances = elements
       .filter(isInstanceElement)
-      .filter((instance: InstanceElement) => instance.elemID.typeName === DOMAIN_TYPE_NAME)
+      .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME)
 
     // Instead of having a `Brand` reference expression, make it the parent of the domain.
     await Promise.all(

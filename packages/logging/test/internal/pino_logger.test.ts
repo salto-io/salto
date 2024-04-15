@@ -732,13 +732,12 @@ describe('pino based logger', () => {
 
       it('should log levelCountRecord correctly', () => {
         expect(logger.getLogCount()).toEqual({
-          warn: 1
+          warn: 1,
         })
-
       })
       it('should init levelCountRecord correctly', () => {
         expect(logger.getLogCount()).toEqual({
-          warn: 1
+          warn: 1,
         })
         logger.initLogCount()
         expect(logger.getLogCount()).toEqual({})

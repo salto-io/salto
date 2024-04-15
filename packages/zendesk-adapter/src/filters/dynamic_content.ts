@@ -30,8 +30,8 @@ import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChange
 import { API_DEFINITIONS_CONFIG } from '../config'
 import {
   applyforInstanceChangesOfType,
-  placeholderToTitle as placeholderToName,
-  titleToPlaceholder as nameToPlaceholder,
+  placeholderToName,
+  nameToPlaceholder,
 } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 

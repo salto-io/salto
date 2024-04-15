@@ -921,8 +921,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         // This is a hack to make the Domain NaCl file nested under Brand, even though it's not actually fetched as a
         // nested object in the same call.
         { fieldName: 'Domain' },
+        { fieldName: 'SignInPage' },
       ],
-      fieldTypeOverrides: [{ fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' }],
+      fieldTypeOverrides: [
+        { fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' },
+        { fieldName: 'SignInPage', fieldType: 'list<SignInPage>' },
+      ],
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {

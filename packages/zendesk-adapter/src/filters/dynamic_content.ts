@@ -28,11 +28,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import {
-  applyforInstanceChangesOfType,
-  placeholderToName,
-  nameToPlaceholder,
-} from './utils'
+import { applyforInstanceChangesOfType, placeholderToName, nameToPlaceholder } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const log = logger(module)

@@ -17,6 +17,7 @@
 import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
 import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
@@ -33,10 +34,7 @@ const TRANSITION_FROM_V2_SCHEME = Joi.array().items(
 )
 
 // we already validate the workflow structure in workflow_filter, so we just want to differ between the two versions
-const isTransitionFromV2 = (value: unknown): value is WorkflowStatusAndPort[] => {
-  const { error } = TRANSITION_FROM_V2_SCHEME.validate(value)
-  return error === undefined
-}
+const isTransitionFromV2 = createSchemeGuard<WorkflowStatusAndPort[]>(TRANSITION_FROM_V2_SCHEME)
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 

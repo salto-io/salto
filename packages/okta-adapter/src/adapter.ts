@@ -92,6 +92,7 @@ import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
 import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
+import domainFilter from './filters/domain_parent'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
@@ -130,6 +131,8 @@ const DEFAULT_FILTERS = [
   appLogoFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
+  // should run after fieldReferencesFilter
+  domainFilter,
   // should run after fieldReferencesFilter
   addAliasFilter,
   // should run after fieldReferencesFilter and userFilter

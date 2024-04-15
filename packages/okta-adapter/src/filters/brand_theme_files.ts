@@ -48,6 +48,7 @@ const getBrandThemeFile = async (
     contentType: fileType,
     link,
     logoName: brandTheme.elemID.name,
+    nestedPath: brandTheme.path?.slice(2, brandTheme.path?.length - 1) ?? [],
   })
 }
 

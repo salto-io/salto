@@ -23,7 +23,7 @@ import {
 } from '../../../src/filters/template_engines/creator'
 
 describe('create template expression from files', () => {
-  let config: Themes
+  let config: Themes['referenceOptions']['javascriptReferenceLookupStrategy']
   const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
     id: 12345,
   })
@@ -39,7 +39,7 @@ describe('create template expression from files', () => {
     var without_a_prefix = 12345
     var PREFIX_full_article = 'https://brand.com/article/12345'`
 
-  const expectedJavascriptContent = (strategy: 'greedy' | 'prefix'): (ReferenceExpression | string)[] => {
+  const expectedJavascriptContent = (strategy: 'numericValues' | 'varNamePrefix'): (ReferenceExpression | string)[] => {
     const greedyJavascriptContent = [
       `
     var without_a_prefix = `,
@@ -52,7 +52,7 @@ describe('create template expression from files', () => {
     var without_a_prefix = 12345
     var PREFIX_full_article = '`,
     ]
-    const innerContent = strategy === 'greedy' ? greedyJavascriptContent : prefixJavascriptContent
+    const innerContent = strategy === 'numericValues' ? greedyJavascriptContent : prefixJavascriptContent
     return [
       `
     $(document).ready(function() {
@@ -96,18 +96,18 @@ describe('create template expression from files', () => {
     return undefined
   }
 
-  describe.each(['greedy', 'prefix'])('with %s javascript strategy', strategyString => {
-    const strategy = strategyString as 'greedy' | 'prefix'
+  describe.each(['numericValues', 'varNamePrefix'])('with %s javascript strategy', strategyString => {
+    const strategy = strategyString as 'numericValues' | 'varNamePrefix'
     beforeEach(() => {
       config =
-        strategy === 'greedy'
+        strategy === 'numericValues'
           ? {
-              javascriptStrategy: 'greedy',
-              javascriptDigitAmount: 5,
+              strategy: 'numericValues',
+              minimumDigitAmount: 5,
             }
           : {
-              javascriptStrategy: 'prefix',
-              javascriptPrefix: 'PREFIX_',
+              strategy: 'varNamePrefix',
+              prefix: 'PREFIX_',
             }
     })
     describe('createHandlebarTemplateExpression', () => {

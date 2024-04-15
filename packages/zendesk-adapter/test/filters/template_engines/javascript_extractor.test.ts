@@ -17,10 +17,10 @@ import { InstanceElement, ObjectType, ElemID, ReferenceExpression } from '@salto
 import { ZENDESK, ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, BRAND_TYPE_NAME } from '../../../src/constants'
 import {
   extractDomainsAndFieldsFromScripts,
-  extractGreedyIdsFromScripts,
+  extractNumericValueIdsFromScripts,
 } from '../../../src/filters/template_engines/javascript_extractor'
 
-describe('extractGreedyIdsFromScripts', () => {
+describe('extractNumericValueIdsFromScripts', () => {
   const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
     id: 123456,
   })
@@ -40,7 +40,7 @@ describe('extractGreedyIdsFromScripts', () => {
       const id2 = 789012;
       // More script code
     `
-    const result = extractGreedyIdsFromScripts(idsToElements, script, 6)
+    const result = extractNumericValueIdsFromScripts(idsToElements, script, 6)
     expect(result).toEqual({
       parts: [
         expect.stringMatching(/\s+\/\/ Some script code\s+const id1 = /),
@@ -59,7 +59,7 @@ describe('extractGreedyIdsFromScripts', () => {
       const id2 = 'some id?';
       // More script code
     `
-    const result = extractGreedyIdsFromScripts(idsToElements, script, 6)
+    const result = extractNumericValueIdsFromScripts(idsToElements, script, 6)
     expect(result).toEqual(script)
   })
 })

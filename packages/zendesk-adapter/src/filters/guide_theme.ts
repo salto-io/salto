@@ -86,6 +86,9 @@ const createTemplateExpression = ({
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
   config: Themes
 }): string | TemplateExpression => {
+  if (config.referenceOptions.enableReferenceLookup === false) {
+    return content
+  }
   try {
     let createTemplateExpressionFunc: TemplateEngineCreator
     if (filePath.endsWith('.hbs')) {
@@ -104,7 +107,7 @@ const createTemplateExpression = ({
         matchBrandSubdomain,
         enableMissingReferences: false, // Starting with false, to gain confidence in the feature
       },
-      config,
+      config.referenceOptions.javascriptReferenceLookupStrategy,
     )
   } catch (e) {
     log.warn('Error parsing references in file %s, %o', filePath, e)
@@ -359,8 +362,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
             idsToElements,
             matchBrandSubdomain,
             config: config[FETCH_CONFIG].guide?.themes || {
-              javascriptStrategy: 'greedy',
-              javascriptDigitAmount: 6,
+              referenceOptions: {
+                enableReferenceLookup: false,
+              },
             },
           })
           theme.value.root = themeElements

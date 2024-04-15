@@ -143,9 +143,9 @@ export const isCorrectConditions = (value: unknown, typeName: string): value is 
 const getBrandsForFilter = (
   elements: InstanceElement[],
   fetchConfig: ZendeskFetchConfig,
-  filter: 'brands' | 'themesForBrands',
+  filter: 'brands' | 'themesForBrands' | 'themes.brands',
 ): InstanceElement[] => {
-  const brandsRegexList = fetchConfig.guide?.[filter] ?? []
+  const brandsRegexList: string[] = _.get(fetchConfig.guide, filter, [])
   return elements
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brandInstance => brandInstance.value.has_help_center)
@@ -158,7 +158,10 @@ export const getBrandsForGuide = (elements: InstanceElement[], fetchConfig: Zend
 export const getBrandsForGuideThemes = (
   elements: InstanceElement[],
   fetchConfig: ZendeskFetchConfig,
-): InstanceElement[] => getBrandsForFilter(elements, fetchConfig, 'themesForBrands')
+): InstanceElement[] => {
+  const themesSelector = fetchConfig.guide?.themesForBrands ? 'themesForBrands' : 'themes.brands'
+  return getBrandsForFilter(elements, fetchConfig, themesSelector)
+}
 
 export const matchBrand = (url: string, brands: Record<string, InstanceElement>): InstanceElement | undefined => {
   const urlSubdomain = url.match(DOMAIN_REGEX)?.pop()

@@ -18,7 +18,7 @@ import { extractTemplate } from '@salto-io/adapter-utils'
 import { DOMAIN_REGEX } from '../utils'
 import { extractIdIfElementExists } from './utils'
 
-export const extractGreedyIdsFromScripts = (
+export const extractNumericValueIdsFromScripts = (
   idsToElements: Record<string, InstanceElement>,
   script: string,
   digitAmount: number,

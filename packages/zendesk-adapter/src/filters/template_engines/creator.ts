@@ -19,30 +19,38 @@ import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { Themes } from '../../config'
 import { parseHandlebarPotentialReferences } from './handlebar_parser'
 import { parseHtmlPotentialReferences } from './html_parser'
-import { extractDomainsAndFieldsFromScripts, extractGreedyIdsFromScripts } from './javascript_extractor'
+import { extractDomainsAndFieldsFromScripts, extractNumericValueIdsFromScripts } from './javascript_extractor'
 import { parsePotentialReferencesByPrefix } from './javascript_parser'
 import { PotentialReference, TemplateEngineOptions } from './types'
 
 export type TemplateEngineCreator = (
   content: string,
   options: TemplateEngineOptions,
-  config: Themes,
+  javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
 ) => string | TemplateExpression
 
 const extractOrParseByStrategy = (
   scripts: PotentialReference<string>[],
   idsToElements: Record<string, InstanceElement>,
-  themes: Themes,
+  javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
 ): PotentialReference<string | TemplateExpression>[] => {
-  if (themes.javascriptStrategy === 'greedy') {
+  if (javascriptReferenceLookupStrategy?.strategy === 'numericValues') {
     return scripts.map(script => ({
-      value: extractGreedyIdsFromScripts(idsToElements, script.value, themes.javascriptDigitAmount),
+      value: extractNumericValueIdsFromScripts(
+        idsToElements,
+        script.value,
+        javascriptReferenceLookupStrategy.minimumDigitAmount,
+      ),
       loc: script.loc,
     }))
   }
-  if (themes.javascriptStrategy === 'prefix') {
+  if (javascriptReferenceLookupStrategy?.strategy === 'varNamePrefix') {
     return scripts.flatMap(script => {
-      const parsedScripts = parsePotentialReferencesByPrefix(script.value, idsToElements, themes.javascriptPrefix)
+      const parsedScripts = parsePotentialReferencesByPrefix(
+        script.value,
+        idsToElements,
+        javascriptReferenceLookupStrategy.prefix,
+      )
       return parsedScripts.map(parsedScript => ({
         value: parsedScript.value,
         loc: { start: script.loc.start + parsedScript.loc.start, end: script.loc.start + parsedScript.loc.end },
@@ -81,12 +89,12 @@ const javascriptReferencesByConfig = (
   scripts: PotentialReference<string>[],
   idsToElements: Record<string, InstanceElement>,
   matchBrandSubdomain: (url: string) => InstanceElement | undefined,
-  themes?: Themes,
+  javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
 ): PotentialReference<string | TemplateExpression>[] => {
-  if (themes === undefined) {
+  if (javascriptReferenceLookupStrategy === undefined) {
     return scripts
   }
-  return extractOrParseByStrategy(scripts, idsToElements, themes).flatMap(script =>
+  return extractOrParseByStrategy(scripts, idsToElements, javascriptReferenceLookupStrategy).flatMap(script =>
     extractDomainsAndFieldsAfterStrategy(script, idsToElements, matchBrandSubdomain),
   )
 }
@@ -120,7 +128,7 @@ const mergeDistinctReferences = (
 export const createHandlebarTemplateExpression: TemplateEngineCreator = (
   content,
   { matchBrandSubdomain, idsToElements, enableMissingReferences },
-  config,
+  javascriptReferenceLookupStrategy,
 ) => {
   const handlebarReferences = parseHandlebarPotentialReferences(content, idsToElements)
   const { urls, scripts } = parseHtmlPotentialReferences(content, {
@@ -128,34 +136,44 @@ export const createHandlebarTemplateExpression: TemplateEngineCreator = (
     idsToElements,
     enableMissingReferences,
   })
-  const javascriptReferences = javascriptReferencesByConfig(scripts, idsToElements, matchBrandSubdomain, config)
+  const javascriptReferences = javascriptReferencesByConfig(
+    scripts,
+    idsToElements,
+    matchBrandSubdomain,
+    javascriptReferenceLookupStrategy,
+  )
   return mergeDistinctReferences(content, [...handlebarReferences, ...urls, ...javascriptReferences])
 }
 
 export const createHtmlTemplateExpression: TemplateEngineCreator = (
   content,
   { matchBrandSubdomain, idsToElements, enableMissingReferences },
-  config,
+  javascriptReferenceLookupStrategy,
 ) => {
   const { urls, scripts } = parseHtmlPotentialReferences(content, {
     matchBrandSubdomain,
     idsToElements,
     enableMissingReferences,
   })
-  const javascriptReferences = javascriptReferencesByConfig(scripts, idsToElements, matchBrandSubdomain, config)
+  const javascriptReferences = javascriptReferencesByConfig(
+    scripts,
+    idsToElements,
+    matchBrandSubdomain,
+    javascriptReferenceLookupStrategy,
+  )
   return mergeDistinctReferences(content, [...urls, ...javascriptReferences])
 }
 
 export const createJavascriptTemplateExpression: TemplateEngineCreator = (
   content,
   { matchBrandSubdomain, idsToElements },
-  config,
+  javascriptReferenceLookupStrategy,
 ) => {
   const javascriptReferences = javascriptReferencesByConfig(
     [{ value: content, loc: { start: 0, end: content.length } }],
     idsToElements,
     matchBrandSubdomain,
-    config,
+    javascriptReferenceLookupStrategy,
   )
   return mergeDistinctReferences(content, javascriptReferences)
 }

@@ -149,7 +149,7 @@ describe('Salesforce adapter E2E with real account', () => {
     if (credLease.return) {
       await credLease.return()
     }
-    log.printLogCount('Salesforce adapter E2E')
+    log.info('Salesforce adapter E2E: Log counts = %o', log.getLogCount())
   })
 
   // Set long timeout as we communicate with salesforce API

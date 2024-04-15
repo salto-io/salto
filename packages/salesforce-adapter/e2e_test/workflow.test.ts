@@ -84,7 +84,7 @@ describe('workflow filter', () => {
     if (credLease.return) {
       await credLease.return()
     }
-    log.printLogCount('workflow filter')
+    log.info('workflow filter E2E: Log counts = %o', log.getLogCount())
   })
   const baseCustomObject = 'Lead'
 

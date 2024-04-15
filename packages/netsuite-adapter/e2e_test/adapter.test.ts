@@ -167,7 +167,7 @@ describe('Netsuite adapter E2E with real account', () => {
     if (credentialsLease?.return) {
       await credentialsLease.return()
     }
-    log.printLogCount('Netsuite adapter E2E')
+    log.info('Netsuite adapter E2E: Log counts = %o', log.getLogCount())
   })
 
   // Set long timeout as we communicate with Netsuite APIs

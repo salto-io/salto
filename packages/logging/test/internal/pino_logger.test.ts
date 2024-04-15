@@ -724,26 +724,24 @@ describe('pino based logger', () => {
           .toContain("customProp1: 'customVal1', customProp2: { aNumber: 42 }")
       })
     })
-    describe('when printLogCount is called', () => {
-      let lines: string[] = []
-
+    describe('when getLogCount is called', () => {
       beforeEach(() => {
-        initialConfig.minLevel = 'debug'
         logger = createLogger()
         logger.log('warn', 'test')
-        logger.printLogCount('location')
-        logger.initLogCount()
-        logger.printLogCount()
-        lines = consoleStream.contents().split('\n')
       })
 
       it('should log levelCountRecord correctly', () => {
-        expect(lines[1]).toContain('location: final log count is')
-        expect(lines[2]).toContain('  "warn": 1')
-        // stack
+        expect(logger.getLogCount()).toEqual({
+          warn: 1
+        })
+
       })
       it('should init levelCountRecord correctly', () => {
-        expect(lines[4]).toContain(' final log count is: {}')
+        expect(logger.getLogCount()).toEqual({
+          warn: 1
+        })
+        logger.initLogCount()
+        expect(logger.getLogCount()).toEqual({})
       })
     })
 

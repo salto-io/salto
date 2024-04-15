@@ -208,7 +208,7 @@ describe.each([
       await env2CredsLease.return()
     }
     await workspaceHelpersCleanup()
-    log.printLogCount('cli e2e multi env')
+    log.info('cli e2e multi env: Log counts = %o', log.getLogCount())
   })
 
   describe('init envs', () => {

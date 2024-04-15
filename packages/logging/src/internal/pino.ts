@@ -275,26 +275,23 @@ export const loggerRepo = (
 
   const loggerMaker: BaseLoggerMaker = (namespace: Namespace) => {
     const pinoLoggerWithoutTags = childrenByNamespace.get(namespace)
-    const logFunc = (level: LogLevel, message: string | Error, ...args: unknown[]): void => {
-      const namespaceTags = tagsByNamespace.get(namespace)
-      /*
-       We must "normalize" logTags because there are types of tags that pino doesn't support
-       for example - Functions.
-       */
-      const normalizedLogTags = normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
-      const [formattedOrError, unconsumedArgs] =
-        typeof message === 'string' ? formatMessage(message, ...args) : [message, args]
-
-      if (levelCountRecord[level] === undefined) {
-        levelCountRecord[level] = 0
-      }
-      levelCountRecord[level] += 1
-
-      logMessage(pinoLoggerWithoutTags, level, unconsumedArgs, normalizedLogTags, formattedOrError)
-    }
     return {
       log(level: LogLevel, message: string | Error, ...args: unknown[]): void {
-        return logFunc(level, message, ...args)
+        const namespaceTags = tagsByNamespace.get(namespace)
+        /*
+         We must "normalize" logTags because there are types of tags that pino doesn't support
+         for example - Functions.
+         */
+        const normalizedLogTags = normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
+        const [formattedOrError, unconsumedArgs] =
+          typeof message === 'string' ? formatMessage(message, ...args) : [message, args]
+
+        if (levelCountRecord[level] === undefined) {
+          levelCountRecord[level] = 0
+        }
+        levelCountRecord[level] += 1
+
+        logMessage(pinoLoggerWithoutTags, level, unconsumedArgs, normalizedLogTags, formattedOrError)
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) global.globalLogTags = {}
@@ -307,9 +304,8 @@ export const loggerRepo = (
         if (!logTags) tagsByNamespace.set(namespace, {})
         else tagsByNamespace.set(namespace, mergeLogTags(tagsByNamespace.get(namespace), logTags))
       },
-      printLogCount(location?: string) {
-        const message = `${location ?? ''}: final log count is: ${JSON.stringify(levelCountRecord, null, 2)}`
-        logFunc('debug', message)
+      getLogCount() {
+        return levelCountRecord
       },
       initLogCount() {
         levelCountRecord = {}

@@ -278,6 +278,6 @@ describe('custom object instances e2e', () => {
     if (credLease.return) {
       await credLease.return()
     }
-    log.printLogCount('custom object instances e2e')
+    log.info('custom object instances e2e: Log counts = %o', log.getLogCount())
   })
 })

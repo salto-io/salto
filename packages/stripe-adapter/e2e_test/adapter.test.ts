@@ -46,7 +46,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
     if (credLease.return) {
       await credLease.return()
     }
-    log.printLogCount('Stripe adapter E2E')
+    log.info('Stripe adapter E2E: Log counts = %o', log.getLogCount())
   })
 
   it('fetched elements are all objects', () => {

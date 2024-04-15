@@ -31,7 +31,7 @@ export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 export type BaseLogger = {
   log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
   assignTags(logTags?: LogTags): void
-  printLogCount(location?: string): void
+  getLogCount(): Record<string, number>
   initLogCount(): void
 }
 
@@ -115,7 +115,7 @@ export const logger = (
   tags?: LogTags,
 ): Logger => {
   const baseLogger = baseLoggerRepo(namespace, tags)
-  const baseCount = baseLogger.printLogCount
+  const baseLogCount = baseLogger.getLogCount
   const baseInitLogCount = baseLogger.initLogCount
   const baseLog = baseLogger.log
 
@@ -133,7 +133,7 @@ export const logger = (
 
         baseLog(level, ...rest)
       },
-      printLogCount: (location?: string): void => baseCount(location),
+      getLogCount: () => baseLogCount(),
       initLogCount: (): void => baseInitLogCount(),
     }),
   )

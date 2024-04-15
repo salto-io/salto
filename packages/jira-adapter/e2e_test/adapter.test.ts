@@ -90,7 +90,7 @@ each([
     if (credLease.return) {
       await credLease.return()
     }
-    log.printLogCount('Jira E2E')
+    log.info('Jira E2E: Log counts = %o', log.getLogCount())
   })
 
   describe('should fetch types', () => {

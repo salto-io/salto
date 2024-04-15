@@ -1145,7 +1145,7 @@ describe('Zendesk adapter E2E', () => {
       if (credLease.return) {
         await credLease.return()
       }
-      log.printLogCount('Zendesk adapter E2E')
+      log.info('Zendesk adapter E2E: Log counts = %o', log.getLogCount())
     })
     it('should fetch the regular instances and types', async () => {
       const typesToFetch = [

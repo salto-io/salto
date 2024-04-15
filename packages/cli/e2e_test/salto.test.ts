@@ -77,7 +77,7 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
     const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
     afterAll(async () => {
       await workspaceHelpersCleanup()
-      log.printLogCount('cli e2e')
+      log.info('cli e2e: Log counts = %o', log.getLogCount())
     })
 
     const workspaceConfigFile = `${__dirname}/../e2e_test/NACL/salto.config/workspace.nacl`

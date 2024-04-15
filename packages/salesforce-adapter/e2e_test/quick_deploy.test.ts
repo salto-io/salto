@@ -155,6 +155,6 @@ describe('validation and quick deploy e2e', () => {
         await credLease.return()
       }
     }
-    log.printLogCount('quick deploy e2e')
+    log.info('quick deploy e2e: Log counts = %o', log.getLogCount())
   })
 })

@@ -425,7 +425,7 @@ describe('Okta adapter E2E', () => {
       if (credLease.return) {
         await credLease.return()
       }
-      log.printLogCount('Okta adapter E2E')
+      log.info('Okta adapter E2E: Log counts = %o', log.getLogCount())
     })
     it('should fetch the regular instances and types', async () => {
       const expectedTypes = [

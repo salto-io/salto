@@ -28,7 +28,11 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { applyforInstanceChangesOfType, placeholderToTitle as placeholderToName, titleToPlaceholder as nameToPlaceholder } from './utils'
+import {
+  applyforInstanceChangesOfType,
+  placeholderToTitle as placeholderToName,
+  titleToPlaceholder as nameToPlaceholder,
+} from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const log = logger(module)
@@ -94,7 +98,16 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         log.debug('Creating dynamic content item with placeholder %s', newAdditionChange.value.placeholder)
         await deployChange({ action: 'add', data: { after: newAdditionChange } }, client, config.apiDefinitions)
       } catch (additionError) {
-        return { appliedChanges: [], errors: [{elemID: changeData.elemID, message: `Failed to create dynamic content item: ${additionError}`, severity: 'Error'}] }
+        return {
+          appliedChanges: [],
+          errors: [
+            {
+              elemID: changeData.elemID,
+              message: `Failed to create dynamic content item: ${additionError}`,
+              severity: 'Error',
+            },
+          ],
+        }
       }
       try {
         await deployChange(
@@ -110,19 +123,18 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           return {
             appliedChanges: [],
             errors: [
-              { elemID: changeData.elemID, 
-                message: 'Unable to modify name of dynamic content item, please modify it in the Zendesk UI and fetch.', 
-                severity: 'Warning'
-              }
+              {
+                elemID: changeData.elemID,
+                message: 'Unable to modify name of dynamic content item, please modify it in the Zendesk UI and fetch.',
+                severity: 'Warning',
+              },
             ],
           }
         }
         log.warn('Unable to modify dynamic content item %s, but removal was successful: %s', modificationError)
         return {
           appliedChanges: [],
-          errors: [
-            { message: `Failed to create dynamic content item: ${modificationError}`, severity: 'Error' }
-          ],
+          errors: [{ message: `Failed to create dynamic content item: ${modificationError}`, severity: 'Error' }],
         }
       }
       log.trace('Successfully created dynamic content item %s', changeData.elemID.name)

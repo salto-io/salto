@@ -69,9 +69,7 @@ export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 export const placeholderToTitle = (placeholder: string): string => placeholder.substring(5, placeholder.length - 2)
 
 export const titleToPlaceholder = (title: string): string => {
-  const cleanedTitle = title.replace(/:?\s+/g, '_')
-                            .replace(/::/g, '-')
-                            .replace(/\s/g, '_')
+  const cleanedTitle = title.replace(/:?\s+/g, '_').replace(/::/g, '-').replace(/\s/g, '_')
   return `{{dc.${cleanedTitle.toLowerCase()}}}`
 }
 export const applyforInstanceChangesOfType = async (

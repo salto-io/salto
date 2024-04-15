@@ -56,7 +56,7 @@ type issueTypeMappingStruct = {
 type ResponsesRecord = Record<string, Record<string, Promise<graphQLResponseType>>>
 
 const viewOrDefaultScreen = (screenScheme: InstanceElement): string =>
-  screenScheme.value.screens?.view ?? screenScheme.value.screens?.default
+  screenScheme.value.screens.view ?? screenScheme.value.screens.default
 
 // Check if the issueType of the issueTypeMapping is default or is in the issueTypeScheme of the project
 const IsIssueTypeInIssueTypeSchemesOrDefault = (
@@ -117,7 +117,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
         [
           ...new Set(
             issueTypeScreenSchemesToiIssueTypeMappings[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]
-              ?.filter((issueTypeMapping: issueTypeMappingStruct) =>
+              .filter((issueTypeMapping: issueTypeMappingStruct) =>
                 IsIssueTypeInIssueTypeSchemesOrDefault(
                   issueTypeMapping,
                   issueTypeSchemesToIssueTypeList,
@@ -129,8 +129,8 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
                   issueTypeMapping,
                   issueTypeScreenSchemesToiIssueTypeMappings[
                     project.value.issueTypeScreenScheme.issueTypeScreenScheme.id
-                  ]?.length ?? 0,
-                  issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id]?.length ?? 0,
+                  ].length,
+                  issueTypeSchemesToIssueTypeList[project.value.issueTypeScheme.issueTypeScheme.id].length,
                 ),
               )
               .map(

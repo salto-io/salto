@@ -89,7 +89,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
+                  // add CV to inform the user that verified and isPrimary are read-only
                   omit: ['verified', 'isPrimary', 'domainAliases'],
                 },
               },
@@ -136,12 +136,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
-                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
+                  omit: ['groupSettings', 'labels'],
                 },
               },
-              copyFromResponse: {
-                additional: { pick: ['adminCreated', 'nonEditableAliases'] },
+              condition: {
+                transformForCheck: {
+                  omit: ['groupSettings', 'labels'],
+                },
               },
             },
             {
@@ -153,6 +154,32 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   root: 'groupSettings',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['groupSettings'],
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/v1/groups/{id}',
+                  method: 'patch',
+                  queryArgs: {
+                    updateMask: 'labels',
+                  },
+                  client: 'cloudIdentity',
+                },
+                transformation: {
+                  root: 'labels',
+                  nestUnderField: 'labels',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['labels'],
                 },
               },
             },
@@ -175,8 +202,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
-                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
+                  omit: ['groupSettings', 'labels'],
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  omit: ['groupSettings', 'labels'],
                 },
               },
             },
@@ -189,6 +220,32 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   root: 'groupSettings',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['groupSettings'],
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/v1/groups/{id}',
+                  queryArgs: {
+                    updateMask: 'labels',
+                  },
+                  method: 'patch',
+                  client: 'cloudIdentity',
+                },
+                transformation: {
+                  root: 'labels',
+                  nestUnderField: 'labels',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['labels'],
                 },
               },
             },
@@ -425,7 +482,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
+                  // add CV to inform the user that this field are read-only
                   omit: ['resourceEmail'],
                   adjust: item => {
                     const { value } = item

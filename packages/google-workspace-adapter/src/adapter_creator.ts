@@ -24,6 +24,7 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { REFERENCES } from './definitions/references'
 import { Options } from './definitions/types'
 import {
+  CLOUD_IDENTITY_APP_NAME,
   DIRECTORY_APP_NAME,
   GROUP_SETTINGS_APP_NAME,
   createFromOauthResponse,
@@ -80,6 +81,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   initialClients: {
     main: undefined,
     groupSettings: createConnectionForApp(GROUP_SETTINGS_APP_NAME),
+    cloudIdentity: createConnectionForApp(CLOUD_IDENTITY_APP_NAME),
   },
   clientDefaults,
 })

@@ -30,11 +30,11 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const getFieldReferences = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
+const markRuleAsWeakReference = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
   const { priorities } = instance.value
   if (priorities === undefined || !Array.isArray(priorities)) {
     // priorities can be undefined if the policy has no custom rules
-    log.debug(
+    log.trace(
       `priorities value is undefined or not an array in instance ${instance.elemID.getFullName()}, hence not calculating rules weak references`,
     )
     return []
@@ -57,7 +57,7 @@ const getPolicyPriorityReferences: GetCustomReferencesFunc = async elements =>
   awu(elements)
     .filter(isInstanceElement)
     .filter(instance => POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName))
-    .flatMap(getFieldReferences)
+    .flatMap(markRuleAsWeakReference)
     .toArray()
 
 /*

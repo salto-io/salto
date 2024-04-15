@@ -49,7 +49,6 @@ import {
   PASSWORD_RULE_PRIORITY_TYPE_NAME,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
   POLICY_RULE_TYPE_NAMES,
-  POLICY_TYPE_NAMES,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_POLICY_TYPE_NAME,
@@ -62,7 +61,6 @@ import { OktaConfig } from '../config'
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { createUrl } = fetch.resource
-const ALL_SUPPORTED_POLICY_NAMES = POLICY_TYPE_NAMES.concat([AUTHORIZATION_POLICY])
 const ALL_SUPPORTED_POLICY_RULE_NAMES = POLICY_RULE_TYPE_NAMES.concat([AUTHORIZATION_POLICY_RULE])
 // Automation is not included in the list of supported policy rules because it is not supported
 const POLICY_NAME_TO_PRIORITY_NAME: Record<string, string> = {
@@ -124,6 +122,13 @@ const setPriority = (typeName: string, priority: number): number => {
   return priority + 1
 }
 
+const getParentPolicy = (rule: InstanceElement): InstanceElement | undefined => {
+  if (rule.elemID.typeName === AUTHORIZATION_POLICY_RULE) {
+    return getParents(rule).find(parent => parent.elemID.typeName === AUTHORIZATION_POLICY)?.value
+  }
+  return getParents(rule)[0]?.value
+}
+
 const deployPriorityChange = async ({
   client,
   priority,
@@ -137,7 +142,7 @@ const deployPriorityChange = async ({
 }): Promise<void> => {
   const { id } = rule.value
   const { type } = rule.value
-  const policy = getParents(rule).find(parent => ALL_SUPPORTED_POLICY_NAMES.includes(parent.elemID.typeName))?.value
+  const policy = getParentPolicy(rule)
   if (policy === undefined) {
     throw new Error('Failed to deploy priority change due to missing policy')
   }
@@ -168,13 +173,10 @@ const filter: FilterCreator = ({ config, client }) => ({
     const policiesRules = instances.filter(instance =>
       ALL_SUPPORTED_POLICY_RULE_NAMES.includes(instance.elemID.typeName),
     )
-    const policyAndrules = Object.values(
+    const policyAndRules = Object.values(
       policiesRules.reduce(
         (acc, rule) => {
-          // Autorization policy rules has more than one parent
-          const policy = getParents(rule).find(parent =>
-            ALL_SUPPORTED_POLICY_NAMES.includes(parent.elemID.typeName),
-          )?.value
+          const policy = getParentPolicy(rule)
           if (policy === undefined) {
             log.warn('Policy not found for rule %s', rule.elemID.getFullName())
             return acc
@@ -197,7 +199,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     const priorityTypes = POLICY_RULE_PRIORITY_TYPE_NAMES.map(name => createPriorityType(name))
     priorityTypes.forEach(type => elements.push(type))
     const priorityNameToPriorityType = _.keyBy(priorityTypes, type => type.elemID.typeName)
-    await awu(policyAndrules).forEach(async ({ policy, rules }) => {
+    policyAndRules.forEach(({ policy, rules }) => {
       const type = priorityNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policy.elemID.typeName]]
       const priorityInstance = createPolicyRulePriorityInstance({
         rules,

@@ -198,3 +198,7 @@ export type EmptyObject = {
 export const TValuesToIgnore = new Set(['workbook', 'dataSet', 'formula'])
 export const fieldsToOmitFromDefinition = [NAME]
 export const fieldsToOmitFromOriginal = [DEFINITION, TABLES, CHARTS, PIVOTS]
+
+export const INNER_ARRAY_NAMES = [PIVOTS, CHARTS, DATASET_LINKS]
+
+export const INNER_XML_TITLES = [DEFINITION, MAPPING]

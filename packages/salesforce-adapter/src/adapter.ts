@@ -179,7 +179,7 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
-import { fixElementsFunc } from './weak_references'
+import { fixElementsFunc } from './weak_references/handlers'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array

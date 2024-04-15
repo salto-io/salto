@@ -25,7 +25,7 @@ import {
   combineElementFixers,
 } from '@salto-io/adapter-components'
 import { profilesHandler } from './profiles'
-import { WeakReferencesHandler } from './weak_references_handler'
+import { WeakReferencesHandler } from './types'
 import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from '../types'
 
 type Handlers = 'profiles'

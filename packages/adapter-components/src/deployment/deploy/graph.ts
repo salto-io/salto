@@ -104,13 +104,13 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       })
     })
     defQuery.query(typeName)?.actionDependencies?.forEach(({ first, second }) => {
-      graph.addEdge(toNodeID(typeName, first), toNodeID(typeName, second))
+      graph.addEdge(toNodeID(typeName, second), toNodeID(typeName, first))
     })
   })
   dependencies?.forEach(({ first, second }) => {
     getRelevantActions(changesByTypeAndAction[first.type], first.action).forEach(firstAction => {
       getRelevantActions(changesByTypeAndAction[second.type], second.action).forEach(secondAction => {
-        graph.addEdge(toNodeID(first.type, firstAction), toNodeID(second.type, secondAction))
+        graph.addEdge(toNodeID(second.type, secondAction), toNodeID(first.type, firstAction))
       })
     })
   })

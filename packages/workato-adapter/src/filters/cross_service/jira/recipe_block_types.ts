@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Joi from 'joi'
 import { BlockBase, createBlockChecker } from '../recipe_block_types'
 import { CROSS_SERVICE_SUPPORTED_APPS, JIRA } from '../../../constants'

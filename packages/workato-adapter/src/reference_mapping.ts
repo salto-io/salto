@@ -14,11 +14,39 @@
  * limitations under the License.
  */
 
-import { cloneDeepWithoutRefs, isInstanceElement } from '@salto-io/adapter-api'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { fetch as fetchUtils, references as referenceUtils, resolveValues } from '@salto-io/adapter-components'
-import { CONNECTION_TYPE, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, WORKATO } from './constants'
+import {
+  Change,
+  ChangeDataType,
+  cloneDeepWithoutRefs,
+  isInstanceElement,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
+import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
+import {
+  fetch as fetchUtils,
+  references as referenceUtils,
+  resolveChangeElement,
+  resolveValues,
+} from '@salto-io/adapter-components'
+import { collections } from '@salto-io/lowerdash'
+import {
+  CONNECTION_TYPE,
+  FOLDER_TYPE,
+  NETSUITE,
+  RECIPE_CODE_TYPE,
+  RECIPE_CONFIG_TYPE,
+  RECIPE_TYPE,
+  SALESFORCE,
+  WORKATO,
+  ZENDESK,
+} from './constants'
 import { getFolderPath, getRootFolderID } from './utils'
+import { resolveReference as salesforceResolver } from './filters/cross_service/salesforce/resolve'
+import { resolveReference as netsuiteResolver } from './filters/cross_service/netsuite/resolve'
+import { resolveReference as zendeskResolver } from './filters/cross_service/zendesk/resolve'
+import { resolveWorkatoValues } from './rlm'
+
+const { awu } = collections.asynciterable
 
 type WorkatoReferenceSerializationStrategyName = 'serializeInner' | 'folderPath'
 type WorkatoFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
@@ -124,7 +152,45 @@ localWorkatoLookUpName = async args => {
     // The second param is needed to resolve references by WorkatoSerializationStrategy
     return referenceUtils.generateLookupFunc(deployResolveRules, defs => new WorkatoFieldReferenceResolver(defs))(args)
   }
-  // TODO - support cross-service references on deploy - SALTO-5997
-  throw new Error('We Currently not support cross-service references in deploy')
+  return args.ref
 }
-export const workatoLookUpName = localWorkatoLookUpName
+
+const getCrossServiceLookupNameFunc =
+  (
+    resolveReferenceFunc: GetLookupNameFunc,
+    accountToServiceNameMap: Record<string, string>,
+    serviceName: string,
+  ): GetLookupNameFunc =>
+  async args => {
+    if (accountToServiceNameMap[args.ref.elemID.adapter] === serviceName) {
+      // TODO add check args.ref
+      return resolveReferenceFunc(args)
+    }
+    return args.ref
+  }
+
+const getCrossServiceLookUpNameFuncs = (
+  accountToServiceNameMap: Record<string, string> | undefined,
+): GetLookupNameFunc[] =>
+  accountToServiceNameMap
+    ? [
+        getCrossServiceLookupNameFunc(netsuiteResolver, accountToServiceNameMap, NETSUITE),
+        getCrossServiceLookupNameFunc(salesforceResolver, accountToServiceNameMap, SALESFORCE),
+        getCrossServiceLookupNameFunc(zendeskResolver, accountToServiceNameMap, ZENDESK),
+      ]
+    : []
+
+const mergeLookUpNameFuncs = (lookUpNameFuncs: GetLookupNameFunc[]) => async (args: GetLookupNameFuncArgs) => {
+  const resolveds = await awu(lookUpNameFuncs.map(lookupFunc => lookupFunc(args))).toArray()
+  return resolveds.find(resolved => !isReferenceExpression(resolved)) ?? args.ref
+}
+
+export const workatoLookUpNameFunc = (
+  accountToServiceNameMap: Record<string, string>,
+  change: Change<ChangeDataType>,
+): Promise<Change<ChangeDataType>> =>
+  resolveChangeElement(
+    change,
+    mergeLookUpNameFuncs([...getCrossServiceLookUpNameFuncs(accountToServiceNameMap), localWorkatoLookUpName]),
+    resolveWorkatoValues,
+  )

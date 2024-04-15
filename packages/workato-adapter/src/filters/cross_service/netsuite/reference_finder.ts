@@ -26,13 +26,14 @@ import {
   getBlockDependencyDirection,
 } from '../reference_finders'
 import { NetsuiteIndex } from './element_index'
+import {
+  NETSUITE_FIELD_REFERENCE_SEPARATOR,
+  NETSUITE_OBJECT_REFERENCE_SEEPARATOR,
+  NETSUITE_SCRIPT_SUFFIX,
+} from './resolve'
 import { isNetsuiteBlock, NetsuiteBlock } from './recipe_block_types'
 
 const { isDefined } = lowerdashValues
-
-const OBJECT_REFERENCE_SEEPARATOR = '@@'
-const FIELD_REFERENCE_SEPARATOR = '@'
-const SCRIPT_SUFFIX = 'script'
 
 type NetsuiteFieldMatchGroup = { field: string }
 const isNetsuiteFieldMatchGroup = (val: Values): val is NetsuiteFieldMatchGroup => _.isString(val.field)
@@ -67,7 +68,12 @@ export const addNetsuiteRecipeReferences = async (
       if (valueParts.length > 2) {
         return undefined
       }
-      if (valueParts.length === 2 && valueParts[1] !== SCRIPT_SUFFIX) {
+      /*
+       * Watch, when you build/edit netsuite related block in workato recipe, netsuite 'default' options
+       * (like Customer or Employee in recomended 'Search standard records') imported without @@script suffix.
+       * This behaviour isn't change anything.
+       */
+      if (valueParts.length === 2 && valueParts[1] !== NETSUITE_SCRIPT_SUFFIX) {
         // TODO use object types / fields instead of instances when available (SALTO-825)
         const scriptId = valueParts[1]
         if (scriptId !== undefined) {
@@ -102,7 +108,7 @@ export const addNetsuiteRecipeReferences = async (
     if (netsuiteObject !== undefined) {
       const type = addPotentialReference(
         netsuiteObject,
-        OBJECT_REFERENCE_SEEPARATOR,
+        NETSUITE_OBJECT_REFERENCE_SEEPARATOR,
         path.createNestedID('input', 'netsuite_object'),
       )
       if (type !== undefined) {
@@ -123,7 +129,7 @@ export const addNetsuiteRecipeReferences = async (
     ;(dynamicPickListSelection.custom_list ?? []).forEach(({ value }, idx) => {
       addPotentialReference(
         value,
-        FIELD_REFERENCE_SEPARATOR,
+        NETSUITE_FIELD_REFERENCE_SEPARATOR,
         path.createNestedID('dynamicPickListSelection', 'custom_list', String(idx)),
       )
     })

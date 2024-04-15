@@ -48,7 +48,12 @@ import commonFilters from './filters/common'
 import { DEPLOY_USING_RLM_GROUP, RECIPE_CODE_TYPE, WORKATO } from './constants'
 import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
-import { workatoLookUpName } from './reference_mapping'
+import {
+  getCrossServiceLookUpNameFuncs,
+  mergeLookUpNameFuncs,
+  workatoLookUpName,
+  workatoLookUpNameFunc,
+} from './reference_mapping'
 import { resolveWorkatoValues, RLMDeploy } from './rlm'
 import { getChangeGroupIds } from './group_change'
 
@@ -153,14 +158,15 @@ export default class WorkatoAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   // eslint-disable-next-line class-methods-use-this
-  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+  async deploy({ changeGroup, accountToServiceNameMap }: DeployOptions): Promise<DeployResult> {
+    // TODO: this feature should be rebase after SALTO-5495
     if (changeGroup.groupID !== DEPLOY_USING_RLM_GROUP || this.userConfig[ENABLE_DEPLOY_SUPPORT_FLAG] !== true) {
       throw new Error('Not implemented')
     }
 
     // resolving workato references
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(async change => resolveChangeElement(change, workatoLookUpName, resolveWorkatoValues))
+      .map(async change => workatoLookUpNameFunc(accountToServiceNameMap, change))
       .toArray()
 
     const runner = this.createFiltersRunner()

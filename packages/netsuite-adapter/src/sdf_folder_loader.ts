@@ -41,7 +41,6 @@ const loadElementsFromFolder = async (
   const customizationInfos = await parseSdfProjectDir(baseDir)
   const elements = await createElements(
     customizationInfos.filter(custInfo => !TYPES_TO_SKIP.includes(custInfo.typeName)),
-    elementsSource,
     getElemIdFunc,
   )
   await filtersRunner.onFetch(elements)

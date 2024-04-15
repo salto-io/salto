@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import {
   OBJECTS_DIR,
   convertToFeaturesXmlContent,
@@ -23,7 +22,6 @@ import {
   parseObjectsDir,
   parseSdfProjectDir,
 } from '../../src/client/sdf_parser'
-import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../../src/client/utils'
 import {
   MOCK_FEATURES_XML,
   MOCK_FILE_ATTRS_PATH,
@@ -111,64 +109,58 @@ describe('sdf parser', () => {
         MOCK_FOLDER_ATTRS_PATH,
         MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
       ])
-      const [objectsWithoutAttributes, objectsWithAttributes] = _.partition(objects, obj => obj.hadMissingAttributes)
-      expect(objectsWithAttributes).toEqual([
-        {
-          fileContent: 'dummy file content',
-          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
-          typeName: 'file',
-          values: {
-            description: 'file description',
+      expect(objects).toEqual(
+        expect.arrayContaining([
+          {
+            fileContent: 'dummy file content',
+            path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
+            typeName: 'file',
+            values: {
+              description: 'file description',
+            },
           },
-          hadMissingAttributes: false,
-        },
-        {
-          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-          typeName: 'folder',
-          values: {
-            description: 'folder description',
+          {
+            path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+            typeName: 'folder',
+            values: {
+              description: 'folder description',
+            },
           },
-          hadMissingAttributes: false,
-        },
-      ])
-      expect(objectsWithoutAttributes).toEqual([
-        {
-          fileContent: 'console.log("Hello World!")',
-          hadMissingAttributes: true,
-          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'test.js'],
-          typeName: 'file',
-          values: {
-            availablewithoutlogin: 'F',
-            bundleable: 'F',
-            description: '',
-            generateurltimestamp: 'F',
-            hideinbundle: 'F',
-            isinactive: 'F',
+          {
+            fileContent: 'console.log("Hello World!")',
+            path: ['Templates', 'E-mail Templates', 'InnerFolder', 'test.js'],
+            typeName: 'file',
+            values: {
+              availablewithoutlogin: 'F',
+              bundleable: 'F',
+              description: '',
+              generateurltimestamp: 'F',
+              hideinbundle: 'F',
+              isinactive: 'F',
+            },
           },
-        },
-        {
-          typeName: 'folder',
-          values: {
-            bundleable: 'F',
-            description: '',
-            isinactive: 'F',
-            isprivate: 'F',
+          {
+            typeName: 'folder',
+            values: {
+              bundleable: 'F',
+              description: '',
+              isinactive: 'F',
+              isprivate: 'F',
+            },
+            path: ['Templates'],
           },
-          path: ['Templates'],
-          hadMissingAttributes: true,
-        },
-        {
-          typeName: 'folder',
-          values: {
-            bundleable: 'F',
-            description: '',
-            isinactive: 'F',
-            isprivate: 'F',
+          {
+            typeName: 'folder',
+            values: {
+              bundleable: 'F',
+              description: '',
+              isinactive: 'F',
+              isprivate: 'F',
+            },
+            path: ['Templates', 'E-mail Templates'],
           },
-          path: ['Templates', 'E-mail Templates'],
-          hadMissingAttributes: true,
-        },
-      ])
+        ]),
+      )
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_PATH}`)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_ATTRS_PATH}`)
@@ -198,94 +190,86 @@ describe('sdf parser', () => {
   })
   describe('parseSdfProjectDir', () => {
     it('should parse', async () => {
-      const [fileCabinetWithoutAttributes, objects] = _.partition(
-        await parseSdfProjectDir('/projectPath'),
-        obj => (isFileCustomizationInfo(obj) || isFolderCustomizationInfo(obj)) && obj.hadMissingAttributes,
+      const parsedContent = await parseSdfProjectDir('/projectPath')
+      expect(parsedContent).toEqual(
+        expect.arrayContaining([
+          {
+            fileContent: MOCK_TEMPLATE_CONTENT,
+            fileExtension: 'html',
+            scriptId: 'a',
+            typeName: 'addressForm',
+            values: {
+              '@_filename': 'a.xml',
+            },
+          },
+          {
+            scriptId: 'b',
+            typeName: 'addressForm',
+            values: {
+              '@_filename': 'b.xml',
+            },
+          },
+          {
+            fileContent: 'dummy file content',
+            path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
+            typeName: 'file',
+            values: {
+              description: 'file description',
+            },
+          },
+          {
+            path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+            typeName: 'folder',
+            values: {
+              description: 'folder description',
+            },
+          },
+          {
+            typeName: 'companyFeatures',
+            values: {
+              feature: [
+                {
+                  id: 'SUITEAPPCONTROLCENTER',
+                  status: 'ENABLED',
+                },
+              ],
+            },
+          },
+          {
+            fileContent: 'console.log("Hello World!")',
+            path: ['Templates', 'E-mail Templates', 'InnerFolder', 'test.js'],
+            typeName: 'file',
+            values: {
+              availablewithoutlogin: 'F',
+              bundleable: 'F',
+              description: '',
+              generateurltimestamp: 'F',
+              hideinbundle: 'F',
+              isinactive: 'F',
+            },
+          },
+          {
+            typeName: 'folder',
+            values: {
+              bundleable: 'F',
+              description: '',
+              isinactive: 'F',
+              isprivate: 'F',
+            },
+            path: ['Templates'],
+          },
+          {
+            typeName: 'folder',
+            values: {
+              bundleable: 'F',
+              description: '',
+              isinactive: 'F',
+              isprivate: 'F',
+            },
+            path: ['Templates', 'E-mail Templates'],
+          },
+        ]),
       )
-      expect(objects).toEqual([
-        {
-          fileContent: MOCK_TEMPLATE_CONTENT,
-          fileExtension: 'html',
-          scriptId: 'a',
-          typeName: 'addressForm',
-          values: {
-            '@_filename': 'a.xml',
-          },
-        },
-        {
-          scriptId: 'b',
-          typeName: 'addressForm',
-          values: {
-            '@_filename': 'b.xml',
-          },
-        },
-        {
-          fileContent: 'dummy file content',
-          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
-          typeName: 'file',
-          values: {
-            description: 'file description',
-          },
-          hadMissingAttributes: false,
-        },
-        {
-          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-          typeName: 'folder',
-          values: {
-            description: 'folder description',
-          },
-          hadMissingAttributes: false,
-        },
-        {
-          typeName: 'companyFeatures',
-          values: {
-            feature: [
-              {
-                id: 'SUITEAPPCONTROLCENTER',
-                status: 'ENABLED',
-              },
-            ],
-          },
-        },
-      ])
-      expect(fileCabinetWithoutAttributes).toEqual([
-        {
-          fileContent: 'console.log("Hello World!")',
-          hadMissingAttributes: true,
-          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'test.js'],
-          typeName: 'file',
-          values: {
-            availablewithoutlogin: 'F',
-            bundleable: 'F',
-            description: '',
-            generateurltimestamp: 'F',
-            hideinbundle: 'F',
-            isinactive: 'F',
-          },
-        },
-        {
-          typeName: 'folder',
-          values: {
-            bundleable: 'F',
-            description: '',
-            isinactive: 'F',
-            isprivate: 'F',
-          },
-          path: ['Templates'],
-          hadMissingAttributes: true,
-        },
-        {
-          typeName: 'folder',
-          values: {
-            bundleable: 'F',
-            description: '',
-            isinactive: 'F',
-            isprivate: 'F',
-          },
-          path: ['Templates', 'E-mail Templates'],
-          hadMissingAttributes: true,
-        },
-      ])
     })
   })
   describe('convertToXmlContent', () => {

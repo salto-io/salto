@@ -94,7 +94,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     emptyValidatorWorkflowChange: emptyValidatorWorkflowChangeValidator,
     readOnlyWorkflow: readOnlyWorkflowValidator,
     dashboardGadgets: dashboardGadgetsValidator,
-    issueLayouts: issueLayoutsValidator,
+    issueLayouts: issueLayoutsValidator(client, config),
     dashboardLayout: dashboardLayoutValidator,
     permissionType: permissionTypeValidator,
     automations: automationsValidator,

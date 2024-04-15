@@ -1617,6 +1617,7 @@ export const SUPPORTED_TYPES = {
   RateLimitAdmin: ['RateLimitAdminNotifications'],
   ResourceSet: ['ResourceSets'],
   DeviceAssurance: ['api__v1__device_assurances@uuuub'],
+  SignInPage: ['api__v1__brands___brandId___pages__SignInPage@???????'],
 }
 
 const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {

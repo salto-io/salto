@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   Change,
+  DeployResult,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -23,11 +24,14 @@ import {
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { applyforInstanceChangesOfType, placeholderToTitle, titleToPlaceholder } from './utils'
+import { applyforInstanceChangesOfType, placeholderToTitle as placeholderToName, titleToPlaceholder as nameToPlaceholder } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
+
+const log = logger(module)
 
 export const VARIANTS_FIELD_NAME = 'variants'
 export const DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME = 'dynamic_content_item__variants'
@@ -79,21 +83,51 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const isAdditionOfAlteredDynamicContentItem = (item: Change<InstanceElement>): boolean =>
       isAdditionChange(item) &&
-      getChangeData(item).value.placeholder !== titleToPlaceholder(getChangeData(item).value.title)
+      getChangeData(item).value.placeholder !== nameToPlaceholder(getChangeData(item).value.title)
 
-    itemChanges.filter(isAdditionOfAlteredDynamicContentItem).forEach(item => {
-      const itemDataToBeAltered = getChangeData(item)
-      const originalItemData = itemDataToBeAltered.clone()
-      itemDataToBeAltered.value.title = placeholderToTitle(itemDataToBeAltered.value.placeholder)
-
-      itemChanges.push({
-        action: 'modify',
-        data: {
-          before: itemDataToBeAltered,
-          after: originalItemData,
-        },
-      })
-    })
+    const alterDynamicContentAddition = async (change: Change<InstanceElement>): Promise<DeployResult> => {
+      const changeData = getChangeData(change)
+      const newAdditionChange = changeData.clone()
+      const newModificationChange = newAdditionChange.clone()
+      newAdditionChange.value.name = placeholderToName(newModificationChange.value.placeholder)
+      try {
+        log.debug('Creating dynamic content item with placeholder %s', newAdditionChange.value.placeholder)
+        await deployChange({ action: 'add', data: { after: newAdditionChange } }, client, config.apiDefinitions)
+      } catch (additionError) {
+        return { appliedChanges: [], errors: [{elemID: changeData.elemID, message: `Failed to create dynamic content item: ${additionError}`, severity: 'Error'}] }
+      }
+      try {
+        await deployChange(
+          { action: 'modify', data: { before: newAdditionChange, after: newModificationChange } },
+          client,
+          config.apiDefinitions,
+        )
+      } catch (modificationError) {
+        try {
+          await deployChange({ action: 'remove', data: { before: newAdditionChange } }, client, config.apiDefinitions)
+        } catch (removalError) {
+          log.error('Unable to remove dynamic content item after failed modification: %s', removalError)
+          return {
+            appliedChanges: [],
+            errors: [
+              { elemID: changeData.elemID, 
+                message: 'Unable to modify name of dynamic content item, please modify it in the Zendesk UI and fetch.', 
+                severity: 'Warning'
+              }
+            ],
+          }
+        }
+        log.warn('Unable to modify dynamic content item %s, but removal was successful: %s', modificationError)
+        return {
+          appliedChanges: [],
+          errors: [
+            { message: `Failed to create dynamic content item: ${modificationError}`, severity: 'Error' }
+          ],
+        }
+      }
+      log.trace('Successfully created dynamic content item %s', changeData.elemID.name)
+      return { appliedChanges: [change], errors: [] }
+    }
 
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
       // The service does not allow us to have an item with no variant - therefore, we need to do
@@ -115,6 +149,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           variantRemovalChanges,
         ] as Change<InstanceElement>[][],
         async change => {
+          if (isAdditionOfAlteredDynamicContentItem(change)) {
+            await alterDynamicContentAddition(change)
+          }
           await deployChange(change, client, config.apiDefinitions)
         },
       )

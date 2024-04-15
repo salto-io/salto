@@ -187,7 +187,6 @@ describe('dynamic content filter', () => {
     const resolvedParent = new InstanceElement('parent', parentObjType, {
       default_locale_id: 1,
       name: 'parent',
-      title: 'parent',
       placeholder: '{{dc.parent}}',
       [VARIANTS_FIELD_NAME]: [
         { content: 'abc', locale_id: 1, active: true, default: true },
@@ -206,9 +205,9 @@ describe('dynamic content filter', () => {
       active: true,
       default: false,
     })
-    const differentTitleAndPlaceholder = new InstanceElement('differentTitleAndPlaceholder', parentObjType, {
+    const differentNameAndPlaceholder = new InstanceElement('differentNameAndPlaceholder', parentObjType, {
       default_locale_id: 1,
-      title: 'differentTitleAndPlaceholder',
+      name: 'differentNameAndPlaceholder',
       placeholder: '{{dc.placeholder}}',
       [VARIANTS_FIELD_NAME]: [{ content: 'abc', locale_id: 1, active: true, default: true }],
     })
@@ -298,22 +297,48 @@ describe('dynamic content filter', () => {
         beforeElements.map((e, i) => ({ action: 'modify', data: { before: e, after: afterElements[i] } })),
       )
     })
-    it('should create the correct changes when creating a new change where title is different from the placeholder', async () => {
+    it('should create the correct changes when creating a new change where name is different from the placeholder', async () => {
       // deploy changes the change itself so we need to clone it
-      const clonedDifferentTitleAndPlaceholder = differentTitleAndPlaceholder.clone()
-      const res = await filter.deploy([{ action: 'add', data: { after: differentTitleAndPlaceholder } }])
-      expect(mockDeployChange).toHaveBeenCalledTimes(2)
+      const res = await filter.deploy([{ action: 'add', data: { after: differentNameAndPlaceholder } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(2)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(res.deployResult.appliedChanges[0]).toEqual({
         action: 'add',
-        data: { after: differentTitleAndPlaceholder },
+        data: { after: differentNameAndPlaceholder },
       })
-      expect(res.deployResult.appliedChanges[1]).toEqual({
-        action: 'modify',
-        data: { after: clonedDifferentTitleAndPlaceholder, before: differentTitleAndPlaceholder },
+    })
+    it('should return a failure when the addition fails', async () => {
+      const clonedDifferentNameAndPlaceholder = differentNameAndPlaceholder.clone()
+      mockDeployChange.mockImplementation(async () => {
+        throw new Error('err')
       })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedDifferentNameAndPlaceholder } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+    it('should return a failure when the modification fails but the addition succeeded', async () => {
+      mockDeployChange.mockImplementation(async change => {
+        if (change.action === 'add') {
+          return { item: { id: 11 } }
+        }
+        throw new Error('err')
+      })
+      const res = await filter.deploy([{ action: 'add', data: { after: differentNameAndPlaceholder } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: differentNameAndPlaceholder } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToOmit: undefined,
+      })
+
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
     // This test must be last because it changes the mock implementation!
     it('should return error if deployChange failed', async () => {

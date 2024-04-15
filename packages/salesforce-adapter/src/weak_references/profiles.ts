@@ -25,7 +25,7 @@ import {
   ReferenceInfo,
   Values,
 } from '@salto-io/adapter-api'
-import { WeakReferencesHandler } from './types'
+import { WeakReferencesHandler } from '../types'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,

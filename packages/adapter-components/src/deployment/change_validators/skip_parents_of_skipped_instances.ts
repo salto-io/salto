@@ -62,8 +62,8 @@ export const createSkipParentsOfSkippedInstancesValidator =
           ({
             elemID: ref.elemID,
             severity: 'Error',
-            message: `${ref.elemID.getFullName()} depends on a skipped instance`,
-            detailedMessage: `${ref.elemID.getFullName()} depends on a skipped instance and therefore is also skipped`,
+            message: 'Element cannot be deployed due to an error in its dependency',
+            detailedMessage: `${ref.elemID.getFullName()} cannot be deployed due to an error in its dependency. Please resolve that error and try again.`,
           }) as ChangeError,
       )
       .value()

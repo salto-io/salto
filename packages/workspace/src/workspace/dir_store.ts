@@ -28,7 +28,7 @@ export type GetFileOptions = {
 export type DirectoryStore<T extends ContentType> = {
   list(): Promise<string[]>
   get(filename: string, options?: GetFileOptions): Promise<File<T> | undefined>
-  set(file: File<T>): Promise<void>
+  set(file: File<T>, tag?: string): Promise<void>
   delete(filename: string): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>

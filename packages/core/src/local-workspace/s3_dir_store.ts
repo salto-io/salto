@@ -27,7 +27,10 @@ import { values } from '@salto-io/lowerdash'
 const log = logger(module)
 
 const DEFAULT_CONCURRENCY_LIMIT = 100
-
+type fileToUpdate = {
+  file: dirStore.File<Buffer>
+  tag?: string
+}
 export const buildS3DirectoryStore = ({
   bucketName,
   baseDir,
@@ -39,7 +42,7 @@ export const buildS3DirectoryStore = ({
   S3Client?: AWS.S3
   concurrencyLimit?: number
 }): staticFiles.StateStaticFilesStore => {
-  let updated: Record<string, dirStore.File<Buffer>> = {}
+  let updated: Record<string, fileToUpdate> = {}
   const s3 = S3Client ?? createS3Client()
   const bottleneck = new Bottleneck({ maxConcurrent: concurrencyLimit })
 
@@ -71,7 +74,7 @@ export const buildS3DirectoryStore = ({
     }
   }
 
-  const writeFile = async (file: dirStore.File<Buffer>): Promise<void> => {
+  const writeFile = async (file: dirStore.File<Buffer>, tag?: string): Promise<void> => {
     const fullFilePath = getFullPath(file.filename)
 
     try {
@@ -81,6 +84,7 @@ export const buildS3DirectoryStore = ({
           Bucket: bucketName,
           Key: fullFilePath,
           Body: file.buffer,
+          Tagging: tag,
         })
         log.trace('Wrote %s to S3 bucket %s', fullFilePath, bucketName)
       })
@@ -128,13 +132,13 @@ export const buildS3DirectoryStore = ({
   const flush = async (): Promise<void> => {
     const files = Object.values(updated)
     updated = {}
-    await Promise.all(files.map(f => writeFile(f)))
+    await Promise.all(files.map(f => writeFile(f.file, f.tag)))
   }
 
   return {
-    get: async filePath => (updated[filePath] ? updated[filePath] : readFile(filePath)),
-    set: async file => {
-      updated[file.filename] = file
+    get: async filePath => (updated[filePath]?.file ? updated[filePath].file : readFile(filePath)),
+    set: async (file, tag) => {
+      updated[file.filename] = { file, tag }
     },
     list,
     getFullPath: filePath => `s3://${bucketName}/${getFullPath(filePath)}`,

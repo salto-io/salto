@@ -206,6 +206,22 @@ describe('buildS3DirectoryStore', () => {
       expect(putObjectMock).toHaveBeenCalledTimes(1)
     })
   })
+  describe('set with tag', () => {
+    it('should write the file', async () => {
+      await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') }, 'tag')
+
+      expect(putObjectMock).not.toHaveBeenCalled()
+
+      await directoryStore.flush()
+
+      expect(putObjectMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Key: 'baseDir/a/b',
+        Body: Buffer.from('aaa'),
+        Tagging: 'tag',
+      })
+    })
+  })
 
   describe('getFullPath', () => {
     it('should throw on unexpected error', async () => {

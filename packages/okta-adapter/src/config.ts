@@ -811,7 +811,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           context: [{ name: 'brandId', fromField: 'id' }],
         },
         {
-          type: 'api__v1__brands___brandId___pages__SignInPage@???????',
+          type: 'SignInPage',
           toField: 'SignInPage',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
@@ -829,9 +829,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       dataField: '.',
     },
   },
-  'api__v1__brands___brandId___pages__SignInPage@???????': {
+  SignInPage: {
     request: {
-      url: '/api/v1/brands/{brandId}/pages/sign-in',
+      url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
     },
     transformation: {
       dataField: '.', // TODO(rachum): needed?
@@ -1617,7 +1617,6 @@ export const SUPPORTED_TYPES = {
   RateLimitAdmin: ['RateLimitAdminNotifications'],
   ResourceSet: ['ResourceSets'],
   DeviceAssurance: ['api__v1__device_assurances@uuuub'],
-  SignInPage: ['api__v1__brands___brandId___pages__SignInPage@???????'],
 }
 
 const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {

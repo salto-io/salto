@@ -17,12 +17,26 @@
 import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import _ from 'lodash'
 import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { isWorkflowV2Transition, WorkflowTransitionV2, WORKFLOW_V1 } from '../workflowV2/types'
+import { WorkflowStatusAndPort, WorkflowTransitionV2 } from '../workflowV2/types'
 
 const { makeArray } = collections.array
+
+const TRANSITION_FROM_V2_SCHEME = Joi.array().items(
+  Joi.object({
+    statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
+    port: Joi.number(),
+  }),
+)
+
+// we already validate the workflow structure in workflow_filter, so we just want to differ between the two versions
+const isTransitionFromV2 = (value: unknown): value is WorkflowStatusAndPort[] => {
+  const { error } = TRANSITION_FROM_V2_SCHEME.validate(value)
+  return error === undefined
+}
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -84,12 +98,11 @@ export const createStatusMap = (statuses: Status[]): Map<string, string> =>
 export const getTransitionKey = (
   transition: WorkflowTransitionV1 | WorkflowTransitionV2,
   statusesMap: Map<string, string>,
-  workflowVersion: string,
 ): string => {
   const type = getTransitionType(transition)
   const fromSorted =
     type === 'Directed'
-      ? (isWorkflowV2Transition(transition, workflowVersion)
+      ? (isTransitionFromV2(transition.from)
           ? makeArray(transition.from).map(from => from.statusReference)
           : makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
         )
@@ -101,14 +114,10 @@ export const getTransitionKey = (
   return naclCase([transition.name, `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
 }
 
-export const transformTransitions = (
-  value: Value,
-  workflowVersion: string,
-  statuses?: Pick<Status, 'id' | 'name'>[],
-): SaltoError[] => {
+export const transformTransitions = (value: Value, statuses?: Pick<Status, 'id' | 'name'>[]): SaltoError[] => {
   const statusesMap = createStatusMap(statuses ?? value.statuses ?? [])
   const maxCounts = _(value.transitions)
-    .map(transition => getTransitionKey(transition, statusesMap, workflowVersion))
+    .map(transition => getTransitionKey(transition, statusesMap))
     .countBy()
     .value()
 
@@ -118,7 +127,7 @@ export const transformTransitions = (
     value.transitions
       // This is Value and not the actual type as we change types
       .map((transition: Value) => {
-        const key = getTransitionKey(transition, statusesMap, workflowVersion)
+        const key = getTransitionKey(transition, statusesMap)
         counts[key] = (counts[key] ?? 0) + 1
         if (maxCounts[key] > 1) {
           return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
@@ -178,7 +187,7 @@ export const expectedToActualTransitionIds = ({
       // create a map of [expectedId, actualId]
       .map(
         transition =>
-          [expectedTransitionIds.get(getTransitionKey(transition, statusesMap, WORKFLOW_V1)), transition.id] as [
+          [expectedTransitionIds.get(getTransitionKey(transition, statusesMap)), transition.id] as [
             string | undefined,
             string | undefined,
           ],

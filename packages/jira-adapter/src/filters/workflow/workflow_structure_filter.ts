@@ -34,7 +34,6 @@ import { Condition, isWorkflowResponseInstance, Rules, WorkflowResponse, Status,
 import { validatorType, types as validatorTypes } from './validators_types'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { transformTransitions } from './transition_structure'
-import { WORKFLOW_V1 } from '../workflowV2/types'
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = ['GenerateChangeHistoryFunction', 'IssueReindexFunction', 'IssueCreateFunction']
 
@@ -157,7 +156,7 @@ const transformWorkflowInstance = (workflowValues: WorkflowResponse): SaltoError
     })
 
   // The type is changed after transform Transitions, so should be last
-  return transformTransitions(workflowValues, WORKFLOW_V1)
+  return transformTransitions(workflowValues)
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint

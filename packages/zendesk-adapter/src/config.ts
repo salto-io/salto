@@ -266,7 +266,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   view__restriction: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'unknown' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'unknown' },
+        {
+          fieldName: 'type',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['Group', 'User'] },
+        },
+      ],
     },
   },
   trigger: {

@@ -93,8 +93,8 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
     }
     const { typeName } = change.data.after.elemID
     return !isEqualValues(
-      transform({ value: change.data.before, typeName, context: args }),
-      transform({ value: change.data.after, typeName, context: args }),
+      transform({ value: change.data.before.value, typeName, context: args }),
+      transform({ value: change.data.after.value, typeName, context: args }),
     )
   }
 }

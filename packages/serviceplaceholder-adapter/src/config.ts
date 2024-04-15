@@ -31,8 +31,9 @@ export type UserConfig = definitions.UserConfig<
 >
 
 export const DEFAULT_CONFIG: UserConfig = {
-  client: {},
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
+    // TODO hideTypes should be true when the adapter is ready. for development, it helps to set to false
+    hideTypes: true,
   },
 }

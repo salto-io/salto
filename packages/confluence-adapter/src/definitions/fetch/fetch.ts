@@ -17,6 +17,17 @@ import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
 import { adjustLabelsToIdsFunc } from '../transformation_utils'
+import {
+  BLOG_POST_TYPE_NAME,
+  GLOBAL_TEMPLATE_TYPE_NAME,
+  LABEL_TYPE_NAME,
+  PAGE_TYPE_NAME,
+  PERMISSION_TYPE_NAME,
+  RESTRICTION_TYPE_NAME,
+  SPACE_SETTINGS_TYPE_NAME,
+  SPACE_TYPE_NAME,
+  TEMPLATE_TYPE_NAME,
+} from '../../constants'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -54,7 +65,7 @@ const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, definitions.fetch.ElementFiel
 )
 
 const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  label: {
+  [LABEL_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -77,7 +88,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  space: {
+  [SPACE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -95,7 +106,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       directFetch: true,
       recurseInto: {
         permissions: {
-          typeName: 'permission',
+          typeName: PERMISSION_TYPE_NAME,
           context: {
             args: {
               id: {
@@ -105,7 +116,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           },
         },
         templates: {
-          typeName: 'template',
+          typeName: TEMPLATE_TYPE_NAME,
           context: {
             args: {
               key: {
@@ -115,7 +126,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           },
         },
         settings: {
-          typeName: 'space_settings',
+          typeName: SPACE_SETTINGS_TYPE_NAME,
           context: {
             args: {
               key: {
@@ -136,7 +147,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         templates: {
           standalone: {
-            typeName: 'template',
+            typeName: TEMPLATE_TYPE_NAME,
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: false,
@@ -144,7 +155,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         settings: {
           standalone: {
-            typeName: 'space_settings',
+            typeName: SPACE_SETTINGS_TYPE_NAME,
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: true,
@@ -153,7 +164,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  permission: {
+  [PERMISSION_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -165,7 +176,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
   },
-  space_settings: {
+  [SPACE_SETTINGS_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -185,7 +196,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  page: {
+  [PAGE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -201,7 +212,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       directFetch: true,
       recurseInto: {
         restriction: {
-          typeName: 'restriction',
+          typeName: RESTRICTION_TYPE_NAME,
           context: {
             args: {
               id: {
@@ -251,7 +262,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  blogpost: {
+  [BLOG_POST_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -282,7 +293,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  restriction: {
+  [RESTRICTION_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -303,7 +314,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     ],
   },
-  template: {
+  [TEMPLATE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -339,7 +350,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
       },
     },
   },
-  global_template: {
+  [GLOBAL_TEMPLATE_TYPE_NAME]: {
     requests: [
       {
         endpoint: {

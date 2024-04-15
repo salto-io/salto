@@ -81,7 +81,6 @@ const getMockFunction = (method: HTTPMethod, mockAxiosAdapter: MockAdapter): Moc
 }
 
 const DEFAULT_CONFIG: UserConfig = {
-  client: {},
   fetch: {
     ...INCLUDE_ALL_CONFIG,
   },

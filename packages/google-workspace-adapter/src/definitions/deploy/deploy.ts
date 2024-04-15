@@ -90,11 +90,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   // add CV to inform the user that this fields are read-only
-                  omit: ['verified', 'isPrimary'],
+                  omit: ['verified', 'isPrimary', 'domainAliases'],
                 },
               },
+              // TODO - SALTO-5728 - we should deal with the domain aliases in a different request
               copyFromResponse: {
-                additional: { pick: ['verified', 'isPrimary'] },
+                additional: { pick: ['verified', 'isPrimary', 'domainAliases'] },
               },
             },
           ],
@@ -260,6 +261,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/admin/directory/v1/customer/my_customer/orgunits{orgUnitPath}',
                   method: 'put',
+                },
+                // the orgUnitPath can be changed and we use the name of the orgUnit and his parent to identify the orgUnit
+                transformation: {
+                  omit: ['orgUnitPath'],
                 },
               },
             },

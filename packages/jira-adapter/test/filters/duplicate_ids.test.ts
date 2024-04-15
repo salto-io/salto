@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams } from '../utils'
 import duplicateIdsFilter from '../../src/filters/duplicate_ids'
@@ -63,7 +63,7 @@ describe('duplicateIdsFilter', () => {
         errors: [
           {
             message:
-              'The following elements had duplicate names in Jira and therefore their internal id was added to their names: dup_1, dup_2. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.',
+              'The following elements had duplicate names in Jira and therefore their internal id was added to their names.\nIt is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.\ndup_1,\ndup_2',
             severity: 'Warning',
           },
         ],
@@ -102,24 +102,69 @@ describe('duplicateIdsFilter', () => {
 
   it('should only remove the duplicates if fallbackToInternalId is false', async () => {
     config.fetch.fallbackToInternalId = false
-    const dup1 = new InstanceElement('dup', type, {
+    const instance = new InstanceElement('dup', type, {
       id: '1',
       name: 'dup',
     })
-    const dup2 = new InstanceElement('dup', type, {
+    const instanceDuplicatedName = new InstanceElement('dup', type, {
       id: '2',
       name: 'dup',
     })
+    const instanceWithAlias = new InstanceElement(
+      'dup',
+      type,
+      {
+        id: '1',
+        name: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.ALIAS]: ['instance alias'],
+      },
+    )
+    const instanceWithAliasDuplicatedName = new InstanceElement(
+      'dup',
+      type,
+      {
+        id: '2',
+        name: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.ALIAS]: ['another instance alias'],
+      },
+    )
+    const instanceWithAliasDuplicatedNameDuplicateAlias = new InstanceElement(
+      'dup',
+      type,
+      {
+        id: '2',
+        name: 'dup',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.ALIAS]: ['instance alias'],
+      },
+    )
 
-    const elements = [dup1, dup2]
+    const elements = [
+      instance,
+      instanceDuplicatedName,
+      instanceWithAlias,
+      instanceWithAliasDuplicatedName,
+      instanceWithAliasDuplicatedNameDuplicateAlias,
+    ]
     const filterRes = await filter.onFetch?.(elements)
     expect(elements).toHaveLength(0)
 
     expect(filterRes).toEqual({
       errors: [
         {
-          message: `The following elements had duplicate names in Jira: jira.Status.instance.dup. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
-If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
+          message: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
+dup (jira.Status.instance.dup),
+instance alias (jira.Status.instance.dup),
+another instance alias (jira.Status.instance.dup)`,
           severity: 'Warning',
         },
       ],

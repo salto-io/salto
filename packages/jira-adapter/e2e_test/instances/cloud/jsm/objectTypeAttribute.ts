@@ -37,5 +37,5 @@ export const createObjectTypeAttributeValues = (name: string, allElements: Eleme
   typeValueMulti: [
     createReference(new ElemID(JIRA, 'ObjectSchemaStatus', 'instance', 'testSchema__Disposed'), allElements),
     createReference(new ElemID(JIRA, 'ObjectSchemaStatus', 'instance', 'testSchema__Missing'), allElements),
-  ]
+  ],
 })

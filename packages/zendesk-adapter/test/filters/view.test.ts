@@ -224,19 +224,15 @@ describe('views filter', () => {
   })
   describe('onDeploy modification', () => {
     const clonedViewBefore = view.clone()
-    const {
-      value: { restriction, ...viewWithoutRestriction },
-      ...restOfView
-    } = clonedViewBefore
-    const viewAfter = { ...restOfView, value: viewWithoutRestriction } as InstanceElement
-
+    const clonedViewAfter = view.clone()
+    clonedViewAfter.value.restriction = null
     beforeEach(async () => {
-      const change = toChange({ before: clonedViewBefore, after: viewAfter })
+      const change = toChange({ before: clonedViewBefore, after: clonedViewAfter })
       await filter?.onDeploy([change])
     })
 
     it('should remove restriction field', async () => {
-      expect(viewAfter.value.restriction).toBeUndefined()
+      expect(clonedViewAfter.value.restriction).toBeUndefined()
     })
   })
 

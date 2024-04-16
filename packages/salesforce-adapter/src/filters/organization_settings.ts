@@ -126,17 +126,21 @@ const enrichTypeWithFields = async (
   }
 }
 
-const createOrganizationType = (): ObjectType =>
+const createOrganizationType = (
+  enableLatestSupportedAPIVersion: boolean,
+): ObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: {
-      [LATEST_SUPPORTED_API_VERSION_FIELD]: {
-        refType: BuiltinTypes.NUMBER,
-        annotations: {
-          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-        },
-      },
-    },
+    fields: enableLatestSupportedAPIVersion
+      ? {
+          [LATEST_SUPPORTED_API_VERSION_FIELD]: {
+            refType: BuiltinTypes.NUMBER,
+            annotations: {
+              [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            },
+          },
+        }
+      : {},
     annotations: {
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
@@ -203,7 +207,9 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
         return
       }
-      const objectType = createOrganizationType()
+      const enableLatestSupportedAPIVersion =
+        config.fetchProfile.isFeatureEnabled('hideTypesFolder')
+      const objectType = createOrganizationType(enableLatestSupportedAPIVersion)
       const fieldsToIgnore = new Set(
         FIELDS_TO_IGNORE.concat(config.systemFields ?? []),
       )
@@ -229,7 +235,9 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         queryResult[0],
       )
 
-      await addLatestSupportedAPIVersion(client, organizationInstance)
+      if (addLatestSupportedAPIVersion) {
+        await addLatestSupportedAPIVersion(client, organizationInstance)
+      }
 
       elements.push(objectType, organizationInstance)
     },

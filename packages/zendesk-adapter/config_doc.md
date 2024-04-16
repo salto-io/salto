@@ -125,10 +125,10 @@ zendesk {
 
 ## Themes reference options
 
-| Name                                                                              | Default when undefined           | Description                                                             |
-| --------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------- |
-| enableReferenceLookup                                                             | false                            | When enabled, references will be extracted from Themes files            |
-| [javascriptReferenceLookupStrategy](#themes-javascript-reference-lookup-strategy) | { enableReferenceLookup: false } | Configuration for defining reference parsing and extraction from Themes |
+| Name                                                                              | Default when undefined | Description                                                             |
+| --------------------------------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| enableReferenceLookup                                                             | false                  | When enabled, references will be extracted from Themes files            |
+| [javascriptReferenceLookupStrategy](#themes-javascript-reference-lookup-strategy) | undefined              | Configuration for defining reference parsing and extraction from Themes |
 
 ## Themes Javascript Reference Lookup Strategy
 

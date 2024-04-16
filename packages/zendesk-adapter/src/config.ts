@@ -92,6 +92,7 @@ export type Themes = {
 export type Guide = {
   brands: string[]
   themes?: Themes
+  // Deprecated
   themesForBrands?: string[]
 }
 
@@ -2929,6 +2930,7 @@ const GuideType = createMatchingObjectType<Guide>({
     themes: {
       refType: ThemesType,
     },
+    // Deprecated
     themesForBrands: {
       refType: new ListType(BuiltinTypes.STRING),
     },

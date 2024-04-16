@@ -21,6 +21,7 @@ export type ContextParamDefinitions = ArgsWithCustomizer<ContextParams, { args: 
 
 export type DeployRequestEndpointDefinition<ClientOptions extends string = 'main'> = EndpointExtractionParams<
   ChangeAndContext,
+  ChangeAndContext,
   ClientOptions
 >
 

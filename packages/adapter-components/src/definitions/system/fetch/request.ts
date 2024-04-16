@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ContextParams, EndpointExtractionParams } from '../shared/transformation'
+import { EndpointExtractionParams } from '../shared/transformation'
 
-export type FetchRequestDefinition<ClientOptions extends string> = EndpointExtractionParams<
-  ContextParams,
-  ClientOptions
->
+export type FetchRequestDefinition<ClientOptions extends string> = EndpointExtractionParams<{}, {}, ClientOptions>

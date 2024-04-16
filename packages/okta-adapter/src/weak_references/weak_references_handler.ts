@@ -13,14 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import OktaClient from '../client/client'
-import { OktaConfig } from '../config'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { WeakReferencesHandler as ComponentsWeakReferencesHandler } from '@salto-io/adapter-components'
 
-export type FixElementsArgs = {
-  client: OktaClient
-  config: OktaConfig
+export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
-}
-
-export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc
+}>

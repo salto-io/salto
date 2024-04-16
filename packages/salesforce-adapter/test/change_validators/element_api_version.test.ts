@@ -91,4 +91,22 @@ describe('Element API version Change Validator', () => {
     )
     expect(errors).toBeEmpty()
   })
+  it('should return no errors when latest API version is missing from the Organization Settings instance', async () => {
+    const change = toChange({
+      after: flowWithApiVersion(51),
+    })
+    const errors = await elementApiVersionValidator(
+      [change],
+      buildElementsSourceFromElements([
+        new InstanceElement(
+          ElemID.CONFIG_NAME,
+          new ObjectType({
+            elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
+          }),
+          {},
+        ),
+      ]),
+    )
+    expect(errors).toBeEmpty()
+  })
 })

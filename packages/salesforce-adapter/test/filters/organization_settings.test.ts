@@ -182,5 +182,45 @@ describe('organization-wide defaults filter', () => {
         },
       ])
     })
+    it('should not add LatestSupportedApiVersion when hideTypesFolder feature is disabled', async () => {
+      const elements: Element[] = []
+      const filterWithFeatureDisabled = filterCreator({
+        config: buildFilterContext({
+          optionalFeatures: {
+            hideTypesFolder: false,
+          },
+        }),
+        client,
+      })
+      await filterWithFeatureDisabled.onFetch?.(elements)
+      expect(elements).toIncludeAllPartialMembers([
+        {
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
+          annotations: {
+            [CORE_ANNOTATIONS.CREATABLE]: false,
+            [CORE_ANNOTATIONS.DELETABLE]: false,
+            [CORE_ANNOTATIONS.UPDATABLE]: false,
+            [API_NAME]: ORGANIZATION_SETTINGS,
+          },
+        },
+        {
+          elemID: new ElemID(
+            SALESFORCE,
+            ORGANIZATION_SETTINGS,
+            'instance',
+            '_config',
+          ),
+          value: {
+            DefaultAccountAccess: 'Edit',
+            DefaultCalendarAccess: 'HideDetailsInsert',
+            DefaultCampaignAccess: 'All',
+            DefaultCaseAccess: 'None',
+            DefaultContactAccess: 'ControlledByParent',
+            DefaultLeadAccess: 'ReadEditTransfer',
+            DefaultOpportunityAccess: 'None',
+          },
+        },
+      ])
+    })
   })
 })

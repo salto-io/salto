@@ -78,6 +78,7 @@ import {
   DELETE_LINK_TYPES,
   OBJECT_SCHEMA_TYPE,
   OBJECT_TYPE_ICON_TYPE,
+  OBJECT_SCHEMA_STATUS_TYPE,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -1339,6 +1340,29 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'iconId', parentTypes: [OBJECT_TYPE_TYPE] },
     serializationStrategy: 'id',
     target: { type: OBJECT_TYPE_ICON_TYPE },
+  },
+  // typeValueMulti in ObjectTypeAttribute can be of different types.
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_SCHEMA_STATUS_TYPE },
+  },
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'groupStrategyByOriginalName',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  // Hack to handle missing references when the type is unknown
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: 'UnknownType' },
   },
 ]
 

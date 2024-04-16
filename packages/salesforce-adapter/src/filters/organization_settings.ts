@@ -16,6 +16,7 @@
 
 import _ from 'lodash'
 import {
+  BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
   InstanceElement,
@@ -23,7 +24,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { RemoteFilterCreator } from '../filter'
+import { FilterContext, RemoteFilterCreator } from '../filter'
 import { ensureSafeFilterFetch, queryClient, safeApiName } from './utils'
 import {
   getSObjectFieldElement,
@@ -42,6 +43,7 @@ import { FetchProfile } from '../types'
 const log = logger(module)
 
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
+export const LATEST_SUPPORTED_API_VERSION_FIELD = 'LatestSupportedApiVersion'
 
 /*
  * These fields are not multienv friendly
@@ -57,7 +59,7 @@ const FIELDS_TO_IGNORE = [
   'MonthlyPageViewsUsed',
   'OrganizationType',
   'SelfServiceCaseSubmitRecordTypeId',
-  'SelfServiceEmailUserOnCaseCreation‍TemplateId',
+  'SelfServiceEmailUserOnCaseCreationTemplateId',
   'SelfServiceNewCommentTemplateId',
   'SelfServiceNewPassTemplateId',
   'SelfServiceNewUserTemplateId',
@@ -124,10 +126,19 @@ const enrichTypeWithFields = async (
   }
 }
 
-const createOrganizationType = (): ObjectType =>
+const createOrganizationType = (config: FilterContext): ObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: {},
+    fields: config.fetchProfile.isFeatureEnabled('hideTypesFolder')
+      ? {
+          [LATEST_SUPPORTED_API_VERSION_FIELD]: {
+            refType: BuiltinTypes.NUMBER,
+            annotations: {
+              [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            },
+          },
+        }
+      : {},
     annotations: {
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
@@ -154,6 +165,32 @@ const createOrganizationInstance = (
     ],
   )
 
+const addLatestSupportedAPIVersion = async (
+  client: SalesforceClient,
+  instance: InstanceElement,
+): Promise<void> => {
+  const versions = await client.request('/services/data/')
+  if (!Array.isArray(versions)) {
+    log.error(
+      `Got a non-array response when getting supported API versions: ${versions}`,
+    )
+    return
+  }
+
+  const latestVersion = _(versions)
+    .map((ver) => ver?.version)
+    .map(_.toNumber)
+    .filter(_.isFinite)
+    .max()
+
+  if (latestVersion === undefined) {
+    log.error('Could not get the latest supported API version.')
+    return
+  }
+
+  instance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
+}
+
 const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
@@ -168,7 +205,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
         return
       }
-      const objectType = createOrganizationType()
+      const objectType = createOrganizationType(config)
       const fieldsToIgnore = new Set(
         FIELDS_TO_IGNORE.concat(config.systemFields ?? []),
       )
@@ -193,6 +230,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         objectType,
         queryResult[0],
       )
+
+      if (config.fetchProfile.isFeatureEnabled('hideTypesFolder')) {
+        await addLatestSupportedAPIVersion(client, organizationInstance)
+      }
 
       elements.push(objectType, organizationInstance)
     },

@@ -166,6 +166,7 @@ export type ChangeValidatorName =
   | 'metadataTypes'
   | 'taskOrEventFieldsModifications'
   | 'newFieldsAndObjectsFLS'
+  | 'elementApiVersion'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -883,6 +884,7 @@ const changeValidatorConfigType =
       metadataTypes: { refType: BuiltinTypes.BOOLEAN },
       taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
       newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
+      elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

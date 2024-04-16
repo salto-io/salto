@@ -23,7 +23,7 @@ import {
   ORGANIZATION_SETTINGS,
   SALESFORCE,
 } from '../../src/constants'
-import { defaultFilterContext } from '../utils'
+import { buildFilterContext } from '../utils'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
@@ -34,7 +34,11 @@ describe('organization-wide defaults filter', () => {
   const mockedFilterUtils = jest.mocked(filterUtilsModule)
   const { client, connection } = mockAdapter({})
   const filter = filterCreator({
-    config: defaultFilterContext,
+    config: buildFilterContext({
+      optionalFeatures: {
+        hideTypesFolder: true,
+      },
+    }),
     client,
   })
 
@@ -173,6 +177,7 @@ describe('organization-wide defaults filter', () => {
             DefaultContactAccess: 'ControlledByParent',
             DefaultLeadAccess: 'ReadEditTransfer',
             DefaultOpportunityAccess: 'None',
+            LatestSupportedApiVersion: 60,
           },
         },
       ])

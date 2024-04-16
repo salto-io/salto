@@ -24,7 +24,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { RemoteFilterCreator } from '../filter'
+import { FilterContext, RemoteFilterCreator } from '../filter'
 import { ensureSafeFilterFetch, queryClient, safeApiName } from './utils'
 import {
   getSObjectFieldElement,
@@ -126,12 +126,10 @@ const enrichTypeWithFields = async (
   }
 }
 
-const createOrganizationType = (
-  enableLatestSupportedAPIVersion: boolean,
-): ObjectType =>
+const createOrganizationType = (config: FilterContext): ObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: enableLatestSupportedAPIVersion
+    fields: config.fetchProfile.isFeatureEnabled('hideTypesFolder')
       ? {
           [LATEST_SUPPORTED_API_VERSION_FIELD]: {
             refType: BuiltinTypes.NUMBER,
@@ -207,9 +205,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
         return
       }
-      const enableLatestSupportedAPIVersion =
-        config.fetchProfile.isFeatureEnabled('hideTypesFolder')
-      const objectType = createOrganizationType(enableLatestSupportedAPIVersion)
+      const objectType = createOrganizationType(config)
       const fieldsToIgnore = new Set(
         FIELDS_TO_IGNORE.concat(config.systemFields ?? []),
       )
@@ -235,7 +231,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         queryResult[0],
       )
 
-      if (addLatestSupportedAPIVersion) {
+      if (config.fetchProfile.isFeatureEnabled('hideTypesFolder')) {
         await addLatestSupportedAPIVersion(client, organizationInstance)
       }
 

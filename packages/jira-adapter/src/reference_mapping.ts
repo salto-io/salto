@@ -1357,6 +1357,13 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
+  // Hack to handle missing references when the type is unknown
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: 'UnknownType' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

@@ -45,7 +45,10 @@ import {
 } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import { LastChangeDateOfTypesWithNestedInstances } from '../src/types'
+import {
+  LastChangeDateOfTypesWithNestedInstances,
+  OptionalFeatures,
+} from '../src/types'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -439,13 +442,19 @@ export const createCustomSettingsObject = (
   return obj
 }
 
-export const defaultFilterContext: FilterContext = {
+export const buildFilterContext = ({
+  optionalFeatures,
+}: {
+  optionalFeatures?: OptionalFeatures
+}): FilterContext => ({
   systemFields: SYSTEM_FIELDS,
-  fetchProfile: buildFetchProfile({ fetchParams: {} }),
+  fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures } }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
   flsProfiles: [constants.ADMIN_PROFILE],
-}
+})
+
+export const defaultFilterContext: FilterContext = buildFilterContext({})
 
 export const mockFetchOpts: MockInterface<FetchOptions> = {
   progressReporter: { reportProgress: jest.fn() },

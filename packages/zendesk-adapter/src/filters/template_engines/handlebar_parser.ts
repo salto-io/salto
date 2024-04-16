@@ -22,7 +22,11 @@ import {
   PathExpression,
   SubExpression,
 } from '@handlebars/parser/types/ast'
+import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
+import { PotentialReference } from './types'
+import { findLineStartIndexes, sourceLocationToIndexRange } from './utils'
 
 // These are the helper functions that may have potential references in their arguments:
 // https://developer.zendesk.com/api-reference/help_center/help-center-templates/helpers/
@@ -62,8 +66,24 @@ const extractPotentialIds = (node: Node): NumberLiteral[] | undefined => {
  * @example parseHandlebarPotentialReferences('Hello {{#is id 12345}}good name{{else}}bad name{{/is}}')
  * // Returns [{ value: 12345, loc: { start: { line: 1, column: 18 }, end: { line: 1, column: 23 } } }]
  */
-export const parseHandlebarPotentialReferences = (content: string): NumberLiteral[] => {
+export const parseHandlebarPotentialReferencesFromString = (content: string): NumberLiteral[] => {
   const ast = parse(content)
   const potentialIds = ast.body.map(extractPotentialIds).filter(values.isDefined).flat()
   return potentialIds
+}
+
+export const parseHandlebarPotentialReferences = (
+  content: string,
+  idsToElements: Record<string, InstanceElement>,
+): PotentialReference<TemplateExpression>[] => {
+  const potentialReferences = parseHandlebarPotentialReferencesFromString(content)
+  const newlineIndexes = findLineStartIndexes(content)
+  return potentialReferences
+    .filter(ref => idsToElements[ref.value] !== undefined)
+    .map(ref => ({
+      value: createTemplateExpression({
+        parts: [new ReferenceExpression(idsToElements[ref.value].elemID, idsToElements[ref.value])],
+      }),
+      loc: sourceLocationToIndexRange(newlineIndexes, ref.loc),
+    }))
 }

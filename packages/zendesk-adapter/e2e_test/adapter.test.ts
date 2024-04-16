@@ -200,7 +200,12 @@ const usedConfig = {
     exclude: [],
     guide: {
       brands: ['.*'],
-      themesForBrands: ['.*'],
+      themes: {
+        brands: ['.*'],
+        referenceOptions: {
+          enableReferenceLookup: false,
+        },
+      },
     },
   },
   [API_DEFINITIONS_CONFIG]: {
@@ -308,7 +313,16 @@ describe('Zendesk adapter E2E', () => {
         currentBrandName: brand.value.name,
         name,
         idsToElements: {},
-        matchBrandSubdomain: () => brand,
+        matchBrandSubdomain: (url: string) => (url === brand.value.brand_url ? brand : undefined),
+        config: {
+          referenceOptions: {
+            enableReferenceLookup: true,
+            javascriptReferenceLookupStrategy: {
+              strategy: 'numericValues',
+              minimumDigitAmount: 6,
+            },
+          },
+        },
       })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()
@@ -1060,7 +1074,12 @@ describe('Zendesk adapter E2E', () => {
             exclude: [],
             guide: {
               brands: ['.*'],
-              themesForBrands: ['.*'],
+              themes: {
+                brands: ['.*'],
+                referenceOptions: {
+                  enableReferenceLookup: false,
+                },
+              },
             },
           },
           [API_DEFINITIONS_CONFIG]: {

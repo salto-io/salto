@@ -1904,7 +1904,12 @@ describe('adapter', () => {
             exclude: [],
             guide: {
               brands: ['.WithGuide'],
-              themesForBrands: ['my.'],
+              themes: {
+                brands: ['my.'],
+                referenceOptions: {
+                  enableReferenceLookup: false,
+                },
+              },
             },
           },
         })

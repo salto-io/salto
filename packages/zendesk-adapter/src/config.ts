@@ -73,8 +73,26 @@ export type IdLocator = {
   type: string[]
 }
 
+export type Themes = {
+  brands?: string[]
+  referenceOptions: {
+    enableReferenceLookup: boolean
+    javascriptReferenceLookupStrategy?:
+      | {
+          strategy: 'numericValues'
+          minimumDigitAmount: number
+        }
+      | {
+          strategy: 'varNamePrefix'
+          prefix: string
+        }
+  }
+}
+
 export type Guide = {
   brands: string[]
+  themes?: Themes
+  // Deprecated
   themesForBrands?: string[]
 }
 
@@ -2838,6 +2856,68 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
   },
 })
 
+const ThemesReferenceJavascriptReferenceLookupStrategyType = createMatchingObjectType<
+  Themes['referenceOptions']['javascriptReferenceLookupStrategy']
+>({
+  elemID: new ElemID(ZENDESK, 'ThemesReferenceJavascriptReferenceLookupStrategyType'),
+  fields: {
+    strategy: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    minimumDigitAmount: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        _required: true,
+      },
+    },
+    prefix: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const ThemesReferenceType = createMatchingObjectType<Themes['referenceOptions']>({
+  elemID: new ElemID(ZENDESK, 'ThemeType-referenceOptions'),
+  fields: {
+    enableReferenceLookup: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        _required: true,
+      },
+    },
+    javascriptReferenceLookupStrategy: {
+      refType: ThemesReferenceJavascriptReferenceLookupStrategyType,
+    },
+  },
+})
+
+const ThemesType = createMatchingObjectType<Themes>({
+  elemID: new ElemID(ZENDESK, 'ThemeType'),
+  fields: {
+    brands: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    referenceOptions: {
+      refType: ThemesReferenceType,
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const GuideType = createMatchingObjectType<Guide>({
   elemID: new ElemID(ZENDESK, 'GuideType'),
   fields: {
@@ -2847,6 +2927,10 @@ const GuideType = createMatchingObjectType<Guide>({
         _required: true,
       },
     },
+    themes: {
+      refType: ThemesType,
+    },
+    // Deprecated
     themesForBrands: {
       refType: new ListType(BuiltinTypes.STRING),
     },
@@ -3130,7 +3214,9 @@ export const validateGuideTypesConfig = (adapterApiConfig: configUtils.AdapterAp
 export const isGuideEnabled = (fetchConfig: ZendeskFetchConfig): boolean => fetchConfig.guide?.brands !== undefined
 
 export const isGuideThemesEnabled = (fetchConfig: ZendeskFetchConfig): boolean =>
-  fetchConfig.guide?.themesForBrands !== undefined && fetchConfig.guide?.themesForBrands.length > 0
+  (fetchConfig.guide?.themes?.brands !== undefined && fetchConfig.guide?.themes?.brands.length > 0) ||
+  // Deprecated
+  (fetchConfig.guide?.themesForBrands !== undefined && fetchConfig.guide?.themesForBrands.length > 0)
 
 export const validateOmitInactiveConfig = (
   omitInactiveConfig: OmitInactiveConfig | undefined,

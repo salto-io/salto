@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import _, { Dictionary } from 'lodash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   Element,
@@ -38,8 +38,10 @@ import {
   RECORD_TYPE_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
+import { isInstanceOfTypeSync } from '../filters/utils'
 
 const { makeArray } = collections.array
+const { pickAsync } = promises.object
 const log = logger(module)
 
 enum section {
@@ -73,16 +75,17 @@ type ReferenceFromSectionParams = {
   targetsGetter: RefTargetsGetter
 }
 
-const referencesFromSection = (
+const mapSectionEntries = <T>(
   profile: InstanceElement,
   sectionName: section,
   { filter = () => true, targetsGetter }: ReferenceFromSectionParams,
-): ReferenceInfo[] => {
+  f: (sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
+): T[] => {
   const sectionValue = profile.value[sectionName]
   if (!_.isPlainObject(sectionValue)) {
     if (sectionValue !== undefined) {
       log.warn(
-        'Section %s of %s is not an object. References will not be extracted.',
+        'Section %s of %s is not an object, skipping.',
         sectionName,
         profile.elemID,
       )
@@ -91,17 +94,11 @@ const referencesFromSection = (
   }
   return Object.entries(sectionValue as Values)
     .filter(([, sectionEntry]) => filter(sectionEntry))
-    .flatMap(([sectionEntryKey, sectionEntry]): ReferenceInfo[] => {
-      const refTargets = targetsGetter(sectionEntry, sectionEntryKey)
-      return refTargets.map(({ target, sourceField }) => ({
-        source: profile.elemID.createNestedID(
-          sectionName,
-          sectionEntryKey,
-          ...makeArray(sourceField),
-        ),
-        target,
-        type: 'weak',
-      }))
+    .flatMap(([sectionEntryKey, sectionEntry]) => {
+      const targets = targetsGetter(sectionEntry, sectionEntryKey)
+      return targets.map(({ target, sourceField }) =>
+        f(sectionEntryKey, target, sourceField),
+      )
     })
 }
 
@@ -260,21 +257,48 @@ const sectionsReferenceParams: Record<section, ReferenceFromSectionParams> = {
   },
 }
 
-const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
+const mapProfileSections = <T>(
+  profile: InstanceElement,
+  f: (
+    sectionName: string,
+    sectionEntryKey: string,
+    target: ElemID,
+    sourceField?: string,
+  ) => T,
+): T[] =>
   Object.entries(sectionsReferenceParams).flatMap(([sectionName, params]) =>
-    referencesFromSection(profile, sectionName as section, params),
+    mapSectionEntries(
+      profile,
+      sectionName as section,
+      params,
+      _.curry(f)(sectionName),
+    ),
+  )
+
+const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
+  mapProfileSections(
+    profile,
+    (sectionName, sectionEntryKey, target, sourceField) => ({
+      source: profile.elemID.createNestedID(
+        sectionName,
+        sectionEntryKey,
+        ...makeArray(sourceField),
+      ),
+      target,
+      type: 'weak',
+    }),
   )
 
 const getProfilesCustomReferences: WeakReferencesHandler['findWeakReferences'] =
   async (elements: Element[]): Promise<ReferenceInfo[]> => {
     // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
     // have to figure out the type name the hard way.
-    const profilesAndPermissionSets = elements
+    const profiles = elements
       .filter(isInstanceElement)
       .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
     const refs = log.timeDebug(
-      () => profilesAndPermissionSets.flatMap(referencesFromProfile),
-      `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets.`,
+      () => profiles.flatMap(referencesFromProfile),
+      `Generating references from ${profiles.length} profiles.`,
     )
     log.debug(
       'Generated %d references for %d elements.',
@@ -284,7 +308,58 @@ const getProfilesCustomReferences: WeakReferencesHandler['findWeakReferences'] =
     return refs
   }
 
+const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
+  _(
+    mapProfileSections(
+      profile,
+      (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
+        [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
+        target,
+      ],
+    ),
+  )
+    .fromPairs()
+    .value()
+
+const removeMissingReferences: WeakReferencesHandler['removeWeakReferences'] =
+  ({ elementsSource }) =>
+  async (elements) => {
+    const profiles = elements.filter(
+      isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
+    )
+    const entriesTargets: Dictionary<ElemID> = _.merge(
+      {},
+      ...profiles.map(profileEntriesTargets),
+    )
+    const brokenReferenceFields = Object.keys(
+      await pickAsync(
+        entriesTargets,
+        async (target) => !(await elementsSource.has(target)),
+      ),
+    )
+    const brokenElements = profiles.filter((profile) =>
+      brokenReferenceFields.some((field) => _(profile.value).has(field)),
+    )
+    const fixedElements = brokenElements.map((profile) => {
+      const fixed = profile.clone()
+      fixed.value = _.omit(fixed.value, ...brokenReferenceFields)
+      return fixed
+    })
+    const errors = brokenElements.flatMap((profile) =>
+      brokenReferenceFields
+        .filter((field) => _(profile.value).has(field))
+        .map((field) => ({
+          elemID: profile.elemID.createNestedID(...field.split('.')),
+          severity: 'Info' as const,
+          message: 'Dropping profile fields which reference missing types',
+          detailedMessage: `The field references the type ${entriesTargets[field].getFullName()} which is not available in the workspace.`,
+        })),
+    )
+
+    return { fixedElements, errors }
+  }
+
 export const profilesHandler: WeakReferencesHandler = {
   findWeakReferences: getProfilesCustomReferences,
-  removeWeakReferences: () => async () => ({ fixedElements: [], errors: [] }),
+  removeWeakReferences: removeMissingReferences,
 }

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 import {
+  ElemID,
+  Field,
+  FixElementsFunc,
   InstanceElement,
+  ReferenceExpression,
   ReferenceInfo,
   Values,
-  ElemID,
-  ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -199,7 +202,7 @@ describe('Profile weak references handler', () => {
     })
   })
 
-  describe('apex classes', () => {
+  describe('Apex classes', () => {
     const apexClass = new InstanceElement(
       'SomeApexClass',
       mockTypes.ApexClass,
@@ -805,6 +808,130 @@ describe('Profile weak references handler', () => {
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
       })
+    })
+  })
+})
+
+describe('Profiles fix elements', () => {
+  const profileInstance = new InstanceElement('test', mockTypes.Profile, {
+    fieldPermissions: {
+      Account: {
+        testField__c: 'ReadWrite',
+      },
+    },
+    applicationVisibilities: {
+      SomeApplication: {
+        application: 'SomeApplication',
+        default: true,
+        visible: true,
+      },
+    },
+    classAccesses: {
+      SomeApexClass: {
+        apexClass: 'SomeApexClass',
+        enabled: true,
+      },
+    },
+    flowAccesses: {
+      SomeFlow: {
+        enabled: true,
+        flow: 'SomeFlow',
+      },
+    },
+    layoutAssignments: {
+      'Account_Account_Layout@bs': [
+        {
+          layout: 'Account-Account Layout',
+        },
+      ],
+    },
+    objectPermissions: {
+      Account: {
+        allowCreate: true,
+        allowDelete: true,
+        allowEdit: true,
+        allowRead: true,
+        modifyAllRecords: false,
+        object: 'Account',
+        viewAllRecords: false,
+      },
+    },
+    pageAccesses: {
+      SomeApexPage: {
+        apexPage: 'SomeApexPage',
+        enabled: true,
+      },
+    },
+    recordTypeVisibilities: {
+      Case: {
+        SomeCaseRecordType: {
+          default: true,
+          recordType: 'Case.SomeCaseRecordType',
+          visible: false,
+        },
+      },
+    },
+  })
+  let fixElementsFunc: FixElementsFunc
+
+  describe('when references are missing', () => {
+    beforeEach(() => {
+      const elementsSource = buildElementsSourceFromElements([])
+      fixElementsFunc = profilesHandler.removeWeakReferences({ elementsSource })
+    })
+
+    it('should drop fields', async () => {
+      const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+      expect(fixedElements).toHaveLength(1)
+      expect(errors).toHaveLength(8)
+    })
+  })
+
+  describe('when references are resolved', () => {
+    beforeEach(() => {
+      const elementsSource = buildElementsSourceFromElements([
+        new Field(mockTypes.Account, 'testField__c', mockTypes.AccountSettings),
+        new InstanceElement('SomeApplication', mockTypes.CustomApplication, {}),
+        new InstanceElement('SomeApexClass', mockTypes.ApexClass, {}),
+        new InstanceElement('SomeFlow', mockTypes.Flow, {}),
+        new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
+        mockTypes.Account,
+        new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
+        new InstanceElement(
+          'Case_SomeCaseRecordType',
+          mockTypes.RecordType,
+          {},
+        ),
+      ])
+      fixElementsFunc = profilesHandler.removeWeakReferences({ elementsSource })
+    })
+
+    it('should drop fields', async () => {
+      const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+      expect(fixedElements).toBeEmpty()
+      expect(errors).toBeEmpty()
+    })
+  })
+
+  describe('when some references are resolved', () => {
+    beforeEach(() => {
+      const elementsSource = buildElementsSourceFromElements([
+        new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
+        mockTypes.Account,
+        new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
+        new InstanceElement(
+          'Case_SomeCaseRecordType',
+          mockTypes.RecordType,
+          {},
+        ),
+      ])
+      fixElementsFunc = profilesHandler.removeWeakReferences({ elementsSource })
+    })
+
+    it('should drop fields', async () => {
+      const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+      expect(fixedElements).toHaveLength(1)
+      expect(errors).toHaveLength(4)
     })
   })
 })

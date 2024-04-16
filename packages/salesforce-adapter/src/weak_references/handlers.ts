@@ -29,6 +29,7 @@ import {
   CUSTOM_REFS_CONFIG,
   DATA_CONFIGURATION,
   FETCH_CONFIG,
+  FIX_ELEMENTS_CONFIG,
   WeakReferencesHandler,
 } from '../types'
 
@@ -42,7 +43,7 @@ const defaultHandlersConfiguration: Record<Handlers, boolean> = {
   profiles: false,
 }
 
-const handlersConfiguration = (
+const customReferencesConfiguration = (
   adapterConfig: InstanceElement,
 ): Record<string, boolean> =>
   _.defaults(
@@ -54,8 +55,18 @@ const handlersConfiguration = (
 
 export const getCustomReferences = combineCustomReferenceGetters(
   _.mapValues(handlers, (handler) => handler.findWeakReferences),
-  handlersConfiguration,
+  customReferencesConfiguration,
 )
+
+const fixElementsConfiguration = (
+  adapterConfig: InstanceElement,
+): Record<string, boolean> =>
+  _.defaults(
+    adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[
+      FIX_ELEMENTS_CONFIG
+    ],
+    defaultHandlersConfiguration,
+  )
 
 export const fixElementsFunc = ({
   elementsSource,
@@ -63,7 +74,8 @@ export const fixElementsFunc = ({
   elementsSource: ReadOnlyElementsSource
 }): FixElementsFunc =>
   combineElementFixers(
-    Object.values(handlers).map((handler) =>
+    _.mapValues(handlers, (handler) =>
       handler.removeWeakReferences({ elementsSource }),
     ),
+    fixElementsConfiguration,
   )

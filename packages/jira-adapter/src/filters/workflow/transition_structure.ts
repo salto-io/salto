@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { invertNaclCase, naclCase, createSchemeGuard } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
 import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'

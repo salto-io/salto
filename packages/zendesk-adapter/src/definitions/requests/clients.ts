@@ -43,6 +43,36 @@ export const createClientDefinitions = (
               params: { queryArgs: { 'page[size]': String(100) } },
             },
           },
+          '/api/v2/triggers': {
+            get: {
+              pagination: 'cursor',
+              params: { queryArgs: { 'page[size]': String(100) } },
+            },
+          },
+          '/api/v2/trigger_categories': {
+            get: {
+              pagination: 'cursor',
+              params: { queryArgs: { 'page[size]': String(100) } },
+            },
+          },
+          '/api/v2/automations': {
+            get: {
+              pagination: 'cursor',
+              params: { queryArgs: { 'page[size]': String(100) } },
+            },
+          },
+          '/api/v2/brands': {
+            get: {
+              pagination: 'cursor',
+              params: { queryArgs: { 'page[size]': String(100) } },
+            },
+          },
+          '/api/v2/recipient_addresses': {
+            get: {
+              pagination: 'cursor',
+              params: { queryArgs: { 'page[size]': String(100) } },
+            },
+          },
         },
       },
     },

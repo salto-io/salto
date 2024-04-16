@@ -177,7 +177,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       policiesRules.reduce(
         (acc, rule) => {
           const policy = getParentPolicy(rule)
-          if (policy === undefined) {
+          if (!isInstanceElement(policy)) {
             log.warn('Policy not found for rule %s', rule.elemID.getFullName())
             return acc
           }

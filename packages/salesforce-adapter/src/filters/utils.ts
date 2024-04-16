@@ -854,7 +854,7 @@ const pickFromDuplicates = (
   duplicateProperties: ReadonlyArray<FileProperties>,
 ): FileProperties | undefined =>
   _(duplicateProperties)
-    .sortBy((prop) => prop.lastModifiedDate)
+    .sortBy((prop) => new Date(prop.lastModifiedDate))
     .last()
 
 const removeDuplicateFileProps = (

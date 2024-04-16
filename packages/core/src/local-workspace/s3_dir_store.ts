@@ -40,6 +40,7 @@ export const buildS3DirectoryStore = ({
   concurrencyLimit?: number
 }): staticFiles.StateStaticFilesStore => {
   let updated: Record<string, dirStore.File<Buffer>> = {}
+  let deleted = new Set<string>()
   const s3 = S3Client ?? createS3Client()
   const bottleneck = new Bottleneck({ maxConcurrent: concurrencyLimit })
 
@@ -125,10 +126,44 @@ export const buildS3DirectoryStore = ({
       return Array.from(paths)
     }, `listing s3 objects for ${baseDir}`)
 
+  const deleteMany = async (objectPaths: string[]): Promise<void> => {
+    const objectIdentifiers: AWS.ObjectIdentifier[] = objectPaths.map(objectPath => ({ Key: getFullPath(objectPath) }))
+
+    // Split the deletion into batches of 1000 items each (AWS limit)
+    const batchSize = 1000
+    const batchPromises = []
+
+    for (let i = 0; i < objectIdentifiers.length; i += batchSize) {
+      const batch = objectIdentifiers.slice(i, i + batchSize)
+      batchPromises.push(
+        bottleneck.schedule(async () => {
+          log.trace('Deleting batch of objects from S3 bucket %s', bucketName)
+          const result = await s3.deleteObjects({
+            Bucket: bucketName,
+            Delete: { Objects: batch },
+          })
+          log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
+        }),
+      )
+    }
+
+    try {
+      await Promise.all(batchPromises)
+    } catch (err) {
+      log.error('Failed to delete objects from S3 bucket %s: %s', bucketName, safeJsonStringify(err))
+      throw err
+    }
+  }
   const flush = async (): Promise<void> => {
     const files = Object.values(updated)
     updated = {}
     await Promise.all(files.map(f => writeFile(f)))
+
+    if (deleted.size > 0) {
+      const toDelete = Array.from(deleted)
+      await deleteMany(toDelete)
+      deleted = new Set()
+    }
   }
 
   return {
@@ -139,5 +174,8 @@ export const buildS3DirectoryStore = ({
     list,
     getFullPath: filePath => `s3://${bucketName}/${getFullPath(filePath)}`,
     flush,
+    delete: async fileName => {
+      deleted.add(fileName)
+    },
   }
 }

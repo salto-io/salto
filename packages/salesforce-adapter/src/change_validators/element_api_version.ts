@@ -38,6 +38,11 @@ const elementApiVersionValidator: ChangeValidator = async (
   const latestApiVersion =
     orgSettings?.value[LATEST_SUPPORTED_API_VERSION_FIELD]
 
+  if (latestApiVersion === undefined) {
+    log.debug('Latest API version not found.')
+    return []
+  }
+
   if (!_.isNumber(latestApiVersion)) {
     log.error('Could not get the latest supported API version.')
     return []

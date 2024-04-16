@@ -65,6 +65,7 @@ describe('Static Files', () => {
         getFullPath: mockFunction<DirectoryStore<Buffer>['getFullPath']>().mockImplementation(filename => filename),
         isPathIncluded: mockFunction<DirectoryStore<Buffer>['isPathIncluded']>().mockReturnValue(true),
         exists: mockFunction<DirectoryStore<Buffer>['exists']>().mockResolvedValue(true),
+        deleteMany: mockFunction<DirectoryStore<Buffer>['deleteMany']>(),
       }
       staticFilesSource = buildStaticFilesSource(mockDirStore, mockCacheStore)
     })

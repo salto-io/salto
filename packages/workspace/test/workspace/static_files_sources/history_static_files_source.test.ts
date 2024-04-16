@@ -41,6 +41,7 @@ describe('buildHistoryStateStaticFilesSource', () => {
       getFullPath: jest.fn(),
       isPathIncluded: jest.fn(),
       exists: jest.fn().mockResolvedValue(true),
+      deleteMany: jest.fn(),
     }
 
     staticFilesSource = buildHistoryStateStaticFilesSource(directoryStore)

@@ -42,4 +42,5 @@ export type DirectoryStore<T extends ContentType> = {
   getFullPath(filename: string): string
   isPathIncluded(filePath: string): boolean
   exists: (filePath: string) => Promise<boolean>
+  deleteMany: (filePaths: string[]) => Promise<void>
 }

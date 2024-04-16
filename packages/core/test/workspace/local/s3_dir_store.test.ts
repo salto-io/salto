@@ -25,16 +25,19 @@ describe('buildS3DirectoryStore', () => {
   let getObjectMock: jest.Mock
   let listObjectsV2Mock: jest.Mock
   let putObjectMock: jest.Mock
+  let deleteManyObjectsMock: jest.Mock
 
   beforeEach(() => {
     getObjectMock = jest.fn().mockResolvedValue(undefined)
     listObjectsV2Mock = jest.fn().mockResolvedValue(undefined)
     putObjectMock = jest.fn().mockResolvedValue(undefined)
+    deleteManyObjectsMock = jest.fn().mockResolvedValue(undefined)
 
     const mockS3Client = {
       getObject: getObjectMock,
       listObjectsV2: listObjectsV2Mock,
       putObject: putObjectMock,
+      deleteObjects: deleteManyObjectsMock,
     }
 
     directoryStore = buildS3DirectoryStore({
@@ -210,6 +213,35 @@ describe('buildS3DirectoryStore', () => {
   describe('getFullPath', () => {
     it('should throw on unexpected error', async () => {
       expect(directoryStore.getFullPath('somePath')).toBe(`s3://${bucketName}/baseDir/somePath`)
+    })
+  })
+  describe('deleteMany', () => {
+    it('should delete the files', async () => {
+      await directoryStore.deleteMany(['a1/b1', 'a2/b2'])
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: [{ Key: `${baseDir}/a1/b1` }, { Key: `${baseDir}/a2/b2` }],
+        },
+      })
+      expect(deleteManyObjectsMock).toHaveBeenCalledTimes(1)
+    })
+    it('should slice the list to batches of 1000 ', async () => {
+      const keys = Array.from({ length: 2000 }, (_, i) => `a${i}`)
+      await directoryStore.deleteMany(keys)
+      expect(deleteManyObjectsMock).toHaveBeenCalledTimes(2)
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: keys.slice(0, 1000).map(key => ({ Key: `${baseDir}/${key}` })),
+        },
+      })
+      expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Delete: {
+          Objects: keys.slice(1000).map(key => ({ Key: `${baseDir}/${key}` })),
+        },
+      })
     })
   })
 })

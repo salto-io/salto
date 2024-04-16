@@ -41,6 +41,7 @@ describe('buildOverrideStateStaticFilesSource', () => {
       getFullPath: jest.fn(),
       isPathIncluded: jest.fn(),
       exists: jest.fn().mockResolvedValue(true),
+      deleteMany: jest.fn(),
     }
 
     staticFilesSource = buildOverrideStateStaticFilesSource(directoryStore)

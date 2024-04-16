@@ -94,6 +94,7 @@ const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> =
     ),
     isPathIncluded: mockFunction<dirStore.DirectoryStore<T>['isPathIncluded']>(),
     exists: mockFunction<dirStore.DirectoryStore<T>['exists']>(),
+    deleteMany: mockFunction<dirStore.DirectoryStore<T>['deleteMany']>(),
   }
 }
 

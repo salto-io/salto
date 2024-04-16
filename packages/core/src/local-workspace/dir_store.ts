@@ -315,6 +315,12 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     getFullPath: filename => getAbsFileName(filename),
     isPathIncluded,
     exists: async (filename: string): Promise<boolean> => fileUtils.exists(getAbsFileName(filename)),
+    deleteMany: async (filePaths: string[]): Promise<void> => {
+      await withLimitedConcurrency(
+        filePaths.map(f => () => deleteFile(f)),
+        DELETE_CONCURRENCY,
+      )
+    },
   }
 }
 

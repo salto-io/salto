@@ -325,6 +325,9 @@ export const mockDirStore = (
     exists: mockFunction<DirectoryStore<string>['exists']>().mockImplementation(async filename =>
       naclFiles.has(filename),
     ),
+    deleteMany: mockFunction<DirectoryStore<string>['deleteMany']>().mockImplementation(async filePaths => {
+      filePaths.forEach(filePath => naclFiles.delete(filePath))
+    }),
   }
 }
 

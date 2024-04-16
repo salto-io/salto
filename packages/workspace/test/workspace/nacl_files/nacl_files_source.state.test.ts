@@ -61,6 +61,7 @@ describe('Nacl Files Source', () => {
       getFullPath: filename => filename,
       isPathIncluded: jest.fn().mockResolvedValue(true),
       exists: jest.fn().mockResolvedValue(false),
+      deleteMany: jest.fn().mockResolvedValue(undefined),
     }
     mockedStaticFilesSource = mockStaticFilesSource()
   })

@@ -131,6 +131,35 @@ export const buildS3DirectoryStore = ({
     await Promise.all(files.map(f => writeFile(f)))
   }
 
+  const deleteMany = async (objectPaths: string[]): Promise<void> => {
+    const objectIdentifiers: AWS.ObjectIdentifier[] = objectPaths.map(objectPath => ({ Key: getFullPath(objectPath) }))
+
+    // Split the deletion into batches of 1000 items each (AWS limit)
+    const batchSize = 1000
+    const batchPromises = []
+
+    for (let i = 0; i < objectIdentifiers.length; i += batchSize) {
+      const batch = objectIdentifiers.slice(i, i + batchSize)
+      batchPromises.push(
+        bottleneck.schedule(async () => {
+          log.trace('Deleting batch of objects from S3 bucket %s', bucketName)
+          const result = await s3.deleteObjects({
+            Bucket: bucketName,
+            Delete: { Objects: batch },
+          })
+          log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
+        }),
+      )
+    }
+
+    try {
+      await Promise.all(batchPromises)
+    } catch (err) {
+      log.error('Failed to delete objects from S3 bucket %s: %s', bucketName, safeJsonStringify(err))
+      throw err
+    }
+  }
+
   return {
     get: async filePath => (updated[filePath] ? updated[filePath] : readFile(filePath)),
     set: async file => {
@@ -139,5 +168,6 @@ export const buildS3DirectoryStore = ({
     list,
     getFullPath: filePath => `s3://${bucketName}/${getFullPath(filePath)}`,
     flush,
+    deleteMany,
   }
 }

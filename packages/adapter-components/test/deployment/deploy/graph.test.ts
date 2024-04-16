@@ -76,6 +76,7 @@ describe('createDependencyGraph', () => {
         changeGroup: { changes, groupID: 'abc' },
         changes,
         elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
       })
     })
 
@@ -128,6 +129,7 @@ describe('createDependencyGraph', () => {
         changes,
         elementSource: buildElementsSourceFromElements([]),
         dependencies: deployDef.dependencies,
+        sharedContext: {},
       })
     })
 
@@ -188,6 +190,7 @@ describe('createDependencyGraph', () => {
         changeGroup: { changes, groupID: 'abc' },
         changes,
         elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
         dependencies: deployDef.dependencies,
       })
     })

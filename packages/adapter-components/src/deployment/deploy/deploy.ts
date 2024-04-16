@@ -22,9 +22,7 @@ import {
   InstanceElement,
   SaltoElementError,
   DeployResult,
-  ChangeGroup,
   isSaltoError,
-  ReadOnlyElementsSource,
   changeId,
   isSaltoElementError,
   createSaltoElementErrorFromError,
@@ -92,24 +90,21 @@ const createSingleChangeDeployer = <TOptions extends APIDefinitionsOptions>({
 export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   definitions,
   changes,
-  changeGroup,
-  elementSource,
   deployChangeFunc,
   convertError,
   changeResolver,
+  ...changeContext
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   changes: Change<InstanceElement>[]
-  changeGroup: Readonly<ChangeGroup>
-  elementSource: ReadOnlyElementsSource
   convertError: ConvertError
   deployChangeFunc?: (args: DeployChangeInput<ResolveAdditionalActionType<TOptions>>) => Promise<void>
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
-}): Promise<Omit<DeployResult, 'extraProperties'>> => {
+} & Omit<ChangeAndContext, 'change'>): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const defQuery = queryWithDefault(definitions.deploy.instances)
   const { dependencies } = definitions.deploy
 
-  const graph = createDependencyGraph({ defQuery, dependencies, changes, changeGroup, elementSource })
+  const graph = createDependencyGraph({ defQuery, dependencies, changes, ...changeContext })
 
   const errors: SaltoElementError[] = []
   const appliedChanges: Change<InstanceElement>[] = []
@@ -125,7 +120,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       typeActionChanges.length,
       typeName,
       action,
-      changeGroup.groupID,
+      changeContext.changeGroup.groupID,
     )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
     const limiter = new Bottleneck({
@@ -137,7 +132,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       await Promise.all(
         typeActionChanges.map(async change => {
           try {
-            await limitedDeployChange({ change, changeGroup, elementSource, action })
+            await limitedDeployChange({ change, action, ...changeContext })
             return change
           } catch (err) {
             log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)

@@ -247,6 +247,7 @@ describe('DeployRequester', () => {
         change,
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
       }),
     ).rejects.toThrow('Could not find requests for change adapter.test.instance.instance action modify')
   })
@@ -268,6 +269,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(instance.value.obj.id).toBe(1)
     expect(client.delete).toHaveBeenCalledWith(
@@ -313,6 +315,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
 
     expect(client.post).toHaveBeenCalledWith({
@@ -341,6 +344,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
 
     expect(getChangeData(change).value.id).toEqual(1234)
@@ -391,6 +395,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
 
     expect(getChangeData(change).value).toEqual({
@@ -399,6 +404,117 @@ describe('DeployRequester', () => {
       id: 1234,
       stop: true,
     })
+  })
+  it('should copy extra context and nest under elem id', async () => {
+    client.post.mockResolvedValue({
+      status: 200,
+      data: {
+        a: {
+          id: 1234,
+        },
+        stop: true,
+      },
+    })
+    const defs: (typeof definitions)['deploy']['instances'] = _.merge({}, definitions.deploy.instances, {
+      customizations: {
+        test: {
+          requestsByAction: {
+            customizations: {
+              add: [
+                {
+                  request: {
+                    transformation: {
+                      // TODO the "old infra" test had a fieldsToIgnore recursive function - this can now be done using adjust
+                      nestUnderField: 'a',
+                    },
+                  },
+                  copyFromResponse: {
+                    toExtraContext: {
+                      pick: ['stop'],
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    })
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(defs),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ after: instance })
+    const sharedContext = {}
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+      sharedContext,
+    })
+
+    expect(getChangeData(change).value).toEqual({
+      creatableField: 'creatableValue',
+      ignored: 'ignored',
+      id: 1234,
+    })
+    expect(sharedContext).toEqual({ 'adapter.test.instance.instance': { stop: true } })
+  })
+
+  it('should copy extra context at top level when nestUnderElemID=false', async () => {
+    client.post.mockResolvedValue({
+      status: 200,
+      data: {
+        a: {
+          id: 1234,
+        },
+        stop: true,
+      },
+    })
+    const defs: (typeof definitions)['deploy']['instances'] = _.merge({}, definitions.deploy.instances, {
+      customizations: {
+        test: {
+          requestsByAction: {
+            customizations: {
+              add: [
+                {
+                  request: {
+                    transformation: {
+                      // TODO the "old infra" test had a fieldsToIgnore recursive function - this can now be done using adjust
+                      nestUnderField: 'a',
+                    },
+                  },
+                  copyFromResponse: {
+                    toExtraContext: {
+                      pick: ['stop'],
+                      nestUnderElemID: false,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    })
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(defs),
+      changeResolver: async change => change,
+    })
+    const change = toChange({ after: instance })
+    const sharedContext = {}
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+      sharedContext,
+    })
+
+    expect(sharedContext).toEqual({ stop: true })
   })
 
   it('should omit request body when deploy request config contains omitRequestBody=true', async () => {
@@ -429,6 +545,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(client.delete).toHaveBeenCalledWith({ url: '/test/endpoint/1', data: undefined, queryParams: undefined })
   })
@@ -461,6 +578,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
@@ -498,6 +616,7 @@ describe('DeployRequester', () => {
         change,
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
       }),
     ).resolves.not.toThrow()
   })
@@ -531,6 +650,7 @@ describe('DeployRequester', () => {
         change,
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
       })
     }).rejects.toThrow('Something went wrong')
   })
@@ -576,6 +696,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(client.delete).toHaveBeenCalledTimes(3)
   })
@@ -614,6 +735,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(getChangeData(change).value.id).toBe('NEW')
     expect(client.post).toHaveBeenCalledWith(
@@ -668,6 +790,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(getChangeData(change).value.stop).toBe(true)
     expect(client.post).toHaveBeenCalledWith(
@@ -715,6 +838,7 @@ describe('DeployRequester', () => {
       change,
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
     })
     expect(client.post).toHaveBeenCalledWith(
       expect.objectContaining({

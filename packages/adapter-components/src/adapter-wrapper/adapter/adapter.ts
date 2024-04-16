@@ -136,6 +136,7 @@ export class AdapterImpl<
           config: this.userConfig,
           getElemIdFunc: this.getElemIdFunc,
           elementSource,
+          sharedContext: {},
         },
         filterCreators,
         objects.concatObjects,

@@ -36,6 +36,10 @@ export type FilterOptions<
   getElemIdFunc?: ElemIdGetter
   fetchQuery: ElementQuery
   elementSource: ReadOnlyElementsSource
+  // Extra context shared throughout operation (including between change groups during deploy),
+  // and can be used for passing information between changes or change groups.
+  // Note that deployment steps can be executed in parallel, so use this with caution.
+  sharedContext: Record<string, unknown>
 } & TAdditional
 
 export type AdapterFilterCreator<

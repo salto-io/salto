@@ -32,6 +32,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     await applyforInstanceChangesOfType(changes, [VIEW_TYPE_NAME], (instance: InstanceElement) => {
       instance.value = {
         ...instance.value,
+        restriction: instance.value.restriction ?? null,
         all: (instance.value.conditions.all ?? []).map((e: Values) => ({ ...e, value: valToString(e.value) })),
         any: (instance.value.conditions.any ?? []).map((e: Values) => ({ ...e, value: valToString(e.value) })),
         output: {
@@ -44,7 +45,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
               .map((c: Values) => c.id)
               .filter(values.isDefined) ?? [],
         },
-        restriction: instance.value.restriction ?? null,
         // copying raw_title to title means that title might now be a dynamic content token
         // and not a raw string. Since the title field is hidden, this should be safe
         title: instance.value.raw_title,

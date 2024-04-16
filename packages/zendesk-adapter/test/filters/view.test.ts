@@ -133,7 +133,7 @@ describe('views filter', () => {
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
-  describe('preDeploy', () => {
+  describe('preDeploy addition', () => {
     const clonedView = view.clone()
     beforeEach(async () => {
       const change = toChange({ after: clonedView })
@@ -182,8 +182,21 @@ describe('views filter', () => {
       expect(clonedView.value.raw_title).toEqual(clonedView.value.title)
     })
   })
+  describe('preDeploy modification', () => {
+    const clonedViewBefore = view.clone()
+    const clonedViewAfter = view.clone()
+    delete clonedViewAfter.value.restriction
+    beforeEach(async () => {
+      const change = toChange({ before: clonedViewBefore, after: clonedViewAfter })
+      await filter?.preDeploy([change])
+    })
 
-  describe('onDeploy', () => {
+    it('should add restriction field as null', async () => {
+      expect(clonedViewAfter.value.restriction).toEqual(null)
+    })
+  })
+
+  describe('onDeploy addition', () => {
     const clonedView = view.clone()
     beforeEach(async () => {
       clonedView.value.any = view.value.conditions.any
@@ -207,6 +220,23 @@ describe('views filter', () => {
     })
     it('should keep execution', async () => {
       expect(clonedView.value.execution).toBeDefined()
+    })
+  })
+  describe('onDeploy modification', () => {
+    const clonedViewBefore = view.clone()
+    const {
+      value: { restriction, ...viewWithoutRestriction },
+      ...restOfView
+    } = clonedViewBefore
+    const viewAfter = { ...restOfView, value: viewWithoutRestriction } as InstanceElement
+
+    beforeEach(async () => {
+      const change = toChange({ before: clonedViewBefore, after: viewAfter })
+      await filter?.onDeploy([change])
+    })
+
+    it('should remove restriction field', async () => {
+      expect(viewAfter.value.restriction).toBeUndefined()
     })
   })
 

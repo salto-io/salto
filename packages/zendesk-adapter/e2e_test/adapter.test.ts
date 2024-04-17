@@ -23,6 +23,7 @@ import {
   DeployResult,
   Element,
   ElemID,
+  FetchResult,
   FieldDefinition,
   getChangeData,
   InstanceElement,
@@ -68,22 +69,22 @@ import {
   ARTICLE_ATTACHMENTS_FIELD,
   ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,
-  ARTICLE_TYPE_NAME,
-  BRAND_TYPE_NAME,
+  ARTICLE_TYPE_NAME, AUTOMATION_TYPE_NAME,
+  BRAND_TYPE_NAME, BUSINESS_HOUR_SCHEDULE,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
-  CUSTOM_OBJECT_TYPE_NAME,
+  CUSTOM_OBJECT_TYPE_NAME, CUSTOM_ROLE_TYPE_NAME, GROUP_TYPE_NAME,
   GUIDE,
-  GUIDE_THEME_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME, MACRO_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
-  SECTION_TYPE_NAME,
-  THEME_SETTINGS_TYPE_NAME,
-  USER_SEGMENT_TYPE_NAME,
+  SECTION_TYPE_NAME, SLA_POLICY_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME, VIEW_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
@@ -101,6 +102,24 @@ const ALL_SUPPORTED_TYPES = {
 }
 
 const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
+
+const TYPES_TO_REMOVE_AND_PREFIX: Record<string, string> = {
+  [BRAND_TYPE_NAME]: 'Testbrand',
+  [CUSTOM_ROLE_TYPE_NAME]: 'Testcustom_role',
+  [USER_FIELD_TYPE_NAME]: 'Testuser_field',
+  [AUTOMATION_TYPE_NAME]: 'Testautomation',
+  [TICKET_FIELD_TYPE_NAME]: 'Testticket_field',
+  [CATEGORY_TYPE_NAME]: 'Testcategory',
+  [PERMISSION_GROUP_TYPE_NAME]: 'TestpermissionGroup',
+  [BUSINESS_HOUR_SCHEDULE]: 'Testbusiness_hours_schedule',
+  [CUSTOM_OBJECT_TYPE_NAME]: 'key',
+  [USER_SEGMENT_TYPE_NAME]: 'Testuser_segment',
+  [VIEW_TYPE_NAME]: 'Testview',
+  [SLA_POLICY_TYPE_NAME]: 'Testsla_policy',
+  [MACRO_TYPE_NAME]: 'Testmacro',
+  [GROUP_TYPE_NAME]: 'Testgroup',
+  [GUIDE_THEME_TYPE_NAME]: 'e2eHelpCenter_Testtheme',
+}
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(1000 * 60 * 15)
@@ -177,18 +196,29 @@ const deployChanges = async (
   return deployResults
 }
 
-const cleanup = async (adapterAttr: Reals): Promise<void> => {
-  const fetchResult = await adapterAttr.adapter.fetch({
-    progressReporter: { reportProgress: () => null },
-  })
+const cleanup = async (adapterAttr: Reals, fetchResult: FetchResult): Promise<void> => {
+  const typesToRemove = new Set(Object.keys(TYPES_TO_REMOVE_AND_PREFIX))
   expect(fetchResult.errors).toHaveLength(0)
   const { elements } = fetchResult
-  const e2eBrandInstances = elements
+  const changesToClean = elements
     .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-    .filter(brand => brand.elemID.name.startsWith('Testbrand'))
-  if (e2eBrandInstances.length > 0) {
-    await deployChanges(adapterAttr, { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) })
+    .filter(instance => typesToRemove.has(instance.elemID.typeName))
+    .filter(instance => instance.elemID.name.startsWith(TYPES_TO_REMOVE_AND_PREFIX[instance.elemID.typeName]))
+    .map(instance => toChange({ before: instance }))
+  const groupedChanges = _.groupBy(changesToClean, change => getChangeData(change).elemID.typeName)
+  if (changesToClean.length > 0) {
+    if (groupedChanges[CATEGORY_TYPE_NAME] !== undefined && groupedChanges[CATEGORY_TYPE_NAME].length > 0){
+      // category clean up needs to run first as permission group depends on them
+      await deployChanges(
+        adapterAttr,
+        {[CATEGORY_TYPE_NAME]: groupedChanges[CATEGORY_TYPE_NAME]},
+      )
+      delete groupedChanges[CATEGORY_TYPE_NAME]
+    }
+    await deployChanges(
+      adapterAttr,
+      groupedChanges,
+    )
   }
 }
 
@@ -362,6 +392,14 @@ describe('Zendesk adapter E2E', () => {
       if (brandInstanceE2eHelpCenter === undefined) {
         return
       }
+      adapterAttr = realAdapter(
+        {
+          credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements([brandInstanceE2eHelpCenter]),
+        },
+        usedConfig,
+      )
+      await cleanup(adapterAttr, firstFetchResult)
       // ******************* create all elements for deploy *******************
       const automationInstance = createInstanceElement({
         type: 'automation',
@@ -1088,7 +1126,6 @@ describe('Zendesk adapter E2E', () => {
           },
         },
       )
-      await cleanup(adapterAttr)
       const instancesToAdd = [
         ticketFieldInstance,
         ticketFieldOption1,

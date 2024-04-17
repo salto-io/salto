@@ -141,6 +141,17 @@ describe('adapter', () => {
           'google_workspace.schema__fields',
         ])
         expect(
+          Object.fromEntries(
+            elements
+              .filter(isInstanceElement)
+              .filter(e => e.elemID.typeName === 'orgUnit')
+              .map(e => [e.elemID.name, e.path]),
+          ),
+        ).toEqual({
+          '_@d': ['google_workspace', 'Records', 'orgUnit', 'Salto_Neta_test1', 'Salto_Neta_test1'],
+          '_uri@d': ['google_workspace', 'Records', 'orgUnit', 'Salto_Neta_test1', 'uri', 'uri'],
+        })
+        expect(
           elements
             .filter(isInstanceElement)
             .find(e => e.elemID.getFullName() === 'google_workspace.orgUnit.instance._@d')?.value,

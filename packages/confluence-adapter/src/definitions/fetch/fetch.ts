@@ -233,6 +233,10 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           // Confluence does not allow pages with the same title in the same space
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
         },
+        path: {
+          // only the filename matters, the paths are updated in the custom_paths filter
+          pathParts: [{ parts: [{ fieldName: 'title' }] }],
+        },
       },
       fieldCustomizations: {
         id: {

@@ -26,7 +26,7 @@ import {
   isInstanceElement,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { AdapterFilterCreator, FilterResult } from '@salto-io/adapter-components/src/filter_utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import {
   applyFunctionToChangeData,
   extractTemplate,
@@ -131,7 +131,7 @@ const prepRef = (ref: ReferenceExpression): TemplatePart => {
   return ref
 }
 
-const filter: AdapterFilterCreator<UserConfig, FilterResult, {}, Options> = () => {
+const filter: filterUtils.AdapterFilterCreator<UserConfig, filterUtils.FilterResult, {}, Options> = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
     name: 'templateBodyToTemplateExpressionFilter',

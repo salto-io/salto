@@ -849,6 +849,14 @@ export const getChangedAtSingletonInstance = async (
 export const isCustomType = (element: Element): element is ObjectType =>
   isObjectType(element) &&
   ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+
+const pickFromDuplicates = (
+  duplicateProperties: ReadonlyArray<FileProperties>,
+): FileProperties | undefined =>
+  _(duplicateProperties)
+    .sortBy((prop) => new Date(prop.lastModifiedDate))
+    .last()
+
 const removeDuplicateFileProps = (
   files: FileProperties[],
 ): FileProperties[] => {
@@ -862,7 +870,7 @@ const removeDuplicateFileProps = (
       props,
     )
   })
-  return uniques.concat(duplicates.map((props) => props[0]))
+  return uniques.concat(duplicates.map(pickFromDuplicates).filter(isDefined))
 }
 export const listMetadataObjects = async (
   client: SalesforceClient,

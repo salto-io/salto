@@ -2008,18 +2008,33 @@ public class MyClass${index} {
       it('should fetch only the element once', async () => {
         mockMetadataType({ xmlName: 'Test2' }, { valueTypeFields: [] }, [
           {
-            props: { fullName: 'Test' },
+            props: {
+              fullName: 'Test',
+              lastModifiedDate: '2024-04-09',
+              id: 'olderInstance',
+            },
             values: { fullName: 'Test' },
           },
           {
-            props: { fullName: 'Test' },
+            props: {
+              fullName: 'Test',
+              lastModifiedDate: '2024-04-10',
+              id: 'newerInstance',
+            },
             values: { fullName: 'Test' },
           },
         ])
         const { elements: result } = await adapter.fetch(mockFetchOpts)
         const testInstances = findElements(result, 'Test2', 'Test')
         expect(connection.metadata.read).toHaveBeenCalled()
-        expect(testInstances).toHaveLength(1)
+        expect(testInstances).toEqual([
+          expect.objectContaining({
+            value: {
+              fullName: 'Test',
+              internalId: 'newerInstance',
+            },
+          }),
+        ])
       })
     })
 

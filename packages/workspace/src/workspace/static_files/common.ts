@@ -62,4 +62,7 @@ export type StateStaticFilesSource = Pick<
   'getStaticFile' | 'persistStaticFile' | 'flush' | 'clear' | 'rename' | 'delete'
 >
 
-export type StateStaticFilesStore = Pick<DirectoryStore<Buffer>, 'get' | 'set' | 'list' | 'getFullPath' | 'flush'>
+export type StateStaticFilesStore = Pick<
+  DirectoryStore<Buffer>,
+  'get' | 'set' | 'list' | 'getFullPath' | 'flush' | 'delete'
+>

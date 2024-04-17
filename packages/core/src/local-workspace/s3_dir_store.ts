@@ -23,10 +23,12 @@ import Bottleneck from 'bottleneck'
 import getStream from 'get-stream'
 import { Readable } from 'stream'
 import { values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 
 const log = logger(module)
 
 const DEFAULT_CONCURRENCY_LIMIT = 100
+const DELETION_BATCH_SIZE = 1000 // AWS limit
 
 export const buildS3DirectoryStore = ({
   bucketName,
@@ -129,23 +131,17 @@ export const buildS3DirectoryStore = ({
   const deleteMany = async (objectPaths: string[]): Promise<void> => {
     const objectIdentifiers: AWS.ObjectIdentifier[] = objectPaths.map(objectPath => ({ Key: getFullPath(objectPath) }))
 
-    // Split the deletion into batches of 1000 items each (AWS limit)
-    const batchSize = 1000
-    const batchPromises = []
-
-    for (let i = 0; i < objectIdentifiers.length; i += batchSize) {
-      const batch = objectIdentifiers.slice(i, i + batchSize)
-      batchPromises.push(
-        bottleneck.schedule(async () => {
-          log.trace('Deleting batch of objects from S3 bucket %s', bucketName)
-          const result = await s3.deleteObjects({
-            Bucket: bucketName,
-            Delete: { Objects: batch },
-          })
-          log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
-        }),
-      )
-    }
+    const batches = _.chunk(objectIdentifiers, DELETION_BATCH_SIZE)
+    const batchPromises = batches.map(batch =>
+      bottleneck.schedule(async () => {
+        log.trace('Deleting batch of objects from S3 bucket %s', bucketName)
+        const result = await s3.deleteObjects({
+          Bucket: bucketName,
+          Delete: { Objects: batch },
+        })
+        log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
+      }),
+    )
 
     try {
       await Promise.all(batchPromises)
@@ -154,6 +150,7 @@ export const buildS3DirectoryStore = ({
       throw err
     }
   }
+
   const flush = async (): Promise<void> => {
     const files = Object.values(updated)
     updated = {}
@@ -161,8 +158,8 @@ export const buildS3DirectoryStore = ({
 
     if (deleted.size > 0) {
       const toDelete = Array.from(deleted)
-      await deleteMany(toDelete)
       deleted = new Set()
+      await deleteMany(toDelete)
     }
   }
 

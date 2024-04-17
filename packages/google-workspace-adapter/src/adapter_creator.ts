@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
+import { client as clientUtils, createAdapter, credentials, deployment } from '@salto-io/adapter-components'
 import { Credentials, basicCredentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnectionForApp } from './client/connection'
@@ -49,6 +49,8 @@ const clientDefaults = {
   retry: DEFAULT_RETRY_OPTS,
 }
 
+const { createCheckDeploymentBasedOnDefinitionsValidator } = deployment.changeValidators
+
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
   authenticationMethods: {
@@ -77,6 +79,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   operationsCustomizations: {
     connectionCreatorFromConfig: () => createConnectionForApp(DIRECTORY_APP_NAME),
     credentialsFromConfig: defaultCredentialsFromConfig,
+    additionalChangeValidators: {
+      createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnDefinitionsValidator({
+        typesConfig: createDeployDefinitions(),
+      }),
+    },
   },
   initialClients: {
     main: undefined,

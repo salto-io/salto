@@ -132,7 +132,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       await Promise.all(
         typeActionChanges.map(async change => {
           try {
-            await limitedDeployChange({ change, action, ...changeContext })
+            await limitedDeployChange({ ...changeContext, change, action })
             return change
           } catch (err) {
             log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)

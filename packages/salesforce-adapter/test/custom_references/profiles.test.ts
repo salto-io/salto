@@ -35,7 +35,7 @@ import {
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from '../utils'
-import { profilesHandler } from '../../src/weak_references/profiles'
+import { profilesHandler } from '../../src/custom_references/profiles'
 
 describe('Profile weak references handler', () => {
   let refs: ReferenceInfo[]

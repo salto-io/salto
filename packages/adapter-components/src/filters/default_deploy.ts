@@ -37,7 +37,7 @@ export const defaultDeployFilterCreator =
     convertError: ConvertError
     fieldReferenceResolverCreator?: FieldReferenceResolverCreator<Options>
   }): AdapterFilterCreator<{}, TResult, {}, Options> =>
-  ({ definitions, elementSource }) => ({
+  ({ definitions, elementSource, sharedContext }) => ({
     name: 'defaultDeployFilter',
     deploy: async (changes, changeGroup) => {
       const { deploy, ...otherDefs } = definitions
@@ -55,6 +55,7 @@ export const defaultDeployFilterCreator =
         changes: changes.filter(isInstanceChange),
         changeGroup,
         elementSource,
+        sharedContext,
         deployChangeFunc,
         convertError,
         definitions: { deploy, ...otherDefs },

@@ -26,7 +26,13 @@ import {
   isReferenceExpression,
   isTemplateExpression,
 } from '@salto-io/adapter-api'
-import { invertNaclCase, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  elementExpressionStringifyReplacer,
+  invertNaclCase,
+  naclCase,
+  pathNaclCase,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { NameMappingFunction, NameMappingFunctionMap, NameMappingOptions } from '../../definitions'
@@ -75,7 +81,7 @@ export const createServiceIDs = ({
 export const serviceIDKeyCreator =
   ({ serviceIDFields, typeID }: { serviceIDFields: string[]; typeID: ElemID }): ((entry: Values) => string) =>
   entry =>
-    safeJsonStringify(createServiceIDs({ entry, serviceIDFields, typeID }))
+    safeJsonStringify(createServiceIDs({ entry, serviceIDFields, typeID }), elementExpressionStringifyReplacer)
 
 /**
  * Returns the name part of an elemId based on the provided name mapping options, which can be

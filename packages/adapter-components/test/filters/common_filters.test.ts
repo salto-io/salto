@@ -41,7 +41,6 @@ describe('common filters', () => {
       const filters = createCommonFilters({
         referenceRules: [],
         config: {
-          client: {},
           fetch: {
             ...INCLUDE_ALL_CONFIG,
           },

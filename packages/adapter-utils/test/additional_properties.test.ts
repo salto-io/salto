@@ -22,6 +22,7 @@ import {
   InstanceElement,
   ObjectType,
   ReferenceExpression,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { extractAdditionalPropertiesField, setAdditionalPropertiesAnnotation } from '../src/additional_properties'
 
@@ -73,10 +74,10 @@ describe('additional_properties', () => {
       })
     })
     describe('when additional properties annotation is defining a type', () => {
-      it('should return undefined', () => {
+      it('should return the type', () => {
         const objType = baseObj.clone()
         const additionalPropertiesObjType = new ObjectType({
-          elemID: new ElemID('additionalProperties'),
+          elemID: new ElemID('adapter', 'additionalProperties'),
           fields: { field: { refType: BuiltinTypes.STRING } },
         })
         objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = {
@@ -85,6 +86,24 @@ describe('additional_properties', () => {
         }
         expect(extractAdditionalPropertiesField(objType, fieldName)).toEqual(
           new Field(objType, fieldName, additionalPropertiesObjType, { someUniqueAnnotation: 'unique' }),
+        )
+      })
+    })
+    describe('when additional properties annotation is defining a type but the type is not loaded', () => {
+      it('should return the type', () => {
+        const objType = baseObj.clone()
+        const additionalPropertiesObjType = new ObjectType({
+          elemID: new ElemID('adapter', 'additionalProperties'),
+          fields: { field: { refType: BuiltinTypes.STRING } },
+        })
+        objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = {
+          refType: new ReferenceExpression(additionalPropertiesObjType.elemID),
+          annotations: { someUniqueAnnotation: 'unique' },
+        }
+        expect(extractAdditionalPropertiesField(objType, fieldName)).toEqual(
+          new Field(objType, fieldName, new TypeReference(new ElemID('adapter', 'additionalProperties')), {
+            someUniqueAnnotation: 'unique',
+          }),
         )
       })
     })

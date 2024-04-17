@@ -14,6 +14,7 @@
     { "path": "../dag" },
     { "path": "../dummy-adapter" },
     { "path": "../file" },
+    { "path": "../intercom-adapter" },
     { "path": "../jira-adapter" },
     { "path": "../logging" },
     { "path": "../lowerdash" },

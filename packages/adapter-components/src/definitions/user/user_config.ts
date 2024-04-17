@@ -32,7 +32,7 @@ export type UserConfig<
   }>,
   TDeploy extends UserDeployConfig = UserDeployConfig,
 > = {
-  client: TClient
+  client?: TClient
   fetch: TFetch
   deploy?: TDeploy
 }
@@ -104,7 +104,7 @@ export const adapterConfigFromConfig = <
 ): Co & UserConfig<TCustomNameMappingOptions> => {
   // TODO extend validations SALTO-5584
   validateClientConfig('client', config?.value?.client)
-  const client = mergeWithDefaultConfig(defaultConfig.client, config?.value?.client)
+  const client = mergeWithDefaultConfig(defaultConfig.client ?? {}, config?.value?.client)
 
   const fetch = _.defaults({}, config?.value?.fetch, defaultConfig.fetch)
 

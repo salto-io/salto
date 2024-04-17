@@ -42,6 +42,7 @@
     "@salto-io/dummy-adapter": "0.3.55",
     "@salto-io/file": "0.3.55",
     "@salto-io/google-workspace-adapter": "0.3.55",
+    "@salto-io/intercom-adapter": "0.3.55",
     "@salto-io/jira-adapter": "0.3.55",
     "@salto-io/logging": "0.3.55",
     "@salto-io/lowerdash": "0.3.55",

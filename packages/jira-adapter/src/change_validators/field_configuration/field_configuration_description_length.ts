@@ -26,11 +26,12 @@ export const fieldConfigurationDescriptionLengthValidator: ChangeValidator = asy
   changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-    .filter(change => change.data.after.value.description.length > FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
-    .map(change => ({
-      elemID: getChangeData(change).elemID,
+    .map(getChangeData)
+    .filter(inst => inst.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+    .filter(inst => inst.value.description.length > FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
+    .map(inst => ({
+      elemID: inst.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Field configuration description length exceeded maximum.',
-      detailedMessage: `Field configuration description length (${change.data.after.value.description.length}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH} characters.`,
+      detailedMessage: `Field configuration description length (${inst.value.description.length}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH} characters.`,
     }))

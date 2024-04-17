@@ -24,7 +24,7 @@ export type ValueReferenceResolver = (args: { value: Values }) => Values
 export type DeployRequestCondition = ArgsWithCustomizer<
   boolean,
   {
-    // when true, the request will be sent even if the before and after values are equal
+    // when false, the request will be sent even if the before and after values are equal
     // default: true
     skipIfIdentical?: boolean
     // transformation to use on before and after of the change when comparing the values

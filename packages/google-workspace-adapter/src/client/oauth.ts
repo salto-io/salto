@@ -28,9 +28,12 @@ import { ADAPTER_NAME } from '../constants'
 
 export const DIRECTORY_APP_NAME = 'directory'
 export const GROUP_SETTINGS_APP_NAME = 'groupSettings'
+export const CLOUD_IDENTITY_APP_NAME = 'cloudIdentity'
 
 const REQUIRED_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/cloud-platform',
+  'https://www.googleapis.com/auth/admin.directory.customer',
   'https://www.googleapis.com/auth/admin.directory.rolemanagement',
   'https://www.googleapis.com/auth/admin.directory.group',
   'https://www.googleapis.com/auth/admin.directory.domain',

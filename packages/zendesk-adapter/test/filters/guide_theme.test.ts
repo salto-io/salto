@@ -27,6 +27,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { staticFileToTemplateExpression } from '@salto-io/parser/src/utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { FilterCreator } from '../../src/filter'
@@ -43,6 +44,7 @@ jest.mock('jszip', () =>
       // Mocked data you expect after loading the zip file
       'file1.txt': { async: jest.fn(() => Buffer.from('file1content')), dir: false },
       'subfolder.dot/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
+      'fileWithReference.js': { async: jest.fn(() => Buffer.from('var SUPER_DUPER_PREFIX_123 = 123')), dir: false },
     }
     const mockCorruptedFiles = {
       'file1.txt': {
@@ -110,6 +112,10 @@ const themeSettingsInstance2 = new InstanceElement(`${brand1.value.name}_setting
   liveTheme: new ReferenceExpression(newThemeWithFiles.elemID),
 })
 
+const articleInstance = new InstanceElement('article', new ObjectType({ elemID: new ElemID('test', 'article') }), {
+  id: 123,
+})
+
 describe('filterCreator', () => {
   describe('fetch', () => {
     describe('bad config', () => {
@@ -121,7 +127,15 @@ describe('filterCreator', () => {
 
         beforeEach(() => {
           const config = { ...DEFAULT_CONFIG }
-          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: [] }
+          config[FETCH_CONFIG].guide = {
+            brands: ['.*'],
+            themes: {
+              brands: [],
+              referenceOptions: {
+                enableReferenceLookup: false,
+              },
+            },
+          }
           filter = filterCreator(createFilterCreatorParams({ config }))
         })
 
@@ -137,8 +151,22 @@ describe('filterCreator', () => {
 
       beforeEach(() => {
         const config = { ...DEFAULT_CONFIG }
-        config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
-        filter = filterCreator(createFilterCreatorParams({ config }))
+        config[FETCH_CONFIG].guide = {
+          brands: ['.*'],
+          themes: {
+            brands: ['.*'],
+            referenceOptions: {
+              enableReferenceLookup: true,
+              javascriptReferenceLookupStrategy: {
+                strategy: 'varNamePrefix',
+                prefix: 'SUPER_DUPER_PREFIX_',
+              },
+            },
+          },
+        }
+        filter = filterCreator(
+          createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([articleInstance]) }),
+        )
         mockDownload = jest.spyOn(DownloadModule, 'download')
       })
 
@@ -211,6 +239,12 @@ describe('filterCreator', () => {
               content: Buffer.from('file2content'),
             }),
           )
+          const templateExpression = await staticFileToTemplateExpression(
+            liveThemeWithId.value.root.files['fileWithReference_js@v'].content,
+          )
+          expect(templateExpression).toEqual({
+            parts: ['var SUPER_DUPER_PREFIX_123 = ', new ReferenceExpression(articleInstance.elemID)],
+          })
 
           expect(Object.keys(nonLiveThemeWithId.value.root)).toHaveLength(2)
           expect(nonLiveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(
@@ -272,7 +306,15 @@ describe('filterCreator', () => {
     beforeEach(() => {
       jest.resetAllMocks()
       const config = { ...DEFAULT_CONFIG }
-      config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+      config[FETCH_CONFIG].guide = {
+        brands: ['.*'],
+        themes: {
+          brands: ['.*'],
+          referenceOptions: {
+            enableReferenceLookup: false,
+          },
+        },
+      }
       filter = filterCreator(
         createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([themeSettingsInstance]) }),
       )
@@ -334,7 +376,15 @@ describe('filterCreator', () => {
 
         it('should publish the theme if live is true', async () => {
           const config = { ...DEFAULT_CONFIG }
-          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+          config[FETCH_CONFIG].guide = {
+            brands: ['.*'],
+            themes: {
+              brands: ['.*'],
+              referenceOptions: {
+                enableReferenceLookup: false,
+              },
+            },
+          }
           filter = filterCreator(
             createFilterCreatorParams({
               config,
@@ -428,7 +478,15 @@ describe('filterCreator', () => {
 
         it('should publish the theme if live is true', async () => {
           const config = { ...DEFAULT_CONFIG }
-          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+          config[FETCH_CONFIG].guide = {
+            brands: ['.*'],
+            themes: {
+              brands: ['.*'],
+              referenceOptions: {
+                enableReferenceLookup: false,
+              },
+            },
+          }
           filter = filterCreator(
             createFilterCreatorParams({
               config,
@@ -465,7 +523,15 @@ describe('filterCreator', () => {
         describe('error only in publish', () => {
           beforeEach(() => {
             const config = { ...DEFAULT_CONFIG }
-            config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+            config[FETCH_CONFIG].guide = {
+              brands: ['.*'],
+              themes: {
+                brands: ['.*'],
+                referenceOptions: {
+                  enableReferenceLookup: false,
+                },
+              },
+            }
             filter = filterCreator(
               createFilterCreatorParams({
                 config,

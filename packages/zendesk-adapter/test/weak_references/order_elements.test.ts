@@ -169,7 +169,7 @@ describe('order_elements', () => {
         {
           elemID: orderInstance.elemID.createNestedID('active'),
           severity: 'Info',
-          message: 'Deploying automation_order.active without all attached automations',
+          message: 'Deploying without all attached automations',
           detailedMessage:
             'This automation_order.active is attached to some automations that do not exist in the target environment. It will be deployed without referencing these automations.',
         },
@@ -205,7 +205,7 @@ describe('order_elements', () => {
           {
             elemID: triggerOrderInstance.elemID.createNestedID('order.0.inactive'),
             severity: 'Info',
-            message: 'Deploying trigger_order.order.0.inactive without all attached triggers',
+            message: 'Deploying without all attached triggers',
             detailedMessage:
               'This trigger_order.order.0.inactive is attached to some triggers that do not exist in the target environment. It will be deployed without referencing these triggers.',
           },

@@ -43,6 +43,7 @@ import { DeployRequestCondition, DeployableRequestDefinition } from '../../defin
 import { DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
+import { recursiveNaclCase } from '../../fetch/element/instance_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -92,8 +93,8 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
     }
     const { typeName } = change.data.after.elemID
     return !isEqualValues(
-      transform({ value: change.data.before, typeName, context: args }),
-      transform({ value: change.data.after, typeName, context: args }),
+      transform({ value: change.data.before.value, typeName, context: args }),
+      transform({ value: change.data.after.value, typeName, context: args }),
     )
   }
 }
@@ -245,7 +246,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
           changeGroup,
           elementSource,
           additionalContext,
-          value: getChangeData(resolvedChange).value,
+          value: recursiveNaclCase(getChangeData(resolvedChange).value, true),
         })
 
     throwOnUnresolvedReferences(data)

@@ -8,7 +8,8 @@
     ],
     "nohoist": [
       "salto-vscode/**",
-      "**/@salto-io/rocksdb/**"
+      "**/@salto-io/rocksdb/**",
+      "**/acorn-walk"
     ]
   },
   "resolutions": {

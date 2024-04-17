@@ -2,7 +2,7 @@
 
 ## Non interactive Login Parameters
 
-Supprted parameters are:
+Supported parameters are:
 
 TODO adjust according to auth
 
@@ -12,6 +12,6 @@ TODO adjust according to auth
 
 ### Example
 
-```
+```bash
 salto account add serviceplaceholder --login-parameters username=username
 ```

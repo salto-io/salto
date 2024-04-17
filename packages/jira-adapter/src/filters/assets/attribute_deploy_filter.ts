@@ -160,7 +160,7 @@ const deployAttributeChanges = async ({
       additionalUrlVars,
     })
     if (isAdditionOrModificationChange(change)) {
-      const data = _.omit(instance.value, ['objectType', 'typeValue', 'additionalValue'])
+      const data = _.omit(instance.value, ['objectType', 'typeValue', 'additionalValue', 'typeValueMulti'])
       const url = `gateway/api/jsm/assets/workspace/${workspaceId}/v1/objecttypeattribute/${instance.value.id}/configure`
       await client.put({
         url,

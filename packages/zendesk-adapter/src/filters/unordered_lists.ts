@@ -32,6 +32,7 @@ import {
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
   VIEW_TYPE_NAME,
+  WORKSPACE_TYPE_NAME,
 } from '../constants'
 
 const log = logger(module)
@@ -240,6 +241,22 @@ const orderArticleLabelNames = (instances: InstanceElement[]): void => {
     })
 }
 
+const orderAppInstallationsInWorkspace = (instances: InstanceElement[]): void => {
+  instances
+    .filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
+    .forEach(workspace => {
+      const appsList = workspace.value.apps
+      if (_.isArray(appsList)) {
+        // _.sortBy is stable, so the order of apps with the same position will not change
+        workspace.value.apps = _.sortBy(appsList, ['position'])
+      } else if (appsList !== undefined) {
+        log.warn(
+          `orderAppInstallationsInWorkspace - app installations are not a list in ${appsList.elemID.getFullName()}`,
+        )
+      }
+    })
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -253,6 +270,7 @@ const filterCreator: FilterCreator = () => ({
     orderFormCondition(instances)
     orderViewCustomFields(instances)
     orderArticleLabelNames(instances)
+    orderAppInstallationsInWorkspace(instances)
   },
 })
 

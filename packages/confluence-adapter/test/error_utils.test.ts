@@ -19,89 +19,7 @@ import { customConvertError } from '../src/error_utils'
 
 describe('customConvertError', () => {
   const elemID = new ElemID('testElemID')
-
-  it('should return message from the error array, when error is in the correct version error structure', () => {
-    const error = {
-      message: 'mock',
-      name: 'mock',
-      response: { data: { errors: [{ title: 'Version error' }] }, status: 409 },
-    } as Error
-
-    const result = customConvertError(elemID, error)
-
-    expect(result).toEqual({
-      message: 'Version error',
-      severity: 'Error',
-      elemID,
-    })
-  })
-
-  it('should return error.message when error has no response', () => {
-    const error = {
-      message: 'mock',
-      name: 'mock',
-    } as Error
-    const result = customConvertError(elemID, error)
-    expect(result).toEqual({
-      message: 'mock',
-      severity: 'Error',
-      elemID,
-    })
-  })
-  it('should return error.message when status is not 409', () => {
-    const error = {
-      message: 'mock',
-      name: 'mock',
-      response: { data: { errors: [{ title: 'Test error' }] }, status: 408 },
-    } as Error
-    const result = customConvertError(elemID, error)
-    expect(result).toEqual({
-      message: 'mock',
-      severity: 'Error',
-      elemID,
-    })
-  })
-  it('should return error.message when errors array is empty', () => {
-    const error = {
-      message: 'mock',
-      name: 'mock',
-      response: { data: { errors: [] }, status: 409 },
-    } as Error
-    const result = customConvertError(elemID, error)
-    expect(result).toEqual({
-      message: 'mock',
-      severity: 'Error',
-      elemID,
-    })
-  })
-  it('should return error.message when title is undefined', () => {
-    const error = {
-      message: 'mock',
-      name: 'mock',
-      response: { data: { errors: [{ title: undefined }] }, status: 409 },
-    } as Error
-    const result = customConvertError(elemID, error)
-    expect(result).toEqual({
-      message: 'mock',
-      severity: 'Error',
-      elemID,
-    })
-  })
-  it('should return error.message when title does not start with "Version"', () => {
-    const error = {
-      message: 'mock',
-      name: 'mock',
-      response: { data: { errors: [{ title: 'Not Version error' }] }, status: 409 },
-    } as Error
-    const result = customConvertError(elemID, error)
-    expect(result).toEqual({
-      message: 'mock',
-      severity: 'Error',
-      elemID,
-    })
-  })
-
-  it('should return the error when it is SaltoError', () => {
+  it('should return the error when it is error SaltoError', () => {
     const error = {
       elemID: new ElemID('mock'),
       message: 'mock',
@@ -111,5 +29,107 @@ describe('customConvertError', () => {
     } as Error
     const result = customConvertError(elemID, error)
     expect(result).toEqual(error)
+  })
+  describe('Version error', () => {
+    it('should return message from the error array, when error is in the correct version error structure', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { errors: [{ title: 'Version error' }] }, status: 409 },
+      } as Error
+
+      const result = customConvertError(elemID, error)
+
+      expect(result).toEqual({
+        message: 'Version error',
+        severity: 'Error',
+        elemID,
+      })
+    })
+
+    it('should return error.message when error has no response', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result).toEqual({
+        message: 'mock',
+        severity: 'Error',
+        elemID,
+      })
+    })
+    it('should return error.message when status is not 409', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { errors: [{ title: 'Test error' }] }, status: 408 },
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result).toEqual({
+        message: 'mock',
+        severity: 'Error',
+        elemID,
+      })
+    })
+    it('should return error.message when errors array is empty', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { errors: [] }, status: 409 },
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result).toEqual({
+        message: 'mock',
+        severity: 'Error',
+        elemID,
+      })
+    })
+    it('should return error.message when title is undefined', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { errors: [{ title: undefined }] }, status: 409 },
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result).toEqual({
+        message: 'mock',
+        severity: 'Error',
+        elemID,
+      })
+    })
+    it('should return error.message when title does not start with "Version"', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { errors: [{ title: 'Not Version error' }] }, status: 409 },
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result).toEqual({
+        message: 'mock',
+        severity: 'Error',
+        elemID,
+      })
+    })
+  })
+  describe('Java NullPointer exception', () => {
+    it('should return undefined when error is java.NullPointer exception', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { message: 'java.lang.NullPointerException: Cannot invoke something' }, status: 500 },
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result).toBeUndefined()
+    })
+    it('should return error message when status is 500 but error is not java NullPointer', () => {
+      const error = {
+        message: 'mock',
+        name: 'mock',
+        response: { data: { message: 'blabla' }, status: 500 },
+      } as Error
+      const result = customConvertError(elemID, error)
+      expect(result?.message).toEqual('mock')
+    })
   })
 })

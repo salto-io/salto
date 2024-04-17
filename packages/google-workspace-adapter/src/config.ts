@@ -28,8 +28,8 @@ export type UserConfig = definitions.UserConfig<
 >
 
 export const DEFAULT_CONFIG: UserConfig = {
-  client: {},
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
+    hideTypes: true,
   },
 }

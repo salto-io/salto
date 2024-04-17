@@ -84,7 +84,15 @@ describe('filterCreator', () => {
 
         beforeEach(() => {
           const config = { ...DEFAULT_CONFIG }
-          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: [] }
+          config[FETCH_CONFIG].guide = {
+            brands: ['.*'],
+            themes: {
+              brands: [],
+              referenceOptions: {
+                enableReferenceLookup: false,
+              },
+            },
+          }
           filter = filterCreator(createFilterCreatorParams({ config }))
         })
 
@@ -99,7 +107,15 @@ describe('filterCreator', () => {
 
       beforeEach(() => {
         const config = { ...DEFAULT_CONFIG }
-        config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+        config[FETCH_CONFIG].guide = {
+          brands: ['.*'],
+          themes: {
+            brands: ['.*'],
+            referenceOptions: {
+              enableReferenceLookup: false,
+            },
+          },
+        }
         filter = filterCreator(createFilterCreatorParams({ config }))
       })
 
@@ -132,7 +148,15 @@ describe('filterCreator', () => {
     beforeEach(() => {
       jest.resetAllMocks()
       const config = { ...DEFAULT_CONFIG }
-      config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+      config[FETCH_CONFIG].guide = {
+        brands: ['.*'],
+        themes: {
+          brands: ['.*'],
+          referenceOptions: {
+            enableReferenceLookup: false,
+          },
+        },
+      }
       filter = filterCreator(createFilterCreatorParams({ config }))
       mockPublish = jest.spyOn(PublishModule, 'publish')
     })

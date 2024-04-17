@@ -34,7 +34,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/config'
-import { ADAPTER_NAME } from '../src/constants'
+import { ADAPTER_NAME, BLOG_POST_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../src/constants'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
@@ -106,15 +106,15 @@ describe('adapter', () => {
           .fetch({ progressReporter: { reportProgress: () => null } })
 
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
-          'blogpost',
-          'page',
+          BLOG_POST_TYPE_NAME,
+          PAGE_TYPE_NAME,
         ])
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'confluence.blogpost',
-          'confluence.blogpost.instance.22_This_is_My_super_blog@ussss',
-          'confluence.blogpost.instance.65539_Hey__I_m_am_a_first_blog_post@ulstsssss',
-          'confluence.blogpost__body',
-          'confluence.blogpost__version',
+          'confluence.blog_post',
+          'confluence.blog_post.instance.22_This_is_My_super_blog@ussss',
+          'confluence.blog_post.instance.65539_Hey__I_m_am_a_first_blog_post@ulstsssss',
+          'confluence.blog_post__body',
+          'confluence.blog_post__version',
           'confluence.global_template',
           'confluence.page',
           'confluence.page.instance.22_Getting_started_in_Confluence@usss',
@@ -129,7 +129,8 @@ describe('adapter', () => {
         expect(
           elements
             .filter(isInstanceElement)
-            .find(e => e.elemID.getFullName() === 'confluence.blogpost.instance.22_This_is_My_super_blog@ussss')?.value,
+            .find(e => e.elemID.getFullName() === 'confluence.blog_post.instance.22_This_is_My_super_blog@ussss')
+            ?.value,
         ).toEqual({
           authorId: 'mockId22',
           createdAt: '2024-03-20T10:30:12.473Z',
@@ -201,7 +202,7 @@ describe('adapter', () => {
       results.push(
         await operations.deploy({
           changeGroup: {
-            groupID: 'space',
+            groupID: SPACE_TYPE_NAME,
             changes: [
               toChange({
                 before: space1,
@@ -216,7 +217,7 @@ describe('adapter', () => {
       results.push(
         await operations.deploy({
           changeGroup: {
-            groupID: 'group',
+            groupID: PAGE_TYPE_NAME,
             changes: [
               toChange({
                 before: page2,

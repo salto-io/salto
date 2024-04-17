@@ -61,7 +61,7 @@ describe('removeDupUsersHandler', () => {
       expect(handlerResponse.errors).toEqual([
         {
           elemID: userSegmentWithDuplicatesInstance.elemID,
-          message: 'Duplicate appearances of 2 usernames in instance fields',
+          message: 'Duplicate usernames in instance fields',
           severity: 'Warning',
           detailedMessage:
             'The following usernames appear multiple times: hi@hi.com, 123.\n' +

@@ -111,7 +111,7 @@ describe('fallbackUsersHandler', () => {
       expect(fallbackResponse.errors).toEqual([
         {
           elemID: macroInstance.elemID,
-          message: '2 usernames will be overridden to fallback@.com',
+          message: 'Usernames will be overridden',
           severity: 'Warning',
           detailedMessage:
             'The following users are referenced by this instance, but do not exist in the target environment: a@a.com, 3.\n' +
@@ -120,7 +120,7 @@ describe('fallbackUsersHandler', () => {
         },
         {
           elemID: articleInstance.elemID,
-          message: '1 usernames will be overridden to fallback@.com',
+          message: 'Usernames will be overridden',
           severity: 'Warning',
           detailedMessage:
             'The following users are referenced by this instance, but do not exist in the target environment: a@a.com.\n' +
@@ -129,7 +129,7 @@ describe('fallbackUsersHandler', () => {
         },
         {
           elemID: triggerInstance.elemID,
-          message: '1 usernames will be overridden to fallback@.com',
+          message: 'Usernames will be overridden',
           severity: 'Warning',
           detailedMessage:
             'The following users are referenced by this instance, but do not exist in the target environment: non.\n' +

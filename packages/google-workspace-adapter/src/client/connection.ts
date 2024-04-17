@@ -37,7 +37,10 @@ export const validateDirectoryCredentials = async ({
 }
 
 // There is no endPoints for groupSettings that we can use to validate the credentials with.
-export const validateGroupSettingsCredentials = async (): Promise<AccountInfo> => ({ accountId: 'groupSettings' })
+export const validateGroupSettingsCredentials = async (): Promise<AccountInfo> => ({ accountId: 'googoo' })
+
+// There is no endPoints for groupSettings that we can use to validate the credentials with.
+export const validateCloudIdentityCredentials = async (): Promise<AccountInfo> => ({ accountId: 'googoo' })
 
 const validateCredentialsPerApp: Record<
   string,
@@ -51,11 +54,13 @@ const validateCredentialsPerApp: Record<
 > = {
   directory: validateDirectoryCredentials,
   groupSettings: validateGroupSettingsCredentials,
+  cloudIdentity: validateCloudIdentityCredentials,
 }
 
 const baseUrlPerApp: Record<string, string> = {
   directory: 'https://admin.googleapis.com',
   groupSettings: 'https://www.googleapis.com',
+  cloudIdentity: 'https://cloudidentity.googleapis.com',
 }
 
 const isOauthCredentials = (cred: Credentials): cred is OauthAccessTokenCredentials => 'refreshToken' in cred

@@ -14,15 +14,26 @@
  * limitations under the License.
  */
 
-import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { invertNaclCase, naclCase, createSchemeGuard } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import _ from 'lodash'
 import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { isWorkflowV2Transition, WorkflowTransitionV2 } from '../workflowV2/types'
+import { WorkflowStatusAndPort, WorkflowTransitionV2 } from '../workflowV2/types'
 
 const { makeArray } = collections.array
+
+const TRANSITION_FROM_V2_SCHEME = Joi.array().items(
+  Joi.object({
+    statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
+    port: Joi.number(),
+  }),
+)
+
+// we already validate the workflow structure in workflow_filter, so we just want to differ between the two versions
+const isTransitionFromV2 = createSchemeGuard<WorkflowStatusAndPort[]>(TRANSITION_FROM_V2_SCHEME)
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -88,7 +99,7 @@ export const getTransitionKey = (
   const type = getTransitionType(transition)
   const fromSorted =
     type === 'Directed'
-      ? (isWorkflowV2Transition(transition)
+      ? (isTransitionFromV2(transition.from)
           ? makeArray(transition.from).map(from => from.statusReference)
           : makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
         )

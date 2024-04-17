@@ -125,8 +125,8 @@ describe('adapter', () => {
           'google_workspace.group.instance.blabla',
           'google_workspace.group__groupSettings',
           'google_workspace.orgUnit',
-          'google_workspace.orgUnit.instance.Salto_Neta_test1@s',
-          'google_workspace.orgUnit.instance.Salto_Neta_test1_uri@ssu',
+          'google_workspace.orgUnit.instance._@d',
+          'google_workspace.orgUnit.instance._uri@d',
           'google_workspace.role',
           'google_workspace.role.instance._SEED_ADMIN_ROLE',
           'google_workspace.roleAssignment',
@@ -143,7 +143,7 @@ describe('adapter', () => {
         expect(
           elements
             .filter(isInstanceElement)
-            .find(e => e.elemID.getFullName() === 'google_workspace.orgUnit.instance.Salto_Neta_test1@s')?.value,
+            .find(e => e.elemID.getFullName() === 'google_workspace.orgUnit.instance._@d')?.value,
         ).toEqual({
           name: 'Salto Neta test1',
           description: 'Salto Neta test1',

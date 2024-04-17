@@ -830,6 +830,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'SignInPage',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
+        {
+          type: 'ErrorPage',
+          toField: 'ErrorPage',
+          context: [{ name: 'brandId', fromField: 'id' }],
+        },
       ],
     },
     transformation: {
@@ -851,7 +856,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       idFields: [],
       extendsParentId: true,
-      serviceUrl: '/admin/customizations/brands/{brandId}/pages/sign-in',
+      serviceUrl: '/admin/customizations/brands',
+      dataField: '.',
+    },
+  },
+  ErrorPage: {
+    request: {
+      url: '/api/v1/brands/{brandId}/pages/error/customized',
+    },
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+      serviceUrl: '/admin/customizations/brands',
       dataField: '.',
     },
   },
@@ -934,10 +950,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'BrandTheme' }, { fieldName: 'SignInPage' }],
+      standaloneFields: [{ fieldName: 'BrandTheme' }, { fieldName: 'SignInPage' }, { fieldName: 'ErrorPage' }],
       fieldTypeOverrides: [
         { fieldName: 'BrandTheme', fieldType: 'list<BrandTheme>' },
         { fieldName: 'SignInPage', fieldType: 'SignInPage' },
+        { fieldName: 'ErrorPage', fieldType: 'ErrorPage' },
       ],
       serviceUrl: '/admin/customizations/footer',
     },

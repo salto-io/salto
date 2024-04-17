@@ -184,14 +184,14 @@ const extractExtraContextToApply = <ClientOptions extends string>({
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
 } & ChangeAndContext): Values | undefined => {
-  const { toExtraContext } = requestDef.copyFromResponse ?? {}
-  if (toExtraContext !== undefined) {
+  const { toSharedContext } = requestDef.copyFromResponse ?? {}
+  if (toSharedContext !== undefined) {
     const dataToApply = extractDataToApply({
-      definition: toExtraContext,
+      definition: toSharedContext,
       changeAndContext: context,
       response,
     })
-    if (toExtraContext.nestUnderElemID !== false) {
+    if (toSharedContext.nestUnderElemID !== false) {
       return {
         [getChangeData(context.change).elemID.getFullName()]: dataToApply,
       }

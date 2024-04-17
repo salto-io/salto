@@ -49,7 +49,7 @@ export type DeployableRequestDefinition<ClientOptions extends string> = {
     additional?: TransformDefinition<ChangeAndContext>
     // values that should be available as extra context to other requests within the deployment
     // default: nothing
-    toExtraContext?: TransformDefinition<ChangeAndContext> & {
+    toSharedContext?: TransformDefinition<ChangeAndContext> & {
       // when true, the transformation result will be stored under a path based on the elem id, to avoid unintentional overlaps
       // default: true
       nestUnderElemID?: boolean

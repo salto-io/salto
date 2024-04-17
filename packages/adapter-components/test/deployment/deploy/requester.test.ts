@@ -429,7 +429,7 @@ describe('DeployRequester', () => {
                     },
                   },
                   copyFromResponse: {
-                    toExtraContext: {
+                    toSharedContext: {
                       pick: ['stop'],
                     },
                   },
@@ -487,7 +487,7 @@ describe('DeployRequester', () => {
                     },
                   },
                   copyFromResponse: {
-                    toExtraContext: {
+                    toSharedContext: {
                       pick: ['stop'],
                       nestUnderElemID: false,
                     },

@@ -23,6 +23,7 @@ import {
   getChangeData,
   Change,
   ListType,
+  Field,
 } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements_deprecated'
 import { overrideInstanceTypeForDeploy, restoreInstanceTypeFromChange } from '../../src/deployment/placeholder_types'
@@ -157,6 +158,25 @@ describe('ducktype deployment functions', () => {
     it('should copy service id fields from type if they do not exist in the instance', () => {
       objType.fields.id = expectedType.fields.id
       delete instance.value.id
+      const instanceForDeploy = overrideInstanceTypeForDeploy({
+        instance,
+        defQuery: queryWithDefault<Pick<InstanceFetchApiDefinitions, 'element' | 'resource'>>({
+          default: {
+            resource: {
+              serviceIDFields: ['id'],
+            },
+          },
+          customizations: {
+            obj: {},
+          },
+        }),
+      })
+      expect(instanceForDeploy).toBeDefined()
+      expect(instanceForDeploy.refType.type).toEqual(expectedType)
+    })
+    it('should default to serviceid type if service id fields do not exist at all', () => {
+      delete instance.value.id
+      expectedType.fields.id = new Field(expectedType, 'id', BuiltinTypes.SERVICE_ID)
       const instanceForDeploy = overrideInstanceTypeForDeploy({
         instance,
         defQuery: queryWithDefault<Pick<InstanceFetchApiDefinitions, 'element' | 'resource'>>({

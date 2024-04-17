@@ -132,7 +132,7 @@ const extractDataToApply = ({
 const extractResponseDataToApply = async <ClientOptions extends string>({
   requestDef,
   response,
-  ...context
+  ...changeAndContext
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
@@ -144,13 +144,13 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
       dataToApply,
       extractDataToApply({
         definition: copyFromResponse.additional,
-        changeAndContext: context,
+        changeAndContext,
         response,
       }),
     )
   }
   if (copyFromResponse?.updateServiceIDs !== false) {
-    const type = await getChangeData(context.change).getType()
+    const type = await getChangeData(changeAndContext.change).getType()
     const serviceIDFieldNames = Object.keys(
       _.pickBy(
         await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
@@ -166,7 +166,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
             // reverse the transformation used for the request
             root: requestDef.request.transformation?.nestUnderField,
           },
-          changeAndContext: context,
+          changeAndContext,
           response,
         }),
       )
@@ -179,7 +179,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
 const extractExtraContextToApply = <ClientOptions extends string>({
   requestDef,
   response,
-  ...context
+  ...changeAndContext
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
@@ -188,12 +188,12 @@ const extractExtraContextToApply = <ClientOptions extends string>({
   if (toSharedContext !== undefined) {
     const dataToApply = extractDataToApply({
       definition: toSharedContext,
-      changeAndContext: context,
+      changeAndContext,
       response,
     })
     if (toSharedContext.nestUnderElemID !== false) {
       return {
-        [getChangeData(context.change).elemID.getFullName()]: dataToApply,
+        [getChangeData(changeAndContext.change).elemID.getFullName()]: dataToApply,
       }
     }
     return dataToApply
@@ -258,9 +258,16 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     const { elemID, value } = getChangeData(change)
 
     const resolvedChange = await changeResolver(change)
+    const contextFunc =
+      mergedRequestDef.context?.custom !== undefined
+        ? mergedRequestDef.context.custom(mergedRequestDef.context)
+        : () => undefined
     const additionalContext = replaceAllArgs({
       context: _.merge({}, getChangeData(resolvedChange).value, getChangeData(resolvedChange).annotations),
-      value: _.merge(_.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource', 'sharedContext'])),
+      value: _.merge(
+        contextFunc({ change, ...changeContext }),
+        _.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource', 'sharedContext', 'custom']),
+      ),
     })
 
     const data = mergedEndpointDef.omitBody

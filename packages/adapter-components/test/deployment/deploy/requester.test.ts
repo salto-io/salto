@@ -21,6 +21,7 @@ import {
   InstanceElement,
   ObjectType,
   getChangeData,
+  isModificationChange,
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -121,6 +122,34 @@ describe('DeployRequester', () => {
                         endpoint: {
                           path: '/test/endpoint/{instanceId}',
                           method: 'delete',
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            test2: {
+              requestsByAction: {
+                customizations: {
+                  modify: [
+                    {
+                      request: {
+                        context: {
+                          custom:
+                            () =>
+                            ({ change }) => {
+                              if (!isModificationChange(change)) {
+                                return {}
+                              }
+                              return {
+                                oldInstanceId: change.data.before.value.obj.id,
+                              }
+                            },
+                        },
+                        endpoint: {
+                          path: '/test2/endpoint/{oldInstanceId}',
+                          method: 'put',
                         },
                       },
                     },
@@ -252,7 +281,7 @@ describe('DeployRequester', () => {
     ).rejects.toThrow('Could not find requests for change adapter.test.instance.instance action modify')
   })
 
-  it('deleting an instance should send the instance id to the right URL', async () => {
+  it('should use context in URL', async () => {
     client.delete.mockResolvedValue({
       status: 200,
       data: {},
@@ -275,6 +304,36 @@ describe('DeployRequester', () => {
     expect(client.delete).toHaveBeenCalledWith(
       expect.objectContaining({
         url: '/test/endpoint/1',
+      }),
+    )
+  })
+  it('should use custom context in URL', async () => {
+    client.put.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    const requester = getRequester<{ additionalAction: AdditionalAction }>({
+      clients: definitions.clients,
+      deployDefQuery: queryWithDefault(definitions.deploy.instances),
+      changeResolver: async change => change,
+    })
+    const beforeInstance = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('adapter', 'test2') }), {
+      obj: { id: 5 },
+    })
+    const afterInstance = beforeInstance.clone()
+    afterInstance.value = {}
+
+    const change = toChange({ before: beforeInstance, after: afterInstance })
+    await requester.requestAllForChangeAndAction({
+      action: change.action,
+      change,
+      changeGroup: { changes: [change], groupID: 'abc' },
+      elementSource: buildElementsSourceFromElements([]),
+      sharedContext: {},
+    })
+    expect(client.put).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/test2/endpoint/5',
       }),
     )
   })

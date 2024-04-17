@@ -29,7 +29,7 @@ const TYPES_TO_FIELDS: Record<string, string[]> = {
   [AUTHORIZATION_POLICY]: ['policyRules'],
   [AUTOMATION_TYPE_NAME]: ['policyRules'],
   ...Object.fromEntries(POLICY_TYPE_NAMES.map(typeName => [typeName, ['policyRules']])),
-  Brand: ['BrandTheme'],
+  Brand: ['BrandTheme'], // 'SignInPage'
 }
 
 /**

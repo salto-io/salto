@@ -57,6 +57,9 @@ const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
 // The expression match AppUserSchema endpoint used for fetch
 const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
+// Match any of the custom pages endpoints (sign-in, error,
+const CUSTOM_PAGE_URL = /(\/api\/v1\/brands\/\w+\/pages\/\w+)/
+
 type OktaRateLimits = {
   rateLimitRemaining: number
   rateLimitReset: number
@@ -202,8 +205,13 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
         updateRateLimits(rateLimits, e.response?.headers, args.url)
       }
       const status = e.response?.status
-      // Okta returns 404 when trying fetch AppUserSchema for built-in apps
-      if (status === 404 && args.url.match(APP_USER_SCHEMA_URL)) {
+      if (
+        status === 404 &&
+        // Okta returns 404 when trying fetch AppUserSchema for built-in apps
+        (args.url.match(APP_USER_SCHEMA_URL) ||
+          // Okta returns 404 when trying to fetch a customized brand page when the default is used
+          args.url.match(CUSTOM_PAGE_URL))
+      ) {
         log.debug('Suppressing %d error %o for AppUserSchema', status, e)
         return { data: [], status }
       }

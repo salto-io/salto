@@ -28,6 +28,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
+import { spaceMergeAndTransformAdjust } from '../transformation_utils/space'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -104,6 +105,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: true,
+      mergeAndTransform: {
+        adjust: spaceMergeAndTransformAdjust,
+      },
       recurseInto: {
         permissions: {
           typeName: PERMISSION_TYPE_NAME,
@@ -142,6 +146,12 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
       },
       fieldCustomizations: {
+        permissionInternalIdMap: {
+          hide: true,
+        },
+        key: {
+          hide: true,
+        },
         id: {
           hide: true,
         },
@@ -150,7 +160,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             typeName: TEMPLATE_TYPE_NAME,
             addParentAnnotation: true,
             referenceFromParent: false,
-            nestPathUnderParent: false,
+            nestPathUnderParent: true,
           },
         },
         settings: {

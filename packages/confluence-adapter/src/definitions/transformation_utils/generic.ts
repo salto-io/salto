@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+import { Value } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 
-export const assertValue = (value: unknown): Record<string, unknown> => {
+export const assertValue = (value: unknown): Record<string, Value> => {
   if (!lowerdashValues.isPlainRecord(value)) {
     throw new Error('Can not adjust when the value is not an object')
   }

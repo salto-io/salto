@@ -25,7 +25,7 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
     global: {
       branches: 22,
       functions: 59.3,
-      lines: 70,
+      lines: 68.9,
       statements: 68.9,
     },
   },

@@ -32,7 +32,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import { JIRA, ACCOUNT_ID_FIELDS_NAMES, WORKFLOW_CONFIGURATION_TYPE } from '../../../src/constants'
+import { JIRA, ACCOUNT_ID_FIELDS_NAMES, WORKFLOW_CONFIGURATION_TYPE, AUTOMATION_TYPE } from '../../../src/constants'
 import accountIdFilter, { ACCOUNT_ID_TYPES } from '../../../src/filters/account_id/account_id_filter'
 import * as common from './account_id_common'
 
@@ -55,6 +55,7 @@ describe('account_id_filter', () => {
   let boardInstance: InstanceElement
   let fieldContextInstance: InstanceElement
   let workflowInstance: InstanceElement
+  let automationInstance: InstanceElement
 
   beforeEach(() => {
     elemIdGetter = mockFunction<ElemIdGetter>().mockImplementation(
@@ -122,6 +123,90 @@ describe('account_id_filter', () => {
         },
       },
     })
+    automationInstance = new InstanceElement('automationInstance', createEmptyType(AUTOMATION_TYPE), {
+      components: [
+        {
+          component: 'ACTION',
+          type: 'jira.issue.create',
+          value: {
+            operations: [
+              {
+                field: {
+                  type: 'ID',
+                  value: 'bla'
+                },
+                fieldType: 'project',
+                type: 'SET',
+                value: {
+                  value: 'current',
+                  type: 'COPY'
+                }
+              },
+              {
+                field: {
+                  type: 'ID',
+                  value: 'assignee'
+                },
+                fieldType: 'assignee',
+                type: 'SET',
+                value: {
+                  type: 'ID',
+                  value: 'acc6'
+                }
+              },
+            ],
+            sendNotifications: false
+          },
+          children: [
+          ],
+          conditions: [
+          ]
+        },
+        {
+          component: 'CONDITION',
+          schemaVersion: 3,
+          type: 'jira.issue.condition',
+          value: {
+            selectedField: {
+              type: 'ID',
+              value: 'assignee'
+            },
+            selectedFieldType: 'assignee',
+            comparison: 'EQUALS',
+            compareFieldValue: {
+              type: 'ID',
+              values: ['acc7','acc8'],
+            },
+            multiValue: false
+          },
+          children: [
+          ],
+          conditions: [
+          ]
+        },
+        {// do not add account id
+          component: 'CONDITION',
+          schemaVersion: 3,
+          type: 'jira.issue.condition',
+          value: {
+            selectedField: {
+              type: 'ID',
+              value: 'assignee'
+            },
+            selectedFieldType: 'assignee',
+            comparison: 'NOT_EMPTY',
+            compareFieldValue: {
+              type: 'ID',
+              multiValue: false
+            }
+          },
+          children: [
+          ],
+          conditions: [
+          ]
+        },
+      ]
+    })
 
     displayChanges = [
       toChange({ after: displayNamesInstances[0] }),
@@ -137,6 +222,7 @@ describe('account_id_filter', () => {
         boardInstance,
         fieldContextInstance,
         workflowInstance,
+        automationInstance,
       ])
       common.checkObjectedInstanceIds(simpleInstances[1], '1')
       expect(filterInstance.value.owner.id).toEqual('acc2')
@@ -151,6 +237,9 @@ describe('account_id_filter', () => {
         workflowInstance.value.transitions.transition1.conditions.conditions[1].parameters.scriptRunner.accountIds[0]
           .id,
       ).toEqual('quack')
+      expect(automationInstance.value.components[0].value.operations[1].value.value.id).toEqual('acc6')
+      expect(automationInstance.value.components[1].value.compareFieldValue.values[0].id).toEqual('acc7')
+      expect(automationInstance.value.components[1].value.compareFieldValue.values[1].id).toEqual('acc8')
     })
     it('should change account ids in all defined types', async () => {
       await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
@@ -165,6 +254,12 @@ describe('account_id_filter', () => {
       const instance = common.createInstance('1', type)
       await filter.onFetch([instance])
       common.checkSimpleInstanceIds(instance, '1')
+    })
+    it('should not change account ids for empty values', async () => {
+      await filter.onFetch([
+        automationInstance,
+      ])
+      expect(automationInstance.value.components[2].value.compareFieldValue.value).toBeUndefined()
     })
     it('should enhance types with relevant account ids', async () => {
       const currentObjectType = new ObjectType({

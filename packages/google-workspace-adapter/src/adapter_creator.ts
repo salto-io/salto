@@ -22,7 +22,7 @@ import { ADAPTER_NAME } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { REFERENCES } from './definitions/references'
-import { Options } from './definitions/types'
+import { ClientOptions, Options } from './definitions/types'
 import {
   CLOUD_IDENTITY_APP_NAME,
   DIRECTORY_APP_NAME,
@@ -80,7 +80,9 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     connectionCreatorFromConfig: () => createConnectionForApp(DIRECTORY_APP_NAME),
     credentialsFromConfig: defaultCredentialsFromConfig,
     additionalChangeValidators: {
-      createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnDefinitionsValidator({
+      createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnDefinitionsValidator<{
+        clientOptions: ClientOptions
+      }>({
         typesConfig: createDeployDefinitions(),
       }),
     },

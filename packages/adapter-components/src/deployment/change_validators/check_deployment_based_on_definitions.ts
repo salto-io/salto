@@ -30,16 +30,22 @@ import { collections } from '@salto-io/lowerdash'
 import { DeployApiDefinitions, DeployableRequestDefinition } from '../../definitions/system/deploy'
 import { DefaultWithCustomizations, queryWithDefault } from '../../definitions'
 import { ERROR_MESSAGE, detailedErrorMessage } from './check_deployment_based_on_config'
+import {
+  APIDefinitionsOptions,
+  ResolveAdditionalActionType,
+  ResolveClientOptionsType,
+} from '../../definitions/system/api'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
-const createChangeErrors = (
-  typeConfig: DefaultWithCustomizations<DeployableRequestDefinition<never>[], ActionName>,
+const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
+  typeConfig: DefaultWithCustomizations<DeployableRequestDefinition<ResolveClientOptionsType<Options>>[], ActionName>,
   instanceElemID: ElemID,
   action: ActionName,
 ): ChangeError[] => {
-  const requestsByAction = queryWithDefault(typeConfig).query(action)
-  if (!requestsByAction) {
+  const requestsByAction = makeArray(queryWithDefault(typeConfig).query(action))
+  if (requestsByAction.length === 0 || requestsByAction.every(req => req.request.endpoint === undefined)) {
     return [
       {
         elemID: instanceElemID,
@@ -52,12 +58,12 @@ const createChangeErrors = (
   return []
 }
 
-export const createCheckDeploymentBasedOnDefinitionsValidator = ({
+export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends APIDefinitionsOptions = {}>({
   typesConfig,
   typesDeployedViaParent = [],
   typesWithNoDeploy = [],
 }: {
-  typesConfig: DeployApiDefinitions<never, never>
+  typesConfig: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
   typesDeployedViaParent?: string[]
   typesWithNoDeploy?: string[]
 }): ChangeValidator => {

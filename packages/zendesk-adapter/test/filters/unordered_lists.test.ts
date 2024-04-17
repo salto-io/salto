@@ -24,7 +24,7 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import {
   GROUP_TYPE_NAME,
-  MACRO_TYPE_NAME,
+  MACRO_TYPE_NAME, ROUTING_ATTRIBUTE_TYPE_NAME, ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
   TICKET_FIELD_CUSTOM_FIELD_OPTION,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
@@ -46,6 +46,8 @@ describe('Unordered lists filter', () => {
     const triggerDefinitionType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger_definition') })
     const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
     const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') })
+    const routingAttributeType = new ObjectType({ elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_TYPE_NAME) })
+    const routingAttributeValueType = new ObjectType({ elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_VALUE_TYPE_NAME) })
     const viewType = new ObjectType({ elemID: new ElemID(ZENDESK, VIEW_TYPE_NAME) })
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
     const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
@@ -291,6 +293,24 @@ describe('Unordered lists filter', () => {
       ],
     })
 
+    const routingAttributeValueA = new InstanceElement('routingAttributeValueA', routingAttributeValueType, {
+      name: 'A'
+    })
+    const routingAttributeValueB = new InstanceElement('routingAttributeValueB', routingAttributeValueType, {
+      name: 'B'
+    })
+    const routingAttributeValueC = new InstanceElement('routingAttributeValueC', routingAttributeValueType, {
+      name: 'C'
+    })
+
+    const routingAttribute = new InstanceElement('routingAttribute', routingAttributeType, {
+      values: [
+        new ReferenceExpression(routingAttributeValueC.elemID, routingAttributeValueC ),
+        new ReferenceExpression(routingAttributeValueA.elemID, routingAttributeValueA ),
+        new ReferenceExpression(routingAttributeValueB.elemID, routingAttributeValueB ),
+      ],
+    })
+
     const empty = new InstanceElement('empty', dynamicContentItemType, {})
     return [
       localeType,
@@ -331,6 +351,7 @@ describe('Unordered lists filter', () => {
       invalidChildFieldTicketFormInstance,
       invalidTicketFieldInstance,
       workspaceWithMultipleApps,
+      routingAttributeValueC, routingAttributeValueA, routingAttributeValueB, routingAttribute,
     ]
   }
 
@@ -562,6 +583,19 @@ describe('Unordered lists filter', () => {
       expect(instance.value.apps[1].position).toEqual(2)
       expect(instance.value.apps[2].name).toEqual('c')
       expect(instance.value.apps[2].position).toEqual(3)
+    })
+  })
+  describe('routing attribute', () => {
+    let instance: InstanceElement
+    beforeAll(() => {
+      ;[instance] = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === ROUTING_ATTRIBUTE_TYPE_NAME)
+    })
+
+    it('should sort values by name', async () => {
+      expect(instance.value.values).toHaveLength(3)
+      expect(instance.value.values[0].value.value.name).toEqual('A')
+      expect(instance.value.values[1].value.value.name).toEqual('B')
+      expect(instance.value.values[2].value.value.name).toEqual('C')
     })
   })
 })

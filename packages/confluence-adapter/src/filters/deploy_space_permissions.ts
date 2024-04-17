@@ -127,6 +127,7 @@ const deployPermissions = async ({
 }: DeployPermissionsInput): Promise<DeployResult['errors']> => {
   const changeData = getChangeData(spaceModificationChange)
   const { permissionsToDeleted, permissionsToAdd } = calculatePermissionsDiff(spaceModificationChange)
+  log.debug('Found %o permissions to deleted and %o permissions to add', permissionsToDeleted, permissionsToAdd)
   const permissionsToDeletedIds = permissionsToDeleted
     .map(
       permissionToDelete =>
@@ -164,9 +165,9 @@ const deployPermissions = async ({
       ),
     },
   })
-  const removeChanges = permissionsToDeletedIds.map(createPermissionRemoveChange)
+  const removalChanges = permissionsToDeletedIds.map(createPermissionRemoveChange)
   const removalRes = await deployment.deployChanges({
-    changes: removeChanges,
+    changes: removalChanges,
     ...args,
   })
   const additionChanges = permissionsToAdd.map(createPermissionAdditionChange)
@@ -215,92 +216,21 @@ const filter =
       const appliedChanges: DeployResult['appliedChanges'] = []
       const lookupFunc = references.generateLookupFunc(definitions.references?.rules ?? [])
       const changeResolver = createChangeElementResolver<Change<InstanceElement>>({ getLookUpName: lookupFunc })
+      const deployArgsWithoutChanges = {
+        definitions: definitionsWithDeployAndFetch,
+        changeGroup,
+        elementSource,
+        convertError,
+        changeResolver,
+      }
       await awu(spaceNonRemovalChanges).forEach(async spaceChange => {
         if (!isAdditionOrModificationChange(spaceChange) || !isInstanceChange(spaceChange)) {
           return
         }
         const spaceChangeData = getChangeData(spaceChange)
-        const deployPermissions = async (
-          spaceModificationChange: ModificationChange<InstanceElement>,
-        ): Promise<DeployResult['errors']> => {
-          const changeData = getChangeData(spaceModificationChange)
-          const { permissionsToDeleted, permissionsToAdd } = calculatePermissionsDiff(spaceModificationChange)
-          const permissionsToDeletedIds = permissionsToDeleted
-            .map(
-              permissionToDelete =>
-                changeData.value.permissionInternalIdMap?.[naclCase(createPermissionUniqueKey(permissionToDelete))],
-            )
-            .filter(values.isDefined)
-            .filter(_.isString)
-          const createPermissionRemoveChange = (id: string): RemovalChange<InstanceElement> => ({
-            action: 'remove',
-            data: {
-              before: new InstanceElement(id, permissionObjectType, { id }, [], {
-                [CORE_ANNOTATIONS.PARENT]: [changeData],
-              }),
-            },
-          })
-
-          const createPermissionAdditionChange = (permission: PermissionObject): AdditionChange<InstanceElement> => ({
-            action: 'add',
-            data: {
-              after: new InstanceElement(
-                createPermissionUniqueKey(permission),
-                permissionObjectType,
-                {
-                  subject: {
-                    type: permission.type,
-                    identifier: permission.principalId,
-                  },
-                  operation: {
-                    key: permission.key,
-                    target: permission.targetType,
-                  },
-                },
-                [],
-                { [CORE_ANNOTATIONS.PARENT]: [changeData] },
-              ),
-            },
-          })
-          const removeChanges = permissionsToDeletedIds.map(createPermissionRemoveChange)
-          const removalRes = await deployment.deployChanges({
-            changes: removeChanges,
-            changeGroup,
-            elementSource,
-            convertError,
-            definitions: definitionsWithDeployAndFetch,
-            changeResolver,
-          })
-          const additionChanges = permissionsToAdd.map(createPermissionAdditionChange)
-
-          const additionRes = await deployment.deployChanges({
-            changes: additionChanges,
-            changeGroup,
-            elementSource,
-            convertError,
-            definitions: definitionsWithDeployAndFetch,
-            changeResolver,
-          })
-          const newIdsToAdd: Record<string, string> = {}
-          additionRes.appliedChanges.forEach(change => {
-            if (isInstanceChange(change)) {
-              const inst = getChangeData(change)
-              transformPermissionAndUpdateIdMap(inst.value, newIdsToAdd)
-            }
-          })
-          changeData.value.permissionInternalIdMap = {
-            ...changeData.value.permissionInternalIdMap,
-            ...newIdsToAdd,
-          }
-          return [...removalRes.errors, ...additionRes.errors]
-        }
         const { errors: spaceDeploymentErrors } = await deployment.deployChanges({
           changes: [spaceChange],
-          changeGroup,
-          elementSource,
-          convertError,
-          definitions: definitionsWithDeployAndFetch,
-          changeResolver,
+          ...deployArgsWithoutChanges,
         })
         if (!_.isEmpty(spaceDeploymentErrors)) {
           errors.concat(spaceDeploymentErrors)
@@ -309,7 +239,10 @@ const filter =
         log.debug('successfully deployed space %s, starting deploy permissions', spaceChangeData.elemID.getFullName())
         appliedChanges.concat(spaceChange)
         if (isModificationChange(spaceChange)) {
-          const permissionErrors = await deployPermissions(spaceChange)
+          const permissionErrors = await deployPermissions({
+            spaceModificationChange: spaceChange,
+            ...deployArgsWithoutChanges,
+          })
           errors.concat(permissionErrors)
         } else {
           // case of addition change
@@ -332,12 +265,16 @@ const filter =
             const fakeBeforeSpaceInstance = spaceChangeData.clone() as InstanceElement
             fakeBeforeSpaceInstance.value.permissions = itemsWithContext.map(item => item.value)
             restructurePermissionsAndCreateInternalIdMap(fakeBeforeSpaceInstance.value)
+            // copy the created `permissionInternalIdMap` on the fake instance
             spaceChangeData.value.permissionInternalIdMap = fakeBeforeSpaceInstance.value.permissionInternalIdMap
             const fakeModificationChange = toChange({
               before: fakeBeforeSpaceInstance,
               after: spaceChangeData,
             }) as ModificationChange<InstanceElement>
-            const permissionErrors = await deployPermissions(fakeModificationChange)
+            const permissionErrors = await deployPermissions({
+              spaceModificationChange: fakeModificationChange,
+              ...deployArgsWithoutChanges,
+            })
             errors.concat(permissionErrors)
           } catch (e) {
             log.error(

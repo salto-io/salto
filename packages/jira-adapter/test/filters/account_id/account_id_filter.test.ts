@@ -133,34 +133,32 @@ describe('account_id_filter', () => {
               {
                 field: {
                   type: 'ID',
-                  value: 'bla'
+                  value: 'bla',
                 },
                 fieldType: 'project',
                 type: 'SET',
                 value: {
                   value: 'current',
-                  type: 'COPY'
-                }
+                  type: 'COPY',
+                },
               },
               {
                 field: {
                   type: 'ID',
-                  value: 'assignee'
+                  value: 'assignee',
                 },
                 fieldType: 'assignee',
                 type: 'SET',
                 value: {
                   type: 'ID',
-                  value: 'acc6'
-                }
+                  value: 'acc6',
+                },
               },
             ],
-            sendNotifications: false
+            sendNotifications: false,
           },
-          children: [
-          ],
-          conditions: [
-          ]
+          children: [],
+          conditions: [],
         },
         {
           component: 'CONDITION',
@@ -169,43 +167,40 @@ describe('account_id_filter', () => {
           value: {
             selectedField: {
               type: 'ID',
-              value: 'assignee'
+              value: 'assignee',
             },
             selectedFieldType: 'assignee',
             comparison: 'EQUALS',
             compareFieldValue: {
               type: 'ID',
-              values: ['acc7','acc8'],
+              values: ['acc7', 'acc8'],
             },
-            multiValue: false
+            multiValue: false,
           },
-          children: [
-          ],
-          conditions: [
-          ]
+          children: [],
+          conditions: [],
         },
-        {// do not add account id
+        {
+          // do not add account id
           component: 'CONDITION',
           schemaVersion: 3,
           type: 'jira.issue.condition',
           value: {
             selectedField: {
               type: 'ID',
-              value: 'assignee'
+              value: 'assignee',
             },
             selectedFieldType: 'assignee',
             comparison: 'NOT_EMPTY',
             compareFieldValue: {
               type: 'ID',
-              multiValue: false
-            }
+              multiValue: false,
+            },
           },
-          children: [
-          ],
-          conditions: [
-          ]
+          children: [],
+          conditions: [],
         },
-      ]
+      ],
     })
 
     displayChanges = [
@@ -256,9 +251,7 @@ describe('account_id_filter', () => {
       common.checkSimpleInstanceIds(instance, '1')
     })
     it('should not change account ids for empty values', async () => {
-      await filter.onFetch([
-        automationInstance,
-      ])
+      await filter.onFetch([automationInstance])
       expect(automationInstance.value.components[2].value.compareFieldValue.value).toBeUndefined()
     })
     it('should enhance types with relevant account ids', async () => {

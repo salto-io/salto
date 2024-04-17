@@ -65,7 +65,6 @@ const StandardBuiltinTypes = {
 const restrictionType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.RESTRICTION),
   fields: {
-    // eslint-disable-next-line camelcase
     enforce_value: {
       refType: new TypeReference(StandardBuiltinTypes.BOOLEAN.elemID, StandardBuiltinTypes.BOOLEAN),
     },
@@ -170,7 +169,7 @@ export const BuiltinTypes = {
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export const isServiceId = (type: any): boolean => type.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] ?? false
+export const isServiceId = (type: any): boolean => _.has(type, `annotations.${CORE_ANNOTATIONS.SERVICE_ID}`)
 
 export const BuiltinTypesByFullName: Record<string, PrimitiveType> = _.keyBy(Object.values(BuiltinTypes), builtinType =>
   builtinType.elemID.getFullName(),

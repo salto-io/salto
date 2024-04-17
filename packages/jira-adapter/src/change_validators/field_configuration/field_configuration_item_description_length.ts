@@ -29,29 +29,31 @@ import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
 } from '../../constants'
 
-const FILTERED_TYPES = new Set([FIELD_CONFIGURATION_TYPE_NAME, FIELD_CONFIGURATION_ITEM_TYPE_NAME])
-
 type describedType = { description: string }
 type describedElementType = { elemID: ElemID } & describedType
 const isDescriptionTooLong = (obj: describedType): boolean =>
   obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
+const convertToDescribedElementType = (inst: InstanceElement): describedElementType | describedElementType[] => {
+  if (inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
+    return { elemID: inst.elemID, description: inst.value.description }
+  }
 
+  return Object.entries(inst.value.fields).map(([itemName, item]: [string, Value]) => ({
+    elemID: inst.elemID.createNestedID('fields', itemName),
+    description: item.description,
+  }))
+}
 export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(change => !isRemovalChange(change))
     .map(getChangeData)
-    .filter(inst => FILTERED_TYPES.has(inst.elemID.typeName))
-    .map((inst: InstanceElement): describedElementType | describedElementType[] => {
-      if (inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
-        return { elemID: inst.elemID, description: inst.value.description }
-      }
-
-      return Object.entries(inst.value.fields).map(([itemName, item]: [string, Value]) => ({
-        elemID: inst.elemID.createNestedID('fields', itemName),
-        description: item.description,
-      }))
-    })
+    .filter(
+      inst =>
+        inst.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME ||
+        inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME
+    )
+    .map(convertToDescribedElementType)
     .flat()
     .filter(isDescriptionTooLong)
     .map(item => ({

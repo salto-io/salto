@@ -23,8 +23,8 @@ import {
 } from '../../../src/constants'
 
 describe('fieldConfigurationItemDescriptionLengthValidator non split configuration', () => {
-  const fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
-  const fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
+  const fieldConfigurationObjectType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
+  const fieldConfigurationItemObjectType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
   const INITIAL_DESCRIPTION = 'initial description'
   const EMPTY_DESCRIPTION = '*'.repeat(0)
   const SHORT_DESCRIPTION = '*'.repeat(1)
@@ -33,7 +33,7 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
   const LONG_DESCRIPTION = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)
 
   it('Should succeed because regular mode item description length inside FieldConfiguration is lower than maximum.', async () => {
-    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationType, {
+    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationObjectType, {
       fields: {
         empty_description: {
           description: INITIAL_DESCRIPTION,
@@ -66,21 +66,21 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
   })
 
   it('Should succeed because split mode item description length inside FieldConfiguration is lower than maximum.', async () => {
-    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationType)
+    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationObjectType)
     const beforeInstances = [
-      new InstanceElement('SplitModeFieldConfigurationItem-EmptyDescription', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-EmptyDescription', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-      new InstanceElement('SplitModeFieldConfigurationItem-ShortDescription', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-ShortDescription', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-      new InstanceElement('SplitModeFieldConfigurationItem-MaxDescription', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-MaxDescription', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
@@ -100,7 +100,7 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
   })
 
   it('Should return an error for each item in regular mode FieldConfiguration with description length exceeding maximum', async () => {
-    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationType, {
+    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationObjectType, {
       fields: {
         valid_description: {
           description: INITIAL_DESCRIPTION,
@@ -141,17 +141,17 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
   })
 
   it('Should return an error for each item in split mode FieldConfiguration with description length exceeding maximum', async () => {
-    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationType)
+    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationObjectType)
     const beforeInstances = [
-      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription1', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription1', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription2', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription2', fieldConfigurationItemObjectType, {
         description: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
@@ -183,7 +183,7 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
   })
 
   it('Should succeed because there is no description in the item in regular mode for field configuration', async () => {
-    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationType, {
+    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationObjectType, {
       fields: {
         long_string_not_description: {
           some_string: INITIAL_DESCRIPTION,
@@ -203,13 +203,13 @@ describe('fieldConfigurationItemDescriptionLengthValidator non split configurati
   })
 
   it('Should succeed because there is no description in the item in split mode for field configuration', async () => {
-    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationType)
+    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationObjectType)
     const beforeInstances = [
-      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemObjectType, {
         some_string: INITIAL_DESCRIPTION,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription1', fieldConfigurationItemType, {
+      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription1', fieldConfigurationItemObjectType, {
         some_field: 0,
         id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),

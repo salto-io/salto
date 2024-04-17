@@ -18,9 +18,9 @@ import { fieldConfigurationDescriptionLengthValidator } from '../../../src/chang
 import { JIRA, FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_TYPE_NAME } from '../../../src/constants'
 
 describe('fieldConfigurationDescriptionLengthValidator', () => {
-  let fieldConfigurationType: ObjectType
+  let fieldConfigurationObjectType: ObjectType
   let fieldConfigurationInstance: InstanceElement
-  const boundaryValues = [
+  const BOUNDARY_VALUES = [
     0, // Lower bound
     1, // Lower + 1
     Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2), // Average case
@@ -28,9 +28,9 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
     FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, // Upper bound
   ]
   beforeEach(() => {
-    fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
+    fieldConfigurationObjectType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
 
-    fieldConfigurationInstance = new InstanceElement('instance', fieldConfigurationType, {
+    fieldConfigurationInstance = new InstanceElement('instance', fieldConfigurationObjectType, {
       fields: {
         description: 'configuration description',
         item: {
@@ -40,7 +40,7 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
     })
   })
 
-  it.each(boundaryValues)(
+  it.each(BOUNDARY_VALUES)(
     'Should succeed because field configuration description length is lower than maximum.',
     async descriptionLength => {
       const afterInstance = fieldConfigurationInstance.clone()

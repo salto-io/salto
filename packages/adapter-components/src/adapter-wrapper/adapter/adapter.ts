@@ -145,14 +145,13 @@ export class AdapterImpl<
     this.configInstance = configInstance
     this.changeValidators = {
       ...getDefaultChangeValidators(),
-      ...(this.definitions.deploy?.instances === undefined ? { deployNotSupported: deployNotSupportedValidator } : {}),
-      ...(this.definitions.deploy !== undefined
-        ? {
+      ...(this.definitions.deploy?.instances === undefined
+        ? { deployNotSupported: deployNotSupportedValidator }
+        : {
             createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator({
               deployDefinitions: this.definitions.deploy,
             }),
-          }
-        : {}),
+          }),
       ...additionalChangeValidators,
     }
     // TODO combine with infra changers after SALTO-5571

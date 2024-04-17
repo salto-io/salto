@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { InstanceElement, Adapter, AdapterAuthentication } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, AdapterAuthentication, ChangeValidator } from '@salto-io/adapter-api'
 import { FilterCreationArgs, createCommonFilters } from '../filters/common_filters'
 import { createClient } from '../client/client_creator'
 import { AdapterImplConstructor } from './adapter/types'
@@ -77,6 +77,7 @@ export const createAdapter = <
     customizeFilterCreators?: (
       args: FilterCreationArgs<Options, Co>,
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
+    additionalChangeValidators?: Record<string, ChangeValidator>
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
@@ -124,6 +125,7 @@ export const createAdapter = <
           ),
           adapterName,
           configInstance: context.config,
+          additionalChangeValidators: operationsCustomizations.additionalChangeValidators,
         },
         adapterImpl ?? AdapterImpl,
       )

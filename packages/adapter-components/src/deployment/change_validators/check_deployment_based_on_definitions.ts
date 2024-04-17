@@ -27,24 +27,28 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { DeploymentRequestsByAction, DeployRequestConfig, TypeConfig } from '../../config_deprecated'
+import { DeployApiDefinitions, DeployableRequestDefinition } from '../../definitions/system/deploy'
+import { DefaultWithCustomizations, queryWithDefault } from '../../definitions'
+import { ERROR_MESSAGE, detailedErrorMessage } from './check_deployment_based_on_config'
+import {
+  APIDefinitionsOptions,
+  ResolveAdditionalActionType,
+  ResolveClientOptionsType,
+} from '../../definitions/system/api'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
-export const ERROR_MESSAGE = 'Operation not supported'
-
-export const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
-  `Salto does not support "${action}" of ${path.getFullName()}. Please see your business app FAQ at https://help.salto.io/en/articles/6927118-supported-business-applications for a list of supported elements.`
-
-const isDeploymentSupported = (action: Change['action'], config: DeploymentRequestsByAction): boolean =>
-  config[action] !== undefined
-
-const createChangeErrors = (
-  typeConfig: Partial<Record<ActionName, DeployRequestConfig>>,
+const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
+  typeRequestDefinition: DefaultWithCustomizations<
+    DeployableRequestDefinition<ResolveClientOptionsType<Options>>[],
+    ActionName
+  >,
   instanceElemID: ElemID,
   action: ActionName,
 ): ChangeError[] => {
-  if (!isDeploymentSupported(action, typeConfig)) {
+  const actionRequests = makeArray(queryWithDefault(typeRequestDefinition).query(action))
+  if (actionRequests.length === 0 || actionRequests.every(req => req.request.endpoint === undefined)) {
     return [
       {
         elemID: instanceElemID,
@@ -57,17 +61,18 @@ const createChangeErrors = (
   return []
 }
 
-export const createCheckDeploymentBasedOnConfigValidator =
-  ({
-    typesConfig,
-    typesDeployedViaParent = [],
-    typesWithNoDeploy = [],
-  }: {
-    typesConfig: Record<string, TypeConfig>
-    typesDeployedViaParent?: string[]
-    typesWithNoDeploy?: string[]
-  }): ChangeValidator =>
-  async changes =>
+// This is the new version of the createCheckDeploymentBasedOnConfigValidator CV that support definitions
+export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends APIDefinitionsOptions = {}>({
+  deployDefinitions,
+  typesDeployedViaParent = [],
+  typesWithNoDeploy = [],
+}: {
+  deployDefinitions: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
+  typesDeployedViaParent?: string[]
+  typesWithNoDeploy?: string[]
+}): ChangeValidator => {
+  const typeConfigQuery = queryWithDefault(deployDefinitions.instances)
+  return async changes =>
     awu(changes)
       .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
         const element = getChangeData(change)
@@ -75,8 +80,8 @@ export const createCheckDeploymentBasedOnConfigValidator =
           return []
         }
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
-          const typeConfig = typesConfig[typeName]?.deployRequests ?? {}
-          return createChangeErrors(typeConfig, element.elemID, change.action)
+          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction ?? {}
+          return createChangeErrors(requestsByAction, element.elemID, change.action)
         }
         if (typesWithNoDeploy.includes(element.elemID.typeName)) {
           return []
@@ -96,3 +101,4 @@ export const createCheckDeploymentBasedOnConfigValidator =
       })
       .flat()
       .toArray()
+}

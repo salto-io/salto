@@ -69,22 +69,31 @@ import {
   ARTICLE_ATTACHMENTS_FIELD,
   ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,
-  ARTICLE_TYPE_NAME, AUTOMATION_TYPE_NAME,
-  BRAND_TYPE_NAME, BUSINESS_HOUR_SCHEDULE,
+  ARTICLE_TYPE_NAME,
+  AUTOMATION_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
-  CUSTOM_OBJECT_TYPE_NAME, CUSTOM_ROLE_TYPE_NAME, GROUP_TYPE_NAME,
+  CUSTOM_OBJECT_TYPE_NAME,
+  CUSTOM_ROLE_TYPE_NAME,
+  GROUP_TYPE_NAME,
   GUIDE,
-  GUIDE_THEME_TYPE_NAME, MACRO_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
+  MACRO_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
-  SECTION_TYPE_NAME, SLA_POLICY_TYPE_NAME,
-  THEME_SETTINGS_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
-  USER_SEGMENT_TYPE_NAME, VIEW_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  SLA_POLICY_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  VIEW_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
@@ -207,18 +216,12 @@ const cleanup = async (adapterAttr: Reals, fetchResult: FetchResult): Promise<vo
     .map(instance => toChange({ before: instance }))
   const groupedChanges = _.groupBy(changesToClean, change => getChangeData(change).elemID.typeName)
   if (changesToClean.length > 0) {
-    if (groupedChanges[CATEGORY_TYPE_NAME] !== undefined && groupedChanges[CATEGORY_TYPE_NAME].length > 0){
+    if (groupedChanges[CATEGORY_TYPE_NAME] !== undefined && groupedChanges[CATEGORY_TYPE_NAME].length > 0) {
       // category clean up needs to run first as permission group depends on them
-      await deployChanges(
-        adapterAttr,
-        {[CATEGORY_TYPE_NAME]: groupedChanges[CATEGORY_TYPE_NAME]},
-      )
+      await deployChanges(adapterAttr, { [CATEGORY_TYPE_NAME]: groupedChanges[CATEGORY_TYPE_NAME] })
       delete groupedChanges[CATEGORY_TYPE_NAME]
     }
-    await deployChanges(
-      adapterAttr,
-      groupedChanges,
-    )
+    await deployChanges(adapterAttr, groupedChanges)
   }
 }
 

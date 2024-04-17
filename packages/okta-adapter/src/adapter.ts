@@ -94,7 +94,6 @@ import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
 import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
 import domainParentFilter from './filters/domain_parent'
-import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,

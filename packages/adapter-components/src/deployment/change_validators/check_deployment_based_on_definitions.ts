@@ -40,12 +40,15 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
-  typeConfig: DefaultWithCustomizations<DeployableRequestDefinition<ResolveClientOptionsType<Options>>[], ActionName>,
+  typeRequestDefinition: DefaultWithCustomizations<
+    DeployableRequestDefinition<ResolveClientOptionsType<Options>>[],
+    ActionName
+  >,
   instanceElemID: ElemID,
   action: ActionName,
 ): ChangeError[] => {
-  const requestsByAction = makeArray(queryWithDefault(typeConfig).query(action))
-  if (requestsByAction.length === 0 || requestsByAction.every(req => req.request.endpoint === undefined)) {
+  const actionRequests = makeArray(queryWithDefault(typeRequestDefinition).query(action))
+  if (actionRequests.length === 0 || actionRequests.every(req => req.request.endpoint === undefined)) {
     return [
       {
         elemID: instanceElemID,
@@ -58,16 +61,17 @@ const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
   return []
 }
 
+// This is the new version of the createCheckDeploymentBasedOnConfigValidator CV that support definitions
 export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends APIDefinitionsOptions = {}>({
-  typesConfig,
+  deployDefinitions,
   typesDeployedViaParent = [],
   typesWithNoDeploy = [],
 }: {
-  typesConfig: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
+  deployDefinitions: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
   typesDeployedViaParent?: string[]
   typesWithNoDeploy?: string[]
 }): ChangeValidator => {
-  const typeConfigQuery = queryWithDefault(typesConfig.instances)
+  const typeConfigQuery = queryWithDefault(deployDefinitions.instances)
   return async changes =>
     awu(changes)
       .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {

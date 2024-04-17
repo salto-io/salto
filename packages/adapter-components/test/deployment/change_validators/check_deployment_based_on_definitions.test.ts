@@ -26,7 +26,7 @@ import { DeployApiDefinitions } from '../../../src/definitions/system/deploy'
 
 describe('checkDeploymentBasedOnDefinitionsValidator', () => {
   let type: ObjectType
-  const typesConfig: DeployApiDefinitions<never, never> = {
+  const deployDefinitions: DeployApiDefinitions<never, never> = {
     instances: {
       customizations: {
         test: {
@@ -54,13 +54,15 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
   })
 
   it('should not return an error when the changed element is not an instance', async () => {
-    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ typesConfig })([toChange({ after: type })])
+    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
+      toChange({ after: type }),
+    ])
     expect(errors).toEqual([])
   })
 
   it('should return an error when type does not support deploy', async () => {
     const instance = new InstanceElement('test2', new ObjectType({ elemID: new ElemID('dum', 'test2') }))
-    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ typesConfig })([
+    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
       toChange({ after: instance }),
     ])
     expect(errors).toEqual([
@@ -75,7 +77,7 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
 
   it('should return an error when type does not support specific method', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ typesConfig })([
+    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
       toChange({ before: instance }),
     ])
     expect(errors).toEqual([
@@ -90,7 +92,7 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
 
   it('should not return an error when operation is supported', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ typesConfig })([
+    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
       toChange({ after: instance }),
     ])
     expect(errors).toEqual([])
@@ -106,7 +108,7 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInst.elemID, parentInst)] },
     )
     const errors = await createCheckDeploymentBasedOnDefinitionsValidator({
-      typesConfig,
+      deployDefinitions,
       typesDeployedViaParent: [childTypeName],
     })([toChange({ after: instance })])
     expect(errors).toEqual([])
@@ -122,7 +124,7 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInst.elemID, parentInst)] },
     )
     const errors = await createCheckDeploymentBasedOnDefinitionsValidator({
-      typesConfig,
+      deployDefinitions,
       typesDeployedViaParent: [childTypeName],
     })([toChange({ before: instance })])
     expect(errors).toEqual([
@@ -138,7 +140,7 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
     const typeName = 'testChild'
     const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('dum', typeName) }))
     const errors = await createCheckDeploymentBasedOnDefinitionsValidator({
-      typesConfig,
+      deployDefinitions,
       typesDeployedViaParent: [],
       typesWithNoDeploy: [typeName],
     })([toChange({ after: instance })])

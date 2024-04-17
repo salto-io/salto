@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, createAdapter, credentials, deployment } from '@salto-io/adapter-components'
+import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
 import { Credentials, basicCredentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnectionForApp } from './client/connection'
@@ -22,7 +22,7 @@ import { ADAPTER_NAME } from './constants'
 import { createClientDefinitions, createDeployDefinitions, createFetchDefinitions } from './definitions'
 import { PAGINATION } from './definitions/requests/pagination'
 import { REFERENCES } from './definitions/references'
-import { ClientOptions, Options } from './definitions/types'
+import { Options } from './definitions/types'
 import {
   CLOUD_IDENTITY_APP_NAME,
   DIRECTORY_APP_NAME,
@@ -48,8 +48,6 @@ const clientDefaults = {
   maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   retry: DEFAULT_RETRY_OPTS,
 }
-
-const { createCheckDeploymentBasedOnDefinitionsValidator } = deployment.changeValidators
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
@@ -79,13 +77,6 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   operationsCustomizations: {
     connectionCreatorFromConfig: () => createConnectionForApp(DIRECTORY_APP_NAME),
     credentialsFromConfig: defaultCredentialsFromConfig,
-    additionalChangeValidators: {
-      createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnDefinitionsValidator<{
-        clientOptions: ClientOptions
-      }>({
-        typesConfig: createDeployDefinitions(),
-      }),
-    },
   },
   initialClients: {
     main: undefined,

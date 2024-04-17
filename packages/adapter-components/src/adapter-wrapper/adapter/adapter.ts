@@ -56,6 +56,7 @@ import { ElementQuery, createElementQuery } from '../../fetch/query'
 import {
   createChangeValidator,
   deployNotSupportedValidator,
+  createCheckDeploymentBasedOnDefinitionsValidator,
   getDefaultChangeValidators,
 } from '../../deployment/change_validators'
 import { generateOpenApiTypes } from '../../openapi/type_elements/type_elements'
@@ -145,6 +146,13 @@ export class AdapterImpl<
     this.changeValidators = {
       ...getDefaultChangeValidators(),
       ...(this.definitions.deploy?.instances === undefined ? { deployNotSupported: deployNotSupportedValidator } : {}),
+      ...(this.definitions.deploy !== undefined
+        ? {
+            createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator({
+              deployDefinitions: this.definitions.deploy,
+            }),
+          }
+        : {}),
       ...additionalChangeValidators,
     }
     // TODO combine with infra changers after SALTO-5571

@@ -88,7 +88,7 @@ import profileMappingPropertiesFilter from './filters/profile_mapping_properties
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
-import policyRulePrioritiesFilter from './filters/policy_rule_priority'
+import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
@@ -98,6 +98,7 @@ import {
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
   OKTA,
+  POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
 } from './constants'
 import { getLookUpName } from './reference_mapping'
@@ -138,7 +139,7 @@ const DEFAULT_FILTERS = [
   brandThemeFilesFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
-  policyRulePrioritiesFilter,
+  policyPrioritiesFilter,
   addAliasFilter,
   // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
@@ -161,6 +162,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
   ...POLICY_RULE_PRIORITY_TYPE_NAMES,
+  ...POLICY_PRIORITY_TYPE_NAMES,
 ]
 
 export interface OktaAdapterParams {

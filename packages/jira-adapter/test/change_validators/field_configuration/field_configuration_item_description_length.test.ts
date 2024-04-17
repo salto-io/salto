@@ -22,115 +22,206 @@ import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
 } from '../../../src/constants'
 
-const boundaryValues = [
-  0, // Lower bound
-  1, // Lower bound + 1
-  Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2), // Average case
-  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH - 1, // Upper bound - 1
-  FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH, // Upper bound
-]
-
 describe('fieldConfigurationItemDescriptionLengthValidator non split configuration', () => {
-  let fieldConfigurationType: ObjectType
-  let fieldConfigurationInstance: InstanceElement
+  const fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
+  const fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
+  const INITIAL_DESCRIPTION = 'initial description'
+  const EMPTY_DESCRIPTION = '*'.repeat(0)
+  const SHORT_DESCRIPTION = '*'.repeat(1)
+  const AVERAGE_DESCRIPTION = '*'.repeat(Math.floor(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH / 2))
+  const MAX_DESCRIPTION = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH)
+  const LONG_DESCRIPTION = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)
 
-  beforeEach(() => {
-    fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
-
-    fieldConfigurationInstance = new InstanceElement('instance', fieldConfigurationType, {
+  it('Should succeed because regular mode item description length inside FieldConfiguration is lower than maximum.', async () => {
+    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationType, {
       fields: {
-        item1: {
-          description: 'item1 description',
+        empty_description: {
+          description: INITIAL_DESCRIPTION,
         },
-        item2: {
-          description: 'item2 description',
+        short_description: {
+          description: INITIAL_DESCRIPTION,
+        },
+        average_description: {
+          description: INITIAL_DESCRIPTION,
+        },
+        max_description: {
+          description: INITIAL_DESCRIPTION,
         },
       },
     })
+    const afterInstance = beforeInstance.clone()
+    afterInstance.value.fields.empty_description.description = EMPTY_DESCRIPTION
+    afterInstance.value.fields.short_description.description = SHORT_DESCRIPTION
+    afterInstance.value.fields.average_description.description = AVERAGE_DESCRIPTION
+    afterInstance.value.fields.max_description.description = MAX_DESCRIPTION
+
+    expect(
+      await fieldConfigurationItemDescriptionLengthValidator([
+        toChange({
+          before: beforeInstance,
+          after: afterInstance,
+        }),
+      ]),
+    ).toEqual([])
   })
 
-  it.each(boundaryValues)(
-    'Should succeed because item description length inside FieldConfiguration is lower than maximum.',
-    async descriptionLength => {
-      const afterInstance = fieldConfigurationInstance.clone()
-      afterInstance.value.fields.item1.description = '*'.repeat(descriptionLength)
-      expect(
-        await fieldConfigurationItemDescriptionLengthValidator([
-          toChange({
-            before: fieldConfigurationInstance,
-            after: afterInstance,
-          }),
-        ]),
-      ).toEqual([])
-    },
-  )
-
-  it('Should return an error because description length of items inside FieldConfiguration exceeds maximum.', async () => {
-    const afterInstance = fieldConfigurationInstance.clone()
-    afterInstance.value.fields.item1.description = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)
-    const result = await fieldConfigurationItemDescriptionLengthValidator([
-      toChange({
-        before: fieldConfigurationInstance,
-        after: afterInstance,
+  it('Should succeed because split mode item description length inside FieldConfiguration is lower than maximum.', async () => {
+    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationType)
+    const beforeInstances = [
+      new InstanceElement('SplitModeFieldConfigurationItem-EmptyDescription', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
       }),
-    ])
-    expect(result).toHaveLength(1)
-    expect(result).toEqual([
-      {
-        elemID: fieldConfigurationInstance.elemID,
-        severity: 'Error',
-        message: 'Description length exceeded maximum.',
-        detailedMessage: `Exceeded maximum description length of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters for the following fields: ${['item1']}.`,
-      },
-    ])
+      new InstanceElement('SplitModeFieldConfigurationItem-ShortDescription', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+      new InstanceElement('SplitModeFieldConfigurationItem-MaxDescription', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+    ]
+    const afterInstances = beforeInstances.map(instance => instance.clone())
+    afterInstances[0].value.description = EMPTY_DESCRIPTION
+    afterInstances[1].value.description = SHORT_DESCRIPTION
+    afterInstances[2].value.description = AVERAGE_DESCRIPTION
+    afterInstances[3].value.description = MAX_DESCRIPTION
+    expect(
+      await fieldConfigurationItemDescriptionLengthValidator(
+        beforeInstances.map((beforeInstance, index) =>
+          toChange({ before: beforeInstance, after: afterInstances[index] }),
+        ),
+      ),
+    ).toEqual([])
   })
-})
 
-describe('fieldConfigurationItemDescriptionLengthValidator split item configuration', () => {
-  let fieldConfigurationItemType: ObjectType
-  let fieldConfigurationItemInstance: InstanceElement
-
-  beforeEach(() => {
-    fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
-    fieldConfigurationItemInstance = new InstanceElement('instance', fieldConfigurationItemType, {
-      description: 'item description',
-      id: new ReferenceExpression(new ElemID(JIRA, 'item')),
+  it('Should return an error for each item in regular mode FieldConfiguration with description length exceeding maximum', async () => {
+    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationType, {
+      fields: {
+        valid_description: {
+          description: INITIAL_DESCRIPTION,
+        },
+        invalid_description1: {
+          description: INITIAL_DESCRIPTION,
+        },
+        invalid_description2: {
+          description: INITIAL_DESCRIPTION,
+        },
+      },
     })
-  })
-
-  it.each(boundaryValues)(
-    'Should succeed because FieldConfigurationItem description length is lower than maximum.',
-    async descriptionLength => {
-      const afterInstance = fieldConfigurationItemInstance.clone()
-      afterInstance.value.description = '*'.repeat(descriptionLength)
-      expect(
-        await fieldConfigurationItemDescriptionLengthValidator([
-          toChange({
-            before: fieldConfigurationItemInstance,
-            after: afterInstance,
-          }),
-        ]),
-      ).toEqual([])
-    },
-  )
-
-  it('Should return an error because FieldConfigurationItem description length exceeds maximum.', async () => {
-    const afterInstance = fieldConfigurationItemInstance.clone()
-    afterInstance.value.description = '*'.repeat(FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH + 1)
+    const afterInstance = beforeInstance.clone()
+    afterInstance.value.fields.valid_description.description = AVERAGE_DESCRIPTION
+    afterInstance.value.fields.invalid_description1.description = LONG_DESCRIPTION
+    afterInstance.value.fields.invalid_description2.description = LONG_DESCRIPTION
     const result = await fieldConfigurationItemDescriptionLengthValidator([
       toChange({
-        before: fieldConfigurationItemInstance,
+        before: beforeInstance,
         after: afterInstance,
       }),
     ])
-    expect(result).toHaveLength(1)
+    expect(result).toHaveLength(2)
     expect(result).toEqual([
       {
-        elemID: fieldConfigurationItemInstance.elemID,
+        elemID: afterInstance.elemID.createNestedID('fields', 'invalid_description1'),
         severity: 'Error',
         message: 'Description length exceeded maximum.',
-        detailedMessage: `Description length (${afterInstance.value.description.length}) of field configuration item (${afterInstance.value.id.elemID.getFullName()}) exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`,
+        detailedMessage: `Description length (${LONG_DESCRIPTION.length}) of field configuration item exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`,
+      },
+      {
+        elemID: afterInstance.elemID.createNestedID('fields', 'invalid_description2'),
+        severity: 'Error',
+        message: 'Description length exceeded maximum.',
+        detailedMessage: `Description length (${LONG_DESCRIPTION.length}) of field configuration item exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`,
       },
     ])
+  })
+
+  it('Should return an error for each item in split mode FieldConfiguration with description length exceeding maximum', async () => {
+    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationType)
+    const beforeInstances = [
+      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription1', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription2', fieldConfigurationItemType, {
+        description: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+    ]
+    const afterInstances = beforeInstances.map(instance => instance.clone())
+    afterInstances[0].value.description = AVERAGE_DESCRIPTION
+    afterInstances[1].value.description = LONG_DESCRIPTION
+    afterInstances[2].value.description = LONG_DESCRIPTION
+    const result = await fieldConfigurationItemDescriptionLengthValidator(
+      beforeInstances.map((beforeInstance, index) =>
+        toChange({ before: beforeInstance, after: afterInstances[index] }),
+      ),
+    )
+    expect(result).toHaveLength(2)
+    expect(result).toEqual([
+      {
+        elemID: afterInstances[1].elemID,
+        severity: 'Error',
+        message: 'Description length exceeded maximum.',
+        detailedMessage: `Description length (${LONG_DESCRIPTION.length}) of field configuration item exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`,
+      },
+      {
+        elemID: afterInstances[2].elemID,
+        severity: 'Error',
+        message: 'Description length exceeded maximum.',
+        detailedMessage: `Description length (${LONG_DESCRIPTION.length}) of field configuration item exceeded the allowed maximum of ${FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH} characters.`,
+      },
+    ])
+  })
+
+  it('Should succeed because there is no description in the item in regular mode for field configuration', async () => {
+    const beforeInstance = new InstanceElement('RegularModeFieldConfiguration', fieldConfigurationType, {
+      fields: {
+        long_string_not_description: {
+          some_string: INITIAL_DESCRIPTION,
+        },
+        number_field_not_description: {
+          some_field: 0,
+        },
+      },
+    })
+    const afterInstance = beforeInstance.clone()
+    afterInstance.value.fields.long_string_not_description.some_string = LONG_DESCRIPTION
+    afterInstance.value.fields.number_field_not_description.some_field = 1
+    const result = await fieldConfigurationItemDescriptionLengthValidator([
+      toChange({ before: beforeInstance, after: afterInstance }),
+    ])
+    expect(result).toEqual([])
+  })
+
+  it('Should succeed because there is no description in the item in split mode for field configuration', async () => {
+    const fieldConfigurationInstance = new InstanceElement('SplitModeFieldConfiguration', fieldConfigurationType)
+    const beforeInstances = [
+      new InstanceElement('SplitModeFieldConfigurationItem-AverageDescription', fieldConfigurationItemType, {
+        some_string: INITIAL_DESCRIPTION,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+      new InstanceElement('SplitModeFieldConfigurationItem-LongDescription1', fieldConfigurationItemType, {
+        some_field: 0,
+        id: new ReferenceExpression(fieldConfigurationInstance.elemID),
+      }),
+    ]
+    const afterInstances = beforeInstances.map(instance => instance.clone())
+    afterInstances[0].value.some_string = LONG_DESCRIPTION
+    afterInstances[1].value.some_field = 1
+    const result = await fieldConfigurationItemDescriptionLengthValidator(
+      beforeInstances.map((beforeInstance, index) =>
+        toChange({ before: beforeInstance, after: afterInstances[index] }),
+      ),
+    )
+    expect(result).toEqual([])
   })
 })

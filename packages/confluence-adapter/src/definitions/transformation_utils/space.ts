@@ -64,7 +64,7 @@ export const transformPermissionAndUpdateIdMap = (
   return { type, principalId, key, targetType }
 }
 
-const restructurePermissionsAndCreateInternalIdMap = (value: Record<string, Value>): void => {
+export const restructurePermissionsAndCreateInternalIdMap = (value: Record<string, Value>): void => {
   const permissions = _.get(value, 'permissions')
   if (!Array.isArray(permissions)) {
     log.warn('permissions is not an array: %o, skipping space adjust function', permissions)

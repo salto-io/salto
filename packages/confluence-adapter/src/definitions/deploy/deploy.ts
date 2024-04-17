@@ -88,9 +88,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [SPACE_TYPE_NAME]: {
-      // referenceResolution: {
-      //   when: 'early',
-      // },
+      referenceResolution: {
+        when: 'early',
+      },
       requestsByAction: {
         customizations: {
           add: [

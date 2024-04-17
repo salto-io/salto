@@ -149,9 +149,6 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         permissionInternalIdMap: {
           hide: true,
         },
-        key: {
-          hide: true,
-        },
         id: {
           hide: true,
         },

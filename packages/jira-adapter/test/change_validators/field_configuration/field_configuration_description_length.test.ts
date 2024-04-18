@@ -20,13 +20,13 @@ import { JIRA, FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_T
 describe('fieldConfigurationDescriptionLengthValidator', () => {
   let fieldConfigurationObjectType: ObjectType
   let fieldConfigurationInstance: InstanceElement
-  const BOUNDARY_VALUES = [
-    0, // Lower bound
-    1, // Lower + 1
-    Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2), // Average case
-    FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH - 1, // Upper bound - 1
-    FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, // Upper bound
-  ]
+  const INITIAL_DESCRIPTION = 'initial description'
+  const EMPTY_DESCRIPTION = '*'.repeat(0)
+  const SHORT_DESCRIPTION = '*'.repeat(1)
+  const AVERAGE_DESCRIPTION = '*'.repeat(Math.floor(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH / 2))
+  const MAX_DESCRIPTION = '*'.repeat(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)
+  const LONG_DESCRIPTION = '*'.repeat(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH + 1)
+
   beforeEach(() => {
     fieldConfigurationObjectType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
 
@@ -34,17 +34,17 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
       fields: {
         description: 'configuration description',
         item: {
-          description: 'item description',
+          description: INITIAL_DESCRIPTION,
         },
       },
     })
   })
 
-  it.each(BOUNDARY_VALUES)(
+  it.each([EMPTY_DESCRIPTION, SHORT_DESCRIPTION, AVERAGE_DESCRIPTION, MAX_DESCRIPTION])(
     'Should succeed because field configuration description length is lower than maximum.',
-    async descriptionLength => {
+    async updatedDescription => {
       const afterInstance = fieldConfigurationInstance.clone()
-      afterInstance.value.description = '*'.repeat(descriptionLength)
+      afterInstance.value.description = updatedDescription
       expect(
         await fieldConfigurationDescriptionLengthValidator([
           toChange({
@@ -58,7 +58,7 @@ describe('fieldConfigurationDescriptionLengthValidator', () => {
 
   it('Should return an error because field configuration description length exceeds maximum.', async () => {
     const afterInstance = fieldConfigurationInstance.clone()
-    afterInstance.value.description = '*'.repeat(FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH + 1)
+    afterInstance.value.description = LONG_DESCRIPTION
 
     expect(
       await fieldConfigurationDescriptionLengthValidator([

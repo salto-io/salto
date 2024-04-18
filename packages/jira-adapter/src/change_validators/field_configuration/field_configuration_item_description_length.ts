@@ -19,7 +19,7 @@ import {
   isInstanceChange,
   SeverityLevel,
   Value,
-  isRemovalChange,
+  isAdditionOrModificationChange,
   InstanceElement,
   ElemID,
 } from '@salto-io/adapter-api'
@@ -29,11 +29,11 @@ import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
 } from '../../constants'
 
-type describedType = { description: string }
-type describedElementType = { elemID: ElemID } & describedType
-const isDescriptionTooLong = (obj: describedType): boolean =>
+type DescribedType = { description: string }
+type DescribedElementType = { elemID: ElemID } & DescribedType
+const isDescriptionTooLong = (obj: DescribedType): boolean =>
   obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
-const convertToDescribedElementType = (inst: InstanceElement): describedElementType | describedElementType[] => {
+const convertToDescribedElementType = (inst: InstanceElement): DescribedElementType | DescribedElementType[] => {
   if (inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
     return { elemID: inst.elemID, description: inst.value.description }
   }
@@ -46,15 +46,14 @@ const convertToDescribedElementType = (inst: InstanceElement): describedElementT
 export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
-    .filter(change => !isRemovalChange(change))
+    .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(
       inst =>
         inst.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME ||
         inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME
     )
-    .map(convertToDescribedElementType)
-    .flat()
+    .flatMap(convertToDescribedElementType)
     .filter(isDescriptionTooLong)
     .map(item => ({
       elemID: item.elemID,

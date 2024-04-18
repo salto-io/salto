@@ -16,8 +16,8 @@
 import {
   ChangeValidator,
   getChangeData,
+  isAdditionOrModificationChange,
   isInstanceChange,
-  isModificationChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
@@ -25,7 +25,7 @@ import { FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH, FIELD_CONFIGURATION_TYPE_NA
 export const fieldConfigurationDescriptionLengthValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
-    .filter(isModificationChange)
+    .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(inst => inst.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
     .filter(inst => inst.value.description.length > FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH)

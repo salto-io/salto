@@ -17,7 +17,7 @@
 import { definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Value, isModificationChange } from '@salto-io/adapter-api'
+import { Value } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { assertValue } from './generic'
 
@@ -30,13 +30,6 @@ export type PermissionObject = {
   targetType: string
 }
 
-export const isSpaceChange = ({ change }: definitions.deploy.ChangeAndContext): boolean => {
-  if (!isModificationChange(change)) {
-    return false
-  }
-  return !_.isEqual(_.omit(change.data.before.value, 'permissions'), _.omit(change.data.after.value, 'permissions'))
-}
-
 export const createPermissionUniqueKey = ({ type, principalId, key, targetType }: PermissionObject): string =>
   `${type}_${principalId}_${key}_${targetType}`
 
@@ -46,24 +39,35 @@ export const isPermissionObject = (value: unknown): value is PermissionObject =>
   _.isString(_.get(value, 'key')) &&
   _.isString(_.get(value, 'targetType'))
 
+/**
+ * Restructures a single raw permission object from the service and updates permissionInternalIdMap with the relevant service id.
+ * @param permission - raw permission from the service.
+ * @param permissionInternalIdMap - serviceIds map to update.
+ * @param onFetch - is raw permission came upon fetch or deploy (service returns different structures).
+ */
 export const transformPermissionAndUpdateIdMap = (
   permission: Value,
   permissionInternalIdMap: Record<string, string>,
+  onFetch?: boolean,
 ): PermissionObject | undefined => {
-  // subject
-  const type = _.get(permission, 'principal.type') ?? _.get(permission, 'subject.type')
-  const principalId = _.get(permission, 'principal.id') ?? _.get(permission, 'subject.identifier')
+  const type = onFetch ? _.get(permission, 'principal.type') : _.get(permission, 'subject.type')
+  const principalId = onFetch ? _.get(permission, 'principal.id') : _.get(permission, 'subject.identifier')
   const key = _.get(permission, 'operation.key')
-  const targetType = _.get(permission, 'operation.targetType') ?? _.get(permission, 'operation.target')
+  const targetType = onFetch ? _.get(permission, 'operation.targetType') : _.get(permission, 'operation.target')
   const internalId = _.get(permission, 'id')
   if ([type, principalId, key, targetType].some(x => !_.isString(x)) || internalId === undefined) {
     log.warn('permission is not in expected format: %o, skipping', permission)
     return undefined
   }
-  permissionInternalIdMap[createPermissionUniqueKey({ type, principalId, key, targetType })] = internalId.toString()
+  permissionInternalIdMap[createPermissionUniqueKey({ type, principalId, key, targetType })] = String(internalId)
   return { type, principalId, key, targetType }
 }
 
+/**
+ * Restructures permissions array on space instance value and creates an internal ID map.
+ * To be used on deploy. We need this as we cannot hide fields inside arrays
+ * @param value - value containing raw permissions array from the service.
+ */
 export const restructurePermissionsAndCreateInternalIdMap = (value: Record<string, Value>): void => {
   const permissions = _.get(value, 'permissions')
   if (!Array.isArray(permissions)) {
@@ -72,12 +76,17 @@ export const restructurePermissionsAndCreateInternalIdMap = (value: Record<strin
   }
   const permissionInternalIdMap: Record<string, string> = {}
   const transformedPermissions = permissions
-    .map(per => transformPermissionAndUpdateIdMap(per, permissionInternalIdMap))
+    .map(per => transformPermissionAndUpdateIdMap(per, permissionInternalIdMap, true))
     .filter(values.isDefined)
   value.permissions = transformedPermissions
   value.permissionInternalIdMap = { ...permissionInternalIdMap }
 }
 
+/**
+ * Adjust function for transforming space instances upon fetch.
+ * We reconstruct the permissions so we use this function on resource and not on request.
+ * @param item - The item to adjust.
+ */
 export const spaceMergeAndTransformAdjust: definitions.AdjustFunction<{
   fragments: definitions.GeneratedItem[]
 }> = item => {

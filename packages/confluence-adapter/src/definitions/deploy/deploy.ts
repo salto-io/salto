@@ -25,7 +25,6 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { isSpaceChange } from '../transformation_utils/space'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -109,7 +108,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           modify: [
             {
               condition: {
-                custom: () => isSpaceChange,
+                transformForCheck: {
+                  omit: ['permissions'],
+                },
               },
               request: {
                 endpoint: {
@@ -195,8 +196,16 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    // Permission is not a top-level type, we use it to deploy permissions changes on space instances
     [PERMISSION_TYPE_NAME]: {
       requestsByAction: {
+        default: {
+          request: {
+            context: {
+              spaceKey: '{_parent.0.value.key}',
+            },
+          },
+        },
         customizations: {
           add: [
             {
@@ -223,13 +232,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
-        },
-        default: {
-          request: {
-            context: {
-              spaceKey: '{_parent.0.value.key}',
-            },
-          },
         },
       },
     },

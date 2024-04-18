@@ -72,6 +72,7 @@ export const createResourceManager = <ClientOptions extends string>({
           resourceDefQuery,
           query,
           requester,
+          handleError: elementGenerator.handleError,
           initialRequestContext: _.defaults({}, initialRequestContext, context),
         })
       const directFetchResourceDefs = _.pickBy(resourceDefQuery.getAll(), def => def.directFetch)
@@ -80,7 +81,12 @@ export const createResourceManager = <ClientOptions extends string>({
         lowerdashValues.isDefined,
       )
       const graph = createDependencyGraph(resourceDefQuery.getAll())
+      let e: unknown
       await graph.walkAsync(async typeName => {
+        // If we already have an error, we don't want to continue actually fetching resources.
+        // We don't throw the error here, since we don't want it to be wrapped by the graph error.
+        if (e) return
+
         const resourceFetcher = resourceFetchers[typeName]
         if (resourceFetcher === undefined) {
           log.debug('no resource fetcher defined for type %s:%s', adapterName, typeName)
@@ -91,21 +97,29 @@ export const createResourceManager = <ClientOptions extends string>({
           fetcher => fetcher.getItems(),
         )
 
-        // TODO wrap in try-catch and support turning into config suggestions or fetch warnings (SALTO-5427)
-
         const res = await resourceFetcher.fetch({
           contextResources: availableResources, // used to construct the possible context args for the request
           typeFetcherCreator: createTypeFetcher, // used for recurseInto calls
         })
+
+        const typeNameAsStr = String(typeName)
         if (!res.success) {
-          log.warn('failed to fetch type %s:%s:', adapterName, typeName)
+          try {
+            elementGenerator.handleError({ typeName: typeNameAsStr, error: res.error })
+          } catch (err) {
+            e = err
+          }
           return
         }
+
         elementGenerator.pushEntries({
-          typeName: String(typeName),
+          typeName: typeNameAsStr,
           entries: resourceFetcher.getItems()?.map(item => item.value) ?? [],
         })
       })
+
+      // After the graph walk is done, we can throw the error if we have one
+      if (e) throw e
     },
     '[%s] fetching resources for account',
     adapterName,

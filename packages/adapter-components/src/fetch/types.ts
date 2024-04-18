@@ -30,10 +30,14 @@ export type ResourceIdentifier = {
 
 export type ValueGeneratedItem = GeneratedItem<ContextParams, Values>
 
-type ResourceFetchResult = {
-  success: boolean
-  errors?: Error[]
-}
+type ResourceFetchResult =
+  | {
+      success: true
+    }
+  | {
+      success: false
+      error: Error
+    }
 
 export type TypeResourceFetcher = {
   fetch: (args: {

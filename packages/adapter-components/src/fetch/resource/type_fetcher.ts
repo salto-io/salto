@@ -29,6 +29,7 @@ import { createValueTransformer } from '../utils'
 import { ARG_PLACEHOLDER_MATCHER } from '../request'
 import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies'
 import { serviceIDKeyCreator } from '../element/id_utils'
+import { ElementGenerator } from '../element/element'
 
 const log = logger(module)
 
@@ -82,12 +83,14 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
   query,
   requester,
   initialRequestContext,
+  handleError,
 }: {
   adapterName: string
   typeName: string
   resourceDefQuery: DefQuery<FetchResourceDefinition>
   query: ElementQuery
   requester: Requester<ClientOptions>
+  handleError: ElementGenerator['handleError']
   initialRequestContext?: Record<string, unknown>
 }): TypeResourceFetcher | undefined => {
   if (!query.isTypeMatch(typeName)) {
@@ -133,7 +136,12 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         contextPossibleArgs,
       })
 
-      const recurseIntoFetcher = recurseIntoSubresources({ def, typeFetcherCreator, contextResources })
+      const recurseIntoFetcher = recurseIntoSubresources({
+        def,
+        typeFetcherCreator,
+        handleError,
+        contextResources,
+      })
 
       const allFragments = await Promise.all(
         itemsWithContext.map(async item => {
@@ -184,15 +192,9 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
     } catch (e) {
       log.error('[%s] Error caught while fetching %s: %s. stack: %s', adapterName, typeName, e, (e as Error).stack)
       done = true
-      if (_.isError(e)) {
-        return {
-          success: false,
-          errors: [e],
-        }
-      }
       return {
         success: false,
-        errors: [new Error(String(e))],
+        error: _.isError(e) ? e : new Error(String(e)),
       }
     }
   }

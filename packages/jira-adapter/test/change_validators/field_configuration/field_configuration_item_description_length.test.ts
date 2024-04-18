@@ -24,7 +24,9 @@ import {
 
 describe('fieldConfigurationItemDescriptionLengthValidator non split configuration', () => {
   const fieldConfigurationObjectType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
-  const fieldConfigurationItemObjectType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME) })
+  const fieldConfigurationItemObjectType = new ObjectType({
+    elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),
+  })
   const INITIAL_DESCRIPTION = 'initial description'
   const EMPTY_DESCRIPTION = '*'.repeat(0)
   const SHORT_DESCRIPTION = '*'.repeat(1)

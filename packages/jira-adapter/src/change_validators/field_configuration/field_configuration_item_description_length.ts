@@ -19,7 +19,6 @@ import {
   getChangeData,
   isInstanceChange,
   SeverityLevel,
-  Value,
   isAdditionOrModificationChange,
   InstanceElement,
   ElemID,
@@ -31,20 +30,21 @@ import {
 } from '../../constants'
 
 type DescribedType = { description: string }
-const isDescribedType = (obj: unknown): obj is DescribedType =>
-  _.isPlainObject(obj) && _.isString(_.get(obj, 'description'))
 type DescribedElementType = { elemID: ElemID } & DescribedType
+
 const isDescriptionTooLong = (obj: DescribedType): boolean =>
   obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
-const convertToDescribedElementType = (inst: InstanceElement): DescribedElementType | DescribedElementType[] => {
+const convertToDescribedElementType = (inst: InstanceElement): DescribedElementType[] => {
   if (inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
-    return { elemID: inst.elemID, description: inst.value.description }
+    return [{ elemID: inst.elemID, description: inst.value.description }]
   }
 
-  return Object.entries(inst.value.fields).map(([itemName, item]: [string, Value]) => ({
-    elemID: inst.elemID.createNestedID('fields', itemName),
-    description: item.description,
-  }))
+  return Object.entries(inst.value.fields)
+    .map(([itemName, item]) => ({
+      elemID: inst.elemID.createNestedID('fields', itemName),
+      description: _.get(item, 'description'),
+    }))
+    .filter(describedObj => describedObj.description !== undefined)
 }
 export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator = async changes =>
   changes
@@ -57,7 +57,6 @@ export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator =
         inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME,
     )
     .flatMap(convertToDescribedElementType)
-    .filter(isDescribedType)
     .filter(isDescriptionTooLong)
     .map(item => ({
       elemID: item.elemID,

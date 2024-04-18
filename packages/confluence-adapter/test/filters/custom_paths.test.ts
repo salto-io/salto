@@ -32,12 +32,13 @@ describe('query filter', () => {
   const generateElements = (): Element[] => {
     const spaceObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, SPACE_TYPE_NAME) })
     const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, PAGE_TYPE_NAME) })
-    const spaceInst = new InstanceElement(
+    const spaceInst = new InstanceElement('space1', spaceObjectType, { key: 'mockKey_space1' }, [
+      ADAPTER_NAME,
+      elementUtils.RECORDS_PATH,
+      SPACE_TYPE_NAME,
       'space1',
-      spaceObjectType,
-      { key: 'mockKey_space1' },
-      [ADAPTER_NAME, elementUtils.RECORDS_PATH, SPACE_TYPE_NAME, 'space1', 'space1'],
-    )
+      'space1',
+    ])
     const page2UnderSpace1Inst = new InstanceElement(
       'page2UnderSpace1',
       pageObjectType,
@@ -45,7 +46,7 @@ describe('query filter', () => {
         title: 'Page2 under space1',
         spaceId: new ReferenceExpression(spaceInst.elemID, spaceInst),
       },
-      [ADAPTER_NAME, elementUtils.RECORDS_PATH, PAGE_TYPE_NAME, 'page2']
+      [ADAPTER_NAME, elementUtils.RECORDS_PATH, PAGE_TYPE_NAME, 'page2'],
     )
     const page3UnderPage2 = new InstanceElement(
       'page3UnderPage2',
@@ -55,7 +56,7 @@ describe('query filter', () => {
         spaceId: new ReferenceExpression(spaceInst.elemID, spaceInst),
         parentId: new ReferenceExpression(page2UnderSpace1Inst.elemID, page2UnderSpace1Inst),
       },
-      [ADAPTER_NAME, elementUtils.RECORDS_PATH, PAGE_TYPE_NAME, 'page3']
+      [ADAPTER_NAME, elementUtils.RECORDS_PATH, PAGE_TYPE_NAME, 'page3'],
     )
 
     return [spaceObjectType, pageObjectType, spaceInst, page2UnderSpace1Inst, page3UnderPage2]
@@ -71,9 +72,32 @@ describe('query filter', () => {
       expect(
         Object.fromEntries(elements.filter(isInstanceElement).map(inst => [inst.elemID.getFullName(), inst.path])),
       ).toEqual({
-        'confluence.space.instance.space1': [ADAPTER_NAME, elementUtils.RECORDS_PATH, SPACE_TYPE_NAME, 'space1', 'space1'],
-        'confluence.page.instance.page2UnderSpace1': [ADAPTER_NAME, elementUtils.RECORDS_PATH, SPACE_TYPE_NAME, 'space1', 'pages', 'page2', 'page2'],
-        'confluence.page.instance.page3UnderPage2': [ADAPTER_NAME, elementUtils.RECORDS_PATH, SPACE_TYPE_NAME, 'space1', 'pages', 'page2', 'page3', 'page3'],
+        'confluence.space.instance.space1': [
+          ADAPTER_NAME,
+          elementUtils.RECORDS_PATH,
+          SPACE_TYPE_NAME,
+          'space1',
+          'space1',
+        ],
+        'confluence.page.instance.page2UnderSpace1': [
+          ADAPTER_NAME,
+          elementUtils.RECORDS_PATH,
+          SPACE_TYPE_NAME,
+          'space1',
+          'pages',
+          'page2',
+          'page2',
+        ],
+        'confluence.page.instance.page3UnderPage2': [
+          ADAPTER_NAME,
+          elementUtils.RECORDS_PATH,
+          SPACE_TYPE_NAME,
+          'space1',
+          'pages',
+          'page2',
+          'page3',
+          'page3',
+        ],
       })
     })
     it('should not update page path if nested under space and there is no referenced space', async () => {
@@ -82,7 +106,12 @@ describe('query filter', () => {
         page2.value.spaceId = 'something else'
       }
       await filter.onFetch(elements)
-      expect(elements.find(e => e.elemID.name === 'page2UnderSpace1')?.path).toEqual([ADAPTER_NAME, elementUtils.RECORDS_PATH, PAGE_TYPE_NAME, 'page2'])
+      expect(elements.find(e => e.elemID.name === 'page2UnderSpace1')?.path).toEqual([
+        ADAPTER_NAME,
+        elementUtils.RECORDS_PATH,
+        PAGE_TYPE_NAME,
+        'page2',
+      ])
     })
     it('should not update page path if there is no existing path', async () => {
       const page3 = elements.find(e => e.elemID.name === 'page3UnderPage2')

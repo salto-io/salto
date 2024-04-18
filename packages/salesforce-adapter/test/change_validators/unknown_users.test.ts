@@ -576,7 +576,7 @@ describe('unknown user change validator', () => {
       )
     })
   })
-  describe('when the user information is in a CustomField annotation', () => {
+  describe('when the user information is in a CustomField businessOwnerUser annotation', () => {
     let changes: Change[]
     beforeEach(() => {
       const typeForCustomField = mockTypes.Account.clone()
@@ -592,7 +592,7 @@ describe('unknown user change validator', () => {
 
       setupClientMock([IRRELEVANT_USERNAME])
     })
-    it('should fail validation', async () => {
+    it('should return a change error', async () => {
       const changeErrors = await validator(changes)
       expect(changeErrors).toEqual([
         expect.objectContaining({

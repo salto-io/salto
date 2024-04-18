@@ -221,7 +221,7 @@ const filter =
         sharedContext: {},
       }
       await awu(spaceNonRemovalChanges)
-        // This filter is for TypeScript, we already filtered the changes at the beginnings of this filter
+        // This filter is for TypeScript, we already filtered the changes at the beginning of this filter
         .filter(isInstanceChange)
         .forEach(async spaceChange => {
           if (!isInstanceChange(spaceChange)) {

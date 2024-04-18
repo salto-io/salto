@@ -57,7 +57,7 @@ const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
 // The expression match AppUserSchema endpoint used for fetch
 const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
-// Match any of the custom pages endpoints (sign-in, error,
+// Match any of the custom pages endpoints (sign-in and error)
 const CUSTOM_PAGE_URL = /(\/api\/v1\/brands\/\w+\/pages\/\w+)/
 
 type OktaRateLimits = {

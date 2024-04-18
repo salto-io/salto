@@ -103,11 +103,9 @@ export const deployChange = async ({
     })
     return response.data
   } catch (error) {
-    if (
-      isRemovalChange(change) &&
-      error instanceof HTTPError &&
-      allowedStatusCodesOnRemoval.includes(error.response.status)
-    ) {
+    const allowedStatusCodes =
+      endpoint.allowedStatusCodes ?? (isRemovalChange(change) ? allowedStatusCodesOnRemoval : undefined) ?? []
+    if (error instanceof HTTPError && allowedStatusCodes.includes(error.response.status)) {
       log.debug('%s was deleted and therefore marked as deployed', getChangeData(change).elemID.getFullName())
       return undefined
     }

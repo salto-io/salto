@@ -859,6 +859,24 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/customizations/brands',
       dataField: '.',
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+        method: 'put',
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+        method: 'put',
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
+        method: 'delete',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+        allowedStatusCodes: [],
+      },
+    },
   },
   ErrorPage: {
     request: {

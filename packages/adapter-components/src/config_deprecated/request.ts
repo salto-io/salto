@@ -77,6 +77,7 @@ export type DeployRequestConfig = BaseRequestConfig & {
   method: 'post' | 'put' | 'delete' | 'patch'
   fieldsToIgnore?: string[]
   omitRequestBody?: boolean
+  allowedStatusCodes?: number[]
 }
 
 export type DeploymentRequestsByAction<A extends string = ActionName> = Partial<Record<A, DeployRequestConfig>>

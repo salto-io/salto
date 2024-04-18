@@ -312,15 +312,20 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
-          adjust: item => ({
-            value: {
-              operation: _.get(item.value, 'operation'),
-              restrictions: {
-                user: _.get(item.value, 'restrictions.user.results'),
-                group: _.get(item.value, 'restrictions.group.results'),
+          adjust: ({ value }) => {
+            const userRestrictions = _.get(value, 'restrictions.user.results')
+            return {
+              value: {
+                operation: _.get(value, 'operation'),
+                restrictions: {
+                  user: Array.isArray(userRestrictions)
+                    ? userRestrictions.map(user => _.omit(user, ['publicName', 'profilePicture', 'displayName']))
+                    : userRestrictions,
+                  group: _.get(value, 'restrictions.group.results'),
+                },
               },
-            },
-          }),
+            }
+          },
         },
       },
     ],

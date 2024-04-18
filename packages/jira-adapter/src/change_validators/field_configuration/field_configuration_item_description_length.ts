@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import {
   ChangeValidator,
   getChangeData,
@@ -30,6 +31,8 @@ import {
 } from '../../constants'
 
 type DescribedType = { description: string }
+const isDescribedType = (obj: unknown): obj is DescribedType =>
+  _.isPlainObject(obj) && _.isString(_.get(obj, 'description'))
 type DescribedElementType = { elemID: ElemID } & DescribedType
 const isDescriptionTooLong = (obj: DescribedType): boolean =>
   obj.description !== undefined && obj.description.length > FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH
@@ -51,9 +54,10 @@ export const fieldConfigurationItemDescriptionLengthValidator: ChangeValidator =
     .filter(
       inst =>
         inst.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME ||
-        inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME
+        inst.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME,
     )
     .flatMap(convertToDescribedElementType)
+    .filter(isDescribedType)
     .filter(isDescriptionTooLong)
     .map(item => ({
       elemID: item.elemID,

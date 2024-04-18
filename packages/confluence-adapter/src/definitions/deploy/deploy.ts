@@ -34,7 +34,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     ClientOptions
   >({
     [BLOG_POST_TYPE_NAME]: { bulkPath: '/wiki/api/v2/blogposts', idField: 'id' },
-    [GLOBAL_TEMPLATE_TYPE_NAME]: { bulkPath: '/wiki/rest/api/template', idField: 'templateId' },
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
@@ -155,6 +154,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    // If updating the template deploy definitions, check if need to update global template as well
     [TEMPLATE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
@@ -179,6 +179,44 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   queryArgs: {
                     spaceKey: '{space.key}',
                   },
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template/{templateId}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    // If updating the global template deploy definitions, check if need to update template as well
+    // This differs from the template definitions in the context queryArgs (no spaceKey)
+    [GLOBAL_TEMPLATE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/template',
+                  method: 'put',
                 },
               },
             },

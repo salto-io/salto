@@ -32,13 +32,22 @@ describe('builtins', () => {
   })
 
   describe('isServiceId', () => {
-    it('should return true when service ID is present', () => {
+    it('should return true when service ID is true', () => {
       const result = isServiceId({
         annotations: {
-          _service_id: 'ID',
+          _service_id: true,
         },
       })
       expect(result).toEqual(true)
+    })
+
+    it('should return false when service ID is false', () => {
+      const result = isServiceId({
+        annotations: {
+          _service_id: false,
+        },
+      })
+      expect(result).toEqual(false)
     })
 
     it('should return false when service ID is missing', () => {

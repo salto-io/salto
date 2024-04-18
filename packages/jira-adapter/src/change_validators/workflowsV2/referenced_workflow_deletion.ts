@@ -24,7 +24,7 @@ import {
   isRemovalChange,
   InstanceElement,
   ReadOnlyElementsSource,
-  isReferenceExpression
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { WorkflowV2Instance, isWorkflowV2Instance } from '../../filters/workflowV2/types'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
@@ -48,16 +48,15 @@ const isWorkflowInScheme = (scheme: InstanceElement, workflowInst: WorkflowV2Ins
   return false
 }
 
-const hasReferencingWorkflowSchemes = async (
+const getReferencingWorkflowSchemes = async (
   workflow: WorkflowV2Instance,
   elementSource?: ReadOnlyElementsSource,
-): Promise<boolean> => {
+): Promise<InstanceElement[]> => {
   if (elementSource === undefined) {
-    return false
+    return awu([]).toArray()
   }
-  const schemes = await getInstancesFromElementSource(elementSource, [WORKFLOW_SCHEME_TYPE_NAME])
-
-  return schemes.some(scheme => isWorkflowInScheme(scheme, workflow))
+  const schemes = awu(await getInstancesFromElementSource(elementSource, [WORKFLOW_SCHEME_TYPE_NAME]))
+  return schemes.filter(scheme => isWorkflowInScheme(scheme, workflow)).toArray()
 }
 
 export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async (changes, elementSource) =>
@@ -66,11 +65,13 @@ export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async 
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isWorkflowV2Instance)
-    .filter(workflow => hasReferencingWorkflowSchemes(workflow, elementSource))
-    .map(instance => ({
-      elemID: instance.elemID,
+    .filter(async workflow => (await getReferencingWorkflowSchemes(workflow, elementSource)).length > 0)
+    .map(async workflow => {
+      const schemes = (await getReferencingWorkflowSchemes(workflow, elementSource))
+      return {
+      elemID: workflow.elemID,
       severity: 'Error' as SeverityLevel,
       message: "Can't delete a referenced workflow.",
-      detailedMessage: "Workflows referenced by workflow schemes can't be deleted.",
-    }))
+      detailedMessage: `Workflow is referenced by the following workflow schemes: ${schemes.map(scheme => scheme.elemID.getFullName())}.`,
+    }})
     .toArray()

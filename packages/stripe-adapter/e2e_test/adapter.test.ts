@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 import { Element, isObjectType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import 'jest-extended'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { AccessTokenCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
+
+const log = logger(module)
 
 /**
  * assumes the mapping: v1__<plural-typeName> -> <plural-typeName> is declared
@@ -29,6 +32,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
   let credLease: CredsLease<AccessTokenCredentials>
 
   beforeAll(async () => {
+    log.resetLogCount()
     credLease = await credsLease()
     const adapterAttr = realAdapter({ credentials: credLease.value })
     const { elements } = await adapterAttr.adapter.fetch({
@@ -42,6 +46,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
     if (credLease.return) {
       await credLease.return()
     }
+    log.info('Stripe adapter E2E: Log counts = %o', log.getLogCount())
   })
 
   it('fetched elements are all objects', () => {

@@ -15,6 +15,7 @@
  */
 import { ChangeGroup, StaticFile, toChange } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { logger } from '@salto-io/logging'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
 import { API_VERSION } from '../src/client/client'
@@ -26,6 +27,8 @@ import {
   MetadataInstanceElement,
 } from '../src/transformers/transformer'
 import { nullProgressReporter } from './utils'
+
+const log = logger(module)
 
 describe('validation and quick deploy e2e', () => {
   // Set long timeout as we communicate with salesforce API
@@ -40,6 +43,7 @@ describe('validation and quick deploy e2e', () => {
   let apexTestInstance: MetadataInstanceElement
 
   beforeAll(async () => {
+    log.resetLogCount()
     apexClassInstance = createInstanceElement(
       {
         fullName: 'MyApexClass',
@@ -151,5 +155,6 @@ describe('validation and quick deploy e2e', () => {
         await credLease.return()
       }
     }
+    log.info('quick deploy e2e: Log counts = %o', log.getLogCount())
   })
 })

@@ -48,6 +48,7 @@ import {
   detailedCompare,
   naclCase,
 } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -94,6 +95,7 @@ import { ThemeDirectory, unzipFolderToElements } from '../src/filters/guide_them
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
+const log = logger(module)
 
 const ALL_SUPPORTED_TYPES = {
   ...GUIDE_SUPPORTED_TYPES,
@@ -343,6 +345,7 @@ describe('Zendesk adapter E2E', () => {
     }
 
     beforeAll(async () => {
+      log.resetLogCount()
       // get e2eHelpCenter brand
       credLease = await credsLease()
       adapterAttr = realAdapter(
@@ -1142,6 +1145,7 @@ describe('Zendesk adapter E2E', () => {
       if (credLease.return) {
         await credLease.return()
       }
+      log.info('Zendesk adapter E2E: Log counts = %o', log.getLogCount())
     })
     it('should fetch the regular instances and types', async () => {
       const typesToFetch = [

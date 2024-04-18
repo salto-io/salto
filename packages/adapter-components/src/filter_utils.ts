@@ -49,6 +49,11 @@ export type AdapterFilterCreator<
   TOptions extends APIDefinitionsOptions = {},
 > = filter.FilterCreator<TResult, FilterOptions<TOptions, TContext, TAdditional>>
 
+export type NoOptionsFilterCreator<TResult extends void | filter.FilterResult = void> = filter.FilterCreator<
+  TResult,
+  {}
+>
+
 export type UserConfigAdapterFilterCreator<
   TContext,
   TResult extends void | filter.FilterResult = void,

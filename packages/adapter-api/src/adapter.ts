@@ -135,10 +135,7 @@ export type DeployModifiers = {
 
 export type ValidationModifiers = Pick<DeployModifiers, 'changeValidator'>
 
-export type FixElementsFunc = (
-  elements: Element[],
-  adapterConfig?: InstanceElement,
-) => Promise<{
+export type FixElementsFunc = (elements: Element[]) => Promise<{
   fixedElements: Element[]
   errors: ChangeError[]
 }>

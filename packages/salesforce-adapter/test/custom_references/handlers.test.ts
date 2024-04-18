@@ -31,38 +31,44 @@ describe('custom references handlers', () => {
     })
 
     it('should define an elements fixer', async () => {
-      expect(await fixElementsFunc({ elementsSource })([])).toEqual({
-        fixedElements: [],
-        errors: [],
-      })
+      expect(await fixElementsFunc({ elementsSource, config: {} })([])).toEqual(
+        {
+          fixedElements: [],
+          errors: [],
+        },
+      )
     })
   })
 
   describe('with no configuration', () => {
-    const adapterConfig = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      adapter.configType as ObjectType,
-      {
-        fetch: {
-          data: {
-            customReferences: {
-              profiles: true,
-            },
-            fixElements: {
-              profiles: true,
-            },
+    const config = {
+      fetch: {
+        data: {
+          includeObjects: [],
+          saltoIDSettings: { defaultIdFields: [] },
+          customReferences: {
+            profiles: true,
+          },
+          fixElements: {
+            profiles: true,
           },
         },
       },
+    }
+    const adapterConfig = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      adapter.configType as ObjectType,
+      config,
     )
     it('should define a custom references getter', async () => {
       expect(await getCustomReferences([], adapterConfig)).toEqual([])
     })
 
     it('should define an elements fixer', async () => {
-      expect(
-        await fixElementsFunc({ elementsSource })([], adapterConfig),
-      ).toEqual({ fixedElements: [], errors: [] })
+      expect(await fixElementsFunc({ elementsSource, config })([])).toEqual({
+        fixedElements: [],
+        errors: [],
+      })
     })
   })
 })

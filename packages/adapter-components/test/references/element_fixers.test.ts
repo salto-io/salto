@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ElemID, FixElementsFunc, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, FixElementsFunc, ObjectType } from '@salto-io/adapter-api'
 import { combineElementFixers } from '../../src/references/element_fixers'
 
 describe('combineElementFixers', () => {
@@ -106,15 +106,12 @@ describe('combineElementFixers', () => {
 
   describe('with some enabled', () => {
     it('should run only enabled element fixers', async () => {
-      const fixElementsFunc = combineElementFixers(fixers, () => ({
+      const fixElementsFunc = combineElementFixers(fixers, {
         fixer1: true,
         fixer2: false,
-      }))
+      })
 
-      const fixes = await fixElementsFunc(
-        [type1, type2],
-        new InstanceElement('config', new ObjectType({ elemID: new ElemID('adapter', 'config') })),
-      )
+      const fixes = await fixElementsFunc([type1, type2])
 
       expect(fixes.errors).toEqual([
         {

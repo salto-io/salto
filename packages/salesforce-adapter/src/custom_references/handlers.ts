@@ -30,6 +30,7 @@ import {
   DATA_CONFIGURATION,
   FETCH_CONFIG,
   FIX_ELEMENTS_CONFIG,
+  SalesforceConfig,
   WeakReferencesHandler,
 } from '../types'
 
@@ -59,23 +60,23 @@ export const getCustomReferences = combineCustomReferenceGetters(
 )
 
 const fixElementsConfiguration = (
-  adapterConfig: InstanceElement,
+  config: SalesforceConfig,
 ): Record<string, boolean> =>
   _.defaults(
-    adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[
-      FIX_ELEMENTS_CONFIG
-    ],
+    config[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[FIX_ELEMENTS_CONFIG],
     defaultHandlersConfiguration,
   )
 
 export const fixElementsFunc = ({
   elementsSource,
+  config,
 }: {
   elementsSource: ReadOnlyElementsSource
+  config: SalesforceConfig
 }): FixElementsFunc =>
   combineElementFixers(
     _.mapValues(handlers, (handler) =>
       handler.removeWeakReferences({ elementsSource }),
     ),
-    fixElementsConfiguration,
+    fixElementsConfiguration(config),
   )

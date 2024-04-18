@@ -337,24 +337,24 @@ const removeMissingReferences: WeakReferencesHandler['removeWeakReferences'] =
         async (target) => !(await elementsSource.has(target)),
       ),
     )
-    const brokenElements = profiles.filter((profile) =>
+    const profilesWithBrokenReferences = profiles.filter((profile) =>
       brokenReferenceFields.some((field) => _(profile.value).has(field)),
     )
-    const fixedElements = brokenElements.map((profile) => {
+    const fixedElements = profilesWithBrokenReferences.map((profile) => {
       const fixed = profile.clone()
-      fixed.value = _.omit(fixed.value, ...brokenReferenceFields)
+      fixed.value = _.omit(fixed.value, brokenReferenceFields)
       return fixed
     })
-    const errors = brokenElements.flatMap((profile) =>
-      brokenReferenceFields
+    const errors = profilesWithBrokenReferences.map((profile) => ({
+      elemID: profile.elemID,
+      severity: 'Info' as const,
+      message: 'Dropping profile fields which reference missing types',
+      detailedMessage: `The profile have fields which reference types which are not available in the workspace: ${brokenReferenceFields
         .filter((field) => _(profile.value).has(field))
-        .map((field) => ({
-          elemID: profile.elemID.createNestedID(...field.split('.')),
-          severity: 'Info' as const,
-          message: 'Dropping profile fields which reference missing types',
-          detailedMessage: `The field references the type ${entriesTargets[field].getFullName()} which is not available in the workspace.`,
-        })),
-    )
+        .map((field) => entriesTargets[field].getFullName())
+        .sort()
+        .join(', ')}`,
+    }))
 
     return { fixedElements, errors }
   }

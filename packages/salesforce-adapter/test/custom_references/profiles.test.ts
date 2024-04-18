@@ -887,8 +887,31 @@ describe('profiles', () => {
         const { fixedElements, errors } = await fixElementsFunc([
           profileInstance,
         ])
-        expect(fixedElements).toHaveLength(1)
-        expect(errors).toHaveLength(8)
+        expect(fixedElements).toEqual([
+          new InstanceElement('test', mockTypes.Profile, {
+            fieldPermissions: {
+              Account: {},
+            },
+            applicationVisibilities: {},
+            classAccesses: {},
+            flowAccesses: {},
+            layoutAssignments: {},
+            objectPermissions: {},
+            pageAccesses: {},
+            recordTypeVisibilities: {
+              Case: {},
+            },
+          }),
+        ])
+        expect(errors).toEqual([
+          {
+            elemID: profileInstance.elemID,
+            severity: 'Info',
+            message: 'Dropping profile fields which reference missing types',
+            detailedMessage:
+              'The profile have fields which reference types which are not available in the workspace: salesforce.Account, salesforce.Account.field.testField__c, salesforce.ApexClass.instance.SomeApexClass, salesforce.ApexPage.instance.SomeApexPage, salesforce.CustomApplication.instance.SomeApplication, salesforce.Flow.instance.SomeFlow, salesforce.Layout.instance.Account_Account_Layout@bs, salesforce.RecordType.instance.Case_SomeCaseRecordType',
+          },
+        ])
       })
     })
 
@@ -959,8 +982,58 @@ describe('profiles', () => {
         const { fixedElements, errors } = await fixElementsFunc([
           profileInstance,
         ])
-        expect(fixedElements).toHaveLength(1)
-        expect(errors).toHaveLength(4)
+        expect(fixedElements).toEqual([
+          new InstanceElement('test', mockTypes.Profile, {
+            fieldPermissions: {
+              Account: {},
+            },
+            applicationVisibilities: {},
+            classAccesses: {},
+            flowAccesses: {},
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [
+                {
+                  layout: 'Account-Account Layout',
+                },
+              ],
+            },
+            objectPermissions: {
+              Account: {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: false,
+                object: 'Account',
+                viewAllRecords: false,
+              },
+            },
+            pageAccesses: {
+              SomeApexPage: {
+                apexPage: 'SomeApexPage',
+                enabled: true,
+              },
+            },
+            recordTypeVisibilities: {
+              Case: {
+                SomeCaseRecordType: {
+                  default: true,
+                  recordType: 'Case.SomeCaseRecordType',
+                  visible: false,
+                },
+              },
+            },
+          }),
+        ])
+        expect(errors).toEqual([
+          {
+            elemID: profileInstance.elemID,
+            severity: 'Info',
+            message: 'Dropping profile fields which reference missing types',
+            detailedMessage:
+              'The profile have fields which reference types which are not available in the workspace: salesforce.Account.field.testField__c, salesforce.ApexClass.instance.SomeApexClass, salesforce.CustomApplication.instance.SomeApplication, salesforce.Flow.instance.SomeFlow',
+          },
+        ])
       })
     })
   })

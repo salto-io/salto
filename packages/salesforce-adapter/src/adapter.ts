@@ -540,7 +540,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
-    this.fixElementsFunc = fixElementsFunc({ elementsSource })
+    this.fixElementsFunc = fixElementsFunc({ elementsSource, config })
   }
 
   private async getCustomObjectsWithDeletedFields(): Promise<Set<string>> {

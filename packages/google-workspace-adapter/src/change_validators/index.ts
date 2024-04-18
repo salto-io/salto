@@ -1,5 +1,5 @@
 /*
- *                      Copyright 2020 Salto Labs Ltd.
+ *                      Copyright 2024 Salto Labs Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
@@ -13,20 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const deepMerge = require('../../build_utils/deep_merge')
 
-module.exports = deepMerge(require('../../jest.base.config.js'), {
-  name: 'google-workspace-adapter',
-  displayName: 'google-workspace-adapter',
-  rootDir: `${__dirname}`,
-  collectCoverageFrom: ['!<rootDir>/index.ts'],
-  testEnvironment: undefined,
-  coverageThreshold: {
-    global: {
-      branches: 45,
-      functions: 75,
-      lines: 80,
-      statements: 80,
-    },
-  },
-})
+export { roleReadOnlyValidator } from './role_read_only'
+export { groupMemberRoleValidator } from './group_member_role'
+export { domainReadOnlyValidator } from './domain_read_only'
+export { systemRoleValidator } from './system_role'
+export { schemaFieldsValidator } from './schema_fields'
+export { roleAssignmentAdditionValidator } from './role_assignment_addition'

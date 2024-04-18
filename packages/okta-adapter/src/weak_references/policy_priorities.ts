@@ -30,9 +30,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 const getInstanceAttribute = (instance: InstanceElement): string =>
-POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName)
-? 'rules'
-: 'policies'
+  POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName) ? 'rules' : 'policies'
 
 const markInstancesAsWeakReference = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
   const { priorities } = instance.value

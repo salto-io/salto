@@ -283,7 +283,7 @@ const filter: FilterCreator = ({ config, client }) => ({
               priority,
               instance: ref.value,
               config,
-              additionalUrlVars: getAdditionalUrlVars(ref.value)
+              additionalUrlVars: getAdditionalUrlVars(ref.value),
             })
           })
       }
@@ -298,7 +298,7 @@ const filter: FilterCreator = ({ config, client }) => ({
                 priority,
                 instance: ref.value,
                 config,
-                additionalUrlVars: getAdditionalUrlVars(ref.value)
+                additionalUrlVars: getAdditionalUrlVars(ref.value),
               })
             }
           })

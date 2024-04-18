@@ -36,20 +36,20 @@ import { DEFAULT_CONFIG, OktaConfig } from '../../src/config'
 
 describe('policyPrioritiesFilter', () => {
   const createInstance = (id: number, isSystem: boolean, type: ObjectType, parent?: InstanceElement): InstanceElement =>
-  new InstanceElement(
-    `accessPolicyRule${id.toString()}`,
-    type,
-    {
-      id,
-      system: isSystem,
-      name: `accessPolicyRule${id.toString()}`,
-      priority: id,
-    },
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: parent ? [new ReferenceExpression(parent.elemID, parent)] : [],
-    },
-  )
+    new InstanceElement(
+      `accessPolicyRule${id.toString()}`,
+      type,
+      {
+        id,
+        system: isSystem,
+        name: `accessPolicyRule${id.toString()}`,
+        priority: id,
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: parent ? [new ReferenceExpression(parent.elemID, parent)] : [],
+      },
+    )
   const policyRuleTypeNameToPolicyName = (policyRuleName: string): string => {
     const ruleIndex = policyRuleName.indexOf('Rule')
     return policyRuleName.slice(0, ruleIndex)

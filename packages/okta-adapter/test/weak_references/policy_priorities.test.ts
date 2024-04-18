@@ -98,9 +98,9 @@ describe('policyRulePrioritiesHandler', () => {
         {
           elemID: policyRulePriorityInstance.elemID.createNestedID('priorities'),
           severity: 'Info',
-          message: 'Deploying AccessPolicyRulePriority without all attached priorities.',
+          message: 'Deploying AccessPolicyRulePriority without all attached priorities for rules',
           detailedMessage:
-            'This AccessPolicyRulePriority is attached to some instances that do not exist in the target environment. It will be deployed without referencing these.',
+            'This AccessPolicyRulePriority is attached to some rules that do not exist in the target environment. It will be deployed without referencing these.',
         },
       ])
 

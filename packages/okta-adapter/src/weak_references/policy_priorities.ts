@@ -29,6 +29,10 @@ import { WeakReferencesHandler } from './weak_references_handler'
 const { awu } = collections.asynciterable
 
 const log = logger(module)
+const getInstanceAttribute = (instance: InstanceElement): string =>
+POLICY_RULE_PRIORITY_TYPE_NAMES.includes(instance.elemID.typeName)
+? 'rules'
+: 'policies'
 
 const markInstancesAsWeakReference = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
   const { priorities } = instance.value
@@ -102,8 +106,8 @@ const removeMissingPriorities: WeakReferencesHandler['removeWeakReferences'] =
     const errors = fixedElements.map(instance => ({
       elemID: instance.elemID.createNestedID('priorities'),
       severity: 'Info' as const,
-      message: `Deploying ${instance.elemID.typeName} without all attached priorities.`,
-      detailedMessage: `This ${instance.elemID.typeName} is attached to some instances that do not exist in the target environment. It will be deployed without referencing these.`,
+      message: `Deploying ${instance.elemID.typeName} without all attached priorities for ${getInstanceAttribute(instance)}`,
+      detailedMessage: `This ${instance.elemID.typeName} is attached to some ${getInstanceAttribute(instance)} that do not exist in the target environment. It will be deployed without referencing these.`,
     }))
     return { fixedElements, errors }
   }

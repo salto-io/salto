@@ -304,8 +304,8 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   })
   return Object.assign({}, ...policiesConfig)
 }
-const getPoliceyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] => {
-  const policyRulePrioritiesConfig = POLICY_RULE_PRIORITY_TYPE_NAMES.map(typeName => ({
+const getPolicyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] => {
+  const policyPrioritiesConfig = POLICY_RULE_PRIORITY_TYPE_NAMES.concat(POLICY_PRIORITY_TYPE_NAMES).map(typeName => ({
     // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
     [typeName]: {
       deployRequests: {
@@ -315,17 +315,7 @@ const getPoliceyAndPolicyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] 
       },
     },
   }))
-  const policyPrioritiesConfig = POLICY_PRIORITY_TYPE_NAMES.map(typeName => ({
-    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
-    [typeName]: {
-      deployRequests: {
-        add: { url: '', method: 'put' },
-        modify: { url: '', method: 'put' },
-        remove: { url: '', method: 'delete' },
-      },
-    },
-  }))
-  return Object.assign({}, ...policyRulePrioritiesConfig, ...policyPrioritiesConfig)
+  return Object.assign({}, ...policyPrioritiesConfig)
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
@@ -1370,7 +1360,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
   },
   ...getPolicyConfig(),
-  ...getPoliceyAndPolicyRulePriorityConfig(),
+  ...getPolicyAndPolicyRulePriorityConfig(),
   api__v1__behaviors: {
     request: {
       url: '/api/v1/behaviors',

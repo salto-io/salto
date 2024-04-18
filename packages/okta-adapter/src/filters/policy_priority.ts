@@ -55,6 +55,7 @@ import {
   PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_POLICY_TYPE_NAME,
   SIGN_ON_RULE_PRIORITY_TYPE_NAME,
+  SIGN_ON_RULE_TYPE_NAME,
 } from '../constants'
 import { deployChanges } from '../deployment'
 import OktaClient from '../client/client'
@@ -63,8 +64,8 @@ import { OktaConfig } from '../config'
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { createUrl } = fetch.resource
-const ALL_SUPPORTED_POLICY_RULE_NAMES = POLICY_RULE_TYPE_NAMES.concat([AUTHORIZATION_POLICY_RULE])
-const ALL_SUPPORTED_POLICY_NAMES = [SIGN_ON_POLICY_TYPE_NAME]
+export const ALL_SUPPORTED_POLICY_RULE_NAMES = POLICY_RULE_TYPE_NAMES.concat([AUTHORIZATION_POLICY_RULE])
+export const ALL_SUPPORTED_POLICY_NAMES = [SIGN_ON_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME]
 // Automation is not included in the list of supported policy rules because it is not supported
 const POLICY_NAME_TO_RULE_PRIORITY_NAME: Record<string, string> = {
   [ACCESS_POLICY_TYPE_NAME]: ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
@@ -78,6 +79,8 @@ const POLICY_NAME_TO_RULE_PRIORITY_NAME: Record<string, string> = {
 
 const POLICY_NAME_TO_PRIORITY_NAME: Record<string, string> = {
   [SIGN_ON_POLICY_TYPE_NAME]: 'OktaSignOnPolicyPriority',
+  [MFA_POLICY_TYPE_NAME]: 'MultifactorEnrollmentPolicyPriority',
+  [PASSWORD_POLICY_TYPE_NAME]: 'PasswordPolicyPriority',
 }
 export const createPriorityType = (typeName: string, defaultFieldName: string): ObjectType =>
   new ObjectType({
@@ -89,7 +92,7 @@ export const createPriorityType = (typeName: string, defaultFieldName: string): 
       },
       [defaultFieldName]: {
         refType: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
     },
     path: [OKTA, adapterElements.TYPES_PATH, typeName],
@@ -144,7 +147,7 @@ const createPolicyRulePriorityInstance = ({
 }
 
 // For AccessPolicyRules, the priority index starts from 0, while for others it starts from 1.
-export const setPriority = (typeName: string, priority: number): number => {
+const setPriority = (typeName: string, priority: number): number => {
   if (typeName === ACCESS_POLICY_RULE_TYPE_NAME) {
     return priority
   }
@@ -158,7 +161,7 @@ const getParentPolicy = (rule: InstanceElement): InstanceElement | undefined => 
   return getParents(rule)[0]?.value
 }
 
-export const deployPriorityChange = async ({
+const deployPriorityChange = async ({
   client,
   priority,
   instance,
@@ -173,7 +176,10 @@ export const deployPriorityChange = async ({
 }): Promise<void> => {
   const { type } = instance.value
   const ruleTypeName = instance.elemID.typeName
-  const data = { priority: setPriority(ruleTypeName, priority), type, name: instance.value.name }
+  const baseData = { priority: setPriority(ruleTypeName, priority), type, name: instance.value.name }
+  // For sign on rules, we need to include the actions in the data
+  const data =
+    instance.elemID.typeName === SIGN_ON_RULE_TYPE_NAME ? { ...baseData, actions: instance.value.actions } : baseData
   const typeDefinition = config.apiDefinitions.types[instance.elemID.typeName]
   const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests.modify : undefined
   const deployUrl = deployRequest?.url
@@ -185,14 +191,19 @@ export const deployPriorityChange = async ({
   await client.put({ url, data })
 }
 
+const getAdditionalUrlVars = (instance: InstanceElement): Record<string, string> =>
+  ALL_SUPPORTED_POLICY_RULE_NAMES.includes(instance.elemID.typeName)
+    ? { ruleId: instance.value.id, policyId: getParentPolicy(instance)?.value.id }
+    : { policyId: instance.value.id }
+
 /*
  * Manages the priorities of policies and policy rules by generating an InstanceElement
- * for the priorities. Each priority instance contains the instances sorted
- * by their priority, including the default instance. The default instance is always set to be last.
- * In deployment, we deploy the priorities, not the instances themselves.
+ * for the priorities. Each priority instance contains the instances sorted by their
+ * priority, including the default instance. The default instance is always set to be
+ * last. In deployment, we deploy the priorities, not the instances themselves.
  */
 const filter: FilterCreator = ({ config, client }) => ({
-  name: 'policyRulePrioritiesFilter',
+  name: 'policyPrioritiesFilter',
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
     const policiesRules = instances.filter(instance =>
@@ -272,9 +283,7 @@ const filter: FilterCreator = ({ config, client }) => ({
               priority,
               instance: ref.value,
               config,
-              additionalUrlVars: ALL_SUPPORTED_POLICY_RULE_NAMES.includes(ref.value.elemID.typeName)
-                ? { ruleId: ref.value.value.id, policyId: getParentPolicy(ref.value)?.value.id }
-                : { policyId: ref.value.value.id },
+              additionalUrlVars: getAdditionalUrlVars(ref.value)
             })
           })
       }
@@ -289,9 +298,7 @@ const filter: FilterCreator = ({ config, client }) => ({
                 priority,
                 instance: ref.value,
                 config,
-                additionalUrlVars: ALL_SUPPORTED_POLICY_RULE_NAMES.includes(ref.value.elemID.typeName)
-                  ? { ruleId: ref.value.value.id, policyId: getParentPolicy(ref.value)?.value.id }
-                  : { policyId: ref.value.value.id },
+                additionalUrlVars: getAdditionalUrlVars(ref.value)
               })
             }
           })

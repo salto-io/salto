@@ -320,7 +320,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           hide: true,
         },
         assigneeType: {
-          hide: true,
+          omit: true,
         },
       },
     },

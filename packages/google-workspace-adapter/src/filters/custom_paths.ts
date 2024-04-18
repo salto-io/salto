@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { filters, filterUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -30,14 +29,14 @@ const pathMapper: filters.PathMapperFunc = inst => {
     log.warn('org unit %s has a non-reference parentOrgUnitId', inst.elemID.getFullName())
     return undefined
   }
-  const currentFileName = _.last(inst.path)
-  if (currentFileName === undefined) {
-    log.warn('org unit %s has no path, not updating', inst.elemID.getFullName())
+  const pathSuffix = inst.path?.slice(-2)
+  if (pathSuffix?.length !== 2) {
+    log.warn('org unit %s does not have the expected path, not updating', inst.elemID.getFullName())
     return undefined
   }
   return {
     nestUnder: parentOrgUnitId.elemID,
-    pathSuffix: [currentFileName, currentFileName],
+    pathSuffix,
   }
 }
 

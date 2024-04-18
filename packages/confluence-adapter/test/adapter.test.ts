@@ -128,9 +128,8 @@ describe('adapter', () => {
           'confluence.space',
           'confluence.space.instance.My_first_space@s',
           'confluence.space.instance.Omri_Farkash@s',
+          'confluence.space__permissionInternalIdMap',
           'confluence.space__permissions',
-          'confluence.space__permissions__operation',
-          'confluence.space__permissions__principal',
         ])
         expect(
           Object.fromEntries(

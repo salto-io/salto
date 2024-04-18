@@ -17,13 +17,11 @@ import {
   AdditionChange,
   CORE_ANNOTATIONS,
   Change,
-  ChangeGroup,
   DeployResult,
   ElemID,
   InstanceElement,
   ModificationChange,
   ObjectType,
-  ReadOnlyElementsSource,
   RemovalChange,
   SaltoElementError,
   SaltoError,
@@ -81,11 +79,7 @@ const calculatePermissionsDiff = (
       safeJsonStringify({ beforePermissions, afterPermissions }, elementExpressionStringifyReplacer),
       getChangeData(change).elemID.getFullName(),
     )
-    const error: SaltoError = {
-      message: `permissions are not in expected format, cannot deploy permissions in space instance ${getChangeData(change).elemID.getFullName()}`,
-      severity: 'Error',
-    }
-    throw error
+    return { permissionsToDeleted: [], permissionsToAdd: [] }
   }
 
   const overlappingPermissionKeys = new Set(
@@ -102,11 +96,9 @@ const calculatePermissionsDiff = (
 type DeployPermissionsInput = {
   spaceModificationChange: ModificationChange<InstanceElement>
   definitions: types.PickyRequired<definitionsUtils.ApiDefinitions<Options>, 'deploy'>
-  changeGroup: ChangeGroup
-  elementSource: ReadOnlyElementsSource
   convertError: deployment.ConvertError
   changeResolver: ChangeElementResolver<Change<InstanceElement>>
-}
+} & Omit<definitionsUtils.deploy.ChangeAndContext, 'change'>
 
 const deployPermissions = async ({
   spaceModificationChange,
@@ -226,6 +218,7 @@ const filter =
         elementSource,
         convertError,
         changeResolver,
+        sharedContext: {},
       }
       await awu(spaceNonRemovalChanges)
         // This filter is for TypeScript, we already filtered the changes at the beginnings of this filter

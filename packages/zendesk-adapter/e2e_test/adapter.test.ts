@@ -112,23 +112,24 @@ const ALL_SUPPORTED_TYPES = {
 
 const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
 
-const TYPES_TO_REMOVE_AND_PREFIX: Record<string, string> = {
-  [BRAND_TYPE_NAME]: 'Testbrand',
-  [CUSTOM_ROLE_TYPE_NAME]: 'Testcustom_role',
-  [USER_FIELD_TYPE_NAME]: 'Testuser_field',
-  [AUTOMATION_TYPE_NAME]: 'Testautomation',
-  [TICKET_FIELD_TYPE_NAME]: 'Testticket_field',
-  [CATEGORY_TYPE_NAME]: 'Testcategory',
-  [PERMISSION_GROUP_TYPE_NAME]: 'TestpermissionGroup',
-  [BUSINESS_HOUR_SCHEDULE]: 'Testbusiness_hours_schedule',
-  [CUSTOM_OBJECT_TYPE_NAME]: 'key',
-  [USER_SEGMENT_TYPE_NAME]: 'Testuser_segment',
-  [VIEW_TYPE_NAME]: 'Testview',
-  [SLA_POLICY_TYPE_NAME]: 'Testsla_policy',
-  [MACRO_TYPE_NAME]: 'Testmacro',
-  [GROUP_TYPE_NAME]: 'Testgroup',
-  [GUIDE_THEME_TYPE_NAME]: 'e2eHelpCenter_Testtheme',
-}
+const TYPES_TO_REMOVE = new Set<string>([
+  BRAND_TYPE_NAME,
+  CUSTOM_ROLE_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  AUTOMATION_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  PERMISSION_GROUP_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE,
+  CUSTOM_OBJECT_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  VIEW_TYPE_NAME,
+  SLA_POLICY_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
+])
+const UNIQUE_NAME = 'E2ETestName'
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(1000 * 60 * 15)
@@ -206,13 +207,12 @@ const deployChanges = async (
 }
 
 const cleanup = async (adapterAttr: Reals, fetchResult: FetchResult): Promise<void> => {
-  const typesToRemove = new Set(Object.keys(TYPES_TO_REMOVE_AND_PREFIX))
   expect(fetchResult.errors).toHaveLength(0)
   const { elements } = fetchResult
   const changesToClean = elements
     .filter(isInstanceElement)
-    .filter(instance => typesToRemove.has(instance.elemID.typeName))
-    .filter(instance => instance.elemID.name.startsWith(TYPES_TO_REMOVE_AND_PREFIX[instance.elemID.typeName]))
+    .filter(instance => TYPES_TO_REMOVE.has(instance.elemID.typeName))
+    .filter(instance => instance.elemID.name.includes(UNIQUE_NAME))
     .map(instance => toChange({ before: instance }))
   const groupedChanges = _.groupBy(changesToClean, change => getChangeData(change).elemID.typeName)
   if (changesToClean.length > 0) {
@@ -257,7 +257,7 @@ describe('Zendesk adapter E2E', () => {
     let customObjectInstances: InstanceElement[]
     let guideInstances: InstanceElement[]
     let guideThemeInstance: InstanceElement
-    const createName = (type: string): string => `Test${type}${testSuffix}`
+    const createName = (type: string): string => `${UNIQUE_NAME}${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
 
     let groupIdToInstances: Record<string, InstanceElement[]>
@@ -546,13 +546,14 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
       })
 
+      const customObjName = createName('custom_object')
       const customObjectInstance = createInstanceElement({
         type: CUSTOM_OBJECT_TYPE_NAME,
         valuesOverride: {
-          key: `key${testSuffix}`,
-          raw_title: `title${testSuffix}`,
-          raw_title_pluralized: `titles${testSuffix}`,
-          raw_description: `description${testSuffix}`,
+          key: `key${customObjName}`,
+          raw_title: `title${customObjName}`,
+          raw_title_pluralized: `titles${customObjName}`,
+          raw_description: `description${customObjName}`,
         },
       })
 

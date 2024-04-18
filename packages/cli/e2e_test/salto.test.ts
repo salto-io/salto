@@ -112,7 +112,7 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
     const fullPath = (partialPath: string): string => path.join(fetchOutputDir, partialPath)
 
     beforeAll(async () => {
-      log.initLogCount()
+      log.resetLogCount()
       homePath = tmp.dirSync().name
       randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
       fetchOutputDir = `${homePath}/NACL/test_fetch`

@@ -136,7 +136,7 @@ describe('Salesforce adapter E2E with real account', () => {
   let adapter: SalesforceAdapter
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     credLease = await testHelpers().credentials()
     const adapterAttr = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),

@@ -43,7 +43,7 @@ describe('validation and quick deploy e2e', () => {
   let apexTestInstance: MetadataInstanceElement
 
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     apexClassInstance = createInstanceElement(
       {
         fullName: 'MyApexClass',

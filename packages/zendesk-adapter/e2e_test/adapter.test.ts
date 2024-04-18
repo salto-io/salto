@@ -345,7 +345,7 @@ describe('Zendesk adapter E2E', () => {
     }
 
     beforeAll(async () => {
-      log.initLogCount()
+      log.resetLogCount()
       // get e2eHelpCenter brand
       credLease = await credsLease()
       adapterAttr = realAdapter(

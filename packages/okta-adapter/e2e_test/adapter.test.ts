@@ -360,7 +360,7 @@ describe('Okta adapter E2E', () => {
     }
 
     beforeAll(async () => {
-      log.initLogCount()
+      log.resetLogCount()
       credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },

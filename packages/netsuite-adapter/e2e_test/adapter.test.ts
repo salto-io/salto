@@ -157,7 +157,7 @@ describe('Netsuite adapter E2E with real account', () => {
   }
 
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     await adapterCreator.install?.()
     credentialsLease = await credsLease()
     logging(`using account ${credentialsLease.value.accountId}`)

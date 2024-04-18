@@ -71,7 +71,7 @@ describe('workflow filter', () => {
   let fetchResult: Element[]
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),

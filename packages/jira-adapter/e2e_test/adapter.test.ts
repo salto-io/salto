@@ -71,7 +71,7 @@ each([
   let elementsSource: ReadOnlyElementsSource
 
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     elementsSource = buildElementsSourceFromElements([])
     credLease = await credsLease(isDataCenter)
     const adapterAttr = realAdapter({

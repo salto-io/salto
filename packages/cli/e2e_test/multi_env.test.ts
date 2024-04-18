@@ -181,7 +181,7 @@ describe.each([
 
   // Setup the test env
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     env1CredsLease = await salesforceTestHelpers().credentials()
     env2CredsLease = await salesforceTestHelpers().credentials('ENV_2')
     env1Creds = env1CredsLease.value

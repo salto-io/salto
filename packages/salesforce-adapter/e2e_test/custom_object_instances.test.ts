@@ -114,7 +114,7 @@ describe('custom object instances e2e', () => {
     }),
   }
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter(
       {

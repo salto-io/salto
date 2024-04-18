@@ -30,7 +30,7 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
   jest.setTimeout(10 * 1000)
 
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     credLease = await credsLease()
     const adapterAttr = realAdapter({ credentials: credLease.value })
     adapter = adapterAttr.adapter

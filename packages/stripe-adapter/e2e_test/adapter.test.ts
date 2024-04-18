@@ -32,7 +32,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
   let credLease: CredsLease<AccessTokenCredentials>
 
   beforeAll(async () => {
-    log.initLogCount()
+    log.resetLogCount()
     credLease = await credsLease()
     const adapterAttr = realAdapter({ credentials: credLease.value })
     const { elements } = await adapterAttr.adapter.fetch({

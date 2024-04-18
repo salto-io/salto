@@ -883,6 +883,22 @@ describe('Test utils.ts', () => {
 
         expect(result).toEqual({})
       })
+      it('should not remove empty undefined object', async () => {
+        const values = {
+          type: 'ID',
+          multiValue: false,
+          value: {
+            id: undefined
+          },
+        }
+        const result = await transformValues({
+          values,
+          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+        expect(result).toEqual(values)
+      })
     })
   })
 

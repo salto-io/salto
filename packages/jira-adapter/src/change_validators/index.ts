@@ -70,6 +70,7 @@ import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
+import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
 
 const { deployTypesNotSupportedValidator, createChangeValidator } = deployment.changeValidators
 
@@ -98,7 +99,9 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     automations: automationsValidator,
     activeSchemeDeletion: activeSchemeDeletionValidator,
     sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
+    referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator,
     statusMigrationChange: statusMigrationChangeValidator,
+    
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
     workflowStatusMappings: workflowStatusMappingsValidator,
@@ -131,6 +134,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
+    
   }
 
   return createChangeValidator({

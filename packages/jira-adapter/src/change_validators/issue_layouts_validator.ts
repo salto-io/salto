@@ -36,10 +36,11 @@ type issueTypeMappingStruct = {
   screenSchemeId: ReferenceExpression
 }
 
-const parentElemID = (instance: InstanceElement): ElemID => instance.annotations[CORE_ANNOTATIONS.PARENT][0].elemID
+const parentElemID = (instance: InstanceElement): ElemID | undefined =>
+  instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID
 
 // Filters and deletes from the issueTypeMapping the issue layouts that are not in the issueTypeScheme of the project
-const isIssueTypeInIssueTypeScreenScheme = (
+const isIssueTypeInIssueTypeScheme = (
   issueTypeMapping: issueTypeMappingStruct,
   projectIssueTypesFullName: string[],
 ): boolean =>
@@ -62,35 +63,41 @@ const getIssueLayoutsListByProject = (changes: ReadonlyArray<Change>): InstanceE
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ISSUE_LAYOUT_TYPE),
-      instance => parentElemID(instance).getFullName(),
+      instance => parentElemID(instance)?.getFullName(),
     ),
   )
 
 const getProjectIssueLayoutsScreensName = async (
   elementsSource: ReadOnlyElementsSource,
-  projectElemID: ElemID,
+  projectElemID: ElemID | undefined,
 ): Promise<string[]> => {
-  const project = await elementsSource.get(projectElemID)
-  if (!project) return []
-  const projectIssueTypesFullName = (
-    await elementsSource.get(project.value.issueTypeScheme.elemID)
-  )?.value.issueTypeIds?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
+  const project = projectElemID !== undefined ? await elementsSource.get(projectElemID) : undefined
+  if (project === undefined) return []
+  const projectIssueTypesFullName =
+    project.value.issueTypeScheme !== undefined
+      ? (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds
+          ?.filter(
+            (issueType: ReferenceExpression | number | string) =>
+              typeof issueType !== 'string' && typeof issueType !== 'number',
+          )
+          ?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
+      : []
 
   const relevantIssueTypeMappings = (
     (await Promise.all(
-      (await elementsSource.get(project.value.issueTypeScreenScheme.elemID))?.value.issueTypeMappings ?? [],
+      project.value.issueTypeScreenScheme !== undefined
+        ? (await elementsSource.get(project.value.issueTypeScreenScheme.elemID))?.value.issueTypeMappings ?? []
+        : [],
     )) as issueTypeMappingStruct[]
-  ).filter((issueTypeScreenScheme: issueTypeMappingStruct) =>
-    isIssueTypeInIssueTypeScreenScheme(issueTypeScreenScheme, projectIssueTypesFullName),
-  )
+  ).filter(issueTypeScreenScheme => isIssueTypeInIssueTypeScheme(issueTypeScreenScheme, projectIssueTypesFullName))
 
   return (
     await Promise.all(
       relevantIssueTypeMappings
-        .filter((issueTypeScreenScheme: issueTypeMappingStruct) =>
+        .filter(issueTypeScreenScheme =>
           isRelevantMapping(issueTypeScreenScheme, relevantIssueTypeMappings.length, projectIssueTypesFullName.length),
         )
-        .map((issueTypeMapping: issueTypeMappingStruct) => elementsSource.get(issueTypeMapping.screenSchemeId.elemID)),
+        .map(issueTypeMapping => elementsSource.get(issueTypeMapping.screenSchemeId.elemID)),
     )
   )
     .filter(isInstanceElement)
@@ -103,7 +110,7 @@ const getProjectIssueLayoutsScreensName = async (
 }
 
 // this change validator ensures the correctness of issue layout configurations within each project,
-// by validating that each issue layout is linked to a valid screen according to the his specific project
+// by validating that each issue layout is linked to a valid screen according to his specific project
 // we also check that the issue layout is linked to a relevant project
 
 export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => ChangeValidator =
@@ -116,12 +123,15 @@ export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => 
     const issueLayoutsListByProject = getIssueLayoutsListByProject(changes)
     await Promise.all(
       issueLayoutsListByProject.map(async instances => {
+        // I use the first issueLayout of the sub-list of the issueLayouts to get the projectId of the project that this issueLayouts linked to
+        // and I need to do it just for the first issueLayout because all the issueLayouts in this sub-list are linked to the same project
         const issueLayoutsScreens = await getProjectIssueLayoutsScreensName(elementsSource, parentElemID(instances[0]))
 
         await Promise.all(
           instances
             .filter(
               issueLayoutInstance =>
+                issueLayoutInstance.value.extraDefinerId === undefined ||
                 !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
             )
             .map(async issueLayoutInstance => {

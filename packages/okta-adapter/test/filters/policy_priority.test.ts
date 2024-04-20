@@ -47,7 +47,7 @@ describe('policyPrioritiesFilter', () => {
         actions: {
           signon: {
             access: 'ALLOW',
-          }
+          },
         },
         type: 'someType',
       },
@@ -278,7 +278,7 @@ describe('policyPrioritiesFilter', () => {
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(connection.put).toHaveBeenCalledTimes(3)
-        if (policyRuleName ===  SIGN_ON_RULE_TYPE_NAME) {
+        if (policyRuleName === SIGN_ON_RULE_TYPE_NAME) {
           expect(connection.put).toHaveBeenCalledWith(
             '/api/v1/policies/4/rules/1',
             {

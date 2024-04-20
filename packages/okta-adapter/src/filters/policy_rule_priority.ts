@@ -53,6 +53,7 @@ import {
   PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_POLICY_TYPE_NAME,
   SIGN_ON_RULE_PRIORITY_TYPE_NAME,
+  SIGN_ON_RULE_TYPE_NAME,
 } from '../constants'
 import { deployChanges } from '../deployment'
 import OktaClient from '../client/client'
@@ -148,7 +149,9 @@ const deployPriorityChange = async ({
   }
   const policyId = policy.value.id
   const policyTypeName = policy.elemID.typeName
-  const data = { priority: setPriority(policyTypeName, priority), type, name: rule.value.name }
+  const baseData = { priority: setPriority(policyTypeName, priority), type, name: rule.value.name }
+  // For sign on rules, we need to include the actions in the data
+  const data = rule.elemID.typeName === SIGN_ON_RULE_TYPE_NAME ? { ...baseData, actions: rule.value.actions } : baseData
   const typeDefinition = config.apiDefinitions.types[rule.elemID.typeName]
   const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests.modify : undefined
   const deployUrl = deployRequest?.url

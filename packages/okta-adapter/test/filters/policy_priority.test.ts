@@ -29,7 +29,7 @@ import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_NAMES,
   ALL_SUPPORTED_POLICY_RULE_NAMES,
 } from '../../src/filters/policy_priority'
-import { OKTA } from '../../src/constants'
+import { OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import { DEFAULT_CONFIG, OktaConfig } from '../../src/config'
@@ -44,6 +44,12 @@ describe('policyPrioritiesFilter', () => {
         system: isSystem,
         name: `accessPolicyRule${id.toString()}`,
         priority: id,
+        actions: {
+          signon: {
+            access: 'ALLOW',
+          }
+        },
+        type: 'someType',
       },
       undefined,
       {
@@ -272,6 +278,22 @@ describe('policyPrioritiesFilter', () => {
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(connection.put).toHaveBeenCalledTimes(3)
+        if (policyRuleName ===  SIGN_ON_RULE_TYPE_NAME) {
+          expect(connection.put).toHaveBeenCalledWith(
+            '/api/v1/policies/4/rules/1',
+            {
+              priority: 1,
+              actions: {
+                signon: {
+                  access: 'ALLOW',
+                },
+              },
+              name: 'accessPolicyRule1',
+              type: 'someType',
+            },
+            undefined,
+          )
+        }
       },
     )
     it.each(ALL_SUPPORTED_POLICY_NAMES)(
@@ -485,18 +507,14 @@ describe('policyPrioritiesFilter', () => {
       },
     )
     it.each(ALL_SUPPORTED_POLICY_RULE_NAMES)(
-      'should throw when deployUrl is not defined for rule%sPriority instance',
+      'should throw when deployRequests is not defined for rule%sPriority instance',
       async (policyRuleName: string) => {
         const config = {
           ...DEFAULT_CONFIG,
           apiDefinitions: {
             types: {
-              [policyRuleTypeNameToPolicyName(policyRuleName)]: {
-                deployRequests: {
-                  modify: {
-                    url: undefined,
-                  },
-                },
+              [policyRuleName]: {
+                deployRequests: undefined,
               },
             },
           },
@@ -544,9 +562,7 @@ describe('policyPrioritiesFilter', () => {
         const res = await filter.deploy(changes)
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(1)
-        expect(res.deployResult.errors[0].message).toEqual(
-          "Cannot read properties of undefined (reading 'deployRequests')",
-        )
+        expect(res.deployResult.errors[0].message).toEqual('Failed to deploy priority change due to missing url')
         expect(res.deployResult.appliedChanges).toHaveLength(0)
         expect(connection.put).toHaveBeenCalledTimes(0)
       },

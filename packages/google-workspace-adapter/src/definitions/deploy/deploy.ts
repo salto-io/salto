@@ -40,7 +40,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
                   omit: ['isSuperAdminRole', 'isSystemRole'],
                 },
               },
@@ -67,7 +66,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
                   omit: ['isSuperAdminRole', 'isSystemRole'],
                 },
               },
@@ -90,7 +88,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that verified and isPrimary are read-only
                   omit: ['verified', 'isPrimary', 'domainAliases'],
                 },
               },
@@ -483,7 +480,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this field are read-only
                   omit: ['resourceEmail'],
                   adjust: item => {
                     const { value } = item

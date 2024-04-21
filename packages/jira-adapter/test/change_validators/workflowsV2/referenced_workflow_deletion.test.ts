@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import {
-  toChange,
-  InstanceElement,
-  ReferenceExpression,
-  ReadOnlyElementsSource,
-  SeverityLevel,
-} from '@salto-io/adapter-api'
+import { toChange, InstanceElement, ReferenceExpression, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { referencedWorkflowDeletionChangeValidator } from '../../../src/change_validators/workflowsV2/referenced_workflow_deletion'
 import { ISSUE_TYPE_NAME, WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType, createSkeletonWorkflowV2Instance } from '../../utils'
@@ -93,9 +87,9 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
     expect(result).toEqual([
       {
         elemID: referencedWorkflowInstance.elemID,
-        severity: 'Error' as SeverityLevel,
+        severity: 'Error',
         message: "Can't delete a referenced workflow.",
-        detailedMessage: `Workflow is referenced by the following workflow schemes: ${[referencingSchemeInstance.elemID.name]}.`,
+        detailedMessage: 'Workflow is referenced by the following workflow schemes: referencingSchemeInstance.',
       },
     ])
   })
@@ -109,9 +103,10 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
     expect(result).toEqual([
       {
         elemID: defaultWorkflowInstance.elemID,
-        severity: 'Error' as SeverityLevel,
+        severity: 'Error',
         message: "Can't delete a referenced workflow.",
-        detailedMessage: `Workflow is referenced by the following workflow schemes: ${[defaultSchemeInstance.elemID.name, referencingSchemeInstance.elemID.name]}.`,
+        detailedMessage:
+          'Workflow is referenced by the following workflow schemes: defaultSchemeInstance, referencingSchemeInstance.',
       },
     ])
   })

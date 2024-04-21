@@ -24,34 +24,37 @@ import {
   ReadOnlyElementsSource,
   ElemID,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { getWorkflowsFromWorkflowScheme } from '../../filters/workflowV2/workflow_filter'
 import { isWorkflowV2Instance } from '../../filters/workflowV2/types'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const mapWorkflowsToReferencingSchemes = async (
-  elementSource: ReadOnlyElementsSource,
+  elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, Set<ElemID>>> => {
-  const res: Record<string, Set<ElemID>> = {}
+  const workflowNameToWorkflowScheme: Record<string, Set<ElemID>> = {}
 
-  await awu(await getInstancesFromElementSource(elementSource, [WORKFLOW_SCHEME_TYPE_NAME])).forEach(async scheme => {
-    await awu(await getWorkflowsFromWorkflowScheme(scheme)).forEach(workflow => {
+  await awu(await getInstancesFromElementSource(elementsSource, [WORKFLOW_SCHEME_TYPE_NAME])).forEach(scheme => {
+    getWorkflowsFromWorkflowScheme(scheme).forEach(workflow => {
       const key = workflow.elemID.getFullName()
-      if (!(key in res)) {
-        res[key] = new Set<ElemID>()
+      if (workflowNameToWorkflowScheme[key] === undefined) {
+        workflowNameToWorkflowScheme[key] = new Set<ElemID>()
       }
-      res[key].add(scheme.elemID)
+      workflowNameToWorkflowScheme[key].add(scheme.elemID)
     })
   })
-  return res
+  return workflowNameToWorkflowScheme
 }
 
-export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async (changes, elementSource) => {
-  if (elementSource === undefined) {
+export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async (changes, elementsSource) => {
+  if (elementsSource === undefined) {
+    log.warn('Elements source was not passed to referencedWorkflowDeletionChangeValidator. Skipping validator.')
     return []
   }
-  const workflowsToReferencingSchemes = await mapWorkflowsToReferencingSchemes(elementSource)
+  const workflowNameToReferencingWorkflowSchemes = await mapWorkflowsToReferencingSchemes(elementsSource)
   return awu(changes)
     .filter(isInstanceChange)
     .filter(isRemovalChange)
@@ -59,14 +62,14 @@ export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async 
     .filter(isWorkflowV2Instance)
     .filter(
       workflow =>
-        workflow.elemID.getFullName() in workflowsToReferencingSchemes &&
-        workflowsToReferencingSchemes[workflow.elemID.getFullName()].size > 0,
+        workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()] !== undefined &&
+        workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()].size > 0,
     )
-    .map(async workflow => ({
+    .map(workflow => ({
       elemID: workflow.elemID,
       severity: 'Error' as SeverityLevel,
       message: "Can't delete a referenced workflow.",
-      detailedMessage: `Workflow is referenced by the following workflow schemes: ${[...workflowsToReferencingSchemes[workflow.elemID.getFullName()]].map(elemID => elemID.name)}.`,
+      detailedMessage: `Workflow is referenced by the following workflow schemes: ${[...workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]].map(elemID => elemID.name).join(', ')}.`,
     }))
     .toArray()
 }

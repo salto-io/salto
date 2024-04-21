@@ -191,6 +191,7 @@ export const updateNaclFileData = async (
     newData: string
     start: number
     end: number
+    action?: DetailedChange['action']
   }
 
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
@@ -231,7 +232,7 @@ export const updateNaclFileData = async (
       // This is a removal, we want to replace the original content with an empty string
       newData = ''
     }
-    return { newData, start: change.location.start.byte, end: change.location.end.byte }
+    return { newData, start: change.location.start.byte, end: change.location.end.byte, action: change.action }
   }
 
   const bufferChanges = await awu(changes).map(toBufferChange).toArray()
@@ -249,8 +250,8 @@ export const updateNaclFileData = async (
           // Add slice from the current data to fill the gap between the last part and the next
           let data = currentData.slice(lastPartEnd, nextChangeStart)
 
-          if (change.newData === '' && nextChangeStart !== Infinity) {
-            // For removals, removing newline and indent at the end of the block to avoid empty lines
+          if (change.action === 'remove') {
+            // For removals, dropping newline and indent at the end of the block to avoid empty lines
             const lastNewlineIndex = data.search(/\s+$/)
             if (lastNewlineIndex !== -1) {
               data = data.slice(0, lastNewlineIndex)

@@ -27,6 +27,7 @@ import {
   getNestedStaticFiles,
   getChangeLocations,
   DetailedChangeWithSource,
+  updateNaclFileData,
 } from '../../../src/workspace/nacl_files/nacl_file_update'
 
 const mockType = new ObjectType({
@@ -108,5 +109,112 @@ describe('getChangeLocations', () => {
       expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
       expect(result[0].location.filename).toEqual('unsorted.nacl')
     })
+  })
+})
+
+describe('updateNaclFileData', () => {
+  const mockTypeNacl = `type salto.mock {
+  string file {
+  }
+  "List<number>" numArray {
+  }
+  "List<string>" strArray {
+  }
+  "List<salto.obj>" obj {
+  }
+}
+`
+  const partialMockTypeNacl = `type salto.mock {
+  string file {
+  }
+  "List<string>" strArray {
+  }
+}
+`
+
+  it('should add additions to empty data', async () => {
+    const changes: DetailedChangeWithSource[] = [
+      {
+        ...toChange({ after: mockType }),
+        id: mockType.elemID,
+        location: {
+          filename: 'file',
+          start: { col: 1, line: Infinity, byte: Infinity },
+          end: { col: 1, line: Infinity, byte: Infinity },
+        },
+      },
+    ]
+
+    const result = await updateNaclFileData('', changes, {})
+    expect(result).toEqual(mockTypeNacl)
+  })
+
+  it('should remove elements', async () => {
+    const changes: DetailedChangeWithSource[] = [
+      {
+        ...toChange({ before: mockType }),
+        id: mockType.elemID,
+        location: {
+          filename: 'file',
+          start: { col: 0, line: 0, byte: 0 },
+          end: { col: 1, line: 10, byte: mockTypeNacl.length },
+        },
+      },
+    ]
+
+    const result = await updateNaclFileData(mockTypeNacl, changes, {})
+    expect(result).toEqual('')
+  })
+
+  it('should add fields to elements', async () => {
+    const changes: DetailedChangeWithSource[] = [
+      {
+        ...toChange({ after: mockType.fields.numArray }),
+        id: mockType.fields.numArray.elemID,
+        location: {
+          filename: 'file',
+          start: { col: 1, line: 4, byte: 38 },
+          end: { col: 1, line: 4, byte: 38 },
+        },
+      },
+      {
+        ...toChange({ after: mockType.fields.obj }),
+        id: mockType.fields.obj.elemID,
+        location: {
+          filename: 'file',
+          start: { col: 1, line: 6, byte: 70 },
+          end: { col: 1, line: 6, byte: 70 },
+        },
+      },
+    ]
+
+    const result = await updateNaclFileData(partialMockTypeNacl, changes, {})
+    expect(result).toEqual(mockTypeNacl)
+  })
+
+  it('should remove fields from elements', async () => {
+    const changes: DetailedChangeWithSource[] = [
+      {
+        ...toChange({ before: mockType.fields.numArray }),
+        id: mockType.fields.numArray.elemID,
+        location: {
+          filename: 'file',
+          start: { col: 2, line: 3, byte: 39 },
+          end: { col: 2, line: 4, byte: 69 },
+        },
+      },
+      {
+        ...toChange({ before: mockType.fields.obj }),
+        id: mockType.fields.obj.elemID,
+        location: {
+          filename: 'file',
+          start: { col: 2, line: 7, byte: 102 },
+          end: { col: 2, line: 8, byte: 131 },
+        },
+      },
+    ]
+
+    const result = await updateNaclFileData(mockTypeNacl, changes, {})
+    expect(result).toEqual(partialMockTypeNacl)
   })
 })

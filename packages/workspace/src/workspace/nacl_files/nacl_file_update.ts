@@ -114,8 +114,8 @@ const fixEdgeIndentation = (data: string, action: ActionName, initialIndentation
   if (action === 'add') {
     /* When adding the placement we are given is right before the closing bracket.
      * The string that dump gave us has an empty last line, meaning we have to recreate the
-     * indentation that was there previously. We also have to slice from the beggining of the first
-     * line the initial indentation that was there in the begginging.
+     * indentation that was there previously. We also have to slice from the beginning of the first
+     * line the initial indentation that was there in the beginning.
      */
     return [
       firstLine.slice(initialIndentationLevel),
@@ -247,10 +247,20 @@ export const updateNaclFileData = async (
         const nextChangeStart = change.start
         if (lastPartEnd !== nextChangeStart) {
           // Add slice from the current data to fill the gap between the last part and the next
+          let data = currentData.slice(lastPartEnd, nextChangeStart)
+
+          if (change.newData === '' && nextChangeStart !== Infinity) {
+            // For removals, removing newline and indent at the end of the block to avoid empty lines
+            const lastNewlineIndex = data.search(/\n[ \t]*$/)
+            if (lastNewlineIndex !== -1) {
+              data = data.slice(0, lastNewlineIndex)
+            }
+          }
+
           parts.push({
             start: lastPartEnd,
             end: nextChangeStart,
-            newData: currentData.slice(lastPartEnd, nextChangeStart),
+            newData: data,
           })
         }
         parts.push(change)
@@ -261,8 +271,7 @@ export const updateNaclFileData = async (
       [{ start: 0, end: 0, newData: '' }],
     )
 
-  const ret = allBufferParts.map(part => part.newData).join('')
-  return ret
+  return allBufferParts.map(part => part.newData).join('')
 }
 
 const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {

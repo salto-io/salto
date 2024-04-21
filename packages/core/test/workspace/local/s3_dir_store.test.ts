@@ -226,7 +226,7 @@ describe('buildS3DirectoryStore', () => {
       expect(deleteManyObjectsMock).toHaveBeenCalledWith({
         Bucket: bucketName,
         Delete: {
-          Objects: [{ Key: 'a/b' }],
+          Objects: [{ Key: 'baseDir/a/b' }],
         },
       })
     })
@@ -241,7 +241,7 @@ describe('buildS3DirectoryStore', () => {
       expect(deleteManyObjectsMock).toHaveBeenCalledWith({
         Bucket: bucketName,
         Delete: {
-          Objects: [{ Key: 'a/b' }, { Key: 'a/c' }],
+          Objects: [{ Key: 'baseDir/a/b' }, { Key: 'baseDir/a/c' }],
         },
       })
     })
@@ -257,13 +257,13 @@ describe('buildS3DirectoryStore', () => {
       expect(deleteManyObjectsMock).toHaveBeenCalledWith({
         Bucket: bucketName,
         Delete: {
-          Objects: files.slice(0, 1000).map(file => ({ Key: `${file}` })),
+          Objects: files.slice(0, 1000).map(file => ({ Key: `baseDir/${file}` })),
         },
       })
       expect(deleteManyObjectsMock).toHaveBeenCalledWith({
         Bucket: bucketName,
         Delete: {
-          Objects: files.slice(1000).map(file => ({ Key: `${file}` })),
+          Objects: files.slice(1000).map(file => ({ Key: `baseDir/${file}` })),
         },
       })
     })
@@ -306,7 +306,7 @@ describe('buildS3DirectoryStore', () => {
       expect(deleteManyObjectsMock).toHaveBeenCalledWith({
         Bucket: bucketName,
         Delete: {
-          Objects: [{ Key: 'a/b' }],
+          Objects: [{ Key: 'baseDir/a/b' }],
         },
       })
       expect(putObjectMock).not.toHaveBeenCalled()

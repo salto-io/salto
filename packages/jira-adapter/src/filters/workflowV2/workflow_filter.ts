@@ -409,7 +409,7 @@ const getWorkflowPayload = (
   return workflowPayload
 }
 
-const getWorkflowsFromWorkflowScheme = async (
+export const getWorkflowsFromWorkflowScheme = async (
   workflowSchemeInstance: InstanceElement,
 ): Promise<ReferenceExpression[]> => {
   const { defaultWorkflow } = workflowSchemeInstance.value

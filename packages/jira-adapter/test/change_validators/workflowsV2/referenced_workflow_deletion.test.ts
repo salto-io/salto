@@ -22,11 +22,12 @@ import {
   SeverityLevel,
 } from '@salto-io/adapter-api'
 import { referencedWorkflowDeletionChangeValidator } from '../../../src/change_validators/workflowsV2/referenced_workflow_deletion'
-import { WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
+import { ISSUE_TYPE_NAME, WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType, createSkeletonWorkflowV2Instance } from '../../utils'
 
 describe('referencedWorkflowDeletionChangeValidator', () => {
   const workflowSchemeObjectType = createEmptyType(WORKFLOW_SCHEME_TYPE_NAME)
+  const issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME))
   let defaultSchemeInstance: InstanceElement
   let referencingSchemeInstance: InstanceElement
   let referencedWorkflowInstance: InstanceElement
@@ -47,11 +48,16 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
     referencingSchemeInstance = new InstanceElement('referencingSchemeInstance', workflowSchemeObjectType, {
       defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID),
       name: 'referencingSchemeInstance',
-      items: [{ workflow: new ReferenceExpression(referencedWorkflowInstance.elemID) }],
+      items: [
+        {
+          workflow: new ReferenceExpression(referencedWorkflowInstance.elemID),
+          issueType: new ReferenceExpression(issueTypeInstance.elemID),
+        },
+      ],
     })
   })
 
-  it('should succeed because the deleted workflow is unreferenced.', async () => {
+  it("shouldn't raise an error because the deleted workflow is unreferenced.", async () => {
     elementSource = buildElementsSourceFromElements([
       defaultWorkflowInstance,
       referencedWorkflowInstance,
@@ -64,7 +70,7 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
     expect(result).toEqual([])
   })
 
-  it('should succeed because the deleted workflow is unreferenced after changing the referencing workflow scheme.', async () => {
+  it("shouldn't raise an error because the deleted workflow is unreferenced after changing the referencing workflow scheme.", async () => {
     const afterScheme = referencingSchemeInstance.clone()
     afterScheme.value.items[0].workflow = new ReferenceExpression(defaultWorkflowInstance.elemID)
     elementSource = buildElementsSourceFromElements([defaultWorkflowInstance, afterScheme])
@@ -78,7 +84,7 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
     expect(result).toEqual([])
   })
 
-  it('should fail because the deleted workflow is referenced.', async () => {
+  it('should raise an error because the deleted workflow is referenced.', async () => {
     elementSource = buildElementsSourceFromElements([defaultWorkflowInstance, referencingSchemeInstance])
     const result = await referencedWorkflowDeletionChangeValidator(
       [toChange({ before: referencedWorkflowInstance })],
@@ -94,7 +100,7 @@ describe('referencedWorkflowDeletionChangeValidator', () => {
     ])
   })
 
-  it('should fail because the deleted workflow is referenced as a default workflow in a workflow scheme.', async () => {
+  it('should raise an error because the deleted workflow is referenced as a default workflow in a workflow scheme.', async () => {
     elementSource = buildElementsSourceFromElements([defaultSchemeInstance, referencingSchemeInstance])
     const result = await referencedWorkflowDeletionChangeValidator(
       [toChange({ before: defaultWorkflowInstance })],

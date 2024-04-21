@@ -392,7 +392,11 @@ describe('Zendesk adapter E2E', () => {
         },
         usedConfig,
       )
-      await cleanup(adapterAttr, firstFetchResult)
+      try {
+        await cleanup(adapterAttr, firstFetchResult)
+      } catch (e) {
+        log.error('cleanup failed: %s, stack: %s', e, e.stack)
+      }
       // ******************* create all elements for deploy *******************
       const automationInstance = createInstanceElement({
         type: 'automation',

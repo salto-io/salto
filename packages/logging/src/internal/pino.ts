@@ -190,6 +190,13 @@ export const loggerRepo = (
   config: Config,
 ): BaseLoggerRepo => {
   const { stream, end: endStream } = toStream(consoleStream, config)
+  const levelCountRecord: Record<LogLevel, number> = {
+    error: 0,
+    warn: 0,
+    info: 0,
+    debug: 0,
+    trace: 0,
+  }
   global.globalLogTags = mergeLogTags(global.globalLogTags || {}, config.globalTags)
   const tagsByNamespace = new collections.map.DefaultMap<string, LogTags>(() => global.globalLogTags)
 
@@ -285,6 +292,8 @@ export const loggerRepo = (
         const [formattedOrError, unconsumedArgs] =
           typeof message === 'string' ? formatMessage(message, ...args) : [message, args]
 
+        levelCountRecord[level] += 1
+
         logMessage(pinoLoggerWithoutTags, level, unconsumedArgs, normalizedLogTags, formattedOrError)
       },
       assignGlobalTags(logTags?: LogTags): void {
@@ -297,6 +306,14 @@ export const loggerRepo = (
       assignTags(logTags?: LogTags): void {
         if (!logTags) tagsByNamespace.set(namespace, {})
         else tagsByNamespace.set(namespace, mergeLogTags(tagsByNamespace.get(namespace), logTags))
+      },
+      getLogCount() {
+        return levelCountRecord
+      },
+      resetLogCount() {
+        Object.keys(levelCountRecord).forEach(level => {
+          levelCountRecord[level as LogLevel] = 0
+        })
       },
     }
   }

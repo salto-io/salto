@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, createAdapter, credentials } from '@salto-io/adapter-components'
+import { client as clientUtils, createAdapter, credentials, filters } from '@salto-io/adapter-components'
 import { Credentials, basicCredentialsType } from './auth'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnectionForApp } from './client/connection'
@@ -32,6 +32,7 @@ import {
   oauthAccessTokenCredentialsType,
   oauthRequestParametersType,
 } from './client/oauth'
+import customPathsFilterCreator from './filters/custom_paths'
 
 const { validateCredentials, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -77,6 +78,11 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
   operationsCustomizations: {
     connectionCreatorFromConfig: () => createConnectionForApp(DIRECTORY_APP_NAME),
     credentialsFromConfig: defaultCredentialsFromConfig,
+    customizeFilterCreators: args => ({
+      ...filters.createCommonFilters<Options, UserConfig>(args),
+      // customPathsFilterCreator must run after fieldReferencesFilter
+      customPathsFilterCreator,
+    }),
   },
   initialClients: {
     main: undefined,

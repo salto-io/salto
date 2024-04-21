@@ -360,6 +360,7 @@ describe('Okta adapter E2E', () => {
     }
 
     beforeAll(async () => {
+      log.resetLogCount()
       credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
@@ -424,6 +425,7 @@ describe('Okta adapter E2E', () => {
       if (credLease.return) {
         await credLease.return()
       }
+      log.info('Okta adapter E2E: Log counts = %o', log.getLogCount())
     })
     it('should fetch the regular instances and types', async () => {
       const expectedTypes = [

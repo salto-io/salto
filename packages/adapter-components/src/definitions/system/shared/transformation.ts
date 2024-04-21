@@ -16,6 +16,7 @@
 import { types } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { HTTPEndpointIdentifier, RequestArgs } from '../requests/types'
+import { ArgsWithCustomizer } from './types'
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
 
@@ -76,13 +77,16 @@ export type TransformDefinition<TContext = ContextParams, TTargetVal = Values> =
   adjust?: AdjustFunction<TContext, unknown, TTargetVal>
 }
 
-export type ExtractionParams<TContext = ContextParams> = {
+export type ExtractionParams<TContext = {}, TInput = {}> = {
   transformation?: TransformDefinition<TContext>
 
   // context to pass to request
-  context?: Partial<ContextParams & TContext>
+  context?: ArgsWithCustomizer<Partial<ContextParams & TContext>, Partial<ContextParams & TContext>, TInput>
 }
 
-export type EndpointExtractionParams<TContext, ClientOptions extends string> = ExtractionParams<TContext> & {
+export type EndpointExtractionParams<TContext, TInput, ClientOptions extends string> = ExtractionParams<
+  TContext,
+  TInput
+> & {
   endpoint: HTTPEndpointIdentifier<ClientOptions> & RequestArgs
 }

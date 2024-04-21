@@ -141,5 +141,10 @@ export const serviceUrlFilterCreatorDeprecated: <
       },
     },
   } as ApiDefinitions
-  return serviceUrlFilterCreator()({ ...args, definitions, elementSource: buildElementsSourceFromElements([]) })
+  return serviceUrlFilterCreator()({
+    ...args,
+    definitions,
+    elementSource: buildElementsSourceFromElements([]),
+    sharedContext: {},
+  })
 }

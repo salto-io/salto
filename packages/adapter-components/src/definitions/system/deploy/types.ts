@@ -19,6 +19,9 @@ export type ChangeAndContext = {
   change: Change<InstanceElement>
   changeGroup: Readonly<ChangeGroup>
   elementSource: ReadOnlyElementsSource
+  // additional values that can be passed between requests or filters within the operation
+  // (e.g. an id returned from one response that should be used in the next)
+  sharedContext: Record<string, unknown>
 }
 
 export type DeployChangeInput<AdditionalAction extends string> = ChangeAndContext & {

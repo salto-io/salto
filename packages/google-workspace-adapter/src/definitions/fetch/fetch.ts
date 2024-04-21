@@ -379,10 +379,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           aliasComponents: [{ fieldName: 'name' }],
         },
         path: {
-          pathParts: [
-            { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
-            { parts: [{ fieldName: 'name' }] },
-          ],
+          pathParts: [{ parts: [{ fieldName: 'name' }] }, { parts: [{ fieldName: 'name' }] }],
         },
       },
 

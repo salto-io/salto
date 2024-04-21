@@ -17,6 +17,7 @@ import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings, collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { copyFile, rm, mkdirp, exists, readFile, writeFile } from '@salto-io/file'
 import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
@@ -65,6 +66,7 @@ const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 const apiNameAnno = (obj: string, field: string): Record<string, string> => ({
   [API_NAME]: [obj, field].join(API_NAME_SEPARATOR),
 })
+const log = logger(module)
 
 describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]])(
   'cli e2e with account name %s',
@@ -73,7 +75,10 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
     // in the case that account name is just normal salesforce
     // we want to go through the default behavior, so we send undefined, instead of ['salesforce']
     const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
-    afterAll(workspaceHelpersCleanup)
+    afterAll(async () => {
+      await workspaceHelpersCleanup()
+      log.info('cli e2e: Log counts = %o', log.getLogCount())
+    })
 
     const workspaceConfigFile = `${__dirname}/../e2e_test/NACL/salto.config/workspace.nacl`
     const localWorkspaceConfigFile = `${__dirname}/../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
@@ -107,6 +112,7 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
     const fullPath = (partialPath: string): string => path.join(fetchOutputDir, partialPath)
 
     beforeAll(async () => {
+      log.resetLogCount()
       homePath = tmp.dirSync().name
       randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
       fetchOutputDir = `${homePath}/NACL/test_fetch`

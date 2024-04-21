@@ -25,7 +25,6 @@ import { referencedWorkflowDeletionChangeValidator } from '../../../src/change_v
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType, createSkeletonWorkflowV2Instance } from '../../utils'
 
-
 describe('referencedWorkflowDeletionChangeValidator', () => {
   const workflowSchemeObjectType = createEmptyType(WORKFLOW_SCHEME_TYPE_NAME)
   let defaultSchemeInstance: InstanceElement

@@ -102,6 +102,8 @@ export const buildS3DirectoryStore = ({
         ContinuationToken: token,
       })
     })
+  const getRelativeFileName = (filename: string): string =>
+    path.isAbsolute(filename) ? path.relative(baseDir, filename) : filename
 
   const list = async (): Promise<string[]> =>
     log.timeDebug(async () => {
@@ -128,8 +130,10 @@ export const buildS3DirectoryStore = ({
       return Array.from(paths)
     }, `listing s3 objects for ${baseDir}`)
 
-  const deleteMany = async (objectPaths: string[]): Promise<void> => {
-    const objectIdentifiers: AWS.ObjectIdentifier[] = objectPaths.map(objectPath => ({ Key: getFullPath(objectPath) }))
+  const deleteMany = async (fileNames: string[]): Promise<void> => {
+    const objectIdentifiers: AWS.ObjectIdentifier[] = fileNames.map(fileName => ({
+      Key: getRelativeFileName(fileName),
+    }))
 
     const batches = _.chunk(objectIdentifiers, DELETION_BATCH_SIZE)
     const batchPromises = batches.map(batch =>
@@ -164,15 +168,22 @@ export const buildS3DirectoryStore = ({
   }
 
   return {
-    get: async filePath => (updated[filePath] ? updated[filePath] : readFile(filePath)),
+    get: async filePath => {
+      if (deleted.has(filePath)) {
+        return undefined
+      }
+      return updated[filePath] ? updated[filePath] : readFile(filePath)
+    },
     set: async file => {
       updated[file.filename] = file
+      deleted.delete(file.filename)
     },
     list,
     getFullPath: filePath => `s3://${bucketName}/${getFullPath(filePath)}`,
     flush,
     delete: async fileName => {
       deleted.add(fileName)
+      delete updated[fileName]
     },
   }
 }

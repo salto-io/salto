@@ -21,7 +21,7 @@ const systemRoleError = (role: InstanceElement): ChangeError => ({
   elemID: role.elemID,
   severity: 'Error',
   message: 'Can not edit system roles trough the API',
-  detailedMessage: 'Can not edit the uri system roles trough the API',
+  detailedMessage: 'Can not edit system roles trough the API',
 })
 
 describe('systemRoleValidator', () => {

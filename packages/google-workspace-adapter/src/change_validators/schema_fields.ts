@@ -44,6 +44,7 @@ const isIllegalFieldChange = (change: ModificationChange<InstanceElement>): bool
   })
 }
 
+// This validator checks that schema fields are not changed to be single valued or have their type changed
 export const schemaFieldsValidator: ChangeValidator = async changes =>
   changes
     .filter(isModificationChange)

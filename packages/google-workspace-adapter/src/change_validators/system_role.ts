@@ -16,6 +16,8 @@
 import { ChangeValidator, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { ROLE_TYPE_NAME } from '../constants'
 
+//  Google support predefined roles that are managed by Google and can not be edited.
+
 export const systemRoleValidator: ChangeValidator = async changes =>
   changes
     .map(getChangeData)
@@ -27,6 +29,6 @@ export const systemRoleValidator: ChangeValidator = async changes =>
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Can not edit system roles trough the API',
-        detailedMessage: `Can not edit the ${instance.value.roleName} system roles trough the API`,
+        detailedMessage: 'Can not edit system roles trough the API',
       },
     ])

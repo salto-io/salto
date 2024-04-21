@@ -21,7 +21,7 @@ const additionError = (role: InstanceElement): ChangeError => ({
   elemID: role.elemID,
   severity: 'Info',
   message: 'Can not edit isSuperAdminRole trough the API',
-  detailedMessage: 'Can not edit uri isSuperAdminRole field trough the API, we will change it to false',
+  detailedMessage: 'Role uri will be deployed but not as super admin role',
 })
 
 const modificationError = (role: InstanceElement): ChangeError => ({

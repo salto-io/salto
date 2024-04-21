@@ -46,7 +46,7 @@ export const roleReadOnlyValidator: ChangeValidator = async changes => {
         elemID: instance.elemID,
         severity: 'Info',
         message: 'Can not edit isSuperAdminRole trough the API',
-        detailedMessage: `Can not edit ${instance.value.roleName} isSuperAdminRole field trough the API, we will change it to false`,
+        detailedMessage: `Role ${instance.value.roleName} will be deployed but not as super admin role`,
       },
     ])
 

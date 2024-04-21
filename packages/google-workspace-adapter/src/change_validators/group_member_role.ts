@@ -28,6 +28,7 @@ const isGroupRoleChange = (change: ModificationChange<InstanceElement>): boolean
   return before.value.role !== after.value.role && after.value.type !== 'USER'
 }
 
+// When a group is a group member of other groups, the role can not be changed and must be 'MEMBER'
 export const groupMemberRoleValidator: ChangeValidator = async changes =>
   changes
     .filter(isModificationChange)

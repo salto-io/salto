@@ -23,21 +23,36 @@ import {
   isInstanceElement,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ROLE_ASSIGNMENT_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
-const isSecurityGroup = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource): Promise<boolean> => {
+const isNonSecurityGroup = async (
+  instance: InstanceElement,
+  elementSource: ReadOnlyElementsSource,
+): Promise<boolean> => {
   const groupReference = instance.value.assignedTo
   if (isReferenceExpression(groupReference)) {
-    const group = await groupReference.getResolvedValue(elementSource)
-    const labels = Object.keys(group.value.labels)
-    return !labels.includes('cloudidentity_googleapis_com_groups_security@vvdv')
+    try {
+      const group = await groupReference.getResolvedValue(elementSource)
+      // const labels = Object.keys(group.value.labels)
+      // return !labels.includes('cloudidentity_googleapis_com_groups_security@vvdv')
+      return !Object.prototype.hasOwnProperty.call(
+        group.value.labels,
+        'cloudidentity_googleapis_com_groups_security@vvdv',
+      )
+    } catch (e) {
+      log.error('Failed to resolve group reference %s for role assignment', groupReference.elemID.getFullName())
+      return false
+    }
   }
   return false
 }
 
+// This validator checks that role assignments are only created for security groups.
 export const roleAssignmentAdditionValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
     return []
@@ -47,7 +62,7 @@ export const roleAssignmentAdditionValidator: ChangeValidator = async (changes, 
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === ROLE_ASSIGNMENT_TYPE_NAME)
-    .filter(async instance => isSecurityGroup(instance, elementSource))
+    .filter(async instance => isNonSecurityGroup(instance, elementSource))
     .map(
       ({ elemID }): ChangeError => ({
         elemID,

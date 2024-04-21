@@ -102,8 +102,6 @@ export const buildS3DirectoryStore = ({
         ContinuationToken: token,
       })
     })
-  const getRelativeFileName = (filename: string): string =>
-    path.isAbsolute(filename) ? path.relative(baseDir, filename) : filename
 
   const list = async (): Promise<string[]> =>
     log.timeDebug(async () => {
@@ -132,7 +130,7 @@ export const buildS3DirectoryStore = ({
 
   const deleteMany = async (fileNames: string[]): Promise<void> => {
     const objectIdentifiers: AWS.ObjectIdentifier[] = fileNames.map(fileName => ({
-      Key: getRelativeFileName(fileName),
+      Key: getFullPath(fileName),
     }))
 
     const batches = _.chunk(objectIdentifiers, DELETION_BATCH_SIZE)
@@ -143,6 +141,7 @@ export const buildS3DirectoryStore = ({
           Bucket: bucketName,
           Delete: { Objects: batch },
         })
+        log.trace('ido amit ido')
         log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
       }),
     )

@@ -8,11 +8,6 @@ orbs:
   macos: circleci/macos@2.4.1
 
 commands:
-  install_java:
-    steps:
-      - run:
-          name: Install Java
-          command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
   run_e2e_tests:
     parameters:
       should_install_java:
@@ -20,7 +15,6 @@ commands:
         default: false
       package_name:
         type: string
-
     steps:
       - run:
           name: configure sources.list
@@ -37,9 +31,11 @@ commands:
       - when:
           condition: << parameters.should_install_java >>
           steps:
-            - install_java
+            run:
+              name: Install Java
+              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
-          name: Run E2E tests
+          name: Run E2E tests for package << parameters.package_name >>
           command: cd packages/<< parameters.package_name >> && yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
@@ -218,126 +214,22 @@ jobs:
           name: Release version
           command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
 
-  cli_e2e_test:
+  e2e_tests:
+    parameters:
+      package_name:
+        type: string
+      should_install_java:
+        type: boolean
     docker:
       - image: cimg/node:14.15
-
     resource_class: large
     working_directory: /mnt/ramdisk/project
-
     steps:
       - attach_workspace:
           at: .
-
       - run_e2e_tests:
-          package_name: 'cli'
-          should_install_java: false
-
-  jira_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'jira-adapter'
-          should_install_java: true
-
-  netsuite_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'netsuite-adapter'
-          should_install_java: true
-
-  okta_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'okta-adapter'
-          should_install_java: false
-
-
-  salesforce_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'salesforce-adapter'
-          should_install_java: false
-
-  stripe_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'stripe-adapter'
-          should_install_java: false
-
-  zendesk_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'zendesk-adapter'
-          should_install_java: false
-
-  zuora_e2e_test:
-    docker:
-      - image: cimg/node:14.15
-
-    resource_class: large
-    working_directory: /mnt/ramdisk/project
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run_e2e_tests:
-          package_name: 'zuora-billing-adapter'
-          should_install_java: false
+          package_name: <<parameters.package_name>>
+          should_install_java: <<parameters.should_install_java>>     
 
   package_cli:
     docker:
@@ -495,42 +387,37 @@ jobs:
           command: .circleci/scripts/publish-canary.sh
 
 workflows:
-
   commit:
     jobs:
       - build
 
-      - cli_e2e_test:
+      - e2e_tests:
           requires:
             - build
+          matrix:
+            alias: e2e_tests_without_java
+            parameters:
+              package_name: 
+                - cli
+                - okta-adapter
+                - salesforce-adapter
+                - stripe-adapter
+                - zendesk-adapter
+                - zuora-billing-adapter
+              should_install_java: 
+                - false
 
-      - jira_e2e_test:
+      - e2e_tests:
           requires:
             - build
-
-      - netsuite_e2e_test:
-          requires:
-            - build
-
-      - okta_e2e_test:
-          requires:
-            - build
-      
-      - salesforce_e2e_test:
-          requires:
-            - build
-
-      - stripe_e2e_test:
-          requires:
-            - build
-      
-      - zendesk_e2e_test:
-          requires:
-            - build
-      
-      - zuora_e2e_test:
-          requires:
-            - build
+          matrix:
+            alias: e2e_tests_with_java
+            parameters:
+              package_name: 
+                - jira-adapter
+                - netsuite-adapter
+              should_install_java: 
+                - true
 
       - save_project_cache:
           requires:
@@ -580,15 +467,8 @@ workflows:
           requires:
             - build
             - unit_test
-            - cli_e2e_test
-            - jira_e2e_test
-            - netsuite_e2e_test
-            - okta_e2e_test
-            - salesforce_e2e_test
-            - stripe_e2e_test
-            - zendesk_e2e_test
-            - zuora_e2e_test
-
+            - e2e_tests_without_java
+            - e2e_tests_with_java
 
       - publish_on_version_change:
           context: salto
@@ -599,12 +479,5 @@ workflows:
           requires:
             - build
             - unit_test
-            - cli_e2e_test
-            - jira_e2e_test
-            - netsuite_e2e_test
-            - okta_e2e_test
-            - salesforce_e2e_test
-            - stripe_e2e_test
-            - zendesk_e2e_test
-            - zuora_e2e_test
-
+            - e2e_tests_without_java
+            - e2e_tests_with_java

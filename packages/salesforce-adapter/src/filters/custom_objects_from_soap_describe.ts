@@ -33,10 +33,9 @@ import { FilterResult, RemoteFilterCreator } from '../filter'
 import {
   getSObjectFieldElement,
   apiName,
-  toCustomField,
   isSubfieldOfCompound,
 } from '../transformers/transformer'
-import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
+import { isInstanceOfType, ensureSafeFilterFetch, toCustomField } from './utils'
 import { CustomField } from '../client/types'
 import { createSkippedListConfigChangeFromError } from '../config_change'
 import { FetchProfile } from '../types'

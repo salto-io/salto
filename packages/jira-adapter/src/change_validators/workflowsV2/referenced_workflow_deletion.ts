@@ -67,11 +67,12 @@ export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async 
     .filter(isWorkflowV2Instance)
     .filter(async workflow => (await getReferencingWorkflowSchemes(workflow, elementSource)).length > 0)
     .map(async workflow => {
-      const schemes = (await getReferencingWorkflowSchemes(workflow, elementSource))
+      const schemes = await getReferencingWorkflowSchemes(workflow, elementSource)
       return {
-      elemID: workflow.elemID,
-      severity: 'Error' as SeverityLevel,
-      message: "Can't delete a referenced workflow.",
-      detailedMessage: `Workflow is referenced by the following workflow schemes: ${schemes.map(scheme => scheme.elemID.name)}.`,
-    }})
+        elemID: workflow.elemID,
+        severity: 'Error' as SeverityLevel,
+        message: "Can't delete a referenced workflow.",
+        detailedMessage: `Workflow is referenced by the following workflow schemes: ${schemes.map(scheme => scheme.elemID.name)}.`,
+      }
+    })
     .toArray()

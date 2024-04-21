@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/google-workspace-adapter",
-  "version": "0.3.55",
+  "version": "0.3.56",
   "license": "Apache-2.0",
   "description": "Salto google-workspace adapter",
   "repository": {
@@ -31,11 +31,11 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.55",
-    "@salto-io/adapter-components": "0.3.55",
-    "@salto-io/adapter-utils": "0.3.55",
-    "@salto-io/logging": "0.3.55",
-    "@salto-io/lowerdash": "0.3.55",
+    "@salto-io/adapter-api": "0.3.56",
+    "@salto-io/adapter-components": "0.3.56",
+    "@salto-io/adapter-utils": "0.3.56",
+    "@salto-io/logging": "0.3.56",
+    "@salto-io/lowerdash": "0.3.56",
     "axios": "^0.26.1",
     "form-data": "^4.0.0",
     "google-auth-library": "^9.7.0",
@@ -44,7 +44,7 @@
     "uuid": "^8.3.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.55",
+    "@salto-io/test-utils": "0.3.56",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",

@@ -55,8 +55,9 @@ const getReferencingWorkflowSchemes = async (
   if (elementSource === undefined) {
     return awu([]).toArray()
   }
-  const schemes = awu(await getInstancesFromElementSource(elementSource, [WORKFLOW_SCHEME_TYPE_NAME]))
-  return schemes.filter(scheme => isWorkflowInScheme(scheme, workflow)).toArray()
+  return awu(await getInstancesFromElementSource(elementSource, [WORKFLOW_SCHEME_TYPE_NAME]))
+    .filter(scheme => isWorkflowInScheme(scheme, workflow))
+    .toArray()
 }
 
 export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async (changes, elementSource) =>

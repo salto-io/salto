@@ -24,7 +24,9 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import {
   GROUP_TYPE_NAME,
-  MACRO_TYPE_NAME, ROUTING_ATTRIBUTE_TYPE_NAME, ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  ROUTING_ATTRIBUTE_TYPE_NAME,
+  ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
   TICKET_FIELD_CUSTOM_FIELD_OPTION,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
@@ -294,20 +296,20 @@ describe('Unordered lists filter', () => {
     })
 
     const routingAttributeValueA = new InstanceElement('routingAttributeValueA', routingAttributeValueType, {
-      name: 'A'
+      name: 'A',
     })
     const routingAttributeValueB = new InstanceElement('routingAttributeValueB', routingAttributeValueType, {
-      name: 'B'
+      name: 'B',
     })
     const routingAttributeValueC = new InstanceElement('routingAttributeValueC', routingAttributeValueType, {
-      name: 'C'
+      name: 'C',
     })
 
     const routingAttribute = new InstanceElement('routingAttribute', routingAttributeType, {
       values: [
-        new ReferenceExpression(routingAttributeValueC.elemID, routingAttributeValueC ),
-        new ReferenceExpression(routingAttributeValueA.elemID, routingAttributeValueA ),
-        new ReferenceExpression(routingAttributeValueB.elemID, routingAttributeValueB ),
+        new ReferenceExpression(routingAttributeValueC.elemID, routingAttributeValueC),
+        new ReferenceExpression(routingAttributeValueA.elemID, routingAttributeValueA),
+        new ReferenceExpression(routingAttributeValueB.elemID, routingAttributeValueB),
       ],
     })
 
@@ -351,7 +353,10 @@ describe('Unordered lists filter', () => {
       invalidChildFieldTicketFormInstance,
       invalidTicketFieldInstance,
       workspaceWithMultipleApps,
-      routingAttributeValueC, routingAttributeValueA, routingAttributeValueB, routingAttribute,
+      routingAttributeValueC,
+      routingAttributeValueA,
+      routingAttributeValueB,
+      routingAttribute,
     ]
   }
 

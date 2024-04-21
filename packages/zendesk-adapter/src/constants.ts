@@ -115,3 +115,5 @@ export const ORDER_TYPE_NAMES = [
   VIEW_ORDER_TYPE_NAME,
   WORKSPACE_ORDER_TYPE_NAME,
 ]
+export const USER_FIELD_CUSTOM_FIELD_OPTIONS = 'user_field__custom_field_options'
+export const ORGANIZATION_FIELD_CUSTOM_FIELD_OPTIONS = 'organization_field__custom_field_options'

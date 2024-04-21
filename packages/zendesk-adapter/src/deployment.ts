@@ -147,6 +147,7 @@ export const deployChange = async (
       client,
       endpointDetails: deployRequests,
       fieldsToIgnore,
+      allowedStatusCodesOnRemoval: [404],
     })
     addId({
       change,

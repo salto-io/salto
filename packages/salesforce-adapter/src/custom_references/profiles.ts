@@ -38,9 +38,9 @@ import {
   RECORD_TYPE_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { isInstanceOfTypeSync } from '../filters/utils'
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 const { pickAsync } = promises.object
 const log = logger(module)
 
@@ -289,13 +289,16 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
     }),
   )
 
+// At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
+// have to figure out the type name the hard way.
+const filterProfiles = (elements: Element[]): InstanceElement[] =>
+  elements
+    .filter(isInstanceElement)
+    .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+
 const getProfilesCustomReferences: WeakReferencesHandler['findWeakReferences'] =
   async (elements: Element[]): Promise<ReferenceInfo[]> => {
-    // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
-    // have to figure out the type name the hard way.
-    const profiles = elements
-      .filter(isInstanceElement)
-      .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+    const profiles = filterProfiles(elements)
     const refs = log.timeDebug(
       () => profiles.flatMap(referencesFromProfile),
       `Generating references from ${profiles.length} profiles.`,
@@ -324,17 +327,20 @@ const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
 const removeMissingReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async (elements) => {
-    const profiles = elements.filter(
-      isInstanceOfTypeSync(PROFILE_METADATA_TYPE),
-    )
+    const profiles = filterProfiles(elements)
     const entriesTargets: Dictionary<ElemID> = _.merge(
       {},
       ...profiles.map(profileEntriesTargets),
     )
+    const elementNames = new Set(
+      await awu(await elementsSource.list())
+        .map((elemID) => elemID.getFullName())
+        .toArray(),
+    )
     const brokenReferenceFields = Object.keys(
       await pickAsync(
         entriesTargets,
-        async (target) => !(await elementsSource.has(target)),
+        async (target) => !elementNames.has(target.getFullName()),
       ),
     )
     const profilesWithBrokenReferences = profiles.filter((profile) =>

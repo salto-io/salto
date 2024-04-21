@@ -281,10 +281,12 @@ export const adapter: Adapter = {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.deploy(opts)
       },
+
       validate: async (opts) => {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.validate(opts)
       },
+
       deployModifiers: {
         changeValidator: createChangeValidator({
           config,
@@ -295,6 +297,7 @@ export const adapter: Adapter = {
         dependencyChanger,
         getChangeGroupIds,
       },
+
       validationModifiers: {
         changeValidator: createChangeValidator({
           config,
@@ -302,6 +305,11 @@ export const adapter: Adapter = {
           checkOnly: true,
           client,
         }),
+      },
+
+      fixElements: async (elements) => {
+        const salesforceAdapter = createSalesforceAdapter()
+        return salesforceAdapter.fixElements(elements)
       },
     }
   },

@@ -224,9 +224,6 @@ const filter =
         // This filter is for TypeScript, we already filtered the changes at the beginning of this filter
         .filter(isInstanceChange)
         .forEach(async spaceChange => {
-          if (!isInstanceChange(spaceChange)) {
-            return
-          }
           const spaceChangeData = getChangeData(spaceChange)
           const { errors: spaceDeploymentErrors } = await deployment.deployChanges({
             changes: [spaceChange],

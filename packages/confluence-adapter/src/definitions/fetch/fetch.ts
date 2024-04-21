@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
-import { adjustLabelsToIdsFunc } from '../transformation_utils'
+import { adjustLabelsToIdsFunc, adjustRestriction } from '../transformation_utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -312,20 +312,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
         transformation: {
           root: 'results',
-          adjust: ({ value }) => {
-            const userRestrictions = _.get(value, 'restrictions.user.results')
-            return {
-              value: {
-                operation: _.get(value, 'operation'),
-                restrictions: {
-                  user: Array.isArray(userRestrictions)
-                    ? userRestrictions.map(user => _.omit(user, ['publicName', 'profilePicture', 'displayName']))
-                    : userRestrictions,
-                  group: _.get(value, 'restrictions.group.results'),
-                },
-              },
-            }
-          },
+          adjust: adjustRestriction,
         },
       },
     ],

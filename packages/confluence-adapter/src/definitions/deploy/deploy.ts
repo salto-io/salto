@@ -42,11 +42,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         customizations: {
           add: [
             {
-              condition: {
-                transformForCheck: {
-                  omit: ['restriction', 'version'],
-                },
-              },
               request: {
                 endpoint: {
                   path: '/wiki/api/v2/pages',

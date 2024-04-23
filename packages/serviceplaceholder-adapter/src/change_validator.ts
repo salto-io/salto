@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const ADAPTER_NAME = 'google_workspace'
-export const DOMAIN_TYPE_NAME = 'domain'
-export const ROLE_TYPE_NAME = 'role'
-export const SCHEMA_TYPE_NAME = 'schema'
-export const GROUP_TYPE_NAME = 'group'
-export const GROUP_MEMBER_TYPE_NAME = 'groupMember'
-export const ROLE_ASSIGNMENT_TYPE_NAME = 'roleAssignment'
+import { ChangeValidator } from '@salto-io/adapter-api'
+
+export default (): Record<string, ChangeValidator> => ({
+  // TODO: Implement change validators
+})

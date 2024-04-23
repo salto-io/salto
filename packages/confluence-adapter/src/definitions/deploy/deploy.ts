@@ -52,9 +52,26 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
               },
             },
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'put',
+                },
+                transformation: {
+                  pick: ['restriction'],
+                  adjust: ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
+                },
+              },
+            },
           ],
           modify: [
             {
+              condition: {
+                transformForCheck: {
+                  omit: ['restriction', 'version'],
+                },
+              },
               request: {
                 endpoint: {
                   path: '/wiki/api/v2/pages/{id}',
@@ -68,6 +85,18 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               copyFromResponse: {
                 additional: {
                   pick: ['version.number'],
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'put',
+                },
+                transformation: {
+                  pick: ['restriction'],
+                  adjust: ({ value }) => ({ value: { results: _.get(value, 'restriction') } }),
                 },
               },
             },

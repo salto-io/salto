@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const ADAPTER_NAME = 'google_workspace'
-export const DOMAIN_TYPE_NAME = 'domain'
-export const ROLE_TYPE_NAME = 'role'
-export const SCHEMA_TYPE_NAME = 'schema'
-export const GROUP_TYPE_NAME = 'group'
-export const GROUP_MEMBER_TYPE_NAME = 'groupMember'
-export const ROLE_ASSIGNMENT_TYPE_NAME = 'roleAssignment'
+
+export { roleReadOnlyValidator } from './role_read_only'
+export { groupMemberRoleValidator } from './group_member_role'
+export { domainReadOnlyValidator } from './domain_read_only'
+export { systemRoleValidator } from './system_role'
+export { schemaFieldsValidator } from './schema_fields'
+export { roleAssignmentAdditionValidator } from './role_assignment_addition'

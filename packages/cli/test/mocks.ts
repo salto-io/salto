@@ -326,12 +326,7 @@ export const mockWorkspace = ({
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     accounts: [],
-    saltoMetadata: new InMemoryRemoteMap(
-      [] as {
-        key: wsState.StateMetadataKey
-        value: string
-      }[],
-    ),
+    saltoMetadata: new InMemoryRemoteMap<string, wsState.StateMetadataKey>(),
     staticFilesSource: mockStateStaticFilesSource(),
   })
   const stateByEnv = Object.fromEntries(envs.map(env => [env, wsState.buildInMemState(mockStateData)]))

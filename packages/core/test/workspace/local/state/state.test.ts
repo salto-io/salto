@@ -46,24 +46,17 @@ const { toMD5 } = hash
 
 type MockStateContentArgs = {
   elements: Element[]
-  date?: Date
   pathIndexLine?: string
-  version?: string
   extraLine?: string
 }
 const mockStateContent = async ({
   elements,
-  date,
   pathIndexLine = '[]',
-  version = '0.0.1',
   extraLine,
 }: MockStateContentArgs): Promise<Buffer> => {
   const elementsLine = await serialization.serialize(elements)
-  const dateLine = safeJsonStringify({ [elements[0].elemID.adapter]: date ?? new Date() })
+  const dateLine = safeJsonStringify(elements[0].elemID.adapter)
   const lines = [elementsLine, dateLine, pathIndexLine]
-  if (version !== undefined) {
-    lines.push(safeJsonStringify(version))
-  }
   if (extraLine !== undefined) {
     lines.push(extraLine)
   }
@@ -107,25 +100,17 @@ describe('localState', () => {
     let sfElements: Element[]
     let nsElements: Element[]
     let initialStateHash: string | undefined
-    let sfUpdateDate: Date
-    let nsUpdateDate: Date
     const pathPrefix = 'multiple_files'
     let mapCreator: remoteMap.RemoteMapCreator
     beforeEach(async () => {
       nsElements = getTopLevelElements('netsuite')
       sfElements = getTopLevelElements('salesforce')
-      sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
-      nsUpdateDate = new Date('2023-02-02T00:00:00.000Z')
       contentProvider = mockContentProvider({
         [`${pathPrefix}/netsuite`]: await mockStateContent({
           elements: nsElements,
-          date: nsUpdateDate,
-          version: '0.1.23',
         }),
         [`${pathPrefix}/salesforce`]: await mockStateContent({
           elements: sfElements,
-          date: sfUpdateDate,
-          version: '0.0.1',
         }),
       })
       mapCreator = inMemRemoteMapCreator()
@@ -420,9 +405,9 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     beforeEach(async () => {
       contentProvider = mockContentProvider({
-        'env/noVersion': await mockStateContent({ elements: getTopLevelElements(), version: undefined }),
+        'env/noVersion': await mockStateContent({ elements: getTopLevelElements() }),
         'env/extraLine': await mockStateContent({ elements: getTopLevelElements('extra'), extraLine: '"more data?"' }),
-        'env/emptyVersion': await mockStateContent({ elements: getTopLevelElements('noVersion'), version: '' }),
+        'env/emptyVersion': await mockStateContent({ elements: getTopLevelElements('noVersion') }),
       })
       state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
     })

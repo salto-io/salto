@@ -71,11 +71,11 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
             //   [{"elemID":{...},"annotations":{...}},{"elemID":{...},"annotations":{...}},...]
             res.elements = res.elements.concat(await deserializeParsed(value))
           } else if (key === 1) {
-            // line 2 - configured accounts, e.g.
-            //   [dummy, ...]
+            // line 2 - name of the configured account, e.g.
+            //   "dummy"
             if (_.isPlainObject(value)) {
-              // old-format
-              res.accounts.push(Object.keys(value)[0])
+              // old-format - a dictionary that maps adapter name to timestamp of most recent fetch
+              res.accounts.push(...Object.keys(value))
             } else {
               res.accounts.push(value)
             }
@@ -84,9 +84,11 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
             //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]
             res.pathIndices = res.pathIndices.concat(value)
           } else if (key === 3) {
-            // line 4 - version, e.g.
+            // In the old format, there was a line 4 - version, e.g.
             //   "0.1.2"
-            log.trace('Old format state file contains the OSS version information')
+            // We do not expect this in new-format files, but keep the code here so older state files are parsed as valid.
+            // once we are certain all state files are updated, we can remove the `key === 3` section.
+            log.trace('Old format state file contains the Salto version information')
           } else {
             log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
           }
@@ -154,11 +156,7 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    const accounts = res.accounts ?? []
-    const stateAccounts = stateData.accounts
-    if (stateAccounts !== undefined) {
-      stateAccounts.push(...accounts)
-    }
+    stateData.accounts = _.union(stateData.accounts, res.accounts)
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
@@ -211,7 +209,7 @@ export const localState = (
       }
       yield* yieldWithEOL([
         accountToElementStreams[account],
-        awu([safeJsonStringify(account)]),
+        awu(safeJsonStringify(account)),
         accountToPathIndex[account] || '[]',
       ])
       log.debug(`finished dumping state text [#elements=${elements.length}]`)

@@ -44,7 +44,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
 
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
     const data = await stateData()
-    data.accounts = accounts ?? data.accounts
+    data.accounts = _.union(accounts ?? [], data.accounts)
   }
 
   const updateStatePathIndex = async (

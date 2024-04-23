@@ -44,41 +44,32 @@ const { toMD5 } = hash
 type MockStateContentArgs = {
   format: 'new' | 'old'
   elements: Element[]
-  date: Date
   pathIndexLine?: string
-  version?: string
   extraLine?: string
 }
 const mockStateContent = async ({
   format,
   elements,
-  date,
   pathIndexLine = '[]',
-  version = '0.0.1',
   extraLine,
 }: MockStateContentArgs): Promise<Buffer> => {
-  const dateObject = { [elements[0].elemID.adapter]: date }
+  const accountName = elements[0].elemID.adapter
   const stateContentLines = {
     old: async (): Promise<string[]> => {
-      const dateLine = safeJsonStringify(dateObject)
+      const dateLine = safeJsonStringify({ [accountName]: accountName })
       const elementsLine = await serialization.serialize(elements)
-      const lines = [elementsLine, dateLine, pathIndexLine]
-      if (version !== undefined) {
-        lines.push(safeJsonStringify(version))
-      }
-      return lines
+      return [elementsLine, dateLine, pathIndexLine]
     },
     new: async (): Promise<string[]> => {
       const deprecatedLines = ['[]', '{}', '[]', '""']
-      const versionsLine = safeJsonStringify({ versions: [version] })
-      const updateDatesLine = safeJsonStringify({ updateDates: [dateObject] })
+      const accountNameLine = safeJsonStringify({ accounts: [accountName] })
       const elementsLines = await Promise.all(
         _.chunk(elements, elements.length / 2).map(
           async chunk => `{"elements":${await serialization.serialize(chunk)}}`,
         ),
       )
       const pathIndicesLine = `{"pathIndices":${pathIndexLine}}`
-      return deprecatedLines.concat(versionsLine).concat(updateDatesLine).concat(elementsLines).concat(pathIndicesLine)
+      return deprecatedLines.concat(accountNameLine).concat(elementsLines).concat(pathIndicesLine)
     },
   }
   const lines = await stateContentLines[format]()
@@ -127,28 +118,20 @@ describe('localState', () => {
     let sfElements: Element[]
     let nsElements: Element[]
     let initialStateHash: string | undefined
-    let sfUpdateDate: Date
-    let nsUpdateDate: Date
     const pathPrefix = 'multiple_files'
     let mapCreator: remoteMap.RemoteMapCreator
     beforeEach(async () => {
       process.env.SALTO_DUMP_STATE_WITH_LEGACY_FORMAT = stateFormat === 'new' ? '0' : '1'
       nsElements = getTopLevelElements('netsuite')
       sfElements = getTopLevelElements('salesforce')
-      sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
-      nsUpdateDate = new Date('2023-02-02T00:00:00.000Z')
       contentProvider = mockContentProvider({
         [`${pathPrefix}/netsuite`]: await mockStateContent({
           format: stateFormat,
           elements: nsElements,
-          date: nsUpdateDate,
-          version: '0.1.23',
         }),
         [`${pathPrefix}/salesforce`]: await mockStateContent({
           format: stateFormat,
           elements: sfElements,
-          date: sfUpdateDate,
-          version: '0.0.1',
         }),
       })
       mapCreator = inMemRemoteMapCreator()
@@ -199,12 +182,7 @@ describe('localState', () => {
         const res = await parseStateContent(contentProvider.readContents([]))
         expect(new Set(Object.keys(res))).toEqual(new Set(['pathIndices', 'updateDates', 'versions', 'elements']))
         expect(res.pathIndices).toEqual([])
-        expect(res.updateDates).toEqual([
-          { netsuite: nsUpdateDate.toISOString() },
-          { salesforce: sfUpdateDate.toISOString() },
-          ...(stateFormat === 'new' ? [{}] : []),
-        ])
-        expect(res.versions).toEqual([currentSaltoVersion, currentSaltoVersion, currentSaltoVersion])
+        expect(res.accounts).toEqual(['netsuite', 'salesforce'])
         const originalElements = nsElements.concat(sfElements).concat(mockElement)
         expect(res.elements).toHaveLength(originalElements.length)
         res.elements.forEach(resElement => {
@@ -460,28 +438,22 @@ describe('localState', () => {
   describe.each(['old', 'new'] as const)('malformed state data - %s state format', stateFormat => {
     let state: wsState.State
     let contentProvider: jest.Mocked<StateContentProvider>
-    let updateDate: Date
+
     beforeEach(async () => {
       process.env.SALTO_DUMP_STATE_WITH_LEGACY_FORMAT = stateFormat === 'new' ? '0' : '1'
-      updateDate = new Date()
       contentProvider = mockContentProvider({
         'env/noVersion': await mockStateContent({
           format: stateFormat,
           elements: getTopLevelElements(),
-          date: updateDate,
-          version: undefined,
         }),
         'env/extraLine': await mockStateContent({
           format: stateFormat,
           elements: getTopLevelElements('extra'),
-          date: updateDate,
           extraLine: '"more data?"',
         }),
         'env/emptyVersion': await mockStateContent({
           format: stateFormat,
           elements: getTopLevelElements('noVersion'),
-          date: updateDate,
-          version: '',
         }),
       })
       state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
@@ -504,12 +476,7 @@ describe('localState', () => {
       const res = await parseStateContent(contentProvider.readContents([]))
       expect(new Set(Object.keys(res))).toEqual(new Set(['pathIndices', 'updateDates', 'versions', 'elements']))
       expect(res.pathIndices).toEqual([])
-      expect(res.updateDates).toEqual([
-        { extra: updateDate.toISOString() },
-        { noVersion: updateDate.toISOString() },
-        { salto: updateDate.toISOString() },
-      ])
-      expect(res.versions).toEqual([currentSaltoVersion, currentSaltoVersion, currentSaltoVersion])
+      expect(res.accounts).toEqual(['extra', 'noVersion', 'salto'])
       const originalElements = getTopLevelElements()
         .concat(getTopLevelElements('extra'))
         .concat(getTopLevelElements('noVersion'))

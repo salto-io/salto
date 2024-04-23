@@ -198,11 +198,7 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    const accounts = res.accounts ?? []
-    const stateAccounts = stateData.accounts
-    if (stateAccounts !== undefined) {
-      stateAccounts.push(...accounts)
-    }
+    stateData.accounts = _.union(stateData.accounts, res.accounts)
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
@@ -263,7 +259,11 @@ export const localState = (
       }
       yield* yieldWithEOL(
         getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
-          ? [accountToElementStreams[account], awu([safeJsonStringify(account)]), accountToPathIndex[account] || '[]']
+          ? [
+              accountToElementStreams[account],
+              awu([safeJsonStringify({ [account]: account })]),
+              accountToPathIndex[account] || '[]',
+            ]
           : [
               awu(['[]']), // deprecated: serialized elements
               awu(['{}']), // deprecated: update dates

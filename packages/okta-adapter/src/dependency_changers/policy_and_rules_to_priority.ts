@@ -35,8 +35,8 @@ const createDependencyChange = (
 ): DependencyChange[] => [dependencyChange('add', priority.key, policyOrPolicyRule.key)]
 
 /*
- * This dependency changer is used to add a dependency from policy or policyRule priority instances
- * because we need the policy/policyRule to be deployed before its priority.
+ * This dependency changer is used to add a dependency from policy or policyRule to its priority instances
+ * for modification changes, because we need the policy/policyRule to be deployed before its priority.
  */
 export const changeDependenciesFromPoliciesAndRulesToPriority: DependencyChanger = async changes => {
   const modificationInstanceChanges = Array.from(changes.entries())

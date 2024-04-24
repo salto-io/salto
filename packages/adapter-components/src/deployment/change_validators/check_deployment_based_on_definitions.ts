@@ -48,7 +48,10 @@ const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
   action: ActionName,
 ): ChangeError[] => {
   const actionRequests = makeArray(queryWithDefault(typeRequestDefinition).query(action))
-  if (actionRequests.length === 0 || actionRequests.every(req => req.request.endpoint === undefined)) {
+  if (
+    actionRequests.length === 0 ||
+    actionRequests.every(req => req.request.endpoint === undefined && req.request.earlySuccess !== true)
+  ) {
     return [
       {
         elemID: instanceElemID,

@@ -101,7 +101,9 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
   })
   it('should not return an error when operation has an early success', async () => {
     const instance = new InstanceElement('test', type)
-    _.set(deployDefinitions.instances, 'customizations.test.requestsByAction.customizations.add', [{ request: { earlySuccess: true } }])
+    _.set(deployDefinitions.instances, 'customizations.test.requestsByAction.customizations.add', [
+      { request: { earlySuccess: true } },
+    ])
     const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
       toChange({ after: instance }),
     ])

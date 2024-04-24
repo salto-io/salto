@@ -141,7 +141,6 @@ export const buildS3DirectoryStore = ({
           Bucket: bucketName,
           Delete: { Objects: batch },
         })
-        log.trace('ido amit ido')
         log.trace('Deleted batch of objects from S3 bucket %s: %s', bucketName, safeJsonStringify(result?.Deleted))
       }),
     )

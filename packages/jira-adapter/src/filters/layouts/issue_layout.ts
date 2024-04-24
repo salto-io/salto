@@ -28,7 +28,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
+import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   ISSUE_LAYOUT_TYPE,
@@ -235,6 +235,11 @@ const getProjectIdToProjectDict = (elements: Element[]): Value =>
       .filter(isDefined),
   )
 
+const projectIdMapToString = (projectIdMap: Value): string =>
+  Object.entries(projectIdMap)
+    .map(([key, _val]) => `${key}`)
+    .join(', ')
+
 export const getLayoutRequestsAsync = (
   client: JiraClient,
   config: JiraConfig,
@@ -246,7 +251,7 @@ export const getLayoutRequestsAsync = (
   }
 
   const projectIdToProject = getProjectIdToProjectDict(elements)
-  log.trace(`projectIdToProject (in getLayoutRequestsAsync): ${safeJsonStringify(projectIdToProject)}`)
+  log.trace(`projectIdToProject (in getLayoutRequestsAsync): ${projectIdMapToString(projectIdToProject)}`)
 
   const projectToScreenId = Object.fromEntries(
     Object.entries(getProjectToScreenMappingUnresolved(elements)).filter(([key]) =>
@@ -282,7 +287,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
       return
     }
     const projectIdToProject = getProjectIdToProjectDict(elements)
-    log.trace(`projectIdToProject (in issueLayoutFilter): ${safeJsonStringify(projectIdToProject)}`)
+    log.trace(`projectIdToProject (in issueLayoutFilter): ${projectIdMapToString(projectIdToProject)}`)
     const { subTypes, layoutType: issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))

@@ -264,6 +264,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     ],
     resource: {
       directFetch: false,
+      // the id field in groupMember is not unique, as it the member id.
       serviceIDFields: [],
     },
     element: {

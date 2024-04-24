@@ -227,12 +227,12 @@ const deployLayoutChange = async (change: Change<InstanceElement>, client: JiraC
 
 const getProjectIdToProjectDict = (elements: Element[]): Value =>
   Object.fromEntries(
-    (
-        elements
-          .filter(e => e.elemID.typeName === PROJECT_TYPE)
-          .filter(isInstanceElement)
-          .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
-          .map(project => [project.value.id, project])).filter(isDefined),
+    elements
+      .filter(e => e.elemID.typeName === PROJECT_TYPE)
+      .filter(isInstanceElement)
+      .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
+      .map(project => [project.value.id, project])
+      .filter(isDefined),
   )
 
 export const getLayoutRequestsAsync = (

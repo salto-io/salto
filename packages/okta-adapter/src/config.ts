@@ -880,7 +880,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           brandId: '_parent.0.id',
         },
-        allowedStatusCodes: [],
       },
     },
   },

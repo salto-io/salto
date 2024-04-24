@@ -162,7 +162,7 @@ export const getLayout = async ({
   getElemIdFunc?: ElemIdGetter | undefined
   typeName: LayoutTypeName
 }): Promise<InstanceElement | undefined> => {
-  if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance.path !== undefined) {
+  if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance?.path !== undefined) {
     const { issueLayoutResult } = response.data.issueLayoutConfiguration
     const value = {
       id:

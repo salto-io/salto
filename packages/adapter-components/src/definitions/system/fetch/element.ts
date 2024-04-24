@@ -80,6 +80,20 @@ type StandaloneFieldDefinition = {
   nestPathUnderParent?: boolean
 }
 
+export type PropertySortDefinition = {
+  // A dot-separated path to a property in the list field.
+  // Paths can include reference expressions, e.g. `'path.to.property.refToAnotherElement.id'`
+  path: string
+  order?: 'asc' | 'desc'
+}
+
+// Settings for sorting a list field.
+export type SortFieldDefinition = {
+  // The properties to sort the field by, in order of precedence.
+  // Selected properties should be env-independent to avoid sorting differences between envs.
+  properties: PropertySortDefinition[]
+}
+
 // TODO add safeties (e.g. standalone.referenceFromParent=false means omit)
 export type ElementFieldCustomization = types.XOR<
   {
@@ -87,6 +101,7 @@ export type ElementFieldCustomization = types.XOR<
     hide?: boolean
     standalone?: StandaloneFieldDefinition
     restrictions?: RestrictionAnnotationType
+    sort?: SortFieldDefinition
   },
   types.OneOf<{
     // omit the field

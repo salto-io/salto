@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -26,30 +27,31 @@ import { DeployApiDefinitions } from '../../../src/definitions/system/deploy'
 
 describe('checkDeploymentBasedOnDefinitionsValidator', () => {
   let type: ObjectType
-  const deployDefinitions: DeployApiDefinitions<never, never> = {
-    instances: {
-      customizations: {
-        test: {
-          requestsByAction: {
-            customizations: {
-              add: [
-                {
-                  request: {
-                    endpoint: {
-                      path: '/test',
-                      method: 'post',
+  let deployDefinitions: DeployApiDefinitions<never, never>
+  beforeEach(() => {
+    deployDefinitions = {
+      instances: {
+        customizations: {
+          test: {
+            requestsByAction: {
+              customizations: {
+                add: [
+                  {
+                    request: {
+                      endpoint: {
+                        path: '/test',
+                        method: 'post',
+                      },
                     },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         },
       },
-    },
-    dependencies: [],
-  }
-  beforeEach(() => {
+      dependencies: [],
+    }
     type = new ObjectType({ elemID: new ElemID('dum', 'test') })
   })
 
@@ -92,6 +94,14 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
 
   it('should not return an error when operation is supported', async () => {
     const instance = new InstanceElement('test', type)
+    const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
+      toChange({ after: instance }),
+    ])
+    expect(errors).toEqual([])
+  })
+  it('should not return an error when operation has an early success', async () => {
+    const instance = new InstanceElement('test', type)
+    _.set(deployDefinitions.instances, 'customizations.test.requestsByAction.customizations.add', [{ request: { earlySuccess: true } }])
     const errors = await createCheckDeploymentBasedOnDefinitionsValidator({ deployDefinitions })([
       toChange({ after: instance }),
     ])

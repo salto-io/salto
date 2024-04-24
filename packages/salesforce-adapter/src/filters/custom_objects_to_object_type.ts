@@ -110,8 +110,6 @@ import {
   metadataAnnotationTypes,
   MetadataTypeAnnotations,
   createInstanceElement,
-  toCustomField,
-  toCustomProperties,
   isLocalOnly,
   toMetadataInfo,
   isFieldOfCustomObject,
@@ -138,6 +136,8 @@ import {
   getInstanceAlias,
   toListType,
   isInstanceOfTypeSync,
+  toCustomField,
+  toCustomProperties,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'

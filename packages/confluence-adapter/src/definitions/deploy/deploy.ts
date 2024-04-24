@@ -20,6 +20,7 @@ import { increasePagesVersion, addSpaceKey } from '../transformation_utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
   SPACE_TYPE_NAME,
@@ -37,6 +38,34 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [LABEL_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          // TODO add change validator to explain labels are not deployed directly SALTO-5816
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
+    },
     [PAGE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {

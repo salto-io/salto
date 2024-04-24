@@ -323,6 +323,16 @@ describe('issue layout filter', () => {
       const res = await getLayoutRequestsAsync(client, config, fetchQuery, [projectInstance1])
       expect(res).toBeEmpty()
     })
+    it('should not fail if the project does not have an issueTypeScheme', async () => {
+      projectInstance1.value.issueTypeScheme = undefined
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(res).toEqual({11111: {}})
+    })
+    it('should not fail if issueTypeScheme does not have issueTypeIds', async () => {
+      issueTypeSchemeInstance1.value.issueTypeIds = undefined
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(res).toEqual({11111: {}})
+    })
     it('should not fetch issue layouts if it disabled', async () => {
       const configWithEnableFalse = getDefaultConfig({ isDataCenter: false })
       configWithEnableFalse.fetch.enableIssueLayouts = false
@@ -503,6 +513,14 @@ describe('issue layout filter', () => {
       adapterContext.layoutsPromise = {
         11111: {
           11: {},
+        },
+      }
+      await layoutFilter.onFetch(elements)
+      expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
+    })
+    it('should not fail if a project does not have any screens', async () => {
+      adapterContext.layoutsPromise = {
+        11111: {
         },
       }
       await layoutFilter.onFetch(elements)

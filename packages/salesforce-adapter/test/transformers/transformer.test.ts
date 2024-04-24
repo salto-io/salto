@@ -73,9 +73,7 @@ import {
   SALESFORCE_DATE_PLACEHOLDER,
   FORMULA,
 } from '../../src/constants'
-import {
-  SalesforceRecord,
-} from '../../src/client/types'
+import { SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'

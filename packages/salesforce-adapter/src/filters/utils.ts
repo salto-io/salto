@@ -54,7 +54,13 @@ import {
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
-import { chunks, collections, promises, types, values } from '@salto-io/lowerdash'
+import {
+  chunks,
+  collections,
+  promises,
+  types,
+  values,
+} from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import {
@@ -99,7 +105,12 @@ import {
   FORMULA,
   FIELD_DEPENDENCY_FIELDS,
 } from '../constants'
-import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
+import {
+  CustomField,
+  CustomObject,
+  JSONBool,
+  SalesforceRecord,
+} from '../client/types'
 import * as transformer from '../transformers/transformer'
 import {
   apiName,

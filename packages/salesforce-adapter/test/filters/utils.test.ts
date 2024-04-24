@@ -87,13 +87,22 @@ import {
   createInstanceElement,
   Types,
 } from '../../src/transformers/transformer'
-import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
+import {
+  CustomField,
+  CustomObject,
+  CustomPicklistValue,
+  FilterItem,
+} from '../../src/client/types'
 import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
-import { createCustomObjectType, createField, createValueSetEntry } from '../utils'
+import {
+  createCustomObjectType,
+  createField,
+  createValueSetEntry,
+} from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
 
-const {makeArray} = collections.array
+const { makeArray } = collections.array
 
 describe('filter utils', () => {
   describe('addDefaults', () => {

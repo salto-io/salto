@@ -5,6 +5,7 @@ orbs:
   aws-s3: circleci/aws-s3@1.0.15
   aws-cli: circleci/aws-cli@2.0.3
   coveralls: coveralls/coveralls@1.0.6
+  macos: circleci/macos@2.4.1
 
 commands:
   set_s3_pkg_urls:
@@ -243,6 +244,8 @@ jobs:
       - aws-s3/copy:
           from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
           to: .
+
+      - macos/install-rosetta
 
       - run:
           command: chmod +x ./salto

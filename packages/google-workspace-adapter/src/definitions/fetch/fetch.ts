@@ -114,7 +114,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         groups: {
           standalone: {
             typeName: 'group',
-            addParentAnnotation: true,
+            addParentAnnotation: false,
             referenceFromParent: false,
             nestPathUnderParent: false,
           },

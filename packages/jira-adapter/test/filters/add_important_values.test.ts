@@ -15,11 +15,9 @@
  */
 import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
 import addImportantValuesFilter from '../../src/filters/add_important_values'
 import { createEmptyType, getFilterParams } from '../utils'
 import { AUTOMATION_TYPE, FIELD_TYPE, PROJECT_TYPE, SCHEDULED_JOB_TYPE } from '../../src/constants'
-import { getDefaultConfig } from '../../src/config/config'
 
 describe('add important values filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -35,9 +33,7 @@ describe('add important values filter', () => {
   const noType = createEmptyType('noType')
 
   beforeEach(async () => {
-    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    config.fetch.showImportantValues = true
-    filter = addImportantValuesFilter(getFilterParams({ config })) as FilterType
+    filter = addImportantValuesFilter(getFilterParams()) as FilterType
   })
   describe('onFetch', () => {
     it('should add important values annotation correctly', async () => {
@@ -52,6 +48,7 @@ describe('add important values filter', () => {
         { value: 'trigger', highlighted: true, indexed: false },
         { value: 'components', highlighted: true, indexed: false },
         { value: 'trigger.type', highlighted: false, indexed: true },
+        { value: 'labels', highlighted: true, indexed: true },
       ])
       expect(fieldType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
         { value: 'name', highlighted: true, indexed: false },

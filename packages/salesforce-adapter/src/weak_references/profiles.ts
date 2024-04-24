@@ -13,44 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   Element,
   ElemID,
-  GetCustomReferencesFunc,
   InstanceElement,
   isInstanceElement,
   ReferenceInfo,
   Values,
 } from '@salto-io/adapter-api'
-import { combineCustomReferenceGetters } from '@salto-io/adapter-components'
+import { WeakReferencesHandler } from '../types'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
   API_NAME_SEPARATOR,
   CUSTOM_APPLICATION_METADATA_TYPE,
   SALESFORCE,
-  FIELD_PERMISSIONS,
   FLOW_METADATA_TYPE,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
-} from './constants'
-import { Types } from './transformers/transformer'
-import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from './types'
+} from '../constants'
+import { Types } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 const log = logger(module)
 
-const APP_VISIBILITY_SECTION = 'applicationVisibilities'
-const APEX_CLASS_SECTION = 'classAccesses'
-const FLOW_SECTION = 'flowAccesses'
-const LAYOUTS_SECTION = 'layoutAssignments'
-const OBJECT_SECTION = 'objectPermissions'
-const APEX_PAGE_SECTION = 'pageAccesses'
-const RECORD_TYPE_SECTION = 'recordTypeVisibilities'
+enum section {
+  APEX_CLASS = 'classAccesses',
+  APEX_PAGE = 'pageAccesses',
+  APP_VISIBILITY = 'applicationVisibilities',
+  FIELD_PERMISSIONS = 'fieldPermissions',
+  FLOW = 'flowAccesses',
+  LAYOUTS = 'layoutAssignments',
+  OBJECT = 'objectPermissions',
+  RECORD_TYPE = 'recordTypeVisibilities',
+}
 
 const FIELD_NO_ACCESS = 'NoAccess'
 
@@ -68,18 +69,15 @@ type RefTargetsGetter = (
 ) => ReferenceInSection[]
 
 type ReferenceFromSectionParams = {
-  profile: InstanceElement
-  sectionName: string
   filter?: (sectionEntry: Values) => boolean
   targetsGetter: RefTargetsGetter
 }
 
-const referencesFromSection = ({
-  profile,
-  sectionName,
-  filter = () => true,
-  targetsGetter,
-}: ReferenceFromSectionParams): ReferenceInfo[] => {
+const referencesFromSection = (
+  profile: InstanceElement,
+  sectionName: section,
+  { filter = () => true, targetsGetter }: ReferenceFromSectionParams,
+): ReferenceInfo[] => {
   const sectionValue = profile.value[sectionName]
   if (!_.isPlainObject(sectionValue)) {
     if (sectionValue !== undefined) {
@@ -225,128 +223,68 @@ const recordTypeReferences: RefTargetsGetter = (sectionEntry) =>
       sourceField: recordTypeVisibilityKey,
     }))
 
-const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
-  const appVisibilityRefs = referencesFromSection({
-    profile,
-    sectionName: APP_VISIBILITY_SECTION,
+const sectionsReferenceParams: Record<section, ReferenceFromSectionParams> = {
+  [section.APP_VISIBILITY]: {
     filter: (appVisibilityEntry) =>
       appVisibilityEntry.default || appVisibilityEntry.visible,
     targetsGetter: referenceToInstance(
       'application',
       CUSTOM_APPLICATION_METADATA_TYPE,
     ),
-  })
-  const apexClassRefs = referencesFromSection({
-    profile,
-    sectionName: APEX_CLASS_SECTION,
+  },
+  [section.APEX_CLASS]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexClass', APEX_CLASS_METADATA_TYPE),
-  })
-  const flowRefs = referencesFromSection({
-    profile,
-    sectionName: FLOW_SECTION,
+  },
+  [section.FLOW]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('flow', FLOW_METADATA_TYPE),
-  })
-
-  const apexPageRefs = referencesFromSection({
-    profile,
-    sectionName: APEX_PAGE_SECTION,
+  },
+  [section.APEX_PAGE]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
-  })
-
-  const objectRefs = referencesFromSection({
-    profile,
-    sectionName: OBJECT_SECTION,
+  },
+  [section.OBJECT]: {
     filter: isAnyAccessEnabledForObject,
     targetsGetter: referenceToType('object'),
-  })
-
-  const fieldPermissionsRefs = referencesFromSection({
-    profile,
-    sectionName: FIELD_PERMISSIONS,
+  },
+  [section.FIELD_PERMISSIONS]: {
     filter: isAnyAccessEnabledForField,
     targetsGetter: referencesToFields,
-  })
-
-  const layoutAssignmentRefs = referencesFromSection({
-    profile,
-    sectionName: LAYOUTS_SECTION,
+  },
+  [section.LAYOUTS]: {
     targetsGetter: layoutReferences,
-  })
-
-  const recordTypeRefs = referencesFromSection({
-    profile,
-    sectionName: RECORD_TYPE_SECTION,
+  },
+  [section.RECORD_TYPE]: {
     targetsGetter: recordTypeReferences,
-  })
-
-  return appVisibilityRefs
-    .concat(apexClassRefs)
-    .concat(flowRefs)
-    .concat(apexPageRefs)
-    .concat(objectRefs)
-    .concat(fieldPermissionsRefs)
-    .concat(layoutAssignmentRefs)
-    .concat(recordTypeRefs)
-}
-
-const getProfilesCustomReferences = async (
-  elements: Element[],
-): Promise<ReferenceInfo[]> => {
-  // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
-  // have to figure out the type name the hard way.
-  const profilesAndPermissionSets = elements
-    .filter(isInstanceElement)
-    .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
-  const refs = log.timeDebug(
-    () => profilesAndPermissionSets.flatMap(referencesFromProfile),
-    `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets`,
-  )
-  log.debug('generated %d references', refs.length)
-  return refs
-}
-
-type CustomRefsHandlersConfig = {
-  handler: GetCustomReferencesFunc
-  isEnabledByDefault: boolean
-}
-
-const customReferencesHandlers: Record<string, CustomRefsHandlersConfig> = {
-  profiles: {
-    handler: getProfilesCustomReferences,
-    isEnabledByDefault: false,
   },
 }
 
-const getCustomReferencesConfig = (
-  adapterConfig: InstanceElement,
-): Record<string, boolean> => {
-  const actualConfig =
-    adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[
-      CUSTOM_REFS_CONFIG
-    ] ?? {}
-  const defaultConfig = _.mapValues(
-    customReferencesHandlers,
-    ({ isEnabledByDefault }) => isEnabledByDefault,
+const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] =>
+  Object.entries(sectionsReferenceParams).flatMap(([sectionName, params]) =>
+    referencesFromSection(profile, sectionName as section, params),
   )
-  const configWithAppliedDefaults = _.defaults(actualConfig, defaultConfig)
 
-  if (
-    adapterConfig.value[FETCH_CONFIG]?.optionalFeatures
-      ?.generateRefsInProfiles &&
-    configWithAppliedDefaults.profiles
-  ) {
-    log.warn(
-      'Both custom references and normal reference mapping are enabled for profiles. This may lead to unexpected behavior',
+const getProfilesCustomReferences: WeakReferencesHandler['findWeakReferences'] =
+  async (elements: Element[]): Promise<ReferenceInfo[]> => {
+    // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
+    // have to figure out the type name the hard way.
+    const profilesAndPermissionSets = elements
+      .filter(isInstanceElement)
+      .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+    const refs = log.timeDebug(
+      () => profilesAndPermissionSets.flatMap(referencesFromProfile),
+      `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets.`,
     )
+    log.debug(
+      'Generated %d references for %d elements.',
+      refs.length,
+      elements.length,
+    )
+    return refs
   }
-  return configWithAppliedDefaults
-}
 
-export const getCustomReferences: GetCustomReferencesFunc =
-  combineCustomReferenceGetters(
-    _.mapValues(customReferencesHandlers, ({ handler }) => handler),
-    getCustomReferencesConfig,
-  )
+export const profilesHandler: WeakReferencesHandler = {
+  findWeakReferences: getProfilesCustomReferences,
+  removeWeakReferences: () => async () => ({ fixedElements: [], errors: [] }),
+}

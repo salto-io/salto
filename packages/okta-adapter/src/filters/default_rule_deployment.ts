@@ -122,6 +122,20 @@ const deployDefaultPolicy = async (
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'defaultPolicyRuleDeployment',
+  preDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionChange)
+      .filter(
+        change =>
+          [PROFILE_ENROLLMENT_RULE_TYPE_NAME].includes(getChangeData(change).elemID.typeName) &&
+          getChangeData(change).value.system === true,
+      )
+      .map(change => getChangeData(change))
+      .forEach(instance => {
+        instance.value.priority = 99
+      })
+  },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
@@ -142,6 +156,20 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       leftoverChanges,
       deployResult,
     }
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionChange)
+      .filter(
+        change =>
+          [PROFILE_ENROLLMENT_RULE_TYPE_NAME].includes(getChangeData(change).elemID.typeName) &&
+          getChangeData(change).value.system === true,
+      )
+      .map(change => getChangeData(change))
+      .forEach(instance => {
+        delete instance.value.priority
+      })
   },
 })
 

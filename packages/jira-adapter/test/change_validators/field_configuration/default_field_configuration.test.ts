@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { defaultFieldConfigurationValidator } from '../../src/change_validators/default_field_configuration'
-import { JIRA } from '../../src/constants'
+import { defaultFieldConfigurationValidator } from '../../../src/change_validators/field_configuration/default_field_configuration'
+import { JIRA } from '../../../src/constants'
 
 describe('defaultFieldConfigurationValidator', () => {
   let type: ObjectType

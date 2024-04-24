@@ -119,6 +119,55 @@ describe('requester', () => {
         },
       ])
     })
+    it('should use context in url', async () => {
+      const requester = getRequester({
+        adapterName: 'a',
+        clients: {
+          default: 'main',
+          options: {
+            main: {
+              httpClient: client,
+              endpoints: {
+                default: {
+                  get: {
+                    readonly: true,
+                  },
+                },
+                customizations: {},
+              },
+            },
+          },
+        },
+        pagination: {
+          none: {
+            funcCreator: noPagination,
+          },
+        },
+        requestDefQuery: queryWithDefault<FetchRequestDefinition<'main'>[], string>({
+          customizations: {
+            typeWithContext: [
+              {
+                endpoint: { path: '/custom/{arg1}/{customArg2}' },
+                context: {
+                  arg1: 'a1',
+                  custom: args => () => ({
+                    ...args,
+                    customArg2: 'a2',
+                  }),
+                },
+              },
+            ],
+          },
+        }),
+      })
+      await requester.requestAllForResource({
+        callerIdentifier: { typeName: 'typeWithContext' },
+        contextPossibleArgs: {},
+      })
+      expect(client.get.mock.calls[0][0]).toEqual({
+        url: '/custom/a1/a2',
+      })
+    })
     it('should fail if endpoint is not marked as read-only', async () => {
       const requester = getRequester({
         adapterName: 'a',

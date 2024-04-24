@@ -55,7 +55,7 @@ describe('Functions', () => {
       isTemplate: true,
     })
   })
-  it('should not persist when dumping static file with no content', async () => {
+  it('should persist when dumping static file with no content', async () => {
     const dumped = await functions.file.dump(
       new StaticFile({
         filepath: 'filepath',
@@ -64,7 +64,7 @@ describe('Functions', () => {
     )
     expect(dumped).toHaveProperty('funcName', 'file')
     expect(dumped).toHaveProperty('parameters', ['filepath'])
-    expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(0)
+    expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(1)
   })
   it('should persist when dumping static file with content', async () => {
     const dumped = await functions.file.dump(

@@ -49,9 +49,10 @@ import instanceWithUnknownType from './change_validators/instance_with_unknown_t
 import artificialTypes from './change_validators/artificial_types'
 import taskOrEventFieldsModifications from './change_validators/task_or_event_fields_modifications'
 import newFieldsAndObjectsFLS from './change_validators/new_fields_and_objects_fls'
+import metadataTypes from './change_validators/metadata_types'
+import elementApiVersionValidator from './change_validators/element_api_version'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
-import metadataTypes from './change_validators/metadata_types'
 
 const { createChangeValidator, getDefaultChangeValidators } =
   deployment.changeValidators
@@ -108,6 +109,7 @@ export const changeValidators: Record<
   metadataTypes: () => metadataTypes,
   taskOrEventFieldsModifications: () => taskOrEventFieldsModifications,
   newFieldsAndObjectsFLS: (config) => newFieldsAndObjectsFLS(config),
+  elementApiVersion: () => elementApiVersionValidator,
   ..._.mapValues(getDefaultChangeValidators(), (validator) => () => validator),
 }
 

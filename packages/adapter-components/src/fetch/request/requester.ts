@@ -189,9 +189,14 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
     (
       await Promise.all(
         (requestDefQuery.query(callerIdentifier.typeName) ?? []).map(requestDef => {
-          const allArgs = findAllUnresolvedArgs(getMergedRequestDefinition(requestDef).merged)
+          const mergedDef = getMergedRequestDefinition(requestDef).merged
+          const allArgs = findAllUnresolvedArgs(mergedDef)
           const relevantArgRoots = _.uniq(allArgs.map(arg => arg.split('.')[0]).filter(arg => arg.length > 0))
-          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots)
+          const contextFunc =
+            mergedDef.context?.custom !== undefined
+              ? mergedDef.context.custom(mergedDef.context)
+              : (v: ContextParams) => v
+          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots).map(contextFunc)
           return request({
             contexts,
             requestDef,

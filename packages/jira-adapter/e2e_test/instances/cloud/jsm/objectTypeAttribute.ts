@@ -21,7 +21,7 @@ import { JIRA } from '../../../../src/constants'
 export const createObjectTypeAttributeValues = (name: string, allElements: Element[]): Values => ({
   name,
   objectType: createReference(new ElemID(JIRA, 'ObjectType', 'instance', 'testSchema_Hardware_Assets@us'), allElements),
-  type: 0,
+  type: 7,
   editable: true,
   sortable: true,
   summable: false,
@@ -33,5 +33,9 @@ export const createObjectTypeAttributeValues = (name: string, allElements: Eleme
   includeChildObjectTypes: false,
   uniqueAttribute: false,
   options: '',
-  defaultTypeId: 0,
+  defaultTypeId: -1,
+  typeValueMulti: [
+    createReference(new ElemID(JIRA, 'ObjectSchemaStatus', 'instance', 'testSchema__Disposed'), allElements),
+    createReference(new ElemID(JIRA, 'ObjectSchemaStatus', 'instance', 'testSchema__Missing'), allElements),
+  ],
 })

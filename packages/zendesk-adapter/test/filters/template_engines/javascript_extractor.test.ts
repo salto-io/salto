@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 import { InstanceElement, ObjectType, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
-import { ZENDESK, ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../../../src/constants'
-import { extractGreedyIdsFromScripts } from '../../../src/filters/template_engines/javascript_extractor'
+import { ZENDESK, ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, BRAND_TYPE_NAME } from '../../../src/constants'
+import {
+  extractDomainsAndFieldsFromScripts,
+  extractNumericValueIdsFromScripts,
+} from '../../../src/filters/template_engines/javascript_extractor'
 
-describe('extractGreedyIdsFromScripts', () => {
+describe('extractNumericValueIdsFromScripts', () => {
   const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
     id: 123456,
   })
@@ -37,7 +40,7 @@ describe('extractGreedyIdsFromScripts', () => {
       const id2 = 789012;
       // More script code
     `
-    const result = extractGreedyIdsFromScripts(idsToElements, script)
+    const result = extractNumericValueIdsFromScripts(idsToElements, script, 6)
     expect(result).toEqual({
       parts: [
         expect.stringMatching(/\s+\/\/ Some script code\s+const id1 = /),
@@ -56,7 +59,62 @@ describe('extractGreedyIdsFromScripts', () => {
       const id2 = 'some id?';
       // More script code
     `
-    const result = extractGreedyIdsFromScripts(idsToElements, script)
+    const result = extractNumericValueIdsFromScripts(idsToElements, script, 6)
+    expect(result).toEqual(script)
+  })
+})
+
+describe('extractDomainsAndFieldsFromScripts', () => {
+  const article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
+    id: 123456,
+  })
+  const section = new InstanceElement('section', new ObjectType({ elemID: new ElemID(ZENDESK, SECTION_TYPE_NAME) }), {
+    id: 789012,
+  })
+
+  const idsToElements = {
+    '123456': article,
+    '789012': section,
+  }
+
+  const brand = new InstanceElement('brand', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
+    id: 654321,
+    brand_url: 'https://brand.com',
+  })
+
+  const matchBrandSubdomain = (url: string): InstanceElement | undefined => {
+    if (url.includes('https://brand.com')) {
+      return brand
+    }
+    return undefined
+  }
+
+  it('should return a TemplateExpression with references from the script', () => {
+    const script = `
+      // Some script code
+      const request_custom_fields_123456 = 'some value';
+      const brandDomain = 'https://brand.com/';
+      // More script code
+    `
+    const result = extractDomainsAndFieldsFromScripts(idsToElements, matchBrandSubdomain, script)
+    expect(result).toEqual({
+      parts: [
+        expect.stringMatching(/\s+\/\/ Some script code\s+const request_custom_fields_/),
+        new ReferenceExpression(article.elemID, article),
+        expect.stringMatching(/ = 'some value';\s+const brandDomain = /),
+        new ReferenceExpression(brand.elemID, brand),
+        expect.stringMatching(/\/';\s+\/\/ More script code\s+/),
+      ],
+    })
+  })
+
+  it('should return the input if no potential IDs are found', () => {
+    const script = `
+      // Some script code
+      const request_custom_fields_654321 = 'some value';
+      // More script code
+    `
+    const result = extractDomainsAndFieldsFromScripts(idsToElements, matchBrandSubdomain, script)
     expect(result).toEqual(script)
   })
 })

@@ -19,6 +19,7 @@ import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapt
 import path from 'path'
 import { Plan } from '@salto-io/core'
 import { parser } from '@salto-io/parser'
+import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
@@ -50,6 +51,7 @@ import {
 import * as templates from './helpers/templates'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 const { dumpElements } = parser
 
 const SALESFORCE_SERVICE_NAME = 'salesforce'
@@ -179,6 +181,7 @@ describe.each([
 
   // Setup the test env
   beforeAll(async () => {
+    log.resetLogCount()
     env1CredsLease = await salesforceTestHelpers().credentials()
     env2CredsLease = await salesforceTestHelpers().credentials('ENV_2')
     env1Creds = env1CredsLease.value
@@ -205,6 +208,7 @@ describe.each([
       await env2CredsLease.return()
     }
     await workspaceHelpersCleanup()
+    log.info('cli e2e multi env: Log counts = %o', log.getLogCount())
   })
 
   describe('init envs', () => {

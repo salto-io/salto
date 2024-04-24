@@ -37,7 +37,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [ACCESS_POLICY_RULE_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication rule',
-    priority: 0,
     system: false,
     conditions: {
       network: { connection: 'ANYWHERE' },
@@ -152,7 +151,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [PROFILE_ENROLLMENT_RULE_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'Catch-all Rule',
-    priority: 99,
     system: true,
     type: 'PROFILE_ENROLLMENT',
   },

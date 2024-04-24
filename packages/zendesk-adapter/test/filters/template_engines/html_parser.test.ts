@@ -34,22 +34,22 @@ describe('parseTagsFromHtml', () => {
         {
           value: 'https://example.com',
           loc: {
-            end: 46,
-            start: 7,
+            end: 35,
+            start: 16,
           },
         },
         {
           value: 'https://example.com/image.jpg',
           loc: {
-            end: 106,
-            start: 54,
+            end: 93,
+            start: 64,
           },
         },
         {
           value: 'https://example.com/styles.css',
           loc: {
-            end: 174,
-            start: 114,
+            end: 156,
+            start: 126,
           },
         },
       ])
@@ -88,7 +88,7 @@ describe('parseUrlPotentialReferencesFromString', () => {
   let urlBrandInstance: InstanceElement
   let matchBrandSubdomain: (url: string) => InstanceElement | undefined
   let article: InstanceElement
-  let instancesById: Record<string, InstanceElement>
+  let idsToElements: Record<string, InstanceElement>
   beforeEach(() => {
     urlBrandInstance = new InstanceElement('brand', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
       id: 1,
@@ -98,7 +98,7 @@ describe('parseUrlPotentialReferencesFromString', () => {
     article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
       id: 222552,
     })
-    instancesById = {
+    idsToElements = {
       [urlBrandInstance.value.id]: urlBrandInstance,
       [article.value.id]: article,
     }
@@ -106,7 +106,7 @@ describe('parseUrlPotentialReferencesFromString', () => {
 
   it('should extract URL references from a string', () => {
     const content = 'This is a string with a URL reference: {{help_center.url}}/hc/en-us/articles/222552'
-    const result = parseUrlPotentialReferencesFromString(content, { matchBrandSubdomain, instancesById })
+    const result = parseUrlPotentialReferencesFromString(content, { matchBrandSubdomain, idsToElements })
     expect(result).toEqual({
       parts: [
         'This is a string with a URL reference: {{help_center.url}}/hc/en-us/articles/',
@@ -118,7 +118,7 @@ describe('parseUrlPotentialReferencesFromString', () => {
   it('should extract URL references from a string with multiple references', () => {
     const content =
       'This is a string with multiple URL references: https://some.domain.com/hc/en-us/articles/222552 and {{help_center.url}}/hc/en-us/articles/222552'
-    const result = parseUrlPotentialReferencesFromString(content, { matchBrandSubdomain, instancesById })
+    const result = parseUrlPotentialReferencesFromString(content, { matchBrandSubdomain, idsToElements })
     expect(result).toEqual({
       parts: [
         'This is a string with multiple URL references: ',
@@ -142,7 +142,7 @@ describe('parseUrlPotentialReferencesFromString', () => {
     )
     const result = parseUrlPotentialReferencesFromString(content, {
       matchBrandSubdomain,
-      instancesById,
+      idsToElements,
       enableMissingReferences: true,
     })
     expect(result).toEqual({
@@ -157,7 +157,7 @@ describe('parseUrlPotentialReferencesFromString', () => {
     const content = 'This is a string with a missing URL reference: {{help_center.url}}/hc/en-us/articles/360001234568'
     const result = parseUrlPotentialReferencesFromString(content, {
       matchBrandSubdomain,
-      instancesById,
+      idsToElements,
       enableMissingReferences: false,
     })
     expect(result).toEqual(
@@ -170,7 +170,7 @@ describe('parseHtmlPotentialReferences', () => {
   let urlBrandInstance: InstanceElement
   let matchBrandSubdomain: (url: string) => InstanceElement | undefined
   let article: InstanceElement
-  let instancesById: Record<string, InstanceElement>
+  let idsToElements: Record<string, InstanceElement>
   beforeEach(() => {
     urlBrandInstance = new InstanceElement('brand', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
       id: 1,
@@ -180,7 +180,7 @@ describe('parseHtmlPotentialReferences', () => {
     article = new InstanceElement('article', new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }), {
       id: 222552,
     })
-    instancesById = {
+    idsToElements = {
       [urlBrandInstance.value.id]: urlBrandInstance,
       [article.value.id]: article,
     }
@@ -192,21 +192,21 @@ describe('parseHtmlPotentialReferences', () => {
       <img src="{{help_center.url}}/image.jpg" alt="Image">
       <link href="{{help_center.url}}/styles.css" rel="stylesheet">
     `
-    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, instancesById })
+    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, idsToElements })
     expect(result.urls).toEqual([
       {
         value: {
           parts: ['{{help_center.url}}/hc/en-us/articles/', new ReferenceExpression(article.elemID, article)],
         },
-        loc: { start: 7, end: 71 },
+        loc: { start: 16, end: 60 },
       },
       {
         value: '{{help_center.url}}/image.jpg',
-        loc: { start: 79, end: 131 },
+        loc: { start: 89, end: 118 },
       },
       {
         value: '{{help_center.url}}/styles.css',
-        loc: { start: 139, end: 199 },
+        loc: { start: 151, end: 181 },
       },
     ])
   })
@@ -216,17 +216,17 @@ describe('parseHtmlPotentialReferences', () => {
       <a ng-href="{{help_center.url}}/hc/en-us/articles/222552">Link 1</a>
       <img ng-src="{{help_center.url}}/image.jpg" alt="Image">
     `
-    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, instancesById })
+    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, idsToElements })
     expect(result.urls).toEqual([
       {
         value: {
           parts: ['{{help_center.url}}/hc/en-us/articles/', new ReferenceExpression(article.elemID, article)],
         },
-        loc: { start: 7, end: 74 },
+        loc: { start: 19, end: 63 },
       },
       {
         value: '{{help_center.url}}/image.jpg',
-        loc: { start: 82, end: 137 },
+        loc: { start: 95, end: 124 },
       },
     ])
   })
@@ -252,7 +252,7 @@ describe('parseHtmlPotentialReferences', () => {
     )
     const result = parseHtmlPotentialReferences(htmlContent, {
       matchBrandSubdomain,
-      instancesById,
+      idsToElements,
       enableMissingReferences: true,
     })
     expect(result.urls).toEqual([
@@ -263,7 +263,7 @@ describe('parseHtmlPotentialReferences', () => {
             new ReferenceExpression(missingArticle.elemID, missingArticle),
           ],
         },
-        loc: { start: 7, end: 77 },
+        loc: { start: 16, end: 66 },
       },
       {
         value: {
@@ -273,7 +273,7 @@ describe('parseHtmlPotentialReferences', () => {
             new ReferenceExpression(missingBrandArticle.elemID, missingBrandArticle),
           ],
         },
-        loc: { start: 85, end: 165 },
+        loc: { start: 94, end: 154 },
       },
     ])
   })
@@ -284,7 +284,7 @@ describe('parseHtmlPotentialReferences', () => {
         const someVar = 'some value';
       </script>
     `
-    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, instancesById })
+    const result = parseHtmlPotentialReferences(htmlContent, { matchBrandSubdomain, idsToElements })
     expect(result.scripts).toEqual([
       {
         value: expect.stringMatching(/\s+const someVar = 'some value';\s+/),

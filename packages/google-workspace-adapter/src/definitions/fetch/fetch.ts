@@ -114,7 +114,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         groups: {
           standalone: {
             typeName: 'group',
-            addParentAnnotation: true,
+            addParentAnnotation: false,
             referenceFromParent: false,
             nestPathUnderParent: false,
           },
@@ -187,6 +187,17 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             },
           },
         },
+        labels: {
+          typeName: 'label',
+          single: true,
+          context: {
+            args: {
+              groupId: {
+                root: 'id',
+              },
+            },
+          },
+        },
       },
     },
     element: {
@@ -226,6 +237,19 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         },
       },
     },
+  },
+  label: {
+    requests: [
+      {
+        endpoint: {
+          path: '/v1/groups/{groupId}',
+          client: 'cloudIdentity',
+        },
+        transformation: {
+          root: 'labels',
+        },
+      },
+    ],
   },
   groupMember: {
     requests: [
@@ -355,10 +379,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           aliasComponents: [{ fieldName: 'name' }],
         },
         path: {
-          pathParts: [
-            { parts: [{ fieldName: 'parentOrgUnitId', isReference: true }] },
-            { parts: [{ fieldName: 'name' }] },
-          ],
+          pathParts: [{ parts: [{ fieldName: 'name' }] }, { parts: [{ fieldName: 'name' }] }],
         },
       },
 

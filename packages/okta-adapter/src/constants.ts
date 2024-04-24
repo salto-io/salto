@@ -44,6 +44,13 @@ export const MFA_RULE_TYPE_NAME = 'MultifactorEnrollmentPolicyRule'
 export const SIGN_ON_RULE_TYPE_NAME = 'OktaSignOnPolicyRule'
 export const PASSWORD_RULE_TYPE_NAME = 'PasswordPolicyRule'
 export const AUTHORIZATION_POLICY_RULE = 'AuthorizationServerPolicyRule'
+export const ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME = 'AccessPolicyRulePriority'
+export const PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME = 'ProfileEnrollmentPolicyRulePriority'
+export const AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME = 'AuthorizationServerPolicyRulePriority'
+export const IDP_RULE_PRIORITY_TYPE_NAME = 'IdentityProviderPolicyRulePriority'
+export const MFA_RULE_PRIORITY_TYPE_NAME = 'MultifactorEnrollmentPolicyRulePriority'
+export const SIGN_ON_RULE_PRIORITY_TYPE_NAME = 'OktaSignOnPolicyRulePriority'
+export const PASSWORD_RULE_PRIORITY_TYPE_NAME = 'PasswordPolicyRulePriority'
 export const AUTOMATION_TYPE_NAME = 'Automation'
 export const AUTOMATION_RULE_TYPE_NAME = 'AutomationRule'
 export const ACTIVE_STATUS = 'ACTIVE'
@@ -63,6 +70,15 @@ export const POLICY_RULE_TYPE_NAMES = [
   SIGN_ON_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+]
+export const POLICY_RULE_PRIORITY_TYPE_NAMES = [
+  ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
+  IDP_RULE_PRIORITY_TYPE_NAME,
+  MFA_RULE_PRIORITY_TYPE_NAME,
+  SIGN_ON_RULE_PRIORITY_TYPE_NAME,
+  PASSWORD_RULE_PRIORITY_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_PRIORITY_TYPE_NAME,
+  AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
 ]
 export const CUSTOM_NAME_FIELD = 'customName'
 export const LINKS_FIELD = '_links'

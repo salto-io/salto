@@ -17,3 +17,4 @@
 export * from './generic'
 export * from './page'
 export * from './label'
+export * from './restriction'

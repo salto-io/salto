@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash'
+import { isModificationChange } from '@salto-io/adapter-api'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
@@ -39,7 +40,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
                   omit: ['isSuperAdminRole', 'isSystemRole'],
                 },
               },
@@ -66,7 +66,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
                   omit: ['isSuperAdminRole', 'isSystemRole'],
                 },
               },
@@ -89,7 +88,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
                   omit: ['verified', 'isPrimary', 'domainAliases'],
                 },
               },
@@ -136,12 +134,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
-                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
+                  omit: ['groupSettings', 'labels'],
                 },
               },
-              copyFromResponse: {
-                additional: { pick: ['adminCreated', 'nonEditableAliases'] },
+              condition: {
+                transformForCheck: {
+                  omit: ['groupSettings', 'labels'],
+                },
               },
             },
             {
@@ -153,6 +152,32 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   root: 'groupSettings',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['groupSettings'],
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/v1/groups/{id}',
+                  method: 'patch',
+                  queryArgs: {
+                    updateMask: 'labels',
+                  },
+                  client: 'cloudIdentity',
+                },
+                transformation: {
+                  root: 'labels',
+                  nestUnderField: 'labels',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['labels'],
                 },
               },
             },
@@ -175,8 +200,12 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
-                  omit: ['adminCreated', 'nonEditableAliases', 'groupSettings'],
+                  omit: ['groupSettings', 'labels'],
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  omit: ['groupSettings', 'labels'],
                 },
               },
             },
@@ -189,6 +218,32 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   root: 'groupSettings',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['groupSettings'],
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/v1/groups/{id}',
+                  queryArgs: {
+                    updateMask: 'labels',
+                  },
+                  method: 'patch',
+                  client: 'cloudIdentity',
+                },
+                transformation: {
+                  root: 'labels',
+                  nestUnderField: 'labels',
+                },
+              },
+              condition: {
+                transformForCheck: {
+                  pick: ['labels'],
                 },
               },
             },
@@ -425,7 +480,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // add CV to inform the user that this fields are read-only
                   omit: ['resourceEmail'],
                   adjust: item => {
                     const { value } = item
@@ -492,21 +546,32 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
           ],
-          // TODO - SALTO-5749 - check how to use the old name field in the URL
-          // modify: [
-          //   {
-          //     request: {
-          //       endpoint: {
-          //         path: '/admin/directory/v1/customer/my_customer/features/{name}/rename',
-          //         method: 'put',
-          //       },
-          //       transformation: {
-          //         root: 'name',
-          //         nestUnderField: 'newName',
-          //       },
-          //     },
-          //   },
-          // ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/admin/directory/v1/customer/my_customer/resources/features/{before_name}/rename',
+                  method: 'post',
+                },
+                context: {
+                  custom:
+                    () =>
+                    ({ change }) => {
+                      if (!isModificationChange(change)) {
+                        return {}
+                      }
+                      return {
+                        before_name: change.data.before.value.name,
+                      }
+                    },
+                },
+                transformation: {
+                  root: 'name',
+                  nestUnderField: 'newName',
+                },
+              },
+            },
+          ],
         },
       },
     },

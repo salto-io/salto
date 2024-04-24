@@ -37,6 +37,7 @@ import {
   AUTOMATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
   DEVICE_ASSURANCE,
+  POLICY_RULE_PRIORITY_TYPE_NAMES,
 } from './constants'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
 import { DEFAULT_APP_URLS_VALIDATOR_VALUE } from './change_validators/app_urls'
@@ -301,6 +302,18 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
     }
   })
   return Object.assign({}, ...policiesConfig)
+}
+const getPoliceyRulePriorityConfig = (): OktaSwaggerApiConfig['types'] => {
+  const policyRulePrioritiesConfig = POLICY_RULE_PRIORITY_TYPE_NAMES.map(typeName => ({
+    // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator only for additions and modifications
+    [typeName]: {
+      deployRequests: {
+        add: { url: '', method: 'put' },
+        modify: { url: '', method: 'put' },
+      },
+    },
+  }))
+  return Object.assign({}, ...policyRulePrioritiesConfig)
 }
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
@@ -1367,6 +1380,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
   },
   ...getPolicyConfig(),
+  ...getPoliceyRulePriorityConfig(),
   api__v1__behaviors: {
     request: {
       url: '/api/v1/behaviors',

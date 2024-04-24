@@ -24,7 +24,7 @@ import {
   isModificationChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { elementExpressionStringifyReplacer, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ResponseValue, Response, ClientDataParams, executeWithPolling } from '../../client'
@@ -93,8 +93,8 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
     }
     const { typeName } = change.data.after.elemID
     return !isEqualValues(
-      transform({ value: change.data.before, typeName, context: args }),
-      transform({ value: change.data.after, typeName, context: args }),
+      transform({ value: change.data.before.value, typeName, context: args }),
+      transform({ value: change.data.after.value, typeName, context: args }),
     )
   }
 }
@@ -122,7 +122,7 @@ const extractDataToApply = ({
     log.warn(
       'extracted response for change %s is not a plain object, cannot apply. received value: %s',
       elemID.getFullName(),
-      safeJsonStringify(dataToApply),
+      safeJsonStringify(dataToApply, elementExpressionStringifyReplacer),
     )
     return undefined
   }
@@ -132,7 +132,7 @@ const extractDataToApply = ({
 const extractResponseDataToApply = async <ClientOptions extends string>({
   requestDef,
   response,
-  ...context
+  ...changeAndContext
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
@@ -144,13 +144,13 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
       dataToApply,
       extractDataToApply({
         definition: copyFromResponse.additional,
-        changeAndContext: context,
+        changeAndContext,
         response,
       }),
     )
   }
   if (copyFromResponse?.updateServiceIDs !== false) {
-    const type = await getChangeData(context.change).getType()
+    const type = await getChangeData(changeAndContext.change).getType()
     const serviceIDFieldNames = Object.keys(
       _.pickBy(
         await promises.object.mapValuesAsync(type.fields, async f => isServiceId(await f.getType())),
@@ -166,7 +166,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
             // reverse the transformation used for the request
             root: requestDef.request.transformation?.nestUnderField,
           },
-          changeAndContext: context,
+          changeAndContext,
           response,
         }),
       )
@@ -174,6 +174,31 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
   }
 
   return dataToApply
+}
+
+const extractExtraContextToApply = <ClientOptions extends string>({
+  requestDef,
+  response,
+  ...changeAndContext
+}: {
+  requestDef: DeployableRequestDefinition<ClientOptions>
+  response: Response<ResponseValue | ResponseValue[]>
+} & ChangeAndContext): Values | undefined => {
+  const { toSharedContext } = requestDef.copyFromResponse ?? {}
+  if (toSharedContext !== undefined) {
+    const dataToApply = extractDataToApply({
+      definition: toSharedContext,
+      changeAndContext,
+      response,
+    })
+    if (toSharedContext.nestUnderElemID !== false) {
+      return {
+        [getChangeData(changeAndContext.change).elemID.getFullName()]: dataToApply,
+      }
+    }
+    return dataToApply
+  }
+  return undefined
 }
 
 const throwOnUnresolvedReferences = (value: unknown): void =>
@@ -221,8 +246,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
   const singleRequest = async ({
     requestDef,
     change,
-    changeGroup,
-    elementSource,
+    ...changeContext
   }: ChangeAndContext & {
     requestDef: DeployRequestEndpointDefinition<ResolveClientOptionsType<TOptions>>
   }): Promise<Response<ResponseValue | ResponseValue[]>> => {
@@ -234,17 +258,23 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     const { elemID, value } = getChangeData(change)
 
     const resolvedChange = await changeResolver(change)
+    const contextFunc =
+      mergedRequestDef.context?.custom !== undefined
+        ? mergedRequestDef.context.custom(mergedRequestDef.context)
+        : () => undefined
     const additionalContext = replaceAllArgs({
       context: _.merge({}, getChangeData(resolvedChange).value, getChangeData(resolvedChange).annotations),
-      value: _.merge(_.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource'])),
+      value: _.merge(
+        contextFunc({ change, ...changeContext }),
+        _.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource', 'sharedContext', 'custom']),
+      ),
     })
 
     const data = mergedEndpointDef.omitBody
       ? undefined
       : extractor({
           change,
-          changeGroup,
-          elementSource,
+          ...changeContext,
           additionalContext,
           value: recursiveNaclCase(getChangeData(resolvedChange).value, true),
         })
@@ -306,7 +336,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
   const requestAllForChangeAndAction: DeployRequester<
     ResolveAdditionalActionType<TOptions>
   >['requestAllForChangeAndAction'] = async args => {
-    const { change, changeGroup, action } = args
+    const { change, changeGroup, action, sharedContext } = args
     const { elemID } = getChangeData(change)
     log.debug('requestAllForChange change %s action %s group %s', elemID.getFullName(), action, changeGroup.groupID)
     const deployDef = deployDefQuery.query(elemID.typeName)
@@ -352,12 +382,22 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
       try {
         const dataToApply = await extractResponseDataToApply({ ...args, requestDef: def, response: res })
         if (dataToApply !== undefined) {
-          log.debug(
+          log.trace(
             'applying the following value to change %s: %s',
             elemID.getFullName(),
-            safeJsonStringify(dataToApply),
+            safeJsonStringify(dataToApply, elementExpressionStringifyReplacer),
           )
           _.assign(getChangeData(change).value, dataToApply)
+        }
+        const extraContextToApply = extractExtraContextToApply({ ...args, requestDef: def, response: res })
+        if (extraContextToApply !== undefined) {
+          log.trace(
+            'applying the following value to extra context in group %s from change %s: %s',
+            changeGroup.groupID,
+            elemID.getFullName(),
+            safeJsonStringify(extraContextToApply, elementExpressionStringifyReplacer),
+          )
+          _.assign(sharedContext, extraContextToApply)
         }
       } catch (e) {
         log.error('failed to apply request result: %s (stack: %s)', e, e.stack)

@@ -150,6 +150,7 @@ describe('transformTemplateBodyToTemplateExpression', () => {
       fetchQuery: fetch.query.createMockQuery(),
       config: {} as UserConfig,
       definitions: {} as def.ApiDefinitions<Options>,
+      sharedContext: {},
     })
   })
 

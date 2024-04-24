@@ -94,7 +94,7 @@ export const notEnabledMissingReferencesValidator =
                   isReferenceExpression(part) &&
                   (!isResolvedReferenceExpression(part) || references.checkMissingRef(part.value))
                 ) {
-                  missingReferences.push(createMissingRefString(path, part.value))
+                  missingReferences.push(createMissingRefString(path, part))
                 }
               })
             }

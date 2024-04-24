@@ -23,6 +23,7 @@ import {
   DeployResult,
   Element,
   ElemID,
+  FetchResult,
   FieldDefinition,
   getChangeData,
   InstanceElement,
@@ -48,6 +49,7 @@ import {
   detailedCompare,
   naclCase,
 } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -69,7 +71,9 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
-  BRAND_TYPE_NAME,
+  BRAND_LOGO_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY,
+  CATEGORY_ORDER_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
@@ -78,11 +82,16 @@ import {
   CUSTOM_OBJECT_TYPE_NAME,
   GUIDE,
   GUIDE_THEME_TYPE_NAME,
+  ORGANIZATION_FIELD_CUSTOM_FIELD_OPTIONS,
   PERMISSION_GROUP_TYPE_NAME,
+  ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
+  SUPPORT_ADDRESS_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
+  TICKET_FIELD_CUSTOM_FIELD_OPTION,
+  USER_FIELD_CUSTOM_FIELD_OPTIONS,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -94,6 +103,7 @@ import { ThemeDirectory, unzipFolderToElements } from '../src/filters/guide_them
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
+const log = logger(module)
 
 const ALL_SUPPORTED_TYPES = {
   ...GUIDE_SUPPORTED_TYPES,
@@ -101,6 +111,28 @@ const ALL_SUPPORTED_TYPES = {
 }
 
 const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
+
+const TYPES_NOT_TO_REMOVE = new Set<string>([
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+  CATEGORY_TRANSLATION_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  USER_FIELD_CUSTOM_FIELD_OPTIONS,
+  ORGANIZATION_FIELD_CUSTOM_FIELD_OPTIONS,
+  TICKET_FIELD_CUSTOM_FIELD_OPTION,
+  SUPPORT_ADDRESS_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY,
+  BRAND_LOGO_TYPE_NAME,
+  ROUTING_ATTRIBUTE_VALUE_TYPE_NAME,
+])
+const UNIQUE_NAME = 'E2ETestName'
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(1000 * 60 * 15)
@@ -177,18 +209,22 @@ const deployChanges = async (
   return deployResults
 }
 
-const cleanup = async (adapterAttr: Reals): Promise<void> => {
-  const fetchResult = await adapterAttr.adapter.fetch({
-    progressReporter: { reportProgress: () => null },
-  })
+const cleanup = async (adapterAttr: Reals, fetchResult: FetchResult): Promise<void> => {
   expect(fetchResult.errors).toHaveLength(0)
   const { elements } = fetchResult
-  const e2eBrandInstances = elements
+  const changesToClean = elements
     .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-    .filter(brand => brand.elemID.name.startsWith('Testbrand'))
-  if (e2eBrandInstances.length > 0) {
-    await deployChanges(adapterAttr, { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) })
+    .filter(instance => !TYPES_NOT_TO_REMOVE.has(instance.elemID.typeName))
+    .filter(instance => instance.elemID.name.includes(UNIQUE_NAME))
+    .map(instance => toChange({ before: instance }))
+  const groupedChanges = _.groupBy(changesToClean, change => getChangeData(change).elemID.typeName)
+  if (changesToClean.length > 0) {
+    if (groupedChanges[CATEGORY_TYPE_NAME] !== undefined && groupedChanges[CATEGORY_TYPE_NAME].length > 0) {
+      // category clean up needs to run first as permission group depends on them
+      await deployChanges(adapterAttr, { [CATEGORY_TYPE_NAME]: groupedChanges[CATEGORY_TYPE_NAME] })
+      delete groupedChanges[CATEGORY_TYPE_NAME]
+    }
+    await deployChanges(adapterAttr, groupedChanges)
   }
 }
 
@@ -200,7 +236,12 @@ const usedConfig = {
     exclude: [],
     guide: {
       brands: ['.*'],
-      themesForBrands: ['.*'],
+      themes: {
+        brands: ['.*'],
+        referenceOptions: {
+          enableReferenceLookup: false,
+        },
+      },
     },
   },
   [API_DEFINITIONS_CONFIG]: {
@@ -219,7 +260,7 @@ describe('Zendesk adapter E2E', () => {
     let customObjectInstances: InstanceElement[]
     let guideInstances: InstanceElement[]
     let guideThemeInstance: InstanceElement
-    const createName = (type: string): string => `Test${type}${testSuffix}`
+    const createName = (type: string): string => `${UNIQUE_NAME}${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
 
     let groupIdToInstances: Record<string, InstanceElement[]>
@@ -308,7 +349,16 @@ describe('Zendesk adapter E2E', () => {
         currentBrandName: brand.value.name,
         name,
         idsToElements: {},
-        matchBrandSubdomain: () => brand,
+        matchBrandSubdomain: (url: string) => (url === brand.value.brand_url ? brand : undefined),
+        config: {
+          referenceOptions: {
+            enableReferenceLookup: true,
+            javascriptReferenceLookupStrategy: {
+              strategy: 'numericValues',
+              minimumDigitAmount: 6,
+            },
+          },
+        },
       })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()
@@ -329,6 +379,7 @@ describe('Zendesk adapter E2E', () => {
     }
 
     beforeAll(async () => {
+      log.resetLogCount()
       // get e2eHelpCenter brand
       credLease = await credsLease()
       adapterAttr = realAdapter(
@@ -348,6 +399,14 @@ describe('Zendesk adapter E2E', () => {
       if (brandInstanceE2eHelpCenter === undefined) {
         return
       }
+      adapterAttr = realAdapter(
+        {
+          credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements([brandInstanceE2eHelpCenter]),
+        },
+        usedConfig,
+      )
+      await cleanup(adapterAttr, firstFetchResult)
       // ******************* create all elements for deploy *******************
       const automationInstance = createInstanceElement({
         type: 'automation',
@@ -491,13 +550,14 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
       })
 
+      const customObjName = createName('custom_object')
       const customObjectInstance = createInstanceElement({
         type: CUSTOM_OBJECT_TYPE_NAME,
         valuesOverride: {
-          key: `key${testSuffix}`,
-          raw_title: `title${testSuffix}`,
-          raw_title_pluralized: `titles${testSuffix}`,
-          raw_description: `description${testSuffix}`,
+          key: `key${customObjName}`,
+          raw_title: `title${customObjName}`,
+          raw_title_pluralized: `titles${customObjName}`,
+          raw_description: `description${customObjName}`,
         },
       })
 
@@ -1060,7 +1120,12 @@ describe('Zendesk adapter E2E', () => {
             exclude: [],
             guide: {
               brands: ['.*'],
-              themesForBrands: ['.*'],
+              themes: {
+                brands: ['.*'],
+                referenceOptions: {
+                  enableReferenceLookup: false,
+                },
+              },
             },
           },
           [API_DEFINITIONS_CONFIG]: {
@@ -1069,7 +1134,6 @@ describe('Zendesk adapter E2E', () => {
           },
         },
       )
-      await cleanup(adapterAttr)
       const instancesToAdd = [
         ticketFieldInstance,
         ticketFieldOption1,
@@ -1123,6 +1187,7 @@ describe('Zendesk adapter E2E', () => {
       if (credLease.return) {
         await credLease.return()
       }
+      log.info('Zendesk adapter E2E: Log counts = %o', log.getLogCount())
     })
     it('should fetch the regular instances and types', async () => {
       const typesToFetch = [

@@ -32,6 +32,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     await applyforInstanceChangesOfType(changes, [VIEW_TYPE_NAME], (instance: InstanceElement) => {
       instance.value = {
         ...instance.value,
+        restriction: instance.value.restriction ?? null,
         all: (instance.value.conditions.all ?? []).map((e: Values) => ({ ...e, value: valToString(e.value) })),
         any: (instance.value.conditions.any ?? []).map((e: Values) => ({ ...e, value: valToString(e.value) })),
         output: {
@@ -53,7 +54,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   },
   onDeploy: async changes => {
     await applyforInstanceChangesOfType(changes, [VIEW_TYPE_NAME], (instance: InstanceElement) => {
-      instance.value = _.omit(instance.value, ['all', 'any', 'output'])
+      const baseValuesToOmit = ['all', 'any', 'output']
+      const valuesToOmit = instance.value.restriction === null ? [...baseValuesToOmit, 'restriction'] : baseValuesToOmit
+      instance.value = _.omit(instance.value, valuesToOmit)
       return instance
     })
   },

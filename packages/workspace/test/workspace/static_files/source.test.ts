@@ -120,6 +120,33 @@ describe('Static Files', () => {
             expect(mockDirStore.get).toHaveBeenCalledTimes(1)
             return expect(result).toHaveProperty('hash', hashedContent)
           })
+          it('should hash if not cache', async () => {
+            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
+            mockDirStore.mtimestamp = jest.fn(
+              (filepath: string): Promise<number | undefined> =>
+                Promise.resolve(filepath.endsWith('bb') ? 1000 : undefined),
+            )
+            mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(1)
+            expect(result).toHaveProperty('hash', hashedContent)
+          })
+          it('should hash if file in cache without modified time', async () => {
+            const filepathFromCache = 'filepathfromcache'
+            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
+            mockDirStore.mtimestamp = jest.fn(
+              (filepath: string): Promise<number | undefined> =>
+                Promise.resolve(filepath.endsWith('bb') ? 100 : undefined),
+            )
+            mockCacheStore.get = jest.fn().mockResolvedValue({
+              filepath: filepathFromCache,
+              modified: undefined,
+              hash: 'aaa',
+            })
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(1)
+            expect(result).toHaveProperty('hash', hashedContent)
+          })
         })
       })
       describe('ignoreFileChanges true', () => {
@@ -169,6 +196,24 @@ describe('Static Files', () => {
             const staticFileRes = result as StaticFile
             expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
             expect(mockDirStore.get).toHaveBeenCalled()
+          })
+          it('should not hash if file in cache without modified time', async () => {
+            const filepathFromCache = 'filepathfromcache'
+            mockCacheStore.get = jest.fn().mockResolvedValue({
+              filepath: filepathFromCache,
+              modified: undefined,
+              hash: 'aaa',
+            })
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(0)
+            expect(result).toHaveProperty('hash', 'aaa')
+          })
+          it('should return a missing file error and not hash if the file is not in the cache', async () => {
+            mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
+            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
+            expect(mockDirStore.get).toHaveBeenCalledTimes(0)
+            expect(mockDirStore.mtimestamp).toHaveBeenCalledTimes(0)
+            expect(result).toBeInstanceOf(MissingStaticFile)
           })
         })
       })
@@ -232,33 +277,7 @@ describe('Static Files', () => {
             expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
             expect(mockDirStore.get).toHaveBeenCalled()
           })
-          it('should hash if not cache', async () => {
-            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
-            mockDirStore.mtimestamp = jest.fn(
-              (filepath: string): Promise<number | undefined> =>
-                Promise.resolve(filepath.endsWith('bb') ? 1000 : undefined),
-            )
-            mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
-            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
-            expect(mockDirStore.get).toHaveBeenCalledTimes(1)
-            expect(result).toHaveProperty('hash', hashedContent)
-          })
-          it('should hash if file in cache without modified time', async () => {
-            const filepathFromCache = 'filepathfromcache'
-            mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
-            mockDirStore.mtimestamp = jest.fn(
-              (filepath: string): Promise<number | undefined> =>
-                Promise.resolve(filepath.endsWith('bb') ? 100 : undefined),
-            )
-            mockCacheStore.get = jest.fn().mockResolvedValue({
-              filepath: filepathFromCache,
-              modified: undefined,
-              hash: 'aaa',
-            })
-            const result = await staticFilesSource.getStaticFile({ filepath: 'bb', encoding: 'binary' })
-            expect(mockDirStore.get).toHaveBeenCalledTimes(1)
-            expect(result).toHaveProperty('hash', hashedContent)
-          })
+
           it('should return undefined if not able to read file for hash', async () => {
             mockDirStore.get = jest.fn().mockResolvedValue(undefined)
             mockDirStore.mtimestamp = jest.fn().mockResolvedValue(Promise.resolve(42))
@@ -333,15 +352,9 @@ describe('Static Files', () => {
         beforeEach(() => {
           mockDirStore.set = jest.fn().mockResolvedValue(Promise.resolve())
         })
-        it('should fail if trying to persist for a static file metadata without content', () =>
-          staticFilesSource
-            .persistStaticFile(exampleStaticFileWithHash)
-            .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
 
-        it('should fail if trying to persist for a static file without content', () =>
-          staticFilesSource
-            .persistStaticFile(exampleStaticFileWithHash)
-            .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
+        it('should return undefined if trying to persist for a static file without content', async () =>
+          expect(await staticFilesSource.persistStaticFile(exampleStaticFileWithHash)).toBeUndefined())
         it('should persist valid static file with content', async () => {
           await staticFilesSource.persistStaticFile(exampleStaticFileWithContent)
           expect(mockDirStore.set).toHaveBeenCalledTimes(1)

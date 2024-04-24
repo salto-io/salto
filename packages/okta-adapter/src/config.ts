@@ -893,6 +893,29 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/customizations/brands',
       dataField: '.',
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/pages/error/customized',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/pages/error/customized',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/pages/error/customized',
+        method: 'delete',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
+      },
+    },
   },
   GroupSchema: {
     transformation: {

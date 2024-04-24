@@ -235,6 +235,7 @@ jobs:
   test_cli_mac:
     macos:
       xcode: 14.2.0
+    resource_class: macos.m1.medium.gen1
 
     steps:
       - set_s3_pkg_urls

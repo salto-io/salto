@@ -148,6 +148,10 @@ export const createAdapter = <
       (config =>
         defaultValidateCredentials({ createConnection: connectionCreator(config), credentialsFromConfig })(config)),
     authenticationMethods,
-    configType: (configTypeCreator ?? createUserConfigType)({ adapterName, defaultConfig }),
+    configType: (configTypeCreator ?? createUserConfigType)({
+      adapterName,
+      defaultConfig,
+      changeValidatorNames: Object.keys(operationsCustomizations.additionalChangeValidators ?? {}),
+    }),
   }
 }

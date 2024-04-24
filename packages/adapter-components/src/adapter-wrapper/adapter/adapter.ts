@@ -58,6 +58,7 @@ import {
   deployNotSupportedValidator,
   createCheckDeploymentBasedOnDefinitionsValidator,
   getDefaultChangeValidators,
+  DEFAULT_CHANGE_VALIDATORS,
 } from '../../deployment/change_validators'
 import { generateOpenApiTypes } from '../../openapi/type_elements/type_elements'
 import { generateLookupFunc } from '../../references'
@@ -212,12 +213,24 @@ export class AdapterImpl<
 
     const result = (await this.createFiltersRunner().onFetch(elements)) || {}
 
+    const changeValidatorsToOmitFromConfig = [
+      ...Object.keys(DEFAULT_CHANGE_VALIDATORS),
+      'createCheckDeploymentBasedOnDefinitions',
+      'deployNotSupported',
+    ]
+    const changeValidatorNames = Object.keys(this.changeValidators).filter(
+      name => !changeValidatorsToOmitFromConfig.includes(name),
+    )
+
     const updatedConfig =
       this.configInstance && configChanges
         ? getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
-            configType: createUserConfigType({ adapterName: this.adapterName }),
+            configType: createUserConfigType({
+              adapterName: this.adapterName,
+              changeValidatorNames,
+            }),
           })
         : undefined
 
@@ -321,7 +334,10 @@ export class AdapterImpl<
   }
 
   public get deployModifiers(): DeployModifiers {
-    const changeValidator = createChangeValidator({ validators: this.changeValidators })
+    const changeValidator = createChangeValidator({
+      validators: this.changeValidators,
+      validatorsActivationConfig: this.userConfig.deploy?.changeValidators,
+    })
 
     if (this.definitions.deploy?.instances !== undefined) {
       return {

@@ -87,6 +87,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           parts: [{ fieldName: 'prefix' }, { fieldName: 'name' }],
         },
       },
+      fieldCustomizations: {
+        id: {
+          hide: true,
+        },
+      },
     },
   },
   [SPACE_TYPE_NAME]: {

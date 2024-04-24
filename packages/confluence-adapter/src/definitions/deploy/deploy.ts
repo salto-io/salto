@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
-import { increasePagesVersion } from '../transformation_utils'
+import { increasePagesVersion, addSpaceKey } from '../transformation_utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
   SPACE_TYPE_NAME,
@@ -37,6 +38,34 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
   })
 
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
+    [LABEL_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          // TODO add change validator to explain labels are not deployed directly SALTO-5816
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
+    },
     [PAGE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
@@ -186,6 +215,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     // If updating the template deploy definitions, check if need to update global template as well
     [TEMPLATE_TYPE_NAME]: {
       requestsByAction: {
+        default: {
+          request: {
+            context: {
+              space_key: '{_parent.0.key}',
+            },
+          },
+        },
         customizations: {
           add: [
             {
@@ -193,6 +229,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/wiki/rest/api/template',
                   method: 'post',
+                },
+                transformation: {
+                  adjust: addSpaceKey,
                 },
               },
             },
@@ -204,10 +243,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/wiki/rest/api/template',
                   method: 'put',
                 },
-                context: {
-                  queryArgs: {
-                    spaceKey: '{space.key}',
-                  },
+                transformation: {
+                  adjust: addSpaceKey,
                 },
               },
             },

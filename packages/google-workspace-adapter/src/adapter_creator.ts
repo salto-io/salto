@@ -16,6 +16,7 @@
 import { InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, createAdapter, credentials, filters } from '@salto-io/adapter-components'
 import { Credentials, basicCredentialsType } from './auth'
+import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnectionForApp } from './client/connection'
 import { ADAPTER_NAME } from './constants'
@@ -83,6 +84,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       // customPathsFilterCreator must run after fieldReferencesFilter
       customPathsFilterCreator,
     }),
+    additionalChangeValidators: createChangeValidator(),
   },
   initialClients: {
     main: undefined,

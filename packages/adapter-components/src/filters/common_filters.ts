@@ -67,5 +67,6 @@ export const createCommonFilters = <
   // defaultDeploy should run after other deploy filters
   defaultDeploy: defaultDeployFilterCreator({
     convertError,
+    fieldReferenceResolverCreator,
   }),
 })

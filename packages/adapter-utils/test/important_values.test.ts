@@ -270,7 +270,7 @@ describe('getImportantValues', () => {
     })
     expect(res).toEqual([{ key: 'name', value: 'test inst' }])
   })
-  it('should return only  primitive values if indexed is true', async () => {
+  it('should return only primitive values if indexed is true', async () => {
     // check undefined, number, array of primitive, string --> need to return
     // reference, other obj --> should not return
     const obj2 = new ObjectType({
@@ -366,7 +366,7 @@ describe('getImportantValues', () => {
       { key: 'stringArray', value: ['1', '2'] },
       { key: 'undefinedVal', value: undefined },
       { key: 'reference', value: new ReferenceExpression(inst.elemID) },
-      { key: 'id', value: 12345 },
+      { key: 'obj.id', value: 12345 },
     ])
   })
 })

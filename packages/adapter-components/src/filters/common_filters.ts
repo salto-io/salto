@@ -61,6 +61,8 @@ export const createCommonFilters = <
   fieldReferencesFilter: fieldReferencesFilterCreator(referenceRules, fieldReferenceResolverCreator),
   // referencedInstanceNames should run after fieldReferencesFilter
   referencedInstanceNames: referencedInstanceNamesFilterCreator(),
+  // sortListsFilter should run after fieldReferencesFilter as it might sort list fields by reference properties
+  sortListsFilter: sortListsFilterCreator(),
   serviceUrl: serviceUrlFilterCreator(),
   addAlias: addAliasFilterCreator(),
 
@@ -70,5 +72,4 @@ export const createCommonFilters = <
     convertError,
     fieldReferenceResolverCreator,
   }),
-  sortListsFilter: sortListsFilterCreator(),
 })

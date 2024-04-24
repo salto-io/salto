@@ -38,18 +38,19 @@ const makeDefinitions = <TOptions>(
 })
 
 describe('sort lists filter', () => {
+  const objType = new ObjectType({
+    elemID: new ElemID('adapter', 't1'),
+    fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+  })
+
   it('should sort simple fields with precedence, handle multiple elements and directions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
         field1: {
-          sort: { sortByProperties: [{ path: 'prop1' }, { path: 'prop2', order: 'desc' }] },
+          sort: { properties: [{ path: 'prop1' }, { path: 'prop2', order: 'desc' }] },
         },
       }),
     ) as FilterWith<'onFetch'>
-    const objType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
     const instance1 = new InstanceElement('inst1', objType, {
       field1: [
         { prop1: 2, prop2: 0 },
@@ -83,24 +84,20 @@ describe('sort lists filter', () => {
     })
   })
 
-  it('should sort fields with nested paths and ignore other properties', async () => {
+  it('should sort fields with nested paths and ignore properties not specified to sort by', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'prop1.prop2' }] } },
+        field1: { sort: { properties: [{ path: 'prop1.prop2' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const objType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
-    const instance1 = new InstanceElement('inst1', objType, {
+    const instance = new InstanceElement('inst1', objType, {
       field1: [
         { prop1: { prop2: 2 }, prop2: 1 },
         { prop1: { prop2: 1 }, prop2: 1 },
         { prop1: { prop2: 3 }, prop2: 0 },
       ],
     })
-    const elements = [instance1]
+    const elements = [instance]
     await filter.onFetch(elements)
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
@@ -112,45 +109,12 @@ describe('sort lists filter', () => {
     })
   })
 
-  it('should sort fields with reference expressions', async () => {
+  it('should sort fields that contains objects with properties that are instance reference expressions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'ref.prop1' }] } },
+        field1: { sort: { properties: [{ path: 'ref.prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
-    const instance1 = new InstanceElement('inst1', mainObjType, {
-      field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 3 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 1 }) },
-      ],
-    })
-    const elements = [instance1]
-    await filter.onFetch(elements)
-    expect(elements).toHaveLength(1)
-    expect(elements[0].value).toEqual({
-      field1: [
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 1 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) },
-        { ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 3 }) },
-      ],
-    })
-  })
-
-  it('should sort fields with instance reference expressions', async () => {
-    const filter = sortListsFilterCreator()(
-      makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'ref.prop1' }] } },
-      }),
-    ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
     const referencedObjType = new ObjectType({
       elemID: new ElemID('adapter', 't2'),
       fields: { prop1: { refType: BuiltinTypes.NUMBER } },
@@ -160,7 +124,7 @@ describe('sort lists filter', () => {
       .map(value => new InstanceElement(`ref${value}`, referencedObjType, { prop1: value }))
       .map(instance => new ReferenceExpression(instance.elemID, instance))
 
-    const instance = new InstanceElement('instance', mainObjType, {
+    const instance = new InstanceElement('instance', objType, {
       field1: [{ ref: ref2 }, { ref: ref3 }, { ref: ref1 }],
     })
 
@@ -172,16 +136,12 @@ describe('sort lists filter', () => {
     })
   })
 
-  it('should sort fields that have direct instance reference expressions', async () => {
+  it('should sort fields that are raw lists of instance reference expressions (not wrapped in an object)', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'prop1' }] } },
+        field1: { sort: { properties: [{ path: 'prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
     const referencedObjType = new ObjectType({
       elemID: new ElemID('adapter', 't2'),
       fields: { prop1: { refType: BuiltinTypes.NUMBER } },
@@ -191,7 +151,7 @@ describe('sort lists filter', () => {
       .map(value => new InstanceElement(`ref${value}`, referencedObjType, { prop1: value }))
       .map(instance => new ReferenceExpression(instance.elemID, instance))
 
-    const instance = new InstanceElement('instance', mainObjType, {
+    const instance = new InstanceElement('instance', objType, {
       field1: [ref2, ref1, ref3],
     })
 
@@ -203,69 +163,34 @@ describe('sort lists filter', () => {
     })
   })
 
-  it('should sort fields with nested reference expressions', async () => {
+  it('should sort fields with reference expressions to inner fields (not top-level instances)', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'ref.nestedRef.prop' }] } },
+        field1: { sort: { properties: [{ path: 'ref.prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+    const [ref1, ref2, ref3]: ReferenceExpression[] = [1, 2, 3].map(
+      value =>
+        new ReferenceExpression(ElemID.fromFullName(`adapter.t2.instance.refInst${value}.someField`), { prop1: value }),
+    )
+
+    const instance = new InstanceElement('inst1', objType, {
+      field1: [{ ref: ref2 }, { ref: ref3 }, { ref: ref1 }],
     })
-    const instance1 = new InstanceElement('inst1', mainObjType, {
-      field1: [
-        {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
-          }),
-        },
-        {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
-          }),
-        },
-        {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
-          }),
-        },
-      ],
-    })
-    const elements = [instance1]
+    const elements = [instance]
     await filter.onFetch(elements)
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
-      field1: [
-        {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 1 }),
-          }),
-        },
-        {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 2 }),
-          }),
-        },
-        {
-          ref: new ReferenceExpression(new ElemID('adapter', 't2'), {
-            nestedRef: new ReferenceExpression(new ElemID('adapter', 't3'), { prop: 3 }),
-          }),
-        },
-      ],
+      field1: [{ ref: ref1 }, { ref: ref2 }, { ref: ref3 }],
     })
   })
 
   it('should sort fields with nested instance reference expressions', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'ref.nestedRef.prop1' }] } },
+        field1: { sort: { properties: [{ path: 'ref.nestedRef.prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
     const referencedObjType = new ObjectType({
       elemID: new ElemID('adapter', 't2'),
       fields: { nestedRef: { refType: BuiltinTypes.UNKNOWN } },
@@ -286,7 +211,7 @@ describe('sort lists filter', () => {
       )
       .map(instance => new ReferenceExpression(instance.elemID, instance))
 
-    const instance = new InstanceElement('instance', mainObjType, {
+    const instance = new InstanceElement('instance', objType, {
       field1: [{ ref: ref2 }, { ref: ref3 }, { ref: ref1 }],
     })
 
@@ -301,23 +226,19 @@ describe('sort lists filter', () => {
   it('should sort inner lists if their type has a sort customization', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'prop1' }] } },
+        field1: { sort: { properties: [{ path: 'prop1' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
     const wrappingType = new ObjectType({
       elemID: new ElemID('adapter', 't2'),
-      fields: { ref: { refType: new ListType(mainObjType) } },
+      fields: { ref: { refType: new ListType(objType) } },
     })
-    const instance1 = new InstanceElement('inst1', wrappingType, {
+    const instance = new InstanceElement('inst1', wrappingType, {
       ref: {
         field1: [{ prop1: 2 }, { prop1: 1 }],
       },
     })
-    const elements = [instance1]
+    const elements = [instance]
     await filter.onFetch(elements)
     expect(elements).toHaveLength(1)
     expect(elements[0].value).toEqual({
@@ -327,20 +248,16 @@ describe('sort lists filter', () => {
     })
   })
 
-  it('should not allow to sort by a reference (require a property of the referenced element)', async () => {
+  it('should disallow sorting by a reference (require a property of the referenced element)', async () => {
     const filter = sortListsFilterCreator()(
       makeDefinitions({
-        field1: { sort: { sortByProperties: [{ path: 'ref' }] } },
+        field1: { sort: { properties: [{ path: 'ref' }] } },
       }),
     ) as FilterWith<'onFetch'>
-    const mainObjType = new ObjectType({
-      elemID: new ElemID('adapter', 't1'),
-      fields: { field1: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-    })
-    const instance1 = new InstanceElement('inst1', mainObjType, {
+    const instance = new InstanceElement('inst1', objType, {
       field1: [{ ref: new ReferenceExpression(new ElemID('adapter', 't2'), { prop1: 2 }) }],
     })
-    const elements = [instance1]
+    const elements = [instance]
     await expect(filter.onFetch(elements)).rejects.toThrow()
   })
 })

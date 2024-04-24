@@ -863,10 +863,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       add: {
         url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
         method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
       },
       modify: {
         url: '/api/v1/brands/{brandId}/pages/sign-in/customized',
         method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+        },
       },
       remove: {
         url: '/api/v1/brands/{brandId}/pages/sign-in/customized',

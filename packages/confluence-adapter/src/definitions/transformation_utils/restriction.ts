@@ -15,6 +15,38 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
+import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
+
+export const DEFAULT_RESTRICTION = [
+  {
+    operation: 'update',
+  },
+]
+
+/**
+ * Check if need to modify restriction on added page
+ * If restrictions are set to default no need to make another call as upon page addition it gets default restrictions
+ */
+export const shouldNotModifyRestrictionOnPageAddition = (args: definitions.deploy.ChangeAndContext): boolean => {
+  const changeData = getChangeData(args.change).value
+  const restriction = _.get(changeData, 'restriction')
+  return _.isEqual(restriction, DEFAULT_RESTRICTION)
+}
+
+/**
+ * Check if need to modify restriction on page modification
+ * If user change page restriction to the default, we need to delete the existing restriction
+ */
+export const shouldDeleteRestrictionOnPageModification = (args: definitions.deploy.ChangeAndContext): boolean => {
+  if (!isModificationChange(args.change)) {
+    return false
+  }
+  const afterRestriction = _.get(args.change.data.after.value, 'restriction')
+  if (_.isEqual(args.change.data.before.value.restriction, afterRestriction)) {
+    return false
+  }
+  return _.isEqual(afterRestriction, DEFAULT_RESTRICTION)
+}
 
 /**
  * Update the restriction format and omit redundant fields

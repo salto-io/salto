@@ -14,9 +14,67 @@
  * limitations under the License.
  */
 
-import { adjustRestriction } from '../../src/definitions/transformation_utils'
+import { Change, ChangeGroup, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import {
+  shouldNotModifyRestrictionOnPageAddition,
+  shouldDeleteRestrictionOnPageModification,
+  adjustRestriction,
+  DEFAULT_RESTRICTION,
+} from '../../src/definitions/transformation_utils/restriction'
 
+const objectType = new ObjectType({ elemID: new ElemID('mockType') })
+const createMockChangeAndContext = (change: Change<InstanceElement>): definitions.deploy.ChangeAndContext => ({
+  change,
+  changeGroup: {} as ChangeGroup,
+  elementSource: buildElementsSourceFromElements([]),
+  sharedContext: {},
+})
 describe('restriction transformation utils', () => {
+  describe('shouldNotModifyRestrictionOnPageAddition', () => {
+    it('should return true when restrictions are set to default', () => {
+      const change = toChange({
+        after: new InstanceElement('mockType', objectType, { restriction: DEFAULT_RESTRICTION }),
+      })
+      expect(shouldNotModifyRestrictionOnPageAddition(createMockChangeAndContext(change))).toBe(true)
+    })
+
+    it('should return false when restrictions are not set to default', () => {
+      const change = toChange({ after: new InstanceElement('mockType', objectType, { restriction: [] }) })
+      expect(shouldNotModifyRestrictionOnPageAddition(createMockChangeAndContext(change))).toBe(false)
+    })
+  })
+  describe('shouldDeleteRestrictionOnPageModification', () => {
+    it('should return true when user changes page restriction to default', () => {
+      const change = toChange({
+        after: new InstanceElement('mockType', objectType, { restriction: DEFAULT_RESTRICTION }),
+        before: new InstanceElement('mockType', objectType, { restriction: [] }),
+      })
+      expect(shouldDeleteRestrictionOnPageModification(createMockChangeAndContext(change))).toBe(true)
+    })
+
+    it('should return false when user does not change page restriction to default', () => {
+      const change = toChange({
+        after: new InstanceElement('mockType', objectType, { restriction: [{ operations: 'yoyo' }] }),
+        before: new InstanceElement('mockType', objectType, { restriction: [] }),
+      })
+      expect(shouldDeleteRestrictionOnPageModification(createMockChangeAndContext(change))).toBe(false)
+    })
+    it('should return false when the change is not modification', () => {
+      const change = toChange({
+        after: new InstanceElement('mockType', objectType, { restriction: DEFAULT_RESTRICTION }),
+      })
+      expect(shouldDeleteRestrictionOnPageModification(createMockChangeAndContext(change))).toBe(false)
+    })
+    it('should return false when there is no restriction diff', () => {
+      const change = toChange({
+        after: new InstanceElement('mockType', objectType, { title: 'a', restriction: [] }),
+        before: new InstanceElement('mockType', objectType, { title: 'b',restriction: [] }),
+      })
+      expect(shouldDeleteRestrictionOnPageModification(createMockChangeAndContext(change))).toBe(false)
+    })
+  })
   describe('adjustRestriction', () => {
     it('should remove redundant fields in user restrictions and extract items from the results fields', () => {
       const item = {

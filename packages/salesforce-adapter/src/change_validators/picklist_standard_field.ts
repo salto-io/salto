@@ -30,6 +30,7 @@ import {
   isValueSetReference,
 } from '../filters/utils'
 import { VALUE_SET_FIELDS } from '../constants'
+import { SalesforceConfig } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -61,13 +62,24 @@ const createChangeError = (field: Field): ChangeError => ({
 /**
  * It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed.
  */
-const changeValidator: ChangeValidator = async (changes) =>
-  awu(changes)
-    .filter(isModificationChange)
-    .map(getChangeData)
-    .filter(shouldCreateChangeError)
-    // We can cast since shouldCreateChangeError only return true to fields
-    .map((field) => createChangeError(field as Field))
-    .toArray()
+const changeValidator =
+  (config: SalesforceConfig): ChangeValidator =>
+  async (changes) => {
+    if (
+      config?.fetch?.optionalFeatures?.omitStandardFieldsNonDeployableValues ===
+      true
+    ) {
+      return []
+    }
+    return (
+      awu(changes)
+        .filter(isModificationChange)
+        .map(getChangeData)
+        .filter(shouldCreateChangeError)
+        // We can cast since shouldCreateChangeError only return true to fields
+        .map((field) => createChangeError(field as Field))
+        .toArray()
+    )
+  }
 
 export default changeValidator

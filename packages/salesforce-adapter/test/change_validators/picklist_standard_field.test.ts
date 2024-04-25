@@ -15,6 +15,7 @@
  */
 import {
   ChangeError,
+  ChangeValidator,
   ElemID,
   Field,
   InstanceElement,
@@ -23,12 +24,21 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
-import picklistStandardFieldValidator from '../../src/change_validators/picklist_standard_field'
+import changeValidator from '../../src/change_validators/picklist_standard_field'
 import { STANDARD_VALUE_SET } from '../../src/filters/standard_value_sets'
 import { SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
 import { createField } from '../utils'
 
 describe('picklist standard field change validator', () => {
+  let picklistStandardFieldValidator: ChangeValidator
+
+  beforeEach(() => {
+    picklistStandardFieldValidator = changeValidator({
+      fetch: {
+        optionalFeatures: { omitStandardFieldsNonDeployableValues: false },
+      },
+    })
+  })
   describe('onUpdate', () => {
     let obj: ObjectType
     const valueSetNameField = VALUE_SET_FIELDS.VALUE_SET_NAME

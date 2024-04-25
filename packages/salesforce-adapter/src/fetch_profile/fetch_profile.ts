@@ -47,6 +47,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendedCustomFieldInformation: false,
   importantValues: true,
   hideTypesFolder: false,
+  omitStandardFieldsNonDeployableValues: false,
 }
 
 type BuildFetchProfileParams = {

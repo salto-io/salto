@@ -130,6 +130,7 @@ export type OptionalFeatures = {
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
+  omitStandardFieldsNonDeployableValues?: boolean
 }
 
 export type ChangeValidatorName =
@@ -839,6 +840,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
+    omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

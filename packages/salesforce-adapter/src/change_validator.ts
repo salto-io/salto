@@ -75,7 +75,7 @@ export const changeValidators: Record<
   ChangeValidatorCreator
 > = {
   managedPackage: () => packageValidator,
-  picklistStandardField: () => picklistStandardFieldValidator,
+  picklistStandardField: (config) => picklistStandardFieldValidator(config),
   customObjectInstances: () => customObjectInstancesValidator,
   unknownField: () => unknownFieldValidator,
   customFieldType: () => customFieldTypeValidator,

@@ -31,6 +31,7 @@ import {
   Guide,
   IdLocator,
   OmitInactiveConfig,
+  Themes,
   ZendeskApiConfig,
   ZendeskClientConfig,
   ZendeskDeployConfig,

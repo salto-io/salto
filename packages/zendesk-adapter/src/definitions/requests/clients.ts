@@ -37,42 +37,14 @@ export const createClientDefinitions = (
           },
         },
         customizations: {
-          '/api/v2/organizations': {
-            get: {
-              pagination: 'cursor',
-              params: { queryArgs: { 'page[size]': String(100) } },
-            },
-          },
-          '/api/v2/triggers': {
-            get: {
-              pagination: 'cursor',
-              params: { queryArgs: { 'page[size]': String(100) } },
-            },
-          },
-          '/api/v2/trigger_categories': {
-            get: {
-              pagination: 'cursor',
-              params: { queryArgs: { 'page[size]': String(100) } },
-            },
-          },
-          '/api/v2/automations': {
-            get: {
-              pagination: 'cursor',
-              params: { queryArgs: { 'page[size]': String(100) } },
-            },
-          },
-          '/api/v2/brands': {
-            get: {
-              pagination: 'cursor',
-              params: { queryArgs: { 'page[size]': String(100) } },
-            },
-          },
-          '/api/v2/recipient_addresses': {
-            get: {
-              pagination: 'cursor',
-              params: { queryArgs: { 'page[size]': String(100) } },
-            },
-          },
+          '/api/v2/organizations': { get: { pagination: 'new_cursor' } },
+          '/api/v2/triggers': { get: { pagination: 'new_cursor' } },
+          '/api/v2/trigger_categories': { get: { pagination: 'new_cursor' } },
+          '/api/v2/automations': { get: { pagination: 'new_cursor' } },
+          '/api/v2/brands': { get: { pagination: 'new_cursor' } },
+          '/api/v2/recipient_addresses': { get: { pagination: 'new_cursor' } },
+          '/api/v2/views': { get: { pagination: 'new_cursor' } },
+          'api/v2/macros': { get: { pagination: 'new_cursor' } },
         },
       },
     },

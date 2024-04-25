@@ -15,25 +15,27 @@
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ClientOptions, PaginationOptions } from '../types'
+import { CURSOR_BASED_PAGINATION_FIELD, PAGE_SIZE } from '../../config'
 
-const { cursorPagination, cursorPaginationWithPages } = fetchUtils.request.pagination
+const { cursorPagination } = fetchUtils.request.pagination
 
 // TODO adjust - replace with the correct pagination function(s), remove unneeded ones
 
+export const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (current, next) =>
+  next === `${current}.json` || next === `${current}`
+
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
   cursor: {
-    funcCreator: () =>
-      cursorPagination({
-        pathChecker: fetchUtils.request.pagination.defaultPathChecker,
-        paginationField: 'links.next',
-      }),
+    // TODON see if can simplify and use the function directly
+    funcCreator: () => cursorPagination({ pathChecker, paginationField: 'next_page' }),
   },
-  next_page: {
-    funcCreator: () =>
-      cursorPaginationWithPages({
-        pathChecker: fetchUtils.request.pagination.defaultPathChecker, // TODO-daniel: swap this out for the 'real' default path checker?
-        url: 'hi', // where can i get the actual url?
-        paginationField: 'next_page',
-      }),
+  new_cursor: {
+    // TODON look under meta.has_more and do not continue if false!
+    funcCreator: () => cursorPagination({ pathChecker, paginationField: CURSOR_BASED_PAGINATION_FIELD }),
+    clientArgs: {
+      queryArgs: {
+        'page[size]': String(PAGE_SIZE),
+      },
+    },
   },
 }

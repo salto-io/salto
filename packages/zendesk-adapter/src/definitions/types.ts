@@ -19,7 +19,7 @@ import { definitions } from '@salto-io/adapter-components'
 
 export type AdditionalAction = never
 export type ClientOptions = 'main'
-export type PaginationOptions = 'cursor' | 'next_page'
+export type PaginationOptions = 'cursor' | 'new_cursor'
 // TODO set these to never if not needed
 export type ReferenceContextStrategies = 'parentType'
 export type CustomReferenceSerializationStrategyName = 'otherFieldName'

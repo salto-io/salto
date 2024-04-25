@@ -119,7 +119,6 @@ const createCustomizations = (): Record<
       {
         endpoint: { path: '/api/v2/views' },
         transformation: { root: 'views' },
-        // fileNameFields: ['title'],
       },
     ],
     resource: {
@@ -129,15 +128,21 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/workspaces/agent-workspace/views/{id}' },
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
         title: { hide: true },
-        // restriction: {
-        //   id: { fieldType: 'number', hide: true },
-        // },
-        //  idFields: ['title'],
-        // fileNameFields: ['title'], = elemID: { parts: [{ fieldName: 'label' }] } ?
+      },
+    },
+  },
+
+  view__restriction: {
+    element: {
+      fieldCustomizations: {
+        id: { fieldType: 'unknown' },
+        type: { fieldType: 'string', restrictions: { enforce_value: true, values: ['Group', 'User'] } },
       },
     },
   },
@@ -147,7 +152,6 @@ const createCustomizations = (): Record<
       {
         endpoint: { path: '/api/v2/triggers' },
         transformation: { root: 'triggers' },
-        // fileNameFields: ['title'],
       },
     ],
     resource: {
@@ -157,19 +161,27 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/triggers/{id}' },
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
-        trigger_category: {
-          standalone: {
-            typeName: 'trigger_category',
-            addParentAnnotation: false,
-            referenceFromParent: true,
-            nestPathUnderParent: false,
-          },
-        },
-        //  idFields: ['title'],
-        // fileNameFields: ['title'], = elemID: { parts: [{ fieldName: 'label' }] } ?
+      },
+    },
+  },
+
+  trigger__conditions__all: {
+    element: {
+      fieldCustomizations: {
+        is_user_value: { fieldType: 'boolean' },
+      },
+    },
+  },
+
+  trigger__conditions__any: {
+    element: {
+      fieldCustomizations: {
+        is_user_value: { fieldType: 'boolean' },
       },
     },
   },
@@ -188,10 +200,34 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/triggers' },
+        path: { pathParts: [{ parts: [{ fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'string', hide: true },
-        // fileNameFields: ['name'], = elemID: { parts: [{ fieldName: 'label' }] } ?
+      },
+    },
+  },
+
+  trigger_definition: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/triggers/definitions' },
+        transformation: { root: 'definitions' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/rules/automations/{id}' },
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+        singleton: true,
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
       },
     },
   },
@@ -210,14 +246,11 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/objects-rules/rules/automations/{id}' },
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
-        // restriction: {
-        //   id: { fieldType: 'number', hide: true },
-        // },
-        //  idFields: ['title'],
-        // fileNameFields: ['title'], = elemID: { parts: [{ fieldName: 'label' }] } ?
       },
     },
   },
@@ -229,18 +262,156 @@ const createCustomizations = (): Record<
         transformation: { root: 'targets' },
       },
     ],
-    resource: {
-      directFetch: true,
-    },
+    resource: { directFetch: true },
     element: {
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/apps-integrations/targets/targets' },
+        elemID: { parts: [{ fieldName: 'title' }, { fieldName: 'type' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
       },
     },
+  },
+
+  sla_policy: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/slas/policies' },
+        transformation: { root: 'sla_policies' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/rules/slas' },
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+      },
+      fieldCustomizations: { id: { fieldType: 'number', hide: true } },
+    },
+  },
+
+  sla_policy__filter__all: {
+    // value can be number or string
+    element: { fieldCustomizations: { value: { fieldType: 'unknown' } } },
+  },
+
+  sla_policy__filter__any: {
+    // value can be number or string
+    element: { fieldCustomizations: { value: { fieldType: 'unknown' } } },
+  },
+
+  sla_policies_definition: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/slas/policies/definitions' },
+        transformation: { root: 'value' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+      fieldCustomizations: { id: { hide: true } },
+    },
+  },
+
+  macro: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/macros', queryArgs: { access: 'shared' } },
+        transformation: { root: 'macros' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/workspaces/agent-workspace/macros/{id}' },
+        elemID: { parts: [{ fieldName: 'title' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'title' }] }] },
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        position: { omit: true },
+      },
+    },
+  },
+
+  macro_attachment: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'fileName' }] },
+      },
+      fieldCustomizations: { id: { fieldType: 'number', hide: true } },
+    },
+  },
+
+  macro_action: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/macros/actions' },
+        transformation: { root: '.' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+      },
+    },
+  },
+
+  macro_category: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/macros/categories' },
+        transformation: { root: 'categories' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+      },
+    },
+  },
+
+  macros_definitions: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/macros/definitions' },
+        transformation: { root: 'definitions' },
+      },
+    ],
+    resource: { directFetch: true },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+      },
+    },
+  },
+  macro__restriction: {
+    element: { fieldCustomizations: { id: { fieldType: 'unknown' } } },
   },
 
   brand: {
@@ -286,12 +457,12 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale' }] }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number' },
         default: { hide: true },
-        //      idFields: ['locale'],
-        //      fileNameFields: ['locale'],
       },
     },
   },
@@ -326,8 +497,6 @@ const createCustomizations = (): Record<
             values: ['accepted', 'declined', 'pending', 'inactive'],
           },
         },
-        //      idFields: ['locale'],
-        //      fileNameFields: ['locale'],
       },
     },
   },
@@ -345,6 +514,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'name' }, { fieldName: 'email', isReference: true }] },
       },
       fieldCustomizations: {
         id: { fieldType: 'number', hide: true },
@@ -364,7 +534,6 @@ const createCustomizations = (): Record<
         },
         domain_verification_status: {
           fieldType: 'string',
-          hide: true,
           restrictions: {
             enforce_value: true,
             values: ['unknown', 'verified', 'failed'],

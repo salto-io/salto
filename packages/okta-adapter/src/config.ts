@@ -306,10 +306,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   AppUserSchema: {
     deployRequests: {
-      // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator for removals
+      // Hack to pass through createCheckDeploymentBasedOnConfigValidator validator for removals and additions
       remove: {
         url: '',
         method: 'delete',
+      },
+      add: {
+        url: '',
+        method: 'post',
       },
       modify: {
         url: '/api/v1/meta/schemas/apps/{applicationId}/default',

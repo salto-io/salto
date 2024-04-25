@@ -150,6 +150,25 @@ describe('picklist standard field change validator', () => {
       expect(changeErrors).toHaveLength(1)
     })
 
+    it('should not have errors when omitStandardFieldsNonDeployableValues feature is enabled', async () => {
+      picklistStandardFieldValidator = changeValidator({
+        fetch: {
+          optionalFeatures: { omitStandardFieldsNonDeployableValues: true },
+        },
+      })
+      const beforeField = createField(
+        obj,
+        Types.primitiveDataTypes.Picklist,
+        'Standard',
+      )
+      const afterField = createAfterField(beforeField)
+      const changeErrors = await runChangeValidatorOnUpdate(
+        beforeField,
+        afterField,
+      )
+      expect(changeErrors).toBeEmpty()
+    })
+
     it('should have no error for StandardValueSet picklist standard field', async () => {
       const beforeField = createField(
         obj,

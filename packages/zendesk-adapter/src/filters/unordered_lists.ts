@@ -22,12 +22,14 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
   ARTICLE_TYPE_NAME,
   GROUP_TYPE_NAME,
   MACRO_TYPE_NAME,
+  ROUTING_ATTRIBUTE_TYPE_NAME,
   TICKET_FIELD_CUSTOM_FIELD_OPTION,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
@@ -83,6 +85,22 @@ const orderDynamicContentItems = (instances: InstanceElement[]): void => {
       )
     } else {
       log.warn(`could not sort variants for ${inst.elemID.getFullName()}`)
+    }
+  })
+}
+
+const orderRoutingAttributes = (instances: InstanceElement[]): void => {
+  const routingAttributeInstances = instances.filter(e => e.refType.elemID.name === ROUTING_ATTRIBUTE_TYPE_NAME)
+
+  routingAttributeInstances.forEach(inst => {
+    const { values } = inst.value
+    if (
+      _.isArray(values) &&
+      values.every(val => isResolvedReferenceExpression(val) && val.value.value.name !== undefined)
+    ) {
+      inst.value.values = _.sortBy(values, val => [val.value.value.name])
+    } else {
+      log.info(`could not sort values for ${inst.elemID.getFullName()}`)
     }
   })
 }
@@ -271,6 +289,7 @@ const filterCreator: FilterCreator = () => ({
     orderViewCustomFields(instances)
     orderArticleLabelNames(instances)
     orderAppInstallationsInWorkspace(instances)
+    orderRoutingAttributes(instances)
   },
 })
 

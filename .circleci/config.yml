@@ -36,7 +36,9 @@ commands:
               command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
           name: Run E2E tests for package << parameters.package_name >>
-          command: cd packages/<< parameters.package_name >> && yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
+          command: |
+            pushd packages/<< parameters.package_name >>
+            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
             SALTO_LOG_LEVEL: 'info'

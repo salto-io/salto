@@ -103,6 +103,10 @@ const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(
   AUTOMATION_RESPONSE_SCHEME,
   'Received an invalid automation import response',
 )
+type Component = {
+  children: Component[]
+  conditions: Component[]
+}
 
 type AssetComponent = {
   value: {
@@ -361,28 +365,52 @@ const updateAutomationLabels = async (
     await removeAutomationLabels(getChangeData(change), removedLabels, client, cloudId)
   }
 }
+const proccessComponentPreDeploy = (component: Component, config: JiraConfig): void => {
+  if (config.fetch.enableJSM && config.fetch.enableJSMPremium && isAssetComponent(component)) {
+    const schema = component.value.schemaId.value
+    component.value.schemaLabel = schema.value.name
+    component.value.workspaceId = schema.value.workspaceId
+    if (component.value.objectTypeId !== undefined) {
+      const objectType = component.value.objectTypeId.value
+      component.value.objectTypeLabel = objectType.value.name
+    }
+  }
+  if (config.fetch.enableJSM && isRequestTypeComponent(component)) {
+    const requestType = component.value.requestType.value
+    component.value.serviceDesk = requestType.value.serviceDeskId
+  }
+  if (component.children) {
+    component.children.forEach(child => proccessComponentPreDeploy(child, config))
+  }
+  if (component.conditions) {
+    component.conditions.forEach(child => proccessComponentPreDeploy(child, config))
+  }
+}
 const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig): void => {
   if (!instance.value.components) {
     return
   }
-  if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
-    const assetsComponents: AssetComponent[] = instance.value.components.filter(isAssetComponent)
-    assetsComponents.forEach(component => {
-      const schema = component.value.schemaId.value
-      component.value.schemaLabel = schema.value.name
-      component.value.workspaceId = schema.value.workspaceId
-      if (component.value.objectTypeId !== undefined) {
-        const objectType = component.value.objectTypeId.value
-        component.value.objectTypeLabel = objectType.value.name
-      }
-    })
+  instance.value.components.forEach((component: Component) => proccessComponentPreDeploy(component, config))
+}
+
+const proccessComponentPostDeploy = (component: Component, config: JiraConfig): void => {
+  if (
+    config.fetch.enableJSM &&
+    (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) &&
+    isAssetComponent(component)
+  ) {
+    delete component.value.schemaLabel
+    delete component.value.objectTypeLabel
+    delete component.value.workspaceId
   }
-  if (config.fetch.enableJSM) {
-    const requestTypeComponents: requestTypeComponent[] = instance.value.components.filter(isRequestTypeComponent)
-    requestTypeComponents.forEach(component => {
-      const requestType = component.value.requestType.value
-      component.value.serviceDesk = requestType.value.serviceDeskId
-    })
+  if (config.fetch.enableJSM && isRequestTypeComponent(component)) {
+    delete component.value.serviceDesk
+  }
+  if (component.children) {
+    component.children.forEach(child => proccessComponentPostDeploy(child, config))
+  }
+  if (component.conditions) {
+    component.conditions.forEach(child => proccessComponentPostDeploy(child, config))
   }
 }
 
@@ -390,20 +418,7 @@ const modifyComponentsPostDeploy = (instance: InstanceElement, config: JiraConfi
   if (!instance.value.components) {
     return
   }
-  if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
-    const assetsComponents: AssetComponent[] = instance.value.components.filter(isAssetComponent)
-    assetsComponents.forEach(component => {
-      delete component.value.schemaLabel
-      delete component.value.objectTypeLabel
-      delete component.value.workspaceId
-    })
-  }
-  if (config.fetch.enableJSM) {
-    const requestTypeComponents: requestTypeComponent[] = instance.value.components.filter(isRequestTypeComponent)
-    requestTypeComponents.forEach(component => {
-      delete component.value.serviceDesk
-    })
-  }
+  instance.value.components.forEach((component: Component) => proccessComponentPostDeploy(component, config))
 }
 
 const updateAutomation = async (

@@ -45,6 +45,7 @@ export const createClientDefinitions = (
           '/api/v2/recipient_addresses': { get: { pagination: 'new_cursor' } },
           '/api/v2/views': { get: { pagination: 'new_cursor' } },
           'api/v2/macros': { get: { pagination: 'new_cursor' } },
+          'api/v2/ticket_fields': { get: { pagination: 'new_cursor' } },
         },
       },
     },

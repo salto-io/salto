@@ -414,6 +414,125 @@ const createCustomizations = (): Record<
     element: { fieldCustomizations: { id: { fieldType: 'unknown' } } },
   },
 
+  ticket_form: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/ticket_forms' },
+        transformation: { root: 'ticket_forms' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/tickets/ticket-forms/edit/{id}' },
+      },
+      fieldCustomizations: {
+        name: { hide: true },
+        id: { fieldType: 'number', hide: true },
+        display_name: { omit: true },
+      },
+    },
+  },
+
+  custom_status: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/custom_statuses' },
+        transformation: { root: 'custom_statuses' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/tickets/ticket_statuses/edit/{id}' },
+        elemID: { parts: [{ fieldName: 'status_category' }, { fieldName: 'raw_agent_label' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'status_category' }, { fieldName: 'raw_agent_label' }] }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        end_user_label: { hide: true },
+        agent_label: { hide: true },
+        description: { hide: true },
+        end_user_description: { hide: true },
+        default: { hide: true },
+      },
+    },
+  },
+
+  ticket_field: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/ticket_fields' },
+        transformation: { root: 'ticket_fields' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        value: {
+          typeName: 'ticket_field__custom_field_options',
+          context: { args: { parent_id: { root: 'id' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/tickets/ticket-fields/{id}' },
+        elemID: { parts: [{ fieldName: 'raw_title' }, { fieldName: 'type' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'raw_title' }, { fieldName: 'type' }] }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        title: { hide: true },
+        position: { omit: true },
+        description: { omit: true },
+        title_in_portal: { omit: true },
+        // TODO may want to add back as part of SALTO-2895
+        custom_statuses: { omit: true },
+        custom_field_options: {
+          standalone: {
+            typeName: 'ticket_field__custom_field_options',
+            addParentAnnotation: true,
+            nestPathUnderParent: false,
+            referenceFromParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  ticket_field__custom_field_options: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        name: { omit: true },
+        value: {
+          fieldType: 'string',
+          restrictions: {
+            enforce_value: true,
+            // this regex will not allow the following characters to be in the string:
+            // & % $ # @ ! { } [ ] = + ( ) * ? < > , " ' ` ; \
+            regex: '^[^&%$#@\\! \\{\\}\\[\\]=\\+\\(\\)\\*\\?<>,"\'`;\\\\]+$',
+          },
+        },
+      },
+    },
+  },
+
   brand: {
     requests: [
       {

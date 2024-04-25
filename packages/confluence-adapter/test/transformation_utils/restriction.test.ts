@@ -70,7 +70,7 @@ describe('restriction transformation utils', () => {
     it('should return false when there is no restriction diff', () => {
       const change = toChange({
         after: new InstanceElement('mockType', objectType, { title: 'a', restriction: [] }),
-        before: new InstanceElement('mockType', objectType, { title: 'b',restriction: [] }),
+        before: new InstanceElement('mockType', objectType, { title: 'b', restriction: [] }),
       })
       expect(shouldDeleteRestrictionOnPageModification(createMockChangeAndContext(change))).toBe(false)
     })

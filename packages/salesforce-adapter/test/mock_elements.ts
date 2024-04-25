@@ -663,6 +663,14 @@ export const mockTypes = {
       },
     },
   }),
+  StandardValueSet: createMetadataObjectType({
+    annotations: {
+      metadataType: 'StandardValueSet',
+      dirName: 'standardValueSets',
+      suffix: 'svs',
+      hasMetaFile: true,
+    },
+  }),
 }
 
 export const lwcJsResourceContent =
@@ -838,6 +846,22 @@ export const mockDefaultValues = {
     description: 'Test Workflow Field Update Description',
     assignedTo: 'TestUser',
     status: 'Completed',
+  },
+  StandardValueSet: {
+    [INSTANCE_FULL_NAME_FIELD]: 'TestStandardValueSet',
+    sorted: false,
+    standardValue: [
+      {
+        fullName: 'TestStandardValue1',
+        default: true,
+        label: 'Test Standard Value 1',
+      },
+      {
+        fullName: 'TestStandardValue2',
+        default: false,
+        label: 'Test Standard Value 2',
+      },
+    ],
   },
 }
 

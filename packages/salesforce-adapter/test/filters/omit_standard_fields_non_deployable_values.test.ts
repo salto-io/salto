@@ -51,8 +51,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
             annotations: {
               apiName: STANDARD_PICKLIST_FIELD,
               valueSet: [
-                { label: 'value1', apiName: 'value1', default: true },
-                { label: 'value2', apiName: 'value2', default: false },
+                { fullName: 'value1', default: true, label: 'value1' },
               ],
             },
           },
@@ -61,8 +60,7 @@ describe('omitStandardFieldsNonDeployableValues filter', () => {
             annotations: {
               apiName: CUSTOM_PICKLIST_FIELD,
               valueSet: [
-                { label: 'value1', apiName: 'value1', default: true },
-                { label: 'value2', apiName: 'value2', default: false },
+                { fullName: 'value1', default: true, label: 'value1' },
               ],
             },
           },

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import {
@@ -35,18 +36,18 @@ const log = logger(module)
 const mapWorkflowsToReferencingSchemes = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Record<string, Set<ElemID>>> => {
-  const workflowNameToWorkflowScheme: Record<string, Set<ElemID>> = {}
+  const workflowNameToReferencingWorkflowSchemes: Record<string, Set<ElemID>> = {}
 
   await awu(await getInstancesFromElementSource(elementsSource, [WORKFLOW_SCHEME_TYPE_NAME])).forEach(scheme => {
     getWorkflowsFromWorkflowScheme(scheme).forEach(workflow => {
       const key = workflow.elemID.getFullName()
-      if (workflowNameToWorkflowScheme[key] === undefined) {
-        workflowNameToWorkflowScheme[key] = new Set<ElemID>()
+      if (workflowNameToReferencingWorkflowSchemes[key] === undefined) {
+        workflowNameToReferencingWorkflowSchemes[key] = new Set<ElemID>()
       }
-      workflowNameToWorkflowScheme[key].add(scheme.elemID)
+      workflowNameToReferencingWorkflowSchemes[key].add(scheme.elemID)
     })
   })
-  return workflowNameToWorkflowScheme
+  return workflowNameToReferencingWorkflowSchemes
 }
 
 export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async (changes, elementsSource) => {
@@ -60,11 +61,7 @@ export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async 
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isWorkflowV2Instance)
-    .filter(
-      workflow =>
-        workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()] !== undefined &&
-        workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()].size > 0,
-    )
+    .filter(workflow => !_.isEmpty(workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]))
     .map(workflow => ({
       elemID: workflow.elemID,
       severity: 'Error' as SeverityLevel,

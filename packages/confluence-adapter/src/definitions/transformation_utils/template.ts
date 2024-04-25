@@ -13,9 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
+import { definitions } from '@salto-io/adapter-components'
+import { assertValue } from './generic'
 
-export * from './generic'
-export * from './page'
-export * from './label'
-export * from './restriction'
-export * from './template'
+/**
+ * Add space.key to a template request
+ */
+export const addSpaceKey: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value, context }) => ({
+  value: {
+    ...assertValue(value),
+    space: {
+      key: _.get(context.additionalContext, 'space_key'),
+    },
+  },
+})

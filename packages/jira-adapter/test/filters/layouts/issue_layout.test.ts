@@ -275,7 +275,7 @@ describe('issue layout filter', () => {
       ]
     })
     it('should return the correct request', async () => {
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(Object.entries(res)).toHaveLength(1)
       expect(res['11111'][11]).toBeDefined()
       const resolvedRes = await res['11111'][11]
@@ -283,7 +283,7 @@ describe('issue layout filter', () => {
     })
     it('should return the correct request if there are multiple projects', async () => {
       elements.push(projectInstance2)
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(Object.entries(res)).toHaveLength(2)
       expect(res['11111'][11]).toBeDefined()
       expect(res['22222'][12]).toBeDefined()
@@ -291,7 +291,7 @@ describe('issue layout filter', () => {
     it('should return the correct answer if there are multiple issueLayouts in the same project', async () => {
       projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 2222 } }
       projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 20 } }
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(Object.entries(res)).toHaveLength(1)
       expect(Object.entries(res['11111'])).toHaveLength(2)
       expect(res['11111'][11]).toBeDefined()
@@ -302,7 +302,7 @@ describe('issue layout filter', () => {
         status: 200,
         data: {},
       }))
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(Object.entries(res)).toHaveLength(1)
       expect(res['11111'][11]).toBeDefined()
       const resolvedRes = await res['11111'][11]
@@ -312,7 +312,7 @@ describe('issue layout filter', () => {
       mockGet.mockImplementation(() => {
         throw new Error('err')
       })
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(Object.entries(res)).toHaveLength(1)
       expect(res['11111'][11]).toBeDefined()
       const resolvedRes = await res['11111'][11]
@@ -320,19 +320,29 @@ describe('issue layout filter', () => {
     })
     it('should return empty if there are no issueTypeScreenScheme', async () => {
       projectInstance1.value.issueTypeScreenScheme = undefined
-      const res = await getLayoutRequestsAsync(client, config, fetchQuery, [projectInstance1])
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, [projectInstance1])
       expect(res).toBeEmpty()
+    })
+    it('should not fail if the project does not have an issueTypeScheme', async () => {
+      projectInstance1.value.issueTypeScheme = undefined
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(res).toEqual({ 11111: {} })
+    })
+    it('should not fail if issueTypeScheme does not have issueTypeIds', async () => {
+      issueTypeSchemeInstance1.value.issueTypeIds = undefined
+      const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(res).toEqual({ 11111: {} })
     })
     it('should not fetch issue layouts if it disabled', async () => {
       const configWithEnableFalse = getDefaultConfig({ isDataCenter: false })
       configWithEnableFalse.fetch.enableIssueLayouts = false
-      const res = await getLayoutRequestsAsync(client, configWithEnableFalse, fetchQuery, elements)
+      const res = getLayoutRequestsAsync(client, configWithEnableFalse, fetchQuery, elements)
       expect(res).toBeEmpty()
     })
     it('should not fetch issue layouts if it was excluded', async () => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       fetchQuery.isTypeMatch.mockReturnValue(false)
-      await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      getLayoutRequestsAsync(client, config, fetchQuery, elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
     it('should not fetch issue layouts if it is a data center instance', async () => {
@@ -345,7 +355,7 @@ describe('issue layout filter', () => {
           adapterContext,
         }),
       ) as FilterType
-      await getLayoutRequestsAsync(mockClient(true).client, configWithDataCenterTrue, fetchQuery, elements)
+      getLayoutRequestsAsync(mockClient(true).client, configWithDataCenterTrue, fetchQuery, elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
 
@@ -354,7 +364,7 @@ describe('issue layout filter', () => {
         issueTypeScreenSchemeInstance1.value.issueTypeMappings[0] = { issueTypeId: 100, screenSchemeId: 111 }
         projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
-        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
         expect(res['11111']).toEqual({
           undefined: Promise.resolve({ data: {} }),
@@ -365,7 +375,7 @@ describe('issue layout filter', () => {
         projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
 
-        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
         expect(Object.entries(res['11111'])).toHaveLength(1)
         expect(res['11111'][12]).toBeDefined()
@@ -375,7 +385,7 @@ describe('issue layout filter', () => {
         projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 1111 } }
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
 
-        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
         expect(Object.entries(res['11111'])).toHaveLength(1)
         expect(res['11111'][11]).toBeDefined()
@@ -387,7 +397,7 @@ describe('issue layout filter', () => {
         ]
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 20 } }
 
-        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
         expect(Object.entries(res['11111'])).toHaveLength(2)
         expect(res['11111'][11]).toBeDefined()
@@ -400,7 +410,7 @@ describe('issue layout filter', () => {
         ]
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
 
-        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
         expect(Object.entries(res['11111'])).toHaveLength(1)
         expect(res['11111'][11]).toBeDefined()
@@ -410,7 +420,7 @@ describe('issue layout filter', () => {
         projectInstance1.value.issueTypeScreenScheme = { issueTypeScreenScheme: { id: 2222 } }
         projectInstance1.value.issueTypeScheme = { issueTypeScheme: { id: 10 } }
 
-        const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+        const res = getLayoutRequestsAsync(client, config, fetchQuery, elements)
         expect(Object.entries(res)).toHaveLength(1)
         expect(Object.entries(res['11111'])).toHaveLength(1)
         expect(res['11111'][12]).toBeDefined()
@@ -504,6 +514,13 @@ describe('issue layout filter', () => {
         11111: {
           11: {},
         },
+      }
+      await layoutFilter.onFetch(elements)
+      expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()
+    })
+    it('should not fail if a project does not have any screens', async () => {
+      adapterContext.layoutsPromise = {
+        11111: {},
       }
       await layoutFilter.onFetch(elements)
       expect(elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)).toBeUndefined()

@@ -20,6 +20,7 @@ import { hideTypesFilterCreator } from './hide_types'
 import { defaultDeployFilterCreator } from './default_deploy'
 import { FieldReferenceResolverCreator, fieldReferencesFilterCreator } from './field_references'
 import { queryFilterCreator } from './query'
+import { sortListsFilterCreator } from './sort_lists'
 import {
   ResolveReferenceSerializationStrategyLookup,
   ResolveReferenceContextStrategiesType,
@@ -60,6 +61,8 @@ export const createCommonFilters = <
   fieldReferencesFilter: fieldReferencesFilterCreator(referenceRules, fieldReferenceResolverCreator),
   // referencedInstanceNames should run after fieldReferencesFilter
   referencedInstanceNames: referencedInstanceNamesFilterCreator(),
+  // sortListsFilter should run after fieldReferencesFilter as it might sort list fields by reference properties
+  sortListsFilter: sortListsFilterCreator(),
   serviceUrl: serviceUrlFilterCreator(),
   addAlias: addAliasFilterCreator(),
 

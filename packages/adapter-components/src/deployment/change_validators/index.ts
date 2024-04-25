@@ -19,5 +19,5 @@ export { createCheckDeploymentBasedOnConfigValidator } from './check_deployment_
 export { createCheckDeploymentBasedOnDefinitionsValidator } from './check_deployment_based_on_definitions'
 export { createSkipParentsOfSkippedInstancesValidator } from './skip_parents_of_skipped_instances'
 export { createOutgoingUnresolvedReferencesValidator } from './outgoing_unresolved_references'
-export { getDefaultChangeValidators } from './default_change_validators'
+export { getDefaultChangeValidators, DEFAULT_CHANGE_VALIDATORS } from './default_change_validators'
 export { createChangeValidator, ValidatorsActivationConfig } from './create_change_validator'

@@ -101,7 +101,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
       .filter(e => e.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
       .map(issueTypeScheme => [
         issueTypeScheme.value.id,
-        issueTypeScheme.value.issueTypeIds.map(
+        issueTypeScheme.value.issueTypeIds?.map(
           (issueTypeIdRecord: Record<string, string>) => issueTypeIdRecord.issueTypeId,
         ),
       ]),
@@ -225,30 +225,33 @@ const deployLayoutChange = async (change: Change<InstanceElement>, client: JiraC
   throw Error('Failed to deploy issue layout changes due to missing references')
 }
 
-const getProjectIdToProjectDict = async (elements: Element[]): Promise<Value> =>
+const getProjectIdToProjectDict = (elements: Element[]): Value =>
   Object.fromEntries(
-    (
-      await Promise.all(
-        elements
-          .filter(e => e.elemID.typeName === PROJECT_TYPE)
-          .filter(isInstanceElement)
-          .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
-          .map(async project => [project.value.id, project]),
-      )
-    ).filter(isDefined),
+    elements
+      .filter(e => e.elemID.typeName === PROJECT_TYPE)
+      .filter(isInstanceElement)
+      .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
+      .map(project => [project.value.id, project])
+      .filter(isDefined),
   )
 
-export const getLayoutRequestsAsync = async (
+const projectIdMapToString = (projectIdMap: Value): string =>
+  Object.entries(projectIdMap)
+    .map(([key, _val]) => `${key}`)
+    .join(', ')
+
+export const getLayoutRequestsAsync = (
   client: JiraClient,
   config: JiraConfig,
   fetchQuery: elementUtils.query.ElementQuery,
   elements: Element[],
-): Promise<ResponsesRecord> => {
+): ResponsesRecord => {
   if (client.isDataCenter || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE) || !config.fetch.enableIssueLayouts) {
     return {}
   }
 
-  const projectIdToProject = await getProjectIdToProjectDict(elements)
+  const projectIdToProject = getProjectIdToProjectDict(elements)
+  log.trace(`projectIdToProject (in getLayoutRequestsAsync): ${projectIdMapToString(projectIdToProject)}`)
 
   const projectToScreenId = Object.fromEntries(
     Object.entries(getProjectToScreenMappingUnresolved(elements)).filter(([key]) =>
@@ -283,16 +286,21 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
     if (client.isDataCenter || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE) || !config.fetch.enableIssueLayouts) {
       return
     }
-    const projectIdToProject = await getProjectIdToProjectDict(elements)
+    const projectIdToProject = getProjectIdToProjectDict(elements)
+    log.trace(`projectIdToProject (in issueLayoutFilter): ${projectIdMapToString(projectIdToProject)}`)
     const { subTypes, layoutType: issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
-    const responses = (await adapterContext.layoutsPromise) as ResponsesRecord
+    const responses = adapterContext.layoutsPromise as ResponsesRecord
 
     const issueLayouts = (
       await Promise.all(
         Object.entries(responses).flatMap(([projectId, projectScreens]) =>
           Object.entries(projectScreens).map(async ([screenId, responsePromise]) => {
+            if (projectIdToProject[projectId] === undefined) {
+              log.error(`Project with id ${projectId} was not found in projectIdToProject`)
+              return undefined
+            }
             const response = await responsePromise
             const layoutInstance = await getLayout({
               extraDefinerId: screenId,

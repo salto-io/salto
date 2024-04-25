@@ -38,13 +38,25 @@ describe('changeDependenciesFromPoliciesAndRulesToPriority', () => {
         id: '1',
         name: 'policyInstance',
       })
+      const anotherPolicyInstanceBefore = new InstanceElement('anotherPolicyInstance', policyType, {
+        id: '2',
+        name: 'anotherPolicyInstance',
+      })
       const policyInstanceAfter = policyInstanceBefore.clone()
+      const anotherPolicyInstanceAfter = anotherPolicyInstanceBefore.clone()
       policyInstanceAfter.value.name = 'policyInstance2'
+      anotherPolicyInstanceAfter.value.name = 'anotherPolicyInstance2'
       const priorityInstanceBefore = new InstanceElement('priorityInstance', priorityType, {
-        priorities: [new ReferenceExpression(policyInstanceBefore.elemID, policyInstanceBefore)],
+        priorities: [
+          new ReferenceExpression(policyInstanceBefore.elemID, policyInstanceBefore),
+          new ReferenceExpression(anotherPolicyInstanceBefore.elemID, anotherPolicyInstanceBefore),
+        ],
       })
       const priorityInstanceAfter = priorityInstanceBefore.clone()
-      priorityInstanceAfter.value.priorities = []
+      priorityInstanceAfter.value.priorities = [
+        new ReferenceExpression(anotherPolicyInstanceAfter.elemID, anotherPolicyInstanceAfter),
+        new ReferenceExpression(policyInstanceAfter.elemID, policyInstanceAfter),
+      ]
       const inputChanges = new Map([
         [0, toChange({ before: policyInstanceBefore, after: policyInstanceAfter })],
         [1, toChange({ before: priorityInstanceBefore, after: priorityInstanceAfter })],

@@ -278,23 +278,45 @@ describe('buildS3DirectoryStore', () => {
         Body: Buffer.from('aaa'),
       })
     })
-
-    it('should write the file only once', async () => {
+  })
+  describe('when deleting the file and then setting the file', () => {
+    it('should wrirte the file', async () => {
+      await directoryStore.delete('a/b')
       await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
 
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
       expect(putObjectMock).not.toHaveBeenCalled()
-
       await directoryStore.flush()
 
+      expect(deleteManyObjectsMock).not.toHaveBeenCalled()
       expect(putObjectMock).toHaveBeenCalledWith({
         Bucket: bucketName,
         Key: 'baseDir/a/b',
         Body: Buffer.from('aaa'),
       })
+    })
+    describe('when setting the file and then deleting the file', () => {
+      it('should delete the file with a single API call', async () => {
+        await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
+        await directoryStore.delete('a/b')
 
-      await directoryStore.flush()
+        expect(deleteManyObjectsMock).not.toHaveBeenCalled()
+        expect(putObjectMock).not.toHaveBeenCalled()
 
-      expect(putObjectMock).toHaveBeenCalledTimes(1)
+        await directoryStore.flush()
+        expect(deleteManyObjectsMock).toHaveBeenCalledWith({
+          Bucket: bucketName,
+          Delete: {
+            Objects: [{ Key: 'baseDir/a/b' }],
+          },
+        })
+        expect(putObjectMock).not.toHaveBeenCalled()
+      })
+      it('should not get the file', async () => {
+        await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
+        await directoryStore.delete('a/b')
+        expect(await directoryStore.get('a/b')).toBeUndefined()
+      })
     })
   })
 })

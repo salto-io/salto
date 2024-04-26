@@ -90,7 +90,7 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
       res.accounts = res.accounts.concat(data.updateDates.flatMap(Object.keys))
     }
     if (data.versions !== undefined) {
-      log.trace('Old format state file contains the OSS version information')
+      log.trace('Old format state file contains the Salto version information')
     }
   }
 
@@ -198,7 +198,8 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    stateData.accounts = _.union(stateData.accounts, res.accounts)
+    await stateData.accounts.clear()
+    await stateData.accounts.setAll(res.accounts.map(account => ({ key: account, value: account })))
     await stateData.saltoMetadata.set('hash', newHash)
   }
 

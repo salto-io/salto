@@ -43,8 +43,11 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
   }
 
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
+    if (!accounts) {
+      return
+    }
     const data = await stateData()
-    data.accounts = _.union(accounts ?? [], data.accounts)
+    await data.accounts.setAll(accounts.map(account => ({ key: account, value: account })))
   }
 
   const updateStatePathIndex = async (
@@ -134,7 +137,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    existingAccounts: async (): Promise<string[]> => (await stateData()).accounts,
+    existingAccounts: async (): Promise<string[]> => awu((await stateData()).accounts.keys()).toArray(),
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {
@@ -142,7 +145,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
       await currentStateData.topLevelPathIndex.clear()
-      currentStateData.accounts.length = 0
+      await currentStateData.accounts.clear()
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },

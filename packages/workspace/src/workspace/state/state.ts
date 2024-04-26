@@ -24,7 +24,7 @@ export type UpdateStateElementsArgs = {
 
 export type StateData = {
   elements: RemoteElementSource
-  accounts: string[]
+  accounts: RemoteMap<string>
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
@@ -84,7 +84,12 @@ export const buildStateData = async (
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  accounts: [],
+  accounts: await remoteMapCreator<string>({
+    namespace: createStateNamespace(envName, 'service_names'),
+    serialize: async data => data,
+    deserialize: async data => data,
+    persistent,
+  }),
   saltoMetadata: await remoteMapCreator<string, 'version'>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: async data => data,

@@ -38,7 +38,9 @@ export const mockState = (
   state.buildInMemState(async () => ({
     elements: elementSource.createInMemoryElementSource(elements),
     pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
-    accounts,
+    accounts: new remoteMap.InMemoryRemoteMap<string, string>(
+      accounts.map(account => ({ key: account, value: account })),
+    ),
     saltoMetadata: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
     staticFilesSource: mockStaticFilesSource(),
     topLevelPathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),

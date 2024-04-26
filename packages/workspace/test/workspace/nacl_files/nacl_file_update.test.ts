@@ -27,6 +27,7 @@ import {
   getNestedStaticFiles,
   getChangeLocations,
   DetailedChangeWithSource,
+  updateNaclFileData,
 } from '../../../src/workspace/nacl_files/nacl_file_update'
 
 const mockType = new ObjectType({
@@ -107,6 +108,167 @@ describe('getChangeLocations', () => {
       expect(result[0].location.start).toEqual({ col: 1, line: Infinity, byte: Infinity })
       expect(result[0].location.end).toEqual({ col: 1, line: Infinity, byte: Infinity })
       expect(result[0].location.filename).toEqual('unsorted.nacl')
+    })
+  })
+})
+
+describe('updateNaclFileData', () => {
+  let changes: DetailedChangeWithSource[]
+
+  const mockTypeNacl = `type salto.mock {
+  string file {
+  }
+  "List<number>" numArray {
+  }
+  "List<string>" strArray {
+  }
+  "List<salto.obj>" obj {
+  }
+}
+`
+
+  const mockTypeMissingEndNacl = `type salto.mock {
+  string file {
+  }
+  "List<number>" numArray {
+  }
+  "List<string>" strArray {
+  }
+}
+`
+  const mockTypeMissingMiddleNacl = `type salto.mock {
+  string file {
+  }
+  "List<string>" strArray {
+  }
+  "List<salto.obj>" obj {
+  }
+}
+`
+
+  describe('when the data is empty and there is an element addition', () => {
+    beforeEach(() => {
+      changes = [
+        {
+          ...toChange({ after: mockType }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: Infinity, byte: Infinity },
+            end: { col: 1, line: Infinity, byte: Infinity },
+          },
+        },
+      ]
+    })
+
+    it('should add the element to the data', async () => {
+      const result = await updateNaclFileData('', changes, {})
+      expect(result).toEqual(mockTypeNacl)
+    })
+  })
+
+  describe('when data contains an element which is removed', () => {
+    beforeAll(() => {
+      changes = [
+        {
+          ...toChange({ before: mockType }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 0, line: 0, byte: 0 },
+            end: { col: 1, line: 10, byte: mockTypeNacl.length },
+          },
+        },
+      ]
+    })
+
+    it('should return an empty result', async () => {
+      const result = await updateNaclFileData(mockTypeNacl, changes, {})
+      expect(result).toEqual('')
+    })
+  })
+
+  describe('when data contains an element to which fields are added at the end', () => {
+    beforeAll(() => {
+      changes = [
+        {
+          ...toChange({ after: mockType.fields.obj }),
+          id: mockType.fields.obj.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: 7, byte: 102 },
+            end: { col: 1, line: 7, byte: 102 },
+          },
+        },
+      ]
+    })
+
+    it('should add the fields to the element', async () => {
+      const result = await updateNaclFileData(mockTypeMissingEndNacl, changes, {})
+      expect(result).toEqual(mockTypeNacl)
+    })
+  })
+
+  describe('when data contains an element to which fields are added in the middle', () => {
+    beforeAll(() => {
+      changes = [
+        {
+          ...toChange({ after: mockType.fields.numArray }),
+          id: mockType.fields.numArray.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: 3, byte: 38 },
+            end: { col: 1, line: 3, byte: 38 },
+          },
+        },
+      ]
+    })
+
+    it('should add the fields to the element', async () => {
+      const result = await updateNaclFileData(mockTypeMissingMiddleNacl, changes, {})
+      expect(result).toEqual(mockTypeNacl)
+    })
+  })
+
+  describe('when data contains an element from which a field is removed at the end', () => {
+    beforeAll(() => {
+      changes = [
+        {
+          ...toChange({ before: mockType.fields.obj }),
+          id: mockType.fields.obj.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 2, line: 7, byte: 102 },
+            end: { col: 2, line: 8, byte: 131 },
+          },
+        },
+      ]
+    })
+
+    it('should remove the field and preceding whitespaces from the element', async () => {
+      const result = await updateNaclFileData(mockTypeNacl, changes, {})
+      expect(result).toEqual(mockTypeMissingEndNacl)
+    })
+  })
+
+  describe('when data contains an element from which a field is removed in the middle', () => {
+    beforeAll(() => {
+      changes = [
+        {
+          ...toChange({ before: mockType.fields.numArray }),
+          id: mockType.fields.numArray.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 2, line: 3, byte: 39 },
+            end: { col: 2, line: 4, byte: 69 },
+          },
+        },
+      ]
+    })
+
+    it('should remove the field and preceding whitespaces from the element', async () => {
+      const result = await updateNaclFileData(mockTypeNacl, changes, {})
+      expect(result).toEqual(mockTypeMissingMiddleNacl)
     })
   })
 })

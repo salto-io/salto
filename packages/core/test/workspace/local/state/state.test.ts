@@ -55,8 +55,8 @@ const mockStateContent = async ({
   extraLine,
 }: MockStateContentArgs): Promise<Buffer> => {
   const elementsLine = await serialization.serialize(elements)
-  const dateLine = safeJsonStringify(elements[0].elemID.adapter)
-  const lines = [elementsLine, dateLine, pathIndexLine]
+  const accountsLine = safeJsonStringify(elements[0].elemID.adapter)
+  const lines = [elementsLine, accountsLine, pathIndexLine]
   if (extraLine !== undefined) {
     lines.push(extraLine)
   }

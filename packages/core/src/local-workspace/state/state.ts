@@ -88,7 +88,7 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
             //   "0.1.2"
             // We do not expect this in new-format files, but keep the code here so older state files are parsed as valid.
             // once we are certain all state files are updated, we can remove the `key === 3` section.
-            log.trace('Old format state file contains the Salto version information')
+            log.trace('Old format state file %s contains the Salto version information', name)
           } else {
             log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
           }
@@ -156,7 +156,8 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    stateData.accounts = _.union(stateData.accounts, res.accounts)
+    await stateData.accounts.clear()
+    await stateData.accounts.setAll(res.accounts.map(account => ({ key: account, value: account })))
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
@@ -210,7 +211,7 @@ export const localState = (
       yield* yieldWithEOL([
         accountToElementStreams[account],
         awu(safeJsonStringify(account)),
-        accountToPathIndex[account] || '[]',
+        accountToPathIndex[account] || awu(['[]']),
       ])
       log.debug(`finished dumping state text [#elements=${elements.length}]`)
     }

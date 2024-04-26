@@ -22,6 +22,7 @@ import {
   CORE_ANNOTATIONS,
   ElemID,
   ReadOnlyElementsSource,
+  ChangeError,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../src/client/client'
@@ -65,6 +66,7 @@ describe('issue layouts validator', () => {
   let changeIssueLayout2: Change
   let elementSource: ReadOnlyElementsSource
   let client: JiraClient
+  let error: ChangeError
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -237,6 +239,13 @@ describe('issue layouts validator', () => {
     ]
 
     elementSource = buildElementsSourceFromElements(elements)
+
+    error = {
+      elemID: issueLayoutInstance1.elemID,
+      severity: 'Error',
+      message: 'Invalid screen in Issue Layout',
+      detailedMessage: 'This issue layout references an invalid or non-existing screen.',
+    }
   })
   it('should not return error when issue layout is linked to relevant project screens', async () => {
     const errors = await validator([changeIssueLayout1], elementSource)
@@ -246,7 +255,7 @@ describe('issue layouts validator', () => {
     issueTypeScreenSchemeInstance1.value.issueTypeMappings = []
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
-    expect(errors[0].elemID).toEqual(issueLayoutInstance1.elemID)
+    expect(errors).toEqual([error])
   })
   it('should not return error if the issue layout is linked to the view screen', async () => {
     issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
@@ -275,18 +284,23 @@ describe('issue layouts validator', () => {
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
-  it('should return error and not abort if the project as no issueTypeScheme', async () => {
+  it('should return error and not abort if the project has no issueTypeScheme', async () => {
     delete projectInstance1.value.issueTypeScheme
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
-  it('should return error and not abort if the project as no issueTypeScreenScheme', async () => {
+  it('should return error and not abort if the project has no issueTypeScreenScheme', async () => {
     delete projectInstance1.value.issueTypeScreenScheme
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
-  it('should return error and not abort if the issueLayout as no extraDefinerId', async () => {
+  it('should return error and not abort if the issueLayout has no extraDefinerId', async () => {
     delete issueLayoutInstance1.value.extraDefinerId
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the issueTypeScheme has no issueTypeIds', async () => {
+    issueTypeSchemeInstance1.value.issueTypeIds = []
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
@@ -322,8 +336,28 @@ describe('issue layouts validator', () => {
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
-  it('should return error and not abort if the issueLayout as no parent list', async () => {
+  it('should return error and not abort if the issueLayout has no parent list', async () => {
     delete issueLayoutInstance1.annotations[CORE_ANNOTATIONS.PARENT]
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error the project has no issueTypeScheme', async () => {
+    delete projectInstance1.value.issueTypeScheme
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error the project has no issueTypeScreenScheme', async () => {
+    delete projectInstance1.value.issueTypeScreenScheme
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the issueTypeMappings of the issueTypeScreenScheme are empty', async () => {
+    issueTypeScreenSchemeInstance1.value.issueTypeMappings = []
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the issueTypeMappings of the issueTypeScreenScheme are undefined', async () => {
+    delete issueTypeScreenSchemeInstance1.value.issueTypeMappings
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })
@@ -334,6 +368,51 @@ describe('issue layouts validator', () => {
   })
   it('should return error and not abort if the issueTypes in the issueTypeScheme are numbers', async () => {
     issueTypeSchemeInstance1.value.issueTypeIds = [1]
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the issueTypeScreenScheme of the project is not ReferenceExpression', async () => {
+    projectInstance1.value.issueTypeScreenScheme = 'issueTypeScreenScheme1'
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the issueTypeScheme of the project is not ReferenceExpression', async () => {
+    projectInstance1.value.issueTypeScheme = 'issueTypeScheme1'
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the issueTypeId of the issueTypeMappings of the issueTypeScreenScheme are not ReferenceExpression', async () => {
+    issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
+      {
+        issueTypeId: 'issueType1',
+        screenSchemeId: new ReferenceExpression(screenSchemeInstance2.elemID, screenSchemeInstance2),
+      },
+    ]
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the screenSchemeId of the issueTypeMappings of the issueTypeScreenScheme are not ReferenceExpression', async () => {
+    issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
+      {
+        issueTypeId: new ReferenceExpression(issueTypeInstance1.elemID, issueTypeInstance1),
+        screenSchemeId: 'screenScheme2',
+      },
+    ]
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the screen of the screenScheme is not ReferenceExpression', async () => {
+    screenSchemeInstance2.value.screens = { default: 'screen1' }
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the parent of the issueLayout is not ReferenceExpression', async () => {
+    issueLayoutInstance1.annotations[CORE_ANNOTATIONS.PARENT] = ['project1']
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
+  })
+  it('should return error and not abort if the extraDefinerId of the issueLayout is not ReferenceExpression', async () => {
+    issueLayoutInstance1.value.extraDefinerId = 'screen1'
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
   })

@@ -25,11 +25,13 @@ import {
   ReadOnlyElementsSource,
   CORE_ANNOTATIONS,
   ElemID,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ISSUE_LAYOUT_TYPE } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
+import { isRelevantMapping } from '../filters/layouts/issue_layout'
 
 type issueTypeMappingStruct = {
   issueTypeId: string | ReferenceExpression
@@ -41,19 +43,12 @@ const parentElemID = (instance: InstanceElement): ElemID | undefined =>
 
 // Filters and deletes from the issueTypeMapping the issue layouts that are not in the issueTypeScheme of the project
 const isIssueTypeInIssueTypeScheme = (
-  issueTypeMapping: issueTypeMappingStruct,
+  issueTypeId: ReferenceExpression | string,
   projectIssueTypesFullName: string[],
 ): boolean =>
-  _.isString(issueTypeMapping.issueTypeId) ||
-  projectIssueTypesFullName?.includes(issueTypeMapping.issueTypeId?.elemID.getFullName())
-
-// temporary will be used from the filter
-const isRelevantMapping = (
-  issueTypeScreenScheme: issueTypeMappingStruct,
-  relevantIssueTypeMappingsLength: number,
-  projectIssueTypesFullNameLength: number,
-): boolean =>
-  issueTypeScreenScheme.issueTypeId !== 'default' || relevantIssueTypeMappingsLength <= projectIssueTypesFullNameLength
+  isReferenceExpression(issueTypeId)
+    ? projectIssueTypesFullName?.includes(issueTypeId?.elemID.getFullName())
+    : issueTypeId === 'default'
 
 const getIssueLayoutsListByProject = (changes: ReadonlyArray<Change>): InstanceElement[][] =>
   Object.values(
@@ -72,31 +67,36 @@ const getProjectIssueLayoutsScreensName = async (
   projectElemID: ElemID | undefined,
 ): Promise<string[]> => {
   const project = projectElemID !== undefined ? await elementsSource.get(projectElemID) : undefined
-  if (project === undefined) return []
-  const projectIssueTypesFullName =
-    project.value.issueTypeScheme !== undefined
-      ? (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds
-          ?.filter(
-            (issueType: ReferenceExpression | number | string) =>
-              typeof issueType !== 'string' && typeof issueType !== 'number',
-          )
-          ?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
-      : []
+  if (
+    project?.value.issueTypeScheme === undefined ||
+    project.value.issueTypeScreenScheme === undefined ||
+    !isReferenceExpression(project.value.issueTypeScreenScheme) ||
+    !isReferenceExpression(project.value.issueTypeScheme)
+  )
+    return []
+  const projectIssueTypesFullName = (await elementsSource.get(project.value.issueTypeScheme.elemID))?.value.issueTypeIds
+    ?.filter(isReferenceExpression)
+    ?.map((issueType: ReferenceExpression) => issueType.elemID.getFullName())
 
   const relevantIssueTypeMappings = (
     (await Promise.all(
-      project.value.issueTypeScreenScheme !== undefined
-        ? (await elementsSource.get(project.value.issueTypeScreenScheme.elemID))?.value.issueTypeMappings ?? []
-        : [],
+      (await elementsSource.get(project.value.issueTypeScreenScheme.elemID))?.value.issueTypeMappings ?? [],
     )) as issueTypeMappingStruct[]
-  ).filter(issueTypeScreenScheme => isIssueTypeInIssueTypeScheme(issueTypeScreenScheme, projectIssueTypesFullName))
+  ).filter(issueTypeScreenScheme =>
+    isIssueTypeInIssueTypeScheme(issueTypeScreenScheme.issueTypeId, projectIssueTypesFullName),
+  )
 
   return (
     await Promise.all(
       relevantIssueTypeMappings
         .filter(issueTypeScreenScheme =>
-          isRelevantMapping(issueTypeScreenScheme, relevantIssueTypeMappings.length, projectIssueTypesFullName.length),
+          isRelevantMapping(
+            issueTypeScreenScheme.issueTypeId,
+            relevantIssueTypeMappings.length,
+            projectIssueTypesFullName.length,
+          ),
         )
+        .filter(issueTypeMapping => isReferenceExpression(issueTypeMapping.screenSchemeId))
         .map(issueTypeMapping => elementsSource.get(issueTypeMapping.screenSchemeId.elemID)),
     )
   )
@@ -106,6 +106,7 @@ const getProjectIssueLayoutsScreensName = async (
         screenScheme.value.screens?.default !== undefined || screenScheme.value.screens?.view !== undefined,
     )
     .flatMap((screenScheme: InstanceElement) => screenScheme.value.screens.view ?? screenScheme.value.screens.default)
+    .filter(isReferenceExpression)
     .map((screen: ReferenceExpression) => screen.elemID.getFullName())
 }
 
@@ -131,7 +132,7 @@ export const issueLayoutsValidator: (client: JiraClient, config: JiraConfig) => 
           instances
             .filter(
               issueLayoutInstance =>
-                issueLayoutInstance.value.extraDefinerId === undefined ||
+                !isReferenceExpression(issueLayoutInstance.value.extraDefinerId) ||
                 !issueLayoutsScreens.includes(issueLayoutInstance.value.extraDefinerId.elemID.getFullName()),
             )
             .map(async issueLayoutInstance => {

@@ -16,15 +16,17 @@
 import _ from 'lodash'
 import {
   Change,
-  DeployResult,
   getChangeData,
   InstanceElement,
   isAdditionChange,
   isModificationChange,
   isRemovalChange,
+  isSaltoError,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { ResponseResult } from '@salto-io/adapter-components/src/deployment'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
@@ -81,60 +83,56 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
 
-    const isAdditionOfAlteredDynamicContentItem = (item: Change<InstanceElement>): boolean =>
-      isAdditionChange(item) &&
-      getChangeData(item).value.placeholder !== nameToPlaceholder(getChangeData(item).value.title)
+    const isAdditionOfAlteredDynamicContentItem = (change: Change<InstanceElement>): boolean =>
+      isAdditionChange(change) &&
+      getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME &&
+      getChangeData(change).value.placeholder !== nameToPlaceholder(getChangeData(change).value.name)
 
-    const alterDynamicContentAddition = async (change: Change<InstanceElement>): Promise<DeployResult> => {
-      const changeData = getChangeData(change)
-      const newAdditionChange = changeData.clone()
-      const newModificationChange = newAdditionChange.clone()
-      newAdditionChange.value.name = placeholderToName(newModificationChange.value.placeholder)
+    // When adding a dynamic content item, Zendesk always takes the name and creates the placeholder using it, disregarding what we give it.
+    //  This means that if we want to add a dynamic content item with a placeholder that is different from the name,
+    //  we need to first add the item with a placeholder that is the same as the name, and then modify it to have the
+    //  desired placeholder.
+    const alterDynamicContentAddition = async (change: Change<InstanceElement>): Promise<ResponseResult> => {
+      const clonedAdditionChange = await applyFunctionToChangeData(change, inst => inst.clone())
+      const clonedChangeData = getChangeData(clonedAdditionChange)
+      const newPlaceholder = clonedChangeData.value.placeholder
+      clonedChangeData.value.name = placeholderToName(newPlaceholder)
+      log.trace('Creating dynamic content item with placeholder %s', newPlaceholder)
+      // addition change
+      await deployChange(clonedAdditionChange, client, config.apiDefinitions)
+      log.trace('Successfully created dynamic content item with placeholder %o', newPlaceholder)
       try {
-        log.debug('Creating dynamic content item with placeholder %s', newAdditionChange.value.placeholder)
-        await deployChange({ action: 'add', data: { after: newAdditionChange } }, client, config.apiDefinitions)
-      } catch (additionError) {
-        return {
-          appliedChanges: [],
-          errors: [
-            {
-              elemID: changeData.elemID,
-              message: `Failed to create dynamic content item: ${additionError}`,
-              severity: 'Error',
-            },
-          ],
-        }
-      }
-      try {
-        await deployChange(
-          { action: 'modify', data: { before: newAdditionChange, after: newModificationChange } },
+        // modification change
+        const result = await deployChange(
+          { action: 'modify', data: { before: clonedChangeData, after: getChangeData(change) } },
           client,
           config.apiDefinitions,
         )
+        log.trace('Successfully created dynamic content item %o', clonedChangeData.elemID.getFullName())
+        return result
       } catch (modificationError) {
+        // removal of failed modification
         try {
-          await deployChange({ action: 'remove', data: { before: newAdditionChange } }, client, config.apiDefinitions)
+          await deployChange({ action: 'remove', data: { before: clonedChangeData } }, client, config.apiDefinitions)
+          log.warn(
+            'Unable to modify dynamic content item %s, but removal was successful: %o',
+            clonedChangeData.elemID.getFullName(),
+            modificationError,
+          )
+          return { message: `Failed to create dynamic content item: ${modificationError}`, severity: 'Error' }
         } catch (removalError) {
-          log.error('Unable to remove dynamic content item after failed modification: %s', removalError)
+          log.error(
+            'Unable to remove dynamic content item %s after failed modification: %o',
+            clonedChangeData.elemID.getFullName(),
+            removalError,
+          )
           return {
-            appliedChanges: [],
-            errors: [
-              {
-                elemID: changeData.elemID,
-                message: 'Unable to modify name of dynamic content item, please modify it in the Zendesk UI and fetch.',
-                severity: 'Warning',
-              },
-            ],
+            message:
+              'Unable to modify name of dynamic content item, please modify it in the Zendesk UI and fetch with regenerate salto ids.',
+            severity: 'Warning',
           }
         }
-        log.warn('Unable to modify dynamic content item %s, but removal was successful: %s', modificationError)
-        return {
-          appliedChanges: [],
-          errors: [{ message: `Failed to create dynamic content item: ${modificationError}`, severity: 'Error' }],
-        }
       }
-      log.trace('Successfully created dynamic content item %s', changeData.elemID.name)
-      return { appliedChanges: [change], errors: [] }
     }
 
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
@@ -157,16 +155,18 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           variantRemovalChanges,
         ] as Change<InstanceElement>[][],
         async change => {
-          if (isAdditionOfAlteredDynamicContentItem(change)) {
-            await alterDynamicContentAddition(change)
-          }
           await deployChange(change, client, config.apiDefinitions)
         },
       )
       return { deployResult, leftoverChanges }
     }
     const deployResult = await deployChanges(itemChanges, async change => {
-      const response = await deployChange(change, client, config.apiDefinitions)
+      const response = isAdditionOfAlteredDynamicContentItem(change)
+        ? await alterDynamicContentAddition(change)
+        : await deployChange(change, client, config.apiDefinitions)
+      if (isSaltoError(response)) {
+        throw response
+      }
       return addIdsToChildrenUponAddition({
         response,
         parentChange: change,

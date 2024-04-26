@@ -66,8 +66,10 @@ export type SubjectCondition = {
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 export const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
+// {{dc.name}} -> name
 export const placeholderToName = (placeholder: string): string => placeholder.substring(5, placeholder.length - 2)
 
+// name: bla here-there::everywhere -> {{dc.name_bla_here-there-everywhere}}
 export const nameToPlaceholder = (name: string): string => {
   const cleanedName = name.replace(/:?\s+/g, '_').replace(/::/g, '-').replace(/\s/g, '_')
   return `{{dc.${cleanedName.toLowerCase()}}}`

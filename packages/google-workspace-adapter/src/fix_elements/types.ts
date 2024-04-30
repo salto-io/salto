@@ -13,27 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { elements, definitions } from '@salto-io/adapter-components'
 
-export type UserFetchConfig = definitions.UserFetchConfig<{
-  customNameMappingOptions: never
-  fetchCriteria: definitions.DefaultFetchCriteria
-}>
+import { UserDeployConfig } from '../config'
 
-export type UserDeployConfig = definitions.UserDeployConfig & {
-  defaultDomain?: string
-}
-
-export type UserConfig = definitions.UserConfig<
-  never,
-  definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
-  UserFetchConfig,
-  UserDeployConfig
->
-
-export const DEFAULT_CONFIG: UserConfig = {
-  fetch: {
-    ...elements.query.INCLUDE_ALL_CONFIG,
-    hideTypes: true,
-  },
+export type FixElementsArgs = {
+  definitions: UserDeployConfig
 }

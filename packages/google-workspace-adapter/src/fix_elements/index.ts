@@ -13,27 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { elements, definitions } from '@salto-io/adapter-components'
 
-export type UserFetchConfig = definitions.UserFetchConfig<{
-  customNameMappingOptions: never
-  fetchCriteria: definitions.DefaultFetchCriteria
-}>
+import { FixElementsFunc } from '@salto-io/adapter-api'
+import { fallbackUsersHandler } from './fallback_user'
+import { FixElementsArgs } from './types'
 
-export type UserDeployConfig = definitions.UserDeployConfig & {
-  defaultDomain?: string
-}
-
-export type UserConfig = definitions.UserConfig<
-  never,
-  definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
-  UserFetchConfig,
-  UserDeployConfig
->
-
-export const DEFAULT_CONFIG: UserConfig = {
-  fetch: {
-    ...elements.query.INCLUDE_ALL_CONFIG,
-    hideTypes: true,
-  },
-}
+export const createFixElementFunctions = (args: FixElementsArgs): FixElementsFunc[] => [
+  fallbackUsersHandler(args),
+  // removingDupes needs to be after fallbackUsers
+]

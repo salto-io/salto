@@ -34,6 +34,7 @@ import {
   oauthRequestParametersType,
 } from './client/oauth'
 import customPathsFilterCreator from './filters/custom_paths'
+import { createFixElementFunctions } from './fix_elements'
 
 const { validateCredentials, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -85,6 +86,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       customPathsFilterCreator,
     }),
     additionalChangeValidators: createChangeValidator(),
+    fixElementsFuncs: createFixElementFunctions(UserConfig),
   },
   initialClients: {
     main: undefined,

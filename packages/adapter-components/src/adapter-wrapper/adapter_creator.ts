@@ -43,7 +43,7 @@ import { ClientDefaults } from '../client/http_client'
 import { AdapterImpl } from './adapter/adapter'
 import { getResolverCreator } from '../references/resolver_creator'
 import { ConvertError } from '../deployment'
-import { combineElementFixers } from 'src/references/element_fixers'
+import { combineElementFixers } from '../references/element_fixers'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>

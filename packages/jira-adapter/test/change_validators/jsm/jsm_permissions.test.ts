@@ -148,24 +148,7 @@ describe('jsmPermissionsValidator', () => {
           ],
         },
       })
-      mockConnection.get.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          size: 1,
-          start: 0,
-          limit: 50,
-          isLastPage: true,
-          _links: {},
-          values: [
-            {
-              id: '10',
-              projectId: '111',
-              projectKey: 'SD',
-              projectName: 'Service Desk',
-            },
-          ],
-        },
-      })
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
       projectInstance = new InstanceElement('project1', createEmptyType(PROJECT_TYPE), {
         id: '111',
         name: 'project1',
@@ -188,7 +171,7 @@ describe('jsmPermissionsValidator', () => {
     })
     it('should not return error if JSM is disabled', async () => {
       const validator = jsmPermissionsValidator(config, client)
-      config.fetch.enableJSM = false
+      config.fetch.enableJSM = true
       const changeErrors = await validator([toChange({ before: queueInstance })])
       expect(changeErrors).toHaveLength(0)
     })

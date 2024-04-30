@@ -28,7 +28,7 @@ import { logger } from '@salto-io/logging'
 import { ResponseResult } from '@salto-io/adapter-components/src/deployment'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
+import { addId, addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { applyforInstanceChangesOfType } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
@@ -106,8 +106,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       clonedChangeData.value.name = placeholderToName(newPlaceholder)
       log.trace('Creating dynamic content item with placeholder %s', newPlaceholder)
       // addition change
-      await deployChange(clonedAdditionChange, client, config.apiDefinitions)
+      const response = await deployChange(clonedAdditionChange, client, config.apiDefinitions)
       log.trace('Successfully created dynamic content item with placeholder %o', newPlaceholder)
+
+      // must add ID before the modification change
+      addId({response, change: clonedAdditionChange, apiDefinitions: config.apiDefinitions})
+      const afterChangeData = getChangeData(change)
+      afterChangeData.value.id = getChangeData(clonedAdditionChange).value.id
       try {
         // modification change
         const result = await deployChange(
@@ -126,7 +131,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             clonedChangeData.elemID.getFullName(),
             modificationError,
           )
-          return { message: `Failed to create dynamic content item: ${modificationError}`, severity: 'Error' }
+          return { message: `Failed to create dynamic content item: ${(modificationError as Error).message}`, severity: 'Error' }
         } catch (removalError) {
           log.error(
             'Unable to remove dynamic content item %s after failed modification: %o',

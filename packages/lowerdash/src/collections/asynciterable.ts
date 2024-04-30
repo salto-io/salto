@@ -258,6 +258,24 @@ export const reduceAsync = async <T, U>(
   return last
 }
 
+export const partitionAsync = async <T>(
+  itr: ThenableIterable<T>,
+  pred: (value: T, index: number) => Thenable<boolean>,
+): Promise<[T[], T[]]> => {
+  const trues: T[] = []
+  const falses: T[] = []
+  let index = 0
+  for await (const v of itr) {
+    if (await pred(v, index)) {
+      trues.push(v)
+    } else {
+      falses.push(v)
+    }
+    index += 1
+  }
+  return [trues, falses]
+}
+
 export type BeforeAfter<T> = {
   before: T | undefined
   after: T | undefined
@@ -345,6 +363,7 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   groupBy(keyFunc: (t: T) => Thenable<string>): Promise<Record<string, T[]>>
   uniquify(toSetType: (t: T) => unknown): AwuIterable<T>
   reduce<U>(reduceFunc: (total: U, currentValue: T, index: number) => Thenable<U>, initialValue: U): Promise<U>
+  partition(pred: (value: T, index: number) => Thenable<boolean>): Promise<[T[], T[]]>
 }
 
 export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
@@ -374,5 +393,6 @@ export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
     groupBy: keyFunc => groupByAsync(itr, keyFunc),
     uniquify: (toSetType: (t: T) => unknown) => awu(uniquify(itr, toSetType)),
     reduce: (reducer, initialValue) => reduceAsync(itr, reducer, initialValue),
+    partition: pred => partitionAsync(itr, pred),
   }
 }

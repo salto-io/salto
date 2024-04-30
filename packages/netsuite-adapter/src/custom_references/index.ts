@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 import { permissionsHandler } from './weak_references/permissions_references'
+import { fieldsHandler } from './weak_references/fields_references'
 
 export const customReferenceHandlers = {
   permissionsReferences: permissionsHandler,
+  fieldsReferences: fieldsHandler,
 }

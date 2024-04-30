@@ -282,11 +282,22 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       //     }
       //   : undefined
 
+      // const res = isMethodWithDataParam(method)
+      //   ? await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
+      //   : await this.apiClient[method](
+      //     url,
+      //     isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
+      //   )
+      
+      log.debug(safeJsonStringify(isMethodWithData(params) ? params.data : 'no data'))
+
       const res = {
         status: 200,
         data: {},
         headers: {},
       }
+
+
 
       logResponse(res)
       return {

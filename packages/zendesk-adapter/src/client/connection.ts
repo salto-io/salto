@@ -19,8 +19,8 @@ import axiosRetry from 'axios-retry'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+// import Joi from 'joi'
+import { inspectValue} from '@salto-io/adapter-utils'
 import {
   Credentials,
   isOauthAccessTokenCredentials,
@@ -29,27 +29,27 @@ import {
 } from '../auth'
 
 const log = logger(module)
-type AccountRes = {
-  data: {
-    account: {
-      sandbox: boolean
-    }
-  }
-}
+// type AccountRes = {
+//   data: {
+//     account: {
+//       sandbox: boolean
+//     }
+//   }
+// }
 
-const EXPECTED_VALID_ACCOUNT_RES = Joi.object({
-  data: Joi.object({
-    account: Joi.object({
-      sandbox: Joi.boolean().required(),
-    })
-      .unknown(true)
-      .required(),
-  })
-    .unknown(true)
-    .required(),
-})
-  .unknown(true)
-  .required()
+// const EXPECTED_VALID_ACCOUNT_RES = Joi.object({
+//   data: Joi.object({
+//     account: Joi.object({
+//       sandbox: Joi.boolean().required(),
+//     })
+//       .unknown(true)
+//       .required(),
+//   })
+//     .unknown(true)
+//     .required(),
+// })
+//   .unknown(true)
+//   .required()
 
 export const instanceUrl = (subdomain: string, domain?: string): string =>
   _.isEmpty(domain) ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
@@ -67,10 +67,10 @@ export const APP_MARKETPLACE_HEADERS = {
   'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
 }
 
-const isValidAccountRes = createSchemeGuard<AccountRes>(
-  EXPECTED_VALID_ACCOUNT_RES,
-  'Received an invalid current account response',
-)
+// const isValidAccountRes = createSchemeGuard<AccountRes>(
+//   EXPECTED_VALID_ACCOUNT_RES,
+//   'Received an invalid current account response',
+// )
 
 export const validateCredentials = async ({
   credentials,
@@ -80,13 +80,14 @@ export const validateCredentials = async ({
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    const res = await connection.get('/api/v2/account')
+    // const res = await connection.get('/api/v2/account')
+    log.debug(inspectValue(connection))
     const accountId = instanceUrl(credentials.subdomain, credentials.domain)
-    if (isValidAccountRes(res)) {
-      const isProduction = !res.data.account.sandbox
-      return { accountId, isProduction }
-    }
-    log.warn('res is not valid for /api/v2/account, could not find if account is production')
+    // if (isValidAccountRes(res)) {
+    //   const isProduction = !res.data.account.sandbox
+    //   return { accountId, isProduction }
+    // }
+    // log.warn('res is not valid for /api/v2/account, could not find if account is production')
     return { accountId }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)

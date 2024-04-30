@@ -326,9 +326,9 @@ const processDeployResponse = (
     }))
 
   if (failedComponentErrors.some((error) => error.elemID === undefined)) {
-    log.debug(
-      'Some deploy messages could not be mapped to an ElemID. typeAndNameToElemId=%o',
-      typeAndNameToElemId,
+    log.trace(
+      'Some deploy messages could not be mapped to an ElemID. typeAndNameToElemId=%s',
+      _.pickBy(typeAndNameToElemId, (value) => !_.isEmpty(value)),
     )
   }
 

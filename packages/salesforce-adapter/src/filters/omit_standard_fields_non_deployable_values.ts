@@ -23,6 +23,7 @@ import {
   ensureSafeFilterFetch,
   isCustomObjectSync,
   isStandardField,
+  isStandardPicklistFieldWithValueSet,
 } from './utils'
 
 const log = logger(module)
@@ -40,9 +41,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         .flatMap((customObject) => Object.values(customObject.fields))
         .filter(isStandardField)
       const standardFieldsWithValueSet = standardFields.filter(
-        (field) => field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined,
+        isStandardPicklistFieldWithValueSet,
       )
-      log.debug(
+      ;(standardFieldsWithValueSet.length > 100 ? log.trace : log.debug)(
         'omitting valueSet from the following standard fields: %s',
         safeJsonStringify(
           standardFieldsWithValueSet.map((field) => apiNameSync(field)),

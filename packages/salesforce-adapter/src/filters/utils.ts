@@ -1165,3 +1165,8 @@ export const toCustomProperties = async (
     ..._.pickBy(element.annotations, (_val, name) => isAllowed(name)),
   }
 }
+
+export const isStandardPicklistFieldWithValueSet = (field: Field): boolean =>
+  isStandardField(field) &&
+  isPicklistField(field) &&
+  field.annotations.valueSet !== undefined

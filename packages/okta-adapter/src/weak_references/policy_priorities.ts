@@ -45,7 +45,11 @@ const markInstancesAsWeakReference = async (instance: InstanceElement): Promise<
   return awu(priorities)
     .map(async (ref, index) =>
       isReferenceExpression(ref)
-      ? { source: instance.elemID.createNestedID('priorities', index.toString()), target: ref.elemID, type: 'weak' as const }
+        ? {
+            source: instance.elemID.createNestedID('priorities', index.toString()),
+            target: ref.elemID,
+            type: 'weak' as const,
+          }
         : undefined,
     )
     .filter(values.isDefined)

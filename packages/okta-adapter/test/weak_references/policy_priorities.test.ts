@@ -66,9 +66,13 @@ describe('policyRulePrioritiesHandler', () => {
       const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
 
       expect(references).toEqual([
-        { source: policyRulePriorityInstance.elemID.createNestedID('priorities', '1'), target: ruleInstance.elemID, type: 'weak' },
         {
-          source: policyRulePriorityInstance.elemID.createNestedID('priorities','2'),
+          source: policyRulePriorityInstance.elemID.createNestedID('priorities', '1'),
+          target: ruleInstance.elemID,
+          type: 'weak',
+        },
+        {
+          source: policyRulePriorityInstance.elemID.createNestedID('priorities', '2'),
           target: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME, 'instance', 'rule2'),
           type: 'weak',
         },

@@ -30,7 +30,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { applyforInstanceChangesOfType, placeholderToName, nameToPlaceholder } from './utils'
+import { applyforInstanceChangesOfType } from './utils'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const log = logger(module)
@@ -83,6 +83,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
 
+    // {{dc.name}} -> name
+    const placeholderToName = (placeholder: string): string => placeholder.substring(5, placeholder.length - 2)
+
+    // name -> {{dc.name}}
+    const nameToPlaceholder = (name: string): string => `{{dc.${name}}}`
+
+    
     const isAdditionOfAlteredDynamicContentItem = (change: Change<InstanceElement>): boolean =>
       isAdditionChange(change) &&
       getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME &&

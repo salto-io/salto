@@ -42,7 +42,9 @@ export const appUserSchemaAndApplicationValidator: ChangeValidator = async chang
         return !removedApplicationNames.has(getParent(appUserSchema).elemID.getFullName())
       } catch (e) {
         log.error(
-          `Could not run appUserSchemaAndApplicationValidator validator for instance ${appUserSchema.elemID.getFullName}: ${e}`,
+          'Could not run appUserSchemaAndApplicationValidator validator for instance %s: %s',
+          appUserSchema.elemID.getFullName(),
+          e,
         )
         return false
       }

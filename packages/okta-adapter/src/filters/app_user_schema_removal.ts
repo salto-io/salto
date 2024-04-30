@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
@@ -61,7 +61,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const appUserSchemaInstance = getChangeData(change)
-      const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
+      const parentApplicationId = getParent(appUserSchemaInstance).value.id
       if (!_.isString(parentApplicationId) || !(await verifyApplicationIsDeleted(parentApplicationId, client))) {
         throw new Error('Expected AppUserSchema to be deleted')
       }

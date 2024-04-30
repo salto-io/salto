@@ -15,7 +15,7 @@
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { getChangeData, isModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
 
 export const DEFAULT_RESTRICTION = [
   {
@@ -42,10 +42,10 @@ export const shouldDeleteRestrictionOnPageModification = (args: definitions.depl
     return false
   }
   const afterRestriction = _.get(args.change.data.after.value, 'restriction')
-  if (_.isEqual(args.change.data.before.value.restriction, afterRestriction)) {
+  if (isEqualValues(args.change.data.before.value.restriction, afterRestriction)) {
     return false
   }
-  return _.isEqual(afterRestriction, DEFAULT_RESTRICTION)
+  return isEqualValues(afterRestriction, DEFAULT_RESTRICTION)
 }
 
 /**

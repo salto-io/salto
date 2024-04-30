@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, transformValues } from '@salto-io/adapter-utils'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
@@ -58,11 +58,7 @@ const AppUserSchemaSchema = Joi.object({
 
 const isAppUserSchema = (values: unknown): values is AppUserSchema => {
   const { error } = AppUserSchemaSchema.validate(values)
-  if (error !== undefined) {
-    log.warn('Received an invalid response for the app user schema')
-    return false
-  }
-  return true
+  return _.isUndefined(error)
 }
 
 const getAutoCreatedAppUserSchema = async (applicationId: string, client: OktaClient): Promise<AppUserSchema> => {
@@ -100,7 +96,7 @@ const deployAppUserSchemaAddition = async (
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const appUserSchemaInstance = getChangeData(change)
-  const parentApplicationId = getParents(appUserSchemaInstance)?.[0]?.id
+  const parentApplicationId = getParents(appUserSchemaInstance)[0]?.id
   if (parentApplicationId === undefined) {
     log.error(`Error while trying to get parent id for user schema ${appUserSchemaInstance.elemID.getFullName()}`)
     throw new Error(
@@ -119,14 +115,32 @@ const deployAppUserSchemaAddition = async (
 
   appUserSchemaInstance.value.id = autoCreatedAppUserSchema.id
 
-  appUserSchemaInstance.value.definitions.custom.properties = {}
+  // appUserSchemaInstance.value.definitions.custom.properties = {}
 
-  // if (appUserSchemaInstance.isEqual(autoCreatedAppUserSchemaInstance)) {
-  //   return
-  // }
+  if (appUserSchemaInstance.isEqual(autoCreatedAppUserSchemaInstance)) {
+    return
+  }
 
   const bla = findDifferences(appUserSchemaInstance, autoCreatedAppUserSchemaInstance)
   log.debug(bla)
+
+  const removedEmpty = await transformValues({
+    values: autoCreatedAppUserSchemaInstance.value,
+    type: await autoCreatedAppUserSchemaInstance.getType(),
+    transformFunc: ({ value }) => value,
+    strict: false,
+    allowEmpty: false,
+  })
+  if (removedEmpty) {
+    autoCreatedAppUserSchemaInstance.value = removedEmpty
+  }
+
+  const bla2 = findDifferences(appUserSchemaInstance, autoCreatedAppUserSchemaInstance)
+  log.debug(bla2)
+
+  if (appUserSchemaInstance.isEqual(autoCreatedAppUserSchemaInstance)) {
+    return
+  }
 
   await defaultDeployWithStatus(
     toChange({ before: autoCreatedAppUserSchemaInstance, after: appUserSchemaInstance }),

@@ -84,13 +84,13 @@ const getGeneratedDependenciesReferencesRecord = (
   return referencesRecord
 }
 
-const getFieldReferences = (formInstance: InstanceElement): Record<string, ReferenceExpression> => ({
+const getReferenceRecord = (formInstance: InstanceElement): Record<string, ReferenceExpression> => ({
   ...getIdReferencesRecord(formInstance),
   ...getGeneratedDependenciesReferencesRecord(formInstance),
 })
 
-const getWeakElementReferences = (formInstance: InstanceElement): ReferenceInfo[] => {
-  const fieldsReferences = getFieldReferences(formInstance)
+const getFormReferences = (formInstance: InstanceElement): ReferenceInfo[] => {
+  const fieldsReferences = getReferenceRecord(formInstance)
   return Object.entries(fieldsReferences).flatMap(([path, referenceElement]) => ({
     source: ElemID.fromFullName(path),
     target: referenceElement.elemID,
@@ -98,8 +98,8 @@ const getWeakElementReferences = (formInstance: InstanceElement): ReferenceInfo[
   }))
 }
 
-const getFieldsReferences: GetCustomReferencesFunc = async elements =>
-  elements.filter(isFormInstanceElement).flatMap(getWeakElementReferences)
+const getAllFormsReferences: GetCustomReferencesFunc = async elements =>
+  elements.filter(isFormInstanceElement).flatMap(getFormReferences)
 
 const checkIfUnresolvedGeneratedDependency = (value: string, generatedDependencies: Set<string>): boolean => {
   const capture = captureServiceIdInfo(value)[0]
@@ -115,21 +115,23 @@ const handleGeneratedDependencies = async (
   form: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<{ fixedGeneratedDependencies: GeneratedDependency[]; unresolvedGeneratedDependencies: Set<string> }> => {
-  const unresolvedGeneratedDependencies = new Set<string>()
   if (!form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]) {
-    return { fixedGeneratedDependencies: [], unresolvedGeneratedDependencies }
+    return { fixedGeneratedDependencies: [], unresolvedGeneratedDependencies: new Set<string>() }
   }
-  const fixedGeneratedDependencies = await awu(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
+  const generatedDependencies = collections.array
+    .makeArray(form.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
     .filter(isGeneratedDependency)
-    .filter(async dep => {
-      if (await isUnresolvedReference(dep.reference, elementsSource)) {
-        unresolvedGeneratedDependencies.add(dep.reference.elemID.createTopLevelParentID().parent.name)
-        return false
-      }
-      return true
-    })
-    .toArray()
-  return { fixedGeneratedDependencies, unresolvedGeneratedDependencies }
+
+  const [unresolved, resolved] = await awu(generatedDependencies).partition(async dep =>
+    isUnresolvedReference(dep.reference, elementsSource),
+  )
+
+  return {
+    fixedGeneratedDependencies: resolved,
+    unresolvedGeneratedDependencies: new Set<string>(
+      unresolved.map(dep => dep.reference.elemID.createTopLevelParentID().parent.name),
+    ),
+  }
 }
 
 const getPathsToRemove = async (
@@ -255,6 +257,6 @@ const removeUnresolvedFieldElements: WeakReferencesHandler<{
 export const fieldsHandler: WeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
 }> = {
-  findWeakReferences: getFieldsReferences,
+  findWeakReferences: getAllFormsReferences,
   removeWeakReferences: removeUnresolvedFieldElements,
 }

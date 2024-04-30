@@ -448,7 +448,6 @@ workflows:
       - package_cli:
           requires:
             - build
-            - unit_test
 
       - package_vscode_extension:
           requires:

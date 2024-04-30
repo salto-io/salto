@@ -16,6 +16,8 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { getActiveWorkflowsNames } from '@salto-io/jira-adapter'
 import {
   Workspace,
   ElementSelector,
@@ -721,6 +723,9 @@ export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = asyn
   await validateAndSetEnv(workspace, input, output)
   const elementSource = input.source === 'nacl' ? await workspace.elements() : workspace.state()
 
+  const workflowsNames = await getActiveWorkflowsNames(elementSource)
+  // eslint-disable-next-line no-console
+  console.log(workflowsNames)
   const relevantIds = await selectElementIdsByTraversal({
     selectors: validSelectors,
     source: elementSource,

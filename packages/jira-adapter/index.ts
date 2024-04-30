@@ -15,3 +15,4 @@
  */
 
 export { adapter } from './src/adapter_creator'
+export { getActiveWorkflowsNames } from './src/filters/workflowV2/workflow_filter'

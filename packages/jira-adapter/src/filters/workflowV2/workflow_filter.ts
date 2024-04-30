@@ -409,7 +409,7 @@ const getWorkflowPayload = (
   return workflowPayload
 }
 
-const getWorkflowsFromWorkflowScheme = async (
+export const getWorkflowsFromWorkflowScheme = async (
   workflowSchemeInstance: InstanceElement,
 ): Promise<ReferenceExpression[]> => {
   const { defaultWorkflow } = workflowSchemeInstance.value
@@ -421,11 +421,21 @@ const getWorkflowsFromWorkflowScheme = async (
 }
 
 // active workflow is a workflow that is associated with a project using a workflow scheme
-const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
-  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+export const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
+  const projects = await log.timeDebug(
+    () => getInstancesFromElementSource(elementsSource, [PROJECT_TYPE]),
+    'getInstancesFromElementSource',
+  )
+  log.debug('Fetching active workflows')
   const activeWorkflows = await awu(projects)
     .filter(projectHasWorkflowSchemeReference)
-    .map(project => project.value.workflowScheme.getResolvedValue(elementsSource))
+    .map(project => {
+      const res = log.timeDebug(
+        () => project.value.workflowScheme.getResolvedValue(elementsSource),
+        `getResolvedValue on workflowScheme: ${project.value.workflowScheme.elemID.getFullName()} inside project ${project.elemID.getFullName()}`,
+      )
+      return res
+    })
     .filter(isInstanceElement)
     .flatMap(getWorkflowsFromWorkflowScheme)
     .map(workflowRef => workflowRef.elemID.getFullName())

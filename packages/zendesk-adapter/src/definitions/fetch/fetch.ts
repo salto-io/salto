@@ -697,6 +697,106 @@ const createCustomizations = (): Record<
     },
   },
 
+  app_installation: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/apps/installations' },
+        transformation: { root: 'installations' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/apps-integrations/apps/support-apps' },
+        elemID: { parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] }] },
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number', hide: true },
+        updated: { omit: true },
+      },
+    },
+  },
+
+  app_owned: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/apps/owned' },
+        transformation: { root: 'apps' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/apps-integrations/apps/support-apps' },
+        elemID: { parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'settings.name' }, { fieldName: 'product' }] }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        parameters: { fieldType: 'map<app_owned__parameters>' },
+      },
+    },
+  },
+
+  app_owned__parameters: {
+    resource: { directFetch: true },
+    element: {
+      topLevel: { isTopLevel: true },
+      fieldCustomizations: { id: { hide: true }, app_id: { hide: true } },
+    },
+  },
+
+  oauth_client: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/oauth/clients' },
+        transformation: { root: 'clients' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/oauth_clients' },
+        elemID: { parts: [{ fieldName: 'identifier' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        secret: { hide: true, fieldType: 'string' },
+        user_id: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+
+  oauth_global_client: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/oauth/global_clients' },
+        transformation: { root: 'global_clients' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+
   sharing_agreement: {
     requests: [
       {

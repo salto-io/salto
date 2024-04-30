@@ -41,6 +41,8 @@ import {
   createLayoutType,
   IssueLayoutConfiguration,
   IssueLayoutConfig,
+  ERROR_RESPONSE_SCHEME,
+  errorResponse,
 } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
@@ -86,6 +88,7 @@ export const LAYOUT_TYPE_NAME_TO_DETAILS: Record<LayoutTypeName, LayoutTypeDetai
 
 export const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
 const isLayoutConfigItem = createSchemeGuard<LayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
+const isErrorResponse = createSchemeGuard<errorResponse>(ERROR_RESPONSE_SCHEME)
 
 export const getLayoutResponse = async ({
   variables,
@@ -234,7 +237,7 @@ export const fetchRequestTypeDetails = async ({
 
   const { layoutType: issueLayoutType } = createLayoutType(typeName)
   elements.push(issueLayoutType)
-
+  const requestsTypeToRemove: string[] = []
   const layouts = (
     await Promise.all(
       Object.entries(requestTypeIdToRequestType).flatMap(async ([requestTypeId, requestTypeInstance]) => {
@@ -249,6 +252,17 @@ export const fetchRequestTypeDetails = async ({
           client,
           typeName,
         })
+        if (
+          Array.isArray(response.errors) &&
+          isErrorResponse(response.errors[0]) &&
+          response.errors[0].extensions.statusCode === 404
+        ) {
+          log.info(
+            `Failed to fetch ${requestTypeInstance.annotations[CORE_ANNOTATIONS.ALIAS]} since it does not exist or user does not have required permissions`,
+          )
+          requestsTypeToRemove.push(requestTypeInstance.elemID.getFullName())
+          return undefined
+        }
         return getLayout({
           extraDefinerId: variables.extraDefinerId,
           response,
@@ -267,4 +281,6 @@ export const fetchRequestTypeDetails = async ({
   await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
   await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
   await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
+  // Remove request types that doesn't exist or user does not have required permissions to their layouts
+  _.remove(elements, e => requestsTypeToRemove.includes(e.elemID.getFullName()) && isInstanceElement(e))
 }

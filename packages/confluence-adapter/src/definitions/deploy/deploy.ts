@@ -16,7 +16,12 @@
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
-import { increasePagesVersion, addSpaceKey } from '../transformation_utils'
+import {
+  increasePagesVersion,
+  addSpaceKey,
+  shouldDeleteRestrictionOnPageModification,
+  shouldNotModifyRestrictionOnPageAddition,
+} from '../transformation_utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -82,6 +87,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
             {
+              condition: {
+                custom: () => shouldNotModifyRestrictionOnPageAddition,
+              },
+              request: {
+                earlySuccess: true,
+              },
+            },
+            {
               request: {
                 endpoint: {
                   path: '/wiki/rest/api/content/{id}/restriction',
@@ -118,6 +131,31 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
             {
+              condition: {
+                custom: () => shouldDeleteRestrictionOnPageModification,
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/content/{id}/restriction',
+                  method: 'delete',
+                },
+              },
+            },
+            {
+              condition: {
+                custom: () => shouldDeleteRestrictionOnPageModification,
+              },
+              request: {
+                // delete page restrictions are setting them to default, so no need to make another request
+                earlySuccess: true,
+              },
+            },
+            {
+              condition: {
+                transformForCheck: {
+                  pick: ['restriction'],
+                },
+              },
               request: {
                 endpoint: {
                   path: '/wiki/rest/api/content/{id}/restriction',

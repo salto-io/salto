@@ -327,7 +327,7 @@ const processDeployResponse = (
 
   if (failedComponentErrors.some((error) => error.elemID === undefined)) {
     log.debug(
-      'Some deploy messages could not be mapped to an ElemID. typeAndNameToElemId=%s',
+      'Some deploy messages could not be mapped to an ElemID. typeAndNameToElemId=%o',
       typeAndNameToElemId,
     )
   }

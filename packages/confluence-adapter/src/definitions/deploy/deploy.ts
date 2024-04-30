@@ -16,7 +16,13 @@
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../types'
-import { addSpaceKey, adjustPageOnModification, homepageAdditionToModification, shouldDeleteRestrictionOnPageModification, shouldNotModifyRestrictionOnPageAddition } from '../utils'
+import {
+  addSpaceKey,
+  adjustPageOnModification,
+  homepageAdditionToModification,
+  shouldDeleteRestrictionOnPageModification,
+  shouldNotModifyRestrictionOnPageAddition,
+} from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,

@@ -116,6 +116,7 @@ describe('add permissions to custom record types filter', () => {
       },
     },
   })
+
   const role2Instance = new InstanceElement('customrole_2', roleType().type, {
     scriptid: 'customrole_2',
     permissions: {
@@ -144,7 +145,6 @@ describe('add permissions to custom record types filter', () => {
     role1Instance.value[SCRIPT_ID],
     role1Instance,
   )
-
   customRecord1Object.annotations.permissions.permission.customrole_2.permittedrole = new ReferenceExpression(
     role2Instance.elemID.createNestedID(SCRIPT_ID),
     role2Instance.value[SCRIPT_ID],
@@ -157,7 +157,6 @@ describe('add permissions to custom record types filter', () => {
     role1Instance.value[SCRIPT_ID],
     role1Instance,
   )
-
   customRecord2Object.annotations.permissions.permission.customrole_2.permittedrole = new ReferenceExpression(
     role2Instance.elemID.createNestedID(SCRIPT_ID),
     role2Instance.value[SCRIPT_ID],
@@ -170,7 +169,6 @@ describe('add permissions to custom record types filter', () => {
     customRecord1Object.annotations[SCRIPT_ID],
     customRecord1Object,
   )
-
   role1Instance.value.permissions.permission.customrecord_2.permkey = new ReferenceExpression(
     customRecord2Object.elemID.createNestedID('attr', SCRIPT_ID),
     customRecord2Object.annotations[SCRIPT_ID],
@@ -183,7 +181,6 @@ describe('add permissions to custom record types filter', () => {
     customRecord1Object.annotations[SCRIPT_ID],
     customRecord1Object,
   )
-
   role2Instance.value.permissions.permission.customrecord_2.permkey = new ReferenceExpression(
     customRecord2Object.elemID.createNestedID('attr', SCRIPT_ID),
     customRecord2Object.annotations[SCRIPT_ID],

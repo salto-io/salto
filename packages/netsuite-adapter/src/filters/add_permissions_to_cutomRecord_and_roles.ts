@@ -122,15 +122,17 @@ const areSamePermissionsWithReference = (
 
 const getModifiedPermissionsWithReference = (
   change: AdditionOrModificationRelevantChange,
-): Record<string, PermissionWithReference> => {
+): PermissionWithReference[] => {
   if (isAdditionChange(change)) {
-    return getPermissionsWithReference(change.data.after)
+    return Object.values(getPermissionsWithReference(change.data.after))
   }
   const beforePermissions = getPermissionsWithReference(change.data.before)
   const afterPermissions = getPermissionsWithReference(change.data.after)
-  return _.pickBy(
-    afterPermissions,
-    (value, key) => !(key in beforePermissions) || !areSamePermissionsWithReference(value, beforePermissions[key]),
+  return Object.values(
+    _.pickBy(
+      afterPermissions,
+      (value, key) => !(key in beforePermissions) || !areSamePermissionsWithReference(value, beforePermissions[key]),
+    ),
   )
 }
 
@@ -163,7 +165,7 @@ const addPermissions = (
   sourceObjectsMap.forEach(sourceObj => {
     const permissionField = getModifiedPermissionsWithReference(sourceObj)
 
-    Object.values(permissionField).forEach(async permission => {
+    permissionField.forEach(async permission => {
       addPermission(permission, sourceObj.data.after, targetObjectsMap)
     })
   })

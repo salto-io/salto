@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 import _ from 'lodash'
-import { InstanceElement, Adapter, AdapterAuthentication, ChangeValidator } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  Adapter,
+  AdapterAuthentication,
+  ChangeValidator,
+  FixElementsFunc,
+} from '@salto-io/adapter-api'
 import { FilterCreationArgs, createCommonFilters } from '../filters/common_filters'
 import { createClient } from '../client/client_creator'
 import { AdapterImplConstructor } from './adapter/types'
@@ -37,6 +43,7 @@ import { ClientDefaults } from '../client/http_client'
 import { AdapterImpl } from './adapter/adapter'
 import { getResolverCreator } from '../references/resolver_creator'
 import { ConvertError } from '../deployment'
+import { combineElementFixers } from 'src/references/element_fixers'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -78,6 +85,7 @@ export const createAdapter = <
       args: FilterCreationArgs<Options, Co>,
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
     additionalChangeValidators?: Record<string, ChangeValidator>
+    fixElementsFuncs?: FixElementsFunc[]
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
@@ -106,6 +114,7 @@ export const createAdapter = <
       )
       const definitions = definitionsCreator({ clients, userConfig: config })
       const resolverCreator = getResolverCreator(definitions)
+      const fixElement = combineElementFixers(operationsCustomizations.fixElementsFuncs ?? [])
 
       const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
@@ -126,6 +135,7 @@ export const createAdapter = <
           adapterName,
           configInstance: context.config,
           additionalChangeValidators: operationsCustomizations.additionalChangeValidators,
+          fixElement,
         },
         adapterImpl ?? AdapterImpl,
       )
@@ -140,6 +150,7 @@ export const createAdapter = <
           }
         },
         deployModifiers: adapterOperations.deployModifiers,
+        fixElements: adapterOperations.fixElements?.bind(adapterOperations),
         // TODO SALTO-5578 extend to other operations
       }
     },

@@ -32,6 +32,7 @@ import {
   ChangeValidator,
   DependencyChanger,
   TypeMap,
+  FixElementsFunc,
 } from '@salto-io/adapter-api'
 import { logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -95,6 +96,7 @@ export class AdapterImpl<
   protected changeValidators: Record<string, ChangeValidator>
   protected dependencyChangers: DependencyChanger[]
   protected definitions: RequiredDefinitions<Options>
+  protected fixElementsFunc: FixElementsFunc
   protected referenceResolver: (
     def: FieldReferenceDefinition<
       ResolveReferenceContextStrategiesType<Options>,
@@ -118,6 +120,7 @@ export class AdapterImpl<
     additionalChangeValidators,
     dependencyChangers,
     referenceResolver,
+    fixElement,
   }: AdapterParams<Credentials, Options, Co>) {
     this.adapterName = adapterName
     this.clients = clients
@@ -160,6 +163,8 @@ export class AdapterImpl<
     this.dependencyChangers = dependencyChangers ?? []
 
     this.referenceResolver = referenceResolver
+
+    this.fixElementsFunc = fixElement
   }
 
   @logDuration('generating types from swagger')
@@ -351,4 +356,6 @@ export class AdapterImpl<
       changeValidator,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

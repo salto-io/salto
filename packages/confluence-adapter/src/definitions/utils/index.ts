@@ -14,23 +14,9 @@
  * limitations under the License.
  */
 
-import _ from 'lodash'
-import { definitions } from '@salto-io/adapter-components'
-import { assertValue } from './generic'
-
-/**
- * AdjustFunction that converts labels object array to ids array.
- */
-export const adjustLabelsToIdsFunc: definitions.AdjustFunction = item => {
-  const value = assertValue(item.value)
-  const labels = _.get(value, 'labels')
-  if (_.isEmpty(labels) || !Array.isArray(labels)) {
-    return { value }
-  }
-  return {
-    value: {
-      ...value,
-      labels: labels.map(label => label.id),
-    },
-  }
-}
+export * from './generic'
+export * from './page'
+export * from './label'
+export * from './restriction'
+export * from './template'
+export * from './space'

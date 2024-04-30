@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../types'
-import { adjustLabelsToIdsFunc, adjustRestriction } from '../transformation_utils'
+import { adjustLabelsToIdsFunc, adjustRestriction } from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
@@ -28,7 +28,7 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { spaceMergeAndTransformAdjust } from '../transformation_utils/space'
+import { adjustHomepageToId, spaceMergeAndTransformAdjust } from '../utils/space'
 
 const DEFAULT_FIELDS_TO_HIDE: Record<string, definitions.fetch.ElementFieldCustomization> = {
   created_at: {
@@ -100,11 +100,12 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         endpoint: {
           path: '/wiki/rest/api/space',
           queryArgs: {
-            expand: 'metadata,description,description.plain,metadata.labels,description.view',
+            expand: 'metadata,description,description.plain,metadata.labels,description.view,homepage',
           },
         },
         transformation: {
           root: 'results',
+          adjust: adjustHomepageToId,
         },
       },
     ],

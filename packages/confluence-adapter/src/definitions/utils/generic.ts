@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-export * from './generic'
-export * from './page'
-export * from './label'
-export * from './restriction'
-export * from './template'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
+
+export const validateValue = (value: unknown): Record<string, unknown> => {
+  if (!lowerdashValues.isPlainRecord(value)) {
+    throw new Error('Can not adjust when the value is not an object')
+  }
+  return value
+}

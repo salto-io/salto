@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import { definitions } from '@salto-io/adapter-components'
+import { definitions, deployment } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Value } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { assertValue } from './generic'
+import { validateValue } from './generic'
 
 const log = logger(module)
 
@@ -68,7 +68,7 @@ export const transformPermissionAndUpdateIdMap = (
  * To be used on deploy. We need this as we cannot hide fields inside arrays
  * @param value - value containing raw permissions array from the service.
  */
-export const restructurePermissionsAndCreateInternalIdMap = (value: Record<string, Value>): void => {
+export const restructurePermissionsAndCreateInternalIdMap = (value: Record<string, unknown>): void => {
   const permissions = _.get(value, 'permissions')
   if (!Array.isArray(permissions)) {
     log.warn('permissions is not an array: %o, skipping space adjust function', permissions)
@@ -85,12 +85,37 @@ export const restructurePermissionsAndCreateInternalIdMap = (value: Record<strin
 /**
  * Adjust function for transforming space instances upon fetch.
  * We reconstruct the permissions so we use this function on resource and not on request.
- * @param item - The item to adjust.
  */
 export const spaceMergeAndTransformAdjust: definitions.AdjustFunction<{
   fragments: definitions.GeneratedItem[]
 }> = item => {
-  const value = assertValue(item.value)
+  const value = validateValue(item.value)
   restructurePermissionsAndCreateInternalIdMap(value)
   return { value }
+}
+
+/**
+ * Adjust function for transforming space instances upon fetch.
+ * We convert homepage object returned from the service to its id, then we build a reference from it.
+ */
+export const adjustHomepageToId: definitions.AdjustFunction = args => {
+  const value = validateValue(args.value)
+  value.homepage = _.get(value, 'homepage.id')
+  return { ...args, value }
+}
+
+/**
+ * Group space with its homepage upon addition.
+ * We want to first deploy the space, a default homepage will be created in the service. We want to modify it
+ */
+export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFunction = async change => {
+  const changeData = getChangeData(change)
+  if (isInstanceElement(changeData)) {
+    const homepageFullName = changeData.value.homepage?.elemID?.getFullName()
+    // in case of addition, we want the space to be in the same group as its homepage
+    if (isAdditionChange(change) && _.isString(homepageFullName)) {
+      return homepageFullName
+    }
+  }
+  return changeData.elemID.getFullName()
 }

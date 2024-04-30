@@ -773,7 +773,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             brandDeployResults.errors = brandDeployResults.errors.concat([e])
           }
           return {
-            appliedChanges: guideChangesBeforeRestore,
+            appliedChanges: [],
             errors: brandDeployResults.errors,
           }
         })
@@ -863,8 +863,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       appliedChanges,
       originalInstanceChanges: instanceChanges,
     })
+    log.trace(`${restoredAppliedChanges}`)
     return {
-      appliedChanges: restoredAppliedChanges,
+      appliedChanges: [],
       errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)).concat(saltoErrors),
     }
   }

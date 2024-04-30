@@ -2992,13 +2992,13 @@ export type ChangeValidatorName =
   | 'defaultCustomStatuses'
   | 'customRoleRemoval'
   | 'sideConversations'
-  | 'users'
+  // | 'users'
   | 'requiredAppOwnedParameters'
   | 'oneTranslationPerLocale'
   | 'articleRemoval'
   | 'articleLabelNamesRemoval'
   | 'articleAttachmentSize'
-  | 'everyoneUserSegmentModification'
+  // | 'everyoneUserSegmentModification'
   | 'brandFieldForBrandBasedElements'
   | 'translationForDefaultLocale'
   | 'helpCenterActivation'
@@ -3032,7 +3032,7 @@ export type ChangeValidatorName =
   | 'dynamicContentDeletion'
   | 'dynamicContentPlaceholderModification'
   | 'inactiveTicketFormInView'
-  | 'immutableTypeAndKeyForUserFields'
+  // | 'immutableTypeAndKeyForUserFields'
   | 'localeModification'
   | 'emptyAutomationOrder'
   | 'viewCustomStatusConditions'
@@ -3071,13 +3071,13 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultCustomStatuses: { refType: BuiltinTypes.BOOLEAN },
     customRoleRemoval: { refType: BuiltinTypes.BOOLEAN },
     sideConversations: { refType: BuiltinTypes.BOOLEAN },
-    users: { refType: BuiltinTypes.BOOLEAN },
+    // users: { refType: BuiltinTypes.BOOLEAN },
     requiredAppOwnedParameters: { refType: BuiltinTypes.BOOLEAN },
     oneTranslationPerLocale: { refType: BuiltinTypes.BOOLEAN },
     articleRemoval: { refType: BuiltinTypes.BOOLEAN },
     articleLabelNamesRemoval: { refType: BuiltinTypes.BOOLEAN },
     articleAttachmentSize: { refType: BuiltinTypes.BOOLEAN },
-    everyoneUserSegmentModification: { refType: BuiltinTypes.BOOLEAN },
+    // everyoneUserSegmentModification: { refType: BuiltinTypes.BOOLEAN },
     brandFieldForBrandBasedElements: { refType: BuiltinTypes.BOOLEAN },
     translationForDefaultLocale: { refType: BuiltinTypes.BOOLEAN },
     helpCenterActivation: { refType: BuiltinTypes.BOOLEAN },
@@ -3111,7 +3111,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
-    immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
+    // immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
     localeModification: { refType: BuiltinTypes.BOOLEAN },
     emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
     viewCustomStatusConditions: { refType: BuiltinTypes.BOOLEAN },

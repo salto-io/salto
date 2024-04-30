@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ResponseType } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+// import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -85,7 +85,7 @@ export type HttpMethodToClientParams = {
   options: ClientBaseParams
 }
 
-type MethodsWithDataParam = 'put' | 'post' | 'patch'
+// type MethodsWithDataParam = 'put' | 'post' | 'patch'
 
 export class HTTPError extends Error {
   constructor(
@@ -109,9 +109,9 @@ export type ClientDefaults<TRateLimitConfig extends ClientRateLimitConfig> = {
 const isMethodWithData = (params: ClientParams): params is ClientDataParams => 'data' in params
 
 // Determines if the given HTTP method uses 'data' as the second parameter, based on APIConnection
-const isMethodWithDataParam = <T extends keyof HttpMethodToClientParams>(
-  method: T,
-): method is T & MethodsWithDataParam => ['put', 'post', 'patch'].includes(method)
+// const isMethodWithDataParam = <T extends keyof HttpMethodToClientParams>(
+//   method: T,
+// ): method is T & MethodsWithDataParam => ['put', 'post', 'patch'].includes(method)
 
 export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends ClientRateLimitConfig>
   extends AdapterClientBase<TRateLimitConfig>
@@ -235,7 +235,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
-    const { url, queryParams, headers, responseType } = params
+    const { url, queryParams, headers } = params
     const data = isMethodWithData(params) ? params.data : undefined
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -274,20 +274,19 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     }
 
     try {
-      const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
-        ? {
-            params: queryParams,
-            headers,
-            responseType,
-          }
-        : undefined
+      // const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
+      //   ? {
+      //       params: queryParams,
+      //       headers,
+      //       responseType,
+      //     }
+      //   : undefined
 
-      const res = isMethodWithDataParam(method)
-        ? await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
-        : await this.apiClient[method](
-            url,
-            isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
-          )
+      const res = {
+        status: 200,
+        data: {},
+        headers: {},
+      }
 
       logResponse(res)
       return {

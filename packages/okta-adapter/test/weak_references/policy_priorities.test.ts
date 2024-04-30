@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { OKTA, ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME, ACCESS_POLICY_RULE_TYPE_NAME } from '../../src/constants'
-import { policyRulePrioritiesHandler } from '../../src/weak_references/policy_rule_priorities'
+import { policyPrioritiesHandler } from '../../src/weak_references/policy_priorities'
 import { createConfigInstance } from '../utils'
 import { DEFAULT_CONFIG } from '../../src/config'
 
@@ -63,15 +63,16 @@ describe('policyRulePrioritiesHandler', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references rules', async () => {
-      const references = await policyRulePrioritiesHandler.findWeakReferences(
-        [policyRulePriorityInstance],
-        adapterConfig,
-      )
+      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
 
       expect(references).toEqual([
-        { source: policyRulePriorityInstance.elemID.createNestedID('1'), target: ruleInstance.elemID, type: 'weak' },
         {
-          source: policyRulePriorityInstance.elemID.createNestedID('2'),
+          source: policyRulePriorityInstance.elemID.createNestedID('priorities', '1'),
+          target: ruleInstance.elemID,
+          type: 'weak',
+        },
+        {
+          source: policyRulePriorityInstance.elemID.createNestedID('priorities', '2'),
           target: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME, 'instance', 'rule2'),
           type: 'weak',
         },
@@ -80,20 +81,14 @@ describe('policyRulePrioritiesHandler', () => {
 
     it('should do nothing if received invalid policyRulePriorityInstance', async () => {
       policyRulePriorityInstance.value.priorities = 'invalid'
-      const references = await policyRulePrioritiesHandler.findWeakReferences(
-        [policyRulePriorityInstance],
-        adapterConfig,
-      )
+      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
 
       expect(references).toEqual([])
     })
 
     it('should do nothing if there are no priorities', async () => {
       delete policyRulePriorityInstance.value.priorities
-      const references = await policyRulePrioritiesHandler.findWeakReferences(
-        [policyRulePriorityInstance],
-        adapterConfig,
-      )
+      const references = await policyPrioritiesHandler.findWeakReferences([policyRulePriorityInstance], adapterConfig)
 
       expect(references).toEqual([])
     })
@@ -101,15 +96,13 @@ describe('policyRulePrioritiesHandler', () => {
 
   describe('removeWeakReferences', () => {
     it('should remove the invalid rules', async () => {
-      const fixes = await policyRulePrioritiesHandler.removeWeakReferences({ elementsSource })([
-        policyRulePriorityInstance,
-      ])
+      const fixes = await policyPrioritiesHandler.removeWeakReferences({ elementsSource })([policyRulePriorityInstance])
 
       expect(fixes.errors).toEqual([
         {
           elemID: policyRulePriorityInstance.elemID.createNestedID('priorities'),
           severity: 'Info',
-          message: 'Deploying AccessPolicyRulePriority without all attached priorities for rules.',
+          message: 'Deploying AccessPolicyRulePriority without all attached priorities for rules',
           detailedMessage:
             'This AccessPolicyRulePriority is attached to some rules that do not exist in the target environment. It will be deployed without referencing these.',
         },
@@ -122,9 +115,7 @@ describe('policyRulePrioritiesHandler', () => {
     })
     it('should do nothing if there are no priorities', async () => {
       delete policyRulePriorityInstance.value.priorities
-      const fixes = await policyRulePrioritiesHandler.removeWeakReferences({ elementsSource })([
-        policyRulePriorityInstance,
-      ])
+      const fixes = await policyPrioritiesHandler.removeWeakReferences({ elementsSource })([policyRulePriorityInstance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])
@@ -134,9 +125,7 @@ describe('policyRulePrioritiesHandler', () => {
       policyRulePriorityInstance.value.priorities = [
         new ReferenceExpression(new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME, 'instance', 'rule1')),
       ]
-      const fixes = await policyRulePrioritiesHandler.removeWeakReferences({ elementsSource })([
-        policyRulePriorityInstance,
-      ])
+      const fixes = await policyPrioritiesHandler.removeWeakReferences({ elementsSource })([policyRulePriorityInstance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])

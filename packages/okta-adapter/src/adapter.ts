@@ -95,6 +95,7 @@ import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import groupPushPathFilter from './filters/group_push_path'
 import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
+import appUserSchemaRemovalFilter from './filters/app_user_schema_removal'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
@@ -128,6 +129,7 @@ const DEFAULT_FILTERS = [
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
+  appUserSchemaRemovalFilter,
   userFilter,
   groupMembersFilter,
   groupPushFilter,

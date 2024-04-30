@@ -37,6 +37,7 @@ import { appGroupAssignmentValidator } from './app_group_assignments'
 import { appUrlsValidator } from './app_urls'
 import { profileMappingRemovalValidator } from './profile_mapping_removal'
 import { brandRemovalValidator } from './brand_removal'
+import { appUserSchemaAndApplicationValidator } from './app_user_schema_and_application'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -80,6 +81,7 @@ export default ({ client, config }: { client: OktaClient; config: OktaConfig }):
     brandRemoval: brandRemovalValidator,
     dynamicOSVersion: dynamicOSVersionFeatureValidator,
     brandThemeRemoval: brandThemeRemovalValidator,
+    appUserSchemaAndApplication: appUserSchemaAndApplicationValidator,
   }
 
   return createChangeValidator({

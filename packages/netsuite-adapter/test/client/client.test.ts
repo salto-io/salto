@@ -21,10 +21,10 @@ import {
   Change,
   BuiltinTypes,
   getChangeData,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
-import NetsuiteClient from '../../src/client/client'
 import {
   SDF_CREATE_OR_UPDATE_GROUP_ID,
   SUITEAPP_CREATING_RECORDS_GROUP_ID,
@@ -47,6 +47,8 @@ import {
 import { AdditionalDependencies } from '../../src/config/types'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { SDFObjectNode } from '../../src/client/types'
+import { roleType } from '../../src/autogen/types/standard_types/role'
+import NetsuiteClient from '../../src/client/client'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -74,7 +76,68 @@ describe('NetsuiteClient', () => {
         jest.resetAllMocks()
         deployParams[0].include.features = []
       })
+      describe('Dependency graph and map', () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const instanceWithRef1 = new InstanceElement('instanceWithRef1', type, { scriptid: 'instanceWithRef1' })
+        const instanceWithRef2 = new InstanceElement('instanceWithRef2', type, {
+          scriptid: 'instanceWithRef2',
+          ref: new ReferenceExpression(instanceWithRef1.elemID),
+        })
+        instanceWithRef1.value.ref = new ReferenceExpression(instanceWithRef2.elemID)
 
+        const customRecord = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord_1'),
+          annotations: {
+            scriptid: 'customrecord_1',
+            [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+            permissions: {
+              permission: {
+                ref: '[scriptid=customrole_with_ref]',
+              },
+            },
+          },
+        })
+        const roleWithRef = new InstanceElement('customrole_with_ref', roleType().type, {
+          scriptid: 'customrole_with_ref',
+          ref: '[scriptid=customrecord_1]',
+        })
+        it('should build a map and a graph with an edge role->customrecord when given new role and existing custom record ', async () => {
+          const mapAndGraph = await NetsuiteClient.createDependencyMapAndGraph([
+            toChange({ after: roleWithRef }),
+            toChange({ before: customRecord, after: customRecord }),
+          ])
+          const { dependencyMap, dependencyGraph } = mapAndGraph
+          expect(dependencyMap.get(roleWithRef.elemID.getFullName())?.has('customrecord_1')).toBeTruthy()
+          expect(dependencyGraph.nodes.get(roleWithRef.elemID.getFullName())?.edges.size).toEqual(1)
+          expect(
+            dependencyGraph.nodes.get(roleWithRef.elemID.getFullName())?.edges.get(customRecord.elemID.getFullName()),
+          ).not.toBeUndefined()
+        })
+        it('should build a map and a graph with an edge role->customrecord when given new role and new custom record ', async () => {
+          const mapAndGraph = await NetsuiteClient.createDependencyMapAndGraph([
+            toChange({ after: roleWithRef }),
+            toChange({ after: customRecord }),
+          ])
+          const { dependencyMap, dependencyGraph } = mapAndGraph
+          expect(dependencyMap.get(roleWithRef.elemID.getFullName())?.has('customrecord_1')).toBeTruthy()
+          expect(dependencyGraph.nodes.get(roleWithRef.elemID.getFullName())?.edges.size).toEqual(1)
+          expect(
+            dependencyGraph.nodes.get(roleWithRef.elemID.getFullName())?.edges.get(customRecord.elemID.getFullName()),
+          ).not.toBeUndefined()
+        })
+        it('should build a map and a graph with an edge role->customrecord when given existing role and new custom record ', async () => {
+          const mapAndGraph = await NetsuiteClient.createDependencyMapAndGraph([
+            toChange({ before: roleWithRef, after: roleWithRef }),
+            toChange({ after: customRecord }),
+          ])
+          const { dependencyMap, dependencyGraph } = mapAndGraph
+          expect(dependencyMap.get(roleWithRef.elemID.getFullName())?.has('customrecord_1')).toBeTruthy()
+          expect(dependencyGraph.nodes.get(roleWithRef.elemID.getFullName())?.edges.size).toEqual(1)
+          expect(
+            dependencyGraph.nodes.get(roleWithRef.elemID.getFullName())?.edges.get(customRecord.elemID.getFullName()),
+          ).not.toBeUndefined()
+        })
+      })
       it('should try again to deploy after ObjectsDeployError', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const failedObjectsMap = new Map([['failedObject', [{ message: 'error' }]]])

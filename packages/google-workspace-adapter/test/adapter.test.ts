@@ -75,7 +75,9 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('https://admin.googleapis.com/admin/directory/v1/users?customer=my_customer').reply(200)
+    mockAxiosAdapter
+      .onGet('https://admin.googleapis.com/admin/directory/v1/customers/my_customer')
+      .reply(200, { customerDomain: 'localhost' })
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)

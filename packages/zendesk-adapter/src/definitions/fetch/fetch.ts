@@ -533,6 +533,117 @@ const createCustomizations = (): Record<
     },
   },
 
+  user_field: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/user_fields' },
+        transformation: { root: 'user_fields' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        value: {
+          typeName: 'user_field__custom_field_options',
+          context: { args: { parent_id: { root: 'id' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/agent/admin/user_fields/{id}' },
+        elemID: { parts: [{ fieldName: 'key' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        type: { fieldType: 'string' },
+        title: { hide: true },
+        description: { omit: true },
+        custom_field_options: {
+          standalone: {
+            typeName: 'user_field__custom_field_options',
+            addParentAnnotation: true,
+            nestPathUnderParent: false,
+            referenceFromParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  user_field__custom_field_options: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        default: { hide: true },
+        name: { omit: true },
+      },
+    },
+  },
+
+  organization_field: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/organization_fields' },
+        transformation: { root: 'organization_fields' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        value: {
+          typeName: 'organization_field__custom_field_options',
+          context: { args: { parent_id: { root: 'id' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/agent/admin/organization_fields/{id}' },
+        elemID: { parts: [{ fieldName: 'key' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        type: { fieldType: 'string' },
+        title: { hide: true },
+        description: { omit: true },
+        custom_field_options: {
+          standalone: {
+            typeName: 'organization_field__custom_field_options',
+            addParentAnnotation: true,
+            nestPathUnderParent: false,
+            referenceFromParent: true,
+          },
+        },
+      },
+    },
+  },
+
+  organization_field__custom_field_options: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        name: { omit: true },
+      },
+    },
+  },
+
   brand: {
     requests: [
       {

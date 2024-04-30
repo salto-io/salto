@@ -16,6 +16,8 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import { diff, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { getActiveWorkflowsNames } from '@salto-io/jira-adapter'
 import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
 import {
   CommandDefAction,
@@ -45,7 +47,6 @@ import { outputLine, errorOutputLine } from '../outputer'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
-import { getActiveWorkflowsNames } from '@salto-io/jira-adapter'
 
 const setEnvironment = async (envName: string, output: CliOutput, workspace: Workspace): Promise<CliExitCode> => {
   await workspace.setCurrentEnv(envName)

@@ -89,7 +89,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     // name -> {{dc.name}}
     const nameToPlaceholder = (name: string): string => `{{dc.${name}}}`
 
-    
     const isAdditionOfAlteredDynamicContentItem = (change: Change<InstanceElement>): boolean =>
       isAdditionChange(change) &&
       getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME &&
@@ -110,7 +109,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       log.trace('Successfully created dynamic content item with placeholder %o', newPlaceholder)
 
       // must add ID before the modification change
-      addId({response, change: clonedAdditionChange, apiDefinitions: config.apiDefinitions})
+      addId({ response, change: clonedAdditionChange, apiDefinitions: config.apiDefinitions })
       const afterChangeData = getChangeData(change)
       afterChangeData.value.id = getChangeData(clonedAdditionChange).value.id
       try {
@@ -131,7 +130,10 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             clonedChangeData.elemID.getFullName(),
             modificationError,
           )
-          return { message: `Failed to create dynamic content item: ${(modificationError as Error).message}`, severity: 'Error' }
+          return {
+            message: `Failed to create dynamic content item: ${(modificationError as Error).message}`,
+            severity: 'Error',
+          }
         } catch (removalError) {
           log.error(
             'Unable to remove dynamic content item %s after failed modification: %o',

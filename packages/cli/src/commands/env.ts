@@ -45,6 +45,7 @@ import { outputLine, errorOutputLine } from '../outputer'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
+import { getActiveWorkflowsNames } from '@salto-io/jira-adapter'
 
 const setEnvironment = async (envName: string, output: CliOutput, workspace: Workspace): Promise<CliExitCode> => {
   await workspace.setCurrentEnv(envName)
@@ -308,6 +309,10 @@ const envCurrentDef = createWorkspaceCommand({
 type EnvListArgs = {}
 
 export const listAction: WorkspaceCommandAction<EnvListArgs> = async ({ output, workspace }): Promise<CliExitCode> => {
+  const elementsSource = await workspace.elements()
+  const workflowsNames = await getActiveWorkflowsNames(elementsSource)
+  // eslint-disable-next-line no-console
+  console.log(workflowsNames)
   const list = formatEnvListItem(workspace.envs(), workspace.currentEnv())
   outputLine(list, output)
   return CliExitCode.Success

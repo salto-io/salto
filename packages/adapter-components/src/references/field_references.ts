@@ -32,7 +32,7 @@ import {
   TransformFunc,
   transformValues,
   safeJsonStringify,
-  resolvePath,
+  resolvePath, elementExpressionStringifyReplacer,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
@@ -318,6 +318,7 @@ export const generateLookupFunc = <
   const determineLookupStrategy = async (
     args: GetLookupNameFuncArgs,
   ): Promise<ReferenceSerializationStrategy<CustomIndexField> | undefined> => {
+    log.info(safeJsonStringify(args, elementExpressionStringifyReplacer))
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined

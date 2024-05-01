@@ -212,7 +212,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           extendsParent: true,
         },
         alias: {
-          aliasComponents: [{ fieldName: '_alias', referenceFieldName: '_parent.0' }],
+          aliasComponents: [{ fieldName: '_parent.0', referenceFieldName: '_alias' }],
         },
       },
     },

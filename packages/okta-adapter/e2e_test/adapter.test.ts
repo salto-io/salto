@@ -507,10 +507,12 @@ describe('Okta adapter E2E', () => {
           }
         })
       })
-      const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
-      expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
-      // Validate subdomain field exist as we use it in many flows
-      expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
+      it('should fetch OrgSetting and validate subdomain field', () => {
+        const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
+        expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
+        // Validate subdomain field exist as we use it in many flows
+        expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
+      })
     })
     it('should fetch the newly deployed instances', async () => {
       const deployInstances = deployResults

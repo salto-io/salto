@@ -77,6 +77,54 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
   })
 }
 
+export const resolveValuesDifferentReference: ResolveValuesFunc = async (element, getLookUpName, elementsSource, allowEmpty = true, useElementSourceForTypes = false) => {
+  const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
+    const resolveReferenceExpression = async (expression: ReferenceExpression): Promise<ReferenceExpression> =>
+      expression.value === undefined && elementsSource !== undefined
+        ? new ReferenceExpression(
+          expression.elemID,
+          await expression.getResolvedValue(elementsSource),
+          expression.topLevelParent,
+        )
+        : expression
+    if (isReferenceExpression(value)) {
+      return getLookUpName({
+        // Make sure the reference here is always resolved
+        ref: await resolveReferenceExpression(value),
+        field,
+        path,
+        element,
+      })
+    }
+    if (isStaticFile(value)) {
+      if (value.isTemplate) {
+        const templateExpression = await parserUtils.staticFileToTemplateExpression(value)
+        // resolve of references in templateExpression usually happen in core however for templateStaticFile it is not
+        // possible to do it there, and therefore it happens here.
+        if (templateExpression)
+          templateExpression.parts = await Promise.all(
+            templateExpression?.parts.map(async part =>
+              isReferenceExpression(part) ? resolveReferenceExpression(part) : part,
+            ),
+          )
+        return templateExpression
+      }
+      const content = await value.getContent()
+      return value.encoding === 'binary' ? content : content?.toString(value.encoding)
+    }
+    return value
+  }
+
+  return transformElement({
+    element,
+    transformFunc: valuesReplacer,
+    strict: false,
+    elementsSource: useElementSourceForTypes ? elementsSource : undefined,
+    allowEmpty,
+  })
+}
+
+
 export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
   change: T,
   getLookUpName: GetLookupNameFunc,

@@ -42,7 +42,8 @@ import {
   resolveChangeElement,
   definitions,
   fetch as fetchUtils,
-  restoreChangeElement, resolveValues,
+  restoreChangeElement,
+  resolveValues,
 } from '@salto-io/adapter-components'
 import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'

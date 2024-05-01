@@ -30,7 +30,13 @@ import {
 } from '@salto-io/adapter-api'
 import { parserUtils } from '@salto-io/parser'
 
-export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, elementsSource, allowEmpty = true, useElementSourceForTypes = true) => {
+export const resolveValues: ResolveValuesFunc = async (
+  element,
+  getLookUpName,
+  elementsSource,
+  allowEmpty = true,
+  useElementSourceForTypes = true,
+) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
     const resolveReferenceExpression = async (expression: ReferenceExpression): Promise<ReferenceExpression> =>
       expression.value === undefined && elementsSource !== undefined
@@ -72,7 +78,7 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
     element,
     transformFunc: valuesReplacer,
     strict: false,
-    elementsSource: useElementSourceForTypes ? elementsSource: undefined,
+    elementsSource: useElementSourceForTypes ? elementsSource : undefined,
     allowEmpty,
   })
 }

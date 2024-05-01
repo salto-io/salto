@@ -34,7 +34,6 @@ google_workspace {
 
 ### Deploy configuration options
 
-| Name                         | Default when undefined | Description                                                                                                             |
-| ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [defaultDomain] | ""                     | Configure replacement for deploying groups, you can choose under what domain to create the group. You can use  `###PRIMARY###` in order to create the group under the primary domain.  |
-
+| Name            | Default when undefined | Description                                                                                                                                                                          |
+| --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [defaultDomain] | ""                     | Configure replacement for deploying groups, you can choose under what domain to create the group. You can use `###PRIMARY###` in order to create the group under the primary domain. |

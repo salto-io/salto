@@ -235,11 +235,6 @@ const getProjectIdToProjectDict = (elements: Element[]): Value =>
       .filter(isDefined),
   )
 
-const projectIdMapToString = (projectIdMap: Value): string =>
-  Object.entries(projectIdMap)
-    .map(([key, _val]) => `${key}`)
-    .join(', ')
-
 export const getLayoutRequestsAsync = (
   client: JiraClient,
   config: JiraConfig,
@@ -296,7 +291,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adap
         Object.entries(responses).flatMap(([projectId, projectScreens]) =>
           Object.entries(projectScreens).map(async ([screenId, responsePromise]) => {
             if (projectIdToProject[projectId] === undefined) {
-              log.info(`Project with id ${projectId} was not found in projectIdToProject`) // happens due to 5871
+              log.info(`Project with id ${projectId} was not found in projectIdToProject`) // happens due to SALTO-5871
               return undefined
             }
             const response = await responsePromise

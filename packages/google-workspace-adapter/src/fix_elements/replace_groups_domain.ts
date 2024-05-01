@@ -60,7 +60,6 @@ export const replaceGroupsDomainHandler: FixElementsHandler<Options, UserConfig>
   ({ config, elementsSource }) =>
   async elements => {
     const defaultDomain = config.deploy?.defaultDomain
-    console.log('defaultDomain %s', defaultDomain)
     const groups = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === GROUP_TYPE_NAME)
     const domains = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
@@ -69,19 +68,15 @@ export const replaceGroupsDomainHandler: FixElementsHandler<Options, UserConfig>
     if (groups.length === 0) {
       return { errors: [], fixedElements: [] }
     }
-    console.log('here1')
     const groupsWithNoDomain = groups.filter(group => !isDomainExist(group, domains))
-    console.log('groupsWithNoDomain %s', groupsWithNoDomain.length)
     if (defaultDomain === '') {
       const nonExistErrors = groupsWithNoDomain.map(group => domainNotExistError(group))
       return { errors: nonExistErrors, fixedElements: [] }
     }
-    console.log('here2')
     const primaryDomain = domains.find(domain => domain.value.isPrimary === true)
     if (defaultDomain === DEFAULT_PRIMARY_DOMAIN && !primaryDomain) {
       return { errors: groupsWithNoDomain.map(noPrimaryError), fixedElements: [] }
     }
-    console.log('here3')
     const domainReplacement = defaultDomain === DEFAULT_PRIMARY_DOMAIN ? primaryDomain?.value.domainName : defaultDomain
     const fixedElements = groupsWithNoDomain.map(group => replaceGroupDomain(group, domainReplacement))
     const errors = fixedElements.map(group => replaceDomainInfo(group, domainReplacement))

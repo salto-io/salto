@@ -42,7 +42,7 @@ import {
   resolveChangeElement,
   definitions,
   fetch as fetchUtils,
-  restoreChangeElement, resolveValuesDifferentReference,
+  restoreChangeElement, resolveValues,
 } from '@salto-io/adapter-components'
 import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -820,7 +820,7 @@ export default class ZendeskAdapter implements AdapterOperations {
               change,
               lookupFunc,
               async (element, getLookUpName, elementsSource) =>
-                resolveValuesDifferentReference(element, getLookUpName, elementsSource, true, false),
+                resolveValues(element, getLookUpName, elementsSource, true, false),
               this.elementsSource,
             ),
       )

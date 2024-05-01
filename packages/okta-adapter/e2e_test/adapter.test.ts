@@ -65,10 +65,6 @@ import {
   ROLE_TYPE_NAME,
   USER_SCHEMA_TYPE_NAME,
   USERTYPE_TYPE_NAME,
-  BRAND_TYPE_NAME,
-  BRAND_THEME_TYPE_NAME,
-  SIGN_IN_PAGE_TYPE_NAME,
-  ERROR_PAGE_TYPE_NAME,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
@@ -491,10 +487,6 @@ describe('Okta adapter E2E', () => {
         USER_SCHEMA_TYPE_NAME,
         USERTYPE_TYPE_NAME,
         APPLICATION_TYPE_NAME,
-        BRAND_TYPE_NAME,
-        BRAND_THEME_TYPE_NAME,
-        SIGN_IN_PAGE_TYPE_NAME,
-        ERROR_PAGE_TYPE_NAME,
       ])
 
       let createdTypeNames: string[]

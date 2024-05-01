@@ -173,6 +173,11 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             nestPathUnderParent: true,
           },
         },
+        permissions: {
+          sort: {
+            properties: [{ path: 'principalId' }, { path: 'type' }, { path: 'key' }, { path: 'targetType' }],
+          },
+        },
       },
     },
   },

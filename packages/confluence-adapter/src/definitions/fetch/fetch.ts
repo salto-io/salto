@@ -86,6 +86,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           parts: [{ fieldName: 'prefix' }, { fieldName: 'name' }],
         },
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
       },
       fieldCustomizations: {
         id: {
@@ -150,6 +153,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
     element: {
       topLevel: {
         isTopLevel: true,
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
       },
       fieldCustomizations: {
         permissionInternalIdMap: {
@@ -211,6 +217,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         elemID: {
           extendsParent: true,
         },
+        alias: {
+          aliasComponents: [{ fieldName: '_parent.0', referenceFieldName: '_alias' }],
+        },
       },
     },
   },
@@ -254,6 +263,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         path: {
           // only the filename matters, the paths are updated in the custom_paths filter
           pathParts: [{ parts: [{ fieldName: 'title' }] }],
+        },
+        alias: {
+          aliasComponents: [{ fieldName: 'title' }],
         },
       },
       fieldCustomizations: {
@@ -303,6 +315,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: {
           parts: [{ fieldName: 'spaceId', isReference: true }, { fieldName: 'title' }],
+        },
+        alias: {
+          aliasComponents: [{ fieldName: 'title' }],
         },
       },
       fieldCustomizations: {
@@ -356,6 +371,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
           extendsParent: true,
           parts: [{ fieldName: 'name' }],
         },
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
+        },
       },
       fieldCustomizations: {
         templateId: {
@@ -388,6 +406,9 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
         isTopLevel: true,
         elemID: {
           parts: [{ fieldName: 'name' }],
+        },
+        alias: {
+          aliasComponents: [{ fieldName: 'name' }],
         },
       },
       fieldCustomizations: {

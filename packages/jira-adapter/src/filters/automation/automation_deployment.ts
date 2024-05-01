@@ -366,7 +366,7 @@ const updateAutomationLabels = async (
   }
 }
 const proccessComponentPreDeploy = (component: Component, config: JiraConfig): void => {
-  if (config.fetch.enableJSM && config.fetch.enableJSMPremium && isAssetComponent(component)) {
+  if (config.fetch.enableJSMPremium && isAssetComponent(component)) {
     const schema = component.value.schemaId.value
     component.value.schemaLabel = schema.value.name
     component.value.workspaceId = schema.value.workspaceId
@@ -375,7 +375,7 @@ const proccessComponentPreDeploy = (component: Component, config: JiraConfig): v
       component.value.objectTypeLabel = objectType.value.name
     }
   }
-  if (config.fetch.enableJSM && isRequestTypeComponent(component)) {
+  if (isRequestTypeComponent(component)) {
     const requestType = component.value.requestType.value
     component.value.serviceDesk = requestType.value.serviceDeskId
   }
@@ -387,7 +387,7 @@ const proccessComponentPreDeploy = (component: Component, config: JiraConfig): v
   }
 }
 const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig): void => {
-  if (!instance.value.components) {
+  if (!instance.value.components || !config.fetch.enableJSM) {
     return
   }
   instance.value.components.forEach((component: Component) => proccessComponentPreDeploy(component, config))
@@ -395,15 +395,14 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
 
 const proccessComponentPostDeploy = (component: Component, config: JiraConfig): void => {
   if (
-    config.fetch.enableJSM &&
-    (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium) &&
+    config.fetch.enableJSMPremium &&
     isAssetComponent(component)
   ) {
     delete component.value.schemaLabel
     delete component.value.objectTypeLabel
     delete component.value.workspaceId
   }
-  if (config.fetch.enableJSM && isRequestTypeComponent(component)) {
+  if (isRequestTypeComponent(component)) {
     delete component.value.serviceDesk
   }
   if (component.children) {
@@ -415,7 +414,7 @@ const proccessComponentPostDeploy = (component: Component, config: JiraConfig): 
 }
 
 const modifyComponentsPostDeploy = (instance: InstanceElement, config: JiraConfig): void => {
-  if (!instance.value.components) {
+  if (!instance.value.components || !config.fetch.enableJSM) {
     return
   }
   instance.value.components.forEach((component: Component) => proccessComponentPostDeploy(component, config))

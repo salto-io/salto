@@ -21,12 +21,12 @@ import {
   ModificationChange,
   ObjectType,
   ReferenceExpression,
-  isAdditionChange,
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
   isObjectTypeChange,
   isReferenceExpression,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -120,53 +120,73 @@ const areSamePermissionsWithReference = (
   getPermissionLevelAttribute(permission1) === getPermissionLevelAttribute(permission2) &&
   permission1.restriction === permission2.restriction
 
-const getModifiedPermissionsWithReference = (
-  change: AdditionOrModificationRelevantChange,
-): PermissionWithReference[] => {
-  if (isAdditionChange(change)) {
-    return Object.values(getPermissionsWithReference(change.data.after))
-  }
-  const beforePermissions = getPermissionsWithReference(change.data.before)
-  const afterPermissions = getPermissionsWithReference(change.data.after)
-  return Object.values(
-    _.pickBy(
-      afterPermissions,
-      (value, key) => !(key in beforePermissions) || !areSamePermissionsWithReference(value, beforePermissions[key]),
-    ),
-  )
-}
+const containsPermission = (object: ObjectTypeOrInstanceElement, permissionName: string): boolean =>
+  _.get(object, [...getPermissionFieldPath(object), permissionName]) !== undefined
 
-const addPermission = (
+const getSourceAndTargetNames = (
   permission: PermissionWithReference,
   sourceObj: ObjectTypeOrInstanceElement,
-  targetChangesMap: Map<string, AdditionOrModificationRelevantChange>,
-): void => {
+): { sourceName: string; targetName: string | undefined } => {
   const isRolePermission = isRolePermissionObject(permission)
   const refAttribute = getReferenceAttribute(permission)
   const sourceName = isRolePermission ? sourceObj.elemID.name : sourceObj.elemID.typeName
   const targetName = isRolePermission
     ? refAttribute.topLevelParent?.elemID.typeName
     : refAttribute.topLevelParent?.elemID.name
-  const targetObj = targetName !== undefined ? targetChangesMap.get(targetName) : undefined
-  if (targetObj === undefined) {
+  return { sourceName, targetName }
+}
+
+const isModifiedPermission = (
+  permissionName: string,
+  permission: PermissionWithReference,
+  beforePermissions: Record<string, PermissionWithReference>,
+): boolean =>
+  !(
+    permissionName in beforePermissions &&
+    areSamePermissionsWithReference(permission, beforePermissions[permissionName])
+  )
+
+const addPermission = (
+  permissionName: string,
+  permission: PermissionWithReference,
+  sourceObj: ObjectTypeOrInstanceElement,
+  targetChangesMap: Map<string, AdditionOrModificationRelevantChange>,
+  beforePermissions: Record<string, PermissionWithReference>,
+): void => {
+  const { sourceName, targetName } = getSourceAndTargetNames(permission, sourceObj)
+  const targetObjChange = targetName !== undefined ? targetChangesMap.get(targetName) : undefined
+  if (targetObjChange === undefined) {
     return
   }
-  _.set(
-    targetObj.data.after,
-    [...getPermissionFieldPath(targetObj.data.after), sourceName],
-    createOppositePermission(permission, sourceObj),
-  )
+  if (
+    isModifiedPermission(permissionName, permission, beforePermissions) ||
+    !containsPermission(targetObjChange.data.after, sourceName)
+  ) {
+    _.set(
+      targetObjChange.data.after,
+      [...getPermissionFieldPath(targetObjChange.data.after), sourceName],
+      createOppositePermission(permission, sourceObj),
+    )
+  }
 }
 
 const addPermissions = (
   sourceObjectsMap: Map<string, AdditionOrModificationRelevantChange>,
   targetObjectsMap: Map<string, AdditionOrModificationRelevantChange>,
 ): void =>
-  sourceObjectsMap.forEach(sourceObj => {
-    const permissionField = getModifiedPermissionsWithReference(sourceObj)
-
-    permissionField.forEach(async permission => {
-      addPermission(permission, sourceObj.data.after, targetObjectsMap)
+  sourceObjectsMap.forEach(sourceObjChange => {
+    const afterPermissions = getPermissionsWithReference(sourceObjChange.data.after)
+    const beforePermissions = isModificationChange(sourceObjChange)
+      ? getPermissionsWithReference(sourceObjChange.data.before)
+      : {}
+    Object.keys(afterPermissions).forEach(permissionName => {
+      addPermission(
+        permissionName,
+        afterPermissions[permissionName],
+        sourceObjChange.data.after,
+        targetObjectsMap,
+        beforePermissions,
+      )
     })
   })
 

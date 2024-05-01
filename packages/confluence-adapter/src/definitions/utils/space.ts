@@ -17,7 +17,7 @@
 import { definitions, deployment } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { getChangeData, isAdditionChange, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { validateValue } from './generic'
 
@@ -111,10 +111,10 @@ export const adjustHomepageToId: definitions.AdjustFunction = args => {
 export const spaceChangeGroupWithItsHomepage: deployment.grouping.ChangeIdFunction = async change => {
   const changeData = getChangeData(change)
   if (isInstanceElement(changeData)) {
-    const homepageFullName = changeData.value.homepage?.elemID?.getFullName()
+    const homepageRef = changeData.value.homepage
     // in case of addition, we want the space to be in the same group as its homepage
-    if (isAdditionChange(change) && _.isString(homepageFullName)) {
-      return homepageFullName
+    if (isAdditionChange(change) && isReferenceExpression(homepageRef)) {
+      return homepageRef.elemID.getFullName()
     }
   }
   return changeData.elemID.getFullName()

@@ -34,7 +34,7 @@ describe('page definitions utils', () => {
     after: new InstanceElement('mockSpaceName', spaceObjectType, { id: 'mockSpaceId' }),
   })
   describe('adjustPageOnModification', () => {
-    describe('increasePagesVersion', () => {
+    describe('increasePageVersion', () => {
       it('should increase the page version number', () => {
         const args = {
           typeName: 'mockType',

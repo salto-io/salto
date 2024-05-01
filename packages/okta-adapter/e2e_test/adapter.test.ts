@@ -73,7 +73,6 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
-import { beforeAll } from 'jest-circus'
 
 const { awu } = collections.asynciterable
 const { getInstanceName } = elementsUtils

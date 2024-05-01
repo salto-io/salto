@@ -820,7 +820,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (isListType(endUserType)){
       const myType = endUserType.getInnerTypeSync()
       if (isObjectType(myType)){
-        log.info(' fields are: %s', safeJsonStringify(Object.entries(myType.fields).map(([name, def]) => [name, def.elemID.getFullName()])))
+        log.info(' fields are: %s', safeJsonStringify(Object.entries(myType.fields).map(([name, def]) => [name, def.getTypeSync().elemID.getFullName()])))
       } else {
         log.info('MYTYPE IS NOT AN OBJECT TYPE')
         log.info(myType.elemID.getFullName())

@@ -431,7 +431,7 @@ describe('Okta adapter E2E', () => {
       }
       log.info('Okta adapter E2E: Log counts = %o', log.getLogCount())
     })
-    describe('fetch the regular instances and types', async () => {
+    describe('fetch the regular instances and types', () => {
       const expectedTypes = [
         'AccessPolicy',
         'AccessPolicyRule',
@@ -500,14 +500,14 @@ describe('Okta adapter E2E', () => {
       const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
       const createdInstances = elements.filter(isInstanceElement)
       expectedTypes.forEach(typeName => {
-        it(`should fetch ${typeName}`, () => {
+        it(`should fetch ${typeName}`, async () => {
           expect(createdTypeNames).toContain(typeName)
           if (typesWithInstances.has(typeName)) {
             expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
           }
         })
       })
-      it('should fetch OrgSetting and validate subdomain field', () => {
+      it('should fetch OrgSetting and validate subdomain field', async () => {
         const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
         expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
         // Validate subdomain field exist as we use it in many flows

@@ -73,7 +73,7 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
-import { beforeEach } from 'jest-circus'
+import { beforeAll } from 'jest-circus'
 
 const { awu } = collections.asynciterable
 const { getInstanceName } = elementsUtils
@@ -500,7 +500,7 @@ describe('Okta adapter E2E', () => {
 
       let createdTypeNames: string[]
       let createdInstances: InstanceElement[]
-      beforeEach(() => {
+      beforeAll(async () => {
         createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
         createdInstances = elements.filter(isInstanceElement)
       })

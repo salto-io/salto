@@ -26,6 +26,7 @@ import {
   ElemID,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { JiraConfig } from '../../config/config'
 import { getWorkflowsFromWorkflowScheme } from '../../filters/workflowV2/workflow_filter'
 import { isWorkflowV2Instance } from '../../filters/workflowV2/types'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
@@ -50,23 +51,35 @@ const mapWorkflowsToReferencingSchemes = async (
   return workflowNameToReferencingWorkflowSchemes
 }
 
-export const referencedWorkflowDeletionChangeValidator: ChangeValidator = async (changes, elementsSource) => {
-  if (elementsSource === undefined) {
-    log.warn('Elements source was not passed to referencedWorkflowDeletionChangeValidator. Skipping validator.')
-    return []
+/*
+ * This change validator checks whether a deleted workflow has an workflow-scheme referencing it, if so then emit an error.
+ * This is the behaviour by Jira, which returns an error when trying to delete a referenced workflow.
+ *
+ * Note, this validator only works for WorkflowV2.
+ *  */
+export const referencedWorkflowDeletionChangeValidator =
+  (config: JiraConfig): ChangeValidator =>
+  async (changes, elementsSource) => {
+    if (!config.fetch.enableNewWorkflowAPI) {
+      log.info('New workflow api not enabled, skipping validator.')
+      return []
+    }
+    if (elementsSource === undefined) {
+      log.warn('Elements source was not passed to referencedWorkflowDeletionChangeValidator. Skipping validator.')
+      return []
+    }
+    const workflowNameToReferencingWorkflowSchemes = await mapWorkflowsToReferencingSchemes(elementsSource)
+    return awu(changes)
+      .filter(isInstanceChange)
+      .filter(isRemovalChange)
+      .map(getChangeData)
+      .filter(isWorkflowV2Instance)
+      .filter(workflow => !_.isEmpty(workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]))
+      .map(workflow => ({
+        elemID: workflow.elemID,
+        severity: 'Error' as SeverityLevel,
+        message: "Can't delete a referenced workflow.",
+        detailedMessage: `Workflow is referenced by the following workflow schemes: ${[...workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]].map(elemID => elemID.name).join(', ')}.`,
+      }))
+      .toArray()
   }
-  const workflowNameToReferencingWorkflowSchemes = await mapWorkflowsToReferencingSchemes(elementsSource)
-  return awu(changes)
-    .filter(isInstanceChange)
-    .filter(isRemovalChange)
-    .map(getChangeData)
-    .filter(isWorkflowV2Instance)
-    .filter(workflow => !_.isEmpty(workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]))
-    .map(workflow => ({
-      elemID: workflow.elemID,
-      severity: 'Error' as SeverityLevel,
-      message: "Can't delete a referenced workflow.",
-      detailedMessage: `Workflow is referenced by the following workflow schemes: ${[...workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]].map(elemID => elemID.name).join(', ')}.`,
-    }))
-    .toArray()
-}

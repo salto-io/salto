@@ -99,7 +99,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     automations: automationsValidator,
     activeSchemeDeletion: activeSchemeDeletionValidator,
     sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
-    referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator,
+    referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator(config),
     statusMigrationChange: statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),

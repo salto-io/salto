@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash'
+import { definitions } from '@salto-io/adapter-components'
+import { validateValue } from './generic'
 
-import { assertValue } from '../../src/definitions/transformation_utils'
-
-describe('Adjust utils', () => {
-  describe('assertValue', () => {
-    it('should return the value if it is an object', () => {
-      const value = { key: 'value' }
-      expect(assertValue(value)).toEqual(value)
-    })
-
-    it('should throw an error if the value is not an object', () => {
-      expect(() => assertValue('not an object')).toThrow()
-    })
-  })
+/**
+ * Add space.key to a template request
+ */
+export const addSpaceKey: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = ({ value, context }) => ({
+  value: {
+    ...validateValue(value),
+    space: {
+      key: _.get(context.additionalContext, 'space_key'),
+    },
+  },
 })

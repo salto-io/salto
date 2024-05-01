@@ -22,7 +22,7 @@ import {
   shouldDeleteRestrictionOnPageModification,
   adjustRestriction,
   DEFAULT_RESTRICTION,
-} from '../../src/definitions/transformation_utils/restriction'
+} from '../../../src/definitions/utils'
 
 const objectType = new ObjectType({ elemID: new ElemID('mockType') })
 const createMockChangeAndContext = (change: Change<InstanceElement>): definitions.deploy.ChangeAndContext => ({
@@ -31,7 +31,7 @@ const createMockChangeAndContext = (change: Change<InstanceElement>): definition
   elementSource: buildElementsSourceFromElements([]),
   sharedContext: {},
 })
-describe('restriction transformation utils', () => {
+describe('restriction definitions utils', () => {
   describe('shouldNotModifyRestrictionOnPageAddition', () => {
     it('should return true when restrictions are set to default', () => {
       const change = toChange({

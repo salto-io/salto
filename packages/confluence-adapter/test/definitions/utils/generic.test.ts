@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { validateValue } from '../../../src/definitions/utils'
 
-export const assertValue = (value: unknown): Record<string, unknown> => {
-  if (!lowerdashValues.isPlainRecord(value)) {
-    throw new Error('Can not adjust when the value is not an object')
-  }
-  return value
-}
+describe('generic definitions utils', () => {
+  describe('validateValue', () => {
+    it('should return the value if it is an object', () => {
+      const value = { key: 'value' }
+      expect(validateValue(value)).toEqual(value)
+    })
+
+    it('should throw an error if the value is not an object', () => {
+      expect(() => validateValue('not an object')).toThrow()
+    })
+  })
+})

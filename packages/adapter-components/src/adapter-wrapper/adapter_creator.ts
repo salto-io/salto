@@ -20,6 +20,7 @@ import {
   AdapterAuthentication,
   ChangeValidator,
   FixElementsFunc,
+  FieldDefinition,
 } from '@salto-io/adapter-api'
 import { FilterCreationArgs, createCommonFilters } from '../filters/common_filters'
 import { createClient } from '../client/client_creator'
@@ -44,6 +45,7 @@ import { AdapterImpl } from './adapter/adapter'
 import { getResolverCreator } from '../references/resolver_creator'
 import { ConvertError } from '../deployment'
 import { combineElementFixers } from '../references/element_fixers'
+import { FixElementsArgs } from './fix_elements/types'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -61,6 +63,7 @@ export const createAdapter = <
   adapterImpl,
   defaultConfig,
   configTypeCreator,
+  additionalConfigFields,
   operationsCustomizations,
   clientDefaults,
   customConvertError,
@@ -77,6 +80,10 @@ export const createAdapter = <
     userConfig: Co
   }) => RequiredDefinitions<Options>
   configTypeCreator?: ConfigTypeCreator<ResolveCustomNameMappingOptionsType<Options>>
+  additionalConfigFields?: {
+    additionalFetchFields?: Record<string, FieldDefinition>
+    additionalDeployFields?: Record<string, FieldDefinition>
+  }
   operationsCustomizations: {
     adapterConfigCreator?: (config: Readonly<InstanceElement> | undefined) => Co
     credentialsFromConfig: (config: Readonly<InstanceElement>) => Credentials
@@ -85,17 +92,24 @@ export const createAdapter = <
       args: FilterCreationArgs<Options, Co>,
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
     additionalChangeValidators?: Record<string, ChangeValidator>
-    fixElementsFuncs?: FixElementsFunc[]
+    customizeFixElements?: (args: FixElementsArgs<Options, Co>) => FixElementsFunc[]
   }
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
 }): Adapter => {
-  const { adapterConfigCreator, credentialsFromConfig, connectionCreatorFromConfig, customizeFilterCreators } =
-    operationsCustomizations
+  const {
+    adapterConfigCreator,
+    credentialsFromConfig,
+    connectionCreatorFromConfig,
+    customizeFilterCreators,
+    customizeFixElements,
+  } = operationsCustomizations
   const configCreator: ConfigCreator<Co> = config =>
     (adapterConfigCreator ?? adapterConfigFromConfig)(config, defaultConfig)
   const connectionCreator: ConnectionCreatorFromConfig<Credentials> = config =>
     connectionCreatorFromConfig(configCreator(config).client)
+
+  const { additionalDeployFields, additionalFetchFields } = additionalConfigFields ?? {}
 
   return {
     operations: context => {
@@ -114,7 +128,9 @@ export const createAdapter = <
       )
       const definitions = definitionsCreator({ clients, userConfig: config })
       const resolverCreator = getResolverCreator(definitions)
-      const fixElement = combineElementFixers(operationsCustomizations.fixElementsFuncs ?? [])
+      const fixElement = combineElementFixers(
+        customizeFixElements ? customizeFixElements({ config, elementsSource: context.elementsSource }) : [],
+      )
 
       const adapterOperations = createAdapterImpl<Credentials, Options, Co>(
         {
@@ -163,6 +179,8 @@ export const createAdapter = <
       adapterName,
       defaultConfig,
       changeValidatorNames: Object.keys(operationsCustomizations.additionalChangeValidators ?? {}),
+      additionalDeployFields,
+      additionalFetchFields,
     }),
   }
 }

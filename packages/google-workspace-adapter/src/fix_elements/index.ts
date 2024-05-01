@@ -15,10 +15,8 @@
  */
 
 import { FixElementsFunc } from '@salto-io/adapter-api'
-import { fallbackUsersHandler } from './fallback_user'
-import { FixElementsArgs } from './types'
+import { FixElementsArgs } from '@salto-io/adapter-components'
+import { UserConfig } from '../config'
+import { Options } from '../definitions/types'
 
-export const createFixElementFunctions = (args: FixElementsArgs): FixElementsFunc[] => [
-  fallbackUsersHandler(args),
-  // removingDupes needs to be after fallbackUsers
-]
+export const createFixElementFunctions = (_args: FixElementsArgs<Options, UserConfig>): FixElementsFunc[] => []

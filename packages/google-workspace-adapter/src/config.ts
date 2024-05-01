@@ -24,6 +24,8 @@ export type UserDeployConfig = definitions.UserDeployConfig & {
   defaultDomain?: string
 }
 
+export const DEFAULT_PRIMARY_DOMAIN = '###PRIMARY###'
+
 export type UserConfig = definitions.UserConfig<
   never,
   definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
@@ -35,5 +37,8 @@ export const DEFAULT_CONFIG: UserConfig = {
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
+  },
+  deploy: {
+    defaultDomain: DEFAULT_PRIMARY_DOMAIN,
   },
 }

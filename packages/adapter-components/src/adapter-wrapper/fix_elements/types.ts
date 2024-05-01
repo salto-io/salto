@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-import { UserDeployConfig } from '../config'
+import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { APIDefinitionsOptions, ResolveCustomNameMappingOptionsType, UserConfig } from '../../definitions'
 
-export type FixElementsArgs = {
-  definitions: UserDeployConfig
+export type FixElementsArgs<
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
+> = {
+  config: Co
+  elementsSource: ReadOnlyElementsSource
 }
+
+export type FixElementsHandler<
+  Options extends APIDefinitionsOptions,
+  Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
+> = (args: FixElementsArgs<Options, Co>) => FixElementsFunc

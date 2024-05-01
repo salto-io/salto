@@ -404,11 +404,11 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    const fetchedCustomObjectInstances = elements.filter(isInstanceElement)
+    const fetchedInstances = elements.filter(isInstanceElement)
     // In the partial fetch case, a fetched element may reference an element that was not fetched but exists in the workspace
     const elementsSource = buildElementsSourceForFetch(elements, config)
     const allElements = await awu(await elementsSource.getAll()).toArray()
-    const referenceSources = fetchedCustomObjectInstances.filter(
+    const fetchedCustomObjectInstances = fetchedInstances.filter(
       isInstanceOfCustomObjectSync,
     )
     const allInstances = allElements.filter(isInstanceElement)
@@ -420,15 +420,15 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
       await buildCustomObjectPrefixKeyMap(allElements)
     const { reverseReferencesMap, missingRefs } =
       await replaceLookupsWithRefsAndCreateRefMap(
-        referenceSources,
+        fetchedCustomObjectInstances,
         internalToInstance,
         (internalId: string): string =>
           internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
         dataManagement,
       )
     const instancesWithCollidingElemID =
-      getInstancesWithCollidingElemID(allInstances)
-    const instancesWithEmptyId = allInstances.filter(
+      getInstancesWithCollidingElemID(fetchedInstances)
+    const instancesWithEmptyId = fetchedCustomObjectInstances.filter(
       (instance) => instance.elemID.name === ElemID.CONFIG_NAME,
     )
     const missingRefOriginInternalIDs = new Set(

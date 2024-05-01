@@ -422,17 +422,32 @@ export const getWorkflowsFromWorkflowScheme = async (
 
 // active workflow is a workflow that is associated with a project using a workflow scheme
 export const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
-  const projects = await log.timeDebug(
-    () => getInstancesFromElementSource(elementsSource, [PROJECT_TYPE]),
-    'getInstancesFromElementSource',
-  )
-  log.debug('Fetching active workflows')
+  // eslint-disable-next-line no-console
+  console.log('Start getInstancesFromElementSource')
+  log.debug('Start getInstancesFromElementSource')
+
+  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+
+  // eslint-disable-next-line no-console
+  console.log('Finish getInstancesFromElementSource')
+  log.debug('Finish getInstancesFromElementSource')
   const activeWorkflows = await awu(projects)
     .filter(projectHasWorkflowSchemeReference)
     .map(project => {
-      const res = log.timeDebug(
-        () => project.value.workflowScheme.getResolvedValue(elementsSource),
-        `getResolvedValue on workflowScheme: ${project.value.workflowScheme.elemID.getFullName()} inside project ${project.elemID.getFullName()}`,
+      // eslint-disable-next-line no-console
+      console.log(
+        `Start getResolvedValue on workflowScheme: ${project.value.workflowScheme.elemID.getFullName()} inside project ${project.elemID.getFullName()}`,
+      )
+      log.debug(
+        `Start getResolvedValue on workflowScheme: ${project.value.workflowScheme.elemID.getFullName()} inside project ${project.elemID.getFullName()}`,
+      )
+      const res = project.value.workflowScheme.getResolvedValue(elementsSource)
+      // eslint-disable-next-line no-console
+      console.log(
+        `Finish getResolvedValue on workflowScheme: ${project.value.workflowScheme.elemID.getFullName()} inside project ${project.elemID.getFullName()}`,
+      )
+      log.debug(
+        `Finish getResolvedValue on workflowScheme: ${project.value.workflowScheme.elemID.getFullName()} inside project ${project.elemID.getFullName()}`,
       )
       return res
     })

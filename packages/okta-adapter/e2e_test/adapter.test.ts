@@ -73,6 +73,7 @@ import {
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
+import { beforeEach } from 'jest-circus'
 
 const { awu } = collections.asynciterable
 const { getInstanceName } = elementsUtils
@@ -497,8 +498,13 @@ describe('Okta adapter E2E', () => {
         ERROR_PAGE_TYPE_NAME,
       ])
 
-      const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
-      const createdInstances = elements.filter(isInstanceElement)
+      let createdTypeNames: string[]
+      let createdInstances: InstanceElement[]
+      beforeEach(() => {
+        createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
+        createdInstances = elements.filter(isInstanceElement)
+      })
+
       expectedTypes.forEach(typeName => {
         it(`should fetch ${typeName}`, async () => {
           expect(createdTypeNames).toContain(typeName)

@@ -105,7 +105,7 @@ const getResolvedValue = async (
         'without elementsSource because value does not exist',
     )
   }
-  const value = (await elementsSource?.get(elemID)) ?? resolvedValue
+  const value = resolvedValue ?? (await elementsSource?.get(elemID))
   // When there's no value in the ElementSource & in the Ref
   // Fallback to a placeholder Type. This resembles the behavior
   // before the RefType change.

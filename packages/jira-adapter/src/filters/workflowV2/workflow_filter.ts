@@ -422,10 +422,18 @@ const getWorkflowsFromWorkflowScheme = async (
 
 // active workflow is a workflow that is associated with a project using a workflow scheme
 const getActiveWorkflowsNames = async (elementsSource: ReadOnlyElementsSource): Promise<Set<string>> => {
-  const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
+  const projects = await log.timeTrace(
+    () => getInstancesFromElementSource(elementsSource, [PROJECT_TYPE]),
+    'Fetching all projects from elements source',
+  )
   const activeWorkflows = await awu(projects)
     .filter(projectHasWorkflowSchemeReference)
-    .map(project => project.value.workflowScheme.getResolvedValue(elementsSource))
+    .map(project =>
+      log.timeTrace(
+        () => project.value.workflowScheme.getResolvedValue(elementsSource),
+        `Resolving workflow scheme ${project.value.workflowScheme.elemID.getFullName()} for project ${project.elemID.getFullName()}`,
+      ),
+    )
     .filter(isInstanceElement)
     .flatMap(getWorkflowsFromWorkflowScheme)
     .map(workflowRef => workflowRef.elemID.getFullName())
@@ -751,7 +759,9 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(changes, isAdditionOrModificationWorkflowChange)
-      const activeWorkflowsNames = await getActiveWorkflowsNamesPromise()
+      const activeWorkflowsNames = !_.isEmpty(relevantChanges)
+        ? await getActiveWorkflowsNamesPromise()
+        : new Set<string>()
       const deployResult = await deployChanges(relevantChanges, async change =>
         deployWorkflow({
           change,

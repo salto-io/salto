@@ -18,5 +18,8 @@ import { FixElementsFunc } from '@salto-io/adapter-api'
 import { FixElementsArgs } from '@salto-io/adapter-components'
 import { UserConfig } from '../config'
 import { Options } from '../definitions/types'
+import { replaceGroupsDomainHandler } from './replace_groups_domain'
 
-export const createFixElementFunctions = (_args: FixElementsArgs<Options, UserConfig>): FixElementsFunc[] => []
+export const createFixElementFunctions = (args: FixElementsArgs<Options, UserConfig>): FixElementsFunc[] => [
+  replaceGroupsDomainHandler(args),
+]

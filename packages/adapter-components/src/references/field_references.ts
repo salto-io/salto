@@ -344,20 +344,28 @@ export const generateLookupFunc = <
   }
 
   return async ({ ref, path, field, element }) => {
+    log.info('IN PATH: %s', path?.getFullName())
     if (!isElement(ref.value)) {
+      log.info('REF.VALUE IS NOT AN ELEMENT')
       return ref.value
+    }
+    const tempStrategy = await determineLookupStrategy({
+      ref,
+      path,
+      field,
+      element,
+    })
+    if (tempStrategy === undefined){
+      log.info('TEMP STRATEGY IS UNDEFINED')
     }
 
     const strategy =
-      (await determineLookupStrategy({
-        ref,
-        path,
-        field,
-        element,
-      })) ?? ReferenceSerializationStrategyLookup.fullValue
+      tempStrategy ?? ReferenceSerializationStrategyLookup.fullValue
     if (!isRelativeSerializer(strategy)) {
+      log.info('SERIALIZING')
       return strategy.serialize({ ref, field, element, path })
     }
+    log.info('CLONING DEEP')
     return cloneDeepWithoutRefs(ref.value)
   }
 }

@@ -288,8 +288,8 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       //     url,
       //     isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
       //   )
-      
-      log.debug(safeJsonStringify(isMethodWithData(params) ? params.data : 'no data'))
+
+      log.info('THIS IS THE BODY: %s', safeJsonStringify(isMethodWithData(params) ? params.data : 'no data'))
 
       const res = {
         status: 200,

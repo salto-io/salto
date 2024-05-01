@@ -813,6 +813,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     })) as Change<InstanceElement>[]
     const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
     const runner = await this.createFiltersRunner({})
+    log.info('BEFORE RESOLVE')
+    log.info('THE CHANGE: %s', inspectValue(changesToDeploy))
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
@@ -826,6 +828,8 @@ export default class ZendeskAdapter implements AdapterOperations {
             ),
       )
       .toArray()
+    log.info('AFTER RESOLVE')
+    log.info('THE CHANGE: %s', inspectValue(resolvedChanges))
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(resolvedChanges, change =>
       GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName),
     )

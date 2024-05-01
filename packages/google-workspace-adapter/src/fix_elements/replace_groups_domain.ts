@@ -23,21 +23,21 @@ import { DOMAIN_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const domainNotExistError = (group: InstanceElement): ChangeError => ({
+export const domainNotExistError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
   severity: 'Error',
   message: 'Group Domain does not exist in the target environment',
   detailedMessage: `The domain of the group ${group.value.name} does not exist in the target environment. You can manually update the domain of the group to an existing domain or set the default domain in the deploy defaultDomain configuration to ${DEFAULT_PRIMARY_DOMAIN} to use the primary domain.`,
 })
 
-const noPrimaryError = (group: InstanceElement): ChangeError => ({
+export const noPrimaryError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
   severity: 'Error',
   message: 'Could not find a primary domain',
   detailedMessage: `Could not find a primary domain to use in the ${group.value.name} group. You can manually update the domain of the group to an existing domain or set the default domain in the deploy defaultDomain configuration with existing domain.`,
 })
 
-const replaceDomainInfo = (group: InstanceElement, domain: string): ChangeError => ({
+export const replaceDomainInfo = (group: InstanceElement, domain: string): ChangeError => ({
   elemID: group.elemID,
   severity: 'Info',
   message: `replaced to domain of the ${group.value.name} group to ${domain}`,
@@ -60,6 +60,7 @@ export const replaceGroupsDomainHandler: FixElementsHandler<Options, UserConfig>
   ({ config, elementsSource }) =>
   async elements => {
     const defaultDomain = config.deploy?.defaultDomain
+    console.log('defaultDomain %s', defaultDomain)
     const groups = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === GROUP_TYPE_NAME)
     const domains = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
@@ -68,20 +69,24 @@ export const replaceGroupsDomainHandler: FixElementsHandler<Options, UserConfig>
     if (groups.length === 0) {
       return { errors: [], fixedElements: [] }
     }
+    console.log('here1')
     const groupsWithNoDomain = groups.filter(group => !isDomainExist(group, domains))
+    console.log('groupsWithNoDomain %s', groupsWithNoDomain.length)
     if (defaultDomain === '') {
       const nonExistErrors = groupsWithNoDomain.map(group => domainNotExistError(group))
       return { errors: nonExistErrors, fixedElements: [] }
     }
+    console.log('here2')
     const primaryDomain = domains.find(domain => domain.value.isPrimary === true)
     if (defaultDomain === DEFAULT_PRIMARY_DOMAIN && !primaryDomain) {
       return { errors: groupsWithNoDomain.map(noPrimaryError), fixedElements: [] }
     }
+    console.log('here3')
     const domainReplacement = defaultDomain === DEFAULT_PRIMARY_DOMAIN ? primaryDomain?.value.domainName : defaultDomain
     const fixedElements = groupsWithNoDomain.map(group => replaceGroupDomain(group, domainReplacement))
     const errors = fixedElements.map(group => replaceDomainInfo(group, domainReplacement))
     return {
       errors,
-      fixedElements: [],
+      fixedElements,
     }
   }

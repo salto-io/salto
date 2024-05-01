@@ -28,7 +28,7 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceChange,
-  isInstanceElement,
+  isInstanceElement, isListType, isObjectType,
   isReferenceExpression,
   isSaltoError,
   ReadOnlyElementsSource,
@@ -45,7 +45,7 @@ import {
   fetch as fetchUtils,
   restoreChangeElement,
 } from '@salto-io/adapter-components'
-import { getElemIdFuncWrapper, inspectValue, logDuration } from '@salto-io/adapter-utils'
+import {getElemIdFuncWrapper, inspectValue, logDuration, safeJsonStringify} from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -815,6 +815,22 @@ export default class ZendeskAdapter implements AdapterOperations {
     const runner = await this.createFiltersRunner({})
     log.info('BEFORE RESOLVE')
     log.info('THE CHANGE: %s', inspectValue(changesToDeploy))
+    const type1 = getChangeData(changesToDeploy[0]).getTypeSync()
+    const endUserType = type1.fields.end_user_conditions
+    if (isListType(endUserType)){
+      const myType = endUserType.getInnerTypeSync()
+      if (isObjectType(myType)){
+        log.info(' fields are: %s', safeJsonStringify(Object.entries(myType.fields).map(([name, def]) => [name, def.elemID.getFullName()])))
+      } else {
+        log.info('MYTYPE IS NOT AN OBJECT TYPE')
+        log.info(myType.elemID.getFullName())
+      }
+    } else {
+      log.info('endUserType IS NOT AN List TYPE')
+      log.info(endUserType.elemID.getFullName())
+    }
+
+
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)

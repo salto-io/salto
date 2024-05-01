@@ -394,10 +394,7 @@ const modifyComponentsPreDeploy = (instance: InstanceElement, config: JiraConfig
 }
 
 const proccessComponentPostDeploy = (component: Component, config: JiraConfig): void => {
-  if (
-    config.fetch.enableJSMPremium &&
-    isAssetComponent(component)
-  ) {
+  if (config.fetch.enableJSMPremium && isAssetComponent(component)) {
     delete component.value.schemaLabel
     delete component.value.objectTypeLabel
     delete component.value.workspaceId

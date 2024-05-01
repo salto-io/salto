@@ -80,6 +80,7 @@ import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
+import brandThemeAdditionFilter from './filters/brand_theme_addition'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
@@ -136,6 +137,7 @@ const DEFAULT_FILTERS = [
   defaultPolicyRuleDeployment,
   schemaFieldsRemovalFilter,
   appLogoFilter,
+  brandThemeAdditionFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter

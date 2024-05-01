@@ -953,6 +953,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'map<unknown>' }],
     },
     deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+          themeId: 'id',
+        },
+        fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
+      },
       modify: {
         url: '/api/v1/brands/{brandId}/themes/{themeId}',
         method: 'put',
@@ -1883,9 +1892,9 @@ const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
 ]
 
 export const getSupportedTypes = ({
-  isClassicOrg,
-  supportedTypes,
-}: {
+                                    isClassicOrg,
+                                    supportedTypes,
+                                  }: {
   isClassicOrg: boolean
   supportedTypes: Record<string, string[]>
 }): Record<string, string[]> =>
@@ -2014,11 +2023,11 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
 })
 
 export const validateOktaFetchConfig = ({
-  fetchConfig,
-  clientConfig,
-  apiDefinitions,
-  privateApiDefinitions,
-}: {
+                                          fetchConfig,
+                                          clientConfig,
+                                          apiDefinitions,
+                                          privateApiDefinitions,
+                                        }: {
   fetchConfig: OktaFetchConfig
   clientConfig: OktaClientConfig
   apiDefinitions: OktaSwaggerApiConfig

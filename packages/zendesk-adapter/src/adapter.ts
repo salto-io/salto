@@ -816,7 +816,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     log.info('BEFORE RESOLVE')
     log.info('THE CHANGE: %s', inspectValue(changesToDeploy))
     const type1 = getChangeData(changesToDeploy[0]).getTypeSync()
-    const endUserType = type1.fields.end_user_conditions
+    const endUserType = type1.fields.end_user_conditions.getTypeSync()
     if (isListType(endUserType)){
       const myType = endUserType.getInnerTypeSync()
       if (isObjectType(myType)){

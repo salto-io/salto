@@ -296,20 +296,21 @@ const filterProfiles = (elements: Element[]): InstanceElement[] =>
     .filter(isInstanceElement)
     .filter((instance) => instance.elemID.typeName === PROFILE_METADATA_TYPE)
 
-const getProfilesCustomReferences: WeakReferencesHandler['findWeakReferences'] =
-  async (elements: Element[]): Promise<ReferenceInfo[]> => {
-    const profiles = filterProfiles(elements)
-    const refs = log.timeDebug(
-      () => profiles.flatMap(referencesFromProfile),
-      `Generating references from ${profiles.length} profiles.`,
-    )
-    log.debug(
-      'Generated %d references for %d elements.',
-      refs.length,
-      elements.length,
-    )
-    return refs
-  }
+const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
+  elements: Element[],
+): Promise<ReferenceInfo[]> => {
+  const profiles = filterProfiles(elements)
+  const refs = log.timeDebug(
+    () => profiles.flatMap(referencesFromProfile),
+    `Generating references from ${profiles.length} profiles.`,
+  )
+  log.debug(
+    'Generated %d references for %d elements.',
+    refs.length,
+    elements.length,
+  )
+  return refs
+}
 
 const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
   _(
@@ -324,7 +325,7 @@ const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
     .fromPairs()
     .value()
 
-const removeMissingReferences: WeakReferencesHandler['removeWeakReferences'] =
+const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async (elements) => {
     const profiles = filterProfiles(elements)
@@ -351,21 +352,30 @@ const removeMissingReferences: WeakReferencesHandler['removeWeakReferences'] =
       fixed.value = _.omit(fixed.value, brokenReferenceFields)
       return fixed
     })
-    const errors = profilesWithBrokenReferences.map((profile) => ({
-      elemID: profile.elemID,
-      severity: 'Info' as const,
-      message: 'Dropping profile fields which reference missing types',
-      detailedMessage: `The profile have fields which reference types which are not available in the workspace: ${brokenReferenceFields
+    const errors = profilesWithBrokenReferences.map((profile) => {
+      const profileBrokenReferenceFields = brokenReferenceFields
         .filter((field) => _(profile.value).has(field))
         .map((field) => entriesTargets[field].getFullName())
         .sort()
-        .join(', ')}`,
-    }))
+
+      log.trace(
+        `Removing ${profileBrokenReferenceFields.length} broken references from ${profile.elemID.getFullName()}: ${profileBrokenReferenceFields.join(
+          ', ',
+        )}`,
+      )
+
+      return {
+        elemID: profile.elemID,
+        severity: 'Info' as const,
+        message: 'Dropping profile fields which reference missing types',
+        detailedMessage: `The profile has ${profileBrokenReferenceFields.length} fields which reference types which are not available in the workspace.`,
+      }
+    })
 
     return { fixedElements, errors }
   }
 
 export const profilesHandler: WeakReferencesHandler = {
-  findWeakReferences: getProfilesCustomReferences,
-  removeWeakReferences: removeMissingReferences,
+  findWeakReferences,
+  removeWeakReferences,
 }

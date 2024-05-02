@@ -909,7 +909,7 @@ describe('profiles', () => {
             severity: 'Info',
             message: 'Dropping profile fields which reference missing types',
             detailedMessage:
-              'The profile have fields which reference types which are not available in the workspace: salesforce.Account, salesforce.Account.field.testField__c, salesforce.ApexClass.instance.SomeApexClass, salesforce.ApexPage.instance.SomeApexPage, salesforce.CustomApplication.instance.SomeApplication, salesforce.Flow.instance.SomeFlow, salesforce.Layout.instance.Account_Account_Layout@bs, salesforce.RecordType.instance.Case_SomeCaseRecordType',
+              'The profile has 8 fields which reference types which are not available in the workspace.',
           },
         ])
       })
@@ -1031,7 +1031,7 @@ describe('profiles', () => {
             severity: 'Info',
             message: 'Dropping profile fields which reference missing types',
             detailedMessage:
-              'The profile have fields which reference types which are not available in the workspace: salesforce.Account.field.testField__c, salesforce.ApexClass.instance.SomeApexClass, salesforce.CustomApplication.instance.SomeApplication, salesforce.Flow.instance.SomeFlow',
+              'The profile has 4 fields which reference types which are not available in the workspace.',
           },
         ])
       })

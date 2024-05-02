@@ -796,7 +796,6 @@ const createCustomizations = (): Record<
       },
     },
   },
-
   sharing_agreement: {
     requests: [
       {
@@ -884,10 +883,299 @@ const createCustomizations = (): Record<
           },
         },
         username: { fieldType: 'string', hide: true },
-        //      idFields: ['name', '&email'],
-        //      fileNameFields: ['locale'],
       },
     },
+  },
+
+  account_setting: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/account/settings' },
+        transformation: { root: 'settings' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        singleton: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+
+  account_setting__localization: {
+    element: {
+      fieldCustomizations: {
+        locale_ids: { hide: true },
+      },
+    },
+  },
+
+  resource_collection: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/resource_collections' },
+        transformation: { root: 'resource_collections' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+
+  monitored_twitter_handle: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/channels/twitter/monitored_twitter_handles' },
+        transformation: { root: 'monitored_twitter_handles' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+
+  // placeholder for config validation (the type is created by a filter)
+  tag: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+
+  dynamic_content_item: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/dynamic_content/items' },
+        transformation: { root: 'items' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/workspaces/agent-workspace/dynamic_content' },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        outdated: { hide: true, fieldType: 'boolean' },
+        variants: {
+          standalone: {
+            typeName: 'dynamic_content_item__variants',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: false,
+          },
+        },
+      },
+    },
+  },
+
+  dynamic_content_item__variants: {
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'locale_id', isReference: true }], extendsParent: true },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        outdated: { hide: true, fieldType: 'boolean' },
+      },
+    },
+  },
+
+  webhook: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/webhooks' },
+        transformation: { root: 'webhooks' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/apps-integrations/webhooks/webhooks/{id}/details' },
+      },
+      fieldCustomizations: {
+        meta: { omit: true },
+        id: { hide: true, fieldType: 'string' },
+        created_by: { hide: true },
+        updated_by: { hide: true },
+      },
+    },
+  },
+
+  oauth_token: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/oauth/tokens' },
+        transformation: { root: 'tokens' },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/oauth_clients' },
+        // note: requires oauth_global_client to be included in the config
+        elemID: { parts: [{ fieldName: 'client_id', isReference: true }, { fieldName: 'token' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        created_at: { hide: false },
+      },
+    },
+  },
+
+  // SALTO-2177 token-related types that can optionally be supported - but are not included under supportedTypes yet
+  api_token: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/api_tokens' },
+        transformation: { root: 'api_tokens' },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: { path: '/admin/apps-integrations/apis/zendesk-api/settings/tokens/' },
+        elemID: { parts: [{ fieldName: 'description' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        created_at: { hide: false },
+      },
+    },
+  },
+
+  custom_object: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/custom_objects' },
+        transformation: { root: 'custom_objects' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        custom_object_fields: {
+          typeName: 'custom_object_field',
+          context: { args: { custom_object_key: { root: 'key' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'key' }] },
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'number' },
+        created_by_user_id: { hide: true },
+        updated_by_user_id: { hide: true },
+        // these fields are generated by their raw_ counterparts, and we create them on preDeploy
+        title: { omit: true },
+        title_pluralized: { omit: true },
+        description: { omit: true },
+        custom_object_fields: {
+          standalone: {
+            typeName: 'custom_object_field',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: false,
+          },
+        },
+      },
+    },
+  },
+
+  custom_object_field: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/custom_objects/{custom_object_key}/fields' },
+        transformation: { root: 'custom_object_fields' },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true, parts: [{ fieldName: 'key' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'number' },
+        // these fields are generated by their raw_ counterparts, and we create them on preDeploy
+        title: { omit: true },
+        description: { omit: true },
+        custom_field_options: {
+          standalone: {
+            typeName: 'custom_object_field__custom_field_options',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: false,
+          },
+        },
+      },
+    },
+  },
+
+  // Created in custom_object_fields_options.ts
+  custom_object_field__custom_field_options: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+      },
+    },
+  },
+
+  account_features: {
+    requests: [{ endpoint: { path: '/api/v2/account/features' }, transformation: { root: 'features' } }],
+    resource: { directFetch: true },
+    element: { topLevel: { isTopLevel: true, singleton: true } },
   },
 
   business_hours_schedule: {

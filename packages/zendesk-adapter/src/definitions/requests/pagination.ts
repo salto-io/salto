@@ -25,11 +25,20 @@ export const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (curre
   next === `${current}.json` || next === `${current}`
 
 export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinitions<ClientOptions>> = {
-  cursor: {
+  basic_cursor: {
     // TODON see if can simplify and use the function directly
     funcCreator: () => cursorPagination({ pathChecker, paginationField: 'next_page' }),
   },
-  new_cursor: {
+  basic_cursor_with_args: {
+    // TODON see if can simplify and use the function directly
+    funcCreator: () => cursorPagination({ pathChecker, paginationField: 'next_page' }),
+    clientArgs: {
+      queryArgs: {
+        per_page: String(PAGE_SIZE),
+      },
+    },
+  },
+  links: {
     // TODON look under meta.has_more and do not continue if false!
     funcCreator: () => cursorPagination({ pathChecker, paginationField: CURSOR_BASED_PAGINATION_FIELD }),
     clientArgs: {
@@ -37,5 +46,9 @@ export const PAGINATION: Record<PaginationOptions, definitions.PaginationDefinit
         'page[size]': String(PAGE_SIZE),
       },
     },
+  },
+  settings: {
+    // TODON look under meta.has_more and do not continue if false!
+    funcCreator: () => cursorPagination({ pathChecker, paginationField: 'settings' }),
   },
 }

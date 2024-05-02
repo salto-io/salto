@@ -58,6 +58,8 @@ const isCustomObjectFieldOptions = (options: unknown): options is CustomObjectFi
   )
 
 const onFetch = async (elements: Element[]): Promise<void> => {
+  // eslint-disable-next-line no-console
+  console.log('hi?')
   const customObjectFields = elements
     .filter(isInstanceElement)
     .filter(obj => obj.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)

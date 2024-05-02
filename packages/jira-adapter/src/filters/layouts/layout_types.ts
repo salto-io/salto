@@ -190,3 +190,21 @@ type RequestType = {
 export type RequestTypeWithIssueLayoutConfigInstance = InstanceElement & {
   value: InstanceElement['value'] & RequestType
 }
+
+export type errorResponse = {
+  message: string
+  extensions: {
+    statusCode: number
+  }
+}
+
+export const ERROR_RESPONSE_SCHEME = Joi.object({
+  message: Joi.string().required(),
+  extensions: Joi.object({
+    statusCode: Joi.number().required(),
+  })
+    .required()
+    .unknown(true),
+})
+  .unknown(true)
+  .required()

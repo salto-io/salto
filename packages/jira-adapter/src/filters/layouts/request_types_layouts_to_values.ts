@@ -57,7 +57,7 @@ const filter: FilterCreator = ({ config }) => ({
     const requestFormType = objectTypes.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
     const issueViewType = objectTypes.find(e => e.elemID.typeName === ISSUE_VIEW_TYPE)
     if (requestTypeType === undefined || requestFormType === undefined || issueViewType === undefined) {
-      log.warn('Feild to find requestTypeType or requestFormType or issueViewType')
+      log.warn('Failed to find requestTypeType or requestFormType or issueViewType')
       return
     }
     requestTypeType.fields.requestForm = new Field(requestTypeType, 'requestForm', requestFormType)

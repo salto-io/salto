@@ -363,5 +363,56 @@ describe('requestTypeLayoutsFilter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
       expect(issueLayoutInstance).toBeDefined()
     })
+    it("should remove requestType from elements if couldn't fetch requestType layouts since it does not exist or user does not have required permissions ", async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/gira/1') {
+          return {
+            errors: [
+              {
+                message:
+                  'Entity associated with issue layout does not exist or user does not have required permissions',
+                extensions: {
+                  statusCode: 404,
+                },
+              },
+            ],
+          }
+        }
+        throw new Error('Err')
+      })
+      const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      configWithMissingRefs.fetch.enableMissingReferences = false
+      configWithMissingRefs.fetch.enableJSM = true
+      filter = requestTypeLayoutsFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const requestTypeInstanceFound = instances.find(e => e.elemID.typeName === REQUEST_TYPE_NAME)
+      expect(requestTypeInstanceFound).toBeUndefined()
+    })
+    it("should not remove requestType from elements if couldn't fetch requestType layouts for different error ", async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/gira/1') {
+          return {
+            errors: [
+              {
+                message: 'could not find requestType layouts',
+                extensions: {
+                  statusCode: 404,
+                },
+              },
+            ],
+          }
+        }
+        throw new Error('Err')
+      })
+      const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      configWithMissingRefs.fetch.enableMissingReferences = false
+      configWithMissingRefs.fetch.enableJSM = true
+      filter = requestTypeLayoutsFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const requestTypeInstanceFound = instances.find(e => e.elemID.typeName === REQUEST_TYPE_NAME)
+      expect(requestTypeInstanceFound).toBeDefined()
+    })
   })
 })

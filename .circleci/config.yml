@@ -216,12 +216,10 @@ jobs:
           name: Release version
           command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
 
-  e2e_tests:
+  e2e_tests_without_java:
     parameters:
       package_name:
         type: string
-      should_install_java:
-        type: boolean
     docker:
       - image: cimg/node:14.15
     resource_class: large
@@ -231,7 +229,23 @@ jobs:
           at: .
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
-          should_install_java: <<parameters.should_install_java>>     
+          should_install_java: false     
+
+  e2e_tests_with_java:
+    parameters:
+      package_name:
+        type: string
+    docker:
+      - image: cimg/node:14.15
+    resource_class: large
+    working_directory: /mnt/ramdisk/project
+    steps:
+      - attach_workspace:
+          at: .
+      - run_e2e_tests:
+          package_name: <<parameters.package_name>>
+          should_install_java: true     
+
 
   package_cli:
     docker:
@@ -393,7 +407,7 @@ workflows:
     jobs:
       - build
 
-      - e2e_tests:
+      - e2e_tests_without_java:
           requires:
             - build
           matrix:
@@ -406,10 +420,8 @@ workflows:
                 - stripe-adapter
                 - zendesk-adapter
                 - zuora-billing-adapter
-              should_install_java: 
-                - false
 
-      - e2e_tests:
+      - e2e_tests_with_java:
           requires:
             - build
           matrix:
@@ -418,8 +430,6 @@ workflows:
               package_name: 
                 - jira-adapter
                 - netsuite-adapter
-              should_install_java: 
-                - true
 
       - save_project_cache:
           requires:

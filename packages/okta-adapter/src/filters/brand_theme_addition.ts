@@ -25,10 +25,7 @@ import { deployChanges, defaultDeployChange } from '../deployment'
 
 const log = logger(module)
 
-const getThemeIdByBrand = async (
-  brandId: string,
-  client: OktaClient,
-): Promise<string> => {
+const getThemeIdByBrand = async (brandId: string, client: OktaClient): Promise<string> => {
   const themeEntries = (
     await client.get({
       url: `/api/v1/brands/${brandId}/themes`,

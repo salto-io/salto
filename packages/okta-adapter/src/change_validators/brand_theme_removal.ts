@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  ChangeValidator,
-  getChangeData,
-  isInstanceChange,
-  isRemovalChange,
-} from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
 
@@ -42,15 +37,11 @@ export const brandThemeRemovalValidator: ChangeValidator = async changes => {
   const removedNames = new Set(removeInstanceChanges.map(instance => instance.elemID.getFullName()))
 
   return removedBrandThemeInstances
-    .filter(brandTheme =>
-      !removedNames.has(getParent(brandTheme).elemID.getFullName()),
-    )
+    .filter(brandTheme => !removedNames.has(getParent(brandTheme).elemID.getFullName()))
     .map(brandTheme => ({
-        elemID: brandTheme.elemID,
-        severity: 'Error',
-        message: 'Cannot remove brand theme if its brand is not also being removed',
-        detailedMessage:
-          'In order to remove this brand theme, remove its brand as well',
-      }),
-    )
+      elemID: brandTheme.elemID,
+      severity: 'Error',
+      message: 'Cannot remove brand theme if its brand is not also being removed',
+      detailedMessage: 'In order to remove this brand theme, remove its brand as well',
+    }))
 }

@@ -1900,9 +1900,9 @@ const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
 ]
 
 export const getSupportedTypes = ({
-                                    isClassicOrg,
-                                    supportedTypes,
-                                  }: {
+  isClassicOrg,
+  supportedTypes,
+}: {
   isClassicOrg: boolean
   supportedTypes: Record<string, string[]>
 }): Record<string, string[]> =>
@@ -2033,11 +2033,11 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
 })
 
 export const validateOktaFetchConfig = ({
-                                          fetchConfig,
-                                          clientConfig,
-                                          apiDefinitions,
-                                          privateApiDefinitions,
-                                        }: {
+  fetchConfig,
+  clientConfig,
+  apiDefinitions,
+  privateApiDefinitions,
+}: {
   fetchConfig: OktaFetchConfig
   clientConfig: OktaClientConfig
   apiDefinitions: OktaSwaggerApiConfig

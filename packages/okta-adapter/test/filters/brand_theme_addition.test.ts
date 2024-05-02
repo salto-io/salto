@@ -28,9 +28,15 @@ describe('brandThemeAdditionFilter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const themeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
-  const themeInstance = new InstanceElement('theme', themeType, {
-    secondaryColorHex: '#abcdef',
-  }, undefined, { _parent: [{ id: 'brandId123' }] })
+  const themeInstance = new InstanceElement(
+    'theme',
+    themeType,
+    {
+      secondaryColorHex: '#abcdef',
+    },
+    undefined,
+    { _parent: [{ id: 'brandId123' }] },
+  )
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -54,11 +60,13 @@ describe('brandThemeAdditionFilter', () => {
       const result = await filter.deploy([toChange({ after: themeInstance })])
       expect(result.deployResult.appliedChanges).toHaveLength(1)
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/brands/brandId123/themes', undefined)
-      expect(mockConnection.put).toHaveBeenCalledWith('/api/v1/brands/brandId123/themes/themeId456', {
+      expect(mockConnection.put).toHaveBeenCalledWith(
+        '/api/v1/brands/brandId123/themes/themeId456',
+        {
           secondaryColorHex: '#abcdef',
-        }, undefined,
+        },
+        undefined,
       )
     })
   })
 })
-

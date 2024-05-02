@@ -22,7 +22,11 @@ import { BRAND_THEME_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
 import OktaClient from '../client/client'
 
-const verifyBrandThemeIsDeleted = async (brandId: string, brandThemeId: string, client: OktaClient): Promise<boolean> => {
+const verifyBrandThemeIsDeleted = async (
+  brandId: string,
+  brandThemeId: string,
+  client: OktaClient,
+): Promise<boolean> => {
   try {
     return (
       (

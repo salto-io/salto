@@ -47,8 +47,6 @@ const deployBrandThemeAddition = async (
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
-  log.info(`Deploying BrandTheme with id: ${instance.value.id}`)
-  log.info(`Parent: ${inspectValue(instance.annotations)}`)
   // eslint-disable-next-line no-underscore-dangle
   const brandId = instance.annotations?._parent?.[0]?.id
   if (!_.isString(brandId)) {

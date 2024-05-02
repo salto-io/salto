@@ -87,7 +87,15 @@ const sendLogoRequest = async ({
       ? await logoInstance.value.content.getContent()
       : undefined
   if (isRemoval) {
-    await client.delete({ url })
+    try {
+      await client.delete({ url })
+    } catch (e) {
+      if (e.response?.status === 404) {
+        // Okta returns 404 if the logo was already removed
+        return undefined
+      }
+      throw e
+    }
     return undefined
   }
   const form = new FormData()

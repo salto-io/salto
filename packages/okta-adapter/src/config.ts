@@ -971,6 +971,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         },
         fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
       },
+      remove: {
+        // BrandThemes are removed automatically by Okta when the Brand is removed.
+        // We use an empty URL here to mark this action as supported in case a user removed the theme
+        // alongside its Brand.
+        // A separate Change Validator ensures that mappings aren't removed by themselves.
+        url: '',
+        method: 'delete', // This is just for typing, we intercept it in a filter and use `get`.
+      },
     },
   },
   BrandLogo: {
@@ -1924,6 +1932,7 @@ export type ChangeValidatorName =
   | 'profileMappingRemoval'
   | 'brandRemoval'
   | 'dynamicOSVersion'
+  | 'brandThemeRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1953,6 +1962,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     profileMappingRemoval: { refType: BuiltinTypes.BOOLEAN },
     brandRemoval: { refType: BuiltinTypes.BOOLEAN },
     dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
+    brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

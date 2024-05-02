@@ -128,35 +128,20 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(6)
+    expect(dependencyChanges).toHaveLength(3)
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
     })
   })
   it('should create dependencies if the project not in the changes', async () => {
@@ -168,36 +153,21 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(6)
+    expect(dependencyChanges).toHaveLength(3)
 
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
     })
   })
   it('should create the correct dependencies if the issueTypeScreenScheme not in the changes', async () => {
@@ -209,26 +179,16 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(4)
+    expect(dependencyChanges).toHaveLength(2)
 
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
     })
   })
   it('should create the correct dependencies if the issueTypeScheme not in the changes', async () => {
@@ -240,26 +200,16 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(4)
+    expect(dependencyChanges).toHaveLength(2)
 
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
     })
   })
   it('should create the correct dependencies if the screenScheme not in the changes', async () => {
@@ -271,25 +221,15 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(4)
+    expect(dependencyChanges).toHaveLength(2)
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
     })
   })
   it('should create the correct dependencies if the issueTypeScreenScheme does not have issueTypeMappings', async () => {
@@ -304,15 +244,10 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(2)
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
-      dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-    })
-
+    expect(dependencyChanges).toHaveLength(1)
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
+      dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
   })
   it('should create the correct dependencies if the issueTypeMappings is empty', async () => {
@@ -326,15 +261,10 @@ describe('issueLayoutDependencyChanger', () => {
     ])
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-    expect(dependencyChanges).toHaveLength(2)
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
-      dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-    })
-
+    expect(dependencyChanges).toHaveLength(1)
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
+      dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
   })
   it('should return the correct dependencies for 2 issueLayout in the same Project with 2 issueTypeMappings', async () => {
@@ -357,85 +287,45 @@ describe('issueLayoutDependencyChanger', () => {
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
 
-    expect(dependencyChanges).toHaveLength(16)
+    expect(dependencyChanges).toHaveLength(8)
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'issueTypeSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance2' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'screenSchemeInstance2', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'screenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'screenSchemeInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'screenSchemeInstance2', target: 'issueLayoutInstance2' },
     })
   })
   it('should return the correct dependencies for 2 issueLayout from 2 Projects', async () => {
@@ -454,65 +344,35 @@ describe('issueLayoutDependencyChanger', () => {
 
     const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
 
-    expect(dependencyChanges).toHaveLength(12)
+    expect(dependencyChanges).toHaveLength(6)
     expect(dependencyChanges).toContainEqual({
-      action: 'remove',
+      action: 'add',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'issueTypeScreenSchemeInstance2' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeScreenSchemeInstance2', target: 'issueLayoutInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'issueTypeSchemeInstance2' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'issueTypeSchemeInstance2', target: 'issueLayoutInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
     })
 
     expect(dependencyChanges).toContainEqual({
       action: 'add',
-      dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'remove',
       dependency: { source: 'issueLayoutInstance2', target: 'screenSchemeInstance2' },
-    })
-
-    expect(dependencyChanges).toContainEqual({
-      action: 'add',
-      dependency: { source: 'screenSchemeInstance2', target: 'issueLayoutInstance2' },
     })
   })
   it('should not create dependencies if the issueLayout not in the changes', async () => {
@@ -537,16 +397,11 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(2)
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
-        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-      })
+      expect(dependencyChanges).toHaveLength(1)
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
     })
     it('should create dependencies if the project not in changes and missing issueTypeScreenScheme', async () => {
@@ -558,16 +413,11 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(2)
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
-        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-      })
+      expect(dependencyChanges).toHaveLength(1)
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
     })
     it('should create dependencies if the project in changes and missing issueTypeScheme', async () => {
@@ -580,26 +430,16 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(4)
+      expect(dependencyChanges).toHaveLength(2)
 
       expect(dependencyChanges).toContainEqual({
-        action: 'remove',
+        action: 'add',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
       })
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
         dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'add',
-        dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
       })
     })
     it('should create dependencies if the project not in changes and missing issueTypeScheme', async () => {
@@ -611,26 +451,16 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(4)
+      expect(dependencyChanges).toHaveLength(2)
 
       expect(dependencyChanges).toContainEqual({
-        action: 'remove',
+        action: 'add',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
       })
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
         dependency: { source: 'issueLayoutInstance1', target: 'screenSchemeInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'add',
-        dependency: { source: 'screenSchemeInstance1', target: 'issueLayoutInstance1' },
       })
     })
     it('should create dependencies if the issueTypeScreenScheme in changes and missing issueTypeMappings', async () => {
@@ -644,26 +474,16 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(4)
+      expect(dependencyChanges).toHaveLength(2)
 
       expect(dependencyChanges).toContainEqual({
-        action: 'remove',
+        action: 'add',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'add',
-        dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
       })
     })
     it('should create dependencies if the issueTypeScreenScheme not in changes and missing issueTypeMappings', async () => {
@@ -676,16 +496,11 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(2)
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
-        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-      })
+      expect(dependencyChanges).toHaveLength(1)
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
     })
     it('should create dependencies if the issueTypeScreenScheme in changes and issueTypeMappings is empty', async () => {
@@ -699,26 +514,16 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(4)
+      expect(dependencyChanges).toHaveLength(2)
 
       expect(dependencyChanges).toContainEqual({
-        action: 'remove',
+        action: 'add',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeScreenSchemeInstance1' },
-      })
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'add',
-        dependency: { source: 'issueTypeScreenSchemeInstance1', target: 'issueLayoutInstance1' },
       })
     })
     it('should create dependencies if the issueTypeScreenScheme not in changes and issueTypeMappings is empty', async () => {
@@ -731,16 +536,11 @@ describe('issueLayoutDependencyChanger', () => {
       ])
 
       const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
-      expect(dependencyChanges).toHaveLength(2)
-
-      expect(dependencyChanges).toContainEqual({
-        action: 'remove',
-        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
-      })
+      expect(dependencyChanges).toHaveLength(1)
 
       expect(dependencyChanges).toContainEqual({
         action: 'add',
-        dependency: { source: 'issueTypeSchemeInstance1', target: 'issueLayoutInstance1' },
+        dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
     })
 

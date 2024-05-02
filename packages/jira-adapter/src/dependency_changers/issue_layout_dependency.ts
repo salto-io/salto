@@ -33,12 +33,12 @@ const getParent = (instance: InstanceElement): InstanceElement =>
   instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value
 
 const getSpecificChange = (
-  instanceId: ElemID | undefined,
+  elemId: ElemID | undefined,
   AdditionOrModificationChanges: ChangeWithKey[],
 ): ChangeWithKey | undefined =>
-  instanceId === undefined
+  elemId === undefined
     ? undefined
-    : AdditionOrModificationChanges.find(({ change }) => getChangeData(change).elemID.isEqual(instanceId))
+    : AdditionOrModificationChanges.find(({ change }) => getChangeData(change).elemID.isEqual(elemId))
 
 type issueTypeMappingStruct = {
   issueTypeId: string | InstanceElement
@@ -88,21 +88,22 @@ export const issueLayoutDependencyChanger: DependencyChanger = async changes => 
     const projectIssueTypeMapping = projectIssueTypeScreenSchemeChange
       ? getChangeData(projectIssueTypeScreenSchemeChange.change).value.issueTypeMappings
       : project.value.issueTypeScreenScheme?.value.value.issueTypeMappings
-    const projectScreenSchemes = projectIssueTypeMapping
+    const issueLayoutKeyToProjectScreenSchemesKeys = projectIssueTypeMapping
       ?.map((issueTypeMapping: issueTypeMappingStruct) =>
         getSpecificChange(issueTypeMapping.screenSchemeId.elemID, AdditionOrModificationChanges),
       )
       .filter((change: ChangeWithKey) => change !== undefined)
-      .map((change: ChangeWithKey) => change.key)
-      .map((changeKey: string) => [issueLayoutKey, changeKey])
+      .map((change: ChangeWithKey) => [issueLayoutKey, change.key])
 
-    if (projectScreenSchemes !== undefined && projectScreenSchemes.length !== 0) {
-      issueLayoutsKeysToDependencyKeys.push(...projectScreenSchemes)
+    if (
+      issueLayoutKeyToProjectScreenSchemesKeys !== undefined &&
+      issueLayoutKeyToProjectScreenSchemesKeys.length !== 0
+    ) {
+      issueLayoutsKeysToDependencyKeys.push(...issueLayoutKeyToProjectScreenSchemesKeys)
     }
   })
 
   return issueLayoutsKeysToDependencyKeys.flatMap(([issueLayoutKey, dependencyKey]) => [
-    dependencyChange('remove', issueLayoutKey, dependencyKey),
-    dependencyChange('add', dependencyKey, issueLayoutKey),
+    dependencyChange('add', issueLayoutKey, dependencyKey),
   ])
 }

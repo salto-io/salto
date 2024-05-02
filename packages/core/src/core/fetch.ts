@@ -36,7 +36,6 @@ import {
   isAdditionOrModificationChange,
   isElement,
   isEqualElements,
-  isField,
   isInstanceElement,
   isModificationChange,
   isObjectType,
@@ -476,15 +475,21 @@ const runPostFetch = async ({
 // SALTO-5878 safety due to changed order of precedence when resolving referenced values / types - can remove if we don't see this log
 const updateInconsistentTypes = (validAccountElements: Element[]): void => {
   const objectTypesByElemID = _.keyBy(validAccountElements.filter(isObjectType), e => e.elemID.getFullName())
-  const isInstanceOrField = (e: Element): e is InstanceElement | Field => isInstanceElement(e) || isField(e)
-  const elementsWithInconsistentTypes = validAccountElements
-    .filter(isInstanceOrField)
-    .filter(
-      e =>
-        e.refType.type !== undefined &&
-        objectTypesByElemID[e.refType.elemID.getFullName()] !== undefined &&
-        !isEqualElements(e.refType.type, objectTypesByElemID[e.refType.elemID.getFullName()]),
-    )
+  const isInconsistentType = (e: InstanceElement | Field): boolean =>
+    e.refType.type !== undefined &&
+    objectTypesByElemID[e.refType.elemID.getFullName()] !== undefined &&
+    !isEqualElements(e.refType.type, objectTypesByElemID[e.refType.elemID.getFullName()])
+  const fields = Object.values(objectTypesByElemID)
+    .flatMap(obj => Object.values(obj.fields))
+    .filter(f => isObjectType(f.refType.type))
+  const elementsWithInconsistentTypes: (InstanceElement | Field)[] = validAccountElements
+    .filter(isInstanceElement)
+    .filter(isInconsistentType)
+  fields.forEach(f => {
+    if (isInconsistentType(f)) {
+      elementsWithInconsistentTypes.push(f)
+    }
+  })
 
   if (elementsWithInconsistentTypes.length > 0) {
     log.error(

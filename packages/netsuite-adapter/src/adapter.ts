@@ -343,7 +343,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     this.fixElementsFunc = combineElementFixers(
-      Object.values(customReferenceHandlers).map(handler => handler.removeWeakReferences({ elementsSource })),
+      _.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences({ elementsSource })),
     )
   }
 

@@ -177,6 +177,11 @@ export const mockTypes = {
       dirName: 'aura',
     },
   }),
+  CustomApplication: createMetadataObjectType({
+    annotations: {
+      metadataType: 'CustomApplication',
+    },
+  }),
   CustomObject: createMetadataObjectType({
     annotations: {
       metadataType: 'CustomObject',

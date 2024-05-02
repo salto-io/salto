@@ -49,6 +49,7 @@ export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
 export const CUSTOM_REFS_CONFIG = 'customReferences'
+export const FIX_ELEMENTS_CONFIG = 'fixElements'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
@@ -214,6 +215,10 @@ export type CustomReferencesSettings = Partial<
   Record<customReferencesTypes, boolean>
 >
 
+export type FixElementsSettings = Partial<
+  Record<customReferencesTypes, boolean>
+>
+
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
@@ -331,6 +336,16 @@ const customReferencesSettingsType = new ObjectType({
   ),
 })
 
+const fixElementsSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoFixElementsSettings'),
+  fields: Object.fromEntries(
+    customReferencesTypeNames.map((name) => [
+      name,
+      { refType: BuiltinTypes.BOOLEAN },
+    ]),
+  ),
+})
+
 const warningSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoWarningSettings'),
   fields: {
@@ -355,6 +370,7 @@ export type DataManagementConfig = {
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
   [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
+  [FIX_ELEMENTS_CONFIG]?: FixElementsSettings
 }
 
 export type FetchParameters = {
@@ -655,6 +671,9 @@ const dataManagementType = new ObjectType({
     },
     [CUSTOM_REFS_CONFIG]: {
       refType: customReferencesSettingsType,
+    },
+    [FIX_ELEMENTS_CONFIG]: {
+      refType: fixElementsSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {

@@ -1317,11 +1317,13 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
   {
     src: { field: 'schemaId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_SCHEMA_TYPE },
   },
   {

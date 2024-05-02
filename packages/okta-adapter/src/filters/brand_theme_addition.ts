@@ -29,16 +29,16 @@ const getThemeIdByBrand = async (
   brandId: string,
   client: OktaClient,
 ): Promise<string> => {
-  const mappingEntries = (
+  const themeEntries = (
     await client.get({
       url: `/api/v1/brands/${brandId}/themes`,
     })
   ).data
-  if (_.isArray(mappingEntries) && mappingEntries.length === 1 && _.isString(mappingEntries[0].id)) {
-    return mappingEntries[0].id
+  if (_.isArray(themeEntries) && themeEntries.length === 1 && _.isString(themeEntries[0].id)) {
+    return themeEntries[0].id
   }
-  log.error(`Received unexpected result for brand theme: ${inspectValue(mappingEntries)}`)
-  throw new Error('Could not find BrandTheme with the provided brandId')
+  log.error(`Received unexpected result for brand theme: ${inspectValue(themeEntries)}`)
+  throw new Error(`Could not find BrandTheme with the provided brandId ${brandId}`)
 }
 
 const deployBrandThemeAddition = async (

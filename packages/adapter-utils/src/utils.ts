@@ -532,7 +532,6 @@ export type ResolveValuesFunc = <T extends Element>(
   getLookUpName: GetLookupNameFunc,
   elementsSource?: ReadOnlyElementsSource,
   allowEmpty?: boolean,
-  useElementSourceForTypes?: boolean,
 ) => Promise<T>
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> =>

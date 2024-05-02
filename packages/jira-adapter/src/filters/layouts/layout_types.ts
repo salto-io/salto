@@ -192,12 +192,14 @@ export type RequestTypeWithIssueLayoutConfigInstance = InstanceElement & {
 }
 
 export type errorResponse = {
+  message: string
   extensions: {
     statusCode: number
   }
 }
 
 export const ERROR_RESPONSE_SCHEME = Joi.object({
+  message: Joi.string().required(),
   extensions: Joi.object({
     statusCode: Joi.number().required(),
   })

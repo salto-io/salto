@@ -255,7 +255,9 @@ export const fetchRequestTypeDetails = async ({
         if (
           Array.isArray(response.errors) &&
           isErrorResponse(response.errors[0]) &&
-          response.errors[0].extensions.statusCode === 404
+          response.errors[0].extensions.statusCode === 404 &&
+          response.errors[0].message ===
+            'Entity associated with issue layout does not exist or user does not have required permissions'
         ) {
           log.info(
             `Failed to fetch ${requestTypeInstance.annotations[CORE_ANNOTATIONS.ALIAS]} since it does not exist or user does not have required permissions`,

@@ -47,9 +47,8 @@ const verifyBrandThemeIsDeleted = async (
  * Override the default BrandTheme removal with a verification of removal.
  *
  * BrandThemes are removed automatically by Okta when the Brand is removed, so only verify that they are removed.
- * TODO: see if this is correct
- * Separate change validator and dependency changer ensure that this is only executed if one of the mapping side was
- * removed in the same deploy action.
+ *
+ * A separate change validator ensures that this is only executed if the Brand was removed in the same deploy action.
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   name: 'brandThemeRemovalFilter',

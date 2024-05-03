@@ -215,7 +215,9 @@ const deployLayoutChange = async (change: Change<InstanceElement>, client: JiraC
     const response = await getLayoutResponse({ variables, client, typeName })
     if (!isIssueLayoutResponse(response.data)) {
       log.error('received invalid response from jira', response)
-      throw Error('Failed to deploy issue layout changes due to bad response from jira service')
+      throw Error(
+        'Failed to deploy issue layout changes due to an unexpected response from Jira. Your target environment might not be synced, please fetch it and try again.',
+      )
     }
     const issueLayoutId = response.data.issueLayoutConfiguration.issueLayoutResult.id
     const url = `/rest/internal/1.0/issueLayouts/${issueLayoutId}`

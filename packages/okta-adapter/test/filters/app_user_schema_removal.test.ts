@@ -14,15 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  toChange,
-  getChangeData,
-  CORE_ANNOTATIONS,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../utils'
@@ -48,7 +40,7 @@ describe('appUserSchemaRemovalFilter', () => {
     },
     undefined,
     {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app, app)],
+      [CORE_ANNOTATIONS.PARENT]: [app.value],
     },
   )
   const notFoundError = new clientUtils.HTTPError('message', {
@@ -75,7 +67,6 @@ describe('appUserSchemaRemovalFilter', () => {
       expect(appliedChanges).toHaveLength(1)
       expect(appliedChanges.map(change => getChangeData(change))[0]).toEqual(appUserSchemaInstance)
     })
-
     it('should fail when the parent application exists', async () => {
       mockConnection.get.mockResolvedValue(successResponse)
       const changes = [toChange({ before: appUserSchemaInstance })]
@@ -84,7 +75,6 @@ describe('appUserSchemaRemovalFilter', () => {
       expect(errors).toHaveLength(1)
       expect(appliedChanges).toHaveLength(0)
     })
-
     it('should handle multiple changes', async () => {
       mockConnection.get.mockRejectedValueOnce(notFoundError)
       mockConnection.get.mockResolvedValueOnce(successResponse)

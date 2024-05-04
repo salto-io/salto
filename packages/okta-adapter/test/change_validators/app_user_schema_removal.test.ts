@@ -22,7 +22,7 @@ import {
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { appUserSchemaAndApplicationValidator } from '../../src/change_validators/app_user_schema_and_application'
+import { appUserSchemaRemovalValidator } from '../../src/change_validators/app_user_schema_removal'
 import { OKTA, APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
 describe('appUserSchemaRemovalValidator', () => {
@@ -56,7 +56,7 @@ describe('appUserSchemaRemovalValidator', () => {
     },
   )
   it('should return an error when AppUserSchema is deleted without its parent Application', async () => {
-    const changeErrors = await appUserSchemaAndApplicationValidator([toChange({ before: appUserSchema1 })])
+    const changeErrors = await appUserSchemaRemovalValidator([toChange({ before: appUserSchema1 })])
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([
       {
@@ -68,12 +68,12 @@ describe('appUserSchemaRemovalValidator', () => {
     ])
   })
   it('should log an error when AppUserSchema with 2 parents is deleted', async () => {
-    const logging = logger('okta-adapter/src/change_validators/app_user_schema_and_application')
+    const logging = logger('okta-adapter/src/change_validators/app_user_schema_removal')
     const e = new Error(
       `Expected ${appUserSchema2.elemID.getFullName()} to have exactly one parent, found ${appUserSchema2.annotations[CORE_ANNOTATIONS.PARENT].length}`,
     )
     const logErrorSpy = jest.spyOn(logging, 'error')
-    await appUserSchemaAndApplicationValidator([toChange({ before: appUserSchema2 })])
+    await appUserSchemaRemovalValidator([toChange({ before: appUserSchema2 })])
     expect(logErrorSpy).toHaveBeenCalledWith(
       'Could not run appUserSchemaAndApplicationValidator validator for instance %s: %s',
       appUserSchema2.elemID.getFullName(),
@@ -81,7 +81,7 @@ describe('appUserSchemaRemovalValidator', () => {
     )
   })
   it('should not return an error when AppUserSchema is deleted with its parent Application', async () => {
-    const changeErrors = await appUserSchemaAndApplicationValidator([
+    const changeErrors = await appUserSchemaRemovalValidator([
       toChange({ before: appUserSchema1 }),
       toChange({ before: app }),
     ])

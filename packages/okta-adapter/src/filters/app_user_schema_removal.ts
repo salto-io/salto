@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { deployChanges } from '../deployment'
@@ -27,7 +27,7 @@ const verifyApplicationIsDeleted = async (applicationId: string, client: OktaCli
     return (
       (
         await client.get({
-          url: `/api/v1/meta/schemas/apps/${applicationId}/default`,
+          url: `/api/v1/meta/schemas/apps/${applicationId}`,
         })
       ).status === 404
     )
@@ -44,10 +44,9 @@ const verifyApplicationIsDeleted = async (applicationId: string, client: OktaCli
  *
  * AppUserSchema are removed automatically by Okta when it's parent Application is removed, so instead only
  * verify that they are removed.
- * Separate change validator and dependency changer ensure that this is only executed if the application was
+ * Separate change validator ensures that this is only executed if the application was
  * removed in the same deploy action.
  */
-// TODO: what is the dependency changer?
 const filterCreator: FilterCreator = ({ client }) => ({
   name: 'appUserSchemaRemovalFilter',
   deploy: async changes => {
@@ -61,7 +60,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const appUserSchemaInstance = getChangeData(change)
-      const parentApplicationId = getParent(appUserSchemaInstance).value.id
+      const parentApplicationId = getParents(appUserSchemaInstance)[0].id
       if (!_.isString(parentApplicationId) || !(await verifyApplicationIsDeleted(parentApplicationId, client))) {
         throw new Error('Expected AppUserSchema to be deleted')
       }

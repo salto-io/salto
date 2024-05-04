@@ -23,7 +23,7 @@ const log = logger(module)
 /**
  * When removing AppUserSchema, validate the parent Application gets removed as well
  */
-export const appUserSchemaAndApplicationValidator: ChangeValidator = async changes => {
+export const appUserSchemaRemovalValidator: ChangeValidator = async changes => {
   const removalInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
 
   const removedAppUserSchemaInstances = removalInstanceChanges.filter(

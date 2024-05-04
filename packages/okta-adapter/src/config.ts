@@ -1937,7 +1937,7 @@ export type ChangeValidatorName =
   | 'brandRemoval'
   | 'dynamicOSVersion'
   | 'brandThemeRemoval'
-  | 'appUserSchemaAndApplication'
+  | 'appUserSchemaRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -1968,7 +1968,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     brandRemoval: { refType: BuiltinTypes.BOOLEAN },
     dynamicOSVersion: { refType: BuiltinTypes.BOOLEAN },
     brandThemeRemoval: { refType: BuiltinTypes.BOOLEAN },
-    appUserSchemaAndApplication: { refType: BuiltinTypes.BOOLEAN },
+    appUserSchemaRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

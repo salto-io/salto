@@ -493,7 +493,7 @@ describe('Nacl Files Source', () => {
       const changeModify = {
         id: elemID,
         action: 'modify',
-        data: { before: sfile, after: new StaticFile({ filepath, hash: 'XII' })},
+        data: { before: sfile, after: new StaticFile({ filepath, hash: 'XII' }) },
         path: ['new', 'file'],
       } as DetailedChange
       await src.updateNaclFiles([changeRemove, changeModify])
